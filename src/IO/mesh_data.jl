@@ -4,7 +4,7 @@ using DataFrames
 using MPI
 
 using NearestNeighbors
-include(pwd() * "/src/Parameter/parameter_handling.jl")
+include(pwd() * "/Parameter/parameter_handling.jl")
 #export read_mesh
 #export load_mesh_and_distribute
 function read_mesh(filename::String)
@@ -43,8 +43,8 @@ function distribute(mesh, params, ranksize)
 end
 
 function create_topology(nlist, size)
-
-
+    print(nlist)
+    return nlist
 end
 
 function neighbors(mesh, params, coor)
