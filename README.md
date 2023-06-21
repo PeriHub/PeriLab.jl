@@ -19,7 +19,7 @@ git branch -M main
 git push -uf origin main
 ```
 ## Authors and acknowledgment
-Dr.-Ing. Christian Willberg
+Dr.-Ing. Christian Willberg; christian.willberg@dlr.de
 
 ## License
 BSD License
