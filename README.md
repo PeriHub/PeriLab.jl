@@ -1,6 +1,7 @@
 # PeriLab
 
 ## Modules
+```
 import Pkg
 Pkg.add("MPI")
 Pkg.add("NearestNeighbors")
@@ -8,7 +9,7 @@ Pkg.add("Logging")
 Pkg.add("YAML")
 Pkg.add("CSV")
 Pkg.add("DataFrames")
-
+```
 ## Add your files
 
 ```
