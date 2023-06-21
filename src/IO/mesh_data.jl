@@ -4,7 +4,7 @@ using DataFrames
 using MPI
 
 using NearestNeighbors
-include(pwd() * "/Parameter/parameter_handling.jl")
+include(pwd() * "/src/Parameter/parameter_handling.jl")
 #export read_mesh
 #export load_mesh_and_distribute
 function read_mesh(filename::String)
@@ -48,9 +48,22 @@ function create_topology(nlist, size)
 end
 
 function neighbors(mesh, params, coor)
+    """
+    neighbors(mesh, params, coor)
+
+    Compute the neighbor list for each node in a mesh based on their proximity using a BallTree data structure.
+
+    # Arguments
+    - `mesh`: A mesh data structure containing the coordinates and other information.
+    - `params`: Parameters needed for computing the neighbor list.
+    - `coor`: A vector of coordinate names along which to compute the neighbor list.
+
+    # Returns
+    An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
+    """
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
-    data = zeros(dof, nnodes) # (dof, number of points)
+    data = zeros(dof, nnodes)
     neighborList = fill([], nnodes)
 
     for i in 1:dof
