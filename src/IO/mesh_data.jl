@@ -43,9 +43,8 @@ function distribute(mesh, params, ranksize)
 end
 
 function create_topology(nlist, size)
-    println("nlist $nlist")
-    println()
-    nnodes = length(nlist)u
+
+    nnodes = length(nlist)
     if size == 0
         distribution = [collect(1:nnodes)]
     else
