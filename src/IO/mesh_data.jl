@@ -45,7 +45,7 @@ end
 function create_topology(nlist, size)
 
     nnodes = length(nlist)
-    if size == 0
+    if size == 1
         distribution = [collect(1:nnodes)]
     else
         distribution = create_base_chunk(nnodes, size)
