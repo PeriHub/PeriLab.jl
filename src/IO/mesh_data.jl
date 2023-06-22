@@ -4,7 +4,7 @@ using DataFrames
 using MPI
 
 using NearestNeighbors
-include(pwd() * "/Parameter/parameter_handling.jl")
+include("../Parameter/parameter_handling.jl")
 #export read_mesh
 #export load_mesh_and_distribute
 function read_mesh(filename::String)
@@ -43,10 +43,49 @@ function distribute(mesh, params, ranksize)
 end
 
 function create_topology(nlist, size)
-    print(nlist)
-    return nlist
+    println("nlist $nlist")
+    println()
+    nnodes = length(nlist)u
+    if size == 0
+        distribution = [collect(1:nnodes)]
+    else
+        distribution = create_base_chunk(nnodes, size)
+        println("distrib $distribution")
+        println()
+        # check neighborhood & overlap -> all nodes after chunk are overlap
+        for i in 1:size
+            nchunks = length(distribution[i])
+            for j in 1:nchunks
+                id = distribution[i, j]
+                nneighbors = length(nlist[id])
+                for k in 1:nneighbors
+                    if length(filter(x -> x == neighbors[nlist[id, k]], distribution[i])) < 1
+                        append!(distribution[i], [nlist[id, k]])
+                    end
+                end
+            end
+        end
+
+    end
+    println("distrib $distribution")
+    return distribution
 end
 
+function create_base_chunk(nnodes, size)
+    # Calculate the initial size of each chunk
+    chunk_size = div(nnodes, size)
+    # Split the data into chunks
+    distribution = fill([], size)
+    for i in 1:size
+        start_idx = (i - 1) * chunk_size + 1
+        end_idx = min(i * chunk_size, nnodes)
+        if i == size && end_idx < nnodes
+            end_idx = nnodes
+        end
+        distribution[i] = collect(start_idx:end_idx)
+    end
+    return distribution
+end
 function neighbors(mesh, params, coor)
     """
     neighbors(mesh, params, coor)
@@ -100,7 +139,7 @@ function init_vectors_for_processes(data, comm, vector)
     end
 
     # Scatter the data chunks from the root process to all processes
-    MPI.Scatter(Array(data), local_chunk, chunk_size, MPI.INT, MPI.ROOT, MPI.COMM_WORLD)
+    #MPI.Scatter(Array(data), local_chunk, chunk_size, MPI.INT, MPI.ROOT, MPI.COMM_WORLD)
 
     # Print the local chunk on each process
     println("Rank $rank: ", local_chunk)
