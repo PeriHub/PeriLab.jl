@@ -1,6 +1,14 @@
+"Simple dummy project module to demonstrate how a project can be organized."
+module PeriLab
+
 import MPI
 using YAML
 include("./IO/IO.jl")
+
+export main
+"""
+    Main
+"""
 function main()
     # init MPI as always ...
     MPI.Init()
@@ -22,4 +30,4 @@ function main()
     return MPI.Finalize()
 end
 
-main()
+end # module
