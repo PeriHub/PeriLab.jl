@@ -1,4 +1,4 @@
-using MPI
+import MPI
 using YAML
 include("./IO/IO.jl")
 function main()
