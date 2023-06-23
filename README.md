@@ -1,5 +1,5 @@
 # PeriLab
-
+PeriLab is a Software to solve Peridynamic problems. It is written in Julia to overcome many issues related to the Software Peridigm.
 ## Modules
 ```
 import Pkg
@@ -20,6 +20,6 @@ git push -uf origin main
 ```
 ## Authors and acknowledgment
 Dr.-Ing. Christian Willberg; christian.willberg@dlr.de
-M.Sc. Jan-Timo Hesse jan-timo.hesse@dlr.de
+M.Sc. Jan-Timo Hesse; jan-timo.hesse@dlr.de
 ## Project status
 In development.
