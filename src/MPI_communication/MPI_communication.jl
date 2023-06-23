@@ -15,8 +15,8 @@ function send_single_values(comm, master, values, type)
     send_msg = zeros(type, 1, 1)
     if rank == master
         for i = 0:size-1
+            send_msg[1] = values[i+1]
             if i != master
-                send_msg[1] = values[i+1]
                 MPI.Send(send_msg, i, 0, comm)
             end
         end
