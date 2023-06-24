@@ -8,8 +8,8 @@ function send_single_values(comm, master, values, type)
     size = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
     recv_msg = zeros(type, 1, 1)
-    send_msg = zeros(type, 1, 1)
     if rank == master
+        send_msg = zeros(type, 1, 1)
         for i = 0:size-1
             send_msg[1] = values[i+1]
             if i != master
