@@ -23,28 +23,3 @@ function send_single_values(comm, master, values, type)
     end
     return recv_msg
 end
-function main()
-    MPI.Init()
-    comm = MPI.COMM_WORLD
-    size = MPI.Comm_size(comm)
-    type = Int32
-    rank = 0
-
-    if rank == 0
-        data = [1, 2, 3, 4, 5]
-        nn = [[1, 2, 3], [2, 3, 4], [3, 4, 5]]
-        chunks = [[1, 2], [3, 4], [5]]
-        lechunks = zeros(type, size, 1)
-        for i in 1:size
-            lechunks[i] = length(chunks[i])
-        end
-    end
-    len_chunk = send_single_values(comm, 0, lechunks, type)
-    println("Results on rank ", rank, ": ", len_chunk)
-
-    #localData = init_data_fields(comm, len_chunk[1], "Int64")
-
-    MPI.Barrier(comm)
-    MPI.Finalize()
-end
-main()
