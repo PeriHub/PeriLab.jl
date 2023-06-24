@@ -1,9 +1,5 @@
 import MPI
-function init_data_fields(comm, globalLen, type)
-    localLen = send_single_values(comm, 0, globalLen, type)
-    local_data = zeros(type, localLen[1], 1)
-    return local_data
-end
+
 function send_single_values(comm, master, values, type)
     size = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
@@ -22,4 +18,7 @@ function send_single_values(comm, master, values, type)
         MPI.Recv!(recv_msg, master, 0, comm)
     end
     return recv_msg
+end
+function send_string(comm, master, values, type)
+
 end
