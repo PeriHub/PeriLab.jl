@@ -10,13 +10,15 @@ function send_single_value_from_vector(comm, master, values, type)
     if rank == master
         send_msg = zeros(type, 1, 1)
         for i = 0:size-1
+            # +1 because the index of cores is zero based and julia matrices are one based
             send_msg[1] = values[i+1]
             if i != master
                 MPI.Send(send_msg, i, 0, comm)
+            else
+                recv_msg[1] = send_msg[1]
             end
         end
-        # +1 because the index of cores is zero based and julia matrices are one based
-        recv_msg[1] = send_msg[1]
+
     else
         MPI.Recv!(recv_msg, master, 0, comm)
     end
