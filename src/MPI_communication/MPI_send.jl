@@ -22,6 +22,11 @@ function send_single_value_from_vector(comm, master, values, type)
     end
     return recv_msg
 end
-function send_string(comm, master, values, type)
-
+function send_string(comm, master, send_msg::String)
+    receive_msg = ""
+    receive_msg = MPI.bcast(send_msg, master, comm)
+    if MPI.Comm_rank(comm) == master
+        receive_msg = send_msg
+    end
+    return receive_msg
 end
