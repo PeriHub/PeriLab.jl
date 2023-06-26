@@ -13,7 +13,7 @@ function send_single_value(comm, master, values, type)
             end
         end
         # +1 because the index of cores is zero based and julia matrices are one based
-        recv_msg[master+1] = send_msg[master+1]
+        recv_msg[1] = send_msg[1]
     else
         MPI.Recv!(recv_msg, master, 0, comm)
     end
