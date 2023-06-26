@@ -1,6 +1,6 @@
 import MPI
 
-function send_single_values(comm, master, values, type)
+function send_single_value(comm, master, values, type)
     size = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
     recv_msg = zeros(type, 1, 1)
