@@ -1,8 +1,11 @@
 import MPI
 
-function send_single_value(comm, master, values, type)
+function send_single_value_from_vector(comm, master, values, type)
     size = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
+    if type == String
+        @error "Wrong type String in function send_single_value_from_vector"
+    end
     recv_msg = zeros(type, 1, 1)
     if rank == master
         send_msg = zeros(type, 1, 1)
