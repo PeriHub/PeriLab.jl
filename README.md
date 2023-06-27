@@ -2,6 +2,13 @@
 PeriLab is a Software to solve Peridynamic problems. It is written in Julia to overcome many issues related to the Software Peridigm.
 ## Modules
 ```
+start julia in batch
+in julia promp write ]
+now you can define your enviroment via "activate ."
+write instantiate
+```
+
+```
 import Pkg
 Pkg.add("MPI")
 Pkg.add("NearestNeighbors")

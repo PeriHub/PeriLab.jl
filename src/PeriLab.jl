@@ -11,6 +11,7 @@ export main
 """
 function main()
     # init MPI as always ...
+
     MPI.Init()
     global juliaPath = Base.Filesystem.pwd() * "/"
     # from outside #################
