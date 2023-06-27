@@ -1,6 +1,7 @@
 name = "PeriLab"
 uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
-authors = ["hess_ja <jan-timo.hesse@dlr.de>"]
+authors = ["Christian Willberg <christian.willberg@dlr.de>"
+"jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
 version = "0.1.0"
 
 [deps]
