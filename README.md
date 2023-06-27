@@ -19,7 +19,9 @@ git branch -M main
 git push -uf origin main
 ```
 ## Authors and acknowledgment
+'''
 Dr.-Ing. Christian Willberg; christian.willberg@dlr.de
 M.Sc. Jan-Timo Hesse; jan-timo.hesse@dlr.de
+'''
 ## Project status
 In development.
