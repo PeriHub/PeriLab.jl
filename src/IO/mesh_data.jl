@@ -4,7 +4,7 @@ using DataFrames
 using MPI
 
 using NearestNeighbors
-include("../Parameter/parameter_handling.jl")
+include("../Support/parameter_handling.jl")
 #export read_mesh
 #export load_mesh_and_distribute
 function read_mesh(filename::String)
@@ -25,10 +25,11 @@ function load_mesh_and_distribute(params, comm)
         ranksize = MPI.Comm_size(comm)
         println("$(MPI.Comm_rank(comm)) of $(MPI.Comm_size(comm))")
 
-        distribute(meshdata, params, ranksize)
+        topo = distribute(meshdata, params, ranksize)
     else
         #MPI.Barrier(comm) # notwendig?
     end
+    return meshdata, topo
 end
 
 
