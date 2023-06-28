@@ -86,6 +86,7 @@ function create_base_chunk(nnodes, size)
     end
     return distribution
 end
+
 function neighbors(mesh, params, coor)
     """
     neighbors(mesh, params, coor)
@@ -110,7 +111,7 @@ function neighbors(mesh, params, coor)
     end
     balltree = BallTree(data)
     for i in 1:nnodes
-        neighborList[i] = inrange(balltree, data[:, i], get_horizon(params, values(mesh[!, "block_id"])[i]), true)
+        neighborList[i] = inrange(balltree, data[:, i], get_horizon(params, mesh[!, "block_id"][i]), true)
     end
     return neighborList
 end
