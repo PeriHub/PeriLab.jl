@@ -14,6 +14,7 @@ function read_mesh(filename::String)
     if !isfile(filename)
         @error "File $filename does not exist"
     end
+    @info "Read File $filename"
     return CSV.read(filename, DataFrame; delim=" ", header=header, skipto=2)
 end
 
@@ -32,20 +33,27 @@ function load_mesh_and_distribute(params, comm)
     return meshdata, topo
 end
 
-
-function distribute(mesh, params, ranksize)
+function create_neighborhoodlist(mesh, params)
     coor = names(mesh)
     if coor[3] == "z"
         nlist = neighbors(mesh, params, coor[1:3])
     else
         nlist = neighbors(mesh, params, coor[1:2])
     end
-    topology = create_topology(nlist, ranksize)
+    return nlist
+end
+
+function distribute(mesh, params, ranksize)
+
+    nlist = create_neighborhoodlist(mesh, params)
+
+    return create_topology(nlist, ranksize)
 end
 
 function create_topology(nlist, size)
 
     nnodes = length(nlist)
+    size = 2
     if size == 1
         distribution = [collect(1:nnodes)]
     else
@@ -112,6 +120,9 @@ function neighbors(mesh, params, coor)
     balltree = BallTree(data)
     for i in 1:nnodes
         neighborList[i] = inrange(balltree, data[:, i], get_horizon(params, mesh[!, "block_id"][i]), true)
+        # avoid self reference in neighborhood
+        index = findfirst(x -> x == i, neighborList[i])
+        deleteat!(neighborList[i], index)
     end
     return neighborList
 end
