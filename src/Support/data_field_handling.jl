@@ -1,11 +1,5 @@
-include("../MPI_communication/MPI_send.jl")
-include("../MPI_communication/MPI_send.jl")
-include("../MPI_communication/MPI_receive.jl")
-
-
 # global nnodes = set_basis_length_of_vectors(comm, 0, lechunks)
 # is set in the input reader
-
 function set_basis_length_of_vectors(comm, master, globalLen)
     msg = send_single_value_from_vector(comm, master, globalLen, Int32)
     return msg[1]
