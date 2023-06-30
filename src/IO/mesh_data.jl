@@ -25,14 +25,17 @@ function load_mesh_and_distribute(params, comm)
         meshdata = read_mesh(get_mesh_name(params))
         ranksize = MPI.Comm_size(comm)
         println("$(MPI.Comm_rank(comm)) of $(MPI.Comm_size(comm))")
+        nlist = create_neighborhoodlist(meshdata, params)
 
-        topo, ptc = distribute(meshdata, params, ranksize)
+        topo, ptc = node_distribution(nlist, ranksize)
+
         #topo, ptc = distribute(meshdata, params, 2)
         overlap_map = create_overlap_map(topo, ptc, ranksize)
         # overlap_map = create_overlap_map(topo, ptc, 2)
         println(overlap_map)
     else
         #MPI.Barrier(comm) # notwendig?
+        # synch
         meshdata = "placeholder"
         topo = "placeholder"
     end
@@ -49,14 +52,7 @@ function create_neighborhoodlist(mesh, params)
     return nlist
 end
 
-function distribute(mesh, params, ranksize)
-
-    nlist = create_neighborhoodlist(mesh, params)
-
-    return create_topology(nlist, ranksize)
-end
-
-function create_topology(nlist, size)
+function node_distribution(nlist, size)
 
     nnodes = length(nlist)
 
