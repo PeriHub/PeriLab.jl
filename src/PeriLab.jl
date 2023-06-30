@@ -15,7 +15,7 @@ function main()
     MPI.Init()
     global juliaPath = Base.Filesystem.pwd() * "/"
     # from outside #################
-    filename::String = "JohnsonCook.yaml"
+    filename::String = "Input.yaml"
     comm = MPI.COMM_WORLD
 
     ################################
