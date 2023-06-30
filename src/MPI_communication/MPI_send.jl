@@ -22,7 +22,7 @@ function send_single_value_from_vector(comm, master, values, type)
     else
         MPI.Recv!(recv_msg, master, 0, comm)
     end
-    return recv_msg
+    return recv_msg[1]
 end
 function send_string(comm, master, send_msg::String)
     recv_msg = ""

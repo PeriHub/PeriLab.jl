@@ -5,6 +5,7 @@ using MPI
 
 using NearestNeighbors
 include("../Support/parameter_handling.jl")
+include("../MPI_communication/MPI_init.jl")
 #export read_mesh
 #export load_mesh_and_distribute
 function read_mesh(filename::String)
@@ -20,6 +21,8 @@ end
 
 
 function load_mesh_and_distribute(params, comm)
+    #Int64::nmasters = 0
+    #Int64::nslaves = 0
 
     if (MPI.Comm_rank(comm)) == 0
         meshdata = read_mesh(get_mesh_name(params))
@@ -27,19 +30,32 @@ function load_mesh_and_distribute(params, comm)
         println("$(MPI.Comm_rank(comm)) of $(MPI.Comm_size(comm))")
         nlist = create_neighborhoodlist(meshdata, params)
 
-        topo, ptc = node_distribution(nlist, ranksize)
+        topo, ptc, ntype = node_distribution(nlist, ranksize)
 
-        #topo, ptc = distribute(meshdata, params, 2)
         overlap_map = create_overlap_map(topo, ptc, ranksize)
-        # overlap_map = create_overlap_map(topo, ptc, 2)
+
         println(overlap_map)
     else
         #MPI.Barrier(comm) # notwendig?
         # synch
         meshdata = "placeholder"
         topo = "placeholder"
+        ntype = Dict("masters" => Int64[], "slaves" => Int64[])
     end
+
+    nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
+    nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
+    println(MPI.Comm_rank(comm), " Master ", nmasters)
+    println(MPI.Comm_rank(comm), " Slaves ", nslaves)
     return meshdata, topo
+end
+
+function get_nnodes_per_core(field)
+    nnodes = Int64[]
+    for i in 1:length(field)
+        append!(nnodes, field[i])
+    end
+    return nnodes
 end
 
 function create_neighborhoodlist(mesh, params)
@@ -55,18 +71,23 @@ end
 function node_distribution(nlist, size)
 
     nnodes = length(nlist)
-
+    ntype = Dict("masters" => Int64[], "slaves" => Int64[])
     if size == 1
         distribution = [collect(1:nnodes)]
         overlap_map = [[[]]]
         ptc = []
+        append!(ntype["masters"], nnodes)
+        append!(ntype["slaves"], 0)
     else
+
         distribution, ptc = create_base_chunk(nnodes, size)
         println("distrib $distribution")
         println()
         # check neighborhood & overlap -> all nodes after chunk are overlap
         for i in 1:size
             nchunks = length(distribution[i])
+            append!(ntype["masters"], nchunks)
+
             tempid = Int64[]
             for j in 1:nchunks
                 id = distribution[i][j]
@@ -81,28 +102,31 @@ function node_distribution(nlist, size)
             end
             # only single new elements where added
             append!(distribution[i], sort(unique(tempid)))
+            append!(ntype["slaves"], length(unique(tempid)))
         end
 
     end
     println("distrib $distribution")
-    return distribution, ptc
+    return distribution, ptc, ntype
 end
 function create_overlap_map(distribution, ptc, size)
     #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
     overlap_map = _init_overlap_map_(size)
-    for i in 1:size
-        vector = distribution[i]
-        indices = findall(item -> item != i, ptc[distribution[i]])
-        le = length(indices)
-        from_index = []
-        to_index = []
-        for j in 1:le
-            from_index = findfirst(item -> item == vector[indices[j]], distribution[ptc[vector[indices[j]]]])
-            to_index = indices[j]
-            append!(overlap_map[ptc[vector[indices[j]]]][i][1], from_index)
-            append!(overlap_map[ptc[vector[indices[j]]]][i][2], to_index)
-        end
+    if size > 1
+        for i in 1:size
+            vector = distribution[i]
+            indices = findall(item -> item != i, ptc[vector])
+            le = length(indices)
+            from_index = []
+            to_index = []
+            for j in 1:le
+                from_index = findfirst(item -> item == vector[indices[j]], distribution[ptc[vector[indices[j]]]])
+                to_index = indices[j]
+                append!(overlap_map[ptc[vector[indices[j]]]][i][1], from_index)
+                append!(overlap_map[ptc[vector[indices[j]]]][i][2], to_index)
+            end
 
+        end
     end
     return overlap_map
 end
