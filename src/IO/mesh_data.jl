@@ -33,6 +33,8 @@ function load_mesh_and_distribute(params, comm)
         println(overlap_map)
     else
         #MPI.Barrier(comm) # notwendig?
+        meshdata = "placeholder"
+        topo = "placeholder"
     end
     return meshdata, topo
 end
@@ -61,6 +63,7 @@ function create_topology(nlist, size)
     if size == 1
         distribution = [collect(1:nnodes)]
         overlap_map = [[[]]]
+        ptc = []
     else
         distribution, ptc = create_base_chunk(nnodes, size)
         println("distrib $distribution")
