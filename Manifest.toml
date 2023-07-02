@@ -2,7 +2,7 @@
 
 julia_version = "1.9.1"
 manifest_format = "2.0"
-project_hash = "18207105547a85f9aa0d361b5066d205594464ba"
+project_hash = "265868ce4f32f0378e73b247ba3136559a8fa295"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -104,6 +104,18 @@ deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 version = "1.6.0"
 
+[[deps.Exodus]]
+deps = ["DocStringExtensions", "Exodus_jll", "Pkg", "Suppressor"]
+git-tree-sha1 = "eb8cdb57719925363ae2789a8e14da10a47d4cab"
+uuid = "f57ae99e-f805-4780-bdca-96e224be1e5a"
+version = "0.4.2"
+
+[[deps.Exodus_jll]]
+deps = ["Artifacts", "Fmt_jll", "HDF5_jll", "JLLWrappers", "Libdl", "NetCDF_jll", "Zlib_jll"]
+git-tree-sha1 = "72d120d5e897c0b5935c708eaf021ea1463bddce"
+uuid = "fc7263ad-bce8-5229-97b1-c6ddabda41b1"
+version = "8.19.0+0"
+
 [[deps.FilePathsBase]]
 deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
 git-tree-sha1 = "e27c4ebe80e8699540f2d6c805cc12203b614f12"
@@ -112,6 +124,12 @@ version = "0.9.20"
 
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
+
+[[deps.Fmt_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "ba97df2b9863a056775afa554c87e2c1886af3b1"
+uuid = "5dc1e892-f187-50dd-85f3-7dff85c47fc5"
+version = "9.1.0+0"
 
 [[deps.Formatting]]
 deps = ["Printf"]
@@ -122,6 +140,12 @@ version = "0.4.2"
 [[deps.Future]]
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
+
+[[deps.HDF5_jll]]
+deps = ["Artifacts", "JLLWrappers", "LibCURL_jll", "Libdl", "OpenSSL_jll", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "4cc2bb72df6ff40b055295fdef6d92955f9dede8"
+uuid = "0234f1f7-429e-5d53-9886-15a909be8d59"
+version = "1.12.2+2"
 
 [[deps.IOCapture]]
 deps = ["Logging", "Random"]
@@ -271,6 +295,12 @@ git-tree-sha1 = "2c3726ceb3388917602169bed973dbc97f1b51a8"
 uuid = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
 version = "0.4.13"
 
+[[deps.NetCDF_jll]]
+deps = ["Artifacts", "HDF5_jll", "JLLWrappers", "LibCURL_jll", "Libdl", "XML2_jll", "Zlib_jll"]
+git-tree-sha1 = "7f5a03e6712f5447c9c344430b8d1927a4777483"
+uuid = "7243133f-43d8-5620-bbf4-c2c921802cf3"
+version = "400.902.206+0"
+
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
@@ -285,6 +315,12 @@ deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "LazyArtifac
 git-tree-sha1 = "f3080f4212a8ba2ceb10a34b938601b862094314"
 uuid = "fe0851c0-eecd-5654-98d4-656369965a5c"
 version = "4.1.5+0"
+
+[[deps.OpenSSL_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "1aa4b74f80b01c6bc2b89992b861b5f210e665b5"
+uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
+version = "1.1.21+0"
 
 [[deps.OrderedCollections]]
 git-tree-sha1 = "d321bf2de576bf25ec4d3e4360faca399afca282"
@@ -425,6 +461,12 @@ deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "5.10.1+6"
 
+[[deps.Suppressor]]
+deps = ["Logging"]
+git-tree-sha1 = "37d1976ca8368f6adbe1d65a4deeeda6ee7faa31"
+uuid = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
+version = "0.2.4"
+
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
@@ -474,6 +516,12 @@ version = "1.4.2"
 git-tree-sha1 = "cd1659ba0d57b71a464a29e64dbc67cfe83d54e7"
 uuid = "76eceee3-57b5-4d4a-8e66-0e911cebbf60"
 version = "1.6.1"
+
+[[deps.XML2_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "93c41695bc1c08c46c5899f4fe06d6ead504bb73"
+uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
+version = "2.10.3+0"
 
 [[deps.YAML]]
 deps = ["Base64", "Dates", "Printf", "StringEncodings"]
