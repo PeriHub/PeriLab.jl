@@ -24,12 +24,43 @@ function send_single_value_from_vector(comm, master, values, type)
     end
     return recv_msg[1]
 end
-function send_string(comm, master, send_msg::String)
-    recv_msg = ""
-    recv_msg = MPI.bcast(send_msg, master, comm)
+
+function send_vectors_to_cores(comm, master, values, type)
+    #tbd
+    size = MPI.Comm_size(comm)
+    rank = MPI.Comm_rank(comm)
+    if type == String
+        @error "Wrong type String in function send_single_value_from_vector"
+    end
+    recv_msg = zeros(type, length(values), 1)
+    if rank == master
+        send_msg = zeros(type, lenght(values), 1)
+        for i = 0:size-1
+            # +1 because the index of cores is zero based and julia matrices are one based
+            send_msg[1] = values[i+1]
+            if i != master
+                MPI.Send(send_msg, i, 0, comm)
+            else
+                recv_msg = send_msg
+            end
+        end
+
+    else
+        MPI.Recv!(recv_msg, master, 0, comm)
+    end
+    return recv_msg[1]
+end
+
+
+
+function send_value(comm, master, send_msg)
+
     if MPI.Comm_rank(comm) == master
         recv_msg = send_msg
+    else
+        recv_msg = nothing
     end
+    recv_msg = MPI.bcast(send_msg, master, comm)
     return recv_msg
 end
 
