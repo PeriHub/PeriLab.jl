@@ -8,6 +8,48 @@ include("../Support/parameter_handling.jl")
 include("../MPI_communication/MPI_init.jl")
 #export read_mesh
 #export load_mesh_and_distribute
+
+function init_data(filename, comm)
+    parameter = read_input_file(filename)
+    nmasters = -1
+    nslaves = -1
+    dof = -1
+    ntype = Dict("masters" => 0, "slaves" => 0)
+    if (MPI.Comm_rank(comm)) == 0
+        data = "placeholder"
+        data, ntype, dof = load_mesh_and_distribute(parameter, MPI.Comm_size(comm))
+        #nodeList = zeros(Int64, nmasters + nslaves)
+    end
+    dof = send_value(comm, 0, dof)
+    #MPI.Barrier(comm) # notwendig?
+
+
+    # synch create other fields
+    # nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
+    #  nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
+    # data = "placeholder"
+    # topo = "placeholder"
+    #  ntype = Dict("masters" => Int64[], "slaves" => Int64[])
+    #  information = Dict(
+    #      "Meshdata" => meshdata, 
+    #      "Nodetype" => ntype, 
+    #      "Overlap_map" => overlap_map, 
+    #      "Node_distribution" => init_distribution_at_cores(nmasters+nslaves), 
+    #      "Global_to_local" => globToLoc)
+
+    nmasters = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
+    nslaves = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
+    if (MPI.Comm_rank(comm)) != 0
+        distribution = zeros(Int64, nslaves + slaves, 1)
+
+    end
+    println(MPI.Comm_rank(comm), " Master ", nmasters)
+    println(MPI.Comm_rank(comm), " Slaves ", nslaves)
+    return data, parameter
+end
+function init_distribution_at_cores()
+    init_data_field(dof, type)
+end
 function read_mesh(filename::String)
 
     header = ["x", "y", "z", "block_id", "volume"]
@@ -18,53 +60,42 @@ function read_mesh(filename::String)
     @info "Read File $filename"
     return CSV.read(filename, DataFrame; delim=" ", header=header, skipto=2)
 end
-
-
-function load_mesh_and_distribute(params, comm)
-    #Int64::nmasters = 0
-    #Int64::nslaves = 0
-
-    if (MPI.Comm_rank(comm)) == 0
-        meshdata = read_mesh(get_mesh_name(params))
-        ranksize = MPI.Comm_size(comm)
-        println("$(MPI.Comm_rank(comm)) of $(MPI.Comm_size(comm))")
-        nlist = create_neighborhoodlist(meshdata, params)
-
-        topo, ptc, ntype = node_distribution(nlist, ranksize)
-
-        overlap_map = create_overlap_map(topo, ptc, ranksize)
-
-        println(overlap_map)
+function set_dof(mesh)
+    if "z" in names(mesh)
+        return 3
     else
-        #MPI.Barrier(comm) # notwendig?
-        # synch
-        meshdata = "placeholder"
-        topo = "placeholder"
-        ntype = Dict("masters" => Int64[], "slaves" => Int64[])
+        return 2
     end
+end
 
-    nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
-    nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
-    println(MPI.Comm_rank(comm), " Master ", nmasters)
-    println(MPI.Comm_rank(comm), " Slaves ", nslaves)
-    return meshdata, topo
+function load_mesh_and_distribute(params, ranksize)
+
+    mesh = read_mesh(get_mesh_name(params))
+    dof = set_dof(mesh)
+    nlist = create_neighborhoodlist(mesh, params, dof)
+    distribution, ptc, ntype = node_distribution(nlist, ranksize)
+
+    overlap_map = create_overlap_map(distribution, ptc, ranksize)
+
+    # das kann auf allen Kernen gemacht werden und sollte es auch
+    #globToLoc = create_global_to_local_map(distribution)
+
+    # information = Dict("Meshdata" => meshdata, "Nodetype" => ntype, "Overlap_map" => overlap_map, "Node_distribution" => distribution, "Global_to_local" => globToLoc)
+    return distribution, ntype, dof
 end
 
 function get_nnodes_per_core(field)
     nnodes = Int64[]
-    for i in 1:length(field)
+    le = length(field)
+    for i in 1:le
         append!(nnodes, field[i])
     end
     return nnodes
 end
 
-function create_neighborhoodlist(mesh, params)
+function create_neighborhoodlist(mesh, params, dof)
     coor = names(mesh)
-    if coor[3] == "z"
-        nlist = neighbors(mesh, params, coor[1:3])
-    else
-        nlist = neighbors(mesh, params, coor[1:2])
-    end
+    nlist = neighbors(mesh, params, coor[1:dof])
     return nlist
 end
 
@@ -199,7 +230,6 @@ function neighbors(mesh, params, coor)
     end
     return neighborList
 end
-
 
 function init_vectors_for_processes(data, comm, vector)
 
