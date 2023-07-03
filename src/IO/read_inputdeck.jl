@@ -18,7 +18,6 @@ function read_input_file(filename::String)
     return parameter
 end
 
-
 function read_input(filename::String)
     return YAML.load_file(filename)["Peridigm"]
 end
