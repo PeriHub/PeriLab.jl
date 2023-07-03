@@ -34,3 +34,15 @@ function set_id(name::String)
 
 end
 
+function get_block_ids()
+    return
+end
+
+function get_bc_ids()
+    # gives you for the core the local Id of a point to apply the bc
+    return
+end
+
+function get_core_ids()
+    return
+end
