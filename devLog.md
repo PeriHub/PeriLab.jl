@@ -7,7 +7,7 @@
     !-----------
     6. loc to glob -> distributionsfeld an die Knoten 
     7. glob to loc ableiten für RB Knoten
-    8. overlapmap verteilen an Knoten -> send to all!
+    8. overlapmap verteilen an Knoten -> send to all! -> done
     ! ---------
     9. block filter -> auf den Kernen blockID -> alle Knoten
     10. BC Filter -> an alle

@@ -11,16 +11,25 @@ include("../MPI_communication/MPI_init.jl")
 
 function init_data(filename, comm)
     parameter = read_input_file(filename)
-    nmasters = -1
-    nslaves = -1
-    dof = -1
-    ntype = Dict("masters" => 0, "slaves" => 0)
+
     if (MPI.Comm_rank(comm)) == 0
         data = "placeholder"
-        data, ntype, dof = load_mesh_and_distribute(parameter, MPI.Comm_size(comm))
+        data, ntype, overlap_map, dof = load_mesh_and_distribute(parameter, MPI.Comm_size(comm))
         #nodeList = zeros(Int64, nmasters + nslaves)
+    else
+        nmasters = nothing
+        nslaves = nothing
+        overlap_map = nothing
+        dof = nothing
+        ntype = Dict("masters" => 0, "slaves" => 0)
     end
     dof = send_value(comm, 0, dof)
+
+    overlap_map = send_value(comm, 0, overlap_map)
+    #ntype = send_value(comm, 0, ntype)
+    println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
+
+
     #MPI.Barrier(comm) # notwendig?
 
 
@@ -81,7 +90,7 @@ function load_mesh_and_distribute(params, ranksize)
     #globToLoc = create_global_to_local_map(distribution)
 
     # information = Dict("Meshdata" => meshdata, "Nodetype" => ntype, "Overlap_map" => overlap_map, "Node_distribution" => distribution, "Global_to_local" => globToLoc)
-    return distribution, ntype, dof
+    return distribution, ntype, overlap_map, dof
 end
 
 function get_nnodes_per_core(field)
