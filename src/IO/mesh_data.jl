@@ -17,43 +17,26 @@ function init_data(filename, comm)
         data, ntype, overlap_map, dof = load_mesh_and_distribute(parameter, MPI.Comm_size(comm))
         #nodeList = zeros(Int64, nmasters + nslaves)
     else
-        nmasters = nothing
-        nslaves = nothing
+        nmasters = 0
+        nslaves = 0
         overlap_map = nothing
-        dof = nothing
+        dof = 0
         ntype = Dict("masters" => 0, "slaves" => 0)
     end
     dof = send_value(comm, 0, dof)
-
     overlap_map = send_value(comm, 0, overlap_map)
+    nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
+    nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
+    println(MPI.Comm_rank(comm), " Master ", nmasters)
+    println(MPI.Comm_rank(comm), " Slaves ", nslaves)
     #ntype = send_value(comm, 0, ntype)
     println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
 
-
-    #MPI.Barrier(comm) # notwendig?
-
-
-    # synch create other fields
-    # nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
-    #  nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
-    # data = "placeholder"
-    # topo = "placeholder"
-    #  ntype = Dict("masters" => Int64[], "slaves" => Int64[])
-    #  information = Dict(
-    #      "Meshdata" => meshdata, 
-    #      "Nodetype" => ntype, 
-    #      "Overlap_map" => overlap_map, 
-    #      "Node_distribution" => init_distribution_at_cores(nmasters+nslaves), 
-    #      "Global_to_local" => globToLoc)
-
-    nmasters = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
-    nslaves = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
     if (MPI.Comm_rank(comm)) != 0
-        distribution = zeros(Int64, nslaves + slaves, 1)
-
+        # init fields
+        #create_constant_node_field("Coordinates", Int64, dof)
     end
-    println(MPI.Comm_rank(comm), " Master ", nmasters)
-    println(MPI.Comm_rank(comm), " Slaves ", nslaves)
+    data = 0
     return data, parameter
 end
 function init_distribution_at_cores()
