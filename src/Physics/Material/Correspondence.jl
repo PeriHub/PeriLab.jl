@@ -10,7 +10,7 @@ function shapeTensor(data)
     bondDamage = data["Bond Damage"]
     bondGeometry = data["Bond Geometry"] #dx,dy,dz,len
     invK = data["Inverse Shape Tensor"]
-
+    nstatus = data["Node Status"]
     nnodes = data.nnodes
     dof = data.dof
 
@@ -18,10 +18,12 @@ function shapeTensor(data)
     for iID in 1:nnodes
         shapeTensor = zeros(Float32, dof, dof)
         nneighbors = length(neigborlist[iID])
-        for jID in 1:nneighbors
-            for i in 1:dof
-                for f in 1:dof
-                    shapeTensor[i, j] += bondGeometry[(bondCount-1)*dof+i] * bondGeometry[(bondCount-1)*dof+j] * bondDamage[bondCount]
+        if !nstatus
+            for jID in 1:nneighbors
+                for i in 1:dof
+                    for f in 1:dof
+                        shapeTensor[i, j] += bondGeometry[(bondCount-1)*dof+i] * bondGeometry[(bondCount-1)*dof+j] * bondDamage[bondCount]
+                    end
                 end
             end
         end
