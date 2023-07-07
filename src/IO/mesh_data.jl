@@ -3,10 +3,11 @@ using CSV
 using DataFrames
 using MPI
 
-using NearestNeighbors
-include("../Support/parameter_handling.jl")
-#using .Parameter_Handling
+using NearestNeighbors: BallTree
+using NearestNeighbors: inrange
+include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_init.jl")
+
 #export read_mesh
 #export load_mesh_and_distribute
 
@@ -28,15 +29,15 @@ function init_data(filename, datamanager, comm)
     dof = send_value(comm, 0, dof)
     overlap_map = send_value(comm, 0, overlap_map)
     nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
-    nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
+    nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
     println(MPI.Comm_rank(comm), " Master ", nmasters)
     println(MPI.Comm_rank(comm), " Slaves ", nslaves)
 
     #ntype = send_value(comm, 0, ntype)
     println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
-    println(nnodes)
-    Parameter_Handling.nnodes = nmasters + nslaves
-    id = create_constant_node_field("Coordinates", Int64, dof)
+    datamanager.set_nnodes(nmasters + nslaves)
+    println(datamanager.get_nnodes())
+    #id = create_constant_node_field("Coordinates", Int64, dof)
 
     data = 0
     return datamanager, parameter
