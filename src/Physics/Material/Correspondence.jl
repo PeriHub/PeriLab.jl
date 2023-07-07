@@ -1,8 +1,9 @@
+using Tensorial
 module Correspondence
-()
+
 export shapeTensor
 
-
+export defGrad
 
 function shapeTensor(data)
 
@@ -16,16 +17,14 @@ function shapeTensor(data)
 
     bondCount = 0
     for iID in 1:nnodes
-        shapeTensor = zeros(Float32, dof, dof)
+        @Tensor shapeTensor = zeros(Float32, dof, dof)
         nneighbors = length(neigborlist[iID])
         if !nstatus
             for jID in 1:nneighbors
                 bondCount += 1
-                for i in 1:dof
-                    for j in 1:dof
-                        shapeTensor[i, j] += bondGeometry[(bondCount-1)*dof+i] * bondGeometry[(bondCount-1)*dof+j] * bondDamage[bondCount]
-                    end
-                end
+
+                shapeTensor += bondGeometry[(bondCount-1)*dof+i] * bondGeometry[(bondCount-1)*dof+j] * bondDamage[bondCount]
+
             end
         end
     end
@@ -33,4 +32,38 @@ function shapeTensor(data)
 end
 
 return data
+end
+
+function defGrad(data)
+    coor = data["Deformation", "NP1"]
+    neigborlist = data["Neighborlist"]
+    bondDamage = data["Bond Damage", "NP1"]
+    bondGeometry = data["Bond Geometry"] #dx,dy,dz,len
+    invK = data["Inverse Shape Tensor"]
+    defGradN = data["Deformation Gradient", "N"]
+    defGradNP1 = data["Deformation Gradient", "NP1"]
+    deltaDefGrad = data["Delta Deformation Gradient"]
+    nstatus = data["Node Status"]
+    nnodes = data.nnodes
+    dof = data.dof
+
+    bondCount = 0
+    for iID in 1:nnodes
+        @Tensor defTensor = zeros(Float32, dof, dof)
+        @Tensor invKTensor = invK[:, :, iID]
+        nneighbors = length(neigborlist[iID])
+        if !nstatus
+            for jID in 1:nneighbors
+                bondCount += 1
+                nID = neigborlist[iID, jID]
+                for i in 1:dof
+                    for j in 1:dof
+                        defTensor[i, j] += (coor[dof*(iID-1)+i] - coor[dof*(nID-1)+i]) * bondGeometry[(bondCount-1)*dof+j] * bondDamage[bondCount]
+                    end
+                end
+                defGradNP1[:, :, iID] = defTensor * invKTensor
+                deltaDefGrad[:, :, iID] = defGradNP1[:, :, iID] - defGrad[:, :, iID]
+            end
+        end
+    end
 end
