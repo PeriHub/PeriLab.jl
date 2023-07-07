@@ -3,6 +3,7 @@ module PeriLab
 
 import MPI
 using YAML
+import .Parameter_Handling
 include("./IO/IO.jl")
 
 export main
@@ -22,7 +23,7 @@ function main()
     ################################
     filename = juliaPath * filename
 
-    data, parameter = init_data(filename, comm)
+    datamanager, parameter = init_data(filename, Parameter_Handling, comm)
     #results = solver(data, parameter, comm)
 
     #    save_values(results)

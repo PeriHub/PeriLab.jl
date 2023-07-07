@@ -5,11 +5,13 @@ using MPI
 
 using NearestNeighbors
 include("../Support/parameter_handling.jl")
+#using .Parameter_Handling
 include("../MPI_communication/MPI_init.jl")
 #export read_mesh
 #export load_mesh_and_distribute
 
-function init_data(filename, comm)
+function init_data(filename, datamanager, comm)
+
     parameter = read_input_file(filename)
 
     if (MPI.Comm_rank(comm)) == 0
@@ -29,15 +31,15 @@ function init_data(filename, comm)
     nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
     println(MPI.Comm_rank(comm), " Master ", nmasters)
     println(MPI.Comm_rank(comm), " Slaves ", nslaves)
+
     #ntype = send_value(comm, 0, ntype)
     println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
+    println(nnodes)
+    Parameter_Handling.nnodes = nmasters + nslaves
+    id = create_constant_node_field("Coordinates", Int64, dof)
 
-    if (MPI.Comm_rank(comm)) != 0
-        # init fields
-        #create_constant_node_field("Coordinates", Int64, dof)
-    end
     data = 0
-    return data, parameter
+    return datamanager, parameter
 end
 function init_distribution_at_cores()
     init_data_field(dof, type)
