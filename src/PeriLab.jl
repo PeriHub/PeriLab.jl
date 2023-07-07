@@ -1,10 +1,11 @@
 "Simple dummy project module to demonstrate how a project can be organized."
 module PeriLab
-
+include("./Support/data_manager.jl")
+include("./IO/IO.jl")
 import MPI
 using YAML
-import .Parameter_Handling
-include("./IO/IO.jl")
+import .Data_manager
+
 
 export main
 """
@@ -23,7 +24,7 @@ function main()
     ################################
     filename = juliaPath * filename
 
-    datamanager, parameter = init_data(filename, Parameter_Handling, comm)
+    datamanager, parameter = init_data(filename, Data_manager, comm)
     #results = solver(data, parameter, comm)
 
     #    save_values(results)
