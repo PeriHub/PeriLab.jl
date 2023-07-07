@@ -62,7 +62,7 @@ function defGrad(data)
                     end
                 end
                 defGradNP1[:, :, iID] = defTensor * invKTensor
-                deltaDefGrad[:, :, iID] = defGradNP1[:, :, iID] - defGrad[:, :, iID]
+                deltaDefGrad[:, :, iID] = defGradNP1[:, :, iID] - defGradN[:, :, iID]
             end
         end
     end
