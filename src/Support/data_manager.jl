@@ -52,21 +52,14 @@ end
 
 function create_field(name::String, vartyp::DataType, bondNode::String, dof::Int64, time_dependend::Bool)
 
-    if !haskey(fieldnames, vartyp)
-        fieldnames[vartyp] = Dict()
-    end
     if haskey(fieldnames[vartyp], name)
         return fieldnames[vartyp][name]
     else
-        len = field_length(bondNode, time_dependend) * dof
+        fieldnames[vartyp] = Dict()
+        len = field_length(bondNode, time_dependend)
 
-        if length(values(fieldnames[vartyp])) == 0
-            num = 0
-        else
-            # start ende -> alles in einen Vector, dann sind weniger synchros nötig
-            num = maximum(values(fieldnames[vartyp]))[2]
-            fieldnames[type][name] = (num + 1, num + len + 1)
-        end
+        fieldnames[vartyp][name] = zeros(len, dof)
+
         return fieldnames[vartyp][name]
     end
 end
@@ -74,9 +67,9 @@ end
 function field_length(bondNode::String, time_dependend::Bool)
     le = 0
     if bondNode == "Bond"
-        le = Parameter_Handling.nbonds
+        le = get_nbonds()
     elseif bondNode == "Node"
-        le = Parameter_Handling.nnodes
+        le = get_nnodes()
     else
         le = 0
         @error "Not supported option $bondNode allowed options are Bond::String or Node::String"

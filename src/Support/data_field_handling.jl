@@ -5,10 +5,10 @@ function set_basis_length_of_vectors(comm, master, globalLen)
     return msg[1]
 end
 
-function init_data_field(dof, type)
-    local_data = zeros(type, nnodes * dof, 1)
-    return local_data
-end
+#function init_data_field(dof, type)
+#    local_data = zeros(type, nnodes * dof, 1)
+#    return local_data
+#end
 
 function field_exists(name::String)
 

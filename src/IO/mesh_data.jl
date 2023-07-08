@@ -16,14 +16,14 @@ function init_data(filename, datamanager, comm)
     parameter = read_input_file(filename)
 
     if (MPI.Comm_rank(comm)) == 0
-        data = "placeholder"
-        data, ntype, overlap_map, dof = load_mesh_and_distribute(parameter, MPI.Comm_size(comm))
+        distribution, mesh, ntype, overlap_map, dof = load_mesh_and_distribute(parameter, MPI.Comm_size(comm))
         #nodeList = zeros(Int64, nmasters + nslaves)
     else
         nmasters = 0
         nslaves = 0
         overlap_map = nothing
         dof = 0
+        mesh = nothing
         ntype = Dict("masters" => 0, "slaves" => 0)
     end
     dof = send_value(comm, 0, dof)
@@ -37,7 +37,16 @@ function init_data(filename, datamanager, comm)
     println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
     datamanager.set_nnodes(nmasters + nslaves)
     println(datamanager.get_nnodes())
-    #id = create_constant_node_field("Coordinates", Int64, dof)
+    coor = datamanager.create_constant_node_field("Coordinates", Int64, dof)
+    for rank in 1:MPI.Comm_rank(comm)
+        for idof in 1:dof
+            names(mesh)
+
+            coor["Coordinates"][:, idof] = send_vectors_to_cores(comm, 0, mesh[!, names(mesh)[idof]][distribution[rank]], Float64)
+            coor["Coordinates"][:, idof] = mesh[!, names(mesh)[idof]][distribution[rank]]
+        end
+
+    end
 
     data = 0
     return datamanager, parameter
@@ -76,7 +85,7 @@ function load_mesh_and_distribute(params, ranksize)
     #globToLoc = create_global_to_local_map(distribution)
 
     # information = Dict("Meshdata" => meshdata, "Nodetype" => ntype, "Overlap_map" => overlap_map, "Node_distribution" => distribution, "Global_to_local" => globToLoc)
-    return distribution, ntype, overlap_map, dof
+    return distribution, mesh, ntype, overlap_map, dof
 end
 
 function get_nnodes_per_core(field)
