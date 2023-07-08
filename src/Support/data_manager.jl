@@ -52,7 +52,7 @@ end
 
 function create_field(name::String, vartyp::DataType, bondNode::String, dof::Int64, time_dependend::Bool)
 
-    if !haskey(fieldnames, type)
+    if !haskey(fieldnames, vartyp)
         fieldnames[vartyp] = Dict()
     end
     if haskey(fieldnames[vartyp], name)
