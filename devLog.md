@@ -1,9 +1,9 @@
 ## Dev Steps
     1. dof für koordinaten an alle cores verteilen verteilen -> done
     2. nslave nmaster verteilen -> done
-    3. coordinatenfelder initialisieren auf allen Knoten
-    4. versenden von Koordinaten
-    5. versenden der Block_Id der Knoten
+    3. coordinatenfelder initialisieren auf allen Knoten -> done
+    4. versenden von Koordinaten -> done
+    5. versenden der Block_Id der Knoten -> done
     !-----------
     6. loc to glob -> distributionsfeld an die Knoten 
     7. glob to loc ableiten für RB Knoten

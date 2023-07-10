@@ -26,6 +26,7 @@ function init_data(filename, datamanager, comm)
         mesh = []
         ntype = Dict("masters" => 0, "slaves" => 0)
         distribution = 0
+        send_msg = 0
     end
     dof = send_value(comm, 0, dof)
     overlap_map = send_value(comm, 0, overlap_map)
@@ -37,10 +38,18 @@ function init_data(filename, datamanager, comm)
     datamanager.set_nnodes(nmasters + nslaves)
     #println(datamanager.get_nnodes())
 
-    coor = datamanager.create_constant_node_field("Coordinates", Float32, dof)
 
+    # init blockID field
+    blockID = datamanager.create_constant_node_field("Block_Id", Int64, 1)
+    # distribute blocks
+    if MPI.Comm_rank(comm) == 0
+        send_msg = mesh[!, "block_id"]
+    end
+    blockID = send_vector_from_root_to_core_i(comm, send_msg, blockID, distribution)
+    # init coordinate field
+    coor = datamanager.create_constant_node_field("Coordinates", Float32, dof)
+    # distribute coordinates
     for idof in 1:dof
-        send_msg = 0
 
         if MPI.Comm_rank(comm) == 0
             send_msg = mesh[!, names(mesh)[idof]]
@@ -48,7 +57,7 @@ function init_data(filename, datamanager, comm)
         coor[:, idof] = send_vector_from_root_to_core_i(comm, send_msg, coor[:, idof], distribution)
     end
 
-    println(MPI.Comm_rank(comm), " coor ", coor, " dof ", dof)
+    println(MPI.Comm_rank(comm), " coor ", coor, " blocks ", blockID)
     data = 0
     return datamanager, parameter
 end
