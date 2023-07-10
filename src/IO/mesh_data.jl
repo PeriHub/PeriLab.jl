@@ -38,14 +38,20 @@ function init_data(filename, datamanager, comm)
     datamanager.set_nnodes(nmasters + nslaves)
     println(datamanager.get_nnodes())
     coor = datamanager.create_constant_node_field("Coordinates", Int64, dof)
-    for rank in 1:MPI.Comm_rank(comm)
+    if (MPI.Comm_rank(comm)) == 0
         for idof in 1:dof
-            names(mesh)
-
-            coor["Coordinates"][:, idof] = send_vectors_to_cores(comm, 0, mesh[!, names(mesh)[idof]][distribution[rank]], Float64)
-            coor["Coordinates"][:, idof] = mesh[!, names(mesh)[idof]][distribution[rank]]
+            coor[:, idof] = mesh[!, names(mesh)[idof]][distribution[1]]
         end
+    else
+        for rank in 0:MPI.Comm_rank(comm)
+            for idof in 1:dof
+                names(mesh)
+                #send_vectors_to_cores
+                coor[:, idof] = send_vectors_to_cores(comm, rank, mesh[!, names(mesh)[idof]][distribution[rank+1]], Float64)
+                coor[:, idof] = mesh[!, names(mesh)[idof]][distribution[rank +1]]
+            end
 
+        end
     end
 
     data = 0
