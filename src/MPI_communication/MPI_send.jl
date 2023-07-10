@@ -34,7 +34,7 @@ function send_vectors_to_cores(comm, master, values, type)
     end
     recv_msg = zeros(type, length(values), 1)
     if rank == master
-        send_msg = zeros(type, lenght(values), 1)
+        send_msg = zeros(type, length(values), 1)
         for i = 0:size-1
             # +1 because the index of cores is zero based and julia matrices are one based
             send_msg[1] = values[i+1]
