@@ -4,7 +4,7 @@ function send_single_value_from_vector(comm, master, values, type)
     size = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
     if type == String
-        @error "Wrong type String in function send_single_value_from_vector"
+        @error "Wrong type - String in function send_single_value_from_vector"
     end
     recv_msg = zeros(type, 1, 1)
     if rank == master
@@ -30,14 +30,14 @@ function send_vectors_to_cores(comm, master, values, type)
     size = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
     if type == String
-        @error "Wrong type String in function send_single_value_from_vector"
+        @error "Wrong type - String in function send_vectors_to_cores"
     end
     recv_msg = zeros(type, length(values), 1)
     if rank == master
         send_msg = zeros(type, length(values), 1)
         for i = 0:size-1
             # +1 because the index of cores is zero based and julia matrices are one based
-            send_msg[1] = values[i+1]
+            send_msg = values
             if i != master
                 MPI.Send(send_msg, i, 0, comm)
             else
@@ -48,7 +48,7 @@ function send_vectors_to_cores(comm, master, values, type)
     else
         MPI.Recv!(recv_msg, master, 0, comm)
     end
-    return recv_msg[1]
+    return recv_msg
 end
 
 
