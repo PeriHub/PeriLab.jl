@@ -23,37 +23,32 @@ function init_data(filename, datamanager, comm)
         nslaves = 0
         overlap_map = nothing
         dof = 0
-        mesh = nothing
+        mesh = []
         ntype = Dict("masters" => 0, "slaves" => 0)
+        distribution = 0
     end
     dof = send_value(comm, 0, dof)
     overlap_map = send_value(comm, 0, overlap_map)
     nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
     nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
-    println(MPI.Comm_rank(comm), " Master ", nmasters)
-    println(MPI.Comm_rank(comm), " Slaves ", nslaves)
 
     #ntype = send_value(comm, 0, ntype)
-    println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
+    #println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
     datamanager.set_nnodes(nmasters + nslaves)
-    println(datamanager.get_nnodes())
-    coor = datamanager.create_constant_node_field("Coordinates", Int64, dof)
-    if (MPI.Comm_rank(comm)) == 0
-        for idof in 1:dof
-            coor[:, idof] = mesh[!, names(mesh)[idof]][distribution[1]]
-        end
-    else
-        for rank in 0:MPI.Comm_rank(comm)
-            for idof in 1:dof
-                names(mesh)
-                #send_vectors_to_cores
-                coor[:, idof] = send_vectors_to_cores(comm, rank, mesh[!, names(mesh)[idof]][distribution[rank+1]], Float64)
-                coor[:, idof] = mesh[!, names(mesh)[idof]][distribution[rank +1]]
-            end
+    #println(datamanager.get_nnodes())
 
+    coor = datamanager.create_constant_node_field("Coordinates", Float32, dof)
+
+    for idof in 1:dof
+        send_msg = 0
+
+        if MPI.Comm_rank(comm) == 0
+            send_msg = mesh[!, names(mesh)[idof]]
         end
+        coor[:, idof] = send_vector_from_root_to_core_i(comm, send_msg, coor[:, idof], distribution)
     end
 
+    println(MPI.Comm_rank(comm), " coor ", coor, " dof ", dof)
     data = 0
     return datamanager, parameter
 end

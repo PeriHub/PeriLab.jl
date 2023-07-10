@@ -53,6 +53,27 @@ end
 
 
 
+function send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
+    currentRank = MPI.Comm_rank(comm)
+    if currentRank == 0
+        println
+        recv_msg = send_msg[distribution[currentRank+1]]
+
+        for rank in 1:MPI.Comm_size(comm)-1
+            MPI.Send(send_msg[distribution[rank+1]], rank, rank, comm)
+            #, mesh[!, names(mesh)[idof]][distribution[rank+1]], rank)
+        end
+    else
+        #for rank in 1:MPI.ranksize(comm)
+        #for idof in 1:dof
+        #    coor[:, idof] = recv_vector_from_root(comm, coor[:, idof])
+        #end
+        #recv_msg = currentRank
+        MPI.Recv!(recv_msg, 0, currentRank, comm)
+        #end
+    end
+    return recv_msg
+end
 function send_value(comm, master, send_msg)
 
     if MPI.Comm_rank(comm) == master
