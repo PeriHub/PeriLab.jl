@@ -77,6 +77,18 @@ function create_field(name::String, vartype::DataType, bondNode::String, dof::In
 end
 
 function get_field(name::String)
+    """
+    get_field(name::String)
+
+    Get the field with the specified `name`. If the field exists, return the field. If the field does not exist, return 0.
+
+    # Arguments
+    - `name::String`: The name of the field.
+
+    # Returns
+    The field with the given `name` if it exists, otherwise 0.
+
+    """
     for typ in keys(fieldnames)
         if name in keys(fieldnames[typ])
             return fieldnames[typ][name]
