@@ -37,32 +37,45 @@ function init_data(filename, datamanager, comm)
     #println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
     datamanager.set_nnodes(nmasters + nslaves)
     #println(datamanager.get_nnodes())
+    datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
 
 
+
+    println(MPI.Comm_rank(comm), " coor ", datamanager.get_field("Coordinates"), " blocks ", datamanager.get_field("Block_Id"))
+
+    return datamanager, parameter
+end
+
+
+function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
+    mnames = names(mesh)
+    if ("block_id" in mnames) == false
+        @error "No blocks defined"
+    end
     # init blockID field
     blockID = datamanager.create_constant_node_field("Block_Id", Int64, 1)
     # distribute blocks
     if MPI.Comm_rank(comm) == 0
         send_msg = mesh[!, "block_id"]
     end
-    blockID = send_vector_from_root_to_core_i(comm, send_msg, blockID, distribution)
+    # must be [:] -> to map it in datamanager
+    blockID[:] = send_vector_from_root_to_core_i(comm, send_msg, blockID, distribution)
     # init coordinate field
     coor = datamanager.create_constant_node_field("Coordinates", Float32, dof)
     # distribute coordinates
     for idof in 1:dof
-
         if MPI.Comm_rank(comm) == 0
             send_msg = mesh[!, names(mesh)[idof]]
         end
         coor[:, idof] = send_vector_from_root_to_core_i(comm, send_msg, coor[:, idof], distribution)
     end
-
-    println(MPI.Comm_rank(comm), " coor ", coor, " blocks ", blockID)
-    data = 0
-    return datamanager, parameter
-end
-function init_distribution_at_cores()
-    init_data_field(dof, type)
+    volume = datamanager.create_constant_node_field("Volume", Float32, 1)
+    # distribute blocks
+    if MPI.Comm_rank(comm) == 0
+        send_msg = mesh[!, "volume"]
+    end
+    volume[:] = send_vector_from_root_to_core_i(comm, send_msg, volume, distribution)
+    return datamanager
 end
 function read_mesh(filename::String)
 
