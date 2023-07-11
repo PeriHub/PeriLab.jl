@@ -3,3 +3,7 @@ CompactTension.txt
 JohnsonCook.yaml
 .vscode/
 /docs/build/
+think.md
+test_data_exchange.jl
+test_func.jl
+simple_test.jl
