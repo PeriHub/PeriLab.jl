@@ -51,15 +51,27 @@ end
 # besser ist vielleicht einen synchmanager zu bauen -> dort kann man sich eintragen
 
 function create_field(name::String, vartype::DataType, bondNode::String, dof::Int64, time_dependend::Bool)
+    """
+    create_field(name::String, vartype::DataType, bondNode::String, dof::Int64, time_dependend::Bool)
 
+    Create a field with the given `name` for the specified `vartype`. If the field already exists, return the existing field. If the field does not exist, create a new field with the specified characteristics.
+
+    # Arguments
+    - `name::String`: The name of the field.
+    - `vartype::DataType`: The data type of the field.
+    - `bondNode::String`: length of the field (nnodes or nbonds) associated with the field.
+    - `dof::Int64`: The degrees of freedom per node.
+    - `time_dependend::Bool`: Indicates whether the field is time-dependent.
+
+    # Returns
+    The field with the given `name` and specified characteristics.
+
+    """
     if haskey(fieldnames[vartype], name)
         return fieldnames[vartype][name]
     else
-
         len = field_length(bondNode, time_dependend)
-
         fieldnames[vartype][name] = zeros(vartype, len, dof)
-
         return fieldnames[vartype][name]
     end
 end
