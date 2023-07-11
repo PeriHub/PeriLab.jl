@@ -93,9 +93,6 @@ function key_magic(name::String, type, bondNode::String, dof::Int64, time_depend
     #integer liste wo die keys geführt werden -> nötig?
 end
 
-function get_field(name::String)
-end
-
 function synch_manager()
     # Liste mit den Daten die synchronisiert werden sollen -> 
     # upload; für init
