@@ -1,10 +1,13 @@
+
+include("../../Physics/Physics_Factory.jl")
+import .Physics
 module Solver
 
 
 function init(params, datamodel)
 
     blockNodes = get_blockNodes(datamodel.get_field("Block_Id"))
-    physics = get_physics(params)
+    physics = Physics.get_physics(params)
 
 
     return blockNodes
@@ -20,7 +23,7 @@ end
 
 
 function solver(params, datamodel)
-    blockNodes = init((params, datamodel))
+    blockNodes = init(params, datamodel)
 end
 
 
