@@ -1,9 +1,9 @@
-function get_horizon(data, blockID)
-    check = check_element(data["Blocks"], "block_" * string(blockID))
+function get_horizon(params, blockID)
+    check = check_element(params["Blocks"], "block_" * string(blockID))
     if check
-        check2 = check_element(data["Blocks"]["block_"*string(blockID)], "Horizon")
+        check2 = check_element(params["Blocks"]["block_"*string(blockID)], "Horizon")
         if check2
-            return data["Blocks"]["block_"*string(blockID)]["Horizon"]
+            return params["Blocks"]["block_"*string(blockID)]["Horizon"]
         else
             @error "Horizon of Block $blockID is not defined"
         end
@@ -11,12 +11,40 @@ function get_horizon(data, blockID)
     end
 end
 
-function get_number_of_blocks(data)
-    check = check_element(data, "Blocks")
+function get_number_of_blocks(params)
+    check = check_element(params, "Blocks")
     if check
-        return length(data["Blocks"])
+        return length(params["Blocks"])
     else
-        @error "Block $blockID is not defined"
+        @error "No blocks defined"
     end
     return 0
+end
+
+function get_number_of_materials(params)
+    check = check_element(params, "Materials")
+    if check
+        return length(params["Materials"])
+    else
+        @error "No materials defined"
+    end
+    return 0
+end
+
+function get_materials(params)
+    check = check_element(params, "Materials")
+    if !check
+        @error "No materials defined"
+    end
+
+    return params["Materials"]
+end
+
+function get_materials(params)
+    check = check_element(params, "Materials")
+    if !check
+        @error "No materials defined"
+    end
+
+    return params["Materials"]
 end
