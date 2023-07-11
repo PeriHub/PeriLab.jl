@@ -64,6 +64,15 @@ function create_field(name::String, vartyp::DataType, bondNode::String, dof::Int
     end
 end
 
+function get_field(name::String)
+    for typ in keys(fieldnames)
+        if name in keys(fieldnames[typ])
+            return fieldnames[typ][name]
+        end
+    end
+    return 0
+end
+
 function field_length(bondNode::String, time_dependend::Bool)
     le = 0
     if bondNode == "Bond"
