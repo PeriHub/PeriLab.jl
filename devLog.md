@@ -16,6 +16,12 @@
 
 
 ## Design decisions
-Each vector entry for a value exists for all nodes, also if the node does not have this property in a block. However, the synchronisation is very ugly, because all slave nodes of block with value I need the entry at the other core to. If not it will lead nowhere if MPI communication occurs    
+Each vector entry for a value exists for all nodes, also if the node does not have this property in a block. However, the synchronisation is very ugly, because all slave nodes of block with value I need the entry at the other core to. If not it will lead nowhere if MPI communication occurs
+
+## planned feature
+    search for jl files in material
+    check the header for the material name
+    include the file in the code via a makro
+    material inclusion is very simple
 
 
