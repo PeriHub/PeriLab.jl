@@ -25,7 +25,7 @@ function main()
     filename = juliaPath * filename
 
     datamanager, parameter = init_data(filename, Data_manager, comm)
-    #results = solver(data, parameter, comm)
+
 
     #    save_values(results)
     return MPI.Finalize()
