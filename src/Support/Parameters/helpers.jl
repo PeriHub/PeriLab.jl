@@ -12,11 +12,3 @@ function find_indices(vector, what)
 end
 
 
-function get_blockNodes(blockID)
-    maxBlock = maximum(blockID)
-    blockNodes = distribution = [collect(1:maxBlock)]
-    for i in 1:maxBlock
-        blockNodes[i] = find_indices(blockID, i)
-    end
-    return blockNodes
-end
