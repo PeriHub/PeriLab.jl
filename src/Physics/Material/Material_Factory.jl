@@ -1,10 +1,15 @@
 
-
+include("../../Support/tools.jl")
+include("../../Support/Parameters/parameter_handling.jl")
 module Material
 export get_material
 
 function get_material(params)
-
+    materials = get_materials(params)
+    material_names = keys(material)
+    #files = find_files_with_ending("./", "*.jl")
+    # blocks
+    # blocks -> mat
 end
 
 
