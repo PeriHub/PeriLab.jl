@@ -50,17 +50,17 @@ end
 # nicht synchronisierte vectoren brauchen nicht hier rein -> Problem ist, wie mit der synch Option zu verfahren ist (eine stelle synch andere non synch)Was zählt?
 # besser ist vielleicht einen synchmanager zu bauen -> dort kann man sich eintragen
 
-function create_field(name::String, vartyp::DataType, bondNode::String, dof::Int64, time_dependend::Bool)
+function create_field(name::String, vartype::DataType, bondNode::String, dof::Int64, time_dependend::Bool)
 
-    if haskey(fieldnames[vartyp], name)
-        return fieldnames[vartyp][name]
+    if haskey(fieldnames[vartype], name)
+        return fieldnames[vartype][name]
     else
-        fieldnames[vartyp] = Dict()
+
         len = field_length(bondNode, time_dependend)
 
-        fieldnames[vartyp][name] = zeros(len, dof)
+        fieldnames[vartype][name] = zeros(vartype, len, dof)
 
-        return fieldnames[vartyp][name]
+        return fieldnames[vartype][name]
     end
 end
 
