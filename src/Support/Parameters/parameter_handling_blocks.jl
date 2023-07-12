@@ -40,11 +40,11 @@ function get_materials(params)
     return params["Materials"]
 end
 
-function get_materials(params)
-    check = check_element(params, "Materials")
-    if !check
-        @error "No materials defined"
-    end
+# function get_materials(params)
+#     check = check_element(params, "Materials")
+#     if !check
+#         @error "No materials defined"
+#     end
 
-    return params["Materials"]
-end
+#     return params["Materials"]
+# end

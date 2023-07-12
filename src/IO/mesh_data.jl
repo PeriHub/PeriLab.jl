@@ -12,6 +12,7 @@ include("../MPI_communication/MPI_init.jl")
 #export load_mesh_and_distribute
 
 function init_data(filename, datamanager, comm)
+    print_banner()
 
     parameter = read_input_file(filename)
 
