@@ -7,6 +7,8 @@ using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_init.jl")
+include("../Support/geometry.jl")
+import Geometry
 
 #export read_mesh
 #export load_mesh_and_distribute
@@ -38,14 +40,22 @@ function init_data(filename, datamanager, comm)
     datamanager.set_nnodes(nmasters + nslaves)
     #println(datamanager.get_nnodes())
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
-
+    datamanager = get_node_geometry(datamanager)
 
 
     println(MPI.Comm_rank(comm), " coor ", datamanager.get_field("Coordinates"), " blocks ", datamanager.get_field("Block_Id"))
 
     return datamanager, parameter
 end
-
+function get_node_geometry(datamanager)
+    bondgeom = datamanager.create_constant_bond_field("Block_Id", Float32, 4)
+    coor = datamanager.get_field("Coordinates")
+    nnodes = datamanager.get_nnodes()
+    dof = datamanager.get_dof()
+    nlist = datamanager.get_nlist()
+    bondgeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondgeom)
+    return datamanager
+end
 
 function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     mnames = names(mesh)
@@ -75,8 +85,53 @@ function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
         send_msg = mesh[!, "volume"]
     end
     volume[:] = send_vector_from_root_to_core_i(comm, send_msg, volume, distribution)
+    # additional fields as angles and pointtime can be add automatically
+
+
+    #for upload in uploadDict
+    #    var = datamanager.create_constant_node_field(upload["Name"], upload["Type"], 1)
+    #end
     return datamanager
 end
+
+function check_elements(mesh, dof)
+    mnames = names(mesh)
+
+    uploadDict = []
+    count = 0
+    for nam in mnames
+        count += 1
+        fieldDof = 1
+        if "x" == nam
+            name = "Coordinates"
+            meshentry = collect(count:count+dof)
+            fieldDof = dof
+
+        elseif "volume" == nam
+            name = "Volume"
+            meshentry = collect(count:count)
+
+
+        elseif "block_id" == nam
+            name = "Block_Id"
+            meshentry = collect(count:count)
+        else
+            if "x" in nam
+                meshentry = collect(count:count+dof)
+                name = nam[1:length(nam)-2]
+            else
+                meshentry = collect(count:count)
+                name = nam
+            end
+        end
+
+        append!(uploadDict, Dict("Name" => name, "Pos" => meshentry, "Type" => typeof(mesh[nam][1]), "Dof" => fieldDof))
+
+    end
+    return uploadDict
+end
+
+
 function read_mesh(filename::String)
 
     header = ["x", "y", "z", "block_id", "volume"]
