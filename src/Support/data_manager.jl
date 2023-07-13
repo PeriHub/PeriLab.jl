@@ -71,7 +71,11 @@ function create_field(name::String, vartype::DataType, bondNode::String, dof::In
         return fieldnames[vartype][name]
     else
         len = field_length(bondNode, time_dependend)
-        fieldnames[vartype][name] = zeros(vartype, len, dof)
+        if dof == 1
+            fieldnames[vartype][name] = zeros(vartype, len)
+        else
+            fieldnames[vartype][name] = zeros(vartype, len, dof)
+        end
         return fieldnames[vartype][name]
     end
 end
