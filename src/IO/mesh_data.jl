@@ -12,11 +12,17 @@ import Geometry
 
 #export read_mesh
 #export load_mesh_and_distribute
+function check_elements(parameter)
 
+    check = check_materials_exist(params)
+    return check
+end
 function init_data(filename, datamanager, comm)
 
     parameter = read_input_file(filename)
-
+    if check_element(parameter) == false
+        return
+    end
     if (MPI.Comm_rank(comm)) == 0
         distribution, mesh, ntype, overlap_map, dof = load_mesh_and_distribute(parameter, MPI.Comm_size(comm))
         #nodeList = zeros(Int64, nmasters + nslaves)
