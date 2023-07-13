@@ -18,6 +18,7 @@ function check_elements(parameter)
     return check
 end
 function init_data(filename, datamanager, comm)
+    print_banner()
 
     parameter = read_input_file(filename)
     if check_element(parameter) == false

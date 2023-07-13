@@ -26,6 +26,8 @@ function main()
 
     datamanager, parameter = init_data(filename, Data_manager, comm)
 
+    write_results(datamanager)
+
 
     #    save_values(results)
     return MPI.Finalize()

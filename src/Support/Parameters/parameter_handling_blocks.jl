@@ -21,4 +21,3 @@ function get_number_of_blocks(params)
     return 0
 end
 
-
