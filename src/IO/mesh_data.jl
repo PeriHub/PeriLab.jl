@@ -21,7 +21,7 @@ function init_data(filename, datamanager, comm)
     print_banner()
 
     parameter = read_input_file(filename)
-    if check_element(parameter) == false
+    if check_key_elements(parameter) == false
         return
     end
     if (MPI.Comm_rank(comm)) == 0
