@@ -17,7 +17,7 @@ using Random
 end
 @testset "ut_get_mesh_name" begin
     params = Dict("Discretization" => Dict())
-    @test get_mesh_name(params) = nothing
+    @test get_mesh_name(params) === nothing
     name = randstring(12)
     params = Dict("Discretization" => Dict("Input Mesh File" => name))
     @test get_mesh_name(params) == name
