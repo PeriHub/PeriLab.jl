@@ -2,6 +2,7 @@ function get_mesh_name(data)
     check = check_element(data["Discretization"], "Input Mesh File")
     if !check
         @error "No mesh file is defined."
+        return
     end
     return data["Discretization"]["Input Mesh File"]
 end
