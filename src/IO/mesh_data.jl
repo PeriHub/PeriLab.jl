@@ -8,22 +8,16 @@ using NearestNeighbors: inrange
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_init.jl")
 include("../Support/geometry.jl")
-import Geometry
+import .Geometry
 
 #export read_mesh
 #export load_mesh_and_distribute
-function check_elements(parameter)
 
-    check = check_materials_exist(params)
-    return check
-end
 function init_data(filename, datamanager, comm)
     print_banner()
 
     parameter = read_input_file(filename)
-    if check_key_elements(parameter) == false
-        return
-    end
+
     if (MPI.Comm_rank(comm)) == 0
         distribution, mesh, ntype, overlap_map, dof = load_mesh_and_distribute(parameter, MPI.Comm_size(comm))
         #nodeList = zeros(Int64, nmasters + nslaves)
@@ -55,7 +49,8 @@ function init_data(filename, datamanager, comm)
     return datamanager, parameter
 end
 function get_node_geometry(datamanager)
-    bondgeom = datamanager.create_constant_bond_field("Block_Id", Float32, 4)
+
+    bondgeom = datamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
     coor = datamanager.get_field("Coordinates")
     nnodes = datamanager.get_nnodes()
     dof = datamanager.get_dof()
@@ -185,9 +180,17 @@ end
 function create_neighborhoodlist(mesh, params, dof)
     coor = names(mesh)
     nlist = neighbors(mesh, params, coor[1:dof])
+    lenNlist = get_number_of_neighbornodes(nlist)
     return nlist
 end
-
+function get_number_of_neighbornodes(nlist)
+    len = length(nlist)
+    lenNlist = zeros(Int64, len)
+    for id in 1:len
+        lenNlist[id] = length(nlist[id])
+    end
+    return lenNlist
+end
 function node_distribution(nlist, size)
 
     nnodes = length(nlist)
