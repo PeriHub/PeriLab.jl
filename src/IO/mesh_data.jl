@@ -1,4 +1,4 @@
-#module mesh_data
+module Read_Mesh
 using CSV
 using DataFrames
 using MPI
@@ -12,14 +12,11 @@ import .Geometry
 
 #export read_mesh
 #export load_mesh_and_distribute
-
-function init_data(filename, datamanager, comm)
-    print_banner()
-
-    parameter = read_input_file(filename)
+export init_data
+function init_data(parameter, datamanager, comm)
 
     if (MPI.Comm_rank(comm)) == 0
-        distribution, mesh, ntype, overlap_map, dof = load_mesh_and_distribute(parameter, MPI.Comm_size(comm))
+        distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(parameter, MPI.Comm_size(comm))
         #nodeList = zeros(Int64, nmasters + nslaves)
     else
         nmasters = 0
@@ -30,8 +27,10 @@ function init_data(filename, datamanager, comm)
         ntype = Dict("masters" => 0, "slaves" => 0)
         distribution = 0
         send_msg = 0
+        nlist = 0
     end
     dof = send_value(comm, 0, dof)
+    dof = datamanager.set_dof(dof)
     overlap_map = send_value(comm, 0, overlap_map)
     nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
     nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
@@ -40,20 +39,32 @@ function init_data(filename, datamanager, comm)
     #println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
     datamanager.set_nnodes(nmasters + nslaves)
     #println(datamanager.get_nnodes())
+    datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
-    datamanager = get_node_geometry(datamanager)
+    #datamanager = get_node_geometry(datamanager)
 
 
     println(MPI.Comm_rank(comm), " coor ", datamanager.get_field("Coordinates"), " blocks ", datamanager.get_field("Block_Id"))
 
     return datamanager, parameter
 end
-function get_node_geometry(datamanager)
 
+function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
+    send_msg = []
+    if MPI.Comm_rank(comm) == 0
+        send_msg = get_number_of_neighbornodes(nlist)
+    end
+    lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
+    print(MPI.Comm_rank(comm), " ", lenNlist)
+    return datamanager
+end
+function get_node_geometry(datamanager)
+    dof = datamanager.get_dof()
     bondgeom = datamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
     coor = datamanager.get_field("Coordinates")
     nnodes = datamanager.get_nnodes()
-    dof = datamanager.get_dof()
+
     nlist = datamanager.get_nlist()
     bondgeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondgeom)
     return datamanager
@@ -152,7 +163,7 @@ function set_dof(mesh)
     end
 end
 
-function load_mesh_and_distribute(params, ranksize)
+function load_and_evaluate_mesh(params, ranksize)
 
     mesh = read_mesh(get_mesh_name(params))
     dof = set_dof(mesh)
@@ -165,7 +176,7 @@ function load_mesh_and_distribute(params, ranksize)
     #globToLoc = create_global_to_local_map(distribution)
 
     # information = Dict("Meshdata" => meshdata, "Nodetype" => ntype, "Overlap_map" => overlap_map, "Node_distribution" => distribution, "Global_to_local" => globToLoc)
-    return distribution, mesh, ntype, overlap_map, dof
+    return distribution, mesh, ntype, overlap_map, nlist, dof
 end
 
 function get_nnodes_per_core(field)
@@ -180,7 +191,6 @@ end
 function create_neighborhoodlist(mesh, params, dof)
     coor = names(mesh)
     nlist = neighbors(mesh, params, coor[1:dof])
-    lenNlist = get_number_of_neighbornodes(nlist)
     return nlist
 end
 function get_number_of_neighbornodes(nlist)
@@ -350,4 +360,5 @@ function init_vectors_for_processes(data, comm, vector)
 
     # Print the local chunk on each process
     println("Rank $rank: ", local_chunk)
+end
 end
