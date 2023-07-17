@@ -29,11 +29,15 @@ function main()
     # init MPI as always ...
 
     MPI.Init()
+    comm = MPI.COMM_WORLD
+    if MPI.Comm_rank(comm) == 0
+        print_banner()
+    end
     #global juliaPath = Base.Filesystem.pwd() * "/"
     global juliaPath = "./"
     # from outside #################
     filename::String = "Input.yaml"
-    comm = MPI.COMM_WORLD
+
 
     ################################
     filename = juliaPath * filename
