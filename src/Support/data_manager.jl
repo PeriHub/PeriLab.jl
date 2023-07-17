@@ -16,10 +16,15 @@ export create_constant_bond_field
 ##########################
 nnodes = Ref(0)
 nbonds = Ref(0)
+dof = Ref(1)
 fieldnames = Dict(Int64 => Dict(), Float32 => Dict(), Bool => Dict())
 ##########################
-
-
+function set_dof(n)
+    global dof = n
+end
+function get_dof()
+    return dof
+end
 function set_nnodes(n)
     global nnodes = n
 end
