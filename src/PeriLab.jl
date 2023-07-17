@@ -3,7 +3,6 @@ module PeriLab
 include("./Support/data_manager.jl")
 include("./IO/IO.jl")
 import MPI
-using YAML
 import .Data_manager
 
 
