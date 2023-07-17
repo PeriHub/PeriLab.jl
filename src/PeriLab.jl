@@ -26,7 +26,6 @@ function print_banner()
     """)
 end
 function main()
-    include("banner.jl")
     # init MPI as always ...
 
     MPI.Init()
