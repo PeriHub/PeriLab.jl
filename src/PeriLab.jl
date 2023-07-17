@@ -4,6 +4,9 @@ include("./Support/data_manager.jl")
 include("./IO/IO.jl")
 import MPI
 import .Data_manager
+include("./Core/Solver/Solver_control.jl")
+import .IO
+import .Solver
 
 
 export main
@@ -11,6 +14,7 @@ export main
     Main
 """
 function main()
+    include("banner.jl")
     # init MPI as always ...
 
     MPI.Init()
@@ -23,9 +27,9 @@ function main()
     ################################
     filename = juliaPath * filename
 
-    datamanager, parameter = init_data(filename, Data_manager, comm)
+    datamanager, parameter = IO.init_data(filename, Data_manager, comm)
 
-    write_results(datamanager)
+    #write_results(datamanager)
 
 
     #    save_values(results)
