@@ -26,7 +26,6 @@ function init_data(parameter, datamanager, comm)
         mesh = []
         ntype = Dict("masters" => 0, "slaves" => 0)
         distribution = 0
-        send_msg = 0
         nlist = 0
     end
     dof = send_value(comm, 0, dof)
@@ -39,8 +38,9 @@ function init_data(parameter, datamanager, comm)
     #println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
     datamanager.set_nnodes(nmasters + nslaves)
     #println(datamanager.get_nnodes())
-    datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
+    datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
+
     #datamanager = get_node_geometry(datamanager)
 
 
@@ -50,13 +50,59 @@ function init_data(parameter, datamanager, comm)
 end
 
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
-    send_msg = []
+    send_msg = 0
+    lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
     if MPI.Comm_rank(comm) == 0
         send_msg = get_number_of_neighbornodes(nlist)
     end
-    lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
     lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
     print(MPI.Comm_rank(comm), " ", lenNlist)
+    return datamanager
+end
+
+
+function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
+    # init blockID field
+
+    blockID = datamanager.create_constant_node_field("Block_Id", Int64, 1)
+    # set value for all cores as send_msg
+    # only used for rank = 0
+    send_msg = blockID[1]
+    # distribute blocks
+    if MPI.Comm_rank(comm) == 0
+        mnames = names(mesh)
+        if ("block_id" in mnames) == false
+            @error "No blocks defined"
+        end
+        send_msg = mesh[!, "block_id"]
+    end
+    # must be [:] -> to map it in datamanager
+    blockID[:] = send_vector_from_root_to_core_i(comm, send_msg, blockID, distribution)
+
+    # init coordinate field
+    coor = datamanager.create_constant_node_field("Coordinates", Float32, dof)
+    # must be of same type as coordinates
+    send_msg = coor[1, 1]
+    # distribute coordinates
+    for idof in 1:dof
+        if MPI.Comm_rank(comm) == 0
+            send_msg = Float32.(mesh[!, names(mesh)[idof]])
+        end
+        coor[:, idof] = send_vector_from_root_to_core_i(comm, send_msg, coor[:, idof], distribution)
+    end
+    volume = datamanager.create_constant_node_field("Volume", Float32, 1)
+    # distribute blocks
+    send_msg = volume[1]
+    if MPI.Comm_rank(comm) == 0
+        send_msg = Float32.(mesh[!, "volume"]) # because mesh is read as Float64
+    end
+    volume[:] = send_vector_from_root_to_core_i(comm, send_msg, volume, distribution)
+    # additional fields as angles and pointtime can be add automatically
+
+
+    #for upload in uploadDict
+    #    var = datamanager.create_constant_node_field(upload["Name"], upload["Type"], 1)
+    #end
     return datamanager
 end
 function get_node_geometry(datamanager)
@@ -69,44 +115,6 @@ function get_node_geometry(datamanager)
     bondgeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondgeom)
     return datamanager
 end
-
-function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
-    mnames = names(mesh)
-    if ("block_id" in mnames) == false
-        @error "No blocks defined"
-    end
-    # init blockID field
-    blockID = datamanager.create_constant_node_field("Block_Id", Int64, 1)
-    # distribute blocks
-    if MPI.Comm_rank(comm) == 0
-        send_msg = mesh[!, "block_id"]
-    end
-    # must be [:] -> to map it in datamanager
-    blockID[:] = send_vector_from_root_to_core_i(comm, send_msg, blockID, distribution)
-    # init coordinate field
-    coor = datamanager.create_constant_node_field("Coordinates", Float32, dof)
-    # distribute coordinates
-    for idof in 1:dof
-        if MPI.Comm_rank(comm) == 0
-            send_msg = mesh[!, names(mesh)[idof]]
-        end
-        coor[:, idof] = send_vector_from_root_to_core_i(comm, send_msg, coor[:, idof], distribution)
-    end
-    volume = datamanager.create_constant_node_field("Volume", Float32, 1)
-    # distribute blocks
-    if MPI.Comm_rank(comm) == 0
-        send_msg = mesh[!, "volume"]
-    end
-    volume[:] = send_vector_from_root_to_core_i(comm, send_msg, volume, distribution)
-    # additional fields as angles and pointtime can be add automatically
-
-
-    #for upload in uploadDict
-    #    var = datamanager.create_constant_node_field(upload["Name"], upload["Type"], 1)
-    #end
-    return datamanager
-end
-
 function check_elements(mesh, dof)
     mnames = names(mesh)
 
@@ -123,7 +131,6 @@ function check_elements(mesh, dof)
         elseif "volume" == nam
             name = "Volume"
             meshentry = collect(count:count)
-
 
         elseif "block_id" == nam
             name = "Block_Id"
