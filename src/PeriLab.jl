@@ -42,7 +42,8 @@ function main()
     ################################
     filename = juliaPath * filename
 
-    datamanager, parameter = IO.init_data(filename, Data_manager, comm)
+    datamanager, parameter = IO.initialize_data(filename, Data_manager, comm)
+
 
     #write_results(datamanager)
 
