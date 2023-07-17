@@ -2,6 +2,7 @@ using CSV
 using Logging
 using YAML
 using DataFrames
+include("../Support/Parameters/parameter_handling.jl")
 function read_input_file(filename::String)
 
     if occursin("yaml", filename)
@@ -15,12 +16,11 @@ function read_input_file(filename::String)
         parameter = ""
         @error "Not a supported filetype  $filename"
     end
+    check_key_elements(parameter)
     return parameter
 end
 
 function read_input(filename::String)
     return YAML.load_file(filename)["Peridigm"]
 end
-
-
 
