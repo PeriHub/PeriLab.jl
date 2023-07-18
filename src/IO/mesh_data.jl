@@ -5,7 +5,7 @@ using MPI
 
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
-include("../Support/paramss/params_handling.jl")
+include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_init.jl")
 include("../Support/geometry.jl")
 import .Geometry
@@ -365,10 +365,11 @@ function init_vectors_for_processes(data, comm, vector)
 end
 function read_bc_nodes(params)
     bcs = get_bcs(params)
-    bc_nodes=Dict()
+    bc_nodes = Dict()
     for bc in bcs
-        bc_nodes[bc["Name"]]=open(bc["Filename"])
+        bc_nodes[bc["Name"]] = open(bc["Filename"])
     end
     return bc_nodes
 
+end
 end
