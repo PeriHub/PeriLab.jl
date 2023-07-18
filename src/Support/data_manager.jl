@@ -17,7 +17,7 @@ export create_constant_bond_field
 nnodes = Ref(0)
 nbonds = Ref(0)
 dof = Ref(1)
-fieldnames = Dict(Int64 => Dict(), Float32 => Dict(), Bool => Dict())
+fieldnames = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 ##########################
 function set_dof(n)
     global dof = n
@@ -71,7 +71,7 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
 
     """
     if haskey(fieldnames, vartype) == false
-        fieldnames[type] = Dict()
+        fieldnames[type] = Dict{String,Any}()
     end
     if haskey(fieldnames[vartype], name)
         return fieldnames[vartype][name]
@@ -79,18 +79,18 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
 
     if bondOrNode == "Node_Field"
         if dof == 1
-            fieldnames[vartype][name] => zeros(vartype, nnodes)
+            fieldnames[vartype][name] = zeros(vartype, nnodes)
         else
-            fieldnames[vartype][name] => zeros(vartype, nnodes, dof)
+            fieldnames[vartype][name] = zeros(vartype, nnodes, dof)
         end
     elseif bondOrNode == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
-        fieldnames[vartype][name] = fill(Dict{Int64,Any}(), nnodes)
+        fieldnames[vartype][name] = []
         for i in 1:nnodes
             if dof == 1
-                fieldnames[vartype][name][i] => zeros(vartype, nBonds[i])
+                append!(fieldnames[vartype][name], [Vector{vartype}(undef, nBonds[i])])
             else
-                fieldnames[vartype][name][i] => zeros(vartype, nBonds[i], dof)
+                append!(fieldnames[vartype][name], [Matrix{vartype}(undef, nBonds[i], dof)])
             end
         end
     end
