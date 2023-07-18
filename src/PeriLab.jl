@@ -25,6 +25,9 @@ function print_banner()
     888       Y8b.     888     888 888      888  888 888 d88P  |  Official https://julialang.org/ release
     888        "Y8888  888     888 88888888 "Y888888 88888P"   |                                                  
 
+    Copyright Dr.-Ing. Christian Willberg
+    Contact christian.willberg@dlr.de
+
     """)
 end
 function main()
