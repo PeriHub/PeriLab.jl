@@ -5,7 +5,7 @@ using MPI
 
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
-include("../Support/Parameters/parameter_handling.jl")
+include("../Support/paramss/params_handling.jl")
 include("../MPI_communication/MPI_init.jl")
 include("../Support/geometry.jl")
 import .Geometry
@@ -13,10 +13,10 @@ import .Geometry
 #export read_mesh
 #export load_mesh_and_distribute
 export init_data
-function init_data(parameter, datamanager, comm)
+function init_data(params, datamanager, comm)
 
     if (MPI.Comm_rank(comm)) == 0
-        distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(parameter, MPI.Comm_size(comm))
+        distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params, MPI.Comm_size(comm))
         #nodeList = zeros(Int64, nmasters + nslaves)
     else
         nmasters = 0
@@ -43,10 +43,7 @@ function init_data(parameter, datamanager, comm)
     # not optimal, because bond 12 != bond 21
     datamanager.set_nbonds(sum(datamanager.get_field("Number of Neighbors")))
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
-
-
-
-    return datamanager, parameter
+    return datamanager, params
 end
 
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
@@ -315,7 +312,7 @@ function neighbors(mesh, params, coor)
 
     # Arguments
     - `mesh`: A mesh data structure containing the coordinates and other information.
-    - `params`: Parameters needed for computing the neighbor list.
+    - `params`: paramss needed for computing the neighbor list.
     - `coor`: A vector of coordinate names along which to compute the neighbor list.
 
     # Returns
@@ -366,4 +363,12 @@ function init_vectors_for_processes(data, comm, vector)
 
     # Print the local chunk on each process
 end
+function read_bc_nodes(params)
+    bcs = get_bcs(params)
+    bc_nodes=Dict()
+    for bc in bcs
+        bc_nodes[bc["Name"]]=open(bc["Filename"])
+    end
+    return bc_nodes
+
 end
