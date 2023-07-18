@@ -4,6 +4,10 @@
     3. coordinatenfelder initialisieren auf allen Knoten -> done
     4. versenden von Koordinaten -> done
     5. versenden der Block_Id der Knoten -> done
+    5.a neighborhoodlist -> num neighbor für jeden knoten
+                         -> feld init an jedem knoten -> das vielleicht skalierbare referenz? -> done
+    5.b neighboorhoodlist verteilen -> done
+    5.c bond init lists -> done
     !-----------
     6. loc to glob -> distributionsfeld an die Knoten 
     7. glob to loc ableiten für RB Knoten
