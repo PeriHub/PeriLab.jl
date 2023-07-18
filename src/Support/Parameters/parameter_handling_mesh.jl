@@ -1,26 +1,26 @@
-function get_mesh_name(data)
-    check = check_element(data["Discretization"], "Input Mesh File")
+function get_mesh_name(params)
+    check = check_element(params["Discretization"], "Input Mesh File")
     if !check
         @error "No mesh file is defined."
         return
     end
-    return data["Discretization"]["Input Mesh File"]
+    return params["Discretization"]["Input Mesh File"]
 end
 
-function get_topology_name(data)
-    check = check_element(data["Discretization"], "Input FEM Topology File")
+function get_topology_name(params)
+    check = check_element(params["Discretization"], "Input FEM Topology File")
     topoFile::String = ""
     if check
-        topoFile = data["Discretization"]["Input FEM Topology File"]
+        topoFile = params["Discretization"]["Input FEM Topology File"]
     end
     return check, topoFile
 end
 
-function get_bond_filter(data)
-    check = check_element(data["Discretization"], "Bond Filters")
+function get_bond_filter(params)
+    check = check_element(params["Discretization"], "Bond Filters")
     bfList = Any
     if check
-        bfList = data["Discretization"]["Bond Filters"]
+        bfList = params["Discretization"]["Bond Filters"]
     end
     return check, bfList
 end
