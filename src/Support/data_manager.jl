@@ -70,22 +70,25 @@ function create_field(name::String, vartype::DataType, dof::Int64)
     The field with the given `name` and specified characteristics.
 
     """
+    if haskey(fieldnames, vartype) == false
+        fieldnames[type] = Dict()
+    end
     if haskey(fieldnames[vartype], name)
         return fieldnames[vartype][name]
-    else
-
-        if dof == 1
-            fieldnames[vartype][name] = zeros(vartype, nnodes)
-        else
-            fieldnames[vartype][name] = zeros(vartype, nnodes, dof)
-        end
-        return fieldnames[vartype][name]
     end
+
+    if dof == 1
+        fieldnames[vartype][name] = zeros(vartype, nnodes)
+    else
+        fieldnames[vartype][name] = zeros(vartype, nnodes, dof)
+    end
+    return fieldnames[vartype][name]
+
 end
 
 function create_field_bond_type_field(name::String, vartype::DataType, dof::Int64)
     """
-    create_field(name::String, vartype::DataType, dof::Int64)
+    create_field_bond_type_field(name::String, vartype::DataType, dof::Int64)
 
     Create a field with the given `name` for the specified `vartype`. If the field already exists, return the existing field. If the field does not exist, create a new field with the specified characteristics.
 
@@ -99,25 +102,27 @@ function create_field_bond_type_field(name::String, vartype::DataType, dof::Int6
     The field with the given `name` and specified characteristics.
 
     """
-
+    if haskey(fieldnames, vartype) == false
+        fieldnames[type] = Dict()
+    end
     if haskey(fieldnames[vartype], name)
         return fieldnames[vartype][name]
-    else
-
-        nBonds = get_field("Number of Neighbors")
-
-        fieldnames[vartype][name] = fill([], nnodes)
-
-        for i in 1:nnodes
-            if dof == 1
-                fieldnames[vartype][name][i] = zeros(vartype, nBonds[i])
-            else
-                fieldnames[vartype][name][i] = zeros(vartype, nBonds[i], dof)
-            end
-        end
-        #
-        return fieldnames[vartype][name]
     end
+
+    nBonds = get_field("Number of Neighbors")
+
+    fieldnames[vartype][name] = fill(Dict{Int64,Any}(), nnodes)
+
+    for i in 1:nnodes
+        if dof == 1
+            fieldnames[vartype][name][i] = zeros(vartype, nBonds[i])
+        else
+            fieldnames[vartype][name][i] = zeros(vartype, nBonds[i], dof)
+        end
+    end
+
+    return fieldnames[vartype][name]
+
 end
 function get_field(name::String, time::String)
     if time == "Constant" || time == "CONSTANT"
@@ -148,26 +153,6 @@ function return_field(name::String)
         end
     end
     return 0
-end
-
-function field_length(bondNode::String, time_dependend::Bool)
-    le = 0
-    if bondNode == "Bond"
-        le = get_nbonds()
-    elseif bondNode == "Node"
-        le = get_nnodes()
-    else
-        le = 0
-        @error "Not supported option $bondNode allowed options are Bond::String or Node::String"
-    end
-    if time_dependend
-        le *= 2
-    end
-    return le
-end
-function key_magic(name::String, type, bondNode::String, dof::Int64, time_dependend::Bool)
-
-    #integer liste wo die keys geführt werden -> nötig?
 end
 
 function synch_manager()
