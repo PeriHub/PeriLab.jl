@@ -1,8 +1,9 @@
 include("./parameter_handling_mesh.jl")
 include("./parameter_handling_blocks.jl")
 include("./parameter_handling_material.jl")
-function check_element(data, key)
-    return haskey(data, key)
+include("./parameter_handling_solver.jl")
+function check_element(params, key)
+    return haskey(params, key)
 end
 function check_key_elements(params)
     check = check_element(params, "Materials")
