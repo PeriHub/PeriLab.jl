@@ -42,7 +42,7 @@ function init_data(parameter, datamanager, comm)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     # not optimal, because bond 12 != bond 21
     datamanager.set_nbonds(sum(datamanager.get_field("Number of Neighbors")))
-    datamanager = get_node_geometry(datamanager)
+    datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
 
 
     println(MPI.Comm_rank(comm), " coor ", datamanager.get_field("Coordinates"), " blocks ", datamanager.get_field("Block_Id"))
@@ -63,7 +63,17 @@ function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribu
     println(nlistCore, " ", datamanager.get_field("Neighborhoodlist"))
     return datamanager
 end
+function get_bond_geometry(datamanager)
+    dof = datamanager.get_dof()
+    bondgeom = datamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
+    coor = datamanager.get_field("Coordinates")
+    nnodes = datamanager.get_nnodes()
 
+    nlist = datamanager.get_field("Neighborhoodlist")
+    bondgeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondgeom)
+    bondgeom = datamanager.create_constant_bond_field("Bond Damage", Float32, 1)
+    return datamanager
+end
 
 function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     # init blockID field
@@ -106,16 +116,7 @@ function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     #end
     return datamanager
 end
-function get_node_geometry(datamanager)
-    dof = datamanager.get_dof()
-    bondgeom = datamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
-    coor = datamanager.get_field("Coordinates")
-    nnodes = datamanager.get_nnodes()
 
-    nlist = datamanager.get_nlist()
-    bondgeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondgeom)
-    return datamanager
-end
 function check_elements(mesh, dof)
     mnames = names(mesh)
 
