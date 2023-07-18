@@ -119,7 +119,17 @@ function create_field_bond_type_field(name::String, vartype::DataType, dof::Int6
         return fieldnames[vartype][name]
     end
 end
+function get_field(name::String, time::String)
+    if time == "Constant" || time == "CONSTANT"
+        return return_field(name)
+    end
+    return return_field(name * time)
+end
 function get_field(name::String)
+    return name
+end
+
+function return_field(name::String)
     """
     get_field(name::String)
 
