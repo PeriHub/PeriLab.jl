@@ -45,10 +45,10 @@ function create_constant_node_field(name::String, type::DataType, dof::Int64)
     return create_field(name, type, dof)
 end
 function create_bond_field(name::String, type::DataType, dof::Int64)
-    return create_field_bond_type_field(name, type, dof)
+    return create_field_bond_type_field(name * "N", type, dof), create_field_bond_type_field(name * "NP1", type, dof)
 end
 function create_constant_bond_field(name::String, type::DataType, dof::Int64)
-    return create_field_bond_type_field(name * "N", type, dof), create_field_bond_type_field(name * "NP1", type, dof)
+    return create_field_bond_type_field(name, type, dof)
 end
 # wenn nicht existiert, wird an den gesamtvector der Teil angehängt. Dann wird der Vectorabschnitt zurückgeschickt und ist in der jeweiligen routine nutzbar
 # bisher wird alles synchrononisiert
