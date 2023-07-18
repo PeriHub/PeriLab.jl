@@ -39,23 +39,23 @@ function get_nbonds()
     return nbonds
 end
 function create_node_field(name::String, type::DataType, dof::Int64)
-    return create_field(name * "N", type, dof), create_field(name * "NP1", type, dof)
+    return create_field(name * "N", type, Node_Field, dof), create_field(name * "NP1", type, "Node_Field", dof)
 end
 function create_constant_node_field(name::String, type::DataType, dof::Int64)
-    return create_field(name, type, dof)
+    return create_field(name, type, Node_Field, dof)
 end
 function create_bond_field(name::String, type::DataType, dof::Int64)
-    return create_field_bond_type_field(name * "N", type, dof), create_field_bond_type_field(name * "NP1", type, dof)
+    return create_field(name * "N", type, "Bond_Field", dof), create_field_bond_type_field(name * "NP1", type, "Bond_Field", dof)
 end
 function create_constant_bond_field(name::String, type::DataType, dof::Int64)
-    return create_field_bond_type_field(name, type, dof)
+    return create_field(name, type, "Bond_Field", dof)
 end
 # wenn nicht existiert, wird an den gesamtvector der Teil angehängt. Dann wird der Vectorabschnitt zurückgeschickt und ist in der jeweiligen routine nutzbar
 # bisher wird alles synchrononisiert
 # nicht synchronisierte vectoren brauchen nicht hier rein -> Problem ist, wie mit der synch Option zu verfahren ist (eine stelle synch andere non synch)Was zählt?
 # besser ist vielleicht einen synchmanager zu bauen -> dort kann man sich eintragen
 
-function create_field(name::String, vartype::DataType, dof::Int64)
+function create_field(name::String, vartype::DataType, bondOrNode::String, dof::Int64)
     """
     create_field(name::String, vartype::DataType, bondNode::String, dof::Int64)
 
@@ -77,59 +77,36 @@ function create_field(name::String, vartype::DataType, dof::Int64)
         return fieldnames[vartype][name]
     end
 
-    if dof == 1
-        fieldnames[vartype][name] = zeros(vartype, nnodes)
-    else
-        fieldnames[vartype][name] = zeros(vartype, nnodes, dof)
-    end
-    return fieldnames[vartype][name]
-
-end
-
-function create_field_bond_type_field(name::String, vartype::DataType, dof::Int64)
-    """
-    create_field_bond_type_field(name::String, vartype::DataType, dof::Int64)
-
-    Create a field with the given `name` for the specified `vartype`. If the field already exists, return the existing field. If the field does not exist, create a new field with the specified characteristics.
-
-    # Arguments
-    - `name::String`: The name of the field.
-    - `vartype::DataType`: The data type of the field.
-    - `bondNode::String`: length of the field (nnodes or nbonds) associated with the field.
-    - `dof::Int64`: The degrees of freedom per node.
-
-    # Returns
-    The field with the given `name` and specified characteristics.
-
-    """
-    if haskey(fieldnames, vartype) == false
-        fieldnames[type] = Dict()
-    end
-    if haskey(fieldnames[vartype], name)
-        return fieldnames[vartype][name]
-    end
-
-    nBonds = get_field("Number of Neighbors")
-
-    fieldnames[vartype][name] = fill(Dict{Int64,Any}(), nnodes)
-
-    for i in 1:nnodes
+    if bondOrNode == "Node_Field"
         if dof == 1
-            fieldnames[vartype][name][i] = zeros(vartype, nBonds[i])
+            fieldnames[vartype][name] => zeros(vartype, nnodes)
         else
-            fieldnames[vartype][name][i] = zeros(vartype, nBonds[i], dof)
+            fieldnames[vartype][name] => zeros(vartype, nnodes, dof)
+        end
+    elseif bondOrNode == "Bond_Field"
+        nBonds = get_field("Number of Neighbors")
+        fieldnames[vartype][name] = fill(Dict{Int64,Any}(), nnodes)
+        for i in 1:nnodes
+            if dof == 1
+                fieldnames[vartype][name][i] => zeros(vartype, nBonds[i])
+            else
+                fieldnames[vartype][name][i] => zeros(vartype, nBonds[i], dof)
+            end
         end
     end
 
     return fieldnames[vartype][name]
 
 end
+
+
 function get_field(name::String, time::String)
     if time == "Constant" || time == "CONSTANT"
         return return_field(name)
     end
     return return_field(name * time)
 end
+
 function get_field(name::String)
     return return_field(name)
 end
