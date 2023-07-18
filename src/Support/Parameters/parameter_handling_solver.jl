@@ -25,10 +25,9 @@ function get_final_time(params)
 end
 
 function get_solver_options(params)
-    Bool::mechanical = true
-    mechanical =
-        Bool::additive = false
-    Bool::thermal = false
+    mechanical::Bool = true
+    additive::Bool = false
+    thermal::Bool = false
     if check_element(params["Solver"], "Mechanical")
         mechanical = params["Solver"]["Mechanical"]
     end
