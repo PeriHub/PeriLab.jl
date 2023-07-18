@@ -126,7 +126,7 @@ function get_field(name::String, time::String)
     return return_field(name * time)
 end
 function get_field(name::String)
-    return name
+    return return_field(name)
 end
 
 function return_field(name::String)
