@@ -39,10 +39,10 @@ function get_nbonds()
     return nbonds
 end
 function create_node_field(name::String, type::DataType, dof::Int64)
-    return create_field(name * "N", type, Node_Field, dof), create_field(name * "NP1", type, "Node_Field", dof)
+    return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
 end
 function create_constant_node_field(name::String, type::DataType, dof::Int64)
-    return create_field(name, type, Node_Field, dof)
+    return create_field(name, type, "Node_Field", dof)
 end
 function create_bond_field(name::String, type::DataType, dof::Int64)
     return create_field(name * "N", type, "Bond_Field", dof), create_field_bond_type_field(name * "NP1", type, "Bond_Field", dof)
