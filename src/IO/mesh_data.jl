@@ -45,7 +45,6 @@ function init_data(parameter, datamanager, comm)
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
 
 
-    println(MPI.Comm_rank(comm), " coor ", datamanager.get_field("Coordinates"), " blocks ", datamanager.get_field("Block_Id"))
 
     return datamanager, parameter
 end
@@ -60,7 +59,7 @@ function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribu
     nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     # : are needed, because only then a connection between the datamanager and the variable is given
     nlistCore[:, :] = send_vector_from_root_to_core_i(comm, nlist, nlistCore[:, :], distribution)# hier wird nicth in den 
-    println(nlistCore, " ", datamanager.get_field("Neighborhoodlist"))
+
     return datamanager
 end
 function get_bond_geometry(datamanager)
@@ -223,8 +222,7 @@ function node_distribution(nlist, size)
     else
 
         distribution, ptc = create_base_chunk(nnodes, size)
-        println("distrib $distribution")
-        println()
+
         # check neighborhood & overlap -> all nodes after chunk are overlap
         for i in 1:size
             nchunks = length(distribution[i])
@@ -248,7 +246,6 @@ function node_distribution(nlist, size)
         end
 
     end
-    println("distrib $distribution")
     return distribution, ptc, ntype
 end
 function create_overlap_map(distribution, ptc, size)
@@ -368,6 +365,5 @@ function init_vectors_for_processes(data, comm, vector)
     #MPI.Scatter(Array(data), local_chunk, chunk_size, MPI.INT, MPI.ROOT, MPI.COMM_WORLD)
 
     # Print the local chunk on each process
-    println("Rank $rank: ", local_chunk)
 end
 end
