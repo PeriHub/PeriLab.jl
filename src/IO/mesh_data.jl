@@ -40,8 +40,9 @@ function init_data(parameter, datamanager, comm)
     #println(datamanager.get_nnodes())
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
-
-    #datamanager = get_node_geometry(datamanager)
+    # not optimal, because bond 12 != bond 21
+    datamanager.set_nbonds(sum(datamanager.get_field("Number of Neighbors")))
+    datamanager = get_node_geometry(datamanager)
 
 
     println(MPI.Comm_rank(comm), " coor ", datamanager.get_field("Coordinates"), " blocks ", datamanager.get_field("Block_Id"))
@@ -56,7 +57,10 @@ function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribu
         send_msg = get_number_of_neighbornodes(nlist)
     end
     lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
-    print(MPI.Comm_rank(comm), " ", lenNlist)
+    nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    # : are needed, because only then a connection between the datamanager and the variable is given
+    nlistCore[:, :] = send_vector_from_root_to_core_i(comm, nlist, nlistCore[:, :], distribution)# hier wird nicth in den 
+    println(nlistCore, " ", datamanager.get_field("Neighborhoodlist"))
     return datamanager
 end
 
@@ -67,7 +71,7 @@ function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     blockID = datamanager.create_constant_node_field("Block_Id", Int64, 1)
     # set value for all cores as send_msg
     # only used for rank = 0
-    send_msg = blockID[1]
+    send_msg = 0
     # distribute blocks
     if MPI.Comm_rank(comm) == 0
         mnames = names(mesh)
@@ -81,8 +85,6 @@ function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
 
     # init coordinate field
     coor = datamanager.create_constant_node_field("Coordinates", Float32, dof)
-    # must be of same type as coordinates
-    send_msg = coor[1, 1]
     # distribute coordinates
     for idof in 1:dof
         if MPI.Comm_rank(comm) == 0
@@ -92,7 +94,6 @@ function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     end
     volume = datamanager.create_constant_node_field("Volume", Float32, 1)
     # distribute blocks
-    send_msg = volume[1]
     if MPI.Comm_rank(comm) == 0
         send_msg = Float32.(mesh[!, "volume"]) # because mesh is read as Float64
     end
