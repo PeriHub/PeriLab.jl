@@ -21,42 +21,231 @@ glob_to_loc = Ref([])
 fieldnames = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 ##########################
 function set_dof(n)
+    """
+    set_dof(n)
+
+    Sets the degree of freedom (dof) value globally.
+
+    Parameters:
+    - `n` (integer): The value to set as the degree of freedom.
+
+    Example:
+    ```julia
+    set_dof(3)  # sets the degree of freedom to 3
+    ```
+    """
     global dof = n
 end
+
 function get_dof()
+    """
+    get_dof()
+
+    Retrieves the degree of freedom (dof) value.
+
+    Returns:
+    - `dof` (integer): The current degree of freedom value.
+
+    Example:
+    ```julia
+    get_dof()  # returns the current degree of freedom
+    ```
+    """
     return dof
 end
+
 function set_nnodes(n)
+    """
+    set_nnodes(n)
+
+    Sets the number of nodes globally.
+
+    Parameters:
+    - `n` (integer): The value to set as the number of nodes.
+
+    Example:
+    ```julia
+    set_nnodes(10)  # sets the number of nodes to 10
+    ```
+    """
     global nnodes = n
 end
+
 function get_nnodes()
+    """
+    get_nnodes()
+
+    Retrieves the number of nodes.
+
+    Returns:
+    - `nnodes` (integer): The current number of nodes.
+
+    Example:
+    ```julia
+    get_nnodes()  # returns the current number of nodes
+    ```
+    """
     return nnodes
 end
 
 function set_glob_to_loc(list)
+    """
+    set_glob_to_loc(list)
+
+    Sets the global-to-local mapping list globally.
+
+    Parameters:
+    - `list` (array): The list representing the global-to-local mapping.
+
+    Example:
+    ```julia
+    set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping list
+    ```
+    """
     global glob_to_loc = list
 end
+
 function get_glob_to_loc()
+    """
+    get_glob_to_loc()
+
+    Retrieves the global-to-local mapping list.
+
+    Returns:
+    - `glob_to_loc` (array): The current global-to-local mapping list.
+
+    Example:
+    ```julia
+    get_glob_to_loc()  # returns the current global-to-local mapping list
+    ```
+    """
     return glob_to_loc
 end
+
 function set_nbonds(n)
+    """
+    set_nbonds(n)
+
+    Sets the number of bonds globally.
+
+    Parameters:
+    - `n` (integer): The value to set as the number of bonds.
+
+    Example:
+    ```julia
+    set_nbonds(20)  # sets the number of bonds to 20
+    ```
+    """
     global nbonds = n
 end
+
 function get_nbonds()
+    """
+    get_nbonds()
+
+    Retrieves the number of bonds.
+
+    Returns:
+    - `nbonds` (integer): The current number of bonds.
+
+    Example:
+    ```julia
+    get_nbonds()  # returns the current number of bonds
+    ```
+    """
     return nbonds
 end
+
 function create_node_field(name::String, type::DataType, dof::Int64)
+    """
+    create_node_field(name::String, type::DataType, dof::Int64)
+
+    Creates a node field with the given name, data type, and degree of freedom.
+
+    Parameters:
+    - `name` (string): The name of the node field.
+    - `type` (DataType): The data type of the node field.
+    - `dof` (Int64): The degree of freedom of each node.
+
+    Returns:
+    - `node_field` (Field): The created node field for the current time step.
+    - `node_field_np1` (Field): The created node field for the next time step.
+
+    Example:
+    ```julia
+    create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
+    ```
+    """
     return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
 end
+
 function create_constant_node_field(name::String, type::DataType, dof::Int64)
+    """
+    create_constant_node_field(name::String, type::DataType, dof::Int64)
+
+    Creates a constant node field with the given name, data type, and degree of freedom.
+
+    Parameters:
+    - `name` (string): The name of the constant node field.
+    - `type` (DataType): The data type of the constant node field.
+    - `dof` (Int64): The degree of freedom of each node.
+
+    Returns:
+    - `constant_node_field` (Field): The created constant node field.
+
+    Example:
+    ```julia
+    create_constant_node_field("temperature", Float64, 1)  # creates a temperature constant node field
+    ```
+    """
     return create_field(name, type, "Node_Field", dof)
 end
+
 function create_bond_field(name::String, type::DataType, dof::Int64)
+    """
+    create_bond_field(name::String, type::DataType, dof::Int64)
+
+    Creates a bond field with the given name, data type, and degree of freedom.
+
+    Parameters:
+    - `name` (string): The name of the bond field.
+    - `type` (DataType): The data type of the bond field.
+    - `dof` (Int64): The degree of freedom of each bond.
+
+    Returns:
+    - `bond_field` (Field): The created bond field for the current time step.
+    - `bond_field_np1` (Field): The created bond field for the next time step.
+
+    Example:
+    ```julia
+    create_bond_field("stress", Float64, 6)  # creates a stress bond field with 6 degrees of freedom
+    ```
+    """
     return create_field(name * "N", type, "Bond_Field", dof), create_field_bond_type_field(name * "NP1", type, "Bond_Field", dof)
 end
+
 function create_constant_bond_field(name::String, type::DataType, dof::Int64)
+    """
+    create_constant_bond_field(name::String, type::DataType, dof::Int64)
+
+    Creates a constant bond field with the given name, data type, and degree of freedom.
+
+    Parameters:
+    - `name` (string): The name of the constant bond field.
+    - `type` (DataType): The data type of the constant bond field.
+    - `dof` (Int64): The degree of freedom for each bond.
+
+    Returns:
+    - `constant_bond_field` (Field): The created constant bond field.
+
+    Example:
+    ```julia
+    create_constant_bond_field("density", Float64, 1)  # creates a density constant bond field
+    ```
+    """
     return create_field(name, type, "Bond_Field", dof)
 end
+
 # wenn nicht existiert, wird an den gesamtvector der Teil angehängt. Dann wird der Vectorabschnitt zurückgeschickt und ist in der jeweiligen routine nutzbar
 # bisher wird alles synchrononisiert
 # nicht synchronisierte vectoren brauchen nicht hier rein -> Problem ist, wie mit der synch Option zu verfahren ist (eine stelle synch andere non synch)Was zählt?
