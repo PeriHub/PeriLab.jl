@@ -17,6 +17,7 @@ export create_constant_bond_field
 nnodes = Ref(0)
 nbonds = Ref(0)
 dof = Ref(1)
+glob_to_loc = Ref([])
 fieldnames = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 ##########################
 function set_dof(n)
@@ -32,6 +33,9 @@ function get_nnodes()
     return nnodes
 end
 
+function set_glob_to_loc(list)
+    global glob_to_loc = list
+end
 function set_nbonds(n)
     global nbonds = n
 end
