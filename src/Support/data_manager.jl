@@ -36,6 +36,9 @@ end
 function set_glob_to_loc(list)
     global glob_to_loc = list
 end
+function get_glob_to_loc()
+    return glob_to_loc
+end
 function set_nbonds(n)
     global nbonds = n
 end
