@@ -1,4 +1,4 @@
-
+using LinearAlgebra
 module Geometry
 export bond_geometry
 function bond_geometry(nnodes, dof, nlist, coor, bondgeom)
