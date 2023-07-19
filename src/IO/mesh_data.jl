@@ -38,6 +38,7 @@ function init_data(params, datamanager, comm)
     #println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
     datamanager.set_nnodes(nmasters + nslaves)
     #println(datamanager.get_nnodes())
+    datamanager.set_glob_to_loc(glob_to_loc(distribution))
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     # not optimal, because bond 12 != bond 21
@@ -67,7 +68,7 @@ function get_bond_geometry(datamanager)
 
     nlist = datamanager.get_field("Neighborhoodlist")
     bondgeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondgeom)
-    bondgeom = datamanager.create_constant_bond_field("Bond Damage", Float32, 1)
+    bondDamage = datamanager.create_constant_bond_field("Bond Damage", Float32, 1)
     return datamanager
 end
 
@@ -334,16 +335,6 @@ function neighbors(mesh, params, coor)
         deleteat!(neighborList[i], index)
     end
     return neighborList
-end
-
-function read_bc_nodes(params)
-    bcs = get_bcs(params)
-    bc_nodes = Dict()
-    for bc in bcs
-        bc_nodes[bc["Name"]] = open(bc["Filename"])
-    end
-    return bc_nodes
-
 end
 
 function glob_to_loc(distribution)
