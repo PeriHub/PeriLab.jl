@@ -345,4 +345,14 @@ function read_bc_nodes(params)
     return bc_nodes
 
 end
+
+function glob_to_loc(distribution)
+    glob_to_loc = Dict{Int64,Int64}()
+    len = length(distribution)
+    for id in 1:len
+        glob_to_loc[distribution[id]] = id
+    end
+    return glob_to_loc
+end
+
 end
