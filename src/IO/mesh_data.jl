@@ -336,33 +336,6 @@ function neighbors(mesh, params, coor)
     return neighborList
 end
 
-function init_vectors_for_processes(data, comm, vector)
-
-    # Get the rank and size of the current process
-    rank = MPI.Comm_rank(MPI.COMM_WORLD)
-    size = MPI.Comm_size(MPI.COMM_WORLD)
-
-    # Define the size of the vector
-    vector_size = length(data)
-
-    # Calculate the size of each chunk
-    chunk_size = vector_size ÷ size
-
-    # Initialize the local chunk of data on each process
-    local_chunk = Vector{Int}(undef, chunk_size)
-
-    # Create the complete vector of data on the root process (rank 0)
-    if rank == 0
-        data = 1:vector_size
-    else
-        data = Vector{Int}(undef, 0)
-    end
-
-    # Scatter the data chunks from the root process to all processes
-    #MPI.Scatter(Array(data), local_chunk, chunk_size, MPI.INT, MPI.ROOT, MPI.COMM_WORLD)
-
-    # Print the local chunk on each process
-end
 function read_bc_nodes(params)
     bcs = get_bcs(params)
     bc_nodes = Dict()
