@@ -328,7 +328,11 @@ function return_field(name::String)
     """
     for typ in keys(fieldnames)
         if name in keys(fieldnames[typ])
-            return fieldnames[typ][name][filtered_nodes]
+            if length(fieldnames[typ][name][1, :]) == 1
+                # avoiding vector to matrix type transformation
+                return fieldnames[typ][name][filtered_nodes]
+            end
+            return fieldnames[typ][name][filtered_nodes, :]
         end
     end
     return 0
