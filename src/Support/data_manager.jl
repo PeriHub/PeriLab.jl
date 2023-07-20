@@ -110,21 +110,22 @@ function set_glob_to_loc(list)
     global glob_to_loc = list
 end
 
-function get_glob_to_loc()
+function get_local_nodes(global_nodes)
     """
-    get_glob_to_loc()
+    get_local_nodes()
 
-    Retrieves the global-to-local mapping list.
+    Determines the local node numbering.
 
     Returns:
-    - `glob_to_loc` (array): The current global-to-local mapping list.
+    - `get_local_nodes` (array): returns local nodes.
 
     Example:
     ```julia
-    get_glob_to_loc()  # returns the current global-to-local mapping list
+    get_local_nodes()  # returns local nodes
     ```
     """
-    return glob_to_loc
+    return [glob_to_loc[global_node] for global_node in global_nodes]
+
 end
 
 function set_nbonds(n)
