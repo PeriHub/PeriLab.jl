@@ -1,5 +1,5 @@
-using LinearAlgebra
 module Geometry
+using LinearAlgebra
 export bond_geometry
 function bond_geometry(nnodes, dof, nlist, coor, bondgeom)
     for iID in 1:nnodes
