@@ -19,7 +19,12 @@ nbonds = Ref(0)
 dof = Ref(1)
 glob_to_loc = Ref([])
 fieldnames = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
+filtered_nodes = Ref([])
 ##########################
+function set_filter(list_of_nodes)
+    global filtered_nodes = list_of_nodes
+end
+
 function set_dof(n)
     """
     set_dof(n)
@@ -322,7 +327,7 @@ function return_field(name::String)
     """
     for typ in keys(fieldnames)
         if name in keys(fieldnames[typ])
-            return fieldnames[typ][name]
+            return fieldnames[typ][name][filtered_nodes]
         end
     end
     return 0
