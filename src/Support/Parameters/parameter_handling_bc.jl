@@ -1,6 +1,6 @@
 using CSV
 using DataFrames
-function get_node_sets(params)
+function get_bc_node_sets(params)
 
     nsets = Dict{String,Any}()
     if check_element(params, "Boundary Conditions") && check_element(params, "Node Sets")
@@ -17,7 +17,7 @@ function get_node_sets(params)
     return nsets
 end
 
-function get_node_bcs(params)
+function get_bc_node_definitions(params)
     bcs = Dict{String,Any}()
     if check_element(params, "Boundary Conditions") && check_element(params, "Definitions")
         for entry in params["Boundary Conditions"]["Definitions"]
