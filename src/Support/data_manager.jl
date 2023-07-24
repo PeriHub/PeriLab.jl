@@ -338,6 +338,15 @@ function return_field(name::String)
     return 0
 end
 
+
+function get_all_fields()
+    list_of_fields = []
+    for fieldtype in fieldnames
+        append!(list_of_fields, fieldnames[fieldtype].keys())
+    end
+    return list_of_fields
+end
+
 function synch_manager()
     # Liste mit den Daten die synchronisiert werden sollen -> 
     # upload; für init
