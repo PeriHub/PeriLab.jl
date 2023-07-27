@@ -21,8 +21,23 @@ glob_to_loc = Ref([])
 fieldnames = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 filtered_nodes = Ref([])
 ##########################
+# Material information
+##########################
+material_type = Dict{String,Bool}("Bond-Based" => false, "Ordinary" => false, "Correspondence" => true, "Bond-Associated" => false)
+##########################
 function set_filter(list_of_nodes)
     global filtered_nodes = list_of_nodes
+end
+function set_material_type(key, value)
+    if key in keys(material_type)
+        global material_type[key] = value
+    else
+        @warning "Type " * key * " is not defined"
+    end
+end
+
+function get_material_type(key)
+    return material_type[key]
 end
 
 function set_dof(n)
@@ -342,7 +357,7 @@ end
 function get_all_fields()
     list_of_fields = []
     for fieldtype in fieldnames
-        append!(list_of_fields, fieldnames[fieldtype].keys())
+        append!(list_of_fields, keys(fieldnames[fieldtype]))
     end
     return list_of_fields
 end
