@@ -12,3 +12,12 @@ end
 function get_material(params, name)
     return params["Materials"][name]
 end
+function get_material_types(params)
+    if check_element(params["Materials"], "Material Types")
+        return params["Materials"]["Material Types"]
+    elseif check_element(params, "Material Types")
+        return check_element(params, "Material Types")
+    else
+        return Dict()
+    end
+end
