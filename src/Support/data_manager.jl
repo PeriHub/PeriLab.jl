@@ -25,203 +25,6 @@ filtered_nodes = Ref([])
 ##########################
 material_type = Dict{String,Bool}("Bond-Based" => false, "Ordinary" => false, "Correspondence" => true, "Bond-Associated" => false)
 ##########################
-function set_filter(list_of_nodes)
-    global filtered_nodes = list_of_nodes
-end
-function set_material_type(key, value)
-    if key in keys(material_type)
-        global material_type[key] = value
-    else
-        @warning "Type " * key * " is not defined"
-    end
-end
-
-function get_material_type(key)
-    return material_type[key]
-end
-
-function set_dof(n)
-    """
-    set_dof(n)
-
-    Sets the degree of freedom (dof) value globally.
-
-    Parameters:
-    - `n` (integer): The value to set as the degree of freedom.
-
-    Example:
-    ```julia
-    set_dof(3)  # sets the degree of freedom to 3
-    ```
-    """
-    global dof = n
-end
-
-function get_dof()
-    """
-    get_dof()
-
-    Retrieves the degree of freedom (dof) value.
-
-    Returns:
-    - `dof` (integer): The current degree of freedom value.
-
-    Example:
-    ```julia
-    get_dof()  # returns the current degree of freedom
-    ```
-    """
-    return dof
-end
-
-function set_nnodes(n)
-    """
-    set_nnodes(n)
-
-    Sets the number of nodes globally.
-
-    Parameters:
-    - `n` (integer): The value to set as the number of nodes.
-
-    Example:
-    ```julia
-    set_nnodes(10)  # sets the number of nodes to 10
-    ```
-    """
-    global nnodes = n
-end
-
-function get_nnodes()
-    """
-    get_nnodes()
-
-    Retrieves the number of nodes.
-
-    Returns:
-    - `nnodes` (integer): The current number of nodes.
-
-    Example:
-    ```julia
-    get_nnodes()  # returns the current number of nodes
-    ```
-    """
-    return nnodes
-end
-
-function set_glob_to_loc(list)
-    """
-    set_glob_to_loc(list)
-
-    Sets the global-to-local mapping list globally.
-
-    Parameters:
-    - `list` (array): The list representing the global-to-local mapping.
-
-    Example:
-    ```julia
-    set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping list
-    ```
-    """
-    global glob_to_loc = list
-end
-
-function get_local_nodes(global_nodes)
-    """
-    get_local_nodes()
-
-    Determines the local node numbering.
-
-    Returns:
-    - `get_local_nodes` (array): returns local nodes.
-
-    Example:
-    ```julia
-    get_local_nodes()  # returns local nodes
-    ```
-    """
-    return [glob_to_loc[global_node] for global_node in global_nodes]
-
-end
-
-function set_nbonds(n)
-    """
-    set_nbonds(n)
-
-    Sets the number of bonds globally.
-
-    Parameters:
-    - `n` (integer): The value to set as the number of bonds.
-
-    Example:
-    ```julia
-    set_nbonds(20)  # sets the number of bonds to 20
-    ```
-    """
-    global nbonds = n
-end
-
-function get_nbonds()
-    """
-    get_nbonds()
-
-    Retrieves the number of bonds.
-
-    Returns:
-    - `nbonds` (integer): The current number of bonds.
-
-    Example:
-    ```julia
-    get_nbonds()  # returns the current number of bonds
-    ```
-    """
-    return nbonds
-end
-
-function create_node_field(name::String, type::DataType, dof::Int64)
-    """
-    create_node_field(name::String, type::DataType, dof::Int64)
-
-    Creates a node field with the given name, data type, and degree of freedom.
-
-    Parameters:
-    - `name` (string): The name of the node field.
-    - `type` (DataType): The data type of the node field.
-    - `dof` (Int64): The degree of freedom of each node.
-
-    Returns:
-    - `node_field` (Field): The created node field for the current time step.
-    - `node_field_np1` (Field): The created node field for the next time step.
-
-    Example:
-    ```julia
-    create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
-    ```
-    """
-    return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
-end
-
-function create_constant_node_field(name::String, type::DataType, dof::Int64)
-    """
-    create_constant_node_field(name::String, type::DataType, dof::Int64)
-
-    Creates a constant node field with the given name, data type, and degree of freedom.
-
-    Parameters:
-    - `name` (string): The name of the constant node field.
-    - `type` (DataType): The data type of the constant node field.
-    - `dof` (Int64): The degree of freedom of each node.
-
-    Returns:
-    - `constant_node_field` (Field): The created constant node field.
-
-    Example:
-    ```julia
-    create_constant_node_field("temperature", Float64, 1)  # creates a temperature constant node field
-    ```
-    """
-    return create_field(name, type, "Node_Field", dof)
-end
-
 function create_bond_field(name::String, type::DataType, dof::Int64)
     """
     create_bond_field(name::String, type::DataType, dof::Int64)
@@ -267,10 +70,27 @@ function create_constant_bond_field(name::String, type::DataType, dof::Int64)
     return create_field(name, type, "Bond_Field", dof)
 end
 
-# wenn nicht existiert, wird an den gesamtvector der Teil angehängt. Dann wird der Vectorabschnitt zurückgeschickt und ist in der jeweiligen routine nutzbar
-# bisher wird alles synchrononisiert
-# nicht synchronisierte vectoren brauchen nicht hier rein -> Problem ist, wie mit der synch Option zu verfahren ist (eine stelle synch andere non synch)Was zählt?
-# besser ist vielleicht einen synchmanager zu bauen -> dort kann man sich eintragen
+function create_constant_node_field(name::String, type::DataType, dof::Int64)
+    """
+    create_constant_node_field(name::String, type::DataType, dof::Int64)
+
+    Creates a constant node field with the given name, data type, and degree of freedom.
+
+    Parameters:
+    - `name` (string): The name of the constant node field.
+    - `type` (DataType): The data type of the constant node field.
+    - `dof` (Int64): The degree of freedom of each node.
+
+    Returns:
+    - `constant_node_field` (Field): The created constant node field.
+
+    Example:
+    ```julia
+    create_constant_node_field("temperature", Float64, 1)  # creates a temperature constant node field
+    ```
+    """
+    return create_field(name, type, "Node_Field", dof)
+end
 
 function create_field(name::String, vartype::DataType, bondOrNode::String, dof::Int64)
     """
@@ -316,6 +136,92 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
 
 end
 
+function create_node_field(name::String, type::DataType, dof::Int64)
+    """
+    create_node_field(name::String, type::DataType, dof::Int64)
+
+    Creates a node field with the given name, data type, and degree of freedom.
+
+    Parameters:
+    - `name` (string): The name of the node field.
+    - `type` (DataType): The data type of the node field.
+    - `dof` (Int64): The degree of freedom of each node.
+
+    Returns:
+    - `node_field` (Field): The created node field for the current time step.
+    - `node_field_np1` (Field): The created node field for the next time step.
+
+    Example:
+    ```julia
+    create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
+    ```
+    """
+    return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
+end
+
+function get_material_type(key)
+    return material_type[key]
+end
+
+function get_all_fields()
+    list_of_fields = []
+    for fieldtype in fieldnames
+        append!(list_of_fields, keys(fieldnames[fieldtype]))
+    end
+    return list_of_fields
+end
+
+function get_dof()
+    """
+    get_dof()
+
+    Retrieves the degree of freedom (dof) value.
+
+    Returns:
+    - `dof` (integer): The current degree of freedom value.
+
+    Example:
+    ```julia
+    get_dof()  # returns the current degree of freedom
+    ```
+    """
+    return dof
+end
+
+function get_local_nodes(global_nodes)
+    """
+    get_local_nodes()
+
+    Determines the local node numbering.
+
+    Returns:
+    - `get_local_nodes` (array): returns local nodes.
+
+    Example:
+    ```julia
+    get_local_nodes()  # returns local nodes
+    ```
+    """
+    return [glob_to_loc[global_node] for global_node in global_nodes]
+
+end
+
+function get_nnodes()
+    """
+    get_nnodes()
+
+    Retrieves the number of nodes.
+
+    Returns:
+    - `nnodes` (integer): The current number of nodes.
+
+    Example:
+    ```julia
+    get_nnodes()  # returns the current number of nodes
+    ```
+    """
+    return nnodes
+end
 
 function get_field(name::String, time::String)
     if time == "Constant" || time == "CONSTANT"
@@ -326,6 +232,23 @@ end
 
 function get_field(name::String)
     return return_field(name)
+end
+
+function get_nbonds()
+    """
+    get_nbonds()
+
+    Retrieves the number of bonds.
+
+    Returns:
+    - `nbonds` (integer): The current number of bonds.
+
+    Example:
+    ```julia
+    get_nbonds()  # returns the current number of bonds
+    ```
+    """
+    return nbonds
 end
 
 function return_field(name::String)
@@ -353,13 +276,84 @@ function return_field(name::String)
     return 0
 end
 
+function set_dof(n)
+    """
+    set_dof(n)
 
-function get_all_fields()
-    list_of_fields = []
-    for fieldtype in fieldnames
-        append!(list_of_fields, keys(fieldnames[fieldtype]))
+    Sets the degree of freedom (dof) value globally.
+
+    Parameters:
+    - `n` (integer): The value to set as the degree of freedom.
+
+    Example:
+    ```julia
+    set_dof(3)  # sets the degree of freedom to 3
+    ```
+    """
+    global dof = n
+end
+
+function set_filter(list_of_nodes)
+    global filtered_nodes = list_of_nodes
+end
+
+function set_glob_to_loc(list)
+    """
+    set_glob_to_loc(list)
+
+    Sets the global-to-local mapping list globally.
+
+    Parameters:
+    - `list` (array): The list representing the global-to-local mapping.
+
+    Example:
+    ```julia
+    set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping list
+    ```
+    """
+    global glob_to_loc = list
+end
+
+function set_material_type(key, value)
+    if key in keys(material_type)
+        global material_type[key] = value
+    else
+        @warning "Type " * key * " is not defined"
     end
-    return list_of_fields
+end
+
+function set_nnodes(n)
+    """
+    set_nnodes(n)
+
+    Sets the number of nodes globally.
+
+    Parameters:
+    - `n` (integer): The value to set as the number of nodes.
+
+    Example:
+    ```julia
+    set_nnodes(10)  # sets the number of nodes to 10
+    ```
+    """
+    global nnodes = n
+end
+
+function set_nbonds(n)
+    """
+    set_nbonds(n)
+
+    Sets the number of bonds globally.
+
+    Parameters:
+    - `n` (integer): The value to set as the number of bonds.
+
+    Example:
+    ```julia
+    set_nbonds(20)  # sets the number of bonds to 20
+    ```
+    """
+    global nbonds = n
 end
 
 function synch_manager()
