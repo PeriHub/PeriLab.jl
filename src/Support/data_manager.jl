@@ -18,7 +18,7 @@ nnodes = Ref(0)
 nbonds = Ref(0)
 dof = Ref(1)
 glob_to_loc = Ref([])
-fieldnames = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
+fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 filtered_nodes = Ref([])
 ##########################
 # Material information
@@ -107,32 +107,32 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
     The field with the given `name` and specified characteristics.
 
     """
-    if haskey(fieldnames, vartype) == false
-        fieldnames[type] = Dict{String,Any}()
+    if haskey(fields, vartype) == false
+        fields[type] = Dict{String,Any}()
     end
-    if haskey(fieldnames[vartype], name)
-        return fieldnames[vartype][name]
+    if haskey(fields[vartype], name)
+        return fields[vartype][name]
     end
 
     if bondOrNode == "Node_Field"
         if dof == 1
-            fieldnames[vartype][name] = zeros(vartype, nnodes)
+            fields[vartype][name] = zeros(vartype, nnodes)
         else
-            fieldnames[vartype][name] = zeros(vartype, nnodes, dof)
+            fields[vartype][name] = zeros(vartype, nnodes, dof)
         end
     elseif bondOrNode == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
-        fieldnames[vartype][name] = []
+        fields[vartype][name] = []
         for i in 1:nnodes
             if dof == 1
-                append!(fieldnames[vartype][name], [Vector{vartype}(undef, nBonds[i])])
+                append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
             else
-                append!(fieldnames[vartype][name], [Matrix{vartype}(undef, nBonds[i], dof)])
+                append!(fields[vartype][name], [Matrix{vartype}(undef, nBonds[i], dof)])
             end
         end
     end
 
-    return fieldnames[vartype][name]
+    return fields[vartype][name]
 
 end
 
@@ -165,8 +165,8 @@ end
 
 function get_all_fields()
     list_of_fields = []
-    for fieldtype in fieldnames
-        append!(list_of_fields, keys(fieldnames[fieldtype]))
+    for fieldtype in fields
+        append!(list_of_fields, keys(fields[fieldtype]))
     end
     return list_of_fields
 end
@@ -264,13 +264,13 @@ function return_field(name::String)
     The field with the given `name` if it exists, otherwise 0.
 
     """
-    for typ in keys(fieldnames)
-        if name in keys(fieldnames[typ])
-            if length(fieldnames[typ][name][1, :]) == 1
+    for typ in keys(fields)
+        if name in keys(fields[typ])
+            if length(fields[typ][name][1, :]) == 1
                 # avoiding vector to matrix type transformation
-                return fieldnames[typ][name][filtered_nodes]
+                return fields[typ][name][filtered_nodes]
             end
-            return fieldnames[typ][name][filtered_nodes, :]
+            return fields[typ][name][filtered_nodes, :]
         end
     end
     return 0
@@ -356,6 +356,11 @@ function set_nbonds(n)
     global nbonds = n
 end
 
+function switch_NP1_to_N()
+
+
+
+end
 function synch_manager()
     # Liste mit den Daten die synchronisiert werden sollen -> 
     # upload; für init
