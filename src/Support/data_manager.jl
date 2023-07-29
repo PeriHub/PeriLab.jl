@@ -159,10 +159,6 @@ function create_node_field(name::String, type::DataType, dof::Int64)
     return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
 end
 
-function get_material_type(key)
-    return material_type[key]
-end
-
 function get_all_fields()
     list_of_fields = []
     for fieldtype in fields
@@ -232,6 +228,10 @@ end
 
 function get_field(name::String)
     return return_field(name)
+end
+
+function get_material_type(key)
+    return material_type[key]
 end
 
 function get_nbonds()
