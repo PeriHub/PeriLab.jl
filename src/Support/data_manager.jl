@@ -356,10 +356,22 @@ function set_nbonds(n)
     global nbonds = n
 end
 
-function switch_NP1_to_N()
+function get_NP1_to_N_Dict()
+    NP1_to_N = Dict{String,String}()
+    for fieldname in get_all_fields()
+        if "NP1" in fieldname
+            NP1_to_N[fieldname] = fieldname[1:end-2]
+        end
+    end
+    return NP1_to_N
+end
 
 
-
+function switch_NP1_to_N(NP1_to_N)
+    for NP1 in keys(NP1_to_N)
+        field_NP1 = get_field(NP1)
+        get_field(NP1_to_N[NP1]) = field_NP1
+    end
 end
 function synch_manager()
     # Liste mit den Daten die synchronisiert werden sollen -> 
