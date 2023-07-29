@@ -223,11 +223,11 @@ function get_field(name::String, time::String)
     if time == "Constant" || time == "CONSTANT"
         return return_field(name)
     end
-    return return_field(name * time)
+    return return_field(field[name*time])
 end
 
 function get_field(name::String)
-    return return_field(name)
+    return return_field([name])
 end
 
 function get_material_type(key)
