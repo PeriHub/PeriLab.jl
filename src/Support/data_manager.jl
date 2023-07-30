@@ -318,7 +318,7 @@ function set_material_type(key, value)
     if key in keys(material_type)
         global material_type[key] = value
     else
-        @warning "Type " * key * " is not defined"
+        @warn "Type " * key * " is not defined"
     end
 end
 
