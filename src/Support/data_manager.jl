@@ -46,7 +46,7 @@ function create_bond_field(name::String, type::DataType, dof::Int64)
     create_bond_field("stress", Float64, 6)  # creates a stress bond field with 6 degrees of freedom
     ```
     """
-    return create_field(name * "N", type, "Bond_Field", dof), create_field_bond_type_field(name * "NP1", type, "Bond_Field", dof)
+    return create_field(name * "N", type, "Bond_Field", dof), create_field(name * "NP1", type, "Bond_Field", dof)
 end
 
 function create_constant_bond_field(name::String, type::DataType, dof::Int64)
