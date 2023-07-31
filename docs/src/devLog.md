@@ -9,15 +9,22 @@
     5.b neighboorhoodlist verteilen -> done
     5.c bond init lists -> done
     !-----------
-    6. loc to glob -> distributionsfeld an die Knoten 
-    7. glob to loc ableiten für RB Knoten
+    6. loc to glob -> distributionsfeld an die Knoten -> done 
+    7. glob to loc ableiten für RB Knoten -> done
     8. overlapmap verteilen an Knoten -> send to all! -> done
     ! ---------
-    9. block filter -> auf den Kernen blockID -> alle Knoten
-    10. BC Filter -> an alle
+    9. block filter -> auf den Kernen blockID -> alle Knoten -> done
+    10. BC Filter -> an alle -> done
     ! -------------
     11. Nachbarschaftslisten versenden ! wie in sinnvoller Weise?
-
+    12. bondvectors set to zero
+    13. bc interpreter
+    14. overlap synchronisation
+    15. bc in solver
+    16. verlet solver
+    17. write output
+    18. integrate first model
+    19. first test
 
 ## Design decisions
 Each vector entry for a value exists for all nodes, also if the node does not have this property in a block. However, the synchronisation is very ugly, because all slave nodes of block with value I need the entry at the other core to. If not it will lead nowhere if MPI communication occurs
