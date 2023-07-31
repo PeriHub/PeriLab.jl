@@ -19,6 +19,7 @@ nbonds = Ref(0)
 dof = Ref(1)
 glob_to_loc = Ref([])
 fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
+fieldnames = Dict{String,DataType}()
 filtered_nodes = Ref([])
 ##########################
 # Material information
@@ -108,10 +109,10 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
 
     """
     if haskey(fields, vartype) == false
-        fields[type] = Dict{String,Any}()
+        fields[vartype] = Dict{String,Any}()
     end
-    if haskey(fields[vartype], name)
-        return fields[vartype][name]
+    if name in get_all_field_keys()
+        return get_field(name)
     end
 
     if bondOrNode == "Node_Field"
@@ -131,7 +132,7 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
             end
         end
     end
-
+    global fieldnames[name] = vartype
     return fields[vartype][name]
 
 end
@@ -159,12 +160,8 @@ function create_node_field(name::String, type::DataType, dof::Int64)
     return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
 end
 
-function get_all_fields()
-    list_of_fields = []
-    for fieldtype in fields
-        append!(list_of_fields, keys(fields[fieldtype]))
-    end
-    return list_of_fields
+function get_all_field_keys()
+    return keys(fieldnames)
 end
 
 function get_dof()
@@ -220,14 +217,19 @@ function get_nnodes()
 end
 
 function get_field(name::String, time::String)
+
     if time == "Constant" || time == "CONSTANT"
-        return return_field(name)
+        return get_field(name)
     end
-    return return_field(field[name*time])
+    return get_field(name * time)
+
 end
 
 function get_field(name::String)
-    return return_field([name])
+    if name in get_all_field_keys()
+        return fields[fieldnames[name]][name]
+    end
+    return []
 end
 
 function get_material_type(key)
@@ -367,12 +369,12 @@ function get_NP1_to_N_Dict()
 end
 
 
-function switch_NP1_to_N(NP1_to_N)
-    for NP1 in keys(NP1_to_N)
-        field_NP1 = get_field(NP1)
-        get_field(NP1_to_N[NP1]) = field_NP1
-    end
-end
+#function switch_NP1_to_N(NP1_to_N)
+#    for NP1 in keys(NP1_to_N)
+#        field_NP1 = get_field(NP1)
+#        get_field(NP1_to_N[NP1]) = field_NP1
+#    end
+#end
 function synch_manager()
     # Liste mit den Daten die synchronisiert werden sollen -> 
     # upload; für init
