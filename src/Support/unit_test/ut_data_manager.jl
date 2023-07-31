@@ -125,3 +125,32 @@ testNP1NDict = testDatamanager.get_NP1_to_N_Dict()
     @test testNP1NDict["GNP1"] == "GN"
     @test testNP1NDict["INP1"] == "IN"
 end
+
+DN = testDatamanager.get_field("DN")
+DNP1 = testDatamanager.get_field("DNP1")
+
+IN = testDatamanager.get_field("IN")
+INP1 = testDatamanager.get_field("INP1")
+IN[2][1, 3] = 0
+@testset "switch_NP1_to_N" begin
+    DNP1[2, 3] = 5
+    @test DN[2, 3] == 0
+    @test DNP1[2, 3] == 5
+    # bonds
+    INP1[2][1, 3] = 5
+    @test IN[2][1, 3] == 0
+    @test INP1[2][1, 3] == 5
+
+    testDatamanager.switch_NP1_to_N(testNP1NDict)
+
+    @test DN[2, 3] == 5
+    # dependency test
+    @test DNP1[2, 3] == 5
+    DNP1[2, 3] = 6
+    @test DN[2, 3] == 5
+    DN[2, 3] = 3
+    @test DNP1[2, 3] == 6
+    # bonds
+    @test IN[2][1, 3] == 5
+
+end

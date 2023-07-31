@@ -369,12 +369,14 @@ function get_NP1_to_N_Dict()
 end
 
 
-#function switch_NP1_to_N(NP1_to_N)
-#    for NP1 in keys(NP1_to_N)
-#        field_NP1 = get_field(NP1)
-#        get_field(NP1_to_N[NP1]) = field_NP1
-#    end
-#end
+function switch_NP1_to_N(NP1_to_N)
+    for NP1 in keys(NP1_to_N)
+        field_NP1 = get_field(NP1)
+        temp_field_name = NP1_to_N[NP1]
+        field_N = get_field(temp_field_name) #maybe copy??
+        field_N[:] = field_NP1[:]
+    end
+end
 function synch_manager()
     # Liste mit den Daten die synchronisiert werden sollen -> 
     # upload; für init
