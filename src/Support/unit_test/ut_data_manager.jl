@@ -117,3 +117,11 @@ end
     @test length(I[:][:, :]) == testDatamanager.get_nnodes()
 
 end
+testNP1NDict = testDatamanager.get_NP1_to_N_Dict()
+
+@testset "get_NP1_to_N_Dict" begin
+    @test testNP1NDict["BNP1"] == "BN"
+    @test testNP1NDict["DNP1"] == "DN"
+    @test testNP1NDict["GNP1"] == "GN"
+    @test testNP1NDict["INP1"] == "IN"
+end

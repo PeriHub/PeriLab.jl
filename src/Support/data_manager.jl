@@ -360,9 +360,9 @@ end
 
 function get_NP1_to_N_Dict()
     NP1_to_N = Dict{String,String}()
-    for fieldname in get_all_fields()
-        if "NP1" in fieldname
-            NP1_to_N[fieldname] = fieldname[1:end-2]
+    for key in get_all_field_keys()
+        if occursin("NP1", key)
+            NP1_to_N[key] = key[1:end-2]
         end
     end
     return NP1_to_N
