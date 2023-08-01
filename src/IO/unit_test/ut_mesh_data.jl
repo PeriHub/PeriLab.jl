@@ -14,9 +14,6 @@ import .Read_Mesh
         @test lenNlist[i] == 3 * i * i - 2
     end
 
-
-
-
 end
 
 @testset "ut_glob_to_loc" begin
