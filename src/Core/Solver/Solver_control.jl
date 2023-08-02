@@ -6,8 +6,10 @@ module Solver
 
 
 function init(params, datamanager)
+    output_filenames = get_output_filenames(params)
 
-    blockNodes = get_blockNodes(datamodel.get_field("Block_Id"))
+    init_write_results(output_filenames, datamanager)
+    blockNodes = get_blockNodes(datamanager.get_field("Block_Id"))
     mechanical, thermal, additive = get_solver_options(params)
     if mechanical
         dof = datamanager.get_dof()
@@ -29,11 +31,7 @@ function init(params, datamanager)
     return blockNodes, datamanager
 end
 
-function boundary_condition(params, datamanager)
-    global_nset = get_node_sets(params)
-    bcs = et_node_bcs(params)
-    return datamanager.glob_to_loc(global_nset), bcs
-end
+
 
 function get_blockNodes(blockID)
     maxBlock = maximum(blockID)
@@ -45,17 +43,27 @@ function get_blockNodes(blockID)
 end
 
 
-function solver(params, datamodel)
-    blockNodes = init(params, datamodel)
+function solver(params, datamanager)
+    blockNodes = init(params, datamanager)
+    for block in 1:length(blockNodes)
+        datamanager.set_filter(blockNodes[i])
+    end
 end
 
-function run_solver()
+function run_solver(blockNodes, datamanager)
+    inf = check_inf_or_nan(forces)
+    if inf
+        @error "Forces are infinite. Time integration is unstable"
+        exit()
+    end
+    #a = (internal_forces + external_forces) / density
+
 
 end
 
 function solver()
-    blockNodes, datamodel = init(params, datamodel)
-    run_solver(blockNodes, datamodel)
+    blockNodes, datamanager = init(params, datamanager)
+    run_solver(blockNodes, datamanager)
 end
 
 end
