@@ -58,12 +58,13 @@ function run_solver(blockNodes, datamanager)
     end
     #a = (internal_forces + external_forces) / density
 
-
+    datamanager.NP1
 end
 
 function solver()
     blockNodes, datamanager = init(params, datamanager)
     run_solver(blockNodes, datamanager)
+    switch_NP1_to_N()
 end
 
 end
