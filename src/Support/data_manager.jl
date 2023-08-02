@@ -1,16 +1,15 @@
 
 module Data_manager
 include("./Parameters/parameter_handling.jl")
-#export nnodes
-#export nbonds
-export set_nnodes
-export get_nnodes
-export set_nbonds
-export get_nbonds
-export create_node_field
-export create_constant_node_field
 export create_bond_field
 export create_constant_bond_field
+export create_constant_node_field
+export create_node_field
+export get_nbonds
+export get_nnodes
+export set_nbonds
+export set_nnodes
+export switch_NP1_to_N
 ##########################
 # Variables
 ##########################
