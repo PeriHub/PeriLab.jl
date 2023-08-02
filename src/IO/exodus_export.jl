@@ -4,10 +4,19 @@ function open_result_file(filename)
     return ExodusDatabase(filename, "w")
 end
 
-function write_results(datamanager)
+function write_results(params, datamanager)
 
-    if isfile("test_write.e")
-        Base.Filesystem.rm("test_write.e")
+end
+
+
+function write_results_in_exodus(name, data)
+
+end
+
+function init_write_results(filename, datamanager)
+
+    if isfile(filename)
+        Base.Filesystem.rm(filename)
     end
 
     # for (i, name) in enumerate(element_names)
@@ -49,7 +58,7 @@ function write_results(datamanager)
 
     # create exodus database
     exo = ExodusDatabase(
-        "test_write.e";
+        filename;
         maps_int_type, ids_int_type, bulk_int_type, float_type,
         num_dim, num_nodes, num_elems,
         num_elem_blks, num_node_sets, num_side_sets
