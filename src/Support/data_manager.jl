@@ -369,11 +369,12 @@ function get_NP1_to_N_Dict()
 end
 
 
-function switch_NP1_to_N(NP1_to_N)
+function switch_NP1_to_N()
+    NP1_to_N = get_NP1_to_N_Dict()
     for NP1 in keys(NP1_to_N)
         field_NP1 = get_field(NP1)
         temp_field_name = NP1_to_N[NP1]
-        field_N = get_field(temp_field_name) #maybe copy??
+        field_N = get_field(temp_field_name)
         field_N[:] = field_NP1[:]
     end
 end

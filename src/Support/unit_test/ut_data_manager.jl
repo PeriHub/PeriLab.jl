@@ -141,7 +141,7 @@ IN[2][1, 3] = 0
     @test IN[2][1, 3] == 0
     @test INP1[2][1, 3] == 5
 
-    testDatamanager.switch_NP1_to_N(testNP1NDict)
+    testDatamanager.switch_NP1_to_N()
 
     @test DN[2, 3] == 5
     # dependency test
