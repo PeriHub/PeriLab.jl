@@ -22,12 +22,9 @@ using .Boundary_conditions
     for t in 0:4
         bc = "if t>2 0 else 20 end"
         if t > 2
-            println()
-            @test (0.0 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+            @test (0.0 * unit) == Boundary_conditions.eval_bc(bc, coor, t, dof)
         else
-            println()
-            @test (20.0 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+            @test (20.0 * unit) == Boundary_conditions.eval_bc(bc, coor, t, dof)
         end
     end
-
 end
