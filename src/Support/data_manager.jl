@@ -21,6 +21,7 @@ glob_to_loc = Ref([])
 fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 fieldnames = Dict{String,DataType}()
 filtered_nodes = Ref([])
+fields_to_synch = Dict{String,Any}()
 ##########################
 # Material information
 ##########################
@@ -267,6 +268,10 @@ function get_NP1_to_N_Dict()
     return NP1_to_N
 end
 
+function get_synch_fields()
+    return fields_to_synch
+end
+
 function reset_filter()
     global filtered_nodes = 1:nnodes
 end
@@ -351,9 +356,11 @@ function set_nbonds(n)
     global nbonds = n
 end
 
-
-
-
+function set_synch(name, upload_to_cores, download_from_cores)
+    if name in get_all_field_keys()
+        fields_to_synch[name] = Dict{String,Bool}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores)
+    end
+end
 function switch_NP1_to_N()
     NP1_to_N = get_NP1_to_N_Dict()
     for NP1 in keys(NP1_to_N)
