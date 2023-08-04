@@ -2,3 +2,11 @@ function find_files_with_ending(folder_path::AbstractString, file_ending::Abstra
     file_list = filter(x -> isfile(joinpath(folder_path, x)) && endswith(x, file_ending), readdir(folder_path))
     return file_list
 end
+
+function check_inf_or_nan(array, msg)
+    if !isfinite(sum(array))
+        @error msg * " are infinite."
+        return true
+    end
+    return false
+end
