@@ -5,6 +5,7 @@ export create_bond_field
 export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
+export set_filter
 export get_nbonds
 export get_nnodes
 export set_nbonds
@@ -252,30 +253,6 @@ function get_nbonds()
     return nbonds
 end
 
-function return_field(name::String)
-    """
-    get_field(name::String)
-
-    Get the field with the specified `name`. If the field exists, return the field. If the field does not exist, return 0.
-
-    # Arguments
-    - `name::String`: The name of the field.
-
-    # Returns
-    The field with the given `name` if it exists, otherwise 0.
-
-    """
-    for typ in keys(fields)
-        if name in keys(fields[typ])
-            if length(fields[typ][name][1, :]) == 1
-                # avoiding vector to matrix type transformation
-                return fields[typ][name][filtered_nodes]
-            end
-            return fields[typ][name][filtered_nodes, :]
-        end
-    end
-    return 0
-end
 
 function set_dof(n)
     """
