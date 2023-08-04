@@ -181,6 +181,25 @@ function get_dof()
     return dof
 end
 
+function get_field(name::String, time::String)
+
+    if time == "Constant" || time == "CONSTANT"
+        return get_field(name)
+    end
+    return get_field(name * time)
+
+end
+
+function get_field(name::String)
+    # using filtered nodes
+    # view() to get SubArray references
+    # https://docs.julialang.org/en/v1/base/arrays/#Views-(SubArrays-and-other-view-types)
+    if name in get_all_field_keys()
+        return view(fields[fieldnames[name]][name], filtered_nodes, :)
+    end
+    return []
+end
+
 function get_local_nodes(global_nodes)
     """
     get_local_nodes()
@@ -197,6 +216,10 @@ function get_local_nodes(global_nodes)
     """
     return [glob_to_loc[global_node] for global_node in global_nodes]
 
+end
+
+function get_material_type(key)
+    return material_type[key]
 end
 
 function get_nnodes()
@@ -216,25 +239,6 @@ function get_nnodes()
     return nnodes
 end
 
-function get_field(name::String, time::String)
-
-    if time == "Constant" || time == "CONSTANT"
-        return get_field(name)
-    end
-    return get_field(name * time)
-
-end
-
-function get_field(name::String)
-    if name in get_all_field_keys()
-        return fields[fieldnames[name]][name]
-    end
-    return []
-end
-
-function get_material_type(key)
-    return material_type[key]
-end
 
 function get_nbonds()
     """
@@ -253,6 +257,19 @@ function get_nbonds()
     return nbonds
 end
 
+function get_NP1_to_N_Dict()
+    NP1_to_N = Dict{String,String}()
+    for key in get_all_field_keys()
+        if occursin("NP1", key)
+            NP1_to_N[key] = key[1:end-2]
+        end
+    end
+    return NP1_to_N
+end
+
+function reset_filter()
+    global filtered_nodes = 1:nnodes
+end
 
 function set_dof(n)
     """
@@ -334,15 +351,7 @@ function set_nbonds(n)
     global nbonds = n
 end
 
-function get_NP1_to_N_Dict()
-    NP1_to_N = Dict{String,String}()
-    for key in get_all_field_keys()
-        if occursin("NP1", key)
-            NP1_to_N[key] = key[1:end-2]
-        end
-    end
-    return NP1_to_N
-end
+
 
 
 function switch_NP1_to_N()

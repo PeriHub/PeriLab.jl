@@ -37,6 +37,7 @@ function init_data(params, datamanager, comm)
     #ntype = send_value(comm, 0, ntype)
     #println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
     datamanager.set_nnodes(nmasters + nslaves)
+    datamanager.reset_filter()
     #println(datamanager.get_nnodes())
     datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
     # here everything is without blocks -> local numbering at core. Therefore filter = distribution

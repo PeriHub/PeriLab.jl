@@ -21,6 +21,7 @@ end
 testDatamanager = Data_manager
 
 testDatamanager.set_nnodes(5)
+testDatamanager.reset_filter()
 nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
 nn[1] = 2
 nn[2] = 3
@@ -38,8 +39,6 @@ testDatamanager.create_constant_bond_field("H", Float32, 4)
 testDatamanager.create_bond_field("I", Int64, 7)
 testfield_keys = testDatamanager.get_all_field_keys()
 @testset "create data fields -> get all fields" begin
-
-
     @test testDatamanager.get_nnodes() == 5
 
     @test "A" in testfield_keys
@@ -125,9 +124,16 @@ testNP1NDict = testDatamanager.get_NP1_to_N_Dict()
     @test testNP1NDict["GNP1"] == "GN"
     @test testNP1NDict["INP1"] == "IN"
 end
+@testset "set_and_get_values" begin
+    DN = testDatamanager.get_field("DN")
+    DN[1, 3] = 10
+    DNtest = testDatamanager.get_field("DN")
+    @test DN[1, 3] == DNtest[1, 3]
+end
 
 DN = testDatamanager.get_field("DN")
 DNP1 = testDatamanager.get_field("DNP1")
+
 
 IN = testDatamanager.get_field("IN")
 INP1 = testDatamanager.get_field("INP1")
@@ -142,7 +148,6 @@ IN[2][1, 3] = 0
     @test INP1[2][1, 3] == 5
 
     testDatamanager.switch_NP1_to_N()
-
     @test DN[2, 3] == 5
     # dependency test
     @test DNP1[2, 3] == 5
@@ -153,4 +158,24 @@ IN[2][1, 3] = 0
     # bonds
     @test IN[2][1, 3] == 5
 
+end
+
+@testset "filter" begin
+    A = testDatamanager.create_constant_node_field("Atest", Float32, 1)
+    B = testDatamanager.create_constant_node_field("Btest", Float32, 3)
+    A[2] = 2
+    A[3] = 4
+    B[2, 2] = 3
+    B[3, 2] = 5
+    filter = [1, 3]
+    testDatamanager.set_filter(filter)
+    Atest = testDatamanager.get_field("Atest")
+    Btest = testDatamanager.get_field("Btest")
+    @test Atest[2] == 4
+    @test Btest[2, 2] == B[3, 2]
+    testDatamanager.reset_filter()
+    Atest = testDatamanager.get_field("Atest")
+    Btest = testDatamanager.get_field("Btest")
+    @test Atest[3] == A[3]
+    @test Btest[3, 2] == B[3, 2]
 end
