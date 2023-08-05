@@ -22,6 +22,7 @@ fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool =
 fieldnames = Dict{String,DataType}()
 filtered_nodes = Ref([])
 fields_to_synch = Dict{String,Any}()
+overlap_map = Ref([[[[]]]])
 ##########################
 # Material information
 ##########################
@@ -268,6 +269,10 @@ function get_NP1_to_N_Dict()
     return NP1_to_N
 end
 
+function get_overlap_map()
+    return overlap_map
+end
+
 function get_synch_fields()
     return fields_to_synch
 end
@@ -354,6 +359,10 @@ function set_nbonds(n)
     ```
     """
     global nbonds = n
+end
+
+function set_overlap_map(topo)
+    global overlap_map = topo
 end
 
 function set_synch(name, upload_to_cores, download_from_cores)
