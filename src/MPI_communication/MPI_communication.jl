@@ -51,8 +51,6 @@ function send_vectors_to_cores(comm, master, values, type)
     return recv_msg
 end
 
-
-
 function send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
     currentRank = MPI.Comm_rank(comm)
     if currentRank == 0
@@ -124,4 +122,42 @@ function set_overlap_information(comm, vector, topo)
         end
     end
     return vector
+end
+function get_overlap_information(comm, vector, topo)
+    rank = MPI.Comm_rank(comm)
+    size = MPI.Comm_size(comm)
+    recvTopo = topo[rank+1]
+    vec = vector[rank+1]
+    for i in 0:size-1
+        if i != rank
+            if length(recvTopo[i+1]) > 0
+                temp = vec[recvTopo[i+1][1]]
+                index = recvTopo[i+1][1]
+                println("Receive $rank - $i index $index value $temp")
+                recv_msg = zeros(length(recvTopo[i+1][1]), 1)
+                MPI.Recv!(recv_msg, i, 0, comm)
+                vec[recvTopo[i+1][1]] += recv_msg
+            end
+        else
+            for j in 0:size-1
+                sendTopo = topo[j+1]
+                if length(sendTopo[rank+1]) > 0
+                    temp = vec[sendTopo[rank+1][2]]
+                    index = sendTopo[rank+1][2]
+                    println("Send $rank - $i index $index value $temp")
+                    MPI.Send(vec[sendTopo[rank+1][2]], j, 0, comm)
+                end
+            end
+        end
+    end
+    return vector
+end
+
+function recv_vector_from_root(comm, recv_msg)
+
+    println("a ", recv_msg)
+    #if rank == MPI.Comm_rank(comm)
+    MPI.Recv!(recv_msg, 0, 0, comm)
+    # end
+    return recv_msg
 end
