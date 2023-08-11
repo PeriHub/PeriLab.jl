@@ -14,8 +14,9 @@ export switch_NP1_to_N
 ##########################
 # Variables
 ##########################
-nnodes = Ref(0)
 nbonds = Ref(0)
+nnodes = Ref(0)
+nnsets = Ref(0)
 dof = Ref(1)
 glob_to_loc = Ref([])
 fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
@@ -241,6 +242,9 @@ function get_nnodes()
     return nnodes
 end
 
+function get_nnsets()
+    return nnsets
+end
 
 function get_nbonds()
     """
@@ -327,6 +331,23 @@ function set_material_type(key, value)
     end
 end
 
+function set_nbonds(n)
+    """
+    set_nbonds(n)
+
+    Sets the number of bonds globally.
+
+    Parameters:
+    - `n` (integer): The value to set as the number of bonds.
+
+    Example:
+    ```julia
+    set_nbonds(20)  # sets the number of bonds to 20
+    ```
+    """
+    global nbonds = n
+end
+
 function set_nnodes(n)
     """
     set_nnodes(n)
@@ -344,21 +365,8 @@ function set_nnodes(n)
     global nnodes = n
 end
 
-function set_nbonds(n)
-    """
-    set_nbonds(n)
-
-    Sets the number of bonds globally.
-
-    Parameters:
-    - `n` (integer): The value to set as the number of bonds.
-
-    Example:
-    ```julia
-    set_nbonds(20)  # sets the number of bonds to 20
-    ```
-    """
-    global nbonds = n
+function set_nnsets(n)
+    global nnsets = n
 end
 
 function set_overlap_map(topo)

@@ -21,8 +21,9 @@ function check_valid_bcs(bcs, datamanager)
 end
 
 
-function init_BCs()
-    nset, bcs = boundary_condition(params, datamager)
+function init_BCs(params, datamanager)
+    nset, bcs = boundary_condition(params, datamanager)
+    datamanager.set_nnsets(length(nset))
     bcs = check_valid_bcs(bcs, datamanager)
     return nset, bcs
 end
