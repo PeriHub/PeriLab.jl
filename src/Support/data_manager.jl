@@ -164,7 +164,7 @@ function create_node_field(name::String, type::DataType, dof::Int64)
 end
 
 function get_all_field_keys()
-    return keys(fieldnames)
+    return collect(keys(fieldnames))
 end
 
 function get_dof()
