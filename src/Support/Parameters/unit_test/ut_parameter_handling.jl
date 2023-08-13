@@ -1,5 +1,7 @@
 include("../parameter_handling.jl")
+include("../../data_manager.jl")
 using Test
+import .Data_manager
 using Random
 @testset "ut_check_key_elements" begin
     params = Dict()
@@ -50,3 +52,30 @@ end
     @test filenames[1] == "1.e"
     @test filenames[2] == "2.e"
 end
+@testset "ut_get_outputs" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_nnodes(5)
+    testDatamanager.create_constant_node_field("A", Float32, 1)
+    testDatamanager.create_node_field("B", Bool, 1)
+    testDatamanager.create_constant_node_field("C", Float32, 4)
+    testDatamanager.create_node_field("D", Int64, 7)
+    testDatamanager.create_node_field("F", Float32, 1)
+    testDatamanager.create_constant_node_field("E", Float32, 4)
+
+
+    testfield_keys = testDatamanager.get_all_field_keys()
+
+    params = Dict("Output" => Dict("Output1" => Dict("Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))
+
+
+    outputs = get_outputs(params, testfield_keys)
+
+    @test "A" in outputs["Output1"]
+    @test ("B" in outputs["Output1"]) == false
+    @test "C" in outputs["Output1"]
+    @test "A" in outputs["Output2"]
+    @test "B" in outputs["Output2"]
+    @test ("D" in outputs["Output2"]) == false
+    @test "E" in outputs["Output2"]
+end
+
