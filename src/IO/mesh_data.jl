@@ -31,12 +31,14 @@ function init_data(params, datamanager, comm)
     dof = send_value(comm, 0, dof)
     dof = datamanager.set_dof(dof)
     overlap_map = send_value(comm, 0, overlap_map)
+    datamanager.set_overlap_map(overlap_map)
     nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
     nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
 
     #ntype = send_value(comm, 0, ntype)
     #println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
     datamanager.set_nnodes(nmasters + nslaves)
+    define_nsets(params, datamanager)
     datamanager.reset_filter()
     #println(datamanager.get_nnodes())
     datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
@@ -73,6 +75,13 @@ function get_bond_geometry(datamanager)
     bondgeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondgeom)
     bondDamage = datamanager.create_constant_bond_field("Bond Damage", Float32, 1)
     return datamanager
+end
+
+function define_nsets(params, datamanager)
+    nsets = get_node_sets(params)
+    for nset in keys(nsets)
+        datamanager.set_nsets(nset, nsets[nset])
+    end
 end
 
 function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
