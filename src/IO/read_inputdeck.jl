@@ -23,7 +23,7 @@ function read_input_file(filename::String)
 end
 
 function read_input(filename::String)
-    return YAML.load_file(filename)["Peridigm"]
+    return YAML.load_file(filename)["PeriLab"]
 end
 
 end
