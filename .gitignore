@@ -9,3 +9,5 @@ test_func.jl
 simple_test.jl
 node1.txt
 node2.txt
+exodus_test.jl
+1.e

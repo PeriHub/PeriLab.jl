@@ -39,5 +39,6 @@ Each vector entry for a value exists for all nodes, also if the node does not ha
     check the header for the material name
     include the file in the code via a makro
     material inclusion is very simple
+    bonds as elements in exodus
 
 
