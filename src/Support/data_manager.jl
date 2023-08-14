@@ -5,6 +5,7 @@ export create_bond_field
 export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
+export get_all_field_keys
 export get_nnsets
 export get_nsets
 export get_nbonds
