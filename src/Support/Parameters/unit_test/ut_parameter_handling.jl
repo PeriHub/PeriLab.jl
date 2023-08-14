@@ -3,6 +3,7 @@ include("../../data_manager.jl")
 using Test
 import .Data_manager
 using Random
+
 @testset "ut_check_key_elements" begin
     params = Dict()
     @info "Error messages are tested and therefore okay."
@@ -19,6 +20,7 @@ using Random
     params = Dict("Damage" => Dict(), "Materials" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
     @test check_key_elements(params) == true
 end
+
 @testset "ut_get_mesh_name" begin
     params = Dict("Discretization" => Dict())
     @test get_mesh_name(params) === nothing
@@ -61,12 +63,9 @@ end
     testDatamanager.create_node_field("D", Int64, 7)
     testDatamanager.create_node_field("F", Float32, 1)
     testDatamanager.create_constant_node_field("E", Float32, 4)
-
-
     testfield_keys = testDatamanager.get_all_field_keys()
 
     params = Dict("Output" => Dict("Output1" => Dict("Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))
-
 
     outputs = get_outputs(params, testfield_keys)
 
@@ -78,4 +77,27 @@ end
     @test ("D" in outputs["Output2"]) == false
     @test "E" in outputs["Output2"]
 end
+@testset "get_node_sets" begin
+    numbers = [11, 12, 13, 44, 125]
+    lenNumbers = length(numbers)
+    filename = "test.txt"
+    file = open(filename, "w")
+    for number in numbers
+        println(file, number)
+    end
+    close(file)
 
+    params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename)))
+    nsets = get_node_sets(params)
+    @test "Nset_1" in keys(nsets)
+    @test "Nset_2" in keys(nsets)
+    @test length(nsets["Nset_1"]) == 7
+    for i in 1:7
+        @test nsets["Nset_1"][i] == i
+    end
+    @test length(nsets["Nset_2"]) == lenNumbers
+    for i in 1:lenNumbers
+        @test nsets["Nset_2"][i] == numbers[i]
+    end
+    rm(filename)
+end

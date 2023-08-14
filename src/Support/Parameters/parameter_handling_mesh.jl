@@ -25,7 +25,7 @@ function get_bond_filter(params)
     return check, bfList
 end
 
-function get_bc_node_sets(params)
+function get_node_sets(params)
     nsets = Dict{String,Any}()
     if check_element(params["Discretization"], "Node Sets") == false
         return []
@@ -36,7 +36,8 @@ function get_bc_node_sets(params)
             nodes = CSV.read(nodesets[entry], DataFrame; delim=" ", header=false)
             nsets[entry] = nodes.Column1
         else
-            nsets[entry] = nodesets[entry]
+            nodes = split(nodesets[entry])
+            nsets[entry] = parse.(Int, nodes)
         end
     end
     return nsets
