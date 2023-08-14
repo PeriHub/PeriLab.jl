@@ -77,7 +77,7 @@ end
     @test ("D" in outputs["Output2"]) == false
     @test "E" in outputs["Output2"]
 end
-@testset "get_node_sets" begin
+@testset "ut_node_sets" begin
     numbers = [11, 12, 13, 44, 125]
     lenNumbers = length(numbers)
     filename = "test.txt"
