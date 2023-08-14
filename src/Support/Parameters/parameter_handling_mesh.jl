@@ -24,3 +24,20 @@ function get_bond_filter(params)
     end
     return check, bfList
 end
+
+function get_bc_node_sets(params)
+    nsets = Dict{String,Any}()
+    if check_element(params["Discretization"], "Node Sets") == false
+        return []
+    end
+    nodesets = params["Discretization"]["Node Sets"]
+    for entry in keys(nodesets)
+        if occursin(".txt", nodesets[entry])
+            nodes = CSV.read(nodesets[entry], DataFrame; delim=" ", header=false)
+            nsets[entry] = nodes.Column1
+        else
+            nsets[entry] = nodesets[entry]
+        end
+    end
+    return nsets
+end
