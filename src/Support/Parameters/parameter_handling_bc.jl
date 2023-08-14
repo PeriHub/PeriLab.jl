@@ -1,7 +1,7 @@
 using CSV
 using DataFrames
 
-function get_bc_node_definitions(params)
+function get_bc_definitions(params)
     bcs = Dict{String,Any}()
     if check_element(params, "Boundary Conditions") == false
         return bcs

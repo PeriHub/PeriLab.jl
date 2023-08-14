@@ -101,15 +101,15 @@ end
     end
     rm(filename)
 end
-@testset "ut_get_bc_node_definitions" begin
+@testset "ut_get_bc_definitions" begin
     params = Dict()
-    bcs = get_bc_node_definitions(params)
+    bcs = get_bc_definitions(params)
     @test length(bcs) == 0
     params = Dict("Boundary Conditions" => Dict())
-    bcs = get_bc_node_definitions(params)
+    bcs = get_bc_definitions(params)
     @test length(bcs) == 0
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Body Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Prescribed Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")))
-    bcs = get_bc_node_definitions(params)
+    bcs = get_bc_definitions(params)
     @test length(bcs) == 2
     @test bcs["BC_1"] == Dict("Type" => "Body Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t")
     @test bcs["BC_2"] == Dict("Type" => "Prescribed Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")
