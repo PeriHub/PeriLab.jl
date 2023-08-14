@@ -36,7 +36,7 @@ end
     params = Dict()
     bcs = Boundary_conditions.boundary_condition(params, testDatamanager)
     @test length(bcs) == 0
-    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Body Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Prescribed Displacement", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "0")))
+    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "0")))
 
     testDatamanager.set_nsets("Nset_1", [1, 2, 3])
     testDatamanager.set_nsets("Nset_2", [3, 4, 7, 10])
@@ -46,13 +46,53 @@ end
     @test length(bcs) == 2
     @test "BC_1" in keys(bcs)
     @test "BC_2" in keys(bcs)
-    @test bcs["BC_1"]["Type"] == "Body Force"
+    @test bcs["BC_1"]["Type"] == "Force"
     @test bcs["BC_1"]["Coordinate"] == "x"
     @test bcs["BC_1"]["Value"] == "20*t"
     @test bcs["BC_1"]["Node Set"] == [1, 3, 4]
-    @test bcs["BC_2"]["Type"] == "Prescribed Displacement"
+    @test bcs["BC_2"]["Type"] == "Displacement"
     @test bcs["BC_2"]["Coordinate"] == "z"
     @test bcs["BC_2"]["Value"] == "0"
     @test bcs["BC_2"]["Node Set"] == [4, 2, 7, 10]
 end
 
+#@testset "ut_init_BCs" begin
+testDatamanager = Data_manager
+testDatamanager.set_nnodes(5)
+
+testDatamanager.create_constant_node_field("Coordinates")
+testDatamanager.create_constant_node_field("Forces")
+testDatamanager.create_constant_node_field("Displacements")
+testDatamanager.set_dof() = 2
+
+
+params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "0")))
+
+testDatamanager.set_nsets("Nset_1", [1, 2, 3])
+testDatamanager.set_nsets("Nset_2", [3, 4, 7, 10])
+testDatamanager.set_glob_to_loc([1, 3, 4, 2, 5, 6, 7, 8, 9, 10])
+
+bcs = Boundary_conditions.init_BCs(params, testDatamanager)
+@test length(bcs) == 1
+@test "BC_1" in keys(bcs)
+@test ("BC_2" in keys(bcs)) == false
+@test bcs["BC_1"]["Type"] == "Force"
+@test bcs["BC_1"]["Coordinate"] == "x"
+@test bcs["BC_1"]["Value"] == "20*t"
+@test bcs["BC_1"]["Node Set"] == [1, 3, 4]
+
+testDatamanager.set_dof() = 3
+bcs = Boundary_conditions.init_BCs(params, testDatamanager)
+@test length(bcs) == 2
+@test "BC_1" in keys(bcs)
+@test "BC_2" in keys(bcs)
+@test bcs["BC_1"]["Type"] == "Force"
+@test bcs["BC_1"]["Coordinate"] == "x"
+@test bcs["BC_1"]["Value"] == "20*t"
+@test bcs["BC_1"]["Node Set"] == [1, 3, 4]
+@test bcs["BC_2"]["Type"] == "Displacement"
+@test bcs["BC_2"]["Coordinate"] == "z"
+@test bcs["BC_2"]["Value"] == "0"
+@test bcs["BC_2"]["Node Set"] == [4, 2, 7, 10]
+
+#end
