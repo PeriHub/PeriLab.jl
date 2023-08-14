@@ -5,15 +5,15 @@ export apply_bc
 
 function check_valid_bcs(bcs, datamanager)
     # check bc
-    working_bcs = []
-    for bc in bcs
-        for dataentry in datamanager.get_all_fields()
-            if occursin(dataentry, bc["Type"])
-                if bc["Coordinate"] == "z" && datamanager.get_dof() > 2
-                    append!(working_bs, bc)
-                    working_bs[end]["Type"] = [dataentry]
-                    break
-                end
+    working_bcs = Dict()
+    for bc in keys(bcs)
+        if bcs[bc]["Coordinate"] == "z" && datamanager.get_dof() < 3
+            break
+        end
+        for dataentry in datamanager.get_all_field_keys()
+            if occursin(bcs[bc]["Type"], dataentry)
+                working_bcs[bc] = bcs[bc]
+                break
             end
 
         end
@@ -34,8 +34,12 @@ function boundary_condition(params, datamanager)
 
     for bc in keys(bcs_in)
         node_set_name = bcs_in[bc]["Node Set"]
-        delete!(bcs_in[bc], "Node Set")
-        bcs_out[bc] = merge(Dict{String,Any}("Node Set" => datamanager.get_local_nodes(nsets[node_set_name])), bcs_in[bc])
+        bcs_out[bc] = Dict{String,Any}("Node Set" => datamanager.get_local_nodes(nsets[node_set_name]))
+        for entry in keys(bcs_in[bc])
+            if entry != "Node Set"
+                bcs_out[bc][entry] = bcs_in[bc][entry]
+            end
+        end
     end
     return bcs_out
 end
