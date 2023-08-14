@@ -18,17 +18,22 @@
     ! -------------
     11. Nachbarschaftslisten versenden ! wie in sinnvoller Weise?
     12. bondvectors set to zero
-    13. bc interpreter
+    13. bc interpreter -> done
+    13.a nodesets in mesh -> done
     14. overlap synchronisation
     15. bc in solver
     16. verlet solver
     17. write output
     18. integrate first model
+    18.a step width determination
     19. first test
+    20. 2D arrays in fields
 
 ## Design decisions
 Each vector entry for a value exists for all nodes, also if the node does not have this property in a block. However, the synchronisation is very ugly, because all slave nodes of block with value I need the entry at the other core to. If not it will lead nowhere if MPI communication occurs
 
+    IO
+    nodesets are not defined yet in Exodus.jl
 ## planned feature
     search for jl files in material
     check the header for the material name
