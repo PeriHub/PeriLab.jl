@@ -179,3 +179,17 @@ end
     @test Atest[3] == A[3]
     @test Btest[3, 2] == B[3, 2]
 end
+
+@testset "ut_nodesets" begin
+    @test testDatamanager.get_nnsets() == 0
+    testDatamanager.set_nsets("N1", [1, 2])
+    @test testDatamanager.get_nnsets() == 1
+    testDatamanager.set_nsets("N2", [4, 5])
+    @test testDatamanager.get_nnsets() == 2
+    testDatamanager.set_nsets("N3", [1, 12, 22])
+    @test testDatamanager.get_nnsets() == 3
+    nsets = testDatamanager.get_nsets()
+    @test nsets["N1"] == [1, 2]
+    @test nsets["N2"] == [4, 5]
+    @test nsets["N3"] == [1, 12, 22]
+end

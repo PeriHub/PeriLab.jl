@@ -5,24 +5,28 @@ export create_bond_field
 export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
-export set_filter
+export get_nnsets
+export get_nsets
 export get_nbonds
 export get_nnodes
+export set_filter
 export set_nbonds
 export set_nnodes
+export set_nsets
 export switch_NP1_to_N
 ##########################
 # Variables
 ##########################
-nbonds = Ref(0)
-nnodes = Ref(0)
-nnsets = Ref(0)
-dof = Ref(1)
-glob_to_loc = Ref([])
+nbonds = 0
+nnodes = 0
+nnsets = 0
+dof = 1
+glob_to_loc = []
 fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 fieldnames = Dict{String,DataType}()
 filtered_nodes = Ref([])
 fields_to_synch = Dict{String,Any}()
+nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
 ##########################
 # Material information
@@ -242,10 +246,6 @@ function get_nnodes()
     return nnodes
 end
 
-function get_nnsets()
-    return nnsets
-end
-
 function get_nbonds()
     """
     get_nbonds()
@@ -271,6 +271,32 @@ function get_NP1_to_N_Dict()
         end
     end
     return NP1_to_N
+end
+
+
+function get_nnsets()
+    """
+    get_nnsets()
+
+    Get the number of node sets.
+
+    Returns:
+    - `nnsets::Int`: The number of node sets.
+
+    """
+    return nnsets
+end
+
+function get_nsets()
+    """
+    get_nsets()
+
+    Get the node sets
+
+    Returns:
+    - `nsets::Dict{String,Vector{Int64}}`: The node sets dictionary.
+    """
+    return nsets
 end
 
 function get_overlap_map()
@@ -366,7 +392,33 @@ function set_nnodes(n)
 end
 
 function set_nnsets(n)
+    """
+    set_nnsets(n)
+
+    Set the number of node sets.
+
+    Parameters:
+    - `n::Int`: The number of node sets to be set.
+
+    """
     global nnsets = n
+end
+
+function set_nsets(name::String, nodes::Vector{Int})
+    """
+    set_nsets(name, nodes)
+    Set the nodes associated with a named node set.
+
+    Parameters:
+    - `name::String`: The name of the node set.
+    - `nodes::Vector{Int}`: The node indices associated with the node set.
+
+    """
+    if name in keys(nsets)
+        @warn "Node set " * name * " already defined and it is overwritten"
+    end
+    nsets[name] = nodes
+    set_nnsets(length(nsets))
 end
 
 function set_overlap_map(topo)
