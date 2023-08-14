@@ -1,4 +1,5 @@
 module Boundary_conditions
+include("../Support/Parameters/parameter_handling.jl")
 export init_BCs
 export apply_bc
 
@@ -20,28 +21,33 @@ function check_valid_bcs(bcs, datamanager)
     return working_bcs
 end
 
-
 function init_BCs(params, datamanager)
-    nset, bcs = boundary_condition(params, datamanager)
-    datamanager.set_nnsets(length(nset))
+    bcs = boundary_condition(params, datamanager)
     bcs = check_valid_bcs(bcs, datamanager)
-    return nset, bcs
+    return bcs
 end
 
-
 function boundary_condition(params, datamanager)
-    global_nset = get_bc_node_sets(params)
-    bcs = get_bc_node_defintions(params)
-    return datamanager.glob_to_loc(global_nset), bcs
+    bcs_in = get_bc_definitions(params)
+    bcs_out = Dict{String,Any}()
+    nsets = datamanager.get_nsets()
+
+    for bc in keys(bcs_in)
+        node_set_name = bcs_in[bc]["Node Set"]
+        delete!(bcs_in[bc], "Node Set")
+        bcs_out[bc] = merge(Dict{String,Any}("Node Set" => datamanager.get_local_nodes(nsets[node_set_name])), bcs_in[bc])
+    end
+    return bcs_out
 end
 
 function apply_bc(bcs, datamanager, time)
     dof = datamanager.get_dof()
+    nsets = datamanager.get_nsets()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     coordinates = datamanager.get_field("Coordinates")
     for bc in bcs
         field_to_apply_bc = datamanager.get_field(bc["Type"])
-        field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates[bc["Node Set"]], time, dof)
+        field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates[nsets[bc["Node Set"]]], time, dof)
     end
 end
 
