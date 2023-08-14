@@ -11,11 +11,11 @@ function check_valid_bcs(bcs, datamanager)
             break
         end
         for dataentry in datamanager.get_all_field_keys()
-            if occursin(bcs[bc]["Type"], dataentry)
+            if (occursin(bcs[bc]["Type"], dataentry) && occursin("NP1", dataentry)) || bcs[bc]["Type"] == dataentry
                 working_bcs[bc] = bcs[bc]
+                bcs[bc]["Type"] = dataentry
                 break
             end
-
         end
     end
     return working_bcs
@@ -46,20 +46,27 @@ end
 
 function apply_bc(bcs, datamanager, time)
     dof = datamanager.get_dof()
-    nsets = datamanager.get_nsets()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
-    coordinates = datamanager.get_field("Coordinates")
-    for bc in bcs
-        field_to_apply_bc = datamanager.get_field(bc["Type"])
-        field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates[nsets[bc["Node Set"]]], time, dof)
+
+    for name in keys(bcs)
+        bc = bcs[name]
+        datamanager.set_filter(bc["Node Set"])
+        coordinates = datamanager.get_field("Coordinates")
+        field_to_apply_bc = datamanager.get_field(bc["Type"] * "NP1")
+        if length(field_to_apply_bc) == 0
+            field_to_apply_bc = datamanager.get_field(bc["Type"])
+        end
+
+        field_to_apply_bc[:, dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates, time, dof)
     end
+    datamanager.reset_filter()
 end
 
 function clean_up(bc)
-    bc = replace(bc, "*" => ".*")
-    bc = replace(bc, "/" => "./")
-    bc = replace(bc, "+" => ".+")
-    bc = replace(bc, "-" => ".-")
+    bc = replace(bc, "*" => " .* ")
+    bc = replace(bc, "/" => " ./ ")
+    bc = replace(bc, "+" => " .+ ")
+    bc = replace(bc, "-" => " .- ")
     return bc
 end
 
