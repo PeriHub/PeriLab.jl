@@ -31,12 +31,3 @@ function check_key_elements(params)
     end
     return check
 end
-# tbd
-function get_element(params, key)
-    check = check_element(params, "Materials")
-    if !check
-        @error "Entry " * key * " is not defined"
-        return check
-    end
-    return params[key]
-end
