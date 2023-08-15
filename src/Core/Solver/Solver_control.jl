@@ -4,10 +4,11 @@ module Solver
 include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
 include("../../Physics/Physics_Factory.jl")
+include("../BC_manager.jl")
 
 import .IO
 import .Physics
-
+import .Boundary_conditions
 function init(params, datamanager)
 
     exos = init_write_results(output_filenames, datamanager)
@@ -34,9 +35,9 @@ function init(params, datamanager)
 
     end
     physics = Physics.get_physics(params)
-    boundary_condition(params, datamanager)
+    bcs = Boundary_conditions.init_BCs(params, datamanager)
 
-    return blockNodes, datamanager
+    return blockNodes, bcs, datamanager
 end
 
 function get_blockNodes(blockIDs)
@@ -48,13 +49,13 @@ function get_blockNodes(blockIDs)
 end
 
 function solver(params, datamanager)
-    blockNodes = init(params, datamanager)
+    blockNodes, bcs, datamanager = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
-    run_Verlet_solver(blockNodes, datamanager)
+    run_Verlet_solver(blockNodes, bcs, datamanager)
 end
 
-function run_Verlet_solver(blockNodes, datamanager)
+function run_Verlet_solver(blockNodes, bcs, datamanager)
 
     dof = datamanager.get_dof()
     for block in 1:length(blockNodes)
