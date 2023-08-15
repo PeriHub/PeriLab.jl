@@ -1,18 +1,20 @@
 
 using LinearAlgebra
 include("../../Support/tools.jl")
+
 function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
     """
     critical time step for a thermodynamic problem
     Selda Oterkus, Erdogan Madenci, and Abigail G. Agwai.  Fully coupled peridynamic thermomechanics
     """
     criticalTimeStep = 1.0e50
+    dof = datamanager.get_dof()
+    nlist = datamanager.get_nlist()
     nnodes = datamanager.get_nnodes()
     density = datamanager.get_field("Density")
     bondgeometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
+
 
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
@@ -31,19 +33,20 @@ function get_cs_denominator(nneighbors, volume, bondgeometry)
     end
     return denominator
 end
-function compute_mechanical_crititical_time_step()
+function compute_mechanical_crititical_time_step(bulkModulus)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
+    dof = datamanager.get_dof()
+    nlist = datamanager.get_nlist()
     nnodes = datamanager.get_nnodes()
     density = datamanager.get_field("Density")
     bondgeometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
+    horizon = datamanager.get_field("Horizon")
+
     springConstant = 18.0 * bulkModulus / (pi * horizon * horizon * horizon * horizon)
     for iID in 1:nnodes
-
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
         denominator = get_cs_denominator(len(nlist[iID]), volume[nlist[iID]], bondgeometry[iID][:, dof+1])
         t = 18.0 * bulkModulus * density[iID] / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID]) / denominator
@@ -60,21 +63,18 @@ function test_timestep(t, criticalTimeStep)
 end
 function compute_crititical_time_step(datamanager, mechanical, thermo)
     criticalTimeStep = 1.0e50
-    for iblocks in nblocks
+    blocks = datamanager.get_block_list()
+    for iblock in blocks
         if thermo
-            lambda = 0
-            Cv = 0
-            t = compute_thermodynamic_crititical_time_step(datamanager, lambda, CV)
-
+            lambda = datamanager.get_element(iblock, "Thermal", "Lambda")
+            Cv = datamanager.get_element(iblock, "Thermal", "Specific Heat Capacity")
+            t = compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
             criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
         end
         if mechanical
-
-
-            t = compute_mechanical_crititical_time_step()
+            bulkModulus = datamanager.get_element(iblock, "Thermal", "Bulk Modulus")
+            t = compute_mechanical_crititical_time_step(bulkModulus)
             criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
-
-
         end
     end
     return criticalTimeStep
