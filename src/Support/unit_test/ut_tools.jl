@@ -11,13 +11,20 @@ using Test
     @test check_inf_or_nan(a, "a") == false
 end
 @testset "get_matrix_style" begin
+    A = 1
+    @test length(size(A)) == 0
+    Atest = matrix_style(A)
+    @test sum(size(Atest)) == 2
     A = [1]
+    @test length(size(A)) == 1
     @test sum(size(A)) == 1
     Atest = matrix_style(A)
     @test sum(size(Atest)) == 2
     A = [1 1; 1 1]
+    @test length(size(A)) == 2
     @test sum(size(A)) == 4
     Atest = matrix_style(A)
+    @test length(size(A)) == 2
     @test sum(size(A)) == 4
     A = [1 1 1; 1 1 1; 1 1 1]
     @test sum(size(A)) == 6

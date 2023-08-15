@@ -15,6 +15,9 @@ function matrix_style(A)
     """
     include a scalar or an array and reshape it to style needed for LinearAlgebra package
     """
+    if length(size(A)) == 0
+        A = [A]
+    end
     dim = size(A)[1]
     return reshape(A, dim, dim)
 end
