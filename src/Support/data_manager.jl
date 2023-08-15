@@ -6,6 +6,7 @@ export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
 export get_all_field_keys
+export get_block_list
 export get_nlist
 export get_nnsets
 export get_nsets
@@ -23,7 +24,9 @@ nbonds = 0
 nnodes = 0
 nnsets = 0
 dof = 1
-glob_to_loc = []
+block_list = Int64[]
+properties = Dict{Int,Dict}()
+glob_to_loc = Int64[]
 fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 fieldnames = Dict{String,DataType}()
 filtered_nodes = Ref([])
@@ -312,6 +315,22 @@ end
 function get_synch_fields()
     return fields_to_synch
 end
+
+function init_property_list()
+    for iblock in get_block_list()
+        property_list[iblock] = Dict{String,Dict()}("Thermal" => Dict{String,Any}(), "Damage" => Dict{String,Any}(), "Mechanical" => Dict{String,Any}(), "Additive" => Dict{String,Any}())
+
+    end
+end
+
+function get_property(blockId, property, value_name)
+    return property_list[blockId][property][value_name]
+end
+
+function set_property(blockId, property, value_name, value)
+    property_list[blockId][property][value_name] = value
+end
+
 
 function reset_filter()
     global filtered_nodes = 1:nnodes
