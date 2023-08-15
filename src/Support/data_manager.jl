@@ -6,6 +6,7 @@ export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
 export get_all_field_keys
+export get_nlist
 export get_nnsets
 export get_nsets
 export get_nbonds
@@ -228,6 +229,10 @@ end
 
 function get_material_type(key)
     return material_type[key]
+end
+
+function get_nlist()
+    return get_field("Neighborhoodlist")
 end
 
 function get_nnodes()
