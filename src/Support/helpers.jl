@@ -8,7 +8,7 @@ function dof_index(index, inds)
 end
 
 function find_indices(vector, what)
-    return findfirst(item -> item == what, vector)
+    return findall(item -> item == what, vector)
 end
 
 
