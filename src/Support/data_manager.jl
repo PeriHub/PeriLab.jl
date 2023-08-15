@@ -321,15 +321,17 @@ function get_synch_fields()
     return fields_to_synch
 end
 
-function init_property_list()
+function init_property()
     for iblock in get_block_list()
-        property_list[iblock] = Dict{String,Dict()}("Thermal" => Dict{String,Any}(), "Damage" => Dict{String,Any}(), "Mechanical" => Dict{String,Any}(), "Additive" => Dict{String,Any}())
-
+        properties[iblock] = Dict{String,Dict}("Thermal" => Dict{String,Any}(), "Damage" => Dict{String,Any}(), "Mechanical" => Dict{String,Any}(), "Additive" => Dict{String,Any}())
     end
 end
 
 function get_property(blockId, property, value_name)
-    return property_list[blockId][property][value_name]
+    if value_name in keys(properties[blockId][property])
+        return properties[blockId][property][value_name]
+    end
+    return undef
 end
 
 function reset_filter()
@@ -455,7 +457,7 @@ function set_overlap_map(topo)
 end
 
 function set_property(blockId, property, value_name, value)
-    property_list[blockId][property][value_name] = value
+    properties[blockId][property][value_name] = value
 end
 
 function set_synch(name, upload_to_cores, download_from_cores)

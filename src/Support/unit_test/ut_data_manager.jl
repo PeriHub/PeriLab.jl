@@ -206,3 +206,26 @@ end
     @test length(blocklist) == 3
     @test blocklist == [1, 2, 4]
 end
+
+@testset "ut_properties" begin
+    testDatamanager.set_block_list([2, 3, 1, 1])
+    testDatamanager.init_property()
+    @test length(testDatamanager.properties) == 3
+    testDatamanager.set_property(1, "Mechanical", "E", 3)
+    @test testDatamanager.get_property(1, "Mechanical", "E") == 3
+    testDatamanager.set_property(1, "Mechanical", "C", "Hello Test")
+    @test testDatamanager.get_property(1, "Mechanical", "C") == "Hello Test"
+    testDatamanager.set_property(2, "Mechanical", "E", 1.1)
+    @test testDatamanager.get_property(2, "Mechanical", "E") == 1.1
+    testDatamanager.set_property(2, "Thermal", "E", [3 1 2; 1 2 3; 1 3 4])
+    @test testDatamanager.get_property(2, "Thermal", "E") == [3 1 2; 1 2 3; 1 3 4]
+    testDatamanager.set_property(3, "Thermal", "Q", 23.1)
+    @test testDatamanager.get_property(3, "Thermal", "Q") == 23.1
+    testDatamanager.set_property(3, "Damage", "SS", 0.1)
+    @test testDatamanager.get_property(3, "Damage", "SS") == 0.1
+    testDatamanager.set_property(1, "Additive", "E", [1, 2, 3])
+    @test testDatamanager.get_property(1, "Additive", "E") == [1, 2, 3]
+    testDatamanager.set_property(2, "Additive", "Qd", true)
+    @test testDatamanager.get_property(2, "Additive", "Qd") == true
+    @test testDatamanager.get_property(2, "Additive", "not there") == undef
+end
