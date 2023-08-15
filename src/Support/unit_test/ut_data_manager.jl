@@ -193,3 +193,16 @@ end
     @test nsets["N2"] == [4, 5]
     @test nsets["N3"] == [1, 12, 22]
 end
+
+@testset "ut_blocklist" begin
+    blocklist = testDatamanager.get_block_list()
+    @test length(blocklist) == 0
+    testDatamanager.set_block_list([1, 2, 3, 4, 4, 4, 1, 1, 1, 2, 2])
+    blocklist = testDatamanager.get_block_list()
+    @test length(blocklist) == 4
+    @test blocklist == [1, 2, 3, 4]
+    testDatamanager.set_block_list([4, 4, 2, 2, 1, 1])
+    blocklist = testDatamanager.get_block_list()
+    @test length(blocklist) == 3
+    @test blocklist == [1, 2, 4]
+end

@@ -12,6 +12,7 @@ export get_nnsets
 export get_nsets
 export get_nbonds
 export get_nnodes
+export set_block_list
 export set_filter
 export set_nbonds
 export set_nnodes
@@ -176,6 +177,10 @@ function get_all_field_keys()
     return collect(keys(fieldnames))
 end
 
+function get_block_list()
+    return block_list
+end
+
 function get_dof()
     """
     get_dof()
@@ -327,13 +332,12 @@ function get_property(blockId, property, value_name)
     return property_list[blockId][property][value_name]
 end
 
-function set_property(blockId, property, value_name, value)
-    property_list[blockId][property][value_name] = value
-end
-
-
 function reset_filter()
     global filtered_nodes = 1:nnodes
+end
+
+function set_block_list(blocks)
+    global block_list = sort(unique(blocks))
 end
 
 function set_dof(n)
@@ -448,6 +452,10 @@ end
 
 function set_overlap_map(topo)
     global overlap_map = topo
+end
+
+function set_property(blockId, property, value_name, value)
+    property_list[blockId][property][value_name] = value
 end
 
 function set_synch(name, upload_to_cores, download_from_cores)
