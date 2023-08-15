@@ -21,27 +21,28 @@ end
 
 function init_write_results(params, datamanager)
     filenames = get_output_filenames(params)
+    exos = []
+    nnodes = datamanager.get_nnodes()
     dof = datamanager.get_dof()
+    nnsets = datamanager.get_nnsets()
     coordinates = datamanager.get_field("Coordinates")'
     block_Id = datamanager.get_field("Block_Id")
-    volume = datamanager.get_field("Volume")
-
-
+    nsets = datamanager.get_node_sets()
+    for filename in filenames
+        append!(exos, Write_Exodus_Results.init_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets)))
+    end
+    outputs = get_outputs(params, datamanager.get_all_field_keys())
     if dof == 2
-        coords = [coordinates[:, 1], coordinates[:, 2]]
+        coords = vcat(coordinates[:, 1], coordinates[:, 2])
     else
-        coords = [coordinates[:, 1], coordinates[:, 2], coordinates[:, 3]]
+        coords = vcat(coordinates[:, 1], coordinates[:, 2], coordinates[:, 3])
     end
 
-    for file in filenames
-        init_write_results_in_exodus(file, coords, block_Id, volume)
+    for num in 1:length(exos)
+        exos[i] = init_results_in_exodus(exos[i], outputs[i], coordinates, block_Id, volume)
     end
-    # coords = [
-    #     1.0 0.5 0.5 1.0 0.0 0.0 0.5 1.0 0.0
-    #     1.0 1.0 0.5 0.5 1.0 0.5 0.0 0.0 0.0
-    #     0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
-    # ]
-    return filenames
+
+    return exos
 end
 
 function write_results(params, datamanager)
