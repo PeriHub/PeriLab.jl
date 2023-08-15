@@ -10,3 +10,11 @@ function check_inf_or_nan(array, msg)
     end
     return false
 end
+
+function matrix_style(A)
+    """
+    include a scalar or an array and reshape it to style needed for LinearAlgebra package
+    """
+    dim = size(A)[1]
+    return reshape(A, dim, dim)
+end

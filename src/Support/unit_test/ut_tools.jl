@@ -2,11 +2,25 @@ include("../tools.jl")
 
 using Test
 
-@testset "get_set_functions" begin
+@testset "ut_check_inf_or_nan" begin
     a = ones(2, 2)
     @test check_inf_or_nan(a, "a") == false
     a[1, 1] = 1 / 0
     @test check_inf_or_nan(a, "a")
     a = 0
     @test check_inf_or_nan(a, "a") == false
+end
+@testset "get_matrix_style" begin
+    A = [1]
+    @test sum(size(A)) == 1
+    Atest = matrix_style(A)
+    @test sum(size(Atest)) == 2
+    A = [1 1; 1 1]
+    @test sum(size(A)) == 4
+    Atest = matrix_style(A)
+    @test sum(size(A)) == 4
+    A = [1 1 1; 1 1 1; 1 1 1]
+    @test sum(size(A)) == 6
+    Atest = matrix_style(A)
+    @test sum(size(A)) == 6
 end
