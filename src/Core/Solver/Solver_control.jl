@@ -12,9 +12,10 @@ import .Boundary_conditions
 function init(params, datamanager)
 
     exos = init_write_results(output_filenames, datamanager)
+    datamanager.init_property()
     blockNodes = get_blockNodes(datamanager.get_field("Block_Id"))
-    mechanical, thermal, additive = get_solver_options(params)
-    if mechanical
+    solver_options = get_solver_options(params)
+    if solver_options["Mechanical"]
         dof = datamanager.get_dof()
         force = datamanager.create_node_field("Force", Float32, dof)
         Y = datamanager.create_node_field("Deformed State", Float32, dof)
@@ -26,16 +27,22 @@ function init(params, datamanager)
         datamanager.set_synch("Velocity", false, true)
         datamanager.set_synch("Displacements", false, true)
         datamanager.set_synch("Deformed State", false, true)
+        read_properties(params, datamanager, "Mechanical")
     end
-    if thermal
+    if solver_options["Damage"]
+        read_properties(params, datamanager, "Damage")
+    end
+    if solver_options["Thermal"]
         temperature = datamanager.create_node_field("Temperature", Float32, 1)
         flow = datamanager.create_node_field("Flow", Float32, dof) # -> check dof
+        read_properties(params, datamanager, "Thermal")
     end
-    if additive
-
+    if solver_options["Additive"]
+        read_properties(params, datamanager, "Additive")
     end
     physics = Physics.get_physics(params)
     bcs = Boundary_conditions.init_BCs(params, datamanager)
+    read_properties(datamanager, "Mechanical")
 
     return blockNodes, bcs, datamanager
 end
