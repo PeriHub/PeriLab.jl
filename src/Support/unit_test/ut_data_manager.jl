@@ -211,21 +211,21 @@ end
     testDatamanager.set_block_list([2, 3, 1, 1])
     testDatamanager.init_property()
     @test length(testDatamanager.properties) == 3
-    testDatamanager.set_property(1, "Material", "E", 3)
-    @test testDatamanager.get_property(1, "Material", "E") == 3
-    testDatamanager.set_property(1, "Material", "C", "Hello Test")
-    @test testDatamanager.get_property(1, "Material", "C") == "Hello Test"
-    testDatamanager.set_property(2, "Material", "E", 1.1)
-    @test testDatamanager.get_property(2, "Material", "E") == 1.1
-    testDatamanager.set_property(2, "Thermal", "E", [3 1 2; 1 2 3; 1 3 4])
-    @test testDatamanager.get_property(2, "Thermal", "E") == [3 1 2; 1 2 3; 1 3 4]
-    testDatamanager.set_property(3, "Thermal", "Q", 23.1)
-    @test testDatamanager.get_property(3, "Thermal", "Q") == 23.1
-    testDatamanager.set_property(3, "Damage", "SS", 0.1)
-    @test testDatamanager.get_property(3, "Damage", "SS") == 0.1
-    testDatamanager.set_property(1, "Additive", "E", [1, 2, 3])
-    @test testDatamanager.get_property(1, "Additive", "E") == [1, 2, 3]
-    testDatamanager.set_property(2, "Additive", "Qd", true)
-    @test testDatamanager.get_property(2, "Additive", "Qd") == true
-    @test testDatamanager.get_property(2, "Additive", "not there") == undef
+    testDatamanager.set_property(1, "Material Models", "E", 3)
+    @test testDatamanager.get_property(1, "Material Models", "E") == 3
+    testDatamanager.set_property(1, "Material Models", "C", "Hello Test")
+    @test testDatamanager.get_property(1, "Material Models", "C") == "Hello Test"
+    testDatamanager.set_property(2, "Material Models", "E", 1.1)
+    @test testDatamanager.get_property(2, "Material Models", "E") == 1.1
+    testDatamanager.set_property(2, "Thermal Models", "E", [3 1 2; 1 2 3; 1 3 4])
+    @test testDatamanager.get_property(2, "Thermal Models", "E") == [3 1 2; 1 2 3; 1 3 4]
+    testDatamanager.set_property(3, "Thermal Models", "Q", 23.1)
+    @test testDatamanager.get_property(3, "Thermal Models", "Q") == 23.1
+    testDatamanager.set_property(3, "Damage Models", "SS", 0.1)
+    @test testDatamanager.get_property(3, "Damage Models", "SS") == 0.1
+    testDatamanager.set_property(1, "Additive Models", "E", [1, 2, 3])
+    @test testDatamanager.get_property(1, "Additive Models", "E") == [1, 2, 3]
+    testDatamanager.set_property(2, "Additive Models", "Qd", true)
+    @test testDatamanager.get_property(2, "Additive Models", "Qd") == true
+    @test testDatamanager.get_property(2, "Additive Models", "not there") == undef
 end

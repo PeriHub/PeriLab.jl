@@ -324,12 +324,6 @@ function get_synch_fields()
     return fields_to_synch
 end
 
-function init_property()
-    for iblock in get_block_list()
-        properties[iblock] = Dict{String,Dict}("Thermal" => Dict{String,Any}(), "Damage" => Dict{String,Any}(), "Material" => Dict{String,Any}(), "Additive" => Dict{String,Any}())
-    end
-end
-
 function get_property(blockId, property, value_name)
     if value_name in keys(properties[blockId][property])
         return properties[blockId][property][value_name]
@@ -339,6 +333,13 @@ end
 
 function reset_filter()
     global filtered_nodes = 1:nnodes
+end
+
+function init_property()
+    for iblock in get_block_list()
+        properties[iblock] = Dict{String,Dict}("Thermal Models" => Dict{String,Any}(), "Damage Models" => Dict{String,Any}(), "Material Models" => Dict{String,Any}(), "Additive Models" => Dict{String,Any}())
+    end
+    return collect(keys(properties[1]))
 end
 
 function set_block_list(blocks)
@@ -461,6 +462,10 @@ end
 
 function set_property(blockId, property, value_name, value)
     properties[blockId][property][value_name] = value
+end
+
+function set_properties(blockId, property, values)
+    properties[blockId][property] = values
 end
 
 function set_synch(name, upload_to_cores, download_from_cores)

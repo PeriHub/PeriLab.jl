@@ -8,16 +8,16 @@ using Random
     params = Dict()
     @info "Error messages are tested and therefore okay."
     @test check_key_elements(params) == false
-    params = Dict("Damage" => Dict())
+    params = Dict("Damage Models" => Dict())
     @test check_key_elements(params) == false
-    params = Dict("Damage" => Dict(), "Materials" => Dict())
+    params = Dict("Damage Models" => Dict(), "Materials Models" => Dict())
     @test check_key_elements(params) == false
-    params = Dict("Damage" => Dict(), "Materials" => Dict(), "Discretization" => Dict())
+    params = Dict("Damage Models" => Dict(), "Materials Models" => Dict(), "Discretization" => Dict())
     @test check_key_elements(params) == false
-    params = Dict("Damage" => Dict(), "Materials" => Dict(), "Discretization" => Dict(), "Blocks" => Dict())
+    params = Dict("Damage Models" => Dict(), "Materials" => Dict(), "Discretization" => Dict(), "Blocks" => Dict())
     @test check_key_elements(params) == false
     @info "No error messages are okay for this test until now."
-    params = Dict("Damage" => Dict(), "Materials" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
+    params = Dict("Damage Models" => Dict(), "Materials Models" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
     @test check_key_elements(params) == true
 end
 
@@ -146,4 +146,25 @@ end
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict(), "block_4" => Dict()))
     @test get_number_of_blocks(params) == 4
 end
+testDatamanager = Data_manager
+block_list = [1, 2, 3]
+testDatamanager.set_block_list(block_list)
+prop_keys = testDatamanager.init_property()
+params = Dict("Blocks" => Dict("block_1" => Dict("Material" => "a"), "block_2" => Dict("Material" => "c"), "block_3" => Dict("Materials" => "a", "Damage" => "a", "Thermal" => "therm"), "Material" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1)), "Damage" => Dict("a" => Dict("value" => 3), "c" => Dict("value" => [1 2], "value2" => 1)), "Thermal" => Dict("therm" => Dict("value" => "hot", "bool" => true))))
 
+for block in block_list
+    get_block_model_definition(params, block, prop_keys, testDatamanager.set_properties)
+end
+"""
+function get_block_model_definition(params, blockID, prop_keys, properties)
+    if check_element(params, "block_" * string(blockID))
+        block = params["block_"*string(blockID)]
+        for model in prop_keys
+            if check_element(block, model)
+                properties(blockID, model) = get_model_parameter(params, model, block[model])
+            end
+        end
+    end
+    return property
+end
+"""
