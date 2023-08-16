@@ -10,14 +10,14 @@ using Random
     @test check_key_elements(params) == false
     params = Dict("Damage Models" => Dict())
     @test check_key_elements(params) == false
-    params = Dict("Damage Models" => Dict(), "Materials Models" => Dict())
+    params = Dict("Damage Models" => Dict(), "Material Models" => Dict())
     @test check_key_elements(params) == false
-    params = Dict("Damage Models" => Dict(), "Materials Models" => Dict(), "Discretization" => Dict())
+    params = Dict("Damage Models" => Dict(), "Material Models" => Dict(), "Discretization" => Dict())
     @test check_key_elements(params) == false
-    params = Dict("Damage Models" => Dict(), "Materials" => Dict(), "Discretization" => Dict(), "Blocks" => Dict())
+    params = Dict("Damage Models" => Dict(), "Material Models" => Dict(), "Discretization" => Dict(), "Blocks" => Dict())
     @test check_key_elements(params) == false
     @info "No error messages are okay for this test until now."
-    params = Dict("Damage Models" => Dict(), "Materials Models" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
+    params = Dict("Damage Models" => Dict(), "Material Models" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
     @test check_key_elements(params) == true
 end
 
