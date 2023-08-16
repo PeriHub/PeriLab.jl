@@ -114,24 +114,33 @@ end
     @test bcs["BC_1"] == Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t")
     @test bcs["BC_2"] == Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")
 end
-#@testset "ut_get_solver_options" begin
-params = Dict("Solver" => Dict("Material" => true, "Damage" => true, "Additive" => true, "Thermal" => true))
-solver_options = get_solver_options(params)
-@test solver_options["Additive"]
-@test solver_options["Damage"]
-@test solver_options["Material"]
-@test solver_options["Thermal"]
-params = Dict("Solver" => Dict())
-solver_options = get_solver_options(params)
-@test solver_options["Additive"] == false
-@test solver_options["Damage"] == false
-@test solver_options["Material"]
-@test solver_options["Thermal"] == false
+@testset "ut_get_solver_options" begin
+    params = Dict("Solver" => Dict("Material" => true, "Damage" => true, "Additive" => true, "Thermal" => true))
+    solver_options = get_solver_options(params)
+    @test solver_options["Additive"]
+    @test solver_options["Damage"]
+    @test solver_options["Material"]
+    @test solver_options["Thermal"]
+    params = Dict("Solver" => Dict())
+    solver_options = get_solver_options(params)
+    @test solver_options["Additive"] == false
+    @test solver_options["Damage"] == false
+    @test solver_options["Material"]
+    @test solver_options["Thermal"] == false
 
-params = Dict("Solver" => Dict("Material" => false, "Damage" => true, "Thermal" => true))
-solver_options = get_solver_options(params)
-@test solver_options["Additive"] == false
-@test solver_options["Damage"]
-@test solver_options["Material"] == false
-@test solver_options["Thermal"]
-#end
+    params = Dict("Solver" => Dict("Material" => false, "Damage" => true, "Thermal" => true))
+    solver_options = get_solver_options(params)
+    @test solver_options["Additive"] == false
+    @test solver_options["Damage"]
+    @test solver_options["Material"] == false
+    @test solver_options["Thermal"]
+end
+
+@testset "ut_get_number_of_blocks" begin
+    params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
+    @test get_number_of_blocks(params) == 2
+    params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict()))
+    @test get_number_of_blocks(params) == 3
+    params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict(), "block_4" => Dict()))
+    @test get_number_of_blocks(params) == 4
+end
