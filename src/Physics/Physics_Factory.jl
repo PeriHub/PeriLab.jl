@@ -23,7 +23,7 @@ end
 function read_properties(params, datamanager)
     datamanager.init_property()
     blocks = datamanager.get_block_list()
-    prop_keys = testDatamanager.init_property()
+    prop_keys = datamanager.init_property()
     for block in blocks
         get_block_model_definition(params, block, prop_keys, datamanager.set_properties)
     end
