@@ -9,7 +9,7 @@ function check_element(params, key)
     return haskey(params, key)
 end
 function check_key_elements(params)
-    check = check_element(params, "Materials")
+    check = check_element(params, "Material Models")
     if !check
         @error "No materials defined"
         return check
