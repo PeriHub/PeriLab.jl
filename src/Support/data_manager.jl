@@ -12,11 +12,14 @@ export get_nnsets
 export get_nsets
 export get_nbonds
 export get_nnodes
+export get_property
+export init_property
 export set_block_list
 export set_filter
 export set_nbonds
 export set_nnodes
 export set_nsets
+export set_property
 export switch_NP1_to_N
 ##########################
 # Variables
