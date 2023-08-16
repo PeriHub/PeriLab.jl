@@ -25,8 +25,9 @@ function get_final_time(params)
 end
 
 function get_solver_options(params)
-    mechanical::Bool = true
     additive::Bool = false
+    damage::Bool = false
+    mechanical::Bool = true
     thermal::Bool = false
     if check_element(params["Solver"], "Mechanical")
         mechanical = params["Solver"]["Mechanical"]
@@ -37,5 +38,8 @@ function get_solver_options(params)
     if check_element(params["Solver"], "Additive")
         additive = params["Solver"]["Additive"]
     end
-    return mechanical, thermal, additive
+    if check_element(params["Solver"], "Damage")
+        damage = params["Solver"]["Damage"]
+    end
+    return Dict("Additive" => additive, "Damage" => damage, "Mechanical" => mechanical, "Thermal" => thermal)
 end
