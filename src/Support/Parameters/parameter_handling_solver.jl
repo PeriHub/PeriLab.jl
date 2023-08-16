@@ -29,8 +29,8 @@ function get_solver_options(params)
     damage::Bool = false
     mechanical::Bool = true
     thermal::Bool = false
-    if check_element(params["Solver"], "Mechanical")
-        mechanical = params["Solver"]["Mechanical"]
+    if check_element(params["Solver"], "Material")
+        mechanical = params["Solver"]["Material"]
     end
     if check_element(params["Solver"], "Thermal")
         thermal = params["Solver"]["Thermal"]
@@ -41,5 +41,5 @@ function get_solver_options(params)
     if check_element(params["Solver"], "Damage")
         damage = params["Solver"]["Damage"]
     end
-    return Dict("Additive" => additive, "Damage" => damage, "Mechanical" => mechanical, "Thermal" => thermal)
+    return Dict("Additive" => additive, "Damage" => damage, "Material" => mechanical, "Thermal" => thermal)
 end

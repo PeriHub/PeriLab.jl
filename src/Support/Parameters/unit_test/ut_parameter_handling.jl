@@ -115,23 +115,23 @@ end
     @test bcs["BC_2"] == Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")
 end
 #@testset "ut_get_solver_options" begin
-params = Dict("Solver" => Dict("Mechanical" => true, "Damage" => true, "Additive" => true, "Thermal" => true))
+params = Dict("Solver" => Dict("Material" => true, "Damage" => true, "Additive" => true, "Thermal" => true))
 solver_options = get_solver_options(params)
 @test solver_options["Additive"]
 @test solver_options["Damage"]
-@test solver_options["Mechanical"]
+@test solver_options["Material"]
 @test solver_options["Thermal"]
 params = Dict("Solver" => Dict())
 solver_options = get_solver_options(params)
 @test solver_options["Additive"] == false
 @test solver_options["Damage"] == false
-@test solver_options["Mechanical"]
+@test solver_options["Material"]
 @test solver_options["Thermal"] == false
 
-params = Dict("Solver" => Dict("Mechanical" => false, "Damage" => true, "Thermal" => true))
+params = Dict("Solver" => Dict("Material" => false, "Damage" => true, "Thermal" => true))
 solver_options = get_solver_options(params)
 @test solver_options["Additive"] == false
 @test solver_options["Damage"]
-@test solver_options["Mechanical"] == false
+@test solver_options["Material"] == false
 @test solver_options["Thermal"]
 #end

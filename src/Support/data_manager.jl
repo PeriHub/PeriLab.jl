@@ -326,7 +326,7 @@ end
 
 function init_property()
     for iblock in get_block_list()
-        properties[iblock] = Dict{String,Dict}("Thermal" => Dict{String,Any}(), "Damage" => Dict{String,Any}(), "Mechanical" => Dict{String,Any}(), "Additive" => Dict{String,Any}())
+        properties[iblock] = Dict{String,Dict}("Thermal" => Dict{String,Any}(), "Damage" => Dict{String,Any}(), "Material" => Dict{String,Any}(), "Additive" => Dict{String,Any}())
     end
 end
 

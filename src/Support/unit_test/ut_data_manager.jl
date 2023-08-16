@@ -211,12 +211,12 @@ end
     testDatamanager.set_block_list([2, 3, 1, 1])
     testDatamanager.init_property()
     @test length(testDatamanager.properties) == 3
-    testDatamanager.set_property(1, "Mechanical", "E", 3)
-    @test testDatamanager.get_property(1, "Mechanical", "E") == 3
-    testDatamanager.set_property(1, "Mechanical", "C", "Hello Test")
-    @test testDatamanager.get_property(1, "Mechanical", "C") == "Hello Test"
-    testDatamanager.set_property(2, "Mechanical", "E", 1.1)
-    @test testDatamanager.get_property(2, "Mechanical", "E") == 1.1
+    testDatamanager.set_property(1, "Material", "E", 3)
+    @test testDatamanager.get_property(1, "Material", "E") == 3
+    testDatamanager.set_property(1, "Material", "C", "Hello Test")
+    @test testDatamanager.get_property(1, "Material", "C") == "Hello Test"
+    testDatamanager.set_property(2, "Material", "E", 1.1)
+    @test testDatamanager.get_property(2, "Material", "E") == 1.1
     testDatamanager.set_property(2, "Thermal", "E", [3 1 2; 1 2 3; 1 3 4])
     @test testDatamanager.get_property(2, "Thermal", "E") == [3 1 2; 1 2 3; 1 3 4]
     testDatamanager.set_property(3, "Thermal", "Q", 23.1)
