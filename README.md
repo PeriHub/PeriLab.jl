@@ -6,9 +6,24 @@ start julia in batch
 in julia promp write ]
 now you can define your enviroment via "activate ."
 write instantiate
+
+to add the modules you can use 
+
+add MPI
+add NearestNeighbors
+add Logging
+add YAML
+add CSV
+add DataFrames
+add Exodus
+add LinearAlgebra
+
+
 ```
 
 ```
+If you want to define it in an initialise file use
+
 import Pkg
 Pkg.add("MPI")
 Pkg.add("NearestNeighbors")
@@ -16,6 +31,8 @@ Pkg.add("Logging")
 Pkg.add("YAML")
 Pkg.add("CSV")
 Pkg.add("DataFrames")
+Pkg.add("Exodus")
+Pkg.add("LinearAlgebra")
 ```
 ## Add your files
 
