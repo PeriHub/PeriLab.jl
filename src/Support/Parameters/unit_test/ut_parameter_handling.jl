@@ -137,6 +137,8 @@ end
 end
 
 @testset "ut_get_number_of_blocks" begin
+    params = Dict("Blocks" => Dict())
+    @test get_number_of_blocks(params) == 0
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
     @test get_number_of_blocks(params) == 2
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict()))
@@ -144,3 +146,4 @@ end
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict(), "block_4" => Dict()))
     @test get_number_of_blocks(params) == 4
 end
+
