@@ -66,13 +66,13 @@ function compute_crititical_time_step(datamanager, mechanical, thermo)
     blocks = datamanager.get_block_list()
     for iblock in blocks
         if thermo
-            lambda = datamanager.get_element(iblock, "Thermal", "Lambda")
-            Cv = datamanager.get_element(iblock, "Thermal", "Specific Heat Capacity")
+            lambda = datamanager.get_property(iblock, "Thermal Models", "Lambda")
+            Cv = datamanager.get_property(iblock, "Thermal Models", "Specific Heat Capacity")
             t = compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
             criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
         end
         if mechanical
-            bulkModulus = datamanager.get_element(iblock, "Thermal", "Bulk Modulus")
+            bulkModulus = datamanager.get_property(iblock, "Thermal Models", "Bulk Modulus")
             t = compute_mechanical_crititical_time_step(bulkModulus)
             criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
         end

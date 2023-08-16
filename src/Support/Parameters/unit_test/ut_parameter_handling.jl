@@ -115,25 +115,25 @@ end
     @test bcs["BC_2"] == Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")
 end
 @testset "ut_get_solver_options" begin
-    params = Dict("Solver" => Dict("Material" => true, "Damage" => true, "Additive" => true, "Thermal" => true))
+    params = Dict("Solver" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true))
     solver_options = get_solver_options(params)
-    @test solver_options["Additive"]
-    @test solver_options["Damage"]
-    @test solver_options["Material"]
-    @test solver_options["Thermal"]
+    @test solver_options["Additive Models"]
+    @test solver_options["Damage Models"]
+    @test solver_options["Material Models"]
+    @test solver_options["Thermal Models"]
     params = Dict("Solver" => Dict())
     solver_options = get_solver_options(params)
-    @test solver_options["Additive"] == false
-    @test solver_options["Damage"] == false
-    @test solver_options["Material"]
-    @test solver_options["Thermal"] == false
+    @test solver_options["Additive Models"] == false
+    @test solver_options["Damage Models"] == false
+    @test solver_options["Material Models"]
+    @test solver_options["Thermal Models"] == false
 
-    params = Dict("Solver" => Dict("Material" => false, "Damage" => true, "Thermal" => true))
+    params = Dict("Solver" => Dict("Material Models" => false, "Damage Models" => true, "Thermal Models" => true))
     solver_options = get_solver_options(params)
-    @test solver_options["Additive"] == false
-    @test solver_options["Damage"]
-    @test solver_options["Material"] == false
-    @test solver_options["Thermal"]
+    @test solver_options["Additive Models"] == false
+    @test solver_options["Damage Models"]
+    @test solver_options["Material Models"] == false
+    @test solver_options["Thermal Models"]
 end
 
 @testset "ut_get_number_of_blocks" begin
@@ -150,7 +150,7 @@ testDatamanager = Data_manager
 block_list = [1, 2, 3]
 testDatamanager.set_block_list(block_list)
 prop_keys = testDatamanager.init_property()
-params = Dict("Blocks" => Dict("block_1" => Dict("Material" => "a"), "block_2" => Dict("Material" => "c"), "block_3" => Dict("Materials" => "a", "Damage" => "a", "Thermal" => "therm"), "Material" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1)), "Damage" => Dict("a" => Dict("value" => 3), "c" => Dict("value" => [1 2], "value2" => 1)), "Thermal" => Dict("therm" => Dict("value" => "hot", "bool" => true))))
+params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => "a"), "block_2" => Dict("Material  Models" => "c"), "block_3" => Dict("Material Models" => "a", "Damage Models" => "a", "Thermal Models" => "therm"), "Material  Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1)), "Damage Models" => Dict("a" => Dict("value" => 3), "c" => Dict("value" => [1 2], "value2" => 1)), "Thermal Models" => Dict("therm" => Dict("value" => "hot", "bool" => true))))
 
 for block in block_list
     get_block_model_definition(params, block, prop_keys, testDatamanager.set_properties)
