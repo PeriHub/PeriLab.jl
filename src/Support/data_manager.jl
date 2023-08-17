@@ -42,88 +42,88 @@ overlap_map = Ref([[[[]]]])
 ##########################
 material_type = Dict{String,Bool}("Bond-Based" => false, "Ordinary" => false, "Correspondence" => true, "Bond-Associated" => false)
 ##########################
+"""
+   create_bond_field(name::String, type::DataType, dof::Int64)
+
+   Creates a bond field with the given name, data type, and degree of freedom.
+
+   Parameters:
+   - `name` (string): The name of the bond field.
+   - `type` (DataType): The data type of the bond field.
+   - `dof` (Int64): The degree of freedom of each bond.
+
+   Returns:
+   - `bond_field` (Field): The created bond field for the current time step.
+   - `bond_field_np1` (Field): The created bond field for the next time step.
+
+   Example:
+   ```julia
+   create_bond_field("stress", Float64, 6)  # creates a stress bond field with 6 degrees of freedom
+   ```
+   """
 function create_bond_field(name::String, type::DataType, dof::Int64)
-    """
-    create_bond_field(name::String, type::DataType, dof::Int64)
 
-    Creates a bond field with the given name, data type, and degree of freedom.
-
-    Parameters:
-    - `name` (string): The name of the bond field.
-    - `type` (DataType): The data type of the bond field.
-    - `dof` (Int64): The degree of freedom of each bond.
-
-    Returns:
-    - `bond_field` (Field): The created bond field for the current time step.
-    - `bond_field_np1` (Field): The created bond field for the next time step.
-
-    Example:
-    ```julia
-    create_bond_field("stress", Float64, 6)  # creates a stress bond field with 6 degrees of freedom
-    ```
-    """
     return create_field(name * "N", type, "Bond_Field", dof), create_field(name * "NP1", type, "Bond_Field", dof)
 end
+"""
+   create_constant_bond_field(name::String, type::DataType, dof::Int64)
 
+   Creates a constant bond field with the given name, data type, and degree of freedom.
+
+   Parameters:
+   - `name` (string): The name of the constant bond field.
+   - `type` (DataType): The data type of the constant bond field.
+   - `dof` (Int64): The degree of freedom for each bond.
+
+   Returns:
+   - `constant_bond_field` (Field): The created constant bond field.
+
+   Example:
+   ```julia
+   create_constant_bond_field("density", Float64, 1)  # creates a density constant bond field
+   ```
+   """
 function create_constant_bond_field(name::String, type::DataType, dof::Int64)
-    """
-    create_constant_bond_field(name::String, type::DataType, dof::Int64)
-
-    Creates a constant bond field with the given name, data type, and degree of freedom.
-
-    Parameters:
-    - `name` (string): The name of the constant bond field.
-    - `type` (DataType): The data type of the constant bond field.
-    - `dof` (Int64): The degree of freedom for each bond.
-
-    Returns:
-    - `constant_bond_field` (Field): The created constant bond field.
-
-    Example:
-    ```julia
-    create_constant_bond_field("density", Float64, 1)  # creates a density constant bond field
-    ```
-    """
     return create_field(name, type, "Bond_Field", dof)
 end
+"""
+create_constant_node_field(name::String, type::DataType, dof::Int64)
 
+Creates a constant node field with the given name, data type, and degree of freedom.
+
+Parameters:
+- `name` (string): The name of the constant node field.
+- `type` (DataType): The data type of the constant node field.
+- `dof` (Int64): The degree of freedom of each node.
+
+Returns:
+- `constant_node_field` (Field): The created constant node field.
+
+Example:
+```julia
+create_constant_node_field("temperature", Float64, 1)  # creates a temperature constant node field
+```
+"""
 function create_constant_node_field(name::String, type::DataType, dof::Int64)
-    """
-    create_constant_node_field(name::String, type::DataType, dof::Int64)
 
-    Creates a constant node field with the given name, data type, and degree of freedom.
-
-    Parameters:
-    - `name` (string): The name of the constant node field.
-    - `type` (DataType): The data type of the constant node field.
-    - `dof` (Int64): The degree of freedom of each node.
-
-    Returns:
-    - `constant_node_field` (Field): The created constant node field.
-
-    Example:
-    ```julia
-    create_constant_node_field("temperature", Float64, 1)  # creates a temperature constant node field
-    ```
-    """
     return create_field(name, type, "Node_Field", dof)
 end
+"""
+create_field(name::String, vartype::DataType, bondNode::String, dof::Int64)
 
+Create a field with the given `name` for the specified `vartype`. If the field already exists, return the existing field. If the field does not exist, create a new field with the specified characteristics.
+
+# Arguments
+- `name::String`: The name of the field.
+- `vartype::DataType`: The data type of the field.
+- `dof::Int64`: The degrees of freedom per node.
+
+# Returns
+The field with the given `name` and specified characteristics.
+
+"""
 function create_field(name::String, vartype::DataType, bondOrNode::String, dof::Int64)
-    """
-    create_field(name::String, vartype::DataType, bondNode::String, dof::Int64)
 
-    Create a field with the given `name` for the specified `vartype`. If the field already exists, return the existing field. If the field does not exist, create a new field with the specified characteristics.
-
-    # Arguments
-    - `name::String`: The name of the field.
-    - `vartype::DataType`: The data type of the field.
-    - `dof::Int64`: The degrees of freedom per node.
-
-    # Returns
-    The field with the given `name` and specified characteristics.
-
-    """
     if haskey(fields, vartype) == false
         fields[vartype] = Dict{String,Any}()
     end
