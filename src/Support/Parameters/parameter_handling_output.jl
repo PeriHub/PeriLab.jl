@@ -48,12 +48,14 @@ function get_output_variables(outputs, variables)
 end
 
 function get_outputs(params, variables)
-    return_outputs = Dict()
+    return_outputs = Dict{Int64,Any}()
+    num = 0
     if check_element(params, "Output")
         outputs = params["Output"]
         for output in keys(outputs)
             if check_element(outputs[output], "Output Variables")
-                return_outputs[output] = get_output_variables(outputs[output]["Output Variables"], variables)
+                num += 1
+                return_outputs[num] = get_output_variables(outputs[output]["Output Variables"], variables)
             else
                 @warn "No output variables are defined for " * output * "."
             end

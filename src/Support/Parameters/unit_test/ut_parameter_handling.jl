@@ -69,13 +69,13 @@ end
 
     outputs = get_outputs(params, testfield_keys)
 
-    @test "A" in outputs["Output1"]
-    @test ("B" in outputs["Output1"]) == false
-    @test "C" in outputs["Output1"]
-    @test "A" in outputs["Output2"]
-    @test "B" in outputs["Output2"]
-    @test ("D" in outputs["Output2"]) == false
-    @test "E" in outputs["Output2"]
+    @test "A" in outputs[1]
+    @test ("B" in outputs[1]) == false
+    @test "C" in outputs[1]
+    @test "A" in outputs[2]
+    @test "B" in outputs[2]
+    @test ("D" in outputs[2]) == false
+    @test "E" in outputs[2]
 end
 @testset "ut_node_sets" begin
     numbers = [11, 12, 13, 44, 125]
