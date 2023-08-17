@@ -68,7 +68,7 @@ end
     block_Id[end] = 2
     testDatamanager.create_node_field("Displacements", Float64, dof)
     testDatamanager.create_node_field("Forces", Float64, dof)
-    outputs = Dict(1 => Dict("Displacements" => true, "Forces" => true, "Coordinates" => false))
+    outputs = ["Displacements", "Forces"]
     nsets = testDatamanager.get_nsets()
     coords = vcat(transpose(coordinates))
 

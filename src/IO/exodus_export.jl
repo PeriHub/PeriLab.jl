@@ -44,15 +44,13 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
 
     write_coordinates(exo, coords)
     write_number_of_variables(exo, NodalVariable, count(x -> x == true, values(output)))
-    id = 0
-    for name in keys(output)
-        if output[name]
-            id += 1
-            write_name(exo, NodalVariable, id, name)
-            # how to write coordinates
-            #https://github.com/cmhamel/Exodus.jl/issues/118
-            #just call your variables displ_x, displ_y, displ_z. Paraview will load this up as a vector and calculate things like vector magnitude for you.
-        end
+
+
+    for id in output
+        write_name(exo, NodalVariable, id, output[id])
+        # how to write coordinates
+        #https://github.com/cmhamel/Exodus.jl/issues/118
+        #just call your variables displ_x, displ_y, displ_z. Paraview will load this up as a vector and calculate things like vector magnitude for you.
     end
     write_time(exo, 1, 0.0)
     for block in unique(block_Id)
