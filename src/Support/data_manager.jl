@@ -7,6 +7,7 @@ export create_constant_node_field
 export create_node_field
 export get_all_field_keys
 export get_block_list
+export get_field
 export get_nlist
 export get_nnsets
 export get_nsets
@@ -424,6 +425,7 @@ function set_nnodes(n)
     ```
     """
     global nnodes = n
+    reset_filter()
 end
 
 function set_nnsets(n)
