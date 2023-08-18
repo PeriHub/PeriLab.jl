@@ -29,13 +29,12 @@ function init_write_results(params, datamanager)
     block_Id = datamanager.get_field("Block_Id")
     nsets = datamanager.get_nsets()
     for filename in filenames
-        push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets)))
+        push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), nnsets))
     end
 
     coords = vcat(transpose(coordinates))
     outputs, mapping = get_results_mapping(params, datamanager)
     for i in eachindex(exos)
-        outputs[i] = Write_Exodus_Results.paraview_vectors()
         exos[i] = Write_Exodus_Results.init_results_in_exodus(exos[i], outputs[i], coords, block_Id, nsets)
     end
 
