@@ -50,44 +50,32 @@ end
 
 function get_results_mapping(params, datamanager)
     outputs = get_outputs(params, datamanager.get_all_field_keys())
-    mapping = Dict()
+    mapping = Dict{Int64,Dict{String,String}}()
     return_outputs = Dict{Int64,Vector{String}}()
-    for id in outputs
-        return_outputs[id] = []
-        mapping[id] = Dict()
+    for id in eachindex(sort(outputs))
+        return_outputs[id] = String[]
+        mapping[id] = Dict{String,Vector{String}}()
         for fieldname in outputs[id]
-            datafield = datamanger.get_field(fieldname)
+            datafield = datamanager.get_field(fieldname)
             sizedatafield = size(datafield)
+            if length(sizedatafield) == 0
+                @error "No field " * fieldname * " exists."
+                return
+            end
             if length(sizedatafield) == 1
                 push!(return_outputs[id], clearNP1(fieldname))
                 mapping[id][clearNP1(fieldname)] = [fieldname]
             else
                 refDof = sizedatafield[2]
+
                 for dof in 1:refDof
-                    push!(return_outputs[id], clearNP1(fieldname) * get_paraviewCoordinates(dof, refDof))
-                    push!(mapping[id][clearNP1(fieldname)*get_paraviewCoordinates(dof, refDof)], fieldname)
+                    push!(return_outputs[id], clearNP1(fieldname) * Write_Exodus_Results.get_paraviewCoordinates(dof, refDof))
+                    mapping[id][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = fieldname
                 end
             end
         end
     end
     return return_outputs, mapping
-end
-
-function get_paraviewCoordinates(dof)
-    if dof < 4
-        paraviewCoordinates = paraview_specifics(dof)
-    else
-        if dof < 10
-            paraviewCoordinates = paraview_specifics(Int(ceil(9 / dof))) * paraview_specifics(3 - mod(dof, 3))
-        else
-            if dof < 81
-                paraviewCoordinates = paraview_specifics(Int(ceil(81 / dof))) * paraview_specifics(Int(ceil(9 / dof))) * paraview_specifics(3 - mod(dof, 3))
-            else
-                @error "not exportable yet as one variable"
-            end
-        end
-    end
-    return paraviewCoordinates
 end
 
 function clearNP1(name)
