@@ -18,9 +18,8 @@ function shapeTensor(data)
     bondCount = 0
     for iID in 1:nnodes
         @Tensor shapeTensor = zeros(Float32, dof, dof)
-        nneighbors = length(neigborlist[iID])
         if !nstatus
-            for jID in 1:nneighbors
+            for jID in neigborlist[iID]
                 bondCount += 1
 
                 shapeTensor += bondGeometry[(bondCount-1)*dof+i] * bondGeometry[(bondCount-1)*dof+j] * bondDamage[bondCount]
