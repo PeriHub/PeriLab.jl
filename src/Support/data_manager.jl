@@ -216,7 +216,10 @@ function get_field(name::String)
     # view() to get SubArray references
     # https://docs.julialang.org/en/v1/base/arrays/#Views-(SubArrays-and-other-view-types)
     if name in get_all_field_keys()
-        return view(fields[fieldnames[name]][name], filtered_nodes, :)
+        if length(size(fields[fieldnames[name]][name])) > 1
+            return view(fields[fieldnames[name]][name], filtered_nodes, :)
+        end
+        return view(fields[fieldnames[name]][name], filtered_nodes)
     end
     return []
 end

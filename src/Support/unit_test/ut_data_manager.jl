@@ -71,6 +71,7 @@ testfield_keys = testDatamanager.get_all_field_keys()
 end
 
 @testset "get_field" begin
+
     A = testDatamanager.get_field("A")
     @test typeof(A[1]) == Float32
     @test length(A) == testDatamanager.get_nnodes()
@@ -116,6 +117,14 @@ end
     @test length(I[:][:, :]) == testDatamanager.get_nnodes()
 
 end
+
+@testset "set_get_field" begin
+    test = testDatamanager.create_constant_node_field("test", Float32, 1)
+    @test test == testDatamanager.get_field("test")
+    test = testDatamanager.create_constant_node_field("test2", Float32, 3)
+    @test test == testDatamanager.get_field("test2")
+end
+
 testNP1NDict = testDatamanager.get_NP1_to_N_Dict()
 
 @testset "get_NP1_to_N_Dict" begin
