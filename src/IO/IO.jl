@@ -50,23 +50,27 @@ end
 
 function get_results_mapping(params, datamanager)
     outputs = get_outputs(params, datamanager.get_all_field_keys())
+    mapping = Dict()
     return_outputs = Dict{Int64,Vector{String}}()
     for id in outputs
         return_outputs[id] = []
+        mapping[id] = Dict()
         for fieldname in outputs[id]
             datafield = datamanger.get_field(fieldname)
             sizedatafield = size(datafield)
             if length(sizedatafield) == 1
                 push!(return_outputs[id], clearNP1(fieldname))
+                mapping[id][clearNP1(fieldname)] = [fieldname]
             else
                 refDof = sizedatafield[2]
                 for dof in 1:refDof
                     push!(return_outputs[id], clearNP1(fieldname) * get_paraviewCoordinates(dof, refDof))
+                    push!(mapping[id][clearNP1(fieldname)*get_paraviewCoordinates(dof, refDof)], fieldname)
                 end
             end
         end
     end
-    return return_outputs
+    return return_outputs, mapping
 end
 
 function get_paraviewCoordinates(dof)
