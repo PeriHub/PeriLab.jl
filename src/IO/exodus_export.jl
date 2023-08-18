@@ -1,5 +1,6 @@
 module Write_Exodus_Results
 using Exodus
+export get_paraviewCoordinates
 export init_result_file
 export init_write_results_in_exodus
 export write_results_in_exodus
@@ -68,6 +69,7 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
     write_number_of_variables(exo, NodalVariable, length(output))
 
     for id in eachindex(output)
+
         write_name(exo, NodalVariable, id, output[id])
         # how to write coordinates
         #https://github.com/cmhamel/Exodus.jl/issues/118
