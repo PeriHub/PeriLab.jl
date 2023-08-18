@@ -199,8 +199,7 @@ end
 
 function get_nnodes_per_core(field)
     nnodes = Int64[]
-    le = length(field)
-    for i in 1:le
+    for i in 1:eachindex(field)
         append!(nnodes, field[i])
     end
     return nnodes
@@ -351,8 +350,7 @@ end
 
 function glob_to_loc(distribution)
     glob_to_loc = Dict{Int64,Int64}()
-    len = length(distribution)
-    for id in 1:len
+    for id in eachindex(distribution)
         glob_to_loc[distribution[id]] = id
     end
     return glob_to_loc
