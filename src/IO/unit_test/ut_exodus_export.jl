@@ -66,22 +66,20 @@ end
     block_Id = testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
     block_Id .+= 1
     block_Id[end] = 2
-    testDatamanager.create_node_field("Displacements", Float64, dof)
-    testDatamanager.create_node_field("Forces", Float64, dof)
-    outputs = ["Displacements", "Forces"]
+    outputs = ["Displacement", "ForcesNP1"]
     nsets = testDatamanager.get_nsets()
     coords = vcat(transpose(coordinates))
 
     exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), 0)
     @test exo.init.num_dim == dof
 
-    exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs[1], coords, block_Id, nsets)
+    exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, coords, block_Id, nsets)
     @test length(exo.nodal_var_name_dict) == 2
 
     entries = collect(keys(exo.nodal_var_name_dict))
 
-    @test entries[1] == "Displacements"
-    @test entries[2] == "Forces"
+    @test entries[1] in outputs
+    @test entries[2] in outputs
 
     exo_coords = read_coordinates(exo)
     exo_nsets = read_sets(exo, NodeSet)
