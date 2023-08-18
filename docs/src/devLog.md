@@ -22,12 +22,14 @@
     13.a nodesets in mesh -> done
     14. overlap synchronisation
     15. bc in solver
-    16. verlet solver
+    16. verlet solver -> pacackage?
     17. write output
     18. integrate first model
     18.a step width determination
     19. first test
     20. 2D arrays in fields
+    21. params reader for material + physics
+    22. compute class
 
 ## Design decisions
 Each vector entry for a value exists for all nodes, also if the node does not have this property in a block. However, the synchronisation is very ugly, because all slave nodes of block with value I need the entry at the other core to. If not it will lead nowhere if MPI communication occurs
@@ -40,5 +42,7 @@ Each vector entry for a value exists for all nodes, also if the node does not ha
     include the file in the code via a makro
     material inclusion is very simple
     bonds as elements in exodus
+    multiple materials in one block -> evaluation order
+
 
 
