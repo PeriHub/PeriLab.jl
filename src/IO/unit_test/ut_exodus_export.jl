@@ -89,3 +89,23 @@ end
 
     rm(filename)
 end
+@testset "ut_paraview_specifics" begin
+    @test Write_Exodus_Results.paraview_specifics(1) == "x"
+    @test Write_Exodus_Results.paraview_specifics(2) == "y"
+    @test Write_Exodus_Results.paraview_specifics(3) == "z"
+end
+
+@testset "ut_get_paraviewCoordinates" begin
+    for i in 1:3
+        @test Write_Exodus_Results.get_paraviewCoordinates(1, i) == "x"
+        @test Write_Exodus_Results.get_paraviewCoordinates(2, i) == "y"
+        @test Write_Exodus_Results.get_paraviewCoordinates(3, i) == "z"
+    end
+    for ref = 4:9
+        for i in 1:3
+            for j in 1:3
+                @test Write_Exodus_Results.get_paraviewCoordinates((i - 1) * 3 + j, ref) == Write_Exodus_Results.paraview_specifics(i) * Write_Exodus_Results.paraview_specifics(j)
+            end
+        end
+    end
+end

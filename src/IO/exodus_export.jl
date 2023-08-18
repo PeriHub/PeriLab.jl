@@ -27,14 +27,36 @@ function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_nod
 end
 
 function paraview_specifics(dof)
-    convention = Dict("1" => "x", "2" => "y", "3" => "z")
-    return convention[string(dof)]
+
+    convention = Dict(1 => "x", 2 => "y", 3 => "z")
+    return convention[dof]
 end
+
+function get_paraviewCoordinates(dof, refDof)
+    if dof > refDof
+        @warn "Reference dof are to small and set to used dof"
+        refDof = dof
+    end
+    if refDof < 4
+        return paraview_specifics(dof)
+    end
+    if refDof < 10
+        return paraview_specifics(Int(ceil(dof / 3))) * paraview_specifics(dof - Int(ceil(dof / 3 - 1) * 3))
+    end
+
+    @error "not exportable yet as one variable"
+    return
+
+end
+
 
 function get_block_nodes(block_Id, block)
     conn = findall(x -> x == block, block_Id)
     return reshape(conn, 1, length(conn))
 end
+
+
+
 
 function init_results_in_exodus(exo, output, coords, block_Id, nsets)
 
@@ -43,10 +65,9 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
     end
 
     write_coordinates(exo, coords)
-    write_number_of_variables(exo, NodalVariable, count(x -> x == true, values(output)))
+    write_number_of_variables(exo, NodalVariable, length(output))
 
-
-    for id in output
+    for id in eachindex(output)
         write_name(exo, NodalVariable, id, output[id])
         # how to write coordinates
         #https://github.com/cmhamel/Exodus.jl/issues/118
