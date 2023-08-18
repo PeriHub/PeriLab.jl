@@ -63,7 +63,8 @@ end
     coordinates[4, 2] = 1
     coordinates[5, 1] = 2
     coordinates[5, 2] = 2
-    block_Id = testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
+    testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
+    block_Id = testDatamanager.get_field("Block_Id")
     block_Id .+= 1
     block_Id[end] = 2
     outputs = ["Displacement", "ForcesNP1"]
