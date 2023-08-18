@@ -37,8 +37,10 @@ function get_output_variables(outputs, variables)
     return_outputs = []
     for output in keys(outputs)
         if outputs[output]
-            if (output in variables) || output * "NP1" in variables
+            if output in variables
                 push!(return_outputs, output)
+            elseif output * "NP1" in variables
+                push!(return_outputs, output * "NP1")
             else
                 @warn '"' * output * '"' * " is not defined as variable"
             end
