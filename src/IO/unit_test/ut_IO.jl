@@ -44,11 +44,13 @@ block_Id[end] = 2
             if occursin("Forces", entry)
                 dofForce += 1
                 @test mapping[i][entry][1] == "ForcesNP1"
-                @test mapping[i][entry][2] == dofForce
+                @test mapping[i][entry][2] == i
+                @test mapping[i][entry][3] == dofForce
             else
                 dofDisp += 1
                 @test mapping[i][entry][1] == "DisplacementsNP1"
-                @test mapping[i][entry][2] == dofDisp
+                @test mapping[i][entry][2] == 1
+                @test mapping[i][entry][3] == dofDisp
             end
         end
     end
@@ -81,11 +83,13 @@ end
             if occursin("Forces", entry)
                 dofForce += 1
                 @test mapping[i][entry][1] == "ForcesNP1"
-                @test mapping[i][entry][2] == dofForce
+                @test mapping[i][entry][2] == i
+                @test mapping[i][entry][3] == dofForce
             else
                 dofDisp += 1
                 @test mapping[i][entry][1] == "DisplacementsNP1"
-                @test mapping[i][entry][2] == dofDisp
+                @test mapping[i][entry][2] == 1
+                @test mapping[i][entry][3] == dofDisp
             end
         end
     end
