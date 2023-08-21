@@ -79,7 +79,7 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
     for block in unique(block_Id)
         conn = get_block_nodes(block_Id, block)# virtual elements
         write_block(exo, block, "SPHERE", conn)
-        #write_name(exo, block, "block_" * string(block))
+        write_name(exo, Block, block, "Block_" * string(block))
 
     end
     return exo
@@ -90,4 +90,7 @@ function write_step_and_time(exo, step, time)
     return exo
 end
 
+function write_results_in_exodus(exo, mapping, datamanager)
+    #write_values
+end
 end

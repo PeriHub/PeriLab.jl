@@ -93,6 +93,8 @@ end
     Write_Exodus_Results.write_step_and_time(exo, 2, 3.7)
     @test read_number_of_time_steps(exo) == 2
     @test read_time(exo, 2) == 3.7
+    @test read_name(exo, Block, 1) == "Block_1"
+    @test read_name(exo, Block, 2) == "Block_2"
     close(exo)
 
     rm(filename)
