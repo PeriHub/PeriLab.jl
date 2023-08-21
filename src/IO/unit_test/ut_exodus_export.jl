@@ -92,15 +92,16 @@ block_Id[end] = 2
 #outputs = ["Displacements", "Forces"]
 nsets = testDatamanager.get_nsets()
 coords = vcat(transpose(coordinates))
-outputs = Dict("Forcesxx" => ["ForcesNP1", 1, 1], "Forcesxy" => ["ForcesNP1", 1, 2], "Forcesxz" => ["ForcesNP1", 1, 3], "Forcesyx" => ["ForcesNP1", 1, 4], "Forcesyy" => ["ForcesNP1", 1, 5], "Forcesyz" => ["ForcesNP1", 1, 6], "Displacements" => ["DisplacementsNP1", 2, 1])
+outputs = Dict("Forcesxx" => ["ForcesNP1", 1, 1, Float32], "Forcesxy" => ["ForcesNP1", 1, 2, Float32], "Forcesxz" => ["ForcesNP1", 1, 3, Float32], "Forcesyx" => ["ForcesNP1", 1, 4, Float32], "Forcesyy" => ["ForcesNP1", 1, 5, Float32], "Forcesyz" => ["ForcesNP1", 1, 6, Float32], "Displacements" => ["DisplacementsNP1", 2, 1, Float32])
 exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), 0)
 exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, coords, block_Id, nsets)
+
 exo = Write_Exodus_Results.write_step_and_time(exo, 2, 2.2)
 exo = Write_Exodus_Results.write_step_and_time(exo, 3, 3.7)
 
 @testset "ut_init_results_in_exodus" begin
     @test exo.init.num_dim == dof
-    @test length(exo.nodal_var_name_dict) == 2
+    @test length(exo.nodal_var_name_dict) == 7
     entries = collect(keys(exo.nodal_var_name_dict))
     ref = collect(keys(outputs))
     @test sort(entries) == sort(ref)
@@ -116,45 +117,69 @@ exo = Write_Exodus_Results.write_step_and_time(exo, 3, 3.7)
     @test read_name(exo, Block, 2) == "Block_2"
 end
 
-#@testset "ut_write_results_in_exodus" begin
-coordinates = testDatamanager.get_field("Coordinates")
-block_Id = testDatamanager.get_field("Block_Id")
+
 testDatamanager.create_node_field("Forces", Float32, 6)
 testDatamanager.create_node_field("Displacements", Float32, 1)
 force = testDatamanager.get_field("Forces", "NP1")
 disp = testDatamanager.get_field("Displacements", "NP1")
 force[5, 1:6] .= 3.3
-force[1:3, 6] .= 3.3
+force[1:3, 6] .= 2.3
 disp[1] = 3
 disp[2] = 3.00001
 disp[3] = 2.1
 disp[4] = -1.8
 disp[5] = 0
 
+exo = Write_Exodus_Results.write_nodal_results_in_exodus(exo, 2, outputs, testDatamanager)
 
-#outputs = collect(keys(mapping))
-outputs = ["Displacement", "Forces"]
-nsets = testDatamanager.get_nsets()
-coords = vcat(transpose(coordinates))
+test_disp_step_zero = read_values(exo, NodalVariable, 1, 1, "Displacements")
 
-exo = Write_Exodus_Results.write_results_in_exodus(exo, 2, mapping, testDatamanager)
-
-println()
-
-test_disp_step_zero = read_values(exo, NodalVariable, 1, 1, 1)
 test_disp_step_one = read_values(exo, NodalVariable, 2, 1, 1)
-@test test_disp_step_zero == 0.0 .* disp
-@test test_disp_step_zero == disp
-for j in 1:6
-    test_force_step_zero = read_values(exo, NodalVariable, 1, 2, j)
-    test_force_step_one = read_values(exo, NodalVariable, 2, 2, j)
-    @test test_force_step_zero == 0.0 .* force
-    @test test_force_step_one == force[:, j]
+@testset "ut_write_results_in_exodus" begin
+    @test test_disp_step_zero == zeros(5)
+    for id in eachindex(test_disp_step_one)
+        if disp[id] != 0
+            @test test_disp_step_one[id] / disp[id] - 1 < 1e-8
+        else
+            @test test_disp_step_one[id] == disp[id]
+        end
+    end
+
+    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesxx")
+    for id in 1:4
+        @test ftest[id] == 0
+    end
+    @test ftest[5] / 3.3 - 1 < 1e-8
+    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesxy")
+    for id in 1:4
+        @test ftest[id] == 0
+    end
+    @test ftest[5] / 3.3 - 1 < 1e-8
+    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesxz")
+    for id in 1:4
+        @test ftest[id] == 0
+    end
+    @test ftest[5] / 3.3 - 1 < 1e-8
+    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesyx")
+    for id in 1:4
+        @test ftest[id] == 0
+    end
+    @test ftest[5] / 3.3 - 1 < 1e-8
+
+    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesyy")
+    for id in 1:4
+        @test ftest[id] == 0
+    end
+    @test ftest[5] / 3.3 - 1 < 1e-8
+
+    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesyz")
+    @test ftest[1] / 2.3 - 1 < 1e-8
+    @test ftest[2] / 2.3 - 1 < 1e-8
+    @test ftest[3] / 2.3 - 1 < 1e-8
+    @test ftest[4] == 0
+    @test ftest[5] / 3.3 - 1 < 1e-8
+
 end
 
-
-#end
-
 close(exo)
-
 rm(filename)

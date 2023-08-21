@@ -16,7 +16,7 @@ function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_nod
     num_elems = num_nodes
     num_side_sets = 0
     num_node_sets = num_node_sets
-    init = Initialization(
+    init = Initialization{bulk_int_type}(
         Int32(num_dim), Int32(num_nodes), Int32(num_elems),
         Int32(num_elem_blks), Int32(num_node_sets), Int32(num_side_sets)
     )
@@ -52,15 +52,8 @@ end
 
 function get_block_nodes(block_Id, block)
     conn = findall(x -> x == block, block_Id)
-    if length(conn) > 1
-        return reshape(conn, 1, length(conn))
-    else
-        return conn
-    end
+    return reshape(conn, 1, length(conn))
 end
-
-
-
 
 function init_results_in_exodus(exo, output, coords, block_Id, nsets)
 
@@ -69,21 +62,28 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
     end
 
     write_coordinates(exo, coords)
-    write_number_of_variables(exo, NodalVariable, length(output))
 
-    for id in eachindex(output)
-
-        write_name(exo, NodalVariable, id, output[id])
-        # how to write coordinates
-        #https://github.com/cmhamel/Exodus.jl/issues/118
-        #just call your variables displ_x, displ_y, displ_z. Paraview will load this up as a vector and calculate things like vector magnitude for you.
-    end
-    write_step_and_time(exo, 1, 0.0)
     for block in sort(unique(block_Id))
-        conn = get_block_nodes(block_Id, block)# virtual elements
+        conn = get_block_nodes(block_Id, block)# virtual elements     
         write_block(exo, block, "SPHERE", conn)
         write_name(exo, Block, block, "Block_" * string(block))
 
+    end
+
+    """
+    output structure var_name -> [fieldname, exodus id, field dof]
+    """
+    names = collect(keys(sort(output)))
+    write_number_of_variables(exo, NodalVariable, length(names))
+    write_names(exo, NodalVariable, names)
+    nnodes = exo.init.num_nodes
+    for varname in keys(output)
+        if output[varname][4] == Float32 || output[varname][4] == Float64 || output[varname][4] == Float128
+            zero = zeros(Float64, nnodes)
+        else
+            zero = zeros(output[varname][4], nnodes)
+        end
+        write_values(exo, NodalVariable, 1, output[varname][2], varname, zero)
     end
     return exo
 end
@@ -93,13 +93,14 @@ function write_step_and_time(exo, step, time)
     return exo
 end
 
-function write_results_in_exodus(exo, step, mapping, datamanager)
+function write_nodal_results_in_exodus(exo, step, output, datamanager)
     #write_values
-    for map in keys(mapping)
-        field = datamanager.get_field(mapping[map][1])
+    for varname in keys(output)
+        field = datamanager.get_field(output[varname][1])
         #exo, timestep::Integer, id::Integer, var_index::Integer,vector
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
-        write_values(exo, NodalVariable, step, mapping[map][2], mapping[map][3], field[:, mapping[map][3]])
+        var = convert(Array{Float64}, field[:, output[varname][3]])
+        write_values(exo, NodalVariable, step, output[varname][2], varname, var)
     end
     return exo
 end
