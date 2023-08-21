@@ -30,7 +30,7 @@ nn[4] = 2
 nn[5] = 5
 
 testDatamanager.create_constant_node_field("A", Float32, 1)
-testDatamanager.create_node_field("B", Bool, 1)
+B = testDatamanager.create_node_field("B", Bool, 1)
 testDatamanager.create_constant_node_field("C", Float32, 4)
 testDatamanager.create_node_field("D", Int64, 7)
 testDatamanager.create_constant_bond_field("F", Float32, 1)
@@ -40,7 +40,8 @@ testDatamanager.create_bond_field("I", Int64, 7)
 testfield_keys = testDatamanager.get_all_field_keys()
 @testset "create data fields -> get all fields" begin
     @test testDatamanager.get_nnodes() == 5
-
+    @test B[1] == testDatamanager.get_field("BN")
+    @test B[2] == testDatamanager.get_field("B", "NP1")
     @test "A" in testfield_keys
     @test ("AN" in testfield_keys) == false
     @test ("ANP1" in testfield_keys) == false
