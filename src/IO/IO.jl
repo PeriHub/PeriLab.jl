@@ -49,11 +49,11 @@ end
 
 function get_results_mapping(params, datamanager)
     outputs = get_outputs(params, datamanager.get_all_field_keys())
-    mapping = Dict{Int64,Dict{String,String}}()
+    mapping = Dict{Int64,Dict{String,Vector{Any}}}()
     return_outputs = Dict{Int64,Vector{String}}()
     for id in eachindex(sort(outputs))
         return_outputs[id] = String[]
-        mapping[id] = Dict{String,Vector{String}}()
+        mapping[id] = Dict{String,Vector{Any}}()
         for fieldname in outputs[id]
             datafield = datamanager.get_field(fieldname)
             sizedatafield = size(datafield)
@@ -63,13 +63,12 @@ function get_results_mapping(params, datamanager)
             end
             if length(sizedatafield) == 1
                 push!(return_outputs[id], clearNP1(fieldname))
-                mapping[id][clearNP1(fieldname)] = [fieldname]
+                mapping[id][clearNP1(fieldname)] = [fieldname, 1]
             else
                 refDof = sizedatafield[2]
-
                 for dof in 1:refDof
                     push!(return_outputs[id], clearNP1(fieldname) * Write_Exodus_Results.get_paraviewCoordinates(dof, refDof))
-                    mapping[id][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = fieldname
+                    mapping[id][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = [fieldname, dof]
                 end
             end
         end

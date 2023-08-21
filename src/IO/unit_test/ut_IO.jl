@@ -38,11 +38,17 @@ block_Id[end] = 2
     @test output[1] == ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     @test output[2] == ["Displacementsx", "Displacementsy", "Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     for i in 1:2
-        for entry in keys(mapping[i])
+        dofForce = 0
+        dofDisp = 0
+        for entry in keys(sort(mapping[i]))
             if occursin("Forces", entry)
-                @test mapping[i][entry] == "ForcesNP1"
+                dofForce += 1
+                @test mapping[i][entry][1] == "ForcesNP1"
+                @test mapping[i][entry][2] == dofForce
             else
-                @test mapping[i][entry] == "DisplacementsNP1"
+                dofDisp += 1
+                @test mapping[i][entry][1] == "DisplacementsNP1"
+                @test mapping[i][entry][2] == dofDisp
             end
         end
     end
@@ -69,11 +75,17 @@ end
     end
 
     for i in 1:2
-        for entry in keys(mapping[i])
+        dofForce = 0
+        dofDisp = 0
+        for entry in keys(sort(mapping[i]))
             if occursin("Forces", entry)
-                @test mapping[i][entry] == "ForcesNP1"
+                dofForce += 1
+                @test mapping[i][entry][1] == "ForcesNP1"
+                @test mapping[i][entry][2] == dofForce
             else
-                @test mapping[i][entry] == "DisplacementsNP1"
+                dofDisp += 1
+                @test mapping[i][entry][1] == "DisplacementsNP1"
+                @test mapping[i][entry][2] == dofDisp
             end
         end
     end
