@@ -41,6 +41,15 @@ function init_write_results(params, datamanager)
     return exos, mapping
 end
 
+function write_results(exos, step, dt, mapping, datamanager)
+    time = (step - 1) * dt
+
+    for id in eachindex(exos)
+        exos[id] = write_step_and_time(exos[id], step, time)
+        exos[id] = Write_Exodus_Results.write_results_in_exodus(exo[id], step, mapping[id], datamanager)
+    end
+end
+
 function get_results_mapping(params, datamanager)
     outputs = get_outputs(params, datamanager.get_all_field_keys())
     mapping = Dict{Int64,Dict{String,Vector{Any}}}()
