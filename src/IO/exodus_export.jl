@@ -28,7 +28,6 @@ function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_nod
 end
 
 function paraview_specifics(dof)
-
     convention = Dict(1 => "x", 2 => "y", 3 => "z")
     return convention[dof]
 end
@@ -53,7 +52,11 @@ end
 
 function get_block_nodes(block_Id, block)
     conn = findall(x -> x == block, block_Id)
-    return reshape(conn, 1, length(conn))
+    if length(conn) > 1
+        return reshape(conn, 1, length(conn))
+    else
+        return conn
+    end
 end
 
 
@@ -76,7 +79,7 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
         #just call your variables displ_x, displ_y, displ_z. Paraview will load this up as a vector and calculate things like vector magnitude for you.
     end
     write_step_and_time(exo, 1, 0.0)
-    for block in unique(block_Id)
+    for block in sort(unique(block_Id))
         conn = get_block_nodes(block_Id, block)# virtual elements
         write_block(exo, block, "SPHERE", conn)
         write_name(exo, Block, block, "Block_" * string(block))
@@ -90,7 +93,14 @@ function write_step_and_time(exo, step, time)
     return exo
 end
 
-function write_results_in_exodus(exo, mapping, datamanager)
+function write_results_in_exodus(exo, step, mapping, datamanager)
     #write_values
+    for map in keys(mapping)
+        field = datamanager.get_field(mapping[map][1])
+        #exo, timestep::Integer, id::Integer, var_index::Integer,vector
+        # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
+        write_values(exo, NodalVariable, step, mapping[map][2], mapping[map][3], field[:, mapping[map][3]])
+    end
+    return exo
 end
 end
