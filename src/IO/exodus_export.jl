@@ -75,7 +75,7 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
         #https://github.com/cmhamel/Exodus.jl/issues/118
         #just call your variables displ_x, displ_y, displ_z. Paraview will load this up as a vector and calculate things like vector magnitude for you.
     end
-    write_time(exo, 1, 0.0)
+    write_step_and_time(exo, 1, 0.0)
     for block in unique(block_Id)
         conn = get_block_nodes(block_Id, block)# virtual elements
         write_block(exo, block, "SPHERE", conn)
@@ -84,4 +84,10 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
     end
     return exo
 end
+
+function write_step_and_time(exo, step, time)
+    write_time(exo, step, time)
+    return exo
+end
+
 end

@@ -86,6 +86,13 @@ end
     exo_nsets = read_sets(exo, NodeSet)
     @test coords == exo_coords
     @test exo_nsets == []
+
+    Write_Exodus_Results.write_step_and_time(exo, 1, 2.2)
+    @test read_number_of_time_steps(exo) == 1
+    @test read_time(exo, 1) == 2.2
+    Write_Exodus_Results.write_step_and_time(exo, 2, 3.7)
+    @test read_number_of_time_steps(exo) == 2
+    @test read_time(exo, 2) == 3.7
     close(exo)
 
     rm(filename)
@@ -110,3 +117,48 @@ end
         end
     end
 end
+
+
+nnodes = 5
+dof = 2
+testDatamanager = Data_manager
+testDatamanager.set_nnodes(nnodes)
+testDatamanager.set_dof(dof)
+coordinates = testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
+coordinates[1, 1] = 0
+coordinates[1, 2] = 0
+coordinates[2, 1] = 1
+coordinates[2, 2] = 0
+coordinates[3, 1] = 0
+coordinates[3, 2] = 1
+coordinates[4, 1] = 1
+coordinates[4, 2] = 1
+coordinates[5, 1] = 2
+coordinates[5, 2] = 2
+testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
+block_Id = testDatamanager.get_field("Block_Id")
+block_Id .+= 1
+block_Id[end] = 2
+outputs = ["Displacement", "ForcesNP1"]
+nsets = testDatamanager.get_nsets()
+coords = vcat(transpose(coordinates))
+
+exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), 0)
+@test exo.init.num_dim == dof
+
+exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, coords, block_Id, nsets)
+@test length(exo.nodal_var_name_dict) == 2
+
+entries = collect(keys(exo.nodal_var_name_dict))
+
+@test entries[1] in outputs
+@test entries[2] in outputs
+
+exo_coords = read_coordinates(exo)
+exo_nsets = read_sets(exo, NodeSet)
+@test coords == exo_coords
+@test exo_nsets == []
+close(exo)
+
+rm(filename)
+
