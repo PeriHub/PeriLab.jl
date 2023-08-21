@@ -85,11 +85,13 @@ end
                 @test mapping[i][entry][1] == "ForcesNP1"
                 @test mapping[i][entry][2] == i
                 @test mapping[i][entry][3] == dofForce
+                @test mapping[i][entry][4] == Float32
             else
                 dofDisp += 1
                 @test mapping[i][entry][1] == "DisplacementsNP1"
                 @test mapping[i][entry][2] == 1
                 @test mapping[i][entry][3] == dofDisp
+                @test mapping[i][entry][4] == Float32
             end
         end
     end
