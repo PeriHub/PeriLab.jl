@@ -14,13 +14,13 @@ function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
     density = datamanager.get_field("Density")
     bondgeometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
-
+    nneighbors = datamanager.get_field("Number of Neighbors")
 
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
 
     for iID in 1:nnodes
-        denominator = get_cs_denominator(len(nlist[iID]), volume[nlist[iID]], bondgeometry[iID][:, dof+1])
+        denominator = get_cs_denominator(nneighbors[iID], volume[nlist[iID]], bondgeometry[iID][:, dof+1])
         t = density[iID] * Cv / (eigLam * denominator)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
     end
@@ -33,23 +33,24 @@ function get_cs_denominator(nneighbors, volume, bondgeometry)
     end
     return denominator
 end
-function compute_mechanical_crititical_time_step(bulkModulus)
+function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
     nnodes = datamanager.get_nnodes()
+    dof = datamanager.get_dof()
+    nneighbors = datamanager.get_field("Number of Neighbors")
+    nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
     bondgeometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     horizon = datamanager.get_field("Horizon")
 
-    springConstant = 18.0 * bulkModulus / (pi * horizon * horizon * horizon * horizon)
+
     for iID in 1:nnodes
+        denominator = get_cs_denominator(nneighbors[iID], volume[nlist[iID]], bondgeometry[iID][:, dof+1])
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
-        denominator = get_cs_denominator(len(nlist[iID]), volume[nlist[iID]], bondgeometry[iID][:, dof+1])
-        t = 18.0 * bulkModulus * density[iID] / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID]) / denominator
+        t = density[iID] / (denominator * springConstant)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
     end
     return sqrt(2 * criticalTimeStep)
