@@ -1,27 +1,46 @@
 function get_solver_name(params)
-    check = check_element(params["Solver"], "Verlet")
     if check_element(params["Solver"], "Verlet")
-
-        return params["Solver"]["Verlet"]
-
+        return "Verlet"
     end
-    return params["Discretization"]["Input Mesh File"]
+    return ""
 end
 
 function get_initial_time(params)
-    check = check_element(params["Solver"], "Initial Time")
-    if !check
-        @error "No initial time defined"
+
+    if check_element(params["Solver"], "Initial Time")
+        return params["Solver"]["Initial Time"]
     end
-    return params["Discretization"]["Initial Time"]
+
+    @error "No initial time defined"
 end
 
 function get_final_time(params)
-    check = check_element(params["Solver"], "Final Time")
-    if !check
-        @error "No final time defined"
+
+    if check_element(params["Solver"], "Final Time")
+        return params["Solver"]["Final Time"]
     end
-    return params["Discretization"]["Final Time"]
+    @error "No final time defined"
+end
+
+function get_safety_factor(params)
+    if check_element(params["Solver"]["Verlet"], "Safety Factor")
+        return params["Solver"]["Verlet"]["Safety Factor"]
+    end
+    return 1.0
+end
+
+function get_fixed_dt(params)
+    if check_element(params["Solver"]["Verlet"], "Fixed dt")
+        return params["Solver"]["Verlet"]["Fixed dt"]
+    end
+    return -1.0
+end
+
+function get_numerical_damping(params)
+    if check_element(params["Solver"], "Numerical Damping")
+        return params["Solver"]["Numerical Damping"]
+    end
+    return 0.0
 end
 
 function get_solver_options(params)

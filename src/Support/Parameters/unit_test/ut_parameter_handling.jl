@@ -70,10 +70,10 @@ end
     outputs = get_outputs(params, testfield_keys)
 
     @test "A" in outputs[1]
-    @test ("B" in outputs[1]) == false
+    @test ("BNP1" in outputs[1]) == false
     @test "C" in outputs[1]
     @test "A" in outputs[2]
-    @test "B" in outputs[2]
+    @test "BNP1" in outputs[2]
     @test ("D" in outputs[2]) == false
     @test "E" in outputs[2]
 end
@@ -146,4 +146,20 @@ end
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict(), "block_4" => Dict()))
     @test get_number_of_blocks(params) == 4
 end
+
+@testset "ut_solver" begin
+    params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 0.95, "Fixed dt" => 1e-3), "Numerical Damping" => 5e-6))
+    @test get_solver_name(params) == "Verlet"
+    @test get_final_time(params) == params["Solver"]["Final Time"]
+    @test get_initial_time(params) == params["Solver"]["Initial Time"]
+    @test get_safety_factor(params) == params["Solver"]["Verlet"]["Safety Factor"]
+    @test get_fixed_dt(params) == params["Solver"]["Verlet"]["Fixed dt"]
+    @test get_numerical_damping(params) == params["Solver"]["Numerical Damping"]
+    params = Dict("Solver" => Dict("Verlet" => Dict()))
+    @test get_safety_factor(params) == 1
+    @test get_fixed_dt(params) == -1
+    @test get_numerical_damping(params) == 0.0
+end
+
+
 
