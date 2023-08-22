@@ -67,13 +67,37 @@ bondGeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondGeom)
 
 blocks[:] = [1, 1, 2, 2, 1]
 blocks = testDatamanager.set_block_list(blocks)
+testValmech = 3.59255e-05
 # from Peridigm
 @testset "ut_crititical_time_step" begin
-    testVal = 3.59255e-05
+
     t = compute_mechanical_crititical_time_step(testDatamanager, 140.0)
-    @test testVal / t - 1 < 1e-6
+    @test testValmech / t - 1 < 1e-6
     testVal = 1e50 # to take from Peridigm
     t = compute_thermodynamic_crititical_time_step(testDatamanager, 140.0, 5.1)
     #@test testVal / t - 1 < 1e-6
+
+end
+testDatamanager.init_property()
+testDatamanager.set_property(1, "Material Models", "Bulk Modulus", 140.0)
+testDatamanager.set_property(2, "Material Models", "Bulk Modulus", 140.0)
+@testset "ut_init_Verlet" begin
+    params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)))
+    start_time, dt, nsteps = init_Verlet(params, testDatamanager, true, false)
+
+    @test start_time == params["Solver"]["Initial Time"]
+    testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / testValmech))
+    @test nsteps == testStep
+    testDt = (params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / testStep
+
+    @test testDt / dt - 1 < 1e-6
+    params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0, "Fixed dt" => 1e-5)))
+    start_time, dt, nsteps = init_Verlet(params, testDatamanager, true, false)
+
+    testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / 1e-5))
+    @test testStep == nsteps
+    testFixdtVal = (params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / testStep
+
+    @test testFixdtVal / dt - 1 < 1e-6
 
 end

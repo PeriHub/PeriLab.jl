@@ -1,7 +1,7 @@
 
 using LinearAlgebra
 include("../../Support/tools.jl")
-
+include("../../Support/Parameters/parameter_handling.jl")
 function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
     """
     critical time step for a thermodynamic problem
@@ -73,10 +73,42 @@ function compute_crititical_time_step(datamanager, mechanical, thermo)
             criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
         end
         if mechanical
-            bulkModulus = datamanager.get_property(iblock, "Thermal Models", "Bulk Modulus")
-            t = compute_mechanical_crititical_time_step(bulkModulus)
+            bulkModulus = datamanager.get_property(iblock, "Material Models", "Bulk Modulus")
+            t = compute_mechanical_crititical_time_step(datamanager, bulkModulus)
             criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
         end
     end
     return criticalTimeStep
+end
+
+
+function init_Verlet(params, datamanager, mechanical, thermo)
+    @info "======================="
+    @info "==== Verlet Solver ===="
+    @info "======================="
+
+    start_time = get_initial_time(params)
+    final_time = get_final_time(params)
+    safety_factor = get_safety_factor(params)
+    dt = get_fixed_dt(params)
+    @info "Initial time: " * string(start_time) * " [s]"
+    @info "Final time: " * string(final_time) * " [s]"
+    if dt == -1
+        dt = compute_crititical_time_step(datamanager, mechanical, thermo)
+        @info "Minimal time increment: " * string(dt) * " [s]"
+    else
+        @info "Fixed time increment: " * string(dt) * " [s]"
+    end
+
+    nsteps, dt = get_integration_steps(start_time, final_time, safety_factor * dt)
+
+    @info "Safety Factor: " * string(safety_factor)
+    @info "Time increment: " * string(dt) * " [s]"
+    @info "Number of steps: " * string(nsteps)
+    return start_time, dt, nsteps
+end
+function get_integration_steps(start_time, end_time, dt)
+    nsteps = ceil((end_time - start_time) / dt)
+    dt = (end_time - start_time) / nsteps
+    return Int64(nsteps), dt
 end
