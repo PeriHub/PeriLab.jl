@@ -2,12 +2,18 @@
 
 julia_version = "1.9.1"
 manifest_format = "2.0"
-project_hash = "7aa9d2c1d5307213fe2d2d059700827dce84d796"
+project_hash = "5b115e039d2023ca0876dbff6511bc1d1f2d2281"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
 uuid = "a4c015fc-c6ff-483c-b24f-f7ea428134e9"
 version = "0.0.1"
+
+[[deps.Aqua]]
+deps = ["Compat", "Pkg", "Test"]
+git-tree-sha1 = "841cdd09bf3f6ad40ab16b8dc3b6a7a19ce298a3"
+uuid = "4c88cf16-eb10-579e-8560-4a9242c79595"
+version = "0.6.5"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -134,9 +140,9 @@ version = "1.6.0"
 
 [[deps.Exodus]]
 deps = ["DocStringExtensions", "Exodus_jll", "Parameters", "Pkg", "Suppressor"]
-git-tree-sha1 = "dc2687398c57e372e7cc80ce4c9e512c634c75aa"
+git-tree-sha1 = "ca20e18eaea2bb3bac673b1203dc87b8d61aed47"
 uuid = "f57ae99e-f805-4780-bdca-96e224be1e5a"
-version = "0.7.1"
+version = "0.7.2"
 
 [[deps.Exodus_jll]]
 deps = ["Artifacts", "Fmt_jll", "HDF5_jll", "JLLWrappers", "Libdl", "NetCDF_jll", "Zlib_jll"]
@@ -211,10 +217,10 @@ uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
 
 [[deps.JLLWrappers]]
-deps = ["Preferences"]
-git-tree-sha1 = "abc9885a7ca2052a736a600f7fa66209f96506e1"
+deps = ["Artifacts", "Preferences"]
+git-tree-sha1 = "7e5d6779a1e09a36db2a7b6cff50942a0a7d0fca"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
-version = "1.4.1"
+version = "1.5.0"
 
 [[deps.JSON]]
 deps = ["Dates", "Mmap", "Parsers", "Unicode"]
@@ -271,9 +277,9 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LogExpFunctions]]
 deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "c3ce8e7420b3a6e071e0fe4745f5d4300e37b13f"
+git-tree-sha1 = "7d6dd4e9212aebaeed356de34ccf262a3cd415aa"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.24"
+version = "0.3.26"
 
     [deps.LogExpFunctions.extensions]
     LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
@@ -290,9 +296,9 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[deps.MPI]]
 deps = ["Distributed", "DocStringExtensions", "Libdl", "MPICH_jll", "MPIPreferences", "MPItrampoline_jll", "MicrosoftMPI_jll", "OpenMPI_jll", "PkgVersion", "PrecompileTools", "Requires", "Serialization", "Sockets"]
-git-tree-sha1 = "49579593ac2c5f9213c61eead3e39606d22a2a04"
+git-tree-sha1 = "32cafbe56c7f0b7160a1a6c492773af66c0b722f"
 uuid = "da04e1cc-30fd-572f-bb4f-1f8673147195"
-version = "0.20.13"
+version = "0.20.14"
 
     [deps.MPI.extensions]
     AMDGPUExt = "AMDGPU"
@@ -322,9 +328,9 @@ version = "5.3.1+0"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
-git-tree-sha1 = "42324d08725e200c23d4dfb549e0d5d89dede2d2"
+git-tree-sha1 = "9ee1618cbf5240e6d4e0371d6f24065083f60c48"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.10"
+version = "0.5.11"
 
 [[deps.Markdown]]
 deps = ["Base64"]
@@ -440,9 +446,9 @@ version = "1.4.2"
 
 [[deps.PrecompileTools]]
 deps = ["Preferences"]
-git-tree-sha1 = "9673d39decc5feece56ef3940e5dafba15ba0f81"
+git-tree-sha1 = "03b4c25b43cb84cee5c90aa9b5ea0a78fd848d2f"
 uuid = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
-version = "1.1.2"
+version = "1.2.0"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -507,9 +513,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[deps.SpecialFunctions]]
 deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
-git-tree-sha1 = "7beb031cf8145577fbccacd94b8a8f4ce78428d3"
+git-tree-sha1 = "e2cfc4012a19088254b3950b85c3c1d8882d864d"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
-version = "2.3.0"
+version = "2.3.1"
 
     [deps.SpecialFunctions.extensions]
     SpecialFunctionsChainRulesCoreExt = "ChainRulesCore"
@@ -561,9 +567,9 @@ version = "5.10.1+6"
 
 [[deps.Suppressor]]
 deps = ["Logging"]
-git-tree-sha1 = "37d1976ca8368f6adbe1d65a4deeeda6ee7faa31"
+git-tree-sha1 = "34c29aeaea1d120a3403beed6134a76f7d06ef38"
 uuid = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
-version = "0.2.4"
+version = "0.2.5"
 
 [[deps.TOML]]
 deps = ["Dates"]

@@ -1,9 +1,10 @@
 name = "PeriLab"
 uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
-authors = ["Christian Willberg <christian.willberg@dlr.de>", "jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
+authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
 version = "0.1.0"
 
 [deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -13,4 +14,5 @@ Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
 Tensorial = "98f94333-fa9f-48a9-ad80-1c66397b2b38"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
