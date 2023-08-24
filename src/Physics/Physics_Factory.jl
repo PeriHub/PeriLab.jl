@@ -19,7 +19,6 @@ function get_physics(params)
     return
 end
 
-
 function read_properties(params, datamanager)
     datamanager.init_property()
     blocks = datamanager.get_block_list()
@@ -31,7 +30,6 @@ end
 
 function get_block_model_definition(params, blockID, prop_keys, properties)
     # properties function from datamanager
-
     if check_element(params["Blocks"], "block_" * string(blockID))
         block = params["Blocks"]["block_"*string(blockID)]
         for model in prop_keys
