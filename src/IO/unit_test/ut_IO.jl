@@ -34,30 +34,30 @@ block_Id .+= 1
 block_Id[end] = 2
 
 @testset "ut_get_results_mapping" begin
-    output, mapping = IO.get_results_mapping(params, testDatamanager)
-    @test output[1] == ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
-    @test output[2] == ["Displacementsx", "Displacementsy", "Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
+    output = IO.get_results_mapping(params, testDatamanager)
+    @test sort(collect(keys(output[1]))) == ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
+    @test sort(collect(keys(output[2]))) == ["Displacementsx", "Displacementsy", "Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     for i in 1:2
         dofForce = 0
         dofDisp = 0
-        for entry in keys(sort(mapping[i]))
+        for entry in keys(sort(output[i]))
             if occursin("Forces", entry)
                 dofForce += 1
-                @test mapping[i][entry][1] == "ForcesNP1"
-                @test mapping[i][entry][2] == i
-                @test mapping[i][entry][3] == dofForce
+                @test output[i][entry][1] == "ForcesNP1"
+                @test output[i][entry][2] == i
+                @test output[i][entry][3] == dofForce
             else
                 dofDisp += 1
-                @test mapping[i][entry][1] == "DisplacementsNP1"
-                @test mapping[i][entry][2] == 1
-                @test mapping[i][entry][3] == dofDisp
+                @test output[i][entry][1] == "DisplacementsNP1"
+                @test output[i][entry][2] == 1
+                @test output[i][entry][3] == dofDisp
             end
         end
     end
 end
 
 @testset "ut_init_write_results" begin
-    exos, mapping = IO.init_write_results(params, testDatamanager)
+    exos, outputs = IO.init_write_results(params, testDatamanager)
 
     @test length(exos) == 2
     @test length(exos[1].nodal_var_name_dict) == 6
@@ -79,19 +79,19 @@ end
     for i in 1:2
         dofForce = 0
         dofDisp = 0
-        for entry in keys(sort(mapping[i]))
+        for entry in keys(sort(outputs[i]))
             if occursin("Forces", entry)
                 dofForce += 1
-                @test mapping[i][entry][1] == "ForcesNP1"
-                @test mapping[i][entry][2] == i
-                @test mapping[i][entry][3] == dofForce
-                @test mapping[i][entry][4] == Float32
+                @test outputs[i][entry][1] == "ForcesNP1"
+                @test outputs[i][entry][2] == i
+                @test outputs[i][entry][3] == dofForce
+                @test outputs[i][entry][4] == Float32
             else
                 dofDisp += 1
-                @test mapping[i][entry][1] == "DisplacementsNP1"
-                @test mapping[i][entry][2] == 1
-                @test mapping[i][entry][3] == dofDisp
-                @test mapping[i][entry][4] == Float32
+                @test outputs[i][entry][1] == "DisplacementsNP1"
+                @test outputs[i][entry][2] == 1
+                @test outputs[i][entry][3] == dofDisp
+                @test outputs[i][entry][4] == Float32
             end
         end
     end

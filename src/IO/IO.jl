@@ -33,20 +33,20 @@ function init_write_results(params, datamanager)
     end
 
     coords = vcat(transpose(coordinates))
-    outputs, mapping = get_results_mapping(params, datamanager)
+    outputs = get_results_mapping(params, datamanager)
     for i in eachindex(exos)
         exos[i] = Write_Exodus_Results.init_results_in_exodus(exos[i], outputs[i], coords, block_Id, nsets)
     end
 
-    return exos, mapping
+    return exos, outputs
 end
 
-function write_results(exos, step, dt, mapping, datamanager)
+function write_results(exos, step, dt, outputs, datamanager)
     time = (step - 1) * dt
 
     for id in eachindex(exos)
         exos[id] = write_step_and_time(exos[id], step, time)
-        exos[id] = Write_Exodus_Results.write_results_in_exodus(exo[id], step, mapping[id], datamanager)
+        exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exo[id], step, outputs[id], datamanager)
     end
 end
 
@@ -57,7 +57,6 @@ function get_results_mapping(params, datamanager)
 
     for id in eachindex(sort(outputs))
         result_id = 0
-        return_outputs[id] = String[]
         mapping[id] = Dict{String,Vector{Any}}()
         for fieldname in outputs[id]
             result_id += 1
@@ -68,18 +67,16 @@ function get_results_mapping(params, datamanager)
                 return
             end
             if length(sizedatafield) == 1
-                push!(return_outputs[id], clearNP1(fieldname))
                 mapping[id][clearNP1(fieldname)] = [fieldname, result_id, 1]
             else
                 refDof = sizedatafield[2]
                 for dof in 1:refDof
-                    push!(return_outputs[id], clearNP1(fieldname) * Write_Exodus_Results.get_paraviewCoordinates(dof, refDof))
-                    mapping[id][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = [fieldname, result_id, dof]
+                    mapping[id][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = [fieldname, result_id, dof, typeof(datafield[1, 1])]
                 end
             end
         end
     end
-    return return_outputs, mapping
+    return mapping
 end
 
 function clearNP1(name)
