@@ -47,7 +47,6 @@ function init_data(params, datamanager, comm)
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     # not optimal, because bond 12 != bond 21
-    datamanager.set_nbonds(sum(datamanager.get_field("Number of Neighbors")))
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
     return datamanager, params
 end

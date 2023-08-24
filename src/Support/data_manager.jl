@@ -11,13 +11,11 @@ export get_field
 export get_nlist
 export get_nnsets
 export get_nsets
-export get_nbonds
 export get_nnodes
 export get_property
 export init_property
 export set_block_list
 export set_filter
-export set_nbonds
 export set_nnodes
 export set_nsets
 export set_property
@@ -25,7 +23,6 @@ export switch_NP1_to_N
 ##########################
 # Variables
 ##########################
-nbonds = 0
 nnodes = 0
 nnsets = 0
 dof = 1
@@ -219,7 +216,8 @@ function get_field(name::String)
         if length(size(fields[fieldnames[name]][name])) > 1
             return view(fields[fieldnames[name]][name], filtered_nodes, :)
         end
-        return view(fields[fieldnames[name]][name], filtered_nodes)
+        return view(fields[fieldnames[name]][name],
+        )
     end
     return []
 end
@@ -265,23 +263,6 @@ function get_nnodes()
     ```
     """
     return nnodes
-end
-
-function get_nbonds()
-    """
-    get_nbonds()
-
-    Retrieves the number of bonds.
-
-    Returns:
-    - `nbonds` (integer): The current number of bonds.
-
-    Example:
-    ```julia
-    get_nbonds()  # returns the current number of bonds
-    ```
-    """
-    return nbonds
 end
 
 function get_NP1_to_N_Dict()
@@ -341,7 +322,7 @@ end
 
 function init_property()
     for iblock in get_block_list()
-        properties[iblock] = Dict{String,Dict}("Thermal Models" => Dict{String,Any}(), "Damage Models" => Dict{String,Any}(), "Material Models" => Dict{String,Any}(), "Additive Models" => Dict{String,Any}())
+        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
     end
     return collect(keys(properties[1]))
 end
@@ -394,23 +375,6 @@ function set_material_type(key, value)
     else
         @warn "Type " * key * " is not defined"
     end
-end
-
-function set_nbonds(n)
-    """
-    set_nbonds(n)
-
-    Sets the number of bonds globally.
-
-    Parameters:
-    - `n` (integer): The value to set as the number of bonds.
-
-    Example:
-    ```julia
-    set_nbonds(20)  # sets the number of bonds to 20
-    ```
-    """
-    global nbonds = n
 end
 
 function set_nnodes(n)
