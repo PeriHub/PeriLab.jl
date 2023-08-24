@@ -36,38 +36,38 @@ testDatamanager.create_bond_field("G", Bool, 1)
 testDatamanager.create_constant_bond_field("H", Float32, 4)
 testDatamanager.create_bond_field("I", Int64, 7)
 testfield_keys = testDatamanager.get_all_field_keys()
-#@testset "create data fields -> get all fields" begin
-@test testDatamanager.get_nnodes() == 5
-@test B[1] == testDatamanager.get_field("BN")
-@test B[2] == testDatamanager.get_field("B", "NP1")
-@test "A" in testfield_keys
-@test ("AN" in testfield_keys) == false
-@test ("ANP1" in testfield_keys) == false
-@test ("B" in testfield_keys) == false
-@test "BN" in testfield_keys
-@test "BNP1" in testfield_keys
-@test "C" in testfield_keys
-@test ("CN" in testfield_keys) == false
-@test ("CNP1" in testfield_keys) == false
-@test ("D" in testfield_keys) == false
-@test "DN" in testfield_keys
-@test "DNP1" in testfield_keys
-@test ("E" in testfield_keys) == false
-@test ("EN" in testfield_keys) == false
-@test ("ENP1" in testfield_keys) == false
-@test "F" in testfield_keys
-@test ("FN" in testfield_keys) == false
-@test ("FNP1" in testfield_keys) == false
-@test ("G" in testfield_keys) == false
-@test "GN" in testfield_keys
-@test "GNP1" in testfield_keys
-@test "H" in testfield_keys
-@test ("HN" in testfield_keys) == false
-@test ("HNP1" in testfield_keys) == false
-@test ("I" in testfield_keys) == false
-@test "IN" in testfield_keys
-@test "INP1" in testfield_keys
-#end
+@testset "create data fields -> get all fields" begin
+    @test testDatamanager.get_nnodes() == 5
+    @test B[1] == testDatamanager.get_field("BN")
+    @test B[2] == testDatamanager.get_field("B", "NP1")
+    @test "A" in testfield_keys
+    @test ("AN" in testfield_keys) == false
+    @test ("ANP1" in testfield_keys) == false
+    @test ("B" in testfield_keys) == false
+    @test "BN" in testfield_keys
+    @test "BNP1" in testfield_keys
+    @test "C" in testfield_keys
+    @test ("CN" in testfield_keys) == false
+    @test ("CNP1" in testfield_keys) == false
+    @test ("D" in testfield_keys) == false
+    @test "DN" in testfield_keys
+    @test "DNP1" in testfield_keys
+    @test ("E" in testfield_keys) == false
+    @test ("EN" in testfield_keys) == false
+    @test ("ENP1" in testfield_keys) == false
+    @test "F" in testfield_keys
+    @test ("FN" in testfield_keys) == false
+    @test ("FNP1" in testfield_keys) == false
+    @test ("G" in testfield_keys) == false
+    @test "GN" in testfield_keys
+    @test "GNP1" in testfield_keys
+    @test "H" in testfield_keys
+    @test ("HN" in testfield_keys) == false
+    @test ("HNP1" in testfield_keys) == false
+    @test ("I" in testfield_keys) == false
+    @test "IN" in testfield_keys
+    @test "INP1" in testfield_keys
+end
 
 @testset "get_field" begin
 
@@ -215,25 +215,25 @@ end
     @test blocklist == [1, 2, 4]
 end
 
-#@testset "ut_properties" begin
-testDatamanager.set_block_list([2, 3, 1, 1])
-testDatamanager.init_property()
-@test length(testDatamanager.properties) == 3
-testDatamanager.set_property(1, "Material Model", "E", 3)
-@test testDatamanager.get_property(1, "Material Model", "E") == 3
-testDatamanager.set_property(1, "Material Model", "C", "Hello Test")
-@test testDatamanager.get_property(1, "Material Model", "C") == "Hello Test"
-testDatamanager.set_property(2, "Material Model", "E", 1.1)
-@test testDatamanager.get_property(2, "Material Model", "E") == 1.1
-testDatamanager.set_property(2, "Thermal Model", "E", [3 1 2; 1 2 3; 1 3 4])
-@test testDatamanager.get_property(2, "Thermal Model", "E") == [3 1 2; 1 2 3; 1 3 4]
-testDatamanager.set_property(3, "Thermal Model", "Q", 23.1)
-@test testDatamanager.get_property(3, "Thermal Model", "Q") == 23.1
-testDatamanager.set_property(3, "Damage Model", "SS", 0.1)
-@test testDatamanager.get_property(3, "Damage Model", "SS") == 0.1
-testDatamanager.set_property(1, "Additive Model", "E", [1, 2, 3])
-@test testDatamanager.get_property(1, "Additive Models", "E") == [1, 2, 3]
-testDatamanager.set_property(2, "Additive Model", "Qd", true)
-@test testDatamanager.get_property(2, "Additive Model", "Qd") == true
-@test testDatamanager.get_property(2, "Additive Model", "not there") == undef
-#end
+@testset "ut_properties" begin
+    testDatamanager.set_block_list([2, 3, 1, 1])
+    testDatamanager.init_property()
+    @test length(testDatamanager.properties) == 3
+    testDatamanager.set_property(1, "Material Model", "E", 3)
+    @test testDatamanager.get_property(1, "Material Model", "E") == 3
+    testDatamanager.set_property(1, "Material Model", "C", "Hello Test")
+    @test testDatamanager.get_property(1, "Material Model", "C") == "Hello Test"
+    testDatamanager.set_property(2, "Material Model", "E", 1.1)
+    @test testDatamanager.get_property(2, "Material Model", "E") == 1.1
+    testDatamanager.set_property(2, "Thermal Model", "E", [3 1 2; 1 2 3; 1 3 4])
+    @test testDatamanager.get_property(2, "Thermal Model", "E") == [3 1 2; 1 2 3; 1 3 4]
+    testDatamanager.set_property(3, "Thermal Model", "Q", 23.1)
+    @test testDatamanager.get_property(3, "Thermal Model", "Q") == 23.1
+    testDatamanager.set_property(3, "Damage Model", "SS", 0.1)
+    @test testDatamanager.get_property(3, "Damage Model", "SS") == 0.1
+    testDatamanager.set_property(1, "Additive Model", "E", [1, 2, 3])
+    @test testDatamanager.get_property(1, "Additive Model", "E") == [1, 2, 3]
+    testDatamanager.set_property(2, "Additive Model", "Qd", true)
+    @test testDatamanager.get_property(2, "Additive Model", "Qd") == true
+    @test testDatamanager.get_property(2, "Additive Model", "not there") == undef
+end
