@@ -21,3 +21,16 @@ function get_number_of_blocks(params)
     return 0
 end
 
+function get_block_models(params, blockID)
+    modelDict = Dict{String,String}()
+    check = check_element(params["Blocks"], "block_" * string(blockID))
+    if check
+        for key in keys(params["Blocks"]["block_"*string(blockID)])
+            if occursin("Model", key)
+                modelDict[key] = params["Blocks"]["block_"*string(blockID)][key]
+            end
+        end
+    end
+    return modelDict
+end
+

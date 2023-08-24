@@ -165,9 +165,26 @@ end
     @test get_numerical_damping(params) == 0.0
 end
 
+
+params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, "d" => true), "B" => Dict("sa" => [3.2, 2, 3], "d" => "true")), "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1))), "Blocks" => Dict("block_1" => Dict("Material Model" => "A", "Damage Model" => "E"), "block_2" => Dict("Material Model" => "B")))
+
 @testset "ut_get_model_parameter" begin
+    blockModels = Dict{Int32,Dict{String,String}}()
+    for id in 1:2
+        blockModels[id] = get_block_models(params, id)
+    end
+    @test blockModels[1]["Material Model"] == "A"
+    @test blockModels[1]["Damage Model"] == "E"
+    @test blockModels[2]["Material Model"] == "B"
+    testData = Dict("Material Model" => Dict(), "Damage Model" => Dict())
 
-
+    testData["Material Model"] = get_model_parameter(params, "Material Model", blockModels[1]["Material Model"])
+    @test testData["Material Model"]["s"] == 0
+    @test testData["Material Model"]["d"] == true
+    testData["Material Model"] = get_model_parameter(params, "Material Model", blockModels[2]["Material Model"])
+    @test testData["Material Model"]["sa"] == [3.2, 2, 3]
+    @test testData["Material Model"]["d"] == "true"
+    testData["Damage Model"] = get_model_parameter(params, "Damage Model", blockModels[1]["Damage Model"])
+    @test testData["Damage Model"]["ss"] == 0
+    @test testData["Damage Model"]["d"] == 1.1
 end
-
-
