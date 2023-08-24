@@ -216,8 +216,7 @@ function get_field(name::String)
         if length(size(fields[fieldnames[name]][name])) > 1
             return view(fields[fieldnames[name]][name], filtered_nodes, :)
         end
-        return view(fields[fieldnames[name]][name],
-        )
+        return view(fields[fieldnames[name]][name], filtered_nodes,)
     end
     return []
 end
