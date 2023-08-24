@@ -27,8 +27,8 @@
 
 # Name a test and select an appropriate image.
 # images comes from Docker hub
-test:1.10:
-  image: julia:1.10
+test:latest:
+  image: julia:latest
   <<: *test_definition
   
 # test:1.0:
