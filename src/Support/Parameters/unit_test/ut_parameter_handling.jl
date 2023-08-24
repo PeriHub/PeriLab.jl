@@ -8,16 +8,20 @@ using Random
     params = Dict()
     @info "Error messages are tested and therefore okay."
     @test check_key_elements(params) == false
-    params = Dict("Damage Models" => Dict())
+    params = Dict("Physics" => Dict())
     @test check_key_elements(params) == false
-    params = Dict("Damage Models" => Dict(), "Material Models" => Dict())
+    params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict())
     @test check_key_elements(params) == false
-    params = Dict("Damage Models" => Dict(), "Material Models" => Dict(), "Discretization" => Dict())
+    params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict(), "Blocks" => Dict())
     @test check_key_elements(params) == false
-    params = Dict("Damage Models" => Dict(), "Material Models" => Dict(), "Discretization" => Dict(), "Blocks" => Dict())
+    params = Dict("Physics" => Dict("Material Models" => Dict()), "Blocks" => Dict())
+    @test check_key_elements(params) == false
+    params = Dict("Blocks" => Dict())
+    @test check_key_elements(params) == false
+    params = Dict("Physics" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
     @test check_key_elements(params) == false
     @info "No error messages are okay for this test until now."
-    params = Dict("Damage Models" => Dict(), "Material Models" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
+    params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
     @test check_key_elements(params) == true
 end
 
@@ -161,5 +165,9 @@ end
     @test get_numerical_damping(params) == 0.0
 end
 
+@testset "ut_get_model_parameter" begin
+
+
+end
 
 
