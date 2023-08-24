@@ -18,22 +18,22 @@
   script:
     # Let's run the tests. Substitute `coverage = false` below, if you do not
     # want coverage results.
-    - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("GitlabJuliaDemo"); Pkg.test("GitlabJuliaDemo"; coverage = true)'
+    - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("PeriLab"); Pkg.test("PeriLab"; coverage = true)'
     # Comment out below if you do not want coverage results.
     - julia -e 'using Pkg; Pkg.add("Coverage"); 
-      import GitlabJuliaDemo; cd(joinpath(dirname(pathof(GitlabJuliaDemo)), ".."));
+      import PeriLab; cd(joinpath(dirname(pathof(PeriLab)), ".."));
       using Coverage; cl, tl = get_summary(process_folder());
       println("(", cl/tl*100, "%) covered")'
 
 # Name a test and select an appropriate image.
 # images comes from Docker hub
-test:0.7:
-  image: julia:0.7
+test:1.10:
+  image: julia:1.10
   <<: *test_definition
   
-test:1.0:
-  image: julia:1.0
-  <<: *test_definition
+# test:1.0:
+#   image: julia:1.0
+#   <<: *test_definition
 
 # Maybe you would like to test your package against the development branch:
 # test:1.1-dev (not sure there is such an image in docker, so not tested yet):
@@ -56,15 +56,15 @@ pages:
   stage: deploy
   script:
     - apt-get update -qq && apt-get install -y git # needed by Documenter
-    - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("GitlabJuliaDemo");' # rebuild Julia (can be put somewhere else I'm sure
-    - julia -e 'using Pkg; import GitlabJuliaDemo; Pkg.add("Documenter")' # install Documenter
+    - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("PeriLab");' # rebuild Julia (can be put somewhere else I'm sure
+    - julia -e 'using Pkg; import PeriLab; Pkg.add("Documenter")' # install Documenter
     - julia --color=yes docs/make.jl # make documentation
     - mv docs/build public # move to the directory picked up by Gitlab pages
   artifacts:
     paths:
       - public
   only:
-  - master
+  - main
 
 
 # WARNING: This template is using the `julia` images from [Docker
