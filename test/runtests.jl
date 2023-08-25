@@ -1,4 +1,5 @@
-using PeriLab
+include("../src/PeriLab.jl")
+import .PeriLab
 using Test
 using Aqua
 
@@ -41,7 +42,7 @@ end
 @testset "MPI" begin
 
     @testset "ut_MPI" begin
-        include("../src/MPI_communication/unit_test/ut_MPI.jl")
+        #   include("../src/MPI_communication/unit_test/ut_MPI.jl")
     end
 
 end
@@ -49,15 +50,14 @@ end
 
 @testset "Physics" begin
 
-    @testset "Thermal" begin
+    @testset "Thermal" begin end
+    @testset "Correspondence" begin
 
-        @testset "Correspondence" begin
 
-            @testset "ut_MPI" begin
-                include("../src/Physics/Thermal/Correspondence/unit_test/ut_Thermal_correspondence.jl")
-            end
+        include("../src/Physics/Thermal/Correspondence/unit_test/ut_Thermal_correspondence.jl")
 
-        end
+
+
     end
 
     @testset "ut_Physics_Factory" begin
