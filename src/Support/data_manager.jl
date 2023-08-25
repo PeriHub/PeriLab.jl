@@ -309,10 +309,13 @@ function get_synch_fields()
 end
 
 function get_property(blockId, property, value_name)
-    if value_name in keys(properties[blockId][property])
-        return properties[blockId][property][value_name]
+    if property in keys(properties[blockId])
+        if value_name in keys(properties[blockId][property])
+            return properties[blockId][property][value_name]
+        end
     end
-    return undef
+
+    return -1
 end
 
 function reset_filter()
