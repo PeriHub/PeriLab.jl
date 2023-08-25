@@ -4,16 +4,16 @@ module Solver
 include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
 include("../../Physics/Physics_Factory.jl")
+include("../../IO/IO.jl")
 include("../BC_manager.jl")
+include("Verlet.jl")
 
 import .IO
 import .Physics
 import .Boundary_conditions
 function init(params, datamanager)
 
-    exos = init_write_results(output_filenames, datamanager)
-
-
+    # tbd in csv for global vars
     blockNodes = get_blockNodes(datamanager.get_field("Block_Id"))
     solver_options = get_solver_options(params)
     if solver_options["Material Models"]
@@ -31,7 +31,8 @@ function init(params, datamanager)
 
     end
     if solver_options["Damage Models"]
-
+        damage = datamanager.create_node_field("Damage", Float32, 1)
+        bondDamage = datamanager.create_bond_field("Bond Damage", Float32, 1)
     end
     if solver_options["Thermal Models"]
         temperature = datamanager.create_node_field("Temperature", Float32, 1)
@@ -39,13 +40,18 @@ function init(params, datamanager)
 
     end
     if solver_options["Additive Models"]
-
+        activated = datamanager.create_node_field("Activated", Bool, 1)
+        activated[:] .= false
     end
-    physics = Physics.get_physics(params)
+
+    Physics.read_properties(params, datamanager)
+
     bcs = Boundary_conditions.init_BCs(params, datamanager)
-
-
-    return blockNodes, bcs, datamanager
+    if get_solver_name(params) == "Verlet"
+        solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"] = init_Verlet(params, datamanager, solver_options["Material Models"], solver_options["Thermal Models"])
+    end
+    exos, outputs = IO.init_write_results(params, datamanager)
+    return blockNodes, bcs, datamanager, solver_options, exos, outputs
 end
 
 function get_blockNodes(blockIDs)
@@ -57,7 +63,7 @@ function get_blockNodes(blockIDs)
 end
 
 function solver(params, datamanager)
-    blockNodes, bcs, datamanager = init(params, datamanager)
+    blockNodes, bcs, datamanager, exos = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
     run_Verlet_solver(blockNodes, bcs, datamanager)
@@ -65,11 +71,16 @@ end
 
 function run_Verlet_solver(blockNodes, bcs, datamanager)
 
+
+
+
     dof = datamanager.get_dof()
     for block in 1:length(blockNodes)
         datamanager.set_filter(blockNodes[i])
         "evaluate"
     end
+
+    forces = datamanager.get_field("Forces")
     check_inf_or_nan(forces, "Init Forces")
 
     #init

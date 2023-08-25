@@ -69,13 +69,17 @@ function compute_crititical_time_step(datamanager, mechanical, thermo)
         if thermo
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
             Cv = datamanager.get_property(iblock, "Thermal Model", "Specific Heat Capacity")
-            t = compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
-            criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
+            if (lambda != -1) && (Cv != -1)
+                t = compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
+                criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
+            end
         end
         if mechanical
             bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
-            t = compute_mechanical_crititical_time_step(datamanager, bulkModulus)
-            criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
+            if (bulkModulus != -1)
+                t = compute_mechanical_crititical_time_step(datamanager, bulkModulus)
+                criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
+            end
         end
     end
     return criticalTimeStep
@@ -87,11 +91,11 @@ function init_Verlet(params, datamanager, mechanical, thermo)
     @info "==== Verlet Solver ===="
     @info "======================="
 
-    start_time = get_initial_time(params)
+    initial_time = get_initial_time(params)
     final_time = get_final_time(params)
     safety_factor = get_safety_factor(params)
     dt = get_fixed_dt(params)
-    @info "Initial time: " * string(start_time) * " [s]"
+    @info "Initial time: " * string(initial_time) * " [s]"
     @info "Final time: " * string(final_time) * " [s]"
     if dt == -1
         dt = compute_crititical_time_step(datamanager, mechanical, thermo)
@@ -100,15 +104,15 @@ function init_Verlet(params, datamanager, mechanical, thermo)
         @info "Fixed time increment: " * string(dt) * " [s]"
     end
 
-    nsteps, dt = get_integration_steps(start_time, final_time, safety_factor * dt)
+    nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * dt)
 
     @info "Safety Factor: " * string(safety_factor)
     @info "Time increment: " * string(dt) * " [s]"
     @info "Number of steps: " * string(nsteps)
-    return start_time, dt, nsteps
+    return initial_time, dt, nsteps
 end
-function get_integration_steps(start_time, end_time, dt)
-    nsteps = ceil((end_time - start_time) / dt)
-    dt = (end_time - start_time) / nsteps
+function get_integration_steps(initial_time, end_time, dt)
+    nsteps = ceil((end_time - initial_time) / dt)
+    dt = (end_time - initial_time) / nsteps
     return Int64(nsteps), dt
 end
