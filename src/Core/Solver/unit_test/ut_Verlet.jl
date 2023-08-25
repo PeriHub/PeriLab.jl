@@ -79,8 +79,8 @@ testValmech = 3.59255e-05
 
 end
 testDatamanager.init_property()
-testDatamanager.set_property(1, "Material Models", "Bulk Modulus", 140.0)
-testDatamanager.set_property(2, "Material Models", "Bulk Modulus", 140.0)
+testDatamanager.set_property(1, "Material Model", "Bulk Modulus", 140.0)
+testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
 @testset "ut_init_Verlet" begin
     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)))
     start_time, dt, nsteps = init_Verlet(params, testDatamanager, true, false)
