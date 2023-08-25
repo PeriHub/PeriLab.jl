@@ -8,16 +8,8 @@ import .Additive
 import .Damage
 import .Material
 import .Thermal
-export get_physics
+export read_properties
 
-
-function get_physics(params)
-    Additive.get_additive(params)
-    Damage.get_damage(params)
-    Material.get_material(params)
-    Thermal.get_thermal(params)
-    return
-end
 
 function read_properties(params, datamanager)
     datamanager.init_property()
@@ -39,6 +31,29 @@ function get_block_model_definition(params, blockID, prop_keys, properties)
         end
     end
     return properties
+end
+
+
+
+
+function PD_type(params, datamanager)
+    ## function for specific pre-calculations
+
+    if datamanager.is_material_type("Bond-Based")
+    end
+
+    if datamanager.is_material_type("Ordinary")
+    end
+
+    if datamanager.is_material_type("Correspondence")
+        include("Correspondence.jl")
+        data = shapeTensor(data)
+        data = defGrad(data)
+    end
+    if datamanager.is_material_type("Bond Associated")
+    end
+
+    return data
 end
 
 end
