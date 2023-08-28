@@ -68,7 +68,7 @@ end
 
     bondGeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondGeom)
 
-    blockNodes, bcs, datamanager, solver_options, exos, outputs = Solver.init(params, testDatamanager)
+    blockNodes, bcs, datamanager, solver_options, outputs = Solver.init(params, testDatamanager)
 
     @test solver_options["Material Models"]
     @test solver_options["Damage Models"]
@@ -87,12 +87,5 @@ end
     @test "DamageNP1" in testDatamanager.get_all_field_keys()
     @test ("ActivatedNP1" in testDatamanager.get_all_field_keys()) == false
     @test ("Activated" in testDatamanager.get_all_field_keys()) == false
-    @test length(exos) == 2
-    @test isfile("test1.e")
-    @test isfile("test2.e")
 
-    close(exos[1])
-    close(exos[2])
-    rm("test1.e")
-    rm("test2.e")
 end

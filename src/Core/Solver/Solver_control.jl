@@ -28,7 +28,6 @@ function init(params, datamanager)
         datamanager.set_synch("Velocity", false, true)
         datamanager.set_synch("Displacements", false, true)
         datamanager.set_synch("Deformed State", false, true)
-
     end
     if solver_options["Damage Models"]
         damage = datamanager.create_node_field("Damage", Float32, 1)
@@ -50,8 +49,8 @@ function init(params, datamanager)
     if get_solver_name(params) == "Verlet"
         solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"] = init_Verlet(params, datamanager, solver_options["Material Models"], solver_options["Thermal Models"])
     end
-    exos, outputs = IO.init_write_results(params, datamanager)
-    return blockNodes, bcs, datamanager, solver_options, exos, outputs
+
+    return blockNodes, bcs, datamanager, solver_options
 end
 
 function get_blockNodes(blockIDs)
@@ -70,9 +69,6 @@ function solver(params, datamanager)
 end
 
 function run_Verlet_solver(blockNodes, bcs, datamanager)
-
-
-
 
     dof = datamanager.get_dof()
     for block in 1:length(blockNodes)
@@ -93,8 +89,9 @@ function run_Verlet_solver(blockNodes, bcs, datamanager)
 
 end
 
-function solver()
-    blockNodes, datamanager = init(params, datamanager)
+function solver(params, datamanager, exos, outputs)
+    blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
+    # tbd outputfreq 
     run_solver(blockNodes, datamanager)
     switch_NP1_to_N()
 end
