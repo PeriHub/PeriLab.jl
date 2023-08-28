@@ -85,9 +85,7 @@ function read_input_file(filename)
     return Read_Input_Deck.read_input_file(filename)
 end
 
-function write_results(exos, step, dt, outputs, datamanager)
-    time = (step - 1) * dt
-
+function write_results(exos, step, time, outputs, datamanager)
     for id in eachindex(exos)
         exos[id] = write_step_and_time(exos[id], step, time)
         exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exo[id], step, outputs[id], datamanager)
