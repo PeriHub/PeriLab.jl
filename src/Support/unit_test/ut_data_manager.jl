@@ -235,5 +235,5 @@ end
     @test testDatamanager.get_property(1, "Additive Model", "E") == [1, 2, 3]
     testDatamanager.set_property(2, "Additive Model", "Qd", true)
     @test testDatamanager.get_property(2, "Additive Model", "Qd") == true
-    @test testDatamanager.get_property(2, "Additive Model", "not there") == undef
+    @test testDatamanager.get_property(2, "Additive Model", "not there") == Nothing
 end

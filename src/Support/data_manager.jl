@@ -315,7 +315,7 @@ function get_property(blockId, property, value_name)
         end
     end
 
-    return -1
+    return Nothing
 end
 
 function reset_filter()
