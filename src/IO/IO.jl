@@ -1,53 +1,20 @@
 module IO
-
-import .Read_Input_Deck
-import .Read_Mesh
-import .Write_Exodus_Results
-
 include("read_inputdeck.jl")
 include("mesh_data.jl")
 include("exodus_export.jl")
 include("../Support/Parameters/parameter_handling.jl")
+using .Read_Input_Deck
+using .Read_Mesh
+using .Write_Exodus_Results
 export initialize_data
 export init_write_results
-function initialize_data(filename, datamanager, comm)
-    return Read_Mesh.init_data(read_input_file(filename), datamanager, comm)
-end
+export write_results
 
-function read_input_file(filename)
-    return Read_Input_Deck.read_input_file(filename)
-end
-
-function init_write_results(params, datamanager)
-    filenames = get_output_filenames(params)
-    exos = []
-    nnodes = datamanager.get_nnodes()
-    dof = datamanager.get_dof()
-    nnsets = datamanager.get_nnsets()
-    coordinates = datamanager.get_field("Coordinates")
-
-    block_Id = datamanager.get_field("Block_Id")
-    nsets = datamanager.get_nsets()
-    for filename in filenames
-        push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), nnsets))
+function clearNP1(name)
+    if "NP1" == name[end-2:end]
+        return name[1:end-3]
     end
-
-    coords = vcat(transpose(coordinates))
-    outputs = get_results_mapping(params, datamanager)
-    for i in eachindex(exos)
-        exos[i] = Write_Exodus_Results.init_results_in_exodus(exos[i], outputs[i], coords, block_Id, nsets)
-    end
-
-    return exos, outputs
-end
-
-function write_results(exos, step, dt, outputs, datamanager)
-    time = (step - 1) * dt
-
-    for id in eachindex(exos)
-        exos[id] = write_step_and_time(exos[id], step, time)
-        exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exo[id], step, outputs[id], datamanager)
-    end
+    return name
 end
 
 function get_results_mapping(params, datamanager)
@@ -79,10 +46,44 @@ function get_results_mapping(params, datamanager)
     return mapping
 end
 
-function clearNP1(name)
-    if "NP1" == name[end-2:end]
-        return name[1:end-3]
-    end
-    return name
+function initialize_data(filename, datamanager, comm)
+    return Read_Mesh.init_data(read_input_file(filename), datamanager, comm)
 end
+
+function init_write_results(params, datamanager)
+    filenames = get_output_filenames(params)
+    exos = []
+    nnodes = datamanager.get_nnodes()
+    dof = datamanager.get_dof()
+    nnsets = datamanager.get_nnsets()
+    coordinates = datamanager.get_field("Coordinates")
+
+    block_Id = datamanager.get_field("Block_Id")
+    nsets = datamanager.get_nsets()
+    for filename in filenames
+        push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), nnsets))
+    end
+
+    coords = vcat(transpose(coordinates))
+    outputs = get_results_mapping(params, datamanager)
+    for i in eachindex(exos)
+        exos[i] = Write_Exodus_Results.init_results_in_exodus(exos[i], outputs[i], coords, block_Id, nsets)
+    end
+
+    return exos, outputs
+end
+
+function read_input_file(filename)
+    return Read_Input_Deck.read_input_file(filename)
+end
+
+function write_results(exos, step, dt, outputs, datamanager)
+    time = (step - 1) * dt
+
+    for id in eachindex(exos)
+        exos[id] = write_step_and_time(exos[id], step, time)
+        exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exo[id], step, outputs[id], datamanager)
+    end
+end
+
 end
