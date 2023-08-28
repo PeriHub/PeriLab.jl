@@ -41,8 +41,8 @@ end
 if !isdir("tmp")
     mkdir("tmp")
 end
-filename = "./tmp/" * "test.e"
 @testset "ut_create_result_file" begin
+    filename = "./tmp/" * "test.e"
     nnodes = 4
     dof = 3
     exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 1, 0)
