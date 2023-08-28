@@ -28,6 +28,9 @@ Logging.disable_logging(Logging.Error)
         include("../src/Support/unit_test/ut_tools.jl")
     end
 
+    @testset "ut_geometry" begin
+        include("../src/Support/unit_test/ut_geometry.jl")
+    end
 end
 
 @testset "Core" begin
@@ -93,28 +96,5 @@ end
 
 end
 
-@testset "Support" begin
-
-    @testset "Parameters" begin
-
-        @testset "ut_parameter_handling" begin
-            include("../src/Support/Parameters/unit_test/ut_parameter_handling.jl")
-        end
-
-    end
-
-    @testset "ut_data_manager" begin
-        include("../src/Support/unit_test/ut_data_manager.jl")
-    end
-
-    @testset "ut_helpers" begin
-        include("../src/Support/unit_test/ut_helpers.jl")
-    end
-
-    @testset "ut_tools" begin
-        include("../src/Support/unit_test/ut_tools.jl")
-    end
-
-end
 
 # Aqua.test_all(PeriLab)
