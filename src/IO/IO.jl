@@ -6,9 +6,17 @@ include("../Support/Parameters/parameter_handling.jl")
 using .Read_Input_Deck
 using .Read_Mesh
 using .Write_Exodus_Results
+export close_files
 export initialize_data
 export init_write_results
 export write_results
+
+function close_files(exos)
+    @info "Closing output files"
+    for exo in exos
+        close(exo)
+    end
+end
 
 function clearNP1(name)
     if "NP1" == name[end-2:end]

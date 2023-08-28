@@ -95,8 +95,7 @@ end
             end
         end
     end
-    close(exos[1])
-    close(exos[2])
+    IO.close_files(exos)
     rm(filename1)
     rm(filename2)
 end
