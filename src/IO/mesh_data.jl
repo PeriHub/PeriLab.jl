@@ -100,7 +100,7 @@ function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     end
     # must be [:] -> to map it in datamanager
     blockID[:] = send_vector_from_root_to_core_i(comm, send_msg, blockID, distribution)
-    data_manager.set_block_list(blockID)
+    datamanager.set_block_list(blockID)
     # init coordinate field
     coor = datamanager.create_constant_node_field("Coordinates", Float32, dof)
     # distribute coordinates
