@@ -2,12 +2,11 @@
 module PeriLab
 include("./Support/data_manager.jl")
 include("./IO/IO.jl")
-import MPI
-import .Data_manager
 include("./Core/Solver/Solver_control.jl")
-import .IO
-import .Solver
-
+using MPI
+using .Data_manager
+using .IO
+using .Solver
 
 export main
 """
@@ -25,8 +24,8 @@ function print_banner()
     888       Y8b.     888     888 888      888  888 888 d88P  |  Official https://julialang.org/ release
     888        "Y8888  888     888 88888888 "Y888888 88888P"   |                                                  
 
-    Copyright Dr.-Ing. Christian Willberg
-    Contact christian.willberg@dlr.de
+    Copyright: Dr.-Ing. Christian Willberg
+    Contact:   christian.willberg@dlr.de
 
     """)
 end
