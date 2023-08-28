@@ -46,12 +46,14 @@ function main()
     ################################
     filename = juliaPath * filename
 
-    datamanager, parameter = IO.initialize_data(filename, Data_manager, comm)
+    datamanager, params = IO.initialize_data(filename, Data_manager, comm)
+    # for testing
+    datamanager.create_node_field("Displacements", Float32, 3)
 
-
+    exos, outputs = IO.init_write_results(params, datamanager)
     #write_results(datamanager)
-
-
+    # tbd merge
+    IO.close_files(exos)
     #    save_values(results)
     return MPI.Finalize()
 end
