@@ -59,7 +59,7 @@ end
 
 function init_results_in_exodus(exo, output, coords, block_Id, nsets)
 
-    if (typeof(coords) == Matrix{Float32}) || (typeof(coords) == Matrix{Float128})
+    if (typeof(coords) == Matrix{Float32})
         coords = convert(Array{Float64}, coords)
     end
 
@@ -79,11 +79,8 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
     write_names(exo, NodalVariable, names)
     nnodes = exo.init.num_nodes
     for varname in keys(output)
-        if output[varname][4] == Float32 || output[varname][4] == Float64 || output[varname][4] == Float128
-            zero = zeros(Float64, nnodes)
-        else
-            zero = zeros(output[varname][4], nnodes) #-> zu float; nullen bei init in datamanger
-        end
+        zero = zeros(Float64, nnodes)
+        # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, 1, output[varname][2], varname, zero)
     end
     return exo
@@ -101,7 +98,7 @@ function write_nodal_results_in_exodus(exo, step, output, datamanager)
         #exo, timestep::Integer, id::Integer, var_index::Integer,vector
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
         var = convert(Array{Float64}, field[:, output[varname][3]])
-        # tbd integer
+        # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, output[varname][2], varname, var)
     end
     return exo
