@@ -38,10 +38,10 @@ end
     end
 end
 
+if !isdir("tmp")
+    mkdir("tmp")
+end
 @testset "ut_create_result_file" begin
-    if !isdir("tmp")
-        mkdir("tmp")
-    end
     filename = "./tmp/" * "test.e"
     nnodes = 4
     dof = 3

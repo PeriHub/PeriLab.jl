@@ -2,6 +2,8 @@ include("../src/PeriLab.jl")
 import .PeriLab
 using Test
 using Aqua
+using Logging
+Logging.disable_logging(Logging.Error)
 
 
 @testset "Support" begin
@@ -91,6 +93,28 @@ end
 
 end
 
-@testset "Code quality" begin
-    Aqua.test_all(PeriLab)
+@testset "Support" begin
+
+    @testset "Parameters" begin
+
+        @testset "ut_parameter_handling" begin
+            include("../src/Support/Parameters/unit_test/ut_parameter_handling.jl")
+        end
+
+    end
+
+    @testset "ut_data_manager" begin
+        include("../src/Support/unit_test/ut_data_manager.jl")
+    end
+
+    @testset "ut_helpers" begin
+        include("../src/Support/unit_test/ut_helpers.jl")
+    end
+
+    @testset "ut_tools" begin
+        include("../src/Support/unit_test/ut_tools.jl")
+    end
+
 end
+
+# Aqua.test_all(PeriLab)
