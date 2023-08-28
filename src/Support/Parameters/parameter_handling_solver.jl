@@ -60,5 +60,5 @@ function get_solver_options(params)
     if check_element(params["Solver"], "Damage Models")
         damage = params["Solver"]["Damage Models"]
     end
-    return Dict("Additive Models" => additive, "Damage Models" => damage, "Material Models" => mechanical, "Thermal Models" => thermal)
+    return Dict{String,Any}("Additive Models" => additive, "Damage Models" => damage, "Material Models" => mechanical, "Thermal Models" => thermal)
 end

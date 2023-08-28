@@ -5,7 +5,6 @@ import .Data_manager
 import .Write_Exodus_Results
 using Exodus
 
-
 @testset "ut_get_block_nodes" begin
     block_Id = [1, 1, 2, 2, 2, 3, 3, 3, 1, 3, 3, 4]
     test = Write_Exodus_Results.get_block_nodes(block_Id, 1)
