@@ -116,3 +116,37 @@ function get_integration_steps(initial_time, end_time, dt)
     dt = (end_time - initial_time) / nsteps
     return Int64(nsteps), dt
 end
+
+
+function run_Verlet_solver(blockNodes, bcs, datamanager, outputs, exos)
+
+    dof = datamanager.get_dof()
+    for block in 1:length(blockNodes)
+        datamanager.set_filter(blockNodes[i])
+        "evaluate"
+    end
+
+    forces = datamanager.get_field("Forces", "NP1")
+    density = datamanager.get_field("Density")
+
+    uN = datamanager.get_field("Displacements", "N")
+    uNP1 = datamanager.get_field("Displacements", "NP1")
+    aN = datamanager.get_field("Acceleration", "N")
+    aNP1 = datamanager.get_field("Acceleration", "N")
+    vN = datamanager.get_field("Velocity", "N")
+    vNP1 = datamanager.get_field("Velocity", "N")
+    dt = solver_options["dt"]
+    uNP1 = 2 * uN + vN * dt + 0.5 * aN * dt * dt
+    time::Float32 = 0.0
+    for idt in 1:solver_options["nsteps"]
+        #init
+        #uNP1 = u0 + v0*dt + 0.5*a0*dt*dt
+
+        uNP1 = 2 .* uN + vN .* dt + 0.5 * aN .* (dt * dt)
+        forces = Physics.compute_forces(datamanager, dt, time)
+        check_inf_or_nan(forces, "Forces")
+        aNP1 = forces ./ density # element wise
+        write_results(datamanager, idt, time, outputs, exos)
+        datamanager.switch_NP1_to_N()
+    end
+end

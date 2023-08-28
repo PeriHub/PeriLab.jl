@@ -61,40 +61,14 @@ function get_blockNodes(blockIDs)
     return blockNodes
 end
 
-function solver(params, datamanager)
-    blockNodes, bcs, datamanager, exos = init(params, datamanager)
+function solver(params, datamanager, outputs, exos)
+    blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
-    run_Verlet_solver(blockNodes, bcs, datamanager)
+    Verlet.run_Verlet_solver(solver_options, blockNodes, bcs, datamanage, outputs, exosr)
+    return exos
 end
 
-function run_Verlet_solver(blockNodes, bcs, datamanager)
-
-    dof = datamanager.get_dof()
-    for block in 1:length(blockNodes)
-        datamanager.set_filter(blockNodes[i])
-        "evaluate"
-    end
-
-    forces = datamanager.get_field("Forces")
-    check_inf_or_nan(forces, "Init Forces")
-
-    #init
-    #uNP1 = u0 + v0*dt + 0.5*a0*dt*dt
-
-    uNP1 = 2 * uN + v0N * dt + 0.5 * aN * dt * dt
-
-    #a = forces / density
-
-
-end
-
-function solver(params, datamanager, exos, outputs)
-    blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
-    # tbd outputfreq 
-    run_solver(blockNodes, datamanager)
-    switch_NP1_to_N()
-end
 function synchronise(comm)
     synch_fields = datamanager.get_synch_fields()
     overlap_map = datamanager.get_overlap_map()
@@ -103,5 +77,8 @@ function synchronise(comm)
             set_overlap_information(comm, datamanager.get_field(synch_field), overlap_map)
         end
     end
+end
+function write_results(datamanager, time, step)
+    IO.write_results(exos, step, dt, outputs, datamanager)
 end
 end
