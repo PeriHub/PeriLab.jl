@@ -68,7 +68,7 @@ end
 
     bondGeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondGeom)
 
-    blockNodes, bcs, datamanager, solver_options, outputs = Solver.init(params, testDatamanager)
+    blockNodes, bcs, datamanager, solver_options = Solver.init(params, testDatamanager)
 
     @test solver_options["Material Models"]
     @test solver_options["Damage Models"]
