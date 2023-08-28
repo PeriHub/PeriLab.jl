@@ -66,6 +66,12 @@ filename = "./tmp/" * "test.e"
     @test exo.init.num_elem_blks == 3
     close(exo)
     rm(filename)
+    filename = "./tmp/" * "test"
+    exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 3, 2)
+    @test exo.file_name == filename * ".e"
+    @test isfile(filename * ".e")
+    close(exo)
+    rm(filename * ".e")
 end
 filename = "./tmp/" * "test_2.e"
 nnodes = 5

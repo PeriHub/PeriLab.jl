@@ -6,6 +6,9 @@ export init_write_results_in_exodus
 export write_results_in_exodus
 
 function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_node_sets)
+    if ".e" != filename[end-1:end]
+        filename = filename * ".e"
+    end
     if isfile(filename)
         rm(filename)
     end
