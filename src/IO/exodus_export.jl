@@ -101,6 +101,7 @@ function write_nodal_results_in_exodus(exo, step, output, datamanager)
         #exo, timestep::Integer, id::Integer, var_index::Integer,vector
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
         var = convert(Array{Float64}, field[:, output[varname][3]])
+        # tbd integer
         write_values(exo, NodalVariable, step, output[varname][2], varname, var)
     end
     return exo
