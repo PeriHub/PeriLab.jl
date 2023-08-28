@@ -52,7 +52,6 @@ function get_paraviewCoordinates(dof, refDof)
 
 end
 
-
 function get_block_nodes(block_Id, block)
     conn = findall(x -> x == block, block_Id)
     return reshape(conn, 1, length(conn))
@@ -70,7 +69,6 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
         conn = get_block_nodes(block_Id, block)# virtual elements     
         write_block(exo, block, "SPHERE", conn)
         write_name(exo, Block, block, "Block_" * string(block))
-
     end
 
     """
@@ -84,7 +82,7 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
         if output[varname][4] == Float32 || output[varname][4] == Float64 || output[varname][4] == Float128
             zero = zeros(Float64, nnodes)
         else
-            zero = zeros(output[varname][4], nnodes)
+            zero = zeros(output[varname][4], nnodes) #-> zu float; nullen bei init in datamanger
         end
         write_values(exo, NodalVariable, 1, output[varname][2], varname, zero)
     end

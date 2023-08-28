@@ -46,11 +46,13 @@ block_Id[end] = 2
                 @test output[i][entry][1] == "ForcesNP1"
                 @test output[i][entry][2] == i
                 @test output[i][entry][3] == dofForce
+                @test output[i][entry][4] == Float32
             else
                 dofDisp += 1
                 @test output[i][entry][1] == "DisplacementsNP1"
                 @test output[i][entry][2] == 1
                 @test output[i][entry][3] == dofDisp
+                @test output[i][entry][4] == Float32
             end
         end
     end

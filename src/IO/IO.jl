@@ -42,7 +42,7 @@ function get_results_mapping(params, datamanager)
                 return
             end
             if length(sizedatafield) == 1
-                mapping[id][clearNP1(fieldname)] = [fieldname, result_id, 1]
+                mapping[id][clearNP1(fieldname)] = [fieldname, result_id, 1, typeof(datafield[1, 1])]
             else
                 refDof = sizedatafield[2]
                 for dof in 1:refDof
@@ -74,8 +74,8 @@ function init_write_results(params, datamanager)
 
     coords = vcat(transpose(coordinates))
     outputs = get_results_mapping(params, datamanager)
-    for i in eachindex(exos)
-        exos[i] = Write_Exodus_Results.init_results_in_exodus(exos[i], outputs[i], coords, block_Id, nsets)
+    for id in eachindex(exos)
+        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id, nsets)
     end
 
     return exos, outputs

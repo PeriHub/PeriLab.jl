@@ -53,7 +53,7 @@ end
     params = Dict()
     filenames = get_output_filenames(params)
     @test filenames == []
-    params = Dict("Output" => Dict("Output1" => Dict("Output Filename" => "1.e"), "Output2" => Dict("Output Filename" => "2.e")))
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "1.e"), "Output2" => Dict("Output Filename" => "2.e")))
     filenames = get_output_filenames(params)
     @test filenames[1] == "1.e"
     @test filenames[2] == "2.e"
@@ -69,7 +69,7 @@ end
     testDatamanager.create_constant_node_field("E", Float32, 4)
     testfield_keys = testDatamanager.get_all_field_keys()
 
-    params = Dict("Output" => Dict("Output1" => Dict("Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))
 
     outputs = get_outputs(params, testfield_keys)
 
