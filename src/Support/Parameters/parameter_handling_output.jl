@@ -18,9 +18,9 @@ function search_for_duplicates(filenames)
     return returnfilenames
 end
 function get_output_filenames(params)
-    if check_element(params, "Output")
+    if check_element(params, "Outputs")
         filenames = []
-        outputs = params["Output"]
+        outputs = params["Outputs"]
         for output in keys(outputs)
             if check_element(outputs[output], "Output Filename")
                 push!(filenames, outputs[output]["Output Filename"])
@@ -52,8 +52,8 @@ end
 function get_outputs(params, variables)
     return_outputs = Dict{Int64,Any}()
     num = 0
-    if check_element(params, "Output")
-        outputs = params["Output"]
+    if check_element(params, "Outputs")
+        outputs = params["Outputs"]
         for output in keys(outputs)
             if check_element(outputs[output], "Output Variables")
                 num += 1
