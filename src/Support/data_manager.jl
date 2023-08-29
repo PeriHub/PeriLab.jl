@@ -39,7 +39,7 @@ filtered_nodes = Ref([])
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
-rank = 0
+rank::Int64 = 0
 ##########################
 # Material information
 ##########################
