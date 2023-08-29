@@ -58,7 +58,7 @@ block_Id[end] = 2
     end
 end
 
-@testset "ut_init_write_results" begin
+@testset "ut_init_write_result_and_write_results" begin
     exos, outputs = IO.init_write_results(params, testDatamanager)
 
     @test length(exos) == 2
@@ -97,7 +97,23 @@ end
             end
         end
     end
+    IO.write_results(exos, 2, 1.5, outputs, testDatamanager)
+    @test read_time(exos[1], 2) == 1.5
+    @test read_time(exos[2], 2) == 1.5
+    IO.write_results([], 3, 1.6, outputs, testDatamanager)
+    try
+        read_time(exos[1], 3) == 1.6
+    catch
+        @test true
+    end
+    try
+        read_time(exos[2], 3) == 1.6
+    catch
+        @test true
+    end
+
     IO.close_files(exos)
+
     rm(filename1)
     rm(filename2)
 end

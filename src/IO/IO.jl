@@ -87,8 +87,8 @@ end
 
 function write_results(exos, step, time, outputs, datamanager)
     for id in eachindex(exos)
-        exos[id] = write_step_and_time(exos[id], step, time)
-        exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exo[id], step, outputs[id], datamanager)
+        exos[id] = Write_Exodus_Results.write_step_and_time(exos[id], step, time)
+        exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exos[id], step, outputs[id], datamanager)
     end
 end
 
