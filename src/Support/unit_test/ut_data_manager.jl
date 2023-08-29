@@ -1,6 +1,19 @@
 include("../data_manager.jl")
 using Test
 import .Data_manager
+
+@testset "get_local_nodes" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_glob_to_loc([1, 3, 2])
+    @test testDatamanager.get_local_nodes([1, 2, 3]) == [1, 3, 2]
+    @test testDatamanager.get_local_nodes([1]) == [1]
+    @test testDatamanager.get_local_nodes([2]) == [3]
+    @test testDatamanager.get_local_nodes([3]) == [2]
+    @test testDatamanager.get_local_nodes([4]) == []
+    testDatamanager.get_local_nodes([4, 2, 3]) == [3, 2]
+end
+
+
 @testset "get_set_functions" begin
     testDatamanager = Data_manager
     for i in 1:20

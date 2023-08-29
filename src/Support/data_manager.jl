@@ -8,6 +8,7 @@ export create_node_field
 export get_all_field_keys
 export get_block_list
 export get_field
+export get_local_nodes
 export get_nlist
 export get_nnsets
 export get_nsets
@@ -15,6 +16,7 @@ export get_nnodes
 export get_property
 export init_property
 export set_block_list
+export set_glob_to_loc
 export set_filter
 export set_nnodes
 export set_nsets
@@ -232,10 +234,10 @@ function get_local_nodes(global_nodes)
 
     Example:
     ```julia
-    get_local_nodes()  # returns local nodes
+    get_local_nodes()  # returns local nodes or if they do not exist at the core an empty array
     ```
     """
-    return [glob_to_loc[global_node] for global_node in global_nodes]
+    return [glob_to_loc[global_node] for global_node in global_nodes if 1 <= global_node <= length(glob_to_loc)]
 
 end
 
