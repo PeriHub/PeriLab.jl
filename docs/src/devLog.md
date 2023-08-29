@@ -23,9 +23,9 @@
     14. overlap synchronisation
     15. bc in solver
     16. verlet solver -> pacackage?
-    17. write output
+    17. write output -> done
     18. integrate first model
-    18.a step width determination
+    18.a step width determination -> done
     19. first test
     20. 2D arrays in fields
     21. params reader for material + physics
@@ -37,11 +37,12 @@ Each vector entry for a value exists for all nodes, also if the node does not ha
     IO
     nodesets are not defined yet in Exodus.jl
 ## planned feature
+    time step minimum for all cores -> parallel computing!
     search for jl files in material
     check the header for the material name
     include the file in the code via a makro
     material inclusion is very simple
-    bonds as elements in exodus
+    bonds as elements in exodus -> filter small to large writing ?! -> elements can be x,y to be represented both
     multiple materials in one block -> evaluation order
 
 
