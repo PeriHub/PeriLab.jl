@@ -52,7 +52,7 @@ function apply_bc(bcs, datamanager, time)
         bc = bcs[name]
         datamanager.set_filter(bc["Node Set"])
         coordinates = datamanager.get_field("Coordinates")
-        field_to_apply_bc = datamanager.get_field(bc["Type"] * "NP1")
+        field_to_apply_bc = datamanager.get_field(bc["Type"])
         if length(field_to_apply_bc) == 0
             field_to_apply_bc = datamanager.get_field(bc["Type"])
         end
