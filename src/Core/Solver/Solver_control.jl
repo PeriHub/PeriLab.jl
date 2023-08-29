@@ -65,7 +65,7 @@ function solver(params, datamanager, outputs, exos)
     blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
-    Verlet.run_Verlet_solver(solver_options, blockNodes, bcs, datamanage, outputs, exosr)
+    Verlet.run_Verlet_solver(solver_options, blockNodes, bcs, datamanage, outputs, exos, write_results)
     return exos
 end
 
@@ -78,7 +78,7 @@ function synchronise(comm)
         end
     end
 end
-function write_results(datamanager, time, step)
+function write_results(exos, step, dt, outputs, datamanager)
     IO.write_results(exos, step, dt, outputs, datamanager)
 end
 end
