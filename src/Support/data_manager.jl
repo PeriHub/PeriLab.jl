@@ -143,8 +143,10 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
         for i in 1:nnodes
             if dof == 1
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
+                fill!(fields[vartype][name][end], 0)
             else
                 append!(fields[vartype][name], [Matrix{vartype}(undef, nBonds[i], dof)])
+                fill!(fields[vartype][name][end], 0)
             end
         end
     end

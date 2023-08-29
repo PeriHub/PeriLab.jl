@@ -131,10 +131,32 @@ end
 end
 
 @testset "set_get_field" begin
+    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 2
+    nn[2] = 3
+    nn[3] = 2
+    nn[4] = 2
+    nn[5] = 5
     test = testDatamanager.create_constant_node_field("test", Float32, 1)
     @test test == testDatamanager.get_field("test")
     test = testDatamanager.create_constant_node_field("test2", Float32, 3)
     @test test == testDatamanager.get_field("test2")
+    test1, test2 = testDatamanager.create_node_field("test3", Float32, 1)
+    @test test1 == testDatamanager.get_field("test3N")
+    @test test2 == testDatamanager.get_field("test3NP1")
+    test1, test2 = testDatamanager.create_node_field("test4", Float32, 3)
+    @test test1 == testDatamanager.get_field("test4N")
+    @test test2 == testDatamanager.get_field("test4", "NP1")
+    test = testDatamanager.create_constant_bond_field("test5", Float32, 1)
+    @test test == testDatamanager.get_field("test5")
+    test = testDatamanager.create_constant_bond_field("test6", Float32, 3)
+    @test test == testDatamanager.get_field("test6")
+    test1, test2 = testDatamanager.create_bond_field("test7", Float32, 1)
+    @test test1 == testDatamanager.get_field("test7", "N")
+    @test test2 == testDatamanager.get_field("test7", "NP1")
+    test1, test2 = testDatamanager.create_bond_field("test8", Float32, 3)
+    @test test1 == testDatamanager.get_field("test8", "N")
+    @test test2 == testDatamanager.get_field("test8", "NP1")
 end
 
 testNP1NDict = testDatamanager.get_NP1_to_N_Dict()
