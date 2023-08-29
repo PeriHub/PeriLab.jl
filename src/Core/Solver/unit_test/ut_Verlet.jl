@@ -135,4 +135,8 @@ testDatamanager.set_rank(0)
 exos = run_Verlet_solver(solver_options, Solver.get_blockNodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)
 testDatamanager.set_rank(1)
 # only if routine runs, if progress bar is not active
+bcs = Boundary_conditions.init_BCs(params, testDatamanager)
+exos = []
+outputs = Dict()
+solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
 exos = run_Verlet_solver(solver_options, Solver.get_blockNodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)

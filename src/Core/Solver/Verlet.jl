@@ -155,4 +155,5 @@ function run_Verlet_solver(solver_options::Dict{String,Real}, blockNodes::Dict{I
         datamanager.switch_NP1_to_N()
         time += dt
     end
+    return exos
 end
