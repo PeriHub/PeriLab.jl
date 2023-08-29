@@ -60,6 +60,7 @@ function apply_bc(bcs, datamanager, time)
         field_to_apply_bc[:, dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates, time, dof)
     end
     datamanager.reset_filter()
+    return datamanager
 end
 
 function clean_up(bc)
