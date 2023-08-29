@@ -1,9 +1,13 @@
 using Test
 include("../Verlet.jl")
+include("../Solver_control.jl")
 include("../../../Support/geometry.jl")
 include("../../../Support/data_manager.jl")
+include("../../BC_manager.jl")
 import .Data_manager
 import .Geometry
+import .Boundary_conditions
+import .Solver
 @testset "ut_test_timestep" begin
     @test test_timestep(1, 2) == 1
     @test test_timestep(2, 1.1) == 1.1
@@ -101,3 +105,34 @@ testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
     @test testFixdtVal / dt - 1 < 1e-6
 
 end
+nnodes = 5
+dof = 2
+testDatamanager = Data_manager
+
+testDatamanager.set_nnodes(5)
+testDatamanager.set_dof(2)
+
+testDatamanager.set_glob_to_loc([1, 2, 3, 4, 5])
+density = testDatamanager.create_constant_node_field("Density", Float32, 1)
+force = testDatamanager.create_node_field("Forces", Float32, dof)
+Y = testDatamanager.create_node_field("Deformed State", Float32, dof)
+u = testDatamanager.create_node_field("Displacements", Float32, dof)
+bu = testDatamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
+a = testDatamanager.create_constant_node_field("Acceleration", Float32, dof)
+v = testDatamanager.create_node_field("Velocity", Float32, dof)
+
+density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
+testDatamanager.set_nsets("Nset_1", [1, 2, 3])
+testDatamanager.set_nsets("Nset_2", [3, 4, 7, 10])
+blockNodes = [1, 1, 2, 2, 1]
+params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "5")))
+
+bcs = Boundary_conditions.init_BCs(params, testDatamanager)
+exos = []
+outputs = Dict()
+solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
+testDatamanager.set_rank(0)
+exos = run_Verlet_solver(solver_options, Solver.get_blockNodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)
+testDatamanager.set_rank(1)
+# only if routine runs, if progress bar is not active
+exos = run_Verlet_solver(solver_options, Solver.get_blockNodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)
