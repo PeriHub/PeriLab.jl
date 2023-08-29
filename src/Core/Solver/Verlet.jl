@@ -130,7 +130,7 @@ function run_Verlet_solver(solver_options::Dict{String,Real}, blockNodes::Dict{I
     uNP1 = datamanager.get_field("Displacements", "NP1")
     vN = datamanager.get_field("Velocity", "N")
     vNP1 = datamanager.get_field("Velocity", "NP1")
-    aN = datamanager.get_field("Acceleration")
+    a = datamanager.get_field("Acceleration")
     dt = solver_options["dt"]
 
     time::Float32 = 0.0
@@ -142,15 +142,17 @@ function run_Verlet_solver(solver_options::Dict{String,Real}, blockNodes::Dict{I
     end
     for idt in iter
         # one step more, because of init step (time = 0)
-        uNP1 = 2 .* uN + vN .* dt + 0.5 * aN .* (dt * dt)
+        uNP1 = 2 .* uN + vN .* dt + 0.5 * a .* (dt * dt)
         datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
+        # synch
         for block in eachindex(blockNodes)
             datamanager.set_filter(blockNodes[block])
             #forces = Physics.compute_model(datamanager, block, dt, time)
         end
         datamanager.reset_filter()
+        # synch
         check_inf_or_nan(forces, "Forces")
-        aNP1 = forces ./ density # element wise
+        a = forces ./ density # element wise
         write_results(exos, idt, time, outputs, datamanager)
         datamanager.switch_NP1_to_N()
         time += dt
