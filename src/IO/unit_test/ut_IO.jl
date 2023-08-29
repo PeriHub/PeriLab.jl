@@ -101,17 +101,20 @@ end
     @test read_time(exos[1], 2) == 1.5
     @test read_time(exos[2], 2) == 1.5
     IO.write_results([], 3, 1.6, outputs, testDatamanager)
+    testBool = false
     try
         read_time(exos[1], 3) == 1.6
     catch
-        @test true
+        testBool = true
     end
+    @test testBool
+    testBool = false
     try
         read_time(exos[2], 3) == 1.6
     catch
-        @test true
+        testBool = true
     end
-
+    @test testBool
     IO.close_files(exos)
 
     rm(filename1)
