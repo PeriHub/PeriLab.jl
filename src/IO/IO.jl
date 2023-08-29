@@ -55,6 +55,7 @@ function get_results_mapping(params, datamanager)
 end
 
 function initialize_data(filename, datamanager, comm)
+    datamanager.set_rank(MPI.Comm_rank(comm))
     return Read_Mesh.init_data(read_input_file(filename), datamanager, comm)
 end
 

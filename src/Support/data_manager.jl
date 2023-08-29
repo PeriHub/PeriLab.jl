@@ -14,6 +14,7 @@ export get_nnsets
 export get_nsets
 export get_nnodes
 export get_property
+export get_rank
 export init_property
 export set_block_list
 export set_glob_to_loc
@@ -21,6 +22,7 @@ export set_filter
 export set_nnodes
 export set_nsets
 export set_property
+export set_rank
 export switch_NP1_to_N
 ##########################
 # Variables
@@ -37,6 +39,7 @@ filtered_nodes = Ref([])
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
+rank = 0
 ##########################
 # Material information
 ##########################
@@ -323,6 +326,10 @@ function get_property(blockId, property, value_name)
     return Nothing
 end
 
+function get_rank()
+    return rank
+end
+
 function reset_filter()
     global filtered_nodes = 1:nnodes
 end
@@ -442,6 +449,10 @@ end
 
 function set_properties(blockId, property, values)
     properties[blockId][property] = values
+end
+
+function set_rank(value)
+    global rank = value
 end
 
 function set_synch(name, upload_to_cores, download_from_cores)
