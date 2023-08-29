@@ -118,13 +118,10 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_Verlet_solver(blockNodes, bcs, datamanager, outputs, exos)
+function run_Verlet_solver(solver_options::Dict{String,Real}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Any,Any}, exos::Vector{Any})
 
     dof = datamanager.get_dof()
-    for block in 1:length(blockNodes)
-        datamanager.set_filter(blockNodes[i])
-        "evaluate"
-    end
+
 
     forces = datamanager.get_field("Forces", "NP1")
     density = datamanager.get_field("Density")
@@ -136,17 +133,20 @@ function run_Verlet_solver(blockNodes, bcs, datamanager, outputs, exos)
     vN = datamanager.get_field("Velocity", "N")
     vNP1 = datamanager.get_field("Velocity", "N")
     dt = solver_options["dt"]
-    uNP1 = 2 * uN + vN * dt + 0.5 * aN * dt * dt
+    datamanager = apply_bc(bcs, datamanager, time)
     time::Float32 = 0.0
-    for idt in 1:solver_options["nsteps"]
-        #init
-        #uNP1 = u0 + v0*dt + 0.5*a0*dt*dt
-
+    for idt in 1:solver_options["nsteps"]+1
+        # one step more, because of init step (time = 0)
         uNP1 = 2 .* uN + vN .* dt + 0.5 * aN .* (dt * dt)
-        forces = Physics.compute_forces(datamanager, dt, time)
+        datamanager = apply_bc(bcs, datamanager, time)
+        for block in 1:eachindex(blockNodes)
+            datamanager.set_filter(blockNodes[block])
+            #forces = Physics.compute_model(datamanager, dt, time)
+        end
         check_inf_or_nan(forces, "Forces")
         aNP1 = forces ./ density # element wise
-        write_results(datamanager, idt, time, outputs, exos)
+        IO.write_results(datamanager, idt, time, outputs, exos)
         datamanager.switch_NP1_to_N()
+        time += dt
     end
 end
