@@ -222,6 +222,7 @@ function get_field(name::String)
         end
         return view(fields[fieldnames[name]][name], filtered_nodes,)
     end
+    @error "Field " * name * " does not exist. Check if it is initialized as constant."
     return []
 end
 
