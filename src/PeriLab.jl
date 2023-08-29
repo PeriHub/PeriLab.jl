@@ -48,9 +48,9 @@ function main()
 
     datamanager, params = IO.initialize_data(filename, Data_manager, comm)
     # for testing
-    datamanager.create_node_field("Displacements", Float32, 3)
-
-    exos, outputs = IO.init_write_results(params, datamanager)
+    #datamanager.create_node_field("Displacements", Float32, 3)
+    exos, ouputs = IO.init_write_results(params, datamanager)
+    exos = Solver.solver(params, datamanager, outputs, exos)
     #write_results(datamanager)
     # tbd merge
     IO.close_files(exos)
