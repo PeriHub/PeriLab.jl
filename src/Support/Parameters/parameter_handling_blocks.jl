@@ -1,6 +1,7 @@
 
 function get_density(params, blockID)
-    if check_element(params["Blocks"], "block_" * string(blockID))
+    if check_element(params["Blocks"]["block_"*string(blockID)], "Density")
+
         return params["Blocks"]["block_"*string(blockID)]["Density"]
     end
     @error "No density defined for block " * string(blockID)

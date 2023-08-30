@@ -4,9 +4,8 @@ include("../Solver_control.jl")
 include("../../../Support/geometry.jl")
 import .Solver
 include("../../../Support/data_manager.jl")
-include("../../BC_manager.jl")
 include("../../../Support/Parameters/parameter_handling.jl")
-using .Boundary_conditions
+
 import .Data_manager
 @testset "ut_get_blockNodes" begin
     blockIDs = [1, 1, 1, 2, 2, 3, 3, 3, 3, 1, 1, 2, 3, 3, 1, 1, 2]
@@ -20,7 +19,7 @@ end
 @testset "ut_init" begin
     MPI.Init()
     comm = MPI.COMM_WORLD
-    params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => [1 2 3])), "Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")), "Blocks" => Dict("block_1" => Dict("Material Model" => "a"), "block_2" => Dict("Material Model" => "c"), "block_3" => Dict("Material Model" => "a", "Damage Model" => "a", "Thermal Model" => "therm")), "Physics" => Dict("Material Models" => Dict("a" => Dict("Bulk Modulus" => 140.0), "c" => Dict("Bulk Modulus" => 140.0, "value2" => 1)), "Damage Models" => Dict("a" => Dict("value" => 3), "c" => Dict("value" => [1 2], "value2" => 1)), "Thermal Models" => Dict("therm" => Dict("Specific Heat Capacity" => 1e-9, "Lambda" => 1.1))), "Solver" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => false, "Thermal Models" => true, "Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)), "Outputs" => Dict("Output1" => Dict("Output Filename" => "test1.e", "Output Variables" => Dict("Velocity" => true, "Force" => false, "Displacements" => true)), "Output2" => Dict("Output Filename" => "test2.e", "Output Variables" => Dict("Displacements" => true))), "Boundary Conditions" => Dict("BC1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC2" => Dict("Type" => "Force", "Node Set" => "Nset_2", "Coordinate" => "x", "Value" => "20*t")))
+    params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => [1 2 3])), "Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")), "Blocks" => Dict("block_1" => Dict("Material Model" => "a", "Density" => 1e-6), "block_2" => Dict("Material Model" => "c", "Density" => 3e-6)), "Physics" => Dict("Material Models" => Dict("a" => Dict("Bulk Modulus" => 140.0), "c" => Dict("Bulk Modulus" => 140.0, "value2" => 1)), "Damage Models" => Dict("a" => Dict("value" => 3), "c" => Dict("value" => [1 2], "value2" => 1)), "Thermal Models" => Dict("therm" => Dict("Specific Heat Capacity" => 1e-9, "Lambda" => 1.1))), "Solver" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => false, "Thermal Models" => true, "Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)), "Outputs" => Dict("Output1" => Dict("Output Filename" => "test1.e", "Output Variables" => Dict("Velocity" => true, "Force" => false, "Displacements" => true)), "Output2" => Dict("Output Filename" => "test2.e", "Output Variables" => Dict("Displacements" => true))), "Boundary Conditions" => Dict("BC1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC2" => Dict("Type" => "Force", "Node Set" => "Nset_2", "Coordinate" => "x", "Value" => "20*t")))
     nnodes = 5
     dof = 2
     testDatamanager = Data_manager
@@ -37,7 +36,7 @@ end
     nn[5] = 4
     id = testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
 
-    id[:] = [1, 2, 2, 1, 1]
+    id[:] = [1, 1, 2, 2, 1]
     testDatamanager.set_block_list(id)
 
     horizon = testDatamanager.create_constant_node_field("Horizon", Float32, 1)
@@ -70,7 +69,6 @@ end
     coor[5, 2] = 1
 
     volume[:] = [0.5, 0.5, 0.5, 0.5, 0.5]
-    density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
     horizon[:] = [1.1, 1.1, 1.1, 1.1, 1.1]
 
     bondGeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondGeom)
@@ -87,8 +85,8 @@ end
 
     @test bcs["BC1"]["Node Set"] == [2]
     @test bcs["BC2"]["Node Set"] == [2, 3, 4]
-    @test blockNodes[1] == [1, 4, 5]
-    @test blockNodes[2] == [2, 3]
+    @test blockNodes[1] == [1, 2, 5]
+    @test blockNodes[2] == [3, 4]
     @test "TemperatureNP1" in testDatamanager.get_all_field_keys()
     @test "DisplacementsNP1" in testDatamanager.get_all_field_keys()
     @test "DamageNP1" in testDatamanager.get_all_field_keys()
