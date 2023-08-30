@@ -1,16 +1,15 @@
 
 
 module Solver
-include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
 include("../../Physics/Physics_Factory.jl")
 include("../../IO/IO.jl")
-include("../BC_manager.jl")
 include("Verlet.jl")
-
-import .IO
-import .Physics
-import .Boundary_conditions
+include("../../Support/Parameters/parameter_handling.jl")
+include("../BC_manager.jl")
+using .IO
+using .Physics
+using .Boundary_conditions
 function init(params, datamanager)
 
     # tbd in csv for global vars
