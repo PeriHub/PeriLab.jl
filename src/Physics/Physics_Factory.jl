@@ -4,10 +4,12 @@ include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
-import .Additive
-import .Damage
-import .Material
-import .Thermal
+
+using .Additive
+using .Damage
+using .Material
+using .Thermal
+
 export read_properties
 
 
@@ -32,9 +34,6 @@ function get_block_model_definition(params, blockID, prop_keys, properties)
     end
     return properties
 end
-
-
-
 
 function PD_type(params, datamanager)
     ## function for specific pre-calculations
