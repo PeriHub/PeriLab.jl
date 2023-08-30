@@ -3,9 +3,9 @@ include("read_inputdeck.jl")
 include("mesh_data.jl")
 include("exodus_export.jl")
 include("../Support/Parameters/parameter_handling.jl")
-using .Read_Input_Deck
-using .Read_Mesh
-using .Write_Exodus_Results
+import .Read_Input_Deck
+import .Read_Mesh
+import .Write_Exodus_Results
 using MPI
 export close_files
 export initialize_data

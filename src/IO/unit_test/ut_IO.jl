@@ -1,5 +1,6 @@
 
 include("../../Support/data_manager.jl")
+include("../../Support/Parameters/parameter_handling.jl")
 include("../IO.jl")
 import .Data_manager
 using Test

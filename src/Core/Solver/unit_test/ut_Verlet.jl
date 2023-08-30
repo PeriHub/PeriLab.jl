@@ -5,10 +5,10 @@ include("../Solver_control.jl")
 include("../../../Support/geometry.jl")
 include("../../../Support/data_manager.jl")
 include("../../BC_manager.jl")
-import .Data_manager
-import .Geometry
-import .Boundary_conditions
-import .Solver
+using .Data_manager
+using .Geometry
+using .Boundary_conditions
+using .Solver
 @testset "ut_test_timestep" begin
     @test test_timestep(1, 2) == 1
     @test test_timestep(2, 1.1) == 1.1

@@ -2,9 +2,7 @@
 using LinearAlgebra
 using ProgressBars
 include("../../Support/tools.jl")
-include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
-include("../../Support/Parameters/parameter_handling.jl")
 
 function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
     """
@@ -124,7 +122,7 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_Verlet_solver(solver_options::Dict{String,Real}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Any,Any}, exos::Vector{Any}, write_results)
+function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results)
 
     dof = datamanager.get_dof()
     forces = datamanager.get_field("Forces", "NP1")

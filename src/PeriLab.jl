@@ -5,8 +5,8 @@ include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
 using MPI
 using .Data_manager
-using .IO
-using .Solver
+import .IO
+import .Solver
 
 export main
 """
@@ -47,14 +47,12 @@ function main()
     filename = juliaPath * filename
 
     datamanager, params = IO.initialize_data(filename, Data_manager, comm)
-    # for testing
-    #datamanager.create_node_field("Displacements", Float32, 3)
-    exos, ouputs = IO.init_write_results(params, datamanager)
-    exos = Solver.solver(params, datamanager, outputs, exos)
-    #write_results(datamanager)
-    # tbd merge
+
+    blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
+    exos, outputs = IO.init_write_results(params, datamanager)
+    exos = Solver.solver(params, solver_options, blockNodes, bcs, datamanager, outputs, exos, IO.write_results)
     IO.close_files(exos)
-    #    save_values(results)
+
     return MPI.Finalize()
 end
 

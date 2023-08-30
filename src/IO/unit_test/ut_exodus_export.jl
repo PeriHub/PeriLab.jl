@@ -1,5 +1,6 @@
 include("../exodus_export.jl")
 include("../../Support/data_manager.jl")
+include("../../Support/Parameters/parameter_handling.jl")
 using Test
 import .Data_manager
 import .Write_Exodus_Results

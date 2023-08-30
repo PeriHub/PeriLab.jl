@@ -1,3 +1,12 @@
+
+function get_density(params, blockID)
+    if check_element(params["Blocks"], "block_" * string(blockID))
+        return params["Blocks"]["block_"*string(blockID)]["Density"]
+    end
+    @error "No density defined for block " * string(blockID)
+    return
+end
+
 function get_horizon(params, blockID)
     check = check_element(params["Blocks"], "block_" * string(blockID))
     if check

@@ -1,6 +1,6 @@
 
 module Data_manager
-include("./Parameters/parameter_handling.jl")
+
 export create_bond_field
 export create_constant_bond_field
 export create_constant_node_field

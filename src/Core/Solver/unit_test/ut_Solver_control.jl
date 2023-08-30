@@ -4,6 +4,9 @@ include("../Solver_control.jl")
 include("../../../Support/geometry.jl")
 import .Solver
 include("../../../Support/data_manager.jl")
+include("../../BC_manager.jl")
+include("../../../Support/Parameters/parameter_handling.jl")
+using .Boundary_conditions
 import .Data_manager
 @testset "ut_get_blockNodes" begin
     blockIDs = [1, 1, 1, 2, 2, 3, 3, 3, 3, 1, 1, 2, 3, 3, 1, 1, 2]

@@ -3,7 +3,6 @@ include("./Additive/Additive_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
-include("../Support/Parameters/parameter_handling.jl")
 
 using .Additive
 using .Damage

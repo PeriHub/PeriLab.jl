@@ -21,24 +21,19 @@ function get_material(params)
     # blocks -> mat
 end
 
+function evaluate_material(params, datamanager, dt, time)
 
-function material_type(params, datamanager)
-    ## function for specific pre-calculations
+    #datamanager.get
+    #    if 
+end
 
-    if datamanager.is_material_type("Bond-Based")
-    end
 
-    if datamanager.is_material_type("Ordinary")
-    end
+function create_nodel_forces()
+    println()
+end
 
-    if datamanager.is_material_type("Correspondence")
-        include("Correspondence.jl")
-        data = shapeTensor(data)
-        data = defGrad(data)
-    end
-    if datamanager.is_material_type("Bond Associated")
-    end
-
-    return data
+function testing_material(params, datamanager)
+    # for testing
+    return datamanager
 end
 end

@@ -1,5 +1,6 @@
 include("../BC_manager.jl")
 include("../../Support/data_manager.jl")
+include("../../Support/Parameters/parameter_handling.jl")
 using Test
 import .Data_manager
 using .Boundary_conditions

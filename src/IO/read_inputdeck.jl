@@ -2,7 +2,6 @@ module Read_Input_Deck
 using YAML
 using DataFrames
 include("../Support/Parameters/parameter_handling.jl")
-
 export read_input_file
 
 function read_input(filename::String)
@@ -13,7 +12,7 @@ function read_input_file(filename::String)
     if occursin("yaml", filename)
         println("Load  $filename")
         @info "Read file $filename"
-        parameter = read_input(filename)
+        params = read_input(filename)
     elseif occursin("xml", filename)
         @info "Read file $filename"
         #read_xml(filename = filename)
@@ -21,8 +20,8 @@ function read_input_file(filename::String)
         parameter = ""
         @error "Not a supported filetype  $filename"
     end
-    check_key_elements(parameter)
-    return parameter
+    check_key_elements(params)
+    return params
 end
 
 

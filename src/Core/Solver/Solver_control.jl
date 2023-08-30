@@ -15,9 +15,11 @@ function init(params, datamanager)
     # tbd in csv for global vars
     blockNodes = get_blockNodes(datamanager.get_field("Block_Id"))
     solver_options = get_solver_options(params)
+    density = datamanager.create_constant_node_field("Density", Float32, 1)
+    density = set_density(params, blockNodes, density)
     if solver_options["Material Models"]
         dof = datamanager.get_dof()
-        force = datamanager.create_node_field("Force", Float32, dof)
+        force = datamanager.create_node_field("Forces", Float32, dof)
         Y = datamanager.create_node_field("Deformed State", Float32, dof)
         u = datamanager.create_node_field("Displacements", Float32, dof)
         bu = datamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
@@ -60,11 +62,18 @@ function get_blockNodes(blockIDs)
     return blockNodes
 end
 
-function solver(params, datamanager, outputs, exos)
-    blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
+function set_density(params, blockNodes, density)
+    for block in eachindex(blockNodes)
+        density[blockNodes[block]] .= get_density(params, block)
+    end
+    return density
+end
+
+function solver(params, solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results)
+    #blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
-    Verlet.run_Verlet_solver(solver_options, blockNodes, bcs, datamanage, outputs, exos, write_results)
+    run_Verlet_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results)
     return exos
 end
 

@@ -1,6 +1,7 @@
 using Test
 include("../Thermal_correspondence.jl")
-@testset "ut_check_key_elements" begin
+
+@testset "ut_thermal strain" begin
     strain = zeros(3, 3)
     alpha = ones(3, 3)
     temperature = 1.0

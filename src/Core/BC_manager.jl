@@ -1,8 +1,7 @@
 module Boundary_conditions
-include("../Support/Parameters/parameter_handling.jl")
 export init_BCs
 export apply_bc
-
+include("../Support/Parameters/parameter_handling.jl")
 function check_valid_bcs(bcs, datamanager)
     # check bc
     working_bcs = Dict()
