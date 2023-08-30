@@ -8,7 +8,7 @@ using NearestNeighbors: inrange
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_init.jl")
 include("../Support/geometry.jl")
-import .Geometry
+using .Geometry
 
 #export read_mesh
 #export load_mesh_and_distribute
