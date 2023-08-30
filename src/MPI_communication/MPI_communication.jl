@@ -161,3 +161,12 @@ function recv_vector_from_root(comm, recv_msg)
     # end
     return recv_msg
 end
+
+
+function find_and_set_core_value_min(comm, value)
+    return MPI.Allreduce!([value], MPI.MIN, comm)[1]
+end
+
+function find_and_set_core_value_max(comm, value)
+    return MPI.Allreduce!([value], MPI.MAX, comm)[1]
+end

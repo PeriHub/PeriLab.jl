@@ -6,6 +6,15 @@ MPI.Init()
 comm = MPI.COMM_WORLD
 rank = MPI.Comm_rank(comm)
 size = MPI.Comm_size(comm)
+
+@testset "find_and_set_core_value_min and max" begin
+    value = rank + 1
+    value = find_and_set_core_value_min(comm, value)
+    @test value == 1
+    value = rank + 1
+    value = find_and_set_core_value_max(comm, value)
+    @test size == value
+end
 @testset "ut_send_value" begin
     if rank == 0
         send_msg = 100
