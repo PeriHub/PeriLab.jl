@@ -1,7 +1,16 @@
 include("../data_manager.jl")
+using MPI
 using Test
 import .Data_manager
-
+@testset "set_comm" begin
+    MPI.Init()
+    comm = MPI.COMM_WORLD
+    testDatamanager = Data_manager
+    testDatamanager.set_comm(comm)
+    b = testDatamanager.comm()
+    @test comm == b
+    MPI.Finalize()
+end
 @testset "get_local_nodes" begin
     testDatamanager = Data_manager
     testDatamanager.set_glob_to_loc([1, 3, 2])

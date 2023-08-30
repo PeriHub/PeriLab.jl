@@ -40,6 +40,13 @@ fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
 rank::Int64 = 0
+commMPi = Any
+function comm()
+    return commMPi
+end
+function set_comm(value)
+    global commMPi = value
+end
 ##########################
 # Material information
 ##########################
