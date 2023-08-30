@@ -1,4 +1,5 @@
 using Test
+using MPI
 include("../Verlet.jl")
 include("../Solver_control.jl")
 include("../../../Support/geometry.jl")
@@ -72,6 +73,9 @@ bondGeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondGeom)
 blocks[:] = [1, 1, 2, 2, 1]
 blocks = testDatamanager.set_block_list(blocks)
 testValmech = 3.59255e-05
+MPI.Init()
+comm = MPI.COMM_WORLD
+testDatamanager.set_comm(comm)
 # from Peridigm
 @testset "ut_crititical_time_step" begin
 
@@ -82,6 +86,7 @@ testValmech = 3.59255e-05
     #@test testVal / t - 1 < 1e-6
 
 end
+
 testDatamanager.init_property()
 testDatamanager.set_property(1, "Material Model", "Bulk Modulus", 140.0)
 testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
@@ -105,10 +110,12 @@ testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
     @test testFixdtVal / dt - 1 < 1e-6
 
 end
+
 nnodes = 5
 dof = 2
-testDatamanager = Data_manager
 
+testDatamanager = Data_manager
+testDatamanager.set_comm(comm)
 testDatamanager.set_nnodes(5)
 testDatamanager.set_dof(2)
 
@@ -140,3 +147,5 @@ exos = []
 outputs = Dict()
 solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
 exos = run_Verlet_solver(solver_options, Solver.get_blockNodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)
+
+MPI.Finalize()

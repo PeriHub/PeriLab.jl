@@ -3,6 +3,7 @@ using LinearAlgebra
 using ProgressBars
 include("../../Support/tools.jl")
 include("../BC_manager.jl")
+include("../../MPI_communication/MPI_communication.jl")
 include("../../Support/Parameters/parameter_handling.jl")
 
 function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
@@ -48,7 +49,6 @@ function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
     bondgeometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     horizon = datamanager.get_field("Horizon")
-
 
     for iID in 1:nnodes
         denominator = get_cs_denominator(nneighbors[iID], volume[nlist[iID]], bondgeometry[iID][:, dof+1])
@@ -108,6 +108,9 @@ function init_Verlet(params, datamanager, mechanical, thermo)
     end
 
     nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * dt)
+    comm = datamanager.comm()
+    dt = find_and_set_core_value_min(comm, dt)
+    nsteps = find_and_set_core_value_max(comm, nsteps)
 
     @info "Safety Factor: " * string(safety_factor)
     @info "Time increment: " * string(dt) * " [s]"
