@@ -6,6 +6,7 @@ include("../Support/Parameters/parameter_handling.jl")
 using .Read_Input_Deck
 using .Read_Mesh
 using .Write_Exodus_Results
+using MPI
 export close_files
 export initialize_data
 export init_write_results
@@ -55,8 +56,8 @@ function get_results_mapping(params, datamanager)
 end
 
 function initialize_data(filename, datamanager, comm)
-    datamanager.set_comm(comm)
     datamanager.set_rank(MPI.Comm_rank(comm))
+    datamanager.set_comm(comm)
     return Read_Mesh.init_data(read_input_file(filename), datamanager, comm)
 end
 
