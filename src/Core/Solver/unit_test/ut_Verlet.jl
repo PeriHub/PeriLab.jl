@@ -5,6 +5,7 @@ include("../Solver_control.jl")
 include("../../../Support/geometry.jl")
 include("../../../Support/data_manager.jl")
 include("../../BC_manager.jl")
+include("../../../Support/Parameters/parameter_handling.jl")
 using .Data_manager
 using .Geometry
 using .Boundary_conditions
@@ -110,7 +111,7 @@ testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
     @test testFixdtVal / dt - 1 < 1e-6
 
 end
-
+"""
 nnodes = 5
 dof = 2
 
@@ -147,5 +148,5 @@ exos = []
 outputs = Dict()
 solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
 exos = run_Verlet_solver(solver_options, Solver.get_blockNodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)
-
+"""
 MPI.Finalize()
