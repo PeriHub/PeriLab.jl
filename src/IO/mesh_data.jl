@@ -64,6 +64,7 @@ function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribu
 
     return datamanager
 end
+
 function get_bond_geometry(datamanager)
     dof = datamanager.get_dof()
     bondgeom = datamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
@@ -184,8 +185,9 @@ function read_mesh(filename::String)
     end
     @info "Read File $filename"
     header = get_header(filename)
-    return CSV.read(filename, DataFrame; delim=" ", header=header, comment="++", skipto=2)
+    return CSV.read(filename, DataFrame; delim=" ", header=header, skipto=2)
 end
+
 function set_dof(mesh)
     if "z" in names(mesh)
         return 3
@@ -224,6 +226,7 @@ function create_neighborhoodlist(mesh, params, dof)
     nlist = neighbors(mesh, params, coor[1:dof])
     return nlist
 end
+
 function get_number_of_neighbornodes(nlist)
     len = length(nlist)
     lenNlist = zeros(Int64, len)
@@ -232,6 +235,7 @@ function get_number_of_neighbornodes(nlist)
     end
     return lenNlist
 end
+
 function node_distribution(nlist, size)
 
     nnodes = length(nlist)
@@ -271,6 +275,7 @@ function node_distribution(nlist, size)
     end
     return distribution, ptc, ntype
 end
+
 function create_overlap_map(distribution, ptc, size)
     #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
     overlap_map = _init_overlap_map_(size)
@@ -293,7 +298,6 @@ function create_overlap_map(distribution, ptc, size)
     return overlap_map
 end
 
-
 function _init_overlap_map_(size)
     #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
     overlap_map = []
@@ -310,6 +314,7 @@ function _init_overlap_map_(size)
     end
     return overlap_map
 end
+
 function create_base_chunk(nnodes, size)
     # Calculate the initial size of each chunk
     # for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, 
@@ -350,7 +355,7 @@ function neighbors(mesh, params, coor)
     neighborList = fill([], nnodes)
 
     for i in 1:dof
-        data[i, :] = view(values(mesh[!, coor[i]])) # memory mapping?
+        data[i, :] = values(mesh[!, coor[i]])
     end
     balltree = BallTree(data)
     for i in 1:nnodes
