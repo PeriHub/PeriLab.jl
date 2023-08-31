@@ -33,7 +33,7 @@ function get_fixed_dt(params)
     if check_element(params["Solver"]["Verlet"], "Fixed dt")
         return params["Solver"]["Verlet"]["Fixed dt"]
     end
-    return -1.0
+    return true
 end
 
 function get_numerical_damping(params)

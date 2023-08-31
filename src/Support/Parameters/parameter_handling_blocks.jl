@@ -9,16 +9,15 @@ function get_density(params, blockID)
 end
 
 function get_horizon(params, blockID)
-    check = check_element(params["Blocks"], "block_" * string(blockID))
-    if check
-        check2 = check_element(params["Blocks"]["block_"*string(blockID)], "Horizon")
-        if check2
+    if check_element(params["Blocks"], "block_" * string(blockID))
+        if check_element(params["Blocks"]["block_"*string(blockID)], "Horizon")
             return params["Blocks"]["block_"*string(blockID)]["Horizon"]
-        else
-            @error "Horizon of Block $blockID is not defined"
         end
-        @error "Block $blockID is not defined"
+        @error "Horizon of Block $blockID is not defined"
+        return
     end
+    @error "Block $blockID is not defined"
+    return
 end
 
 function get_number_of_blocks(params)
