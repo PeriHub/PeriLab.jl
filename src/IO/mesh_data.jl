@@ -118,7 +118,14 @@ function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     volume[:] = send_vector_from_root_to_core_i(comm, send_msg, volume, distribution)
     # additional fields as angles and pointtime can be add automatically
 
-
+    # send header to all cores
+    # create fields
+    # check in advance x,yz for dof>1 fields
+    # transfer data
+    #if MPI.Comm_rank(comm) == 0
+    #for name in mesh[!, "volume"]
+    #    send_msg = Float32.(mesh[!, "volume"])
+    #end
     #for upload in uploadDict
     #    var = datamanager.create_constant_node_field(upload["Name"], upload["Type"], 1)
     #end
@@ -161,21 +168,29 @@ function check_elements(mesh, dof)
     return uploadDict
 end
 
+function get_header(filename)
+    file = open(filename, "r")
+    for line in eachline(file)
+        if contains(line, '#')
+            close(file)
+            return convert(Vector{String}, split(line[3:end], ' '))
+        end
+    end
+end
 
 function read_mesh(filename::String)
-
-    header = ["x", "y", "z", "block_id", "volume"]
-
     if !isfile(filename)
         @error "File $filename does not exist"
     end
     @info "Read File $filename"
-    return CSV.read(filename, DataFrame; delim=" ", header=header, skipto=2)
+    header = get_header(filename)
+    return CSV.read(filename, DataFrame; delim=" ", header=header, comment="++", skipto=2)
 end
 function set_dof(mesh)
     if "z" in names(mesh)
         return 3
     else
+        @info "2d problem assumed, please define plane stress or plane strain if needed in Physics"
         return 2
     end
 end
@@ -335,7 +350,7 @@ function neighbors(mesh, params, coor)
     neighborList = fill([], nnodes)
 
     for i in 1:dof
-        data[i, :] = values(mesh[!, coor[i]]) # memory mapping?
+        data[i, :] = view(values(mesh[!, coor[i]])) # memory mapping?
     end
     balltree = BallTree(data)
     for i in 1:nnodes
