@@ -98,7 +98,7 @@ function init_Verlet(params, datamanager, mechanical, thermo)
     dt = get_fixed_dt(params)
     @info "Initial time: " * string(initial_time) * " [s]"
     @info "Final time: " * string(final_time) * " [s]"
-    if dt == -1
+    if dt
         dt = compute_crititical_time_step(datamanager, mechanical, thermo)
         @info "Minimal time increment: " * string(dt) * " [s]"
     else
@@ -116,6 +116,9 @@ function init_Verlet(params, datamanager, mechanical, thermo)
     return initial_time, dt, nsteps
 end
 function get_integration_steps(initial_time, end_time, dt)
+    if dt <= 0
+        @error "Time step $dt [s] is not valid"
+    end
     nsteps = ceil((end_time - initial_time) / dt)
     dt = (end_time - initial_time) / nsteps
     return Int64(nsteps), dt
