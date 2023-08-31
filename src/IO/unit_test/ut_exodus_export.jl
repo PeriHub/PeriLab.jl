@@ -101,9 +101,13 @@ coords = vcat(transpose(coordinates))
 outputs = Dict("Forcesxx" => ["ForcesNP1", 1, 1, Float32], "Forcesxy" => ["ForcesNP1", 1, 2, Float32], "Forcesxz" => ["ForcesNP1", 1, 3, Float32], "Forcesyx" => ["ForcesNP1", 1, 4, Float32], "Forcesyy" => ["ForcesNP1", 1, 5, Float32], "Forcesyz" => ["ForcesNP1", 1, 6, Float32], "Displacements" => ["DisplacementsNP1", 2, 1, Float32])
 exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), 0)
 exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, coords, block_Id, nsets)
-
-exo = Write_Exodus_Results.write_step_and_time(exo, 2, 2.2)
-exo = Write_Exodus_Results.write_step_and_time(exo, 3, 3.7)
+exos = []
+push!(exos, exo)
+exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 2, 2.2)
+exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 3, 3.7)
+exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 4, 4.7)
+exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 5, 5.7)
+exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 6, 6.7)
 
 @testset "ut_init_results_in_exodus" begin
     @test exo.init.num_dim == dof
@@ -116,9 +120,12 @@ exo = Write_Exodus_Results.write_step_and_time(exo, 3, 3.7)
     @test coords == exo_coords
     @test exo_nsets == []
 
-    @test read_number_of_time_steps(exo) == 3
+    @test read_number_of_time_steps(exo) == 6
     @test read_time(exo, 2) == 2.2
     @test read_time(exo, 3) == 3.7
+    @test read_time(exo, 4) == 4.7
+    @test read_time(exo, 5) == 5.7
+    @test read_time(exo, 6) == 6.7
     @test read_name(exo, Block, 1) == "Block_1"
     @test read_name(exo, Block, 2) == "Block_2"
 end

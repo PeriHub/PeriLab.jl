@@ -3,13 +3,13 @@ using MPI
 using Test
 import .Data_manager
 @testset "set_comm" begin
-    MPI.Init()
+    # MPI.Init()
     comm = MPI.COMM_WORLD
     testDatamanager = Data_manager
     testDatamanager.set_comm(comm)
     b = testDatamanager.comm()
     @test comm == b
-    MPI.Finalize()
+    # MPI.Finalize()
 end
 @testset "get_local_nodes" begin
     testDatamanager = Data_manager

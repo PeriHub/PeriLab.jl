@@ -157,7 +157,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
         # synch
         check_inf_or_nan(forces, "Forces")
         a = forces ./ density # element wise
-        write_results(exos, idt, time, outputs, datamanager)
+        exos = write_results(exos, idt, time, outputs, datamanager)
         datamanager.switch_NP1_to_N()
         time += dt
     end

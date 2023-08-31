@@ -13,8 +13,9 @@ export init_write_results
 export write_results
 
 function close_files(exos)
-    @info "Closing output files"
+
     for exo in exos
+        @info "Closing output file " * exo.file_name
         close(exo)
     end
 end
@@ -68,19 +69,16 @@ function init_write_results(params, datamanager)
     dof = datamanager.get_dof()
     nnsets = datamanager.get_nnsets()
     coordinates = datamanager.get_field("Coordinates")
-
     block_Id = datamanager.get_field("Block_Id")
     nsets = datamanager.get_nsets()
     for filename in filenames
         push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), nnsets))
     end
-
     coords = vcat(transpose(coordinates))
     outputs = get_results_mapping(params, datamanager)
     for id in eachindex(exos)
         exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id, nsets)
     end
-
     return exos, outputs
 end
 
@@ -90,9 +88,11 @@ end
 
 function write_results(exos, step, time, outputs, datamanager)
     for id in eachindex(exos)
-        exos[id] = Write_Exodus_Results.write_step_and_time(exos[id], step, time)
-        exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exos[id], step, outputs[id], datamanager)
+        # step 1 ist the zero step?!
+        exos[id] = Write_Exodus_Results.write_step_and_time(exos[id], step + 1, time)
+        exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exos[id], step + 1, outputs[id], datamanager)
     end
+    return exos
 end
 
 end
