@@ -17,6 +17,10 @@ function init(params, datamanager)
     solver_options = get_solver_options(params)
     density = datamanager.create_constant_node_field("Density", Float32, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float32, 1)
+    omega = datamanager.create_constant_node_field("Influence Function", Float32, 1)
+    bondDamage = datamanager.create_bond_field("Bond Damage", Float32, 1)
+    omega[:] .= 1 # Prototype
+    bond_damage[:] .= 1# Prototype
     density = set_density(params, blockNodes, density)
     horizon = set_horizon(params, blockNodes, horizon)
     if solver_options["Material Models"]
@@ -34,7 +38,7 @@ function init(params, datamanager)
     end
     if solver_options["Damage Models"]
         damage = datamanager.create_node_field("Damage", Float32, 1)
-        bondDamage = datamanager.create_bond_field("Bond Damage", Float32, 1)
+
     end
     if solver_options["Thermal Models"]
         temperature = datamanager.create_node_field("Temperature", Float32, 1)
@@ -83,8 +87,8 @@ function solver(params, solver_options, blockNodes, bcs, datamanager, outputs, e
     #blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
-    run_Verlet_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results)
-    return exos
+    return run_Verlet_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results)
+
 end
 
 function synchronise(comm)
@@ -97,6 +101,6 @@ function synchronise(comm)
     end
 end
 function write_results(exos, step, dt, outputs, datamanager)
-    IO.write_results(exos, step, dt, outputs, datamanager)
+    return IO.write_results(exos, step, dt, outputs, datamanager)
 end
 end
