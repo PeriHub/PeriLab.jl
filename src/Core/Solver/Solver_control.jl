@@ -16,7 +16,9 @@ function init(params, datamanager)
     blockNodes = get_blockNodes(datamanager.get_field("Block_Id"))
     solver_options = get_solver_options(params)
     density = datamanager.create_constant_node_field("Density", Float32, 1)
+    horizon = datamanager.create_constant_node_field("Horizon", Float32, 1)
     density = set_density(params, blockNodes, density)
+    horizon = set_horizon(params, blockNodes, horizon)
     if solver_options["Material Models"]
         dof = datamanager.get_dof()
         force = datamanager.create_node_field("Forces", Float32, dof)
@@ -68,6 +70,14 @@ function set_density(params, blockNodes, density)
     end
     return density
 end
+
+function set_horizon(params, blockNodes, horizon)
+    for block in eachindex(blockNodes)
+        horizon[blockNodes[block]] .= get_horizon(params, block)
+    end
+    return denhorizonsity
+end
+
 
 function solver(params, solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results)
     #blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
