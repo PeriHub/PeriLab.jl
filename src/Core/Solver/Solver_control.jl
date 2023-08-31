@@ -75,7 +75,7 @@ function set_horizon(params, blockNodes, horizon)
     for block in eachindex(blockNodes)
         horizon[blockNodes[block]] .= get_horizon(params, block)
     end
-    return denhorizonsity
+    return horizon
 end
 
 
