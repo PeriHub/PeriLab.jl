@@ -10,6 +10,15 @@ include("../BC_manager.jl")
 using .IO
 using .Physics
 using .Boundary_conditions
+
+function init_bondDamage_and_influence_function(A, B, C)
+    for id in eachindex(B)
+        B[id] = fill(1.0, size(B[id]))
+        C[id] = fill(1.0, size(C[id]))
+    end
+    return fill(1.0, size(A)), B, C
+end
+
 function init(params, datamanager)
 
     # tbd in csv for global vars
@@ -18,9 +27,8 @@ function init(params, datamanager)
     density = datamanager.create_constant_node_field("Density", Float32, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float32, 1)
     omega = datamanager.create_constant_node_field("Influence Function", Float32, 1)
-    bondDamage = datamanager.create_bond_field("Bond Damage", Float32, 1)
-    omega[:] .= 1 # Prototype
-    bond_damage[:] .= 1# Prototype
+    bondDamageN, bondDamageNP1 = datamanager.create_bond_field("Bond Damage", Float32, 1)
+    omega, bondDamageN, bondDamageNP1 = init_bondDamage_and_influence_function(omega, bondDamageN, bondDamageNP1)
     density = set_density(params, blockNodes, density)
     horizon = set_horizon(params, blockNodes, horizon)
     if solver_options["Material Models"]
