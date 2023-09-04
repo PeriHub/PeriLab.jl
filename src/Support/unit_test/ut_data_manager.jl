@@ -293,4 +293,8 @@ end
     testDatamanager.set_property(2, "Additive Model", "Qd", true)
     @test testDatamanager.get_property(2, "Additive Model", "Qd") == true
     @test testDatamanager.get_property(2, "Additive Model", "not there") == Nothing
+    @test testDatamanager.get_properties(1, "Material Model") == Dict("C" => "Hello Test", "E" => 3)
+    @test testDatamanager.get_properties(1, "Thermal Model") == Dict()
+    @test testDatamanager.get_properties(2, "Material Model") == Dict("E" => 1.1)
+    @test testDatamanager.get_properties(2, "Thermal Model") == Dict("E" => [3 1 2; 1 2 3; 1 3 4])
 end

@@ -14,6 +14,7 @@ export get_nnsets
 export get_nsets
 export get_nnodes
 export get_physics_options
+export get_properties
 export get_property
 export get_rank
 export init_property
@@ -343,7 +344,12 @@ function get_physics_options()
     end
     return physics_options
 end
-
+function get_properties(blockId, property)
+    if property in keys(properties[blockId])
+        return properties[blockId][property]
+    end
+    return Dict()
+end
 
 function get_property(blockId, property, value_name)
     if property in keys(properties[blockId])
