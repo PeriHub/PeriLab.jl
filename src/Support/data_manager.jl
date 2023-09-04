@@ -13,6 +13,7 @@ export get_nlist
 export get_nnsets
 export get_nsets
 export get_nnodes
+export get_physics_options
 export get_property
 export get_rank
 export init_property
@@ -21,6 +22,7 @@ export set_glob_to_loc
 export set_filter
 export set_nnodes
 export set_nsets
+export set_physics_options
 export set_property
 export set_rank
 export switch_NP1_to_N
@@ -39,6 +41,11 @@ filtered_nodes = Ref([])
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
+physics_options = Dict{String,Bool}("Calculate Stretch" => true,
+    "Calculate Deformation Gradient" => false,
+    "Calculate Shape Tensor" => false,
+    "Calculate Bond Associated Shape Tensor" => false,
+    "Calculate Bond Associated Deformation Gradient" => false)
 rank::Int64 = 0
 commMPi = Any
 function comm()
@@ -323,6 +330,21 @@ function get_synch_fields()
     return fields_to_synch
 end
 
+function get_physics_options()
+    if physics_options["Calculate Deformation Gradient"]
+        physics_options["Calculate Shape Tensor"] = true
+        physics_options["Calculate Stretch"] = true
+    end
+    if physics_options["Calculate Bond Associated Deformation Gradient"]
+        physics_options["Calculate Deformation Gradient"] = true
+        physics_options["Calculate Bond Associated Shape Tensor"] = true
+        physics_options["Calculate Shape Tensor"] = true
+        physics_options["Calculate Stretch"] = true
+    end
+    return physics_options
+end
+
+
 function get_property(blockId, property, value_name)
     if property in keys(properties[blockId])
         if value_name in keys(properties[blockId][property])
@@ -448,6 +470,10 @@ end
 
 function set_overlap_map(topo)
     global overlap_map = topo
+end
+
+function set_physics_options(values)
+    physics_options = values
 end
 
 function set_property(blockId, property, value_name, value)
