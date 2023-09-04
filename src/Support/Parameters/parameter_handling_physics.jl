@@ -11,7 +11,7 @@ function get_model_parameter(params, model, id)
     end
 end
 
-function get_physics_option(params, options)
+function get_physics_options(params, options)
     for option in keys(options)
         if check_element(params["Physics"], option)
             options[option] = params["Physics"][option]

@@ -202,7 +202,7 @@ end
         "Calculate Bond Associated Shape Tensor" => false,
         "Calculate Bond Associated Deformation Gradient" => false)
 
-    optionTest = get_physics_option(params, options)
+    optionTest = get_physics_options(params, options)
 
     @test optionTest == params["Physics"]
 
@@ -211,7 +211,7 @@ end
         "Calculate Shape Tensor" => false,
         "Calculate Bond Associated Shape Tensor" => false,
         "Calculate Bond Associated Deformation Gradient" => true))
-    optionTest = get_physics_option(params, options)
+    optionTest = get_physics_options(params, options)
 
     @test optionTest == params["Physics"]
 end
