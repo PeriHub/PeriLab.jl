@@ -91,6 +91,17 @@ testfield_keys = testDatamanager.get_all_field_keys()
     @test "INP1" in testfield_keys
 end
 
+@testset "create_existing_field" begin
+    nnodes = testDatamanager.get_nnodes()
+    field1, field2 = testDatamanager.create_node_field("D", Int64, 3)
+    testfield_keys = testDatamanager.get_all_field_keys()
+    @test "DN" in testfield_keys
+    @test "DNP1" in testfield_keys
+    # because field is not overwritten, the dof value stay
+    @test size(field1) == (nnodes, 7)
+    @test size(field2) == (nnodes, 7)
+end
+
 @testset "get_field" begin
 
     A = testDatamanager.get_field("A")
