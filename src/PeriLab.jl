@@ -50,7 +50,7 @@ function main()
 
     blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
     exos, outputs = IO.init_write_results(params, datamanager)
-    exos = Solver.solver(params, solver_options, blockNodes, bcs, datamanager, outputs, exos, IO.write_results)
+    exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, IO.write_results)
 
     IO.close_files(exos)
 

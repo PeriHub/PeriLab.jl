@@ -136,8 +136,8 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     vNP1 = datamanager.get_field("Velocity", "NP1")
     a = datamanager.get_field("Acceleration")
     dt = solver_options["dt"]
-
-    time::Float32 = 0.0
+    nsteps = solver_options["nsteps"]
+    time::Float32 = solver_options["Initial Time"]
 
     for idt in progress_bar(datamanager.get_rank(), nsteps)
         # one step more, because of init step (time = 0)
@@ -146,7 +146,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
         # synch
         for block in eachindex(blockNodes)
             datamanager.set_filter(blockNodes[block])
-            #forces = Physics.compute_model(datamanager, block, dt, time)
+            #datamanager = Physics.compute_model(params, datamanager, block, dt, time)
         end
         datamanager.reset_filter()
         # synch
@@ -158,6 +158,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     end
     return exos
 end
+
 
 """
     progress_bar(rank::Int64, nsteps::Int64)
@@ -175,9 +176,9 @@ function progress_bar(rank::Int64, nsteps::Int64)
     # Check if rank is equal to 0.
     if rank == 0
         # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
-        return ProgressBar(1:solver_options["nsteps"]+1)
+        return ProgressBar(1:nsteps+1)
     end
 
     # If rank is not 0, return a range from 1 to nsteps + 1.
-    return 1:solver_options["nsteps"]+1
+    return 1:nsteps+1
 end

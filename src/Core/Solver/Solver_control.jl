@@ -77,7 +77,7 @@ function set_horizon(params, blockNodes, horizon)
 end
 
 
-function solver(params, solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results)
+function solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results)
     #blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
