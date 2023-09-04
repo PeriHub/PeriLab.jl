@@ -162,7 +162,7 @@ end
     @test get_numerical_damping(params) == params["Solver"]["Numerical Damping"]
     params = Dict("Solver" => Dict("Verlet" => Dict()))
     @test get_safety_factor(params) == 1
-    @test get_fixed_dt(params) == -1
+    @test get_fixed_dt(params) == true
     @test get_numerical_damping(params) == 0.0
 end
 
@@ -189,3 +189,19 @@ params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, 
     @test testData["Damage Model"]["ss"] == 0
     @test testData["Damage Model"]["d"] == 1.1
 end
+#@testset "get_physics_option" begin
+params = Dict("Physics" => Dict{String,Bool}("Calculate Stretch" => false,
+    "Calculate Deformation Gradient" => false,
+    "Calculate Shape Tensor" => true,
+    "Calculate Bond Associated Shape Tensor" => false,
+    "Calculate Bond Associated Deformation Gradient" => false))
+
+options = Dict{String,Bool}("Calculate Stretch" => true,
+    "Calculate Deformation Gradient" => false,
+    "Calculate Shape Tensor" => false,
+    "Calculate Bond Associated Shape Tensor" => false,
+    "Calculate Bond Associated Deformation Gradient" => false)
+
+optionTest = get_physics_option(params, options)
+@test optionTest = params["Physics"]
+#end
