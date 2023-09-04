@@ -41,7 +41,7 @@ filtered_nodes = Ref([])
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
-physics_options = Dict{String,Bool}("Calculate Stretch" => true,
+physics_options = Dict{String,Bool}("Calculate Deformed Bond Geometry" => true,
     "Calculate Deformation Gradient" => false,
     "Calculate Shape Tensor" => false,
     "Calculate Bond Associated Shape Tensor" => false,
@@ -333,13 +333,13 @@ end
 function get_physics_options()
     if physics_options["Calculate Deformation Gradient"]
         physics_options["Calculate Shape Tensor"] = true
-        physics_options["Calculate Stretch"] = true
+        physics_options["Calculate Deformed Bond Geometry"] = true
     end
     if physics_options["Calculate Bond Associated Deformation Gradient"]
         physics_options["Calculate Deformation Gradient"] = true
         physics_options["Calculate Bond Associated Shape Tensor"] = true
         physics_options["Calculate Shape Tensor"] = true
-        physics_options["Calculate Stretch"] = true
+        physics_options["Calculate Deformed Bond Geometry"] = true
     end
     return physics_options
 end

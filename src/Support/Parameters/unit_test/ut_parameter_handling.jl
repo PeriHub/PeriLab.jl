@@ -190,13 +190,13 @@ params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, 
     @test testData["Damage Model"]["d"] == 1.1
 end
 @testset "get_physics_option" begin
-    params = Dict("Physics" => Dict{String,Bool}("Calculate Stretch" => false,
+    params = Dict("Physics" => Dict{String,Bool}("Calculate Deformed Bond Geometry" => false,
         "Calculate Deformation Gradient" => false,
         "Calculate Shape Tensor" => true,
         "Calculate Bond Associated Shape Tensor" => false,
         "Calculate Bond Associated Deformation Gradient" => false))
 
-    options = Dict{String,Bool}("Calculate Stretch" => true,
+    options = Dict{String,Bool}("Calculate Deformed Bond Geometry" => true,
         "Calculate Deformation Gradient" => false,
         "Calculate Shape Tensor" => false,
         "Calculate Bond Associated Shape Tensor" => false,
@@ -206,7 +206,7 @@ end
 
     @test optionTest == params["Physics"]
 
-    params = Dict("Physics" => Dict{String,Bool}("Calculate Stretch" => true,
+    params = Dict("Physics" => Dict{String,Bool}("Calculate Deformed Bond Geometry" => true,
         "Calculate Deformation Gradient" => true,
         "Calculate Shape Tensor" => false,
         "Calculate Bond Associated Shape Tensor" => false,
