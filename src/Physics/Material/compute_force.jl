@@ -13,7 +13,7 @@ function compute_forces(datamanager, time)
     volume = datamanager.get_field("Volume")
     bond_geometry = datamanager.get_field("Bond Geometry")
 
-    bond_stretch = datamanager.get_field("Bond Stretch", "NP1")
+    deformed_bond = datamanager.get_field("Bond Stretch", "NP1")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
     theta = datamanager.get_field("Theta")
     weighted_volume = datamanager.get_field("Weighted Volume")
@@ -21,14 +21,14 @@ function compute_forces(datamanager, time)
 
     omega[:] .= 1 # Prototype
     bond_damage[:] .= 1# Prototype
-    bond_force[iID][jID] = elastic(nnodes, bond_geometry, bond_stretch, bond_damage, theta, weighted_volume, omega)
+    bond_force[iID][jID] = elastic(nnodes, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega)
 
     for iID in 1:nnodes
-        t = elastic(nnodes, bond_geometry, bond_stretch, bond_damage, theta, weighted_volume, omega)
+        t = elastic(nnodes, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega)
         for jID in 1:num[iID]
             for k in 1:dof
-                forces[iID][:, k] = -bond_force[iID][jID] * bond_stretch[iID][jID, k] / bond_stretch[iID][jID, end] * volume[nlist[iID][jID]]
-                forces[nlist[iID][jID]][:, k] = bond_force[iID][jID] * bond_stretch[iID][jID, k] / bond_stretch[iID][jID, end] * volume[iID]
+                forces[iID][:, k] = -bond_force[iID][jID] * deformed_bond[iID][jID, k] / deformed_bond[iID][jID, end] * volume[nlist[iID][jID]]
+                forces[nlist[iID][jID]][:, k] = bond_force[iID][jID] * deformed_bond[iID][jID, k] / deformed_bond[iID][jID, end] * volume[iID]
             end
         end
         return datamanager
