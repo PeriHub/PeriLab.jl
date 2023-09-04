@@ -40,3 +40,51 @@ end
     @test testDatamanager_read_properties.get_property(3, "Thermal Model", "value") == params["Physics"]["Thermal Models"]["therm"]["value"]
     @test testDatamanager_read_properties.get_property(3, "Thermal Model", "bool") == params["Physics"]["Thermal Models"]["therm"]["bool"]
 end
+
+@testset "ut_init_material_model_fields" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_dof(3)
+    testDatamanager.set_nnodes(4)
+    Physics.init_material_model_fields(testDatamanager)
+    fieldkeys = testDatamanager.get_all_field_keys()
+    @test "ForcesN" in fieldkeys
+    @test "ForcesNP1" in fieldkeys
+    @test "Deformed CoordinatesN" in fieldkeys
+    @test "Deformed CoordinatesNP1" in fieldkeys
+    @test "DisplacementsN" in fieldkeys
+    @test "DisplacementsNP1" in fieldkeys
+    @test "Acceleration" in fieldkeys
+    @test "VelocityN" in fieldkeys
+    @test "VelocityNP1" in fieldkeys
+end
+
+@testset "init_damage_model_fields" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_dof(3)
+    testDatamanager.set_nnodes(4)
+    Physics.init_damage_model_fields(testDatamanager)
+    fieldkeys = testDatamanager.get_all_field_keys()
+    @test "DamageN" in fieldkeys
+    @test "DamageNP1" in fieldkeys
+end
+
+@testset "init_thermal_model_fields" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_dof(3)
+    testDatamanager.set_nnodes(4)
+    Physics.init_thermal_model_fields(testDatamanager)
+    fieldkeys = testDatamanager.get_all_field_keys()
+    @test "TemperatureN" in fieldkeys
+    @test "TemperatureNP1" in fieldkeys
+    @test "Heat FlowN" in fieldkeys
+    @test "Heat FlowNP1" in fieldkeys
+end
+
+@testset "init_additive_model_fields" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_dof(3)
+    testDatamanager.set_nnodes(4)
+    Physics.init_additive_model_fields(testDatamanager)
+    fieldkeys = testDatamanager.get_all_field_keys()
+    @test "Activated" in fieldkeys
+end

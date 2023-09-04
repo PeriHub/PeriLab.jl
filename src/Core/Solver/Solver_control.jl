@@ -32,33 +32,19 @@ function init(params, datamanager)
     density = set_density(params, blockNodes, density)
     horizon = set_horizon(params, blockNodes, horizon)
     if solver_options["Material Models"]
-        dof = datamanager.get_dof()
-        force = datamanager.create_node_field("Forces", Float32, dof)
-        Y = datamanager.create_node_field("Deformed State", Float32, dof)
-        u = datamanager.create_node_field("Displacements", Float32, dof)
-        bu = datamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
-        a = datamanager.create_constant_node_field("Acceleration", Float32, dof)
-        v = datamanager.create_node_field("Velocity", Float32, dof)
-        datamanager.set_synch("Force", true, false)
-        datamanager.set_synch("Velocity", false, true)
-        datamanager.set_synch("Displacements", false, true)
-        datamanager.set_synch("Deformed State", false, true)
+        datamanager = Physics.init_material_model_fields(datamanager)
     end
     if solver_options["Damage Models"]
-        damage = datamanager.create_node_field("Damage", Float32, 1)
-
+        datamanager = Physics.init_damage_model_fields(datamanager)
     end
     if solver_options["Thermal Models"]
-        temperature = datamanager.create_node_field("Temperature", Float32, 1)
-        flow = datamanager.create_node_field("Flow", Float32, dof) # -> check dof
-
+        datamanager = Physics.init_thermal_model_fields(datamanager)
     end
     if solver_options["Additive Models"]
-        activated = datamanager.create_node_field("Activated", Bool, 1)
-        activated[:] .= false
+        datamanager = Physics.init_additive_model_fields(datamanager)
     end
 
-    Physics.read_properties(params, datamanager)
+    physics_options = Physics.read_properties(params, datamanager)
 
     bcs = Boundary_conditions.init_BCs(params, datamanager)
     if get_solver_name(params) == "Verlet"
