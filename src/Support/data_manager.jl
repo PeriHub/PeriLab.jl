@@ -280,10 +280,10 @@ function get_nnodes()
 
     Example:
     ```julia
-    get_nnodes()  # returns the current number of nodes
+    get_nnodes()  # returns the current number of nodes (filtered)
     ```
     """
-    return nnodes
+    return length(filtered_nodes)
 end
 
 function get_NP1_to_N_Dict()

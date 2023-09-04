@@ -39,8 +39,8 @@ end
     @test nnodes == 3
 end
 testDatamanager = Data_manager
-
-testDatamanager.set_nnodes(5)
+nnodes = 5
+testDatamanager.set_nnodes(nnodes)
 
 nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
 nn[1] = 2
@@ -232,6 +232,7 @@ end
     B[3, 2] = 5
     filter = [1, 3]
     testDatamanager.set_filter(filter)
+    @test testDatamanager.get_nnodes() == length(filter)
     Atest = testDatamanager.get_field("Atest")
     Btest = testDatamanager.get_field("Btest")
     @test Atest[2] == 4
@@ -239,6 +240,7 @@ end
     testDatamanager.reset_filter()
     Atest = testDatamanager.get_field("Atest")
     Btest = testDatamanager.get_field("Btest")
+    @test testDatamanager.get_nnodes() == nnodes
     @test Atest[3] == A[3]
     @test Btest[3, 2] == B[3, 2]
 end
