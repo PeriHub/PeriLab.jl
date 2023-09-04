@@ -189,19 +189,29 @@ params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, 
     @test testData["Damage Model"]["ss"] == 0
     @test testData["Damage Model"]["d"] == 1.1
 end
-#@testset "get_physics_option" begin
-params = Dict("Physics" => Dict{String,Bool}("Calculate Stretch" => false,
-    "Calculate Deformation Gradient" => false,
-    "Calculate Shape Tensor" => true,
-    "Calculate Bond Associated Shape Tensor" => false,
-    "Calculate Bond Associated Deformation Gradient" => false))
+@testset "get_physics_option" begin
+    params = Dict("Physics" => Dict{String,Bool}("Calculate Stretch" => false,
+        "Calculate Deformation Gradient" => false,
+        "Calculate Shape Tensor" => true,
+        "Calculate Bond Associated Shape Tensor" => false,
+        "Calculate Bond Associated Deformation Gradient" => false))
 
-options = Dict{String,Bool}("Calculate Stretch" => true,
-    "Calculate Deformation Gradient" => false,
-    "Calculate Shape Tensor" => false,
-    "Calculate Bond Associated Shape Tensor" => false,
-    "Calculate Bond Associated Deformation Gradient" => false)
+    options = Dict{String,Bool}("Calculate Stretch" => true,
+        "Calculate Deformation Gradient" => false,
+        "Calculate Shape Tensor" => false,
+        "Calculate Bond Associated Shape Tensor" => false,
+        "Calculate Bond Associated Deformation Gradient" => false)
 
-optionTest = get_physics_option(params, options)
-@test optionTest = params["Physics"]
-#end
+    optionTest = get_physics_option(params, options)
+
+    @test optionTest == params["Physics"]
+
+    params = Dict("Physics" => Dict{String,Bool}("Calculate Stretch" => true,
+        "Calculate Deformation Gradient" => true,
+        "Calculate Shape Tensor" => false,
+        "Calculate Bond Associated Shape Tensor" => false,
+        "Calculate Bond Associated Deformation Gradient" => true))
+    optionTest = get_physics_option(params, options)
+
+    @test optionTest == params["Physics"]
+end
