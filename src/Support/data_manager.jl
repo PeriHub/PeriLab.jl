@@ -508,10 +508,10 @@ function switch_NP1_to_N()
         field_N = get_field(temp_field_name)
         field_N[:] = field_NP1[:]
         if size(field_NP1[1]) == ()
-            field_NP1[:] = fill(0, size(field_NP1))
+            field_NP1[:] = fill(fieldnames[NP1](0), size(field_NP1))
         else
             for fieldID in eachindex(field_NP1)
-                field_NP1[fieldID] = fill(0, size(field_NP1[fieldID]))
+                field_NP1[fieldID] = fill(fieldnames[NP1](0), size(field_NP1[fieldID]))
             end
         end
     end
