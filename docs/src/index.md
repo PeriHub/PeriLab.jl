@@ -7,6 +7,13 @@ The package repository is <https://gitlab.dlr.de/fa_sw/peridynamik/perilab.git>.
 This placeholder page demonstrates generated documentation.
 
 ```@docs
+Module PeriLab is structured as follows
+
 PeriLab
+    Core
+    IO
+    MPI_communication
+    Physics
+    Support
 main()
 ```
