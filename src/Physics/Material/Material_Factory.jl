@@ -7,7 +7,7 @@ export compute_forces
 function compute_forces(datamanager, material, time, dt)
     # check which models
     if material["Material Model"] == "Test"
-        return testing_material(datamanager)
+        return testing_material(datamanager, time)
     end
 
     if material["Material Model"] == "PD Solid Elastic"
