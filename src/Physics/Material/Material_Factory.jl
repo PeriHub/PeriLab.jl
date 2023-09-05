@@ -2,6 +2,8 @@
 include("../../Support/tools.jl")
 include("../../Support/Parameters/parameter_handling.jl")
 module Material
+include("./Ordinary/Ordinary.jl")
+using .PD_Solid_Elastic
 export compute_forces
 
 function compute_forces(datamanager, material, time, dt)
@@ -11,7 +13,7 @@ function compute_forces(datamanager, material, time, dt)
     end
 
     if material["Material Model"] == "PD Solid Elastic"
-        return Elastic.compute_forces(datamanager, material, time, dt)
+        return PD_Solid_Elastic.compute_forces(datamanager, material, time, dt)
     end
     @error "No material of type " * material["Material Model"] * " exists."
     return datamanager
