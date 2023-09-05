@@ -126,12 +126,14 @@ end
 
 
 function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results)
-
+    @info "Run Verlet Solver"
     dof = datamanager.get_dof()
     forces = datamanager.get_field("Forces", "NP1")
     density = datamanager.get_field("Density")
     uN = datamanager.get_field("Displacements", "N")
     uNP1 = datamanager.get_field("Displacements", "NP1")
+    defCoorN = datamanager.get_field("Deformed Coordinates", "N")
+    defCoorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     vN = datamanager.get_field("Velocity", "N")
     vNP1 = datamanager.get_field("Velocity", "NP1")
     a = datamanager.get_field("Acceleration")
@@ -143,10 +145,11 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
         # one step more, because of init step (time = 0)
         uNP1 = 2 .* uN + vN .* dt + 0.5 * a .* (dt * dt)
         datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
+        defCoorNP1 = defCoorN + uNP1
         # synch
         for block in eachindex(blockNodes)
             datamanager.set_filter(blockNodes[block])
-            #datamanager = Physics.compute_model(params, datamanager, block, dt, time)
+            datamanager = Physics.compute_models(datamanager, block, dt, time)
         end
         datamanager.reset_filter()
         # synch
@@ -178,7 +181,6 @@ function progress_bar(rank::Int64, nsteps::Int64)
         # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
         return ProgressBar(1:nsteps+1)
     end
-
     # If rank is not 0, return a range from 1 to nsteps + 1.
     return 1:nsteps+1
 end
