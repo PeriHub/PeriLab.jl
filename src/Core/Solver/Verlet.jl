@@ -145,7 +145,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
         # one step more, because of init step (time = 0)
         uNP1 = 2 .* uN + vN .* dt + 0.5 * a .* (dt * dt)
         datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
-        defCoorNP1 = defCoorN + uNP1
+        defCoorNP1[:] = defCoorN + uNP1
         # synch
         for block in eachindex(blockNodes)
             datamanager.set_filter(blockNodes[block])
@@ -154,7 +154,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
         datamanager.reset_filter()
         # synch
         check_inf_or_nan(forces, "Forces")
-        a = forces ./ density # element wise
+        a[:] = forces ./ density # element wise
         exos = write_results(exos, idt, time, outputs, datamanager)
         datamanager.switch_NP1_to_N()
         time += dt
