@@ -6,6 +6,10 @@ export compute_forces
 
 function compute_forces(datamanager, material, time, dt)
     # check which models
+    if material["Material Model"] == "Test"
+        return testing_material(datamanager)
+    end
+
     if material["Material Model"] == "PD Solid Elastic"
         return Elastic.compute_forces(datamanager, material, time, dt)
     end
@@ -13,7 +17,10 @@ function compute_forces(datamanager, material, time, dt)
     return datamanager
 end
 
-function testing_material(params, datamanager)
+function testing_material(datamanager, time)
+    if time == 0
+        @info "Testing dummy material is used. Nothing happens here"
+    end
     # for testing
     return datamanager
 end
