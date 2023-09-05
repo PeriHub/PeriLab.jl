@@ -4,7 +4,7 @@ export get_paraviewCoordinates
 export init_result_file
 export init_write_results_in_exodus
 export write_results_in_exodus
-
+using Pkg
 function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_node_sets)
     if ".e" != filename[end-1:end]
         filename = filename * ".e"
@@ -59,6 +59,10 @@ end
 
 function init_results_in_exodus(exo, output, coords, block_Id, nsets)
 
+
+    info = ["PeriLab Version " * string(Pkg.project().version), "compiled with Julia Version " * string(VERSION)]
+
+    write_info(exo, info)
     if (typeof(coords) == Matrix{Float32})
         coords = convert(Array{Float64}, coords)
     end
