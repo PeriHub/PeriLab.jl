@@ -87,7 +87,7 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
 end
 
 function write_step_and_time(exo, step, time)
-    write_time(exo, step, time)
+    write_time(exo, step, Float64(time))
     return exo
 end
 
