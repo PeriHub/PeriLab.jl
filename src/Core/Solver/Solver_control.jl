@@ -28,7 +28,7 @@ function init(params, datamanager)
     horizon = datamanager.create_constant_node_field("Horizon", Float32, 1)
     omega = datamanager.create_constant_node_field("Influence Function", Float32, 1)
     bondDamageN, bondDamageNP1 = datamanager.create_bond_field("Bond Damage", Float32, 1)
-    omega, bondDamageN, bondDamageNP1 = init_bondDamage_and_influence_function(omega, bondDamageN, bondDamageNP1)
+    omega[:], bondDamageN, bondDamageNP1 = init_bondDamage_and_influence_function(omega, bondDamageN, bondDamageNP1)
     density = set_density(params, blockNodes, density)
     horizon = set_horizon(params, blockNodes, horizon)
     if solver_options["Material Models"]
@@ -44,8 +44,8 @@ function init(params, datamanager)
         datamanager = Physics.init_additive_model_fields(datamanager)
     end
 
-    physics_options = Physics.read_properties(params, datamanager)
-
+    Physics.read_properties(params, datamanager)
+    Physics.init_models(datamanager)
     bcs = Boundary_conditions.init_BCs(params, datamanager)
     if get_solver_name(params) == "Verlet"
         solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"] = init_Verlet(params, datamanager, solver_options["Material Models"], solver_options["Thermal Models"])
