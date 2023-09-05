@@ -197,7 +197,6 @@ end
 DN = testDatamanager.get_field("DN")
 DNP1 = testDatamanager.get_field("DNP1")
 
-
 IN = testDatamanager.get_field("IN")
 INP1 = testDatamanager.get_field("INP1")
 IN[2][1, 3] = 0
@@ -213,11 +212,13 @@ IN[2][1, 3] = 0
     testDatamanager.switch_NP1_to_N()
     @test DN[2, 3] == 5
     # dependency test
-    @test DNP1[2, 3] == 5
+
+    @test DNP1[2, 3] == 0
     DNP1[2, 3] = 6
-    @test DN[2, 3] == 5
-    DN[2, 3] = 3
     @test DNP1[2, 3] == 6
+    @test DN[2, 3] == 5
+
+    @test INP1[2][1, 3] == 0
     # bonds
     @test IN[2][1, 3] == 5
 
