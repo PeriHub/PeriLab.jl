@@ -39,8 +39,8 @@ end
     @test length(bcs) == 0
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "0")))
 
-    testDatamanager.set_nsets("Nset_1", [1, 2, 3])
-    testDatamanager.set_nsets("Nset_2", [3, 4, 7, 10])
+    testDatamanager.set_nset("Nset_1", [1, 2, 3])
+    testDatamanager.set_nset("Nset_2", [3, 4, 7, 10])
     testDatamanager.set_glob_to_loc([1, 3, 4, 2, 5, 6, 7, 8, 9, 10])
 
     bcs = Boundary_conditions.boundary_condition(params, testDatamanager)

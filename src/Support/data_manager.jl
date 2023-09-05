@@ -22,7 +22,7 @@ export set_block_list
 export set_glob_to_loc
 export set_filter
 export set_nnodes
-export set_nsets
+export set_nset
 export set_physics_options
 export set_property
 export set_rank
@@ -457,9 +457,9 @@ function set_nnsets(n)
     global nnsets = n
 end
 
-function set_nsets(name::String, nodes::Vector{Int})
+function set_nset(name::String, nodes::Vector{Int})
     """
-    set_nsets(name, nodes)
+    set_nset(name, nodes)
     Set the nodes associated with a named node set.
 
     Parameters:
@@ -471,6 +471,7 @@ function set_nsets(name::String, nodes::Vector{Int})
         @warn "Node set " * name * " already defined and it is overwritten"
     end
     nsets[name] = nodes
+    # set the number of node sets
     set_nnsets(length(nsets))
 end
 
@@ -510,7 +511,7 @@ function switch_NP1_to_N()
             field_NP1[:] = fill(0, size(field_NP1))
         else
             for fieldID in eachindex(field_NP1)
-                field_NP1[fieldID] = copy(fill(0, size(field_NP1[fieldID])))
+                field_NP1[fieldID] = fill(0, size(field_NP1[fieldID]))
             end
         end
     end

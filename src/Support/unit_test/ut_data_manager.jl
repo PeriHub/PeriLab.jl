@@ -248,11 +248,11 @@ end
 
 @testset "ut_nodesets" begin
     @test testDatamanager.get_nnsets() == 0
-    testDatamanager.set_nsets("N1", [1, 2])
+    testDatamanager.set_nset("N1", [1, 2])
     @test testDatamanager.get_nnsets() == 1
-    testDatamanager.set_nsets("N2", [4, 5])
+    testDatamanager.set_nset("N2", [4, 5])
     @test testDatamanager.get_nnsets() == 2
-    testDatamanager.set_nsets("N3", [1, 12, 22])
+    testDatamanager.set_nset("N3", [1, 12, 22])
     @test testDatamanager.get_nnsets() == 3
     nsets = testDatamanager.get_nsets()
     @test nsets["N1"] == [1, 2]

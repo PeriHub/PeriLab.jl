@@ -61,14 +61,25 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
 
 
     info = ["PeriLab Version " * string(Pkg.project().version), "compiled with Julia Version " * string(VERSION)]
-
+    nsetsExo = read_sets(exo, NodeSet)
     write_info(exo, info)
     if (typeof(coords) == Matrix{Float32})
         coords = convert(Array{Float64}, coords)
     end
 
     write_coordinates(exo, coords)
-
+    """
+    names = collect(keys(nsets))
+    if length(names) > 0
+        write_names(exo, NodeSet, names)
+    end
+    id = 0
+    for name in eachindex(nsets)
+        id += 1
+        write_name(exo, NodeSet, name)
+        write_set(exo_new, nsets[id])
+    end
+    """
     for block in sort(unique(block_Id))
         conn = get_block_nodes(block_Id, block)# virtual elements     
         write_block(exo, block, "SPHERE", conn)

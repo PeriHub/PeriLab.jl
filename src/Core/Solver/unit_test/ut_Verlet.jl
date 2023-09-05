@@ -130,8 +130,8 @@ a = testDatamanager.create_constant_node_field("Acceleration", Float32, dof)
 v = testDatamanager.create_node_field("Velocity", Float32, dof)
 
 density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
-testDatamanager.set_nsets("Nset_1", [1, 2, 3])
-testDatamanager.set_nsets("Nset_2", [3, 4, 7, 10])
+testDatamanager.set_nset("Nset_1", [1, 2, 3])
+testDatamanager.set_nset("Nset_2", [3, 4, 7, 10])
 blockNodes = [1, 1, 2, 2, 1]
 params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "5")))
 

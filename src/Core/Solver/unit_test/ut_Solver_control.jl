@@ -44,8 +44,8 @@ end
     density = testDatamanager.create_constant_node_field("Density", Float32, 1)
     volume = testDatamanager.create_constant_node_field("Volume", Float32, 1)
 
-    testDatamanager.set_nsets("Nset_1", [2])
-    testDatamanager.set_nsets("Nset_2", [2, 3, 4])
+    testDatamanager.set_nset("Nset_1", [2])
+    testDatamanager.set_nset("Nset_2", [2, 3, 4])
 
     testDatamanager.set_glob_to_loc([1, 2, 3, 4, 5])
 

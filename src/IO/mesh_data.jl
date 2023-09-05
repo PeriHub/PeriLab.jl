@@ -80,7 +80,7 @@ end
 function define_nsets(params, datamanager)
     nsets = get_node_sets(params)
     for nset in keys(nsets)
-        datamanager.set_nsets(nset, nsets[nset])
+        datamanager.set_nset(nset, nsets[nset])
     end
 end
 
