@@ -4,7 +4,7 @@
     3. coordinatenfelder initialisieren auf allen Knoten -> done
     4. versenden von Koordinaten -> done
     5. versenden der Block_Id der Knoten -> done
-    5.a neighborhoodlist -> num neighbor für jeden knoten
+    5.a neighborhoodlist -> num neighbor für jeden knoten -> done
                          -> feld init an jedem knoten -> das vielleicht skalierbare referenz? -> done
     5.b neighboorhoodlist verteilen -> done
     5.c bond init lists -> done
@@ -17,18 +17,18 @@
     10. BC Filter -> an alle -> done
     ! -------------
     11. Nachbarschaftslisten versenden ! wie in sinnvoller Weise?
-    12. bondvectors set to zero
+    12. bondvectors set to zero -> done
     13. bc interpreter -> done
     13.a nodesets in mesh -> done
     14. overlap synchronisation
-    15. bc in solver
+    15. bc in solver -> done
     16. verlet solver -> pacackage?
     17. write output -> done
     18. integrate first model
     18.a step width determination -> done
     19. first test
     20. 2D arrays in fields
-    21. params reader for material + physics
+    21. params reader for material + physics -> done
     22. compute class
 
 ## Design decisions
@@ -37,7 +37,8 @@ Each vector entry for a value exists for all nodes, also if the node does not ha
     IO
     nodesets are not defined yet in Exodus.jl
 ## planned feature
-    time step minimum for all cores -> parallel computing!
+    time step minimum for all cores -> parallel computing! -> done
+    matrix -> reshape from vector for better use
     search for jl files in material
     check the header for the material name
     include the file in the code via a makro
