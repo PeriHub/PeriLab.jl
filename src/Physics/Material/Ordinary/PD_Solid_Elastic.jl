@@ -17,7 +17,7 @@ function elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_dam
         beta = 3.0 * material["Bulk Modulus"] / weighted_volume[iID]
         for jID in 1:nneighbors[iID]
             c1 = theta[iID] * (beta - alpha / 3.0)
-            t = bond_damage[iID][jID] * omega[iID] * (c1 * bond_geometry[iID][jID, end] + alpha * deformed_bond[iID][jID, end])
+            t = bond_damage[iID][jID] * omega[iID] * (c1 * bond_geometry[iID][jID, end] + alpha * (deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end]))
             bond_force[iID][jID, :] = t * deformed_bond[iID][jID, 1:dof] / deformed_bond[iID][jID, end]
         end
     end
