@@ -16,7 +16,7 @@ function elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_dam
         alpha = 15.0 * material["Shear Modulus"] / weighted_volume[iID]
         beta = 3.0 * material["Bulk Modulus"] / weighted_volume[iID]
         for jID in 1:nneighbors[iID]
-            c1 = omega * theta[iID] * (beta - alpha / 3.0)
+            c1 = theta[iID] * (beta - alpha / 3.0)
             t = bond_damage[iID][jID] * omega[iID] * (c1 * bond_geometry[iID][jID, end] + alpha * deformed_bond[iID][jID, end])
             bond_force[iID][jID, :] = t * deformed_bond[iID][jID, 1:dof] / deformed_bond[iID][jID, end]
         end
@@ -43,7 +43,7 @@ function compute_forces(datamanager, material, time, dt)
     weighted_volume = Ordinary.compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
     theta = Ordinary.compute_dilatation(nnodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     bond_force = elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
-    forces = distribute_forces(nnodes, nneighbors, nlist, bond_force, volume)
+    forces[:] = distribute_forces(nnodes, nneighbors, nlist, bond_force, volume, forces)
     return datamanager
 end
 
