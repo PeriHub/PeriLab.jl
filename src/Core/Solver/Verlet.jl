@@ -143,7 +143,8 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
 
     for idt in progress_bar(datamanager.get_rank(), nsteps)
         # one step more, because of init step (time = 0)
-        uNP1 = 2 .* uN + vN .* dt + 0.5 * a .* (dt * dt)
+        uNP1[:] = 2 .* uN + vN .* dt + 0.5 * a .* (dt * dt)
+        vNP1[:] = (uNP1 - uN) ./ dt
         datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
         defCoorNP1[:] = defCoorN + uNP1
         # synch
