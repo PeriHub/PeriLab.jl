@@ -2,7 +2,7 @@
 include("../../Support/tools.jl")
 include("../../Support/Parameters/parameter_handling.jl")
 module Material
-include("./Ordinary/Ordinary.jl")
+include("./Ordinary/PD_Solid_Elastic.jl")
 using .PD_Solid_Elastic
 export compute_forces
 
