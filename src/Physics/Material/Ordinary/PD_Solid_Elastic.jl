@@ -1,35 +1,13 @@
-include("../material_basis.jl")
-module Ordinary
 
+include("../material_basis.jl")
+module PD_Solid_Elastic
+include("./Ordinary.jl")
+import .Ordinary
 export compute_force
 export material_name
 
 function material_name()
     return "PD Solid Elastic"
-end
-
-function compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
-    """
-    taken from Peridigm
-    """
-    weighted_volume = zeros(Float32, nnodes)
-    for iID in 1:nnodes
-        for jID in 1:nneighbors[iID]
-            weighted_volume[iID] += omega[iID] * bond_damage[iID][jID] * bond_geometry[iID][jID, end] * bond_geometry[iID][jID, end] * volume[nlist[iID][jID]]
-        end
-    end
-    return weighted_volume
-end
-
-function compute_dilatation(nnodes, nneighbors, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
-    theta = zeros(Float32, nnodes)
-    for iID in 1:nnodes
-        for jID in 1:nneighbors[iID]
-            e = deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end]
-            theta[iID] += 3.0 * omega[iID] * bond_damage[iID][jID] * bond_geometry[iID][jID, end] * e * volume[nlist[iID][jID]] / weighted_volume[iID]
-        end
-    end
-    return theta
 end
 
 function elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
@@ -61,8 +39,8 @@ function compute_forces(datamanager, material, time, dt)
 
     # optiming, because if no damage it has not to be updated
 
-    weighted_volume = compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
-    theta = compute_dilatation(nnodes, nneighbors, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    weighted_volume = Ordinary.compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
+    theta = Ordinary.compute_dilatation(nnodes, nneighbors, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     bond_force = elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
     forces = distribute_forces(nnodes, nneighbors, nlist, bond_force, volume)
     return datamanager
