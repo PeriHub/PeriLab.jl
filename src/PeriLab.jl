@@ -4,6 +4,7 @@ include("./Support/data_manager.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
 using MPI
+using LoggingExtras
 using .Data_manager
 import .IO
 import .Solver
@@ -29,7 +30,12 @@ function print_banner()
 
     """)
 end
-function main()
+function main(ARGS)
+    demux_logger = TeeLogger(
+        MinLevelLogger(FileLogger(split(ARGS[1], ".")[1] * ".log"), Logging.Info),
+        MinLevelLogger(ConsoleLogger(stderr), Logging.Info),
+    )
+    global_logger(demux_logger)
     # init MPI as always ...
 
     MPI.Init()
@@ -40,9 +46,10 @@ function main()
     #global juliaPath = Base.Filesystem.pwd() * "/"
     global juliaPath = "./"
     # from outside #################
-    #filename::String = "Input.yaml"
-    filename::String = "Dogbone.yaml"
 
+    @info ARGS
+    filename::String = ARGS[1]
+    # filename::String = "Input.yaml"
 
     ################################
     filename = juliaPath * filename

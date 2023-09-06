@@ -2,7 +2,7 @@
 
 julia_version = "1.9.1"
 manifest_format = "2.0"
-project_hash = "e39d62f480a669a827e40e8c2edafcdbae2656bb"
+project_hash = "e7813d5d6cf84224ea12982d2d30d46f3a758a6e"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -305,6 +305,12 @@ version = "0.3.26"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[[deps.LoggingExtras]]
+deps = ["Dates", "Logging"]
+git-tree-sha1 = "0d097476b6c381ab7906460ef1ef1638fbce1d91"
+uuid = "e6f89c97-d47a-5376-807f-9c37f3926c36"
+version = "1.0.2"
 
 [[deps.LoweredCodeUtils]]
 deps = ["JuliaInterpreter"]

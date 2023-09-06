@@ -7,4 +7,4 @@ end
 using Revise
 import PeriLab
 
-PeriLab.main()
+PeriLab.main(ARGS)
