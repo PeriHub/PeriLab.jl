@@ -199,6 +199,7 @@ DNP1 = testDatamanager.get_field("DNP1")
 
 IN = testDatamanager.get_field("IN")
 INP1 = testDatamanager.get_field("INP1")
+bd = testDatamanager.create_bond_field("Bond Damage", Float32, 1)
 IN[2][1, 3] = 0
 @testset "switch_NP1_to_N" begin
     DNP1[2, 3] = 5
@@ -208,7 +209,9 @@ IN[2][1, 3] = 0
     INP1[2][1, 3] = 5
     @test IN[2][1, 3] == 0
     @test INP1[2][1, 3] == 5
-
+    # extra test, because Bond Damage is set to one, to avoid unneccessary operations
+    bd = testDatamanager.get_field("Bond Damage", "NP1")
+    @test sum(maximum(bd)) == 0
     testDatamanager.switch_NP1_to_N()
     @test DN[2, 3] == 5
     # dependency test
@@ -221,6 +224,10 @@ IN[2][1, 3] = 0
     @test INP1[2][1, 3] == 0
     # bonds
     @test IN[2][1, 3] == 5
+    bd = testDatamanager.get_field("Bond Damage", "NP1")
+    for id in eachindex(bd)
+        @test sum(bd[id]) == nn[id]
+    end
 
 end
 

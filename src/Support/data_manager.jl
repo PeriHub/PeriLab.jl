@@ -510,8 +510,12 @@ function switch_NP1_to_N()
         if size(field_NP1[1]) == ()
             field_NP1[:] = fill(fieldnames[NP1](0), size(field_NP1))
         else
+            value = 0
+            if "Bond DamageNP1" == NP1
+                value = 1
+            end
             for fieldID in eachindex(field_NP1)
-                field_NP1[fieldID] = fill(fieldnames[NP1](0), size(field_NP1[fieldID]))
+                field_NP1[fieldID] = fill(fieldnames[NP1](value), size(field_NP1[fieldID]))
             end
         end
     end
