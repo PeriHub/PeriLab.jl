@@ -26,6 +26,7 @@ end
 
 function compute_forces(datamanager, material, time, dt)
     nnodes = datamanager.get_nnodes()
+    dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     forces = datamanager.get_field("Forces", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
@@ -34,13 +35,13 @@ function compute_forces(datamanager, material, time, dt)
     omega = datamanager.get_field("Influence Function")
     volume = datamanager.get_field("Volume")
     bond_geometry = datamanager.get_field("Bond Geometry")
-    bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, 3)
+    bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, dof)
 
 
     # optiming, because if no damage it has not to be updated
 
     weighted_volume = Ordinary.compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
-    theta = Ordinary.compute_dilatation(nnodes, nneighbors, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    theta = Ordinary.compute_dilatation(nnodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     bond_force = elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
     forces = distribute_forces(nnodes, nneighbors, nlist, bond_force, volume)
     return datamanager
