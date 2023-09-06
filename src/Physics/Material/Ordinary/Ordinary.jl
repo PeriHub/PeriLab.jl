@@ -21,7 +21,7 @@ function compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_
     return weighted_volume
 end
 
-function compute_dilatation(nnodes, nneighbors, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+function compute_dilatation(nnodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     theta = zeros(Float32, nnodes)
     for iID in 1:nnodes
         for jID in 1:nneighbors[iID]
