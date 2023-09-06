@@ -40,7 +40,8 @@ function main()
     #global juliaPath = Base.Filesystem.pwd() * "/"
     global juliaPath = "./"
     # from outside #################
-    filename::String = "Input.yaml"
+    #filename::String = "Input.yaml"
+    filename::String = "Dogbone.yaml"
 
 
     ################################
