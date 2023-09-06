@@ -69,16 +69,13 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
 
     write_coordinates(exo, coords)
     """
-    names = collect(keys(nsets))
-    if length(names) > 0
-        write_names(exo, NodeSet, names)
-    end
-    id = 0
-    for name in eachindex(nsets)
-        id += 1
-        write_name(exo, NodeSet, name)
-        write_set(exo_new, nsets[id])
-    end
+        id = 0
+        for name in eachindex(nsets)
+            id += 1
+            nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name]))
+            write_set(exo, nsetExo)
+            write_name(exo, NodeSet, name)
+        end
     """
     for block in sort(unique(block_Id))
         conn = get_block_nodes(block_Id, block)# virtual elements     
