@@ -64,6 +64,9 @@ end
 
 function init_write_results(params, datamanager)
     filenames = get_output_filenames(params)
+    if length(filenames) == 0
+        @warn "No futput file or output defined"
+    end
     exos = []
     nnodes = datamanager.get_nnodes()
     dof = datamanager.get_dof()
