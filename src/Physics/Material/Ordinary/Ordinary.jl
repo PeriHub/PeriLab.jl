@@ -62,7 +62,7 @@ function compute_forces(datamanager, material, time, dt)
     # optiming, because if no damage it has not to be updated
 
     weighted_volume = compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
-    theta = compute_dilatation(nnodes, nneighbors, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    theta = compute_dilatation(nnodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     bond_force = elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
     forces = distribute_forces(nnodes, nneighbors, nlist, bond_force, volume)
     return datamanager
