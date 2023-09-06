@@ -72,6 +72,9 @@ function init_write_results(params, datamanager)
     block_Id = datamanager.get_field("Block_Id")
     nsets = datamanager.get_nsets()
     for filename in filenames
+        if datamanager.get_rank() > 0
+            filename = filename * "_" * string(datamanager.get_rank())
+        end
         push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), nnsets))
     end
     coords = vcat(transpose(coordinates))
