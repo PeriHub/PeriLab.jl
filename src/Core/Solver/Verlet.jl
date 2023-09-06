@@ -132,6 +132,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     density = datamanager.get_field("Density")
     uN = datamanager.get_field("Displacements", "N")
     uNP1 = datamanager.get_field("Displacements", "NP1")
+    coor = datamanager.get_field("Coordinates")
     defCoorN = datamanager.get_field("Deformed Coordinates", "N")
     defCoorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     vN = datamanager.get_field("Velocity", "N")
@@ -143,10 +144,13 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
 
     for idt in progress_bar(datamanager.get_rank(), nsteps)
         # one step more, because of init step (time = 0)
-        uNP1[:] = 2 .* uN + vN .* dt + 0.5 * a .* (dt * dt)
-        vNP1[:] = (uNP1 - uN) ./ dt
+
+        vNP1[:] = vN + 0.5 * dt .* a
+        # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
+        uNP1[:] = uN + dt .* vNP1
+
         datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
-        defCoorNP1[:] = defCoorN + uNP1
+        defCoorNP1[:] = coor + uNP1
         # synch
         for block in eachindex(blockNodes)
             datamanager.set_filter(blockNodes[block])
