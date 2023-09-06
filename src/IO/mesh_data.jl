@@ -202,10 +202,12 @@ function load_and_evaluate_mesh(params, ranksize)
     mesh = read_mesh(get_mesh_name(params))
     dof = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params, dof)
+    @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
-
+    @info "Finished distribution"
+    @info "Create Overlap"
     overlap_map = create_overlap_map(distribution, ptc, ranksize)
-
+    @info "Finished Overlap"
     # das kann auf allen Kernen gemacht werden und sollte es auch
     #globToLoc = create_global_to_local_map(distribution)
 
@@ -224,6 +226,7 @@ end
 function create_neighborhoodlist(mesh, params, dof)
     coor = names(mesh)
     nlist = neighbors(mesh, params, coor[1:dof])
+    @info "Finished init Neighborhoodlist"
     return nlist
 end
 
@@ -349,6 +352,7 @@ function neighbors(mesh, params, coor)
     # Returns
     An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
     """
+    @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
     data = zeros(dof, nnodes)
