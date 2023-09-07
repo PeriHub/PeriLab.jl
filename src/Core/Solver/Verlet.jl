@@ -49,7 +49,6 @@ function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
 
         t = density[iID] / (denominator * springConstant)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
-        println(sqrt(2 * criticalTimeStep))
     end
     return sqrt(2 * criticalTimeStep)
 end
@@ -82,7 +81,6 @@ function compute_crititical_time_step(datamanager, mechanical, thermo)
     end
     return criticalTimeStep
 end
-
 
 function init_Verlet(params, datamanager, mechanical, thermo)
     @info "======================="
@@ -125,7 +123,7 @@ end
 function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
-    forces = datamanager.get_field("Forces", "NP1")
+    #forces = datamanager.get_field("Forces", "NP1")
     density = datamanager.get_field("Density")
     uN = datamanager.get_field("Displacements", "N")
     uNP1 = datamanager.get_field("Displacements", "NP1")
@@ -155,6 +153,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
         end
         datamanager.reset_filter()
         # synch
+        forces = datamanager.get_field("Forces", "NP1")
         check_inf_or_nan(forces, "Forces")
         a[:] = forces ./ density # element wise
         exos = write_results(exos, idt, time, outputs, datamanager)
