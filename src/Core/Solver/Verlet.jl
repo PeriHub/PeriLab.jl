@@ -95,7 +95,7 @@ function init_Verlet(params, datamanager, mechanical, thermo)
     dt = get_fixed_dt(params)
     @info "Initial time: " * string(initial_time) * " [s]"
     @info "Final time: " * string(final_time) * " [s]"
-    if dt
+    if dt == true
         dt = compute_crititical_time_step(datamanager, mechanical, thermo)
         @info "Minimal time increment: " * string(dt) * " [s]"
     else
