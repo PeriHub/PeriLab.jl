@@ -12,7 +12,7 @@ function compute_forces(datamanager, material, time, dt)
         return testing_material(datamanager, time)
     end
 
-    if material["Material Model"] == "PD Solid Elastic"
+    if material["Material Model"] == PD_Solid_Elastic.material_name()
         return PD_Solid_Elastic.compute_forces(datamanager, material, time, dt)
     end
     @error "No material of type " * material["Material Model"] * " exists."

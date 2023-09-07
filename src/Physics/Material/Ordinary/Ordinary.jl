@@ -24,48 +24,13 @@ end
 function compute_dilatation(nnodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     theta = zeros(Float32, nnodes)
     for iID in 1:nnodes
-        for jID in 1:nneighbors[iID]
-            e = deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end]
-            theta[iID] += 3.0 * omega[iID] * bond_damage[iID][jID] * bond_geometry[iID][jID, end] * e * volume[nlist[iID][jID]] / weighted_volume[iID]
-        end
+        theta[iID] = 3.0 * omega[iID] * sum(
+                         bond_damage[iID][jID] * bond_geometry[iID][jID, end] *
+                         (deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end]) *
+                         volume[nlist[iID][jID]] / weighted_volume[iID]
+                         for jID in 1:nneighbors[iID])
     end
     return theta
-end
-
-function elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
-
-    for iID in 1:nnodes
-        alpha = 15.0 * material["Shear Modulus"] / weighted_volume[iID]
-        beta = 3.0 * material["Bulk Modulus"] / weighted_volume[iID]
-        for jID in 1:nneighbors[iID]
-            c1 = omega * theta[iID] * (beta - alpha / 3.0)
-            t = bond_damage[iID][jID] * omega[iID] * (c1 * bond_geometry[iID][jID, end] + alpha * deformed_bond[iID][jID, end])
-            bond_force[iID][jID, :] = t * deformed_bond[iID][jID, 1:dof] / deformed_bond[iID][jID, end]
-        end
-    end
-    return bond_force
-end
-
-function compute_forces(datamanager, material, time, dt)
-    nnodes = datamanager.get_nnodes()
-    nlist = datamanager.get_nlist()
-    forces = datamanager.get_field("Forces", "NP1")
-    nneighbors = datamanager.get_field("Number of Neighbors")
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    bond_damage = datamanager.get_field("Bond Damage", "NP1")
-    omega = datamanager.get_field("Influence Function")
-    volume = datamanager.get_field("Volume")
-    bond_geometry = datamanager.get_field("Bond Geometry")
-    bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, 3)
-
-
-    # optiming, because if no damage it has not to be updated
-
-    weighted_volume = compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
-    theta = compute_dilatation(nnodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
-    bond_force = elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
-    forces = distribute_forces(nnodes, nneighbors, nlist, bond_force, volume)
-    return datamanager
 end
 
 end
