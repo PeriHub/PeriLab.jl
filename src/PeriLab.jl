@@ -1,14 +1,18 @@
 "Simple dummy project module to demonstrate how a project can be organized."
 module PeriLab
-include("./Support/data_manager.jl")
-include("./IO/IO.jl")
-include("./Core/Solver/Solver_control.jl")
-using MPI
-using LoggingExtras
-using TimerOutputs
-using .Data_manager
-import .IO
-import .Solver
+using PrecompileTools
+@compile_workload begin
+    include("./Support/data_manager.jl")
+    include("./IO/IO.jl")
+    include("./Core/Solver/Solver_control.jl")
+    using MPI
+    using LoggingExtras
+    using TimerOutputs
+    using HDF5
+    using .Data_manager
+    import .IO
+    import .Solver
+end
 
 
 export main
@@ -58,18 +62,27 @@ function main(ARGS, to)
         print_banner()
     end
     #global juliaPath = Base.Filesystem.pwd() * "/"
-    #global juliaPath = "./"
+    global juliaPath = "./"
     # from outside #################
 
     @info ARGS
     # filename::String = "Input.yaml"
 
     ################################
+    filename = juliaPath * filename
 
     @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm)
 
     @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
     @timeit to "IO.init_write_results" exos, outputs = IO.init_write_results(params, datamanager)
+
+    # h5write("/tmp/test.h5", "solver_options", solver_options)
+    # h5write("/tmp/test.h5", "blockNodes", blockNodes)
+    # h5write("/tmp/test.h5", "bcs", 1)
+    # h5write("/tmp/test.h5", "datamanager", datamanager)
+    # h5write("/tmp/test.h5", "outputs", outputs)
+    # h5write("/tmp/test.h5", "exos", exos)
+
     if dry_run
         nsteps = solver_options["nsteps"]
         solver_options["nsteps"] = 10
