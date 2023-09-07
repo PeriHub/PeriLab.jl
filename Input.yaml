@@ -1,161 +1,110 @@
-Peridigm:
-    Discretization: 
-        Type: "Text File"
-        Input Mesh File: "simpleMesh.txt"
-        Bond Filters: 
-            bf_1: 
-                Type: "Rectangular_Plane"
-                Normal_X: 0.0
-                Normal_Y: 1.0
-                Normal_Z: 0.0
-                Lower_Left_Corner_X: -0.5
-                Lower_Left_Corner_Y: 0.0
-                Lower_Left_Corner_Z: -0.5
-                Bottom_Unit_Vector_X: 1.0
-                Bottom_Unit_Vector_Y: 0.0
-                Bottom_Unit_Vector_Z: 0.0
-                Bottom_Length: 40.5
-                Side_Length: 1.0
-    Materials: 
-        Aluminium: 
-            Material Model: "Elastic Bond Associated Correspondence"
-            #Material Model: "Anisotropic Elastic Bond Associated Correspondence"
-            Plane Stress: True
-            Density: 2.81e-08
-            Young's Modulus: 7.17e+04
-            Poisson's Ratio: 3.3e-01
-            Stabilization Type: "Global Stiffness"
-            Thickness: 1.0
-            Hourglass Coefficient: 1.0
-            Tension pressure separation for damage model: True
-            Yield Stress: 74.0
-            Thermal Bond Based: True
-    Damage Models: 
-        Damage: 
-            Damage Model: "Johnson Cook"
-            Damage Parameter 1: 0.9
-            Damage Parameter 2: 0.1
-            Damage Parameter 3: 0.2
-            Critical Damage: 0.8
-            Threshold Damage: 0.6
-    Blocks: 
-        block_1: 
-            Block Names: "block_1"
-            Material: "Aluminium"
-            Damage Model: "Damage"
-            Horizon: 2.7221534653465347
-        block_2: 
-            Block Names: "block_2"
-            Material: "Aluminium"
-            Horizon: 2.7221534653465347
-        block_3: 
-            Block Names: "block_3"
-            Material: "Aluminium"
-            Horizon: 2.7221534653465347
-        block_4: 
-            Block Names: "block_4"
-            Material: "Aluminium"
-            Horizon: 2.7221534653465347
-        block_5: 
-            Block Names: "block_5"
-            Material: "Aluminium"
-            Horizon: 2.7221534653465347
-    Boundary Conditions: 
-        Node Set 1: "ns_CompactTension_1.txt"
-        Node Set 2: "ns_CompactTension_2.txt"
-        Node Set 3: "ns_CompactTension_3.txt"
-        BC_1: 
-            Type: "Body Force"
-            Node Set: "Node Set 1"
-            Coordinate: "y"
-            Value: "20*t"
-        BC_2: 
-            Type: "Body Force"
-            Node Set: "Node Set 2"
-            Coordinate: "y"
-            Value: "-20*t"
-        BC_3: 
-            Type: "Prescribed Displacement"
-            Node Set: "Node Set 1"
-            Coordinate: "x"
-            Value: "0"
-        BC_4: 
-            Type: "Prescribed Displacement"
-            Node Set: "Node Set 2"
-            Coordinate: "x"
-            Value: "0"
-        BC_5: 
-            Type: "Prescribed Displacement"
-            Node Set: "Node Set 3"
-            Coordinate: "z"
-            Value: "0"
-#    Solver: 
-#        Solve For Displacement: True
-#        Verbose: False
-#        Initial Time: 0.0
-#        Final Time: 0.003
-#        Stop after damage initiation: False
-#        End step after damage: 3
-#        Peridigm Preconditioner: "Full Tangent"
-#        NOXQuasiStatic: 
-#            Nonlinear Solver: "Line Search Based"
-#            Number of Load Steps: 100
-#            Max Solver Iterations: 50
-#            Relative Tolerance: 100000.0
-#            Max Age Of Prec: 100
-#            Direction: 
-#                 Method: "Newton"
-#                 Newton: 
-#                      Linear Solver: 
-#                           Jacobian Operator: "Matrix-Free"
-#                           Preconditioner: "None"
-#            Line Search: 
-#                 Method: "Polynomial"
-#            Switch to Verlet: 
-#                 Safety Factor: 0.95
-#                 Numerical Damping: 5e-06
-#                 Output Frequency: 100
-    Solver: 
-        Solve For Displacement: True
-        Verbose: False
-        Initial Time: 0.0
-        Final Time: 0.02
-        Stop after damage initiation: False
-        End step after damage: 3
-        Verlet: 
-            Safety Factor: 0.95
-            Numerical Damping: 5e-06
-            Adapt dt: True
-            Stable Step Difference: 4
-            Maximum Bond Difference: 4
-            Stable Bond Difference: 1
-    Compute Class Parameters: 
-        External_Force: 
-            Compute Class: "Block_Data"
-            Calculation Type: "Sum"
-            Block: "block_2"
-            Variable: "Force"
-            Output Label: "External_Force"
-        External_Displacement: 
-            Compute Class: "Block_Data"
-            Calculation Type: "Maximum"
-            Block: "block_2"
-            Variable: "Displacement"
-            Output Label: "External_Displacement"
-    Output1: 
-        Output File Type: "ExodusII"
-        Output Format: "BINARY"
-        Output Filename: "Johnson_cook"
-        Output Frequency: 40
-        Parallel Write: True
-        Output Variables: 
-            Displacement: True
-            Force: True
-            External_Force: True
-            External_Displacement: True
-            Damage: True
-            Cauchy_Stress: True
-            Von_Mises_Stress: True
-            Broken_Bond_Volume_Averaged: True
-            
-
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: "node1.txt"
+      Node Set 2: "node2.txt"
+    Type: "Text File"
+    Input Mesh File: "simpleMesh.txt"
+    # Input Mesh File: "biggerMesh.txt"
+  Physics:
+    Calculate Stretch: True
+    Calculate Deformation Gradient: False
+    Calculate Shape Tensor: False
+    Calculate Bond Associated Shape Tensor: False
+    Calculate Bond Associated Deformation Gradient: False
+    Material Models:
+      Aluminium:
+        #Material Model: "PD Solid Elastic"
+        Material Model: "Test"
+        Bulk Modulus: 2.0e5
+        Shear Modulus: 1.0e5
+    Damage Models:
+      Damage:
+        Damage Model: "Test"
+  Blocks:
+    block_1:
+      Block Names: "block_1"
+      Material Model: "Aluminium"
+      Damage Model: "Damage"
+      Density: 2.7e-9
+      Horizon: 2.7221534653465347
+    # block_2:
+    #   Block Names: "block_2"
+    #   Material: "Aluminium"
+    #   Density: 2.7e-9
+    #   Horizon: 2.7221534653465347
+    # block_3:
+    #   Block Names: "block_3"
+    #   Material: "Aluminium"
+    #   Density: 2.7e-9
+    #   Horizon: 2.7221534653465347
+    # block_4:
+    #   Block Names: "block_4"
+    #   Material: "Aluminium"
+    #   Density: 2.7e-9
+    #   Horizon: 2.7221534653465347
+    # block_5:
+    #   Block Names: "block_5"
+    #   Material: "Aluminium"
+    #   Density: 2.7e-9
+    #   Horizon: 2.7221534653465347
+  Boundary Conditions:
+    BC_1:
+      Type: "Forces"
+      Node Set: "Node Set 1"
+      Coordinate: "y"
+      Value: "20*t"
+    BC_2:
+      Type: "Forces"
+      Node Set: "Node Set 2"
+      Coordinate: "y"
+      Value: "-20*t"
+    BC_3:
+      Type: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "0"
+    BC_4:
+      Type: "Displacements"
+      Node Set: "Node Set 2"
+      Coordinate: "x"
+      Value: "0"
+    BC_5:
+      Type: "Displacements"
+      Node Set: "Node Set 2"
+      Coordinate: "z"
+      Value: "0"
+  Solver:
+    Solve For Displacement: True
+    Verbose: False
+    Initial Time: 0.0
+    Final Time: 0.00002
+    Stop after damage initiation: False
+    End step after damage: 3
+    Verlet:
+      Safety Factor: 0.95
+      Numerical Damping: 5e-06
+      Adapt dt: True
+      Stable Step Difference: 4
+      Maximum Bond Difference: 4
+      Stable Bond Difference: 1
+  Compute Class Parameters:
+    External_Force:
+      Compute Class: "Block_Data"
+      Calculation Type: "Sum"
+      Block: "block_2"
+      Variable: "Force"
+      Output Label: "External_Force"
+    External_Displacement:
+      Compute Class: "Block_Data"
+      Calculation Type: "Maximum"
+      Block: "block_2"
+      Variable: "Displacement"
+      Output Label: "External_Displacement"
+  Outputs:
+    Output1:
+      Output Filename: "test2"
+      #Output Frequency: 40
+      Output Variables:
+        Displacements: True
+        Volume: True

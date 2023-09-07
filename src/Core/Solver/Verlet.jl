@@ -1,6 +1,7 @@
 
 using LinearAlgebra
 using ProgressBars
+using TimerOutputs
 include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
 
@@ -125,7 +126,7 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results)
+function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
     forces = datamanager.get_field("Forces", "NP1")
@@ -143,26 +144,28 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     time::Float32 = solver_options["Initial Time"]
 
     for idt in progress_bar(datamanager.get_rank(), nsteps)
-        # one step more, because of init step (time = 0)
+        @timeit to "Verlet" begin
+            # one step more, because of init step (time = 0)
 
-        vNP1[:] = vN + 0.5 * dt .* a
-        # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
-        uNP1[:] = uN + dt .* vNP1
+            vNP1[:] = vN + 0.5 * dt .* a
+            # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
+            uNP1[:] = uN + dt .* vNP1
 
-        datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
-        defCoorNP1[:] = coor + uNP1
-        # synch
-        for block in eachindex(blockNodes)
-            datamanager.set_filter(blockNodes[block])
-            datamanager = Physics.compute_models(datamanager, block, dt, time)
+            @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
+            defCoorNP1[:] = coor + uNP1
+            # synch
+            for block in eachindex(blockNodes)
+                @timeit to "set_filter" datamanager.set_filter(blockNodes[block])
+                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, block, dt, time, to)
+            end
+            datamanager.reset_filter()
+            # synch
+            check_inf_or_nan(forces, "Forces")
+            a[:] = forces ./ density # element wise
+            @timeit to "write_results" exos = write_results(exos, idt, time, outputs, datamanager)
+            datamanager.switch_NP1_to_N()
+            time += dt
         end
-        datamanager.reset_filter()
-        # synch
-        check_inf_or_nan(forces, "Forces")
-        a[:] = forces ./ density # element wise
-        exos = write_results(exos, idt, time, outputs, datamanager)
-        datamanager.switch_NP1_to_N()
-        time += dt
     end
     return exos
 end

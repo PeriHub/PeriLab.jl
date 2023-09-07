@@ -10,6 +10,7 @@ using .Damage
 using .Material
 using .Thermal
 using .Geometry
+using TimerOutputs
 export compute_models
 export read_properties
 export init_additive_model_fields
@@ -20,11 +21,11 @@ export init_thermal_model_fields
 function init_models(datamanager)
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
-function compute_models(datamanager, block, dt, time)
+function compute_models(datamanager, block, dt, time, to)
 
-    datamanager = pre_calculation(datamanager, datamanager.get_physics_options())
+    @timeit to "pre_calculation" datamanager = pre_calculation(datamanager, datamanager.get_physics_options())
 
-    datamanager = Material.compute_forces(datamanager, datamanager.get_properties(block, "Material Model"), time, dt)
+    @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, datamanager.get_properties(block, "Material Model"), time, dt)
 
     return datamanager
 
