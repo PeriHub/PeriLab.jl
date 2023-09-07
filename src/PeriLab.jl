@@ -44,7 +44,7 @@ function main(ARGS)
         print_banner()
     end
     #global juliaPath = Base.Filesystem.pwd() * "/"
-    global juliaPath = "./"
+    #global juliaPath = "./"
     # from outside #################
 
     @info ARGS
@@ -52,8 +52,8 @@ function main(ARGS)
     # filename::String = "Input.yaml"
 
     ################################
-    filename = juliaPath * filename
-
+    #filename =  filename
+    # filename = "Input.yaml"
     datamanager, params = IO.initialize_data(filename, Data_manager, comm)
 
     blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
