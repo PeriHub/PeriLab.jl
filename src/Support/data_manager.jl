@@ -42,7 +42,7 @@ filtered_nodes = Ref([])
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
-physics_options = Dict{String,Bool}("Calculate Deformed Bond Geometry" => true,
+physicsOptions = Dict{String,Bool}("Calculate Deformed Bond Geometry" => true,
     "Calculate Deformation Gradient" => false,
     "Calculate Shape Tensor" => false,
     "Calculate Bond Associated Shape Tensor" => false,
@@ -332,17 +332,17 @@ function get_synch_fields()
 end
 
 function get_physics_options()
-    if physics_options["Calculate Deformation Gradient"]
-        physics_options["Calculate Shape Tensor"] = true
-        physics_options["Calculate Deformed Bond Geometry"] = true
+    if physicsOptions["Calculate Deformation Gradient"]
+        physicsOptions["Calculate Shape Tensor"] = true
+        physicsOptions["Calculate Deformed Bond Geometry"] = true
     end
-    if physics_options["Calculate Bond Associated Deformation Gradient"]
-        physics_options["Calculate Deformation Gradient"] = true
-        physics_options["Calculate Bond Associated Shape Tensor"] = true
-        physics_options["Calculate Shape Tensor"] = true
-        physics_options["Calculate Deformed Bond Geometry"] = true
+    if physicsOptions["Calculate Bond Associated Deformation Gradient"]
+        physicsOptions["Calculate Deformation Gradient"] = true
+        physicsOptions["Calculate Bond Associated Shape Tensor"] = true
+        physicsOptions["Calculate Shape Tensor"] = true
+        physicsOptions["Calculate Deformed Bond Geometry"] = true
     end
-    return physics_options
+    return physicsOptions
 end
 function get_properties(blockId, property)
     if property in keys(properties[blockId])
@@ -480,7 +480,7 @@ function set_overlap_map(topo)
 end
 
 function set_physics_options(values)
-    physics_options = values
+    physicsOptions = values
 end
 
 function set_property(blockId, property, value_name, value)
