@@ -11,15 +11,11 @@ function material_name()
 end
 
 function elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
-
     for iID in 1:nnodes
         alpha = 15.0 * material["Shear Modulus"] / weighted_volume[iID]
         beta = 3.0 * material["Bulk Modulus"] / weighted_volume[iID]
-        for jID in 1:nneighbors[iID]
-            c1 = theta[iID] * (beta - alpha / 3.0)
-            t = bond_damage[iID][jID] * omega[iID] * (c1 * bond_geometry[iID][jID, end] + alpha * (deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end]))
-            bond_force[iID][jID, :] = t * deformed_bond[iID][jID, 1:dof] / deformed_bond[iID][jID, end]
-        end
+        c1 = theta[iID] * (beta - alpha / 3.0)
+        bond_force[iID] = bond_damage[iID][:] .* omega[iID] .* (c1 .* bond_geometry[iID][:, end] .+ alpha .* (deformed_bond[iID][:, end] .- bond_geometry[iID][:, end])) .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
     end
     return bond_force
 end

@@ -58,14 +58,13 @@ function main(ARGS, to)
         print_banner()
     end
     #global juliaPath = Base.Filesystem.pwd() * "/"
-    global juliaPath = "./"
+    #global juliaPath = "./"
     # from outside #################
 
     @info ARGS
     # filename::String = "Input.yaml"
 
     ################################
-    filename = juliaPath * filename
 
     @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm)
 

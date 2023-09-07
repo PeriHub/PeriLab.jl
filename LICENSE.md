@@ -1,6 +1,6 @@
 BSD License
 
-Copyright (c) 2023, Christian Willbeg, Jan-Timo Hesse
+Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:

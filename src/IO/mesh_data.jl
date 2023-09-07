@@ -183,7 +183,7 @@ function read_mesh(filename::String)
     if !isfile(filename)
         @error "File $filename does not exist"
     end
-    @info "Read File $filename"
+    @info "Read Mesh File $filename"
     header = get_header(filename)
     return CSV.read(filename, DataFrame; delim=" ", header=header, skipto=2)
 end

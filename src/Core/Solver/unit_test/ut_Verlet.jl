@@ -19,17 +19,11 @@ end
 @testset "ut_get_cs_denominator" begin
     volume = [1, 2, 3]
     bondgeometry = [1, 2, 3]
-    @test get_cs_denominator(1, volume, bondgeometry) == 1
-    @test get_cs_denominator(2, volume, bondgeometry) == 2
-    @test get_cs_denominator(3, volume, bondgeometry) == 3
+    @test get_cs_denominator(volume, bondgeometry) == 3
     bondgeometry = [2, 4, 6]
-    @test get_cs_denominator(1, volume, bondgeometry) == 0.5
-    @test get_cs_denominator(2, volume, bondgeometry) == 1
-    @test get_cs_denominator(3, volume, bondgeometry) == 1.5
+    @test get_cs_denominator(volume, bondgeometry) == 1.5
     bondgeometry = [1, 0.5, 2]
-    @test get_cs_denominator(1, volume, bondgeometry) == 1
-    @test get_cs_denominator(2, volume, bondgeometry) == 5
-    @test get_cs_denominator(3, volume, bondgeometry) == 6.5
+    @test get_cs_denominator(volume, bondgeometry) == 6.5
 end
 
 nnodes = 5
@@ -123,7 +117,7 @@ testDatamanager.set_dof(2)
 testDatamanager.set_glob_to_loc([1, 2, 3, 4, 5])
 density = testDatamanager.create_constant_node_field("Density", Float32, 1)
 force = testDatamanager.create_node_field("Forces", Float32, dof)
-Y = testDatamanager.create_node_field("Deformed State", Float32, dof)
+Y = testDatama#nager.create_node_field("Deformed State", Float32, dof)
 u = testDatamanager.create_node_field("Displacements", Float32, dof)
 bu = testDatamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
 a = testDatamanager.create_constant_node_field("Acceleration", Float32, dof)

@@ -11,10 +11,10 @@ end
 function read_input_file(filename::String)
     if occursin("yaml", filename)
         println("Load  $filename")
-        @info "Read file $filename"
+        @info "Read input file $filename"
         params = read_input(filename)
     elseif occursin("xml", filename)
-        @info "Read file $filename"
+        @info "Read input file $filename"
         #read_xml(filename = filename)
     else
         parameter = ""
@@ -23,7 +23,5 @@ function read_input_file(filename::String)
     check_key_elements(params)
     return params
 end
-
-
 
 end

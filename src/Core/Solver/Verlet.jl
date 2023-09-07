@@ -23,25 +23,20 @@ function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
     eigLam = maximum(eigvals(lambda))
 
     for iID in 1:nnodes
-        denominator = get_cs_denominator(nneighbors[iID], volume[nlist[iID]], bondgeometry[iID][:, dof+1])
+        denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, dof+1])
         t = density[iID] * Cv / (eigLam * denominator)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
     end
     return sqrt(criticalTimeStep)
 end
-function get_cs_denominator(nneighbors, volume, bondgeometry)
-    denominator = 0.0
-    for jID in 1:nneighbors
-        denominator += volume[jID] / bondgeometry[jID]
-    end
-    return denominator
+function get_cs_denominator(volume, bondgeometry)
+    return sum(volume ./ bondgeometry)
 end
 function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
     nnodes = datamanager.get_nnodes()
-    dof = datamanager.get_dof()
     nneighbors = datamanager.get_field("Number of Neighbors")
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
@@ -50,8 +45,9 @@ function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
     horizon = datamanager.get_field("Horizon")
 
     for iID in 1:nnodes
-        denominator = get_cs_denominator(nneighbors[iID], volume[nlist[iID]], bondgeometry[iID][:, dof+1])
+        denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, end])
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
+
         t = density[iID] / (denominator * springConstant)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
     end
@@ -87,7 +83,6 @@ function compute_crititical_time_step(datamanager, mechanical, thermo)
     return criticalTimeStep
 end
 
-
 function init_Verlet(params, datamanager, mechanical, thermo)
     @info "======================="
     @info "==== Verlet Solver ===="
@@ -99,7 +94,7 @@ function init_Verlet(params, datamanager, mechanical, thermo)
     dt = get_fixed_dt(params)
     @info "Initial time: " * string(initial_time) * " [s]"
     @info "Final time: " * string(final_time) * " [s]"
-    if dt
+    if dt == true
         dt = compute_crititical_time_step(datamanager, mechanical, thermo)
         @info "Minimal time increment: " * string(dt) * " [s]"
     else
@@ -129,7 +124,7 @@ end
 function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
-    forces = datamanager.get_field("Forces", "NP1")
+    #forces = datamanager.get_field("Forces", "NP1")
     density = datamanager.get_field("Density")
     uN = datamanager.get_field("Displacements", "N")
     uNP1 = datamanager.get_field("Displacements", "NP1")
@@ -160,9 +155,10 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             end
             datamanager.reset_filter()
             # synch
+            forces = datamanager.get_field("Forces", "NP1")
             check_inf_or_nan(forces, "Forces")
             a[:] = forces ./ density # element wise
-            @timeit to "write_results" exos = write_results(exos, idt, time, outputs, datamanager)
+            exos = write_results(exos, idt, time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
             time += dt
         end
