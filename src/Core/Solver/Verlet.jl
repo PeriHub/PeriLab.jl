@@ -22,25 +22,20 @@ function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
     eigLam = maximum(eigvals(lambda))
 
     for iID in 1:nnodes
-        denominator = get_cs_denominator(nneighbors[iID], volume[nlist[iID]], bondgeometry[iID][:, dof+1])
+        denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, dof+1])
         t = density[iID] * Cv / (eigLam * denominator)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
     end
     return sqrt(criticalTimeStep)
 end
-function get_cs_denominator(nneighbors, volume, bondgeometry)
-    denominator = 0.0
-    for jID in 1:nneighbors
-        denominator += volume[jID] / bondgeometry[jID]
-    end
-    return denominator
+function get_cs_denominator(volume, bondgeometry)
+    return sum(volume ./ bondgeometry)
 end
 function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
     nnodes = datamanager.get_nnodes()
-    dof = datamanager.get_dof()
     nneighbors = datamanager.get_field("Number of Neighbors")
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
@@ -49,10 +44,12 @@ function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
     horizon = datamanager.get_field("Horizon")
 
     for iID in 1:nnodes
-        denominator = get_cs_denominator(nneighbors[iID], volume[nlist[iID]], bondgeometry[iID][:, dof+1])
+        denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, end])
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
+
         t = density[iID] / (denominator * springConstant)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
+        println(sqrt(2 * criticalTimeStep))
     end
     return sqrt(2 * criticalTimeStep)
 end
