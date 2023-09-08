@@ -1,18 +1,18 @@
 "Simple dummy project module to demonstrate how a project can be organized."
 module PeriLab
-using PrecompileTools
-@compile_workload begin
-    include("./Support/data_manager.jl")
-    include("./IO/IO.jl")
-    include("./Core/Solver/Solver_control.jl")
-    using MPI
-    using LoggingExtras
-    using TimerOutputs
-    using HDF5
-    using .Data_manager
-    import .IO
-    import .Solver
-end
+# using PrecompileTools
+# @compile_workload begin
+include("./Support/data_manager.jl")
+include("./IO/IO.jl")
+include("./Core/Solver/Solver_control.jl")
+using MPI
+using LoggingExtras
+using TimerOutputs
+using HDF5
+using .Data_manager
+import .IO
+import .Solver
+# end
 
 
 export main
