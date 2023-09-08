@@ -6,9 +6,8 @@ include("./Support/data_manager.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
 using MPI
-using LoggingExtras
 using TimerOutputs
-using HDF5
+# using HDF5
 using .Data_manager
 import .IO
 import .Solver
@@ -36,24 +35,7 @@ function print_banner()
 
     """)
 end
-function main(ARGS, to)
-
-    dry_run = false
-    for i in eachindex(ARGS)
-        arg = ARGS[i]
-
-        if arg == "--dry_run"
-            dry_run = true
-        else
-            filename::String = arg
-        end
-    end
-
-    demux_logger = TeeLogger(
-        MinLevelLogger(FileLogger(split(filename, ".")[1] * ".log"), Logging.Info),
-        MinLevelLogger(ConsoleLogger(stderr), Logging.Info),
-    )
-    global_logger(demux_logger)
+function main(filename, to, dry_run, verbose)
     # init MPI as always ...
 
     MPI.Init()
@@ -63,13 +45,10 @@ function main(ARGS, to)
     end
     #global juliaPath = Base.Filesystem.pwd() * "/"
     global juliaPath = "./"
-    # from outside #################
-
-    @info ARGS
-    # filename::String = "Input.yaml"
 
     ################################
     filename = juliaPath * filename
+    # @info filename
 
     @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm)
 
