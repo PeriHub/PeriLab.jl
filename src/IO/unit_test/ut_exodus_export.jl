@@ -122,7 +122,7 @@ exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 6, 6.7)
     exo_nsets = read_sets(exo, NodeSet)
     @test coords == exo_coords
     @test exo_nsets == []
-    @test ["PeriLab Version " * string(Pkg.project().version), "compiled with Julia Version " * string(VERSION)] == read_info(exo)
+    @test ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)] == read_info(exo)
     @test read_number_of_time_steps(exo) == 6
     @test read_time(exo, 2) == 2.2
     @test read_time(exo, 3) == 3.7

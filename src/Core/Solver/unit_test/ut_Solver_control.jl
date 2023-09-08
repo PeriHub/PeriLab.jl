@@ -1,5 +1,6 @@
 using Test
 using MPI
+import TimerOutputs
 include("../Solver_control.jl")
 include("../../../Support/geometry.jl")
 import .Solver
