@@ -5,7 +5,7 @@ end
 
 function check_inf_or_nan(array, msg)
     if !isfinite(sum(array))
-        @error msg * " are infinite."
+        @error msg * " is infinite."
         return true
     end
     return false
