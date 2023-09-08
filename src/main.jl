@@ -6,5 +6,11 @@ if isfile("Project.toml") && isfile("Manifest.toml")
 end
 using Revise
 import PeriLab
+using TimerOutputs
+const to = TimerOutput()
 
-PeriLab.main(ARGS)
+@timeit to "PeriLab" begin
+    PeriLab.main(ARGS, to)
+end
+
+show(to)

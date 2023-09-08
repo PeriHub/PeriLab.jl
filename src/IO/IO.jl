@@ -13,11 +13,27 @@ export init_write_results
 export write_results
 
 function close_files(exos)
-
     for exo in exos
         @info "Closing output file " * exo.file_name
         close(exo)
     end
+end
+
+function delete_files(exos)
+
+    for exo in exos
+        @info "Delete output file " * exo.file_name
+        rm(exo.file_name)
+    end
+end
+
+function get_file_size(exos)
+    total_file_size = 0
+    for exo in exos
+        file_stat = stat(exo.file_name)  # Get file information
+        total_file_size += file_stat.size  # Add the file size to the total
+    end
+    return total_file_size
 end
 
 function clearNP1(name)

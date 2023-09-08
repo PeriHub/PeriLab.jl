@@ -77,11 +77,11 @@ function set_horizon(params, blockNodes, horizon)
 end
 
 
-function solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results)
+function solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results, to)
     #blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
-    return run_Verlet_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results)
+    return run_Verlet_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results, to)
 
 end
 
