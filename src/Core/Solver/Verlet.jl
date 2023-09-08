@@ -125,6 +125,10 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
     #forces = datamanager.get_field("Forces", "NP1")
+    # later in the compute class
+    forces = datamanager.create_node_field("Forces", Float32, dof)
+    volume = datamanager.get_field("Volume")
+    forces_density = datamanager.get_field("Force Densities", "NP1")
     density = datamanager.get_field("Density")
     uN = datamanager.get_field("Displacements", "N")
     uNP1 = datamanager.get_field("Displacements", "NP1")
@@ -155,9 +159,10 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             end
             datamanager.reset_filter()
             # synch
-            forces = datamanager.get_field("Forces", "NP1")
+
             check_inf_or_nan(forces, "Forces")
-            a[:] = forces ./ density # element wise
+            a[:] = forces_density ./ density # element wise
+            forces[:] = forces_density .* volume
             exos = write_results(exos, idt, time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
             time += dt

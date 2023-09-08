@@ -56,6 +56,9 @@ function get_results_mapping(params, datamanager)
             datafield = datamanager.get_field(fieldname)
             sizedatafield = size(datafield)
             if length(sizedatafield) == 0
+                #if fieldname == "Forces"
+                #mapping[id]["Forces"] = [fieldname, result_id, 1, typeof(datafield[1, 1])]
+                # compute class must be mapped here
                 @error "No field " * fieldname * " exists."
                 return
             end

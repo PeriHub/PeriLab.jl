@@ -46,14 +46,15 @@ end
 
 function init_material_model_fields(datamanager)
     dof = datamanager.get_dof()
-    datamanager.create_node_field("Forces", Float32, dof)
+    #datamanager.create_node_field("Forces", Float32, dof) -> only if it is an output
+    datamanager.create_node_field("Force Densities", Float32, dof)
     defCoorN, defCoorNP1 = datamanager.create_node_field("Deformed Coordinates", Float32, dof)
     defCoorN[:] = copy(datamanager.get_field("Coordinates"))
     defCoorNP1[:] = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float32, dof)
     datamanager.create_constant_node_field("Acceleration", Float32, dof)
     datamanager.create_node_field("Velocity", Float32, dof)
-    datamanager.set_synch("Force", true, false)
+    datamanager.set_synch("Forces", true, false)
     datamanager.set_synch("Velocity", false, true)
     datamanager.set_synch("Displacements", false, true)
     datamanager.set_synch("Deformed Coordinates", false, true)
