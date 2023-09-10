@@ -22,7 +22,7 @@ PeriLab:
             Horizon: 2.1
         block_2: 
             Block Names: "block_2"
-            Material: "Mat_2"
+            Material Model: "Mat_2"
             Density: 2.7e-9
             Horizon: 2.1
     Boundary Conditions: 
