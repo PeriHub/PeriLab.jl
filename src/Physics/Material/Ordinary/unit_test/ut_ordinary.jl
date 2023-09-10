@@ -31,7 +31,7 @@ using .Ordinary
 
     weighted_volume = Ordinary.compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
 
-    for iID in 1:nnodes
+    for iID in nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
     end
 

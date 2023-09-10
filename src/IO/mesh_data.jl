@@ -72,7 +72,7 @@ function get_bond_geometry(datamanager)
     coor = datamanager.get_field("Coordinates")
     bondgeom = datamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
     bondDamage = datamanager.create_constant_bond_field("Bond Damage", Float32, 1)
-    bondgeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondgeom)
+    bondgeom = Geometry.bond_geometry(1:nnodes, dof, nlist, coor, bondgeom)
     return datamanager
 end
 

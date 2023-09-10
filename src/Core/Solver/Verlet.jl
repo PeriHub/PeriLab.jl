@@ -22,7 +22,7 @@ function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
 
-    for iID in 1:nnodes
+    for iID in nnodes
         denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, dof+1])
         t = density[iID] * Cv / (eigLam * denominator)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
@@ -44,7 +44,7 @@ function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
     volume = datamanager.get_field("Volume")
     horizon = datamanager.get_field("Horizon")
 
-    for iID in 1:nnodes
+    for iID in nnodes
         denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, end])
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 
@@ -124,9 +124,7 @@ end
 function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
-    #forces = datamanager.get_field("Forces", "NP1")
-    # later in the compute class
-    forces = datamanager.create_node_field("Forces", Float32, dof)
+    forces = datamanager.get_field("Forces", "NP1")
     volume = datamanager.get_field("Volume")
     forces_density = datamanager.get_field("Force Densities", "NP1")
     density = datamanager.get_field("Density")
@@ -152,15 +150,15 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
 
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
             defCoorNP1[:] = coor + uNP1
+
             # synch
             for block in eachindex(blockNodes)
-                @timeit to "set_filter" datamanager.set_filter(blockNodes[block])
-                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, block, dt, time, to)
+                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, time, to)
             end
-            datamanager.reset_filter()
+
             # synch
 
-            check_inf_or_nan(forces, "Forces")
+            check_inf_or_nan(forces_density, "Forces")
             a[:] = forces_density ./ density # element wise
             forces[:] = forces_density .* volume
             exos = write_results(exos, idt, time, outputs, datamanager)

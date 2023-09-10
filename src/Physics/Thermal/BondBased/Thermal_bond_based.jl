@@ -7,7 +7,7 @@ function thermal_stretch(blockId, datamanager)
     temperature = datamanager.get_field("Temperature")
     bondgeom = datamanager.get_field("Deformed Bond Geometry")
     nnodes = datamanager.get_nnodes()
-    for iID in 1:nnodes
+    for iID in nnodes
         bondgeom[iID, :] -= alpha * temperature[iID]
     end
 end

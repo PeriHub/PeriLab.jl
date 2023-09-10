@@ -21,11 +21,11 @@ export init_thermal_model_fields
 function init_models(datamanager)
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
-function compute_models(datamanager, block, dt, time, to)
+function compute_models(datamanager, nodes, block, dt, time, to)
 
-    @timeit to "pre_calculation" datamanager = pre_calculation(datamanager, datamanager.get_physics_options())
+    @timeit to "pre_calculation" datamanager = pre_calculation(datamanager, nodes, datamanager.get_physics_options())
 
-    @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, datamanager.get_properties(block, "Material Model"), time, dt)
+    @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
 
     return datamanager
 
@@ -46,7 +46,9 @@ end
 
 function init_material_model_fields(datamanager)
     dof = datamanager.get_dof()
-    #datamanager.create_node_field("Forces", Float32, dof) -> only if it is an output
+    datamanager.create_node_field("Forces", Float32, dof) #-> only if it is an output
+    # tbd later in the compute class
+    datamanager.create_node_field("Forces", Float32, dof)
     datamanager.create_node_field("Force Densities", Float32, dof)
     defCoorN, defCoorNP1 = datamanager.create_node_field("Deformed Coordinates", Float32, dof)
     defCoorN[:] = copy(datamanager.get_field("Coordinates"))
@@ -100,17 +102,17 @@ function init_pre_calculation(datamanager, options)
     return datamanager
 end
 
-function pre_calculation(datamanager, options)
+function pre_calculation(datamanager, nodes, options)
     ## function for specific pre-calculations
     # sub functions in material, damage, etc.
     dof = datamanager.get_dof()
-    nnodes = datamanager.get_nnodes()
     nlist = datamanager.get_nlist()
     defCoor = datamanager.get_field("Deformed Coordinates", "NP1")
     if options["Calculate Deformed Bond Geometry"]
         bond_defNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
-        bond_defNP1[:] = Geometry.bond_geometry(nnodes, dof, nlist, defCoor, bond_defNP1)
+        bond_defNP1[:] = Geometry.bond_geometry(nodes, dof, nlist, defCoor, bond_defNP1)
     end
+
     if options["Calculate Shape Tensor"]
 
     end
