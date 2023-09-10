@@ -7,6 +7,7 @@ import .Read_Input_Deck
 import .Read_Mesh
 import .Write_Exodus_Results
 using MPI
+using TimerOutputs
 export close_files
 export initialize_data
 export init_write_results
