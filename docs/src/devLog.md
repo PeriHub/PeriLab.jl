@@ -37,6 +37,8 @@ Each vector entry for a value exists for all nodes, also if the node does not ha
     IO
     nodesets are not defined yet in Exodus.jl
 ## planned feature
+    static arrays package -> speed up
+    integration of FEM Julia package -> coupling might be better, becaus of more functionality
     time step minimum for all cores -> parallel computing! -> done
     matrix -> reshape from vector for better use
     search for jl files in material
