@@ -45,6 +45,7 @@ end
     testDatamanager = Data_manager
     testDatamanager.set_dof(3)
     testDatamanager.set_nnodes(4)
+    testDatamanager.create_constant_node_field("Coordinates", Float32, 3)
     Physics.init_material_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
     @test "ForcesN" in fieldkeys
