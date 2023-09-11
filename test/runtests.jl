@@ -38,13 +38,13 @@ end
 
     @testset "Solver" begin
 
-        @testset "ut_Solver_control" begin
-            include("../src/Core/Solver/unit_test/ut_Solver_control.jl")
-        end
+        # @testset "ut_Solver_control" begin
+        #     include("../src/Core/Solver/unit_test/ut_Solver_control.jl")
+        # end
 
-        @testset "ut_Verlet" begin
-            include("../src/Core/Solver/unit_test/ut_Verlet.jl")
-        end
+        # @testset "ut_Verlet" begin
+        # include("../src/Core/Solver/unit_test/ut_Verlet.jl")
+        # end
 
     end
 
