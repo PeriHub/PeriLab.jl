@@ -10,6 +10,7 @@ include("../BC_manager.jl")
 using .IO
 using .Physics
 using .Boundary_conditions
+using TimerOutputs
 
 function init_bondDamage_and_influence_function(A, B, C)
     for id in eachindex(B)
@@ -48,7 +49,7 @@ function init(params, datamanager)
     Physics.init_models(datamanager)
     bcs = Boundary_conditions.init_BCs(params, datamanager)
     if get_solver_name(params) == "Verlet"
-        solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"] = init_Verlet(params, datamanager, solver_options["Material Models"], solver_options["Thermal Models"])
+        solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"] = init_Verlet(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
     end
 
     return blockNodes, bcs, datamanager, solver_options

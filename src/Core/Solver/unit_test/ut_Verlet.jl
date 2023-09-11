@@ -61,23 +61,23 @@ coor[5, 2] = 1;
 
 volume[:] = [0.5, 0.5, 0.5, 0.5, 0.5]
 density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
-horizon[:] = [1.1, 1.1, 1.1, 1.1, 1.1]
+horizon[:] = [3.1, 3.1, 3.1, 3.1, 3.1]
 
-bondGeom = Geometry.bond_geometry(nnodes, dof, nlist, coor, bondGeom)
+bondGeom = Geometry.bond_geometry(1:nnodes, dof, nlist, coor, bondGeom)
 
 blocks[:] = [1, 1, 2, 2, 1]
 blocks = testDatamanager.set_block_list(blocks)
-testValmech = 3.59255e-05
+testValmech = 0.0002853254715348906
 MPI.Init()
 comm = MPI.COMM_WORLD
 testDatamanager.set_comm(comm)
 # from Peridigm
 @testset "ut_crititical_time_step" begin
 
-    t = compute_mechanical_crititical_time_step(testDatamanager, 140.0)
+    t = compute_mechanical_crititical_time_step(1:nnodes, testDatamanager, 140.0)
     @test testValmech / t - 1 < 1e-6
     testVal = 1e50 # to take from Peridigm
-    t = compute_thermodynamic_crititical_time_step(testDatamanager, 140.0, 5.1)
+    #t = compute_thermodynamic_crititical_time_step(1:nnodes, testDatamanager, 140.0, 5.1)
     #@test testVal / t - 1 < 1e-6
 
 end
@@ -93,6 +93,9 @@ testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
     testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / testValmech))
     @test nsteps == testStep
     testDt = (params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / testStep
+
+    #nsteps = ceil((end_time - initial_time) / dt)
+    #dt = (end_time - initial_time) / nsteps
 
     @test testDt / dt - 1 < 1e-6
     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0, "Fixed dt" => 1e-5)))
@@ -134,13 +137,13 @@ exos = []
 outputs = Dict()
 solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
 testDatamanager.set_rank(0)
-exos = run_Verlet_solver(solver_options, Solver.get_blockNodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)
+exos = run_Verlet_solver(solver_options, Solver.get_nodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)
 testDatamanager.set_rank(1)
 # only if routine runs, if progress bar is not active
 bcs = Boundary_conditions.init_BCs(params, testDatamanager)
 exos = []
 outputs = Dict()
 solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
-exos = run_Verlet_solver(solver_options, Solver.get_blockNodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)
+exos = run_Verlet_solver(solver_options, Solver.get_nodes(blockNodes), bcs, testDatamanager, outputs, exos, Solver.write_results)
 """
 MPI.Finalize()

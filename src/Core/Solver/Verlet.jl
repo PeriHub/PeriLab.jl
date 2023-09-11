@@ -5,7 +5,7 @@ using TimerOutputs
 include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
 
-function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
+function compute_thermodynamic_crititical_time_step(nodes, datamanager, lambda, Cv)
     """
     critical time step for a thermodynamic problem
     Selda Oterkus, Erdogan Madenci, and Abigail G. Agwai.  Fully coupled peridynamic thermomechanics
@@ -22,7 +22,7 @@ function compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
 
-    for iID in nnodes
+    for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, dof+1])
         t = density[iID] * Cv / (eigLam * denominator)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
@@ -32,11 +32,10 @@ end
 function get_cs_denominator(volume, bondgeometry)
     return sum(volume ./ bondgeometry)
 end
-function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
+function compute_mechanical_crititical_time_step(nodes, datamanager, bulkModulus)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
-    nnodes = datamanager.get_nnodes()
     nneighbors = datamanager.get_field("Number of Neighbors")
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
@@ -44,8 +43,9 @@ function compute_mechanical_crititical_time_step(datamanager, bulkModulus)
     volume = datamanager.get_field("Volume")
     horizon = datamanager.get_field("Horizon")
 
-    for iID in nnodes
+    for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, end])
+
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 
         t = density[iID] / (denominator * springConstant)
@@ -60,7 +60,7 @@ function test_timestep(t, criticalTimeStep)
     end
     return criticalTimeStep
 end
-function compute_crititical_time_step(datamanager, mechanical, thermo)
+function compute_crititical_time_step(datamanager, blockNodes, mechanical, thermo)
     criticalTimeStep = 1.0e50
     blocks = datamanager.get_block_list()
     for iblock in blocks
@@ -68,14 +68,14 @@ function compute_crititical_time_step(datamanager, mechanical, thermo)
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
             Cv = datamanager.get_property(iblock, "Thermal Model", "Specific Heat Capacity")
             if (lambda != Nothing) && (Cv != Nothing)
-                t = compute_thermodynamic_crititical_time_step(datamanager, lambda, Cv)
+                t = compute_thermodynamic_crititical_time_step(blockNodes[iblock], datamanager, lambda, Cv)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
         if mechanical
             bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
             if (bulkModulus != Nothing)
-                t = compute_mechanical_crititical_time_step(datamanager, bulkModulus)
+                t = compute_mechanical_crititical_time_step(blockNodes[iblock], datamanager, bulkModulus)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
@@ -83,7 +83,7 @@ function compute_crititical_time_step(datamanager, mechanical, thermo)
     return criticalTimeStep
 end
 
-function init_Verlet(params, datamanager, mechanical, thermo)
+function init_Verlet(params, datamanager, blockNodes, mechanical, thermo)
     @info "======================="
     @info "==== Verlet Solver ===="
     @info "======================="
@@ -95,7 +95,7 @@ function init_Verlet(params, datamanager, mechanical, thermo)
     @info "Initial time: " * string(initial_time) * " [s]"
     @info "Final time: " * string(final_time) * " [s]"
     if dt == true
-        dt = compute_crititical_time_step(datamanager, mechanical, thermo)
+        dt = compute_crititical_time_step(datamanager, blockNodes, mechanical, thermo)
         @info "Minimal time increment: " * string(dt) * " [s]"
     else
         @info "Fixed time increment: " * string(dt) * " [s]"
