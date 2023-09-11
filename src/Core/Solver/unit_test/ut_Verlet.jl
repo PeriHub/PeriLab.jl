@@ -87,7 +87,7 @@ testDatamanager.set_property(1, "Material Model", "Bulk Modulus", 140.0)
 testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
 @testset "ut_init_Verlet" begin
     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)))
-    start_time, dt, nsteps = init_Verlet(params, testDatamanager, true, false)
+    start_time, dt, nsteps = init_Verlet(params, testDatamanager, 1:nnodes, true, false)
 
     @test start_time == params["Solver"]["Initial Time"]
     testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / testValmech))
@@ -99,7 +99,7 @@ testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
 
     @test testDt / dt - 1 < 1e-6
     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0, "Fixed dt" => 1e-5)))
-    start_time, dt, nsteps = init_Verlet(params, testDatamanager, true, false)
+    start_time, dt, nsteps = init_Verlet(params, testDatamanager, 1:nnodes, true, false)
 
     testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / 1e-5))
     @test testStep == nsteps

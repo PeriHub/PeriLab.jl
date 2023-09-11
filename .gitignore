@@ -2,6 +2,7 @@ CompactTension_red.txt
 CompactTension.txt
 JohnsonCook.yaml
 .vscode/
+*.Identifier
 /docs/build/
 think.md
 test_data_exchange.jl
