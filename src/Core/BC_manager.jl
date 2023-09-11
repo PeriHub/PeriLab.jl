@@ -55,7 +55,6 @@ function apply_bc(bcs, datamanager, time)
         if length(field_to_apply_bc) == 0
             field_to_apply_bc = datamanager.get_field(bc["Type"])
         end
-
         field_to_apply_bc[:, dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates, time, dof)
     end
     datamanager.reset_filter()

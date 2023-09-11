@@ -30,12 +30,12 @@ PeriLab:
             Type: "Displacements"
             Node Set: "Node Set 1"
             Coordinate: "x"
-            Value: "0.1*x"
+            Value: "0.0"
         BC_2: 
             Type: "Displacements"
             Node Set: "Node Set 1"
             Coordinate: "y"
-            Value: "0.0"
+            Value: "0.1*y"
     Solver: 
         Solve For Displacement: True
         Initial Time: 0.0
@@ -45,7 +45,7 @@ PeriLab:
             Safety Factor: 1.0
     Outputs: 
         Output1:
-            Output Filename: "strain_xx"
+            Output Filename: "strain_yy"
             Output Frequency: 1
             Output Variables: 
                 Displacements: True

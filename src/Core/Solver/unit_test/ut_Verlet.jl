@@ -67,6 +67,7 @@ bondGeom = Geometry.bond_geometry(1:nnodes, dof, nlist, coor, bondGeom)
 
 blocks[:] = [1, 1, 2, 2, 1]
 blocks = testDatamanager.set_block_list(blocks)
+# from Peridigm
 testValmech = 0.0002853254715348906
 MPI.Init()
 comm = MPI.COMM_WORLD
