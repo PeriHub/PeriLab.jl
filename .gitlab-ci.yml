@@ -18,7 +18,7 @@
   script:
     # Let's run the tests. Substitute `coverage = false` below, if you do not
     # want coverage results.
-    - julia -e 'using Pkg; Pkg.add(Logging); Pkg.add(Random); Pkg.add(PackageSpec(url=pwd())); Pkg.build("PeriLab"); Pkg.test("PeriLab"; coverage = true)'
+    - julia -e 'using Pkg; Pkg.add("Logging"); Pkg.add("Random"); Pkg.add(PackageSpec(url=pwd())); Pkg.build("PeriLab"); Pkg.test("PeriLab"; coverage = true)'
     # Comment out below if you do not want coverage results.
     - julia -e 'using Pkg; Pkg.add("Coverage");
       import PeriLab; cd(joinpath(dirname(pathof(PeriLab)), ".."));
