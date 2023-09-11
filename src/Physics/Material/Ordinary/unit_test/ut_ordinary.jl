@@ -29,11 +29,45 @@ using .Ordinary
 
     volume = Float32[0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883]
 
-    weighted_volume = Ordinary.compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
+    weighted_volume = Ordinary.compute_weighted_volume(1:nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
 
     for iID in 1:nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
     end
 
 end
-#theta = Ordinary.compute_dilatation(nnodes, nneighbors, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+
+nnodes = 2
+nneighbors = [1, 1]
+
+bond_geometry = [Matrix{Float32}(undef, 1, 3), Matrix{Float32}(undef, 1, 3)]
+bond_geometry[1][1] = 1
+bond_geometry[1][2] = 0
+bond_geometry[1][3] = 1
+bond_geometry[2][1] = -1
+bond_geometry[2][2] = 0
+bond_geometry[2][3] = 1
+
+deformed_bond = [Matrix{Float32}(undef, 1, 3), Matrix{Float32}(undef, 1, 3)]
+deformed_bond[1][1, 1] = 2
+deformed_bond[1][1, 2] = 0
+deformed_bond[1][1, 3] = 2
+deformed_bond[2][1, 1] = -2
+deformed_bond[2][1, 2] = 0
+deformed_bond[2][1, 3] = 2
+bond_damage = [Vector{Float32}(undef, 1), Vector{Float32}(undef, 1)]
+bond_damage[1][1] = 1
+bond_damage[2][1] = 1
+
+volume = ones(Float32, 2)
+weighted_volume = ones(Float32, 2)
+omega = ones(Float32, 2)
+
+nlist = [Vector{Int64}(undef, 1), Vector{Int64}(undef, 1)]
+nlist[1][1] = 2
+nlist[2][1] = 2
+@testset "compute_dilatation" begin
+    theta = Ordinary.compute_dilatation(1:nnodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    @test theta[1] == 3.0
+    @test theta[2] == 3.0
+end

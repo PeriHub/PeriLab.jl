@@ -16,7 +16,7 @@ function shapeTensor(data)
     dof = data.dof
 
     bondCount = 0
-    for iID in 1:nnodes
+    for iID in nnodes
         @Tensor shapeTensor = zeros(Float32, dof, dof)
         if !nstatus
             for jID in neigborlist[iID]
@@ -47,7 +47,7 @@ function defGrad(data)
     dof = data.dof
 
     bondCount = 0
-    for iID in 1:nnodes
+    for iID in nnodes
         @Tensor defTensor = zeros(Float32, dof, dof)
         @Tensor invKTensor = invK[:, :, iID]
         nneighbors = length(neigborlist[iID])

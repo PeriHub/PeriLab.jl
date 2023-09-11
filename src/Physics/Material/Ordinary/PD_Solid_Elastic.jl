@@ -10,8 +10,8 @@ function material_name()
     return "PD Solid Elastic"
 end
 
-function elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
-    for iID in 1:nnodes
+function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
+    for iID in nodes
         alpha = 15.0 * material["Shear Modulus"] / weighted_volume[iID]
         beta = 3.0 * material["Bulk Modulus"] / weighted_volume[iID]
         c1 = theta[iID] * (beta - alpha / 3.0)
@@ -20,11 +20,10 @@ function elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_dam
     return bond_force
 end
 
-function compute_forces(datamanager, material, time, dt)
-    nnodes = datamanager.get_nnodes()
+function compute_forces(datamanager, nodes, material, time, dt)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
-    forces = datamanager.get_field("Forces", "NP1")
+    force_densities = datamanager.get_field("Force Densities", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
@@ -36,10 +35,10 @@ function compute_forces(datamanager, material, time, dt)
 
     # optiming, because if no damage it has not to be updated
 
-    weighted_volume = Ordinary.compute_weighted_volume(nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
-    theta = Ordinary.compute_dilatation(nnodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
-    bond_force = elastic(nnodes, nneighbors, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
-    forces[:] = distribute_forces(nnodes, nneighbors, nlist, bond_force, volume, forces)
+    weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
+    theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    bond_force = elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
+    force_densities[:] = distribute_forces(nodes, nneighbors, nlist, bond_force, volume, force_densities)
     return datamanager
 end
 

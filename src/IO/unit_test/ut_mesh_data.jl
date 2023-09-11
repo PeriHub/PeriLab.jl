@@ -59,3 +59,46 @@ end
 
     rm(filename)
 end
+
+@testset "get_bond_geometry" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_nnodes(3)
+    testDatamanager.set_dof(2)
+    lenNlist = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    lenNlist[:] = [2, 2, 2]
+    nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+
+    nlist[1] = [2, 3]
+    nlist[2] = [1, 3]
+    nlist[3] = [1, 2]
+    coor = testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
+    coor[1, 1] = 0
+    coor[1, 2] = 0
+    coor[2, 1] = 1
+    coor[2, 2] = 0
+    coor[3, 1] = 0
+    coor[3, 2] = 1
+    Read_Mesh.get_bond_geometry(testDatamanager)
+    bondgeom = testDatamanager.get_field("Bond Geometry")
+
+    @test bondgeom[1][1, 1] == 1
+    @test bondgeom[1][1, 2] == 0
+    @test bondgeom[1][1, 3] == 1
+    @test bondgeom[1][2, 1] == 0
+    @test bondgeom[1][2, 2] == 1
+    @test bondgeom[1][2, 3] == 1
+
+    @test bondgeom[2][1, 1] == -1
+    @test bondgeom[2][1, 2] == 0
+    @test bondgeom[2][1, 3] == 1
+    @test bondgeom[2][2, 1] == -1
+    @test bondgeom[2][2, 2] == 1
+    @test bondgeom[2][2, 3] / sqrt(2) - 1 < 1e-8
+
+    @test bondgeom[3][1, 1] == 0
+    @test bondgeom[3][1, 2] == -1
+    @test bondgeom[3][1, 3] == 1
+    @test bondgeom[3][2, 1] == 1
+    @test bondgeom[3][2, 2] == -1
+    @test bondgeom[3][2, 3] / sqrt(2) - 1 < 1e-8
+end

@@ -9,7 +9,7 @@ function calculate_bond_forces(datamanager)
     nlist = datamanager.get_nlist()
     dof = datamanager.get_dof()
     bondNumber = 0
-    for iID in 1:nnodes
+    for iID in nnodes
         nneighbors = length(nlist[iID])
         for jID in 1:nneighbors
             bondNumber += 1
