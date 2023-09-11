@@ -1,8 +1,9 @@
-include("../src/PeriLab.jl")
-import .PeriLab
+# include("../src/PeriLab.jl")
+# import .PeriLab
 using Test
 using Aqua
 using Logging
+using PeriLab
 Logging.disable_logging(Logging.Error)
 
 
