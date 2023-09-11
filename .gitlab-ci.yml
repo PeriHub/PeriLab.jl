@@ -30,7 +30,6 @@
 test:latest:
   image: julia:latest
   <<: *test_definition
-
 # test:1.0:
 #   image: julia:1.0
 #   <<: *test_definition
@@ -51,20 +50,20 @@ test:latest:
 #   `\(\d+.\d+\%\) covered` in the `test coverage parsing` textfield.
 
 # Example documentation deployment
-pages:
-  image: julia:0.7
-  stage: deploy
-  script:
-    - apt-get update -qq && apt-get install -y git # needed by Documenter
-    - julia -e 'using Pkg; Pkg.add(PackageSpec(url=pwd())); Pkg.build("PeriLab");' # rebuild Julia (can be put somewhere else I'm sure
-    - julia -e 'using Pkg; import PeriLab; Pkg.add("Documenter")' # install Documenter
-    - julia --color=yes docs/make.jl # make documentation
-    - mv docs/build public # move to the directory picked up by Gitlab pages
-  artifacts:
-    paths:
-      - public
-  only:
-    - main
+# pages:
+#   image: julia:0.7
+#   stage: deploy
+#   script:
+#     - apt-get update -qq && apt-get install -y git # needed by Documenter
+#     - julia -e 'using Pkg; Pkg.add(PackageSpec(url=pwd())); Pkg.build("PeriLab");' # rebuild Julia (can be put somewhere else I'm sure
+#     - julia -e 'using Pkg; import PeriLab; Pkg.add("Documenter")' # install Documenter
+#     - julia --color=yes docs/make.jl # make documentation
+#     - mv docs/build public # move to the directory picked up by Gitlab pages
+#   artifacts:
+#     paths:
+#       - public
+#   only:
+#     - main
 # WARNING: This template is using the `julia` images from [Docker
 # Hub][3]. One can use custom Julia images and/or the official ones found
 # in the same place. However, care must be taken to correctly locate the binary
