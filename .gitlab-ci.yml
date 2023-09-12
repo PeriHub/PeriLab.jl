@@ -1,76 +1,28 @@
-# An example .gitlab-ci.yml file to test (and optionally report the coverage
-# results of) your [Julia][1] packages. Please refer to the [documentation][2]
-# for more information about package development in Julia.
-#
-# Here, it is assumed that your Julia package is named `MyPackage`. Change it to
-# whatever name you have given to your package.
-#
-# [1]: http://julialang.org/
-# [2]: https://docs.julialang.org/en/v1/manual/documentation/index.html
+image: julia:latest
 
-# Below is the template to run your tests in Julia
-.test_template: &test_definition
-  # Uncomment below if you would like to run the tests on specific references
-  # only, such as the branches `master`, `development`, etc.
-  # only:
-  #   - master
-  #   - development
+before_script:
+  # workaround for https://github.com/JuliaDocs/Documenter.jl/issues/686
+  - apt-get -qq update; apt-get -y install git
+  - julia --project=@. -e "import Pkg; Pkg.build()"
+
+default:
   script:
-    # Let's run the tests. Substitute `coverage = false` below, if you do not
-    # want coverage results.
-    - julia -e 'using Pkg; Pkg.add(PackageSpec(url=pwd())); Pkg.build("PeriLab"); Pkg.test("PeriLab"; coverage = true)'
-    # Comment out below if you do not want coverage results.
-    - julia -e 'using Pkg; Pkg.add("Coverage"); 
-      import PeriLab; cd(joinpath(dirname(pathof(PeriLab)), ".."));
+    - julia --project=@. -e "import Pkg; Pkg.test(; coverage = true)"
+    # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
+    # - julia --project=test/coverage test/coverage/coverage-summary.jl
+
+    - julia -e 'import Pkg; Pkg.add("Coverage");
       using Coverage; cl, tl = get_summary(process_folder());
       println("(", cl/tl*100, "%) covered")'
 
-# Name a test and select an appropriate image.
-# images comes from Docker hub
-test:latest:
-  image: julia:latest
-  <<: *test_definition
-  
-# test:1.0:
-#   image: julia:1.0
-#   <<: *test_definition
-
-# Maybe you would like to test your package against the development branch:
-# test:1.1-dev (not sure there is such an image in docker, so not tested yet):
-#  image: julia:v1.1-dev
-#  # ... allowing for failures, since we are testing against the development
-#  # branch:
-#  allow_failure: true
-#  <<: *test_definition
-
-# REMARK: Do not forget to enable the coverage feature for your project, if you
-# are using code coverage reporting above. This can be done by
-#
-# - Navigating to the `CI/CD Pipelines` settings of your project,
-# - Copying and pasting the default `Simplecov` regex example provided, i.e.,
-#   `\(\d+.\d+\%\) covered` in the `test coverage parsing` textfield.
-
-# Example documentation deployment
 pages:
-  image: julia:0.7
   stage: deploy
   script:
-    - apt-get update -qq && apt-get install -y git # needed by Documenter
-    - julia -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("PeriLab");' # rebuild Julia (can be put somewhere else I'm sure
-    - julia -e 'using Pkg; import PeriLab; Pkg.add("Documenter")' # install Documenter
-    - julia --color=yes docs/make.jl # make documentation
+    - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
+    - julia --project=docs --color=yes docs/make.jl
     - mv docs/build public # move to the directory picked up by Gitlab pages
   artifacts:
     paths:
       - public
   only:
-  - main
-
-
-# WARNING: This template is using the `julia` images from [Docker
-# Hub][3]. One can use custom Julia images and/or the official ones found
-# in the same place. However, care must be taken to correctly locate the binary
-# file (`/opt/julia/bin/julia` above), which is usually given on the image's
-# description page.
-#
-# [3]: https://hub.docker.com/_/julia/
+    - main

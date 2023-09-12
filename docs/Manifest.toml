@@ -2,7 +2,7 @@
 
 julia_version = "1.9.1"
 manifest_format = "2.0"
-project_hash = "09a7ad5c0e1112bb22e407123db4ee67e952ea7b"
+project_hash = "c5afe636e3238e87625a7c715b03c82ea84f8411"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -465,6 +465,12 @@ deps = ["Dates", "PrecompileTools", "UUIDs"]
 git-tree-sha1 = "716e24b21538abc91f6205fd1d8363f39b442851"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
 version = "2.7.2"
+
+[[deps.PeriLab]]
+deps = ["Aqua", "CSV", "DataFrames", "Exodus", "HDF5", "LinearAlgebra", "Logging", "LoggingExtras", "MPI", "NearestNeighbors", "Pkg", "PrecompileTools", "ProgressBars", "Random", "Revise", "Tensorial", "Test", "TimerOutputs", "YAML"]
+path = "/home/jt/perilab"
+uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
+version = "0.1.0"
 
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]

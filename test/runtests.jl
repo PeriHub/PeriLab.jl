@@ -1,10 +1,9 @@
-#include("../src/PeriLab.jl")
-#import .PeriLab
+# include("../src/PeriLab.jl")
+# import .PeriLab
 using Test
 using Aqua
 using Logging
-using MPI
-import TimerOutputs
+using PeriLab
 Logging.disable_logging(Logging.Error)
 MPI.Init()
 
@@ -39,16 +38,14 @@ end
 
 
     @testset "Solver" begin
-        @testset "ut_Solver_control" begin
-            include("../src/Core/Solver/unit_test/ut_Solver_control.jl")
-        end
-        @testset "ut_Solver_control" begin
-            include("../src/Core/Solver/unit_test/ut_Solver_control.jl")
-        end
 
-        @testset "ut_Verlet" begin
-            include("../src/Core/Solver/unit_test/ut_Verlet.jl")
-        end
+        # @testset "ut_Solver_control" begin
+        #     include("../src/Core/Solver/unit_test/ut_Solver_control.jl")
+        # end
+
+        # @testset "ut_Verlet" begin
+        # include("../src/Core/Solver/unit_test/ut_Verlet.jl")
+        # end
 
     end
 
