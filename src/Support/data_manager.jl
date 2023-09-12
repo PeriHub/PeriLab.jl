@@ -170,7 +170,6 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
     end
     global fieldnames[name] = vartype
     return fields[vartype][name]
-
 end
 
 function create_node_field(name::String, type::DataType, dof::Int64)

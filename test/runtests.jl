@@ -5,7 +5,7 @@ using Aqua
 using Logging
 using PeriLab
 Logging.disable_logging(Logging.Error)
-
+MPI.Init()
 
 @testset "Support" begin
 
@@ -97,5 +97,5 @@ end
 
 end
 
-
+MPI.Finalize()
 # Aqua.test_all(PeriLab)

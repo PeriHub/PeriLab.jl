@@ -34,6 +34,9 @@ Pkg.add("DataFrames")
 Pkg.add("Exodus")
 Pkg.add("LinearAlgebra")
 ```
+## Run PeriLab
+ "/home/$user/.julia/bin/mpiexecjl  -n $ncores /home/$user/julia/julia-1.9.1/bin/julia ./src/main.jl""sr
+
 ## Add your files
 
 ```
