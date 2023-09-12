@@ -37,3 +37,4 @@ biggerMesh.txt
 test/tensile_test/tensile_test.yaml
 Input.yaml
 *.log
+*.cov

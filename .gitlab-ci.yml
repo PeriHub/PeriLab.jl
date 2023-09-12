@@ -8,8 +8,12 @@ before_script:
 default:
   script:
     - julia --project=@. -e "import Pkg; Pkg.test(; coverage = true)"
-    - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
-    - julia --project=test/coverage test/coverage/coverage-summary.jl
+    # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
+    # - julia --project=test/coverage test/coverage/coverage-summary.jl
+
+    - julia -e 'import Pkg; Pkg.add("Coverage");
+      using Coverage; cl, tl = get_summary(process_folder());
+      println("(", cl/tl*100, "%) covered")'
 
 pages:
   stage: deploy

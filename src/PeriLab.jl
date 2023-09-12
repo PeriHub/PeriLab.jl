@@ -15,9 +15,7 @@ import .Solver
 
 
 export main
-"""
-    Main
-"""
+
 function print_banner()
     println("""
 
@@ -35,6 +33,18 @@ function print_banner()
 
     """)
 end
+
+"""
+    main(filename, to, dry_run, verbose)
+
+Main function that performs the core functionality of the program.
+
+# Arguments
+- `filename`: The name of the file to process.
+- `to`: The destination directory.
+- `dry_run`: If `true`, performs a dry run without actually moving the file. Default is `false`.
+- `verbose`: If `true`, prints additional information during the execution. Default is `false`.
+"""
 function main(filename, to, dry_run, verbose)
     # init MPI as always ...
 
