@@ -17,7 +17,6 @@ function init_data(params, datamanager, comm)
 
     if (MPI.Comm_rank(comm)) == 0
         distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params, MPI.Comm_size(comm))
-        #nodeList = zeros(Int64, nmasters + nslaves)
     else
         nmasters = 0
         nslaves = 0
@@ -32,25 +31,19 @@ function init_data(params, datamanager, comm)
     dof = datamanager.set_dof(dof)
     overlap_map = send_value(comm, 0, overlap_map)
     distribution = send_value(comm, 0, distribution)
+    nlist = send_value(comm, 0, nlist)
     datamanager.set_overlap_map(overlap_map)
-
     nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
     nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
-
-
-    #println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof, " masters ", nmasters, " slaves ", nslaves)
     datamanager.set_nnodes(nmasters + nslaves)
     define_nsets(params, datamanager)
+    # defines the order of the global nodes to the local core nodes
     datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
     # here everything is without blocks -> local numbering at core. Therefore filter = distribution
     datamanager.set_filter(datamanager.get_local_nodes(distribution[MPI.Comm_rank(comm)+1]))
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
-    println(MPI.Comm_rank(comm), " c ", nlist)
-
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
-    println(MPI.Comm_rank(comm), " d ")
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
-    println(MPI.Comm_rank(comm), " e ")
     @info "Finish init data"
     return datamanager, params
 end
@@ -58,18 +51,38 @@ end
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     send_msg = 0
     lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    println(MPI.Comm_rank(comm), " ", nlist)
-    if MPI.Comm_rank(comm) == 0
+    rank = MPI.Comm_rank(comm)
+    if rank == 0
         send_msg = get_number_of_neighbornodes(nlist)
     end
-
     lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
-
     nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    # : are needed, because only then a connection between the datamanager and the variable is given
-    nlistCore[:, :] = send_vector_from_root_to_core_i(comm, nlist, nlistCore[:, :], distribution)# hier wird nicth in den 
-
+    # global to local for neighbors
+    # layered lists lead to MPI problems.
+    #if rank > 0
+    println(MPI.Comm_rank(comm), " ", distribution)
+    MPI.Barrier(comm)
+    #end
+    nlistCore[:][:] = nlist[distribution[rank+1]][:]
+    if rank > 0
+        println(rank, " ", nlistCore)
+    end
+    nlistCore[:] = get_local_neighbors(datamanager.get_local_nodes, nlistCore)
+    nlist = 0
+    if rank > 0
+        println(rank, " ", nlistCore)
+    end
+    MPI.Barrier(comm)
     return datamanager
+end
+
+function get_local_neighbors(mapping, nlistCore)
+
+    for id in eachindex(nlistCore)
+        println("s", nlistCore[id])
+        nlistCore[id] = mapping(nlistCore[id])
+    end
+    return nlistCore
 end
 
 function get_bond_geometry(datamanager)
@@ -129,13 +142,17 @@ function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     # create fields
     # check in advance x,yz for dof>1 fields
     # transfer data
-    #if MPI.Comm_rank(comm) == 0
-    #for name in mesh[!, "volume"]
-    #    send_msg = Float32.(mesh[!, "volume"])
-    #end
-    #for upload in uploadDict
-    #    var = datamanager.create_constant_node_field(upload["Name"], upload["Type"], 1)
-    #end
+    # upload=Dict()
+    # if MPI.Comm_rank(comm) == 0
+    #     upload=check_elements(mesh, dof)
+    # end
+    # upload = send_vectors_to_cores(comm, 0, upload)
+    # #for name in mesh[!, "volume"]
+    # #    send_msg = Float32.(mesh[!, "volume"])
+    # end
+    # for upload in uploadDict
+    #     var = datamanager.create_constant_node_field(upload["Name"], upload["Type"], upload["Dof"])
+    # end
     return datamanager
 end
 
