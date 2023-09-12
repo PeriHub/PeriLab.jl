@@ -1,10 +1,12 @@
-include("../src/PeriLab.jl")
-import .PeriLab
+#include("../src/PeriLab.jl")
+#import .PeriLab
 using Test
 using Aqua
 using Logging
+using MPI
+import TimerOutputs
 Logging.disable_logging(Logging.Error)
-
+MPI.Init()
 
 @testset "Support" begin
 
@@ -37,7 +39,9 @@ end
 
 
     @testset "Solver" begin
-
+        @testset "ut_Solver_control" begin
+            include("../src/Core/Solver/unit_test/ut_Solver_control.jl")
+        end
         @testset "ut_Solver_control" begin
             include("../src/Core/Solver/unit_test/ut_Solver_control.jl")
         end
@@ -96,5 +100,5 @@ end
 
 end
 
-
+MPI.Finalize()
 # Aqua.test_all(PeriLab)
