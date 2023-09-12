@@ -1,5 +1,5 @@
 using Test
-include("../helpers.jl")
+include("../../../src/Support/helpers.jl")
 @testset "ut_find_indices" begin
     @test find_indices([1, 1, 2, 3, 3, 4, 4, 4, 1], 1) == [1, 2, 9]
     @test find_indices([1, 1, 2, 3, 3, 4, 4, 4, 1], 2) == [3]

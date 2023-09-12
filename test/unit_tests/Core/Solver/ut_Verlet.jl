@@ -1,11 +1,11 @@
 using Test
 using MPI
-include("../Verlet.jl")
-include("../Solver_control.jl")
-include("../../../Support/geometry.jl")
-include("../../../Support/data_manager.jl")
-include("../../BC_manager.jl")
-include("../../../Support/Parameters/parameter_handling.jl")
+include("../../../../src/Core/BC_manager.jl")
+include("../../../../src/Core/Solver/Verlet.jl")
+include("../../../../src/Core/Solver/Solver_control.jl")
+include("../../../../src/Support/geometry.jl")
+include("../../../../src/Support/data_manager.jl")
+include("../../../../src/Support/Parameters/parameter_handling.jl")
 using .Data_manager
 using .Geometry
 using .Boundary_conditions

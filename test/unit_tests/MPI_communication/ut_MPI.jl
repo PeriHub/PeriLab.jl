@@ -1,6 +1,6 @@
 import MPI
 using Test
-include("../MPI_communication.jl")
+include("../../../src/MPI_communication/MPI_communication.jl")
 MPI.Init()
 
 comm = MPI.COMM_WORLD

@@ -1,4 +1,4 @@
-include("../Ordinary.jl")
+include("../../../../../src/Physics/Material/Ordinary/Ordinary.jl")
 using Test
 using .Ordinary
 @testset "compute_weighted_volume" begin

@@ -1,11 +1,11 @@
 using Test
 using MPI
 import TimerOutputs
-include("../Solver_control.jl")
-include("../../../Support/geometry.jl")
+include("../../../../src/Core/Solver/Solver_control.jl")
+include("../../../../src/Support/geometry.jl")
+include("../../../../src/Support/data_manager.jl")
+include("../../../../src/Support/Parameters/parameter_handling.jl")
 import .Solver
-include("../../../Support/data_manager.jl")
-include("../../../Support/Parameters/parameter_handling.jl")
 
 import .Data_manager
 @testset "ut_get_blockNodes" begin

@@ -1,7 +1,6 @@
-
-include("../../Support/data_manager.jl")
-include("../../Support/Parameters/parameter_handling.jl")
-include("../IO.jl")
+include("../../../src/IO/IO.jl")
+include("../../../src/Support/data_manager.jl")
+include("../../../src/Support/Parameters/parameter_handling.jl")
 import .Data_manager
 using Test
 import .IO

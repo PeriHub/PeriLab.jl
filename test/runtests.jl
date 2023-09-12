@@ -12,25 +12,25 @@ Logging.disable_logging(Logging.Error)
     @testset "Parameters" begin
 
         @testset "ut_parameter_handling" begin
-            include("../src/Support/Parameters/unit_test/ut_parameter_handling.jl")
+            include("unit_tests/Support/Parameters//ut_parameter_handling.jl")
         end
 
     end
 
     @testset "ut_data_manager" begin
-        include("../src/Support/unit_test/ut_data_manager.jl")
+        include("unit_tests/Support//ut_data_manager.jl")
     end
 
     @testset "ut_helpers" begin
-        include("../src/Support/unit_test/ut_helpers.jl")
+        include("unit_tests/Support//ut_helpers.jl")
     end
 
     @testset "ut_tools" begin
-        include("../src/Support/unit_test/ut_tools.jl")
+        include("unit_tests/Support//ut_tools.jl")
     end
 
     @testset "ut_geometry" begin
-        include("../src/Support/unit_test/ut_geometry.jl")
+        include("unit_tests/Support//ut_geometry.jl")
     end
 end
 
@@ -40,32 +40,32 @@ end
     @testset "Solver" begin
 
         # @testset "ut_Solver_control" begin
-        #     include("../src/Core/Solver/unit_test/ut_Solver_control.jl")
+        #     include("unit_tests/Core/Solver//ut_Solver_control.jl")
         # end
 
         # @testset "ut_Verlet" begin
-        # include("../src/Core/Solver/unit_test/ut_Verlet.jl")
+        # include("unit_tests/Core/Solver//ut_Verlet.jl")
         # end
 
     end
 
     @testset "ut_BC_manager" begin
-        include("../src/Core/unit_test/ut_BC_manager.jl")
+        include("unit_tests/Core//ut_BC_manager.jl")
     end
 end
 
 @testset "IO" begin
 
     @testset "ut_exodus_export" begin
-        include("../src/IO/unit_test/ut_exodus_export.jl")
+        include("unit_tests/IO//ut_exodus_export.jl")
     end
 
     @testset "ut_IO" begin
-        include("../src/IO/unit_test/ut_IO.jl")
+        include("unit_tests/IO//ut_IO.jl")
     end
 
     @testset "ut_mesh_data" begin
-        include("../src/IO/unit_test/ut_mesh_data.jl")
+        include("unit_tests/IO//ut_mesh_data.jl")
     end
 end
 
@@ -73,7 +73,7 @@ end
 @testset "MPI" begin
 
     @testset "ut_MPI" begin
-        #   include("../src/MPI_communication/unit_test/ut_MPI.jl")
+        #   include("unit_tests/MPI_communication//ut_MPI.jl")
     end
 
 end
@@ -85,14 +85,14 @@ end
     @testset "Correspondence" begin
 
 
-        include("../src/Physics/Thermal/Correspondence/unit_test/ut_Thermal_correspondence.jl")
+        include("unit_tests/Physics/Thermal/Correspondence//ut_Thermal_correspondence.jl")
 
 
 
     end
 
     @testset "ut_Physics_Factory" begin
-        include("../src/Physics/unit_test/ut_Physics_Factory.jl")
+        include("unit_tests/Physics//ut_Physics_Factory.jl")
     end
 
 end

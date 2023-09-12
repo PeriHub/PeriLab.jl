@@ -1,7 +1,7 @@
 
 using Test
-include("../data_manager.jl")
-include("../geometry.jl")
+include("../../../src/Support/data_manager.jl")
+include("../../../src/Support/geometry.jl")
 import .Geometry
 import .Data_manager
 

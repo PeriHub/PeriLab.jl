@@ -1,5 +1,5 @@
 using Test
-include("../Thermal_correspondence.jl")
+include("../../../../../src/Physics/Thermal/Correspondence/Thermal_correspondence.jl")
 
 @testset "ut_thermal strain" begin
     strain = zeros(3, 3)

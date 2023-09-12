@@ -1,5 +1,5 @@
-include("../parameter_handling.jl")
-include("../../data_manager.jl")
+include("../../../../src/Support/data_manager.jl")
+include("../../../../src/Support/Parameters/parameter_handling.jl")
 
 using Test
 import .Data_manager

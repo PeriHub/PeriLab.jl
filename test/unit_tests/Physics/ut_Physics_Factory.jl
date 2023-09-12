@@ -1,6 +1,6 @@
-include("../../Support/data_manager.jl")
-include("../Physics_Factory.jl")
-include("../../Support/Parameters/parameter_handling.jl")
+include("../../../src/Physics/Physics_Factory.jl")
+include("../../../src/Support/data_manager.jl")
+include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .Physics
 import .Data_manager
