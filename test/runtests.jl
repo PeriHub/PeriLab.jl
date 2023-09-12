@@ -4,6 +4,7 @@ using Test
 using Aqua
 using Logging
 using PeriLab
+using MPI
 Logging.disable_logging(Logging.Error)
 MPI.Init()
 
