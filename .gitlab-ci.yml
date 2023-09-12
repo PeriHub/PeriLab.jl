@@ -29,7 +29,8 @@
 # images comes from Docker hub
 test:latest:
   image: julia:latest
-  coverage: '\(\d+.\d+\%\) covered'
+  coverage:
+    - '\(\d+.\d+\%\) covered'
   <<: *test_definition
 # test:1.0:
 #   image: julia:1.0
