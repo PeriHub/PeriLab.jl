@@ -101,7 +101,7 @@ function init_write_results(params, datamanager)
         push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id[1:nnodes]), nnsets))
     end
     coords = vcat(transpose(coordinates[1:nnodes, :]))
-    println(coords)
+    # println(coords)
     outputs = get_results_mapping(params, datamanager)
     for id in eachindex(exos)
         exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id[1:nnodes], nsets)

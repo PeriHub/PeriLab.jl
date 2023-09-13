@@ -45,12 +45,12 @@ Main function that performs the core functionality of the program.
 - `dry_run`: If `true`, performs a dry run without actually moving the file. Default is `false`.
 - `verbose`: If `true`, prints additional information during the execution. Default is `false`.
 """
-function main(filename, to, dry_run, verbose)
+function main(filename, to, dry_run=false, verbose=false, silent=false)
     # init MPI as always ...
 
     MPI.Init()
     comm = MPI.COMM_WORLD
-    if MPI.Comm_rank(comm) == 0
+    if MPI.Comm_rank(comm) == 0 && !silent
         print_banner()
     end
     #global juliaPath = Base.Filesystem.pwd() * "/"
@@ -84,7 +84,7 @@ function main(filename, to, dry_run, verbose)
         @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
 
     else
-        @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, IO.write_results, to)
+        @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, IO.write_results, to, silent)
     end
 
     IO.close_files(exos)
