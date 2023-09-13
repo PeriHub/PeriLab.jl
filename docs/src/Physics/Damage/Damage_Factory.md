@@ -1,7 +1,7 @@
-module Damage
-export get_damage
+```@autodocs
+Modules = [PeriLab.Solver.Physics.Damage]
+Order   = [:function, :type]
+```
 
-function get_damage(params)
-
-end
-end
+```@bibliography
+```

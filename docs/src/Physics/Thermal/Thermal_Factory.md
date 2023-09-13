@@ -1,7 +1,7 @@
-module Thermal
-export get_thermal
+```@autodocs
+Modules = [PeriLab.Solver.Physics.Thermal]
+Order   = [:function, :type]
+```
 
-function get_thermal(params)
-
-end
-end
+```@bibliography
+```
