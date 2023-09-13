@@ -155,7 +155,6 @@ end
 
 function recv_vector_from_root(comm, recv_msg)
 
-    println("a ", recv_msg)
     #if rank == MPI.Comm_rank(comm)
     MPI.Recv!(recv_msg, 0, 0, comm)
     # end
