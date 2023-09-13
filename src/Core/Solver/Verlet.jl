@@ -45,7 +45,6 @@ function compute_mechanical_crititical_time_step(nodes, datamanager, bulkModulus
 
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, end])
-
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 
         t = density[iID] / (denominator * springConstant)

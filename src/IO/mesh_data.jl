@@ -64,7 +64,7 @@ function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribu
     println(MPI.Comm_rank(comm), " ", distribution)
     MPI.Barrier(comm)
     #end
-    nlistCore[:][:] = nlist[distribution[rank+1]][:]
+    nlistCore[:] = nlist[distribution[rank+1]]
     if rank > 0
         println(rank, " ", nlistCore)
     end
@@ -78,10 +78,9 @@ function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribu
 end
 
 function get_local_neighbors(mapping, nlistCore)
-
     for id in eachindex(nlistCore)
-        println("s", nlistCore[id])
         nlistCore[id] = mapping(nlistCore[id])
+        println("s", nlistCore[id])
     end
     return nlistCore
 end
