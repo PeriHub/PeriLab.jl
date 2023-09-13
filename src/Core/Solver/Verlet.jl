@@ -45,6 +45,7 @@ function compute_mechanical_crititical_time_step(nodes, datamanager, bulkModulus
 
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, end])
+
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 
         t = density[iID] / (denominator * springConstant)
@@ -123,7 +124,6 @@ end
 function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
-    # only master nodes have to be calculated per core
     nnodes = datamanager.get_nnodes()
     forces = datamanager.get_field("Forces", "NP1")
     volume = datamanager.get_field("Volume")
