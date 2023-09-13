@@ -23,7 +23,8 @@ end
 function init(params, datamanager)
 
     # tbd in csv for global vars
-    blockNodes = get_blockNodes(datamanager.get_field("Block_Id"))
+    nnodes = datamanager.get_nnodes()
+    blockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes)
     solver_options = get_solver_options(params)
     density = datamanager.create_constant_node_field("Density", Float32, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float32, 1)
@@ -55,10 +56,10 @@ function init(params, datamanager)
     return blockNodes, bcs, datamanager, solver_options
 end
 
-function get_blockNodes(blockIDs)
+function get_blockNodes(blockIDs, nnodes)
     blockNodes = Dict{Int64,Vector{Int64}}()
     for i in unique(blockIDs)
-        blockNodes[i] = find_indices(blockIDs, i)
+        blockNodes[i] = find_indices(blockIDs[1:nnodes], i)
     end
     return blockNodes
 end
