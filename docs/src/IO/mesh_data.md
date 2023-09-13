@@ -37,13 +37,12 @@ function init_data(params, datamanager, comm)
 
     #ntype = send_value(comm, 0, ntype)
     #println(MPI.Comm_rank(comm), " over ", overlap_map, " dof ", dof)
-    datamanager.set_nnodes(nmasters + nslaves)
+    datamanager.set_nmasters(nmasters + nslaves)
     define_nsets(params, datamanager)
-    datamanager.reset_filter()
     #println(datamanager.get_nnodes())
     datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
     # here everything is without blocks -> local numbering at core. Therefore filter = distribution
-    datamanager.set_filter(datamanager.get_local_nodes(distribution[MPI.Comm_rank(comm)+1]))
+
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     # not optimal, because bond 12 != bond 21
