@@ -95,15 +95,16 @@ function init_write_results(params, datamanager)
     block_Id = datamanager.get_field("Block_Id")
     nsets = datamanager.get_nsets()
     for filename in filenames
-        if datamanager.get_rank() > 0
-            filename = filename * "_" * string(datamanager.get_rank())
-        end
-        push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), nnsets))
+        #if datamanager.get_rank() > 0
+        filename = filename * "_" * string(datamanager.get_rank())
+        # end
+        push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id[1:nnodes]), nnsets))
     end
-    coords = vcat(transpose(coordinates))
+    coords = vcat(transpose(coordinates[1:nnodes, :]))
+    println(coords)
     outputs = get_results_mapping(params, datamanager)
     for id in eachindex(exos)
-        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id, nsets)
+        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id[1:nnodes], nsets)
     end
     return exos, outputs
 end
