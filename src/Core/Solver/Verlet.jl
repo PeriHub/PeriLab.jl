@@ -124,6 +124,8 @@ end
 function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
+    # only master nodes have to be calculated per core
+    nnodes = datamanager.get_nnodes()
     forces = datamanager.get_field("Forces", "NP1")
     volume = datamanager.get_field("Volume")
     forces_density = datamanager.get_field("Force Densities", "NP1")
@@ -144,12 +146,12 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
 
-            vNP1[:] = vN + 0.5 * dt .* a
+            vNP1[1:nnodes] = vN[1:nnodes] + 0.5 * dt .* a[1:nnodes]
             # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
-            uNP1[:] = uN + dt .* vNP1
+            uNP1[1:nnodes] = uN[1:nnodes] + dt .* vNP1[1:nnodes]
 
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
-            defCoorNP1[:] = coor + uNP1
+            defCoorNP1[1:nnodes] = coor[1:nnodes] + uNP1[1:nnodes]
 
             # synch
             for block in eachindex(blockNodes)
@@ -159,8 +161,8 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             # synch
 
             check_inf_or_nan(forces_density, "Forces")
-            a[:] = forces_density ./ density # element wise
-            forces[:] = forces_density .* volume
+            a[1:nnodes] = forces_density[1:nnodes] ./ density[1:nnodes] # element wise
+            forces[1:nnodes] = forces_density[1:nnodes] .* volume[1:nnodes]
             exos = write_results(exos, idt, time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
             time += dt
