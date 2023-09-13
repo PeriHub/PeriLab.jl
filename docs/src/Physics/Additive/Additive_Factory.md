@@ -1,8 +1,7 @@
-module Additive
-export get_additive
+```@autodocs
+Modules = [PeriLab.Solver.Physics.Additive]
+Order   = [:function, :type]
+```
 
-function get_additive(params)
-
-end
-
-end
+```@bibliography
+```

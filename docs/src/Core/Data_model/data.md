@@ -1,8 +1,7 @@
+<!-- ```@autodocs
+Modules = [PeriLab.Solver.Datamodel]
+Order   = [:function, :type]
+```
 
-module DataModel
-
-
-
-
-
-end
+```@bibliography
+``` -->
