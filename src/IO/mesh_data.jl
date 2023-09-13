@@ -35,12 +35,13 @@ function init_data(params, datamanager, comm)
     datamanager.set_overlap_map(overlap_map)
     nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
     nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
-    datamanager.set_nnodes(nmasters + nslaves)
+    datamanager.set_nmasters(nmasters)
+    datamanager.set_nslaves(nslaves)
     define_nsets(params, datamanager)
     # defines the order of the global nodes to the local core nodes
     datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
-    # here everything is without blocks -> local numbering at core. Therefore filter = distribution
-    datamanager.set_filter(datamanager.get_local_nodes(distribution[MPI.Comm_rank(comm)+1]))
+
+
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
