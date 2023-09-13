@@ -9,7 +9,7 @@ import .Data_manager
     nnodes = 4
     dof = 2
     testDatamanager = Data_manager
-    testDatamanager.set_nnodes(nnodes)
+    testDatamanager.set_nmasters(nnodes)
     testDatamanager.set_dof(dof)
     nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int32, 1)
     nn[:] = [2, 2, 2, 1]

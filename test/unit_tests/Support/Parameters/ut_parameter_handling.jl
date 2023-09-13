@@ -61,7 +61,7 @@ end
 end
 @testset "ut_get_outputs" begin
     testDatamanager = Data_manager
-    testDatamanager.set_nnodes(5)
+    testDatamanager.set_nmasters(5)
     testDatamanager.create_constant_node_field("A", Float32, 1)
     testDatamanager.create_node_field("B", Bool, 1)
     testDatamanager.create_constant_node_field("C", Float32, 4)

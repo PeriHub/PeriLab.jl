@@ -78,7 +78,7 @@ filename = "./tmp/" * "test_2.e"
 nnodes = 5
 dof = 2
 testDatamanager = Data_manager
-testDatamanager.set_nnodes(nnodes)
+testDatamanager.set_nmasters(nnodes)
 testDatamanager.set_dof(dof)
 coordinates = testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
 coordinates[1, 1] = 0

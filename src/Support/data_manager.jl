@@ -20,9 +20,9 @@ export get_rank
 export init_property
 export set_block_list
 export set_glob_to_loc
-export set_filter
-export set_nnodes
+export set_nmasters
 export set_nset
+export set_nslaves
 export set_physics_options
 export set_property
 export set_rank
@@ -31,6 +31,8 @@ export switch_NP1_to_N
 # Variables
 ##########################
 nnodes = 0
+nmasters = 0
+nslaves = 0
 nnsets = 0
 dof = 1
 block_list = Int64[]
@@ -38,7 +40,6 @@ properties = Dict{Int,Dict}()
 glob_to_loc = Int64[]
 fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 fieldnames = Dict{String,DataType}()
-filtered_nodes = Ref([])
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
@@ -158,7 +159,8 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
     elseif bondOrNode == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
         fields[vartype][name] = []
-        for i in 1:nnodes
+
+        for i in 1:nmasters
             if dof == 1
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
                 fill!(fields[vartype][name][end], vartype(0))
@@ -230,14 +232,14 @@ function get_field(name::String, time::String)
 end
 
 function get_field(name::String)
-    # using filtered nodes
+
     # view() to get SubArray references
     # https://docs.julialang.org/en/v1/base/arrays/#Views-(SubArrays-and-other-view-types)
     if name in get_all_field_keys()
         if length(size(fields[fieldnames[name]][name])) > 1
-            return view(fields[fieldnames[name]][name], filtered_nodes, :)
+            return view(fields[fieldnames[name]][name], :, :)
         end
-        return view(fields[fieldnames[name]][name], filtered_nodes,)
+        return view(fields[fieldnames[name]][name], :,)
     end
     @error "Field " * name * " does not exist. Check if it is initialized as constant."
     return []
@@ -280,10 +282,11 @@ function get_nnodes()
 
     Example:
     ```julia
-    get_nnodes()  # returns the current number of nodes (filtered)
+    get_nnodes()  # returns the current number of nodes 
     ```
     """
-    return length(filtered_nodes)
+
+    return nmasters
 end
 
 function get_NP1_to_N_Dict()
@@ -364,9 +367,7 @@ function get_rank()
     return rank
 end
 
-function reset_filter()
-    global filtered_nodes = 1:nnodes
-end
+
 
 function init_property()
     for iblock in get_block_list()
@@ -396,10 +397,6 @@ function set_dof(n)
     global dof = n
 end
 
-function set_filter(list_of_nodes)
-    global filtered_nodes = list_of_nodes
-end
-
 function set_glob_to_loc(list)
     """
     set_glob_to_loc(list)
@@ -425,53 +422,89 @@ function set_material_type(key, value)
     end
 end
 
-function set_nnodes(n)
-    """
-    set_nnodes(n)
+"""
+ set_nmasters(n)
 
-    Sets the number of nodes globally.
+ Sets the number all nodes of one core globally. For one core the number of nodes is equal to the number of master nodes.
 
-    Parameters:
-    - `n` (integer): The value to set as the number of nodes.
+ Parameters:
+ - `n` (integer): The value to set as the number of nodes.
 
-    Example:
-    ```julia
-    set_nnodes(10)  # sets the number of nodes to 10
-    ```
-    """
-    global nnodes = n
-    reset_filter()
+ Example:
+ ```julia
+ set_nmasters(10)  # sets the number of nodes to 10
+ ```
+ """
+function set_nmasters()
+    global nnodes = nmasters + nslaves
 end
 
+"""
+ set_nmasters(n)
+
+ Sets the number of master nodes globally. For one core the number of nodes is equal to the number of master nodes.
+
+ Parameters:
+ - `n` (integer): The value to set as the number of nodes.
+
+ Example:
+ ```julia
+ set_nmasters(10)  # sets the number of nodes to 10
+ ```
+ """
+function set_nmasters(n)
+    global nmasters = n
+    set_nmasters()
+end
+"""
+set_nnsets(n)
+
+Set the number of node sets.
+
+Parameters:
+- `n::Int`: The number of node sets to be set.
+
+"""
 function set_nnsets(n)
-    """
-    set_nnsets(n)
 
-    Set the number of node sets.
-
-    Parameters:
-    - `n::Int`: The number of node sets to be set.
-
-    """
     global nnsets = n
 end
+"""
+set_nset(name, nodes)
+Set the nodes associated with a named node set.
 
+Parameters:
+- `name::String`: The name of the node set.
+- `nodes::Vector{Int}`: The node indices associated with the node set.
+
+"""
 function set_nset(name::String, nodes::Vector{Int})
-    """
-    set_nset(name, nodes)
-    Set the nodes associated with a named node set.
 
-    Parameters:
-    - `name::String`: The name of the node set.
-    - `nodes::Vector{Int}`: The node indices associated with the node set.
-
-    """
     if name in keys(nsets)
         @warn "Node set " * name * " already defined and it is overwritten"
     end
     nsets[name] = nodes
     # set the number of node sets
     set_nnsets(length(nsets))
+end
+
+"""
+set_nslaves(n)
+
+Sets the number of slave nodes globally. For one core the number of slave is zero. Slaves hold the information of the neighbors, of one node, but are not evaluated.
+
+Parameters:
+- `n` (integer): The value to set as the number of nodes.
+
+Example:
+```julia
+set_nslaves(10)  # sets the number of nodes to 10
+```
+"""
+function set_nslaves(n)
+
+    global nslaves = n
+    set_nmasters()
 end
 
 function set_overlap_map(topo)

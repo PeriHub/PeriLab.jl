@@ -44,7 +44,7 @@ end
 @testset "ut_init_material_model_fields" begin
     testDatamanager = Data_manager
     testDatamanager.set_dof(3)
-    testDatamanager.set_nnodes(4)
+    testDatamanager.set_nmasters(4)
     testDatamanager.create_constant_node_field("Coordinates", Float32, 3)
     Physics.init_material_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
@@ -62,7 +62,7 @@ end
 @testset "init_damage_model_fields" begin
     testDatamanager = Data_manager
     testDatamanager.set_dof(3)
-    testDatamanager.set_nnodes(4)
+    testDatamanager.set_nmasters(4)
     Physics.init_damage_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
     @test "DamageN" in fieldkeys
@@ -72,7 +72,7 @@ end
 @testset "init_thermal_model_fields" begin
     testDatamanager = Data_manager
     testDatamanager.set_dof(3)
-    testDatamanager.set_nnodes(4)
+    testDatamanager.set_nmasters(4)
     Physics.init_thermal_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
     @test "TemperatureN" in fieldkeys
@@ -84,7 +84,7 @@ end
 @testset "init_additive_model_fields" begin
     testDatamanager = Data_manager
     testDatamanager.set_dof(3)
-    testDatamanager.set_nnodes(4)
+    testDatamanager.set_nmasters(4)
     Physics.init_additive_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
     @test "Activated" in fieldkeys

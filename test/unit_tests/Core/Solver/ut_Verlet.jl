@@ -30,7 +30,7 @@ nnodes = 5
 dof = 2
 testDatamanager = Data_manager
 
-testDatamanager.set_nnodes(5)
+testDatamanager.set_nmasters(5)
 testDatamanager.set_dof(2)
 blocks = testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
 horizon = testDatamanager.create_constant_node_field("Horizon", Float32, 1)
@@ -115,7 +115,7 @@ dof = 2
 
 testDatamanager = Data_manager
 testDatamanager.set_comm(comm)
-testDatamanager.set_nnodes(5)
+testDatamanager.set_nmasters(5)
 testDatamanager.set_dof(2)
 
 testDatamanager.set_glob_to_loc([1, 2, 3, 4, 5])

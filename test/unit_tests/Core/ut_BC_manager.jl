@@ -61,7 +61,7 @@ end
 @testset "ut_init_BCs" begin
 
     testDatamanager = Data_manager
-    testDatamanager.set_nnodes(10)
+    testDatamanager.set_nmasters(10)
 
     testDatamanager.create_constant_node_field("Coordinates", Float32, 3)
     testDatamanager.create_constant_node_field("Forces", Float32, 3)
@@ -100,7 +100,6 @@ end
 
     testDatamanager = Data_manager
 
-    testDatamanager.reset_filter()
     testDatamanager.set_dof(3)
     testDatamanager.create_constant_node_field("Coordinates", Float32, 3)
     testDatamanager.create_constant_node_field("Forces", Float32, 3)

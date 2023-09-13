@@ -62,7 +62,7 @@ end
 
 @testset "get_bond_geometry" begin
     testDatamanager = Data_manager
-    testDatamanager.set_nnodes(3)
+    testDatamanager.set_nmasters(3)
     testDatamanager.set_dof(2)
     lenNlist = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
     lenNlist[:] = [2, 2, 2]

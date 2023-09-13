@@ -28,20 +28,25 @@ end
     for i in 1:20
         testDatamanager.set_dof(i)
         @test testDatamanager.get_dof() == i
-        testDatamanager.set_nnodes(i)
+        testDatamanager.set_nmasters(i)
         @test testDatamanager.get_nnodes() == i
     end
-    testDatamanager.set_nnodes(97)
+    testDatamanager.set_nmasters(97)
+    testDatamanager.set_nslaves(5)
     @test testDatamanager.get_nnodes() == 97
+    @test testDatamanager.nslaves == 5
+    @test testDatamanager.nmasters == 97
+    @test testDatamanager.nnodes == 102
     nnodes = testDatamanager.get_nnodes()
     nnodes = 3
     @test testDatamanager.get_nnodes() == 97
     @test nnodes == 3
 end
 testDatamanager = Data_manager
-nnodes = 5
-testDatamanager.set_nnodes(nnodes)
-
+nmaster = 3
+nslave = 2
+testDatamanager.set_nmasters(nmaster)
+testDatamanager.set_nslaves(nslave)
 nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
 nn[1] = 2
 nn[2] = 3
@@ -59,7 +64,7 @@ testDatamanager.create_constant_bond_field("H", Float32, 4)
 testDatamanager.create_bond_field("I", Int64, 7)
 testfield_keys = testDatamanager.get_all_field_keys()
 @testset "create data fields -> get all fields" begin
-    @test testDatamanager.get_nnodes() == 5
+    @test testDatamanager.get_nnodes() == nmaster
     @test B[1] == testDatamanager.get_field("BN")
     @test B[2] == testDatamanager.get_field("B", "NP1")
     @test "A" in testfield_keys
@@ -92,63 +97,60 @@ testfield_keys = testDatamanager.get_all_field_keys()
 end
 
 @testset "create_existing_field" begin
-    nnodes = testDatamanager.get_nnodes()
     field1, field2 = testDatamanager.create_node_field("D", Int64, 3)
     testfield_keys = testDatamanager.get_all_field_keys()
     @test "DN" in testfield_keys
     @test "DNP1" in testfield_keys
     # because field is not overwritten, the dof value stay
-    @test size(field1) == (nnodes, 7)
-    @test size(field2) == (nnodes, 7)
+    @test size(field1) == (nmaster + nslave, 7)
+    @test size(field2) == (nmaster + nslave, 7)
 end
 
-@testset "get_field" begin
+#@testset "get_field" begin
 
-    A = testDatamanager.get_field("A")
-    @test typeof(A[1]) == Float32
-    @test length(A) == testDatamanager.get_nnodes()
+A = testDatamanager.get_field("A")
+@test typeof(A[1]) == Float32
+@test length(A) == testDatamanager.nnodes == nmaster + nslave
 
-    B = testDatamanager.get_field("BN")
-    @test typeof(B[1]) == Bool
-    @test length(B) == testDatamanager.get_nnodes()
+B = testDatamanager.get_field("BN")
+@test typeof(B[1]) == Bool
+@test length(B) == testDatamanager.nnodes == nmaster + nslave
 
-    C = testDatamanager.get_field("C")
-    @test typeof(C[1, 1]) == Float32
-    @test length(C[:, 1]) == testDatamanager.get_nnodes()
-    @test length(C[1, :]) == 4
+C = testDatamanager.get_field("C")
+@test typeof(C[1, 1]) == Float32
+@test length(C[:, 1]) == testDatamanager.nnodes
+@test length(C[1, :]) == 4
 
-    D = testDatamanager.get_field("DNP1")
-    @test typeof(D[1, 1]) == Int64
-    @test length(D[:, 1]) == testDatamanager.get_nnodes()
-    @test length(D[1, :]) == 7
+D = testDatamanager.get_field("DNP1")
+@test typeof(D[1, 1]) == Int64
+@test length(D[:, 1]) == testDatamanager.nnodes
+@test length(D[1, :]) == 7
 
-    F = testDatamanager.get_field("F")
-    @test typeof(F[1, 1][1]) == Float32
-    @test length(F[:, 1]) == testDatamanager.get_nnodes()
-    @test length(F[1]) == nn[1]
-    @test length(F[2]) == nn[2]
-    @test length(F[3]) == nn[3]
-    @test length(F[4]) == nn[4]
-    @test length(F[5]) == nn[5]
-    G = testDatamanager.get_field("GN")
-    @test typeof(G[1, 1][1]) == Bool
-    @test length(G[:, 1]) == testDatamanager.get_nnodes()
+F = testDatamanager.get_field("F")
+@test typeof(F[1, 1][1]) == Float32
+@test length(F[:, 1]) == testDatamanager.nnodes == nmaster + nslave
+@test length(F[1]) == nn[1]
+@test length(F[2]) == nn[2]
+@test length(F[3]) == nn[3]
+G = testDatamanager.get_field("GN")
+@test typeof(G[1, 1][1]) == Bool
+@test length(G[:, 1]) == testDatamanager.nnodes == nmaster + nslave
 
-    H = testDatamanager.get_field("H")
-    @test typeof(H[1][1, 1][1]) == Float32
-    @test length(H[1][:, 1]) == nn[1]
-    @test length(H[1][1, :]) == 4
-    @test length(H[:][:, :]) == testDatamanager.get_nnodes()
+H = testDatamanager.get_field("H")
+@test typeof(H[1][1, 1][1]) == Float32
+@test length(H[1][:, 1]) == nn[1]
+@test length(H[1][1, :]) == 4
+@test length(H[:][:, :]) == testDatamanager.nnodes == nmaster + nslave
 
-    I = testDatamanager.get_field("INP1")
-    @test typeof(I[1][1, 1]) == Int64
-    for i in 1:5
-        @test length(I[i][:, 1]) == nn[i]
-    end
-    @test length(I[1][1, :]) == 7
-    @test length(I[:][:, :]) == testDatamanager.get_nnodes()
-
+I = testDatamanager.get_field("INP1")
+@test typeof(I[1][1, 1]) == Int64
+for i in 1:5
+    @test length(I[i][:, 1]) == nn[i]
 end
+@test length(I[1][1, :]) == 7
+@test length(I[:][:, :]) == testDatamanager.nnodes == nmaster + nslave
+
+#end
 
 @testset "set_get_field" begin
     nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
@@ -229,28 +231,6 @@ IN[2][1, 3] = 0
         @test sum(bd[id]) == nn[id]
     end
 
-end
-
-@testset "filter" begin
-    A = testDatamanager.create_constant_node_field("Atest", Float32, 1)
-    B = testDatamanager.create_constant_node_field("Btest", Float32, 3)
-    A[2] = 2
-    A[3] = 4
-    B[2, 2] = 3
-    B[3, 2] = 5
-    filter = [1, 3]
-    testDatamanager.set_filter(filter)
-    @test testDatamanager.get_nnodes() == length(filter)
-    Atest = testDatamanager.get_field("Atest")
-    Btest = testDatamanager.get_field("Btest")
-    @test Atest[2] == 4
-    @test Btest[2, 2] == B[3, 2]
-    testDatamanager.reset_filter()
-    Atest = testDatamanager.get_field("Atest")
-    Btest = testDatamanager.get_field("Btest")
-    @test testDatamanager.get_nnodes() == nnodes
-    @test Atest[3] == A[3]
-    @test Btest[3, 2] == B[3, 2]
 end
 
 @testset "ut_nodesets" begin

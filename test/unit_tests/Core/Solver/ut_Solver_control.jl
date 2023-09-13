@@ -26,7 +26,7 @@ end
     testDatamanager = Data_manager
     testDatamanager.set_comm(comm)
     testDatamanager.set_dof(2)
-    testDatamanager.set_nnodes(nnodes)
+    testDatamanager.set_nmasters(nnodes)
     testDatamanager.set_nnsets(2)
     nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
 
