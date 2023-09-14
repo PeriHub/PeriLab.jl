@@ -4,6 +4,28 @@ include("../../../src/Support/Parameters/parameter_handling.jl")
 import .Data_manager
 using Test
 import .Read_Mesh
+
+
+@testset "ut__init_overlap_map_" begin
+    overlap_map = Read_Mesh._init_overlap_map_(1)
+    @test sort(collect(keys(overlap_map))) == [1]
+    @test sort(collect(keys(overlap_map[1]))) == []
+    overlap_map = Read_Mesh._init_overlap_map_(2)
+    @test sort(collect(keys(overlap_map))) == [1, 2]
+    @test sort(collect(keys(overlap_map[1]))) == [2]
+    @test sort(collect(keys(overlap_map[2]))) == [1]
+    overlap_map = Read_Mesh._init_overlap_map_(3)
+    @test sort(collect(keys(overlap_map))) == [1, 2, 3]
+    @test sort(collect(keys(overlap_map[1]))) == [2, 3]
+    @test sort(collect(keys(overlap_map[2]))) == [1, 3]
+    @test sort(collect(keys(overlap_map[3]))) == [1, 2]
+    overlap_map = Read_Mesh._init_overlap_map_(4)
+    @test sort(collect(keys(overlap_map))) == [1, 2, 3, 4]
+    @test sort(collect(keys(overlap_map[1]))) == [2, 3, 4]
+    @test sort(collect(keys(overlap_map[2]))) == [1, 3, 4]
+    @test sort(collect(keys(overlap_map[3]))) == [1, 2, 4]
+    @test sort(collect(keys(overlap_map[4]))) == [1, 2, 3]
+end
 @testset "ut_neighbors" begin
     nlist = []
 
