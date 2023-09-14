@@ -1,17 +1,17 @@
-import .Exodus
+using Exodus
+using Test
 import PeriLab
 
-
-@timeit to "PeriLab" begin
-    PeriLab.main(["strain_xx.yaml"], to)
+function check_exodiff(filename)
+    PeriLab.main(filename * ".yaml", true)
+    exodiff(filename * ".e", "./Reference/" * filename * ".e")
+    @test occursin("Files are the same", read("exodiff.log", String))
+    rm("exodiff.log")
+    rm(filename * ".e")
 end
 
-#exodiff("strain_xx.e", "./Reference/ref_strain_xx.e")
-#@timeit to "PeriLab" begin
-#    PeriLab.main(["strain_xx.yaml"], to)
-#end
-#
-#@timeit to "PeriLab" begin
-#    PeriLab.main(["strain_xx.yaml"], to)
-#end
-
+cd("test_PD_Solid_Elastic/") do
+    check_exodiff("strain_xx")
+    # check_exodiff("strain_xy")
+    # check_exodiff("strain_yy")
+end

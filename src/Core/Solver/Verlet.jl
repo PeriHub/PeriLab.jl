@@ -122,7 +122,7 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to)
+function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to, silent)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
@@ -142,7 +142,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     nsteps = solver_options["nsteps"]
     time::Float32 = solver_options["Initial Time"]
 
-    for idt in progress_bar(datamanager.get_rank(), nsteps)
+    for idt in progress_bar(datamanager.get_rank(), nsteps, silent)
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
 

@@ -10,7 +10,7 @@ end
 
 function read_input_file(filename::String)
     if occursin("yaml", filename)
-        println("Load  $filename")
+        # println("Load  $filename")
         @info "Read input file $filename"
         params = read_input(filename)
     elseif occursin("xml", filename)
