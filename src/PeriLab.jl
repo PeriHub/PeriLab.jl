@@ -7,11 +7,15 @@ include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
 using MPI
 using TimerOutputs
+using TimerOutputs
+using LoggingExtras
+const to = TimerOutput()
 # using HDF5
 using .Data_manager
 import .IO
 import .Solver
 # end
+using ArgParse
 
 
 export main
@@ -34,6 +38,38 @@ function print_banner()
     """)
 end
 
+function parse_commandline()
+    s = ArgParseSettings()
+
+    @add_arg_table s begin
+        "--dry_run"
+        help = "dry_run"
+        action = :store_true
+        "--verbose", "-v"
+        help = "verbose"
+        action = :store_true
+        "--debug", "-d"
+        help = "debug"
+        action = :store_true
+        "--silent", "-s"
+        help = "silent"
+        action = :store_true
+        "filename"
+        help = "filename"
+        required = true
+    end
+
+    return parse_args(s)
+end
+
+function main()
+    parsed_args = parse_commandline()
+    println("Parsed args:")
+    for (arg, val) in parsed_args
+        println("  $arg  =>  $val")
+    end
+    main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
+end
 """
     main(filename, to, dry_run, verbose)
 
@@ -45,55 +81,79 @@ Main function that performs the core functionality of the program.
 - `dry_run`: If `true`, performs a dry run without actually moving the file. Default is `false`.
 - `verbose`: If `true`, prints additional information during the execution. Default is `false`.
 """
-function main(filename, to, dry_run=false, verbose=false, silent=false)
-    # init MPI as always ...
+function main(filename, silent=false, dry_run=false, verbose=false, debug=false)
 
-    MPI.Init()
-    comm = MPI.COMM_WORLD
-    if MPI.Comm_rank(comm) == 0 && !silent
-        print_banner()
+    if silent
+        Logging.disable_logging(Logging.Error)
     end
-    #global juliaPath = Base.Filesystem.pwd() * "/"
-    global juliaPath = "./"
 
-    ################################
-    filename = juliaPath * filename
-    # @info filename
+    if debug
+        demux_logger = TeeLogger(
+            MinLevelLogger(FileLogger(split(filename, ".")[1] * ".log"), Logging.Debug),
+            MinLevelLogger(ConsoleLogger(stderr), Logging.Debug),
+        )
+    else
+        demux_logger = TeeLogger(
+            MinLevelLogger(FileLogger(split(filename, ".")[1] * ".log"), Logging.Info),
+            MinLevelLogger(ConsoleLogger(stderr), Logging.Info),
+        )
+    end
+    global_logger(demux_logger)
 
-    @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm)
+    @timeit to "PeriLab" begin
+        # init MPI as always ...
+        # if MPI.Initialized()
+        MPI.Init()
+        comm = MPI.COMM_WORLD
+        if MPI.Comm_rank(comm) == 0 && !silent
+            print_banner()
+        end
+        #global juliaPath = Base.Filesystem.pwd() * "/"
+        global juliaPath = "./"
 
-    @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
-    @timeit to "IO.init_write_results" exos, outputs = IO.init_write_results(params, datamanager)
+        ################################
+        filename = juliaPath * filename
+        # @info filename
 
-    # h5write("/tmp/test.h5", "solver_options", solver_options)
-    # h5write("/tmp/test.h5", "blockNodes", blockNodes)
-    # h5write("/tmp/test.h5", "bcs", 1)
-    # h5write("/tmp/test.h5", "datamanager", datamanager)
-    # h5write("/tmp/test.h5", "outputs", outputs)
-    # h5write("/tmp/test.h5", "exos", exos)
+        @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm)
 
-    if dry_run
-        nsteps = solver_options["nsteps"]
-        solver_options["nsteps"] = 10
-        elapsed_time = @elapsed begin
-            @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, IO.write_results, to)
+        @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
+        @timeit to "IO.init_write_results" exos, outputs = IO.init_write_results(params, datamanager)
+
+        # h5write("/tmp/test.h5", "solver_options", solver_options)
+        # h5write("/tmp/test.h5", "blockNodes", blockNodes)
+        # h5write("/tmp/test.h5", "bcs", 1)
+        # h5write("/tmp/test.h5", "datamanager", datamanager)
+        # h5write("/tmp/test.h5", "outputs", outputs)
+        # h5write("/tmp/test.h5", "exos", exos)
+
+        if dry_run
+            nsteps = solver_options["nsteps"]
+            solver_options["nsteps"] = 10
+            elapsed_time = @elapsed begin
+                @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, IO.write_results, to, silent)
+            end
+
+            @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
+            file_size = IO.get_file_size(exos)
+            @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
+
+        else
+            @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, IO.write_results, to, silent)
         end
 
-        @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
-        file_size = IO.get_file_size(exos)
-        @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
+        IO.close_files(exos)
 
-    else
-        @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, IO.write_results, to, silent)
+        if dry_run
+            IO.delete_files(exos)
+        end
+
+        return MPI.Finalize()
     end
 
-    IO.close_files(exos)
-
-    if dry_run
-        IO.delete_files(exos)
+    if verbose
+        @info demux_logger to
     end
-
-    return MPI.Finalize()
 end
 
 end # module
