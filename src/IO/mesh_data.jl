@@ -14,9 +14,9 @@ using .Geometry
 #export load_mesh_and_distribute
 export init_data
 function init_data(params, datamanager, comm)
-
+    ranks = MPI.Comm_size(comm)
     if (MPI.Comm_rank(comm)) == 0
-        distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params, MPI.Comm_size(comm))
+        distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params, ranks)
     else
         nmasters = 0
         nslaves = 0
@@ -30,6 +30,7 @@ function init_data(params, datamanager, comm)
     dof = send_value(comm, 0, dof)
     dof = datamanager.set_dof(dof)
     overlap_map = send_value(comm, 0, overlap_map)
+
     distribution = send_value(comm, 0, distribution)
     nlist = send_value(comm, 0, nlist)
     datamanager.set_overlap_map(overlap_map)
@@ -40,13 +41,32 @@ function init_data(params, datamanager, comm)
     define_nsets(params, datamanager)
     # defines the order of the global nodes to the local core nodes
     datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
-
-
+    overlap_map[:] = get_local_overlap_map(overlap_map, distribution, ranks)
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
     @info "Finish init data"
     return datamanager, params
+end
+
+function get_local_overlap_map(overlap_map, distribution, ranks)
+    if ranks == 1
+        return overlap_map
+    end
+    for irank in 1:ranks
+        ilocal = glob_to_loc(distribution[irank])
+        for jrank in 1:ranks
+            if irank != jrank
+                overlap_map[irank][jrank]["Send"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Send"])
+                overlap_map[irank][jrank]["Receive"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Receive"])
+            end
+        end
+    end
+    return overlap_map
+end
+
+function local_nodes_from_dict(glob_to_loc, global_nodes)
+    return [glob_to_loc[global_node] for global_node in global_nodes if global_node in keys(glob_to_loc)]
 end
 
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
@@ -63,7 +83,6 @@ function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribu
     nlistCore[:] = nlist[distribution[rank+1][1:nnodes]]
     nlistCore[:] = get_local_neighbors(datamanager.get_local_nodes, nlistCore)
     nlist = 0
-
     return datamanager
 end
 
@@ -304,6 +323,7 @@ function create_overlap_map(distribution, ptc, size)
             for j in 1:le
                 from_index = findfirst(item -> item == vector[indices[j]], distribution[ptc[vector[indices[j]]]])
                 to_index = indices[j]
+
                 append!(overlap_map[ptc[vector[indices[j]]]][i][1], from_index)
                 append!(overlap_map[ptc[vector[indices[j]]]][i][2], to_index)
             end
@@ -312,7 +332,7 @@ function create_overlap_map(distribution, ptc, size)
     end
     return overlap_map
 end
-
+"""
 function _init_overlap_map_(size)
     #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
     overlap_map = []
@@ -329,6 +349,28 @@ function _init_overlap_map_(size)
     end
     return overlap_map
 end
+"""
+
+
+#dict instead of arrays, because it is more readable
+
+
+function _init_overlap_map_(size)
+    #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
+    overlap_map = Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}()
+    for i in 1:size
+        overlap_map[i] = Dict{Int64,Dict{String,Vector{Int64}}}()
+        for j in 1:size
+            if i != j
+                overlap_map[i][j] = Dict{String,Vector{Int64}}("Send" => Int64[], "Receive" => Int64[])
+            end
+        end
+    end
+
+    return overlap_map
+end
+
+
 
 function create_base_chunk(nnodes, size)
     # Calculate the initial size of each chunk

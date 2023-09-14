@@ -87,11 +87,11 @@ function solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, wri
 
 end
 
-function synchronise(comm)
+function synchronise(comm, direction)
     synch_fields = datamanager.get_synch_fields()
     overlap_map = datamanager.get_overlap_map()
     for synch_field in keys(synch_fields)
-        if synch_field["upload_to_cores"]
+        if synch_field[direction]
             set_overlap_information(comm, datamanager.get_field(synch_field), overlap_map)
         end
     end

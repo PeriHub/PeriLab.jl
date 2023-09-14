@@ -3,6 +3,72 @@ include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .Read_Mesh
+
+
+@testset "ut__init_overlap_map_" begin
+    overlap_map = Read_Mesh._init_overlap_map_(1)
+    @test sort(collect(keys(overlap_map))) == [1]
+    @test sort(collect(keys(overlap_map[1]))) == []
+    overlap_map = Read_Mesh._init_overlap_map_(2)
+    @test sort(collect(keys(overlap_map))) == [1, 2]
+    @test sort(collect(keys(overlap_map[1]))) == [2]
+    @test sort(collect(keys(overlap_map[2]))) == [1]
+    overlap_map = Read_Mesh._init_overlap_map_(3)
+    @test sort(collect(keys(overlap_map))) == [1, 2, 3]
+    @test sort(collect(keys(overlap_map[1]))) == [2, 3]
+    @test sort(collect(keys(overlap_map[2]))) == [1, 3]
+    @test sort(collect(keys(overlap_map[3]))) == [1, 2]
+    overlap_map = Read_Mesh._init_overlap_map_(4)
+    @test sort(collect(keys(overlap_map))) == [1, 2, 3, 4]
+    @test sort(collect(keys(overlap_map[1]))) == [2, 3, 4]
+    @test sort(collect(keys(overlap_map[2]))) == [1, 3, 4]
+    @test sort(collect(keys(overlap_map[3]))) == [1, 2, 4]
+    @test sort(collect(keys(overlap_map[4]))) == [1, 2, 3]
+end
+
+@testset "ut_get_local_overlap_map" begin
+    overlap_map = Read_Mesh._init_overlap_map_(3)
+    distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
+
+    overlap_map[1][2]["Send"] = []
+    overlap_map[1][2]["Receive"] = [2, 3]
+    overlap_map[2][1]["Send"] = [2, 3]
+    overlap_map[2][1]["Receive"] = []
+
+    overlap_map[1][3]["Send"] = [1]
+    overlap_map[1][3]["Receive"] = []
+    overlap_map[3][1]["Send"] = []
+    overlap_map[3][1]["Receive"] = [1]
+
+    overlap_map[2][3]["Send"] = [3]
+    overlap_map[2][3]["Receive"] = [4]
+    overlap_map[3][2]["Send"] = [4]
+    overlap_map[3][2]["Receive"] = [3]
+
+    test_overlap_map = Read_Mesh.get_local_overlap_map(overlap_map, distribution, 1)
+    @test test_overlap_map == overlap_map
+    test_overlap_map = Read_Mesh.get_local_overlap_map(overlap_map, distribution, 3)
+
+    @test sort(test_overlap_map[1][2]["Send"]) == []
+    @test sort(test_overlap_map[1][2]["Receive"]) == [2, 3]
+    @test sort(test_overlap_map[2][1]["Send"]) == [1, 2]
+    @test sort(test_overlap_map[2][1]["Receive"]) == []
+    @test sort(test_overlap_map[1][3]["Send"]) == [1]
+    @test sort(test_overlap_map[1][3]["Receive"]) == []
+    @test sort(test_overlap_map[3][1]["Send"]) == []
+    @test sort(test_overlap_map[3][1]["Receive"]) == [2]
+    @test sort(test_overlap_map[2][3]["Send"]) == [2]
+    @test sort(test_overlap_map[2][3]["Receive"]) == [3]
+    @test sort(test_overlap_map[3][2]["Send"]) == [1]
+    @test sort(test_overlap_map[3][2]["Receive"]) == [3]
+end
+
+
+
+
+
+
+
 @testset "ut_neighbors" begin
     nlist = []
 

@@ -1,6 +1,6 @@
 
 using LinearAlgebra
-using ProgressBars
+
 using TimerOutputs
 include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
@@ -63,19 +63,20 @@ end
 function compute_crititical_time_step(datamanager, blockNodes, mechanical, thermo)
     criticalTimeStep = 1.0e50
     blocks = datamanager.get_block_list()
+    nnodes = datamanager.get_nnodes() #  only master nodes are evaluated
     for iblock in blocks
         if thermo
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
             Cv = datamanager.get_property(iblock, "Thermal Model", "Specific Heat Capacity")
             if (lambda != Nothing) && (Cv != Nothing)
-                t = compute_thermodynamic_crititical_time_step(blockNodes[iblock], datamanager, lambda, Cv)
+                t = compute_thermodynamic_crititical_time_step(blockNodes[iblock][1:nnodes], datamanager, lambda, Cv)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
         if mechanical
             bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
             if (bulkModulus != Nothing)
-                t = compute_mechanical_crititical_time_step(blockNodes[iblock], datamanager, bulkModulus)
+                t = compute_mechanical_crititical_time_step(blockNodes[iblock][1:nnodes], datamanager, bulkModulus)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
@@ -151,12 +152,12 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
 
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
             defCoorNP1[1:nnodes, :] = coor[1:nnodes, :] + uNP1[1:nnodes, :]
-
+            synchronise(comm, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
-                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, time, to)
+                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block][1:nnodes], block, dt, time, to)
             end
-
+            synchronise(comm, "download_from_cores")
             # synch
 
             check_inf_or_nan(forces_density, "Forces")
@@ -170,25 +171,3 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     return exos
 end
 
-
-"""
-    progress_bar(rank::Int64, nsteps::Int64)
-
-    Create a progress bar if the rank is 0. The progress bar ranges from 1 to nsteps + 1.
-
-    Parameters:
-    - rank (Int64): An integer to determine if the progress bar should be created.
-    - nsteps (Int64): The total number of steps in the progress bar.
-
-    Returns:
-    - ProgressBar or UnitRange: If rank is 0, a ProgressBar object is returned. Otherwise, a range from 1 to nsteps + 1 is returned.
-"""
-function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
-    # Check if rank is equal to 0.
-    if rank == 0 && !silent
-        # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
-        return ProgressBar(1:nsteps+1)
-    end
-    # If rank is not 0, return a range from 1 to nsteps + 1.
-    return 1:nsteps+1
-end
