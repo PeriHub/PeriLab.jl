@@ -36,7 +36,11 @@ Each vector entry for a value exists for all nodes, also if the node does not ha
 
     IO
     nodesets are not defined yet in Exodus.jl
+
+## Issues
+    for n=4 -> errors    
 ## planned feature
+    test if blocks are defined in yaml, but missing in mesh
     static arrays package -> speed up
     integration of FEM Julia package -> coupling might be better, becaus of more functionality
     time step minimum for all cores -> parallel computing! -> done

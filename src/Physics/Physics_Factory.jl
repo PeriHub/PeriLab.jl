@@ -85,6 +85,7 @@ function init_pre_calculation(datamanager, options)
 
     if options["Calculate Deformed Bond Geometry"]
         bond_defN, bond_defNP1 = datamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
+
     end
     if options["Calculate Shape Tensor"]
 
@@ -110,7 +111,7 @@ function pre_calculation(datamanager, nodes, options)
     defCoor = datamanager.get_field("Deformed Coordinates", "NP1")
     if options["Calculate Deformed Bond Geometry"]
         bond_defNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
-        bond_defNP1[:] = Geometry.bond_geometry(nodes, dof, nlist, defCoor, bond_defNP1)
+        bond_defNP1[nodes] = Geometry.bond_geometry(nodes, dof, nlist, defCoor, bond_defNP1)
     end
 
     if options["Calculate Shape Tensor"]
