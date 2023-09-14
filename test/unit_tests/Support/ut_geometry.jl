@@ -3,7 +3,6 @@ using Test
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/geometry.jl")
 import .Geometry
-import .Data_manager
 
 @testset "ut_bond_geometry" begin
     nnodes = 4

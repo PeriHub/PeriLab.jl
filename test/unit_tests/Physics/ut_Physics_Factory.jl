@@ -3,7 +3,6 @@ include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .Physics
-import .Data_manager
 @testset "ut_get_block_model_definition" begin
     testDatamanager = Data_manager
     block_list = [1, 2, 3]

@@ -1,7 +1,6 @@
 include("../../../src/Support/data_manager.jl")
 using MPI
 using Test
-import .Data_manager
 @testset "set_comm" begin
     # MPI.Init()
     comm = MPI.COMM_WORLD
