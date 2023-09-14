@@ -10,7 +10,7 @@ function check_exodiff(filename)
     rm(filename * ".e")
 end
 
-cd("test/test_PD_Solid_Elastic/") do
+cd("test_PD_Solid_Elastic/") do
     check_exodiff("strain_xx")
     # check_exodiff("strain_xy")
     # check_exodiff("strain_yy")
