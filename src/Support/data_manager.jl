@@ -37,7 +37,7 @@ nnsets = 0
 dof = 1
 block_list = Int64[]
 properties = Dict{Int,Dict}()
-glob_to_loc = Int64[]
+glob_to_loc = Dict{Int64,Int64}()
 fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 fieldnames = Dict{String,DataType}()
 fields_to_synch = Dict{String,Any}()
@@ -259,7 +259,7 @@ function get_local_nodes(global_nodes)
     get_local_nodes()  # returns local nodes or if they do not exist at the core an empty array
     ```
     """
-    return [glob_to_loc[global_node] for global_node in global_nodes if 1 <= global_node <= length(glob_to_loc)]
+    return [glob_to_loc[global_node] for global_node in global_nodes if global_node in keys(glob_to_loc)]
 
 end
 
@@ -397,21 +397,21 @@ function set_dof(n)
     global dof = n
 end
 
-function set_glob_to_loc(list)
+function set_glob_to_loc(dict)
     """
-    set_glob_to_loc(list)
+    set_glob_to_loc(dict)
 
-    Sets the global-to-local mapping list globally.
+    Sets the global-to-local mapping dict globally.
 
     Parameters:
-    - `list` (array): The list representing the global-to-local mapping.
+    - `dict` (array): The dict representing the global-to-local mapping.
 
     Example:
     ```julia
-    set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping list
+    set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping dict
     ```
     """
-    global glob_to_loc = list
+    global glob_to_loc = dict
 end
 
 function set_material_type(key, value)
