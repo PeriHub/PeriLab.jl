@@ -14,9 +14,9 @@ using .Geometry
 #export load_mesh_and_distribute
 export init_data
 function init_data(params, datamanager, comm)
-
+    ranks = MPI.Comm_size(comm)
     if (MPI.Comm_rank(comm)) == 0
-        distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params, MPI.Comm_size(comm))
+        distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params, ranks)
     else
         nmasters = 0
         nslaves = 0
@@ -41,7 +41,7 @@ function init_data(params, datamanager, comm)
     define_nsets(params, datamanager)
     # defines the order of the global nodes to the local core nodes
     datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
-    overlap_map[:] = get_local_overlap_map(overlap_map, distribution, MPI.Comm_size(comm))
+    overlap_map[:] = get_local_overlap_map(overlap_map, distribution, ranks)
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
@@ -50,19 +50,23 @@ function init_data(params, datamanager, comm)
 end
 
 function get_local_overlap_map(overlap_map, distribution, ranks)
+    if ranks == 1
+        return overlap_map
+    end
     for irank in 1:ranks
         ilocal = glob_to_loc(distribution[irank])
         for jrank in 1:ranks
-            jlocal = glob_to_loc(distribution[jrank])
-
-            #overlap_map[irank][jrank]["from"]["to"]
+            if irank != jrank
+                overlap_map[irank][jrank]["Send"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Send"])
+                overlap_map[irank][jrank]["Receive"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Receive"])
+            end
         end
     end
-    #end
-
-
     return overlap_map
+end
 
+function local_nodes_from_dict(glob_to_loc, global_nodes)
+    return [glob_to_loc[global_node] for global_node in global_nodes if global_node in keys(glob_to_loc)]
 end
 
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
