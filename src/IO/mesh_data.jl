@@ -382,8 +382,8 @@ function create_overlap_map(distribution, ptc, size)
                 continue
             end
             indices = findall(item -> item == jcoreID, ptc[vector])
-            overlap_map[jCoreID][icoreID]["Send"] = indices
-            overlap_map[icoreID][jCoreID]["Receive"] = indices
+            overlap_map[icoreID][jcoreID]["Send"] = vector[indices]
+            overlap_map[jcoreID][icoreID]["Receive"] = vector[indices]
         end
     end
     return overlap_map

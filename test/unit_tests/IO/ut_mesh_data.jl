@@ -27,6 +27,39 @@ import .Read_Mesh
     @test sort(collect(keys(overlap_map[4]))) == [1, 2, 3]
 end
 
+@testset "ut_create_overlap_map" begin
+    distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
+    size = 3
+    ptc = [1, 2, 2, 3]
+    overlap_map = Read_Mesh.create_overlap_map(distribution, ptc, size)
+
+    @test overlap_map[1][2]["Send"] == overlap_map[2][1]["Receive"]
+    @test overlap_map[1][3]["Send"] == overlap_map[3][1]["Receive"]
+    @test overlap_map[2][3]["Send"] == overlap_map[3][2]["Receive"]
+    @test overlap_map[1][2]["Receive"] == overlap_map[2][1]["Send"]
+    @test overlap_map[1][3]["Receive"] == overlap_map[3][1]["Send"]
+    @test overlap_map[2][3]["Receive"] == overlap_map[3][2]["Send"]
+
+    for i in 1:3
+        for j in 1:3
+            if i != j
+                if overlap_map[i][j]["Send"] != [] && overlap_map[i][j]["Receive"] != []
+                    @test overlap_map[i][j]["Send"] != overlap_map[i][j]["Receive"]
+                end
+            end
+        end
+    end
+    distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
+    size = 3
+    ptc = [1, 2, 2, 3]
+    @test overlap_map[1][2]["Receive"] == []
+    @test overlap_map[1][2]["Send"] == [2, 3]
+    @test overlap_map[1][3]["Receive"] == [1]
+    @test overlap_map[1][3]["Send"] == []
+    @test overlap_map[2][3]["Receive"] == [3]
+    @test overlap_map[2][3]["Send"] == [4]
+
+end
 @testset "ut_get_local_overlap_map" begin
     overlap_map = Read_Mesh._init_overlap_map_(3)
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
