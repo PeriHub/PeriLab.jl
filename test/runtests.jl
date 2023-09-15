@@ -13,25 +13,25 @@ MPI.Init()
     @testset "Parameters" begin
 
         @testset "ut_parameter_handling" begin
-            include("unit_tests/Support/Parameters//ut_parameter_handling.jl")
+            include("unit_tests/Support/Parameters/ut_parameter_handling.jl")
         end
 
     end
 
     @testset "ut_data_manager" begin
-        include("unit_tests/Support//ut_data_manager.jl")
+        include("unit_tests/Support/ut_data_manager.jl")
     end
 
     @testset "ut_helpers" begin
-        include("unit_tests/Support//ut_helpers.jl")
+        include("unit_tests/Support/ut_helpers.jl")
     end
 
     @testset "ut_tools" begin
-        include("unit_tests/Support//ut_tools.jl")
+        include("unit_tests/Support/ut_tools.jl")
     end
 
     @testset "ut_geometry" begin
-        include("unit_tests/Support//ut_geometry.jl")
+        include("unit_tests/Support/ut_geometry.jl")
     end
 end
 
@@ -51,22 +51,22 @@ end
     end
 
     @testset "ut_BC_manager" begin
-        include("unit_tests/Core//ut_BC_manager.jl")
+        include("unit_tests/Core/ut_BC_manager.jl")
     end
 end
 
 @testset "IO" begin
 
     @testset "ut_exodus_export" begin
-        include("unit_tests/IO//ut_exodus_export.jl")
+        include("unit_tests/IO/ut_exodus_export.jl")
     end
 
     @testset "ut_IO" begin
-        include("unit_tests/IO//ut_IO.jl")
+        include("unit_tests/IO/ut_IO.jl")
     end
 
     @testset "ut_mesh_data" begin
-        include("unit_tests/IO//ut_mesh_data.jl")
+        include("unit_tests/IO/ut_mesh_data.jl")
     end
 end
 
@@ -74,7 +74,7 @@ end
 @testset "MPI" begin
 
     @testset "ut_MPI" begin
-        #   include("unit_tests/MPI_communication//ut_MPI.jl")
+        #   include("unit_tests/MPI_communication/ut_MPI.jl")
     end
 
 end
@@ -86,14 +86,14 @@ end
     @testset "Correspondence" begin
 
 
-        include("unit_tests/Physics/Thermal/Correspondence//ut_Thermal_correspondence.jl")
+        include("unit_tests/Physics/Thermal/Correspondence/ut_Thermal_correspondence.jl")
 
 
 
     end
 
     @testset "ut_Physics_Factory" begin
-        include("unit_tests/Physics//ut_Physics_Factory.jl")
+        include("unit_tests/Physics/ut_Physics_Factory.jl")
     end
 
 end

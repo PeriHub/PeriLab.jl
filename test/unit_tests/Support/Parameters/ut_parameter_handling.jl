@@ -1,8 +1,9 @@
-include("../../../../src/Support/data_manager.jl")
+if !isdefined(@__MODULE__, :Data_manager)
+    include("../../../../src/Support/data_manager.jl")
+end
 include("../../../../src/Support/Parameters/parameter_handling.jl")
 
 using Test
-import .Data_manager
 using Random
 
 @testset "ut_check_key_elements" begin

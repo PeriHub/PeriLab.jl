@@ -1,7 +1,6 @@
 include("../../../src/IO/mesh_data.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
-import .Data_manager
 using Test
 import .Read_Mesh
 

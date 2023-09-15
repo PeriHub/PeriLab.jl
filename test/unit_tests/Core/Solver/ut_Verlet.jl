@@ -4,7 +4,9 @@ include("../../../../src/Core/BC_manager.jl")
 include("../../../../src/Core/Solver/Verlet.jl")
 include("../../../../src/Core/Solver/Solver_control.jl")
 include("../../../../src/Support/geometry.jl")
-include("../../../../src/Support/data_manager.jl")
+if !isdefined(@__MODULE__, :Data_manager)
+    include("../../../../src/Support/data_manager.jl")
+end
 include("../../../../src/Support/Parameters/parameter_handling.jl")
 using .Data_manager
 using .Geometry

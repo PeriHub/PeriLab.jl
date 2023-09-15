@@ -2,7 +2,6 @@ include("../../../src/IO/exodus_export.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
-import .Data_manager
 import .Write_Exodus_Results
 using Exodus
 using Pkg

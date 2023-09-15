@@ -3,11 +3,12 @@ using MPI
 import TimerOutputs
 include("../../../../src/Core/Solver/Solver_control.jl")
 include("../../../../src/Support/geometry.jl")
-include("../../../../src/Support/data_manager.jl")
+if !isdefined(@__MODULE__, :Data_manager)
+    include("../../../../src/Support/data_manager.jl")
+end
 include("../../../../src/Support/Parameters/parameter_handling.jl")
 import .Solver
 
-import .Data_manager
 @testset "ut_get_blockNodes" begin
     blockIDs = [1, 1, 1, 2, 2, 3, 3, 3, 3, 1, 1, 2, 3, 3, 1, 1, 2]
     blockNodes = Solver.get_blockNodes(blockIDs, length(blockIDs))

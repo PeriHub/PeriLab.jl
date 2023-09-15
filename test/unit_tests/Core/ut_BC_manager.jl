@@ -2,7 +2,6 @@ include("../../../src/Core/BC_manager.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
-import .Data_manager
 using .Boundary_conditions
 @testset "ut_evaluation" begin
     unit = ones(Float32, 3)
