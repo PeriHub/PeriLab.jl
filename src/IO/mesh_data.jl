@@ -48,7 +48,22 @@ function init_data(params, datamanager, comm)
     @info "Finish init data"
     return datamanager, params
 end
+"""
+    get_local_overlap_map()
 
+    Changes entries in the overlap map from the global numbering to the local computer core one.
+    Inputs:
+    - `overlap_map` (array): overlap map with global nodes.
+    - `distribution` (array): global nodes distribution at cores, needed for the gobal to local mapping
+    - `ranks` (Int): number of used computer cores
+    Returns:
+    - `overlap_map` (array): returns overlap map with local nodes.
+
+    Example:
+    ```julia
+    get_local_overlap_map(overlap_map, distribution, ranks)  # returns local nodes 
+    ```
+    """
 function get_local_overlap_map(overlap_map, distribution, ranks)
     if ranks == 1
         return overlap_map
@@ -310,28 +325,6 @@ function node_distribution(nlist, size)
     return distribution, ptc, ntype
 end
 
-function create_overlap_map(distribution, ptc, size)
-    #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
-    overlap_map = _init_overlap_map_(size)
-    if size > 1
-        for i in 1:size
-            vector = distribution[i]
-            indices = findall(item -> item != i, ptc[vector])
-            le = length(indices)
-            from_index = []
-            to_index = []
-            for j in 1:le
-                from_index = findfirst(item -> item == vector[indices[j]], distribution[ptc[vector[indices[j]]]])
-                to_index = indices[j]
-
-                append!(overlap_map[ptc[vector[indices[j]]]][i][1], from_index)
-                append!(overlap_map[ptc[vector[indices[j]]]][i][2], to_index)
-            end
-
-        end
-    end
-    return overlap_map
-end
 """
 function _init_overlap_map_(size)
     #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
@@ -369,8 +362,32 @@ function _init_overlap_map_(size)
 
     return overlap_map
 end
+"""
+    ptc - point to core map; it gives the cores where the master nodes are -> basis chunk gives this directly
 
 
+"""
+function create_overlap_map(distribution, ptc, size)
+
+    overlap_map = _init_overlap_map_(size)
+    if size == 1
+        return overlap_map
+    end
+    for icoreID in 1:size
+        # distribution of nodes at core i
+        vector = distribution[icoreID]
+        # gives core ids of all nodes not master at core icoreID
+        for jcoreID in 1:size
+            if icoreID == jcoreID
+                continue
+            end
+            indices = findall(item -> item == jcoreID, ptc[vector])
+            overlap_map[jCoreID][icoreID]["Send"] = indices
+            overlap_map[icoreID][jCoreID]["Receive"] = indices
+        end
+    end
+    return overlap_map
+end
 
 function create_base_chunk(nnodes, size)
     # Calculate the initial size of each chunk
