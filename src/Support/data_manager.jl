@@ -244,9 +244,7 @@ function get_field(name::String)
     @error "Field " * name * " does not exist. Check if it is initialized as constant."
     return []
 end
-
-function get_local_nodes(global_nodes)
-    """
+"""
     get_local_nodes()
 
     Determines the local node numbering.
@@ -259,6 +257,8 @@ function get_local_nodes(global_nodes)
     get_local_nodes()  # returns local nodes or if they do not exist at the core an empty array
     ```
     """
+function get_local_nodes(global_nodes)
+
     return [glob_to_loc[global_node] for global_node in global_nodes if global_node in keys(glob_to_loc)]
 
 end
