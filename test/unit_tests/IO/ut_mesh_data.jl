@@ -1,5 +1,4 @@
 include("../../../src/IO/mesh_data.jl")
-include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .Read_Mesh
@@ -95,12 +94,6 @@ end
     @test sort(test_overlap_map[3][2]["Send"]) == [1]
     @test sort(test_overlap_map[3][2]["Receive"]) == [3]
 end
-
-
-
-
-
-
 
 @testset "ut_neighbors" begin
     nlist = []
