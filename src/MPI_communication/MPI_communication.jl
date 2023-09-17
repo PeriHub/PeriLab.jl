@@ -24,6 +24,29 @@ function send_single_value_from_vector(comm, master, values, type)
     end
     return recv_msg[1]
 end
+"""
+function synch_overlapnodes(comm, topo, vector)
+    currentRank = MPI.Comm_rank(comm)
+    size = MPI.Comm_size(comm)
+    overlapCurrentRank = topo[currentRank+1]
+    for icore in 0:size-1
+        if icore == currentRank
+            continue
+        end
+        if overlapCurrentRank[icore+1]["Send"] > 0
+            send_msg = vector[overlapCurrentRank[icore+1]["Send"]]
+            MPI.Send(send_msg, icore+1, 0, comm)
+        end
+        if overlapCurrentRank[icore+1]["Receive"] > 0
+            recv_msg = vector[overlapCurrentRank[icore+1]["Receive"]]
+            MPI.Recv!(recv_msg, 0, 0, comm)
+            vector[overlapCurrentRank[icore+1]["Receive"]]
+        end
+    end
+    return vector
+  
+end
+"""
 
 function synch_overlapnodes(comm, overlapnodes, vector)
 
@@ -34,19 +57,21 @@ function synch_overlapnodes(comm, overlapnodes, vector)
         return vector
     end
     for jcore in 1:size
-        if length(overlapnodes[rank+1][jcore]["Send"]) == 0 | length(overlapnodes[jcore][rank+1]["Receive"]) == 0
-            continue
-        end
         if (rank + 1 == jcore)
             continue
         end
-        # check ut_create_overlap_map test
-        # the function is clear there
-        send_msg = vector[overlapnodes[rank+1][jcore]["Send"]]
-        #recv_msg = similar(send_msg, typeof(send_msg[1, 1]))
-        MPI.Send(send_msg, jcore - 1, 0, comm)
-        MPI.Recv!(recv_msg, jcore - 1, 0, comm)
-        vector[overlapnodes[jcore][rank+1]["Receive"]] = recv_msg
+        if length(overlapnodes[rank+1][jcore]["Send"]) > 0
+            # check ut_create_overlap_map test
+            # the function is clear there
+            send_msg = vector[overlapnodes[rank+1][jcore]["Send"]]
+            MPI.Send(send_msg, jcore - 1, 0, comm)
+        end
+        if length(overlapnodes[rank+1][jcore]["Receive"]) > 0
+            recv_msg = vector[overlapnodes[rank+1][jcore]["Receive"]]
+            MPI.Recv!(recv_msg, jcore - 1, 0, comm)
+            vector[overlapnodes[rank+1][jcore]["Receive"]] = recv_msg
+        end
+
 
     end
     return vector
@@ -122,27 +147,31 @@ function synch_vector(comm, vector, topo)
     return vector
 end
 
-function set_overlap_information(comm, vector, topo)
+function set_overlap_information(comm, topo, vector)
     rank = MPI.Comm_rank(comm)
     size = MPI.Comm_size(comm)
     recvTopo = topo[rank+1]
-    vec = vector[rank+1]
     for i in 0:size-1
         if i != rank
-            if length(recvTopo[i+1]) > 0
-                temp = vec[recvTopo[i+1][1]]
-                index = recvTopo[i+1][1]
-                println("Receive $rank - $i index $index value $temp")
-                MPI.Recv!(vec[recvTopo[i+1][1]], i, 0, comm)
+            if length(recvTopo[i+1]) == 0
+                continue
             end
+            # temp = vector[recvTopo[i+1][1]]
+            #index = recvTopo[i+1]["Receive"]
+            #println("Receive $rank - $i index $index value $temp")
+            MPI.Recv!(vector[recvTopo[i+1]["Receive"]], i, 0, comm)
+
         else
             for j in 0:size-1
+                if j == rank
+                    continue
+                end
                 sendTopo = topo[j+1]
                 if length(sendTopo[rank+1]) > 0
-                    temp = vec[sendTopo[rank+1][2]]
-                    index = sendTopo[rank+1][2]
-                    println("Send $rank - $i index $index value $temp")
-                    MPI.Send(vec[sendTopo[rank+1][2]], j, 0, comm)
+                    # temp = vector[sendTopo[rank+1][2]]
+                    # index = sendTopo[rank+1]["Send"]
+                    # println("Send $rank - $i index $index value $temp")
+                    MPI.Send(vector[sendTopo[rank+1]["Send"]], j, 0, comm)
                 end
             end
         end
