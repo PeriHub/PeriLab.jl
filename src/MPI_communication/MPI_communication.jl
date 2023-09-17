@@ -25,6 +25,32 @@ function send_single_value_from_vector(comm, master, values, type)
     return recv_msg[1]
 end
 
+function synch_overlapnodes(comm, overlapnodes, vector)
+
+    size = MPI.Comm_size(comm)
+    rank = MPI.Comm_rank(comm)
+
+    if size == 1
+        return vector
+    end
+    for jcore in 1:size
+        if length(overlapnodes[rank+1][jcore]["Send"]) == 0 | length(overlapnodes[jcore][rank+1]["Receive"]) == 0
+            continue
+        end
+        if (rank + 1 == jcore)
+            continue
+        end
+        # check ut_create_overlap_map test
+        # the function is clear there
+        send_msg = vector[overlapnodes[rank+1][jcore]["Send"]]
+        #recv_msg = similar(send_msg, typeof(send_msg[1, 1]))
+        MPI.Send(send_msg, jcore - 1, 0, comm)
+        MPI.Recv!(recv_msg, jcore - 1, 0, comm)
+        vector[overlapnodes[jcore][rank+1]["Receive"]] = recv_msg
+
+    end
+    return vector
+end
 function send_vectors_to_cores(comm, master, values, type)
     #tbd
     size = MPI.Comm_size(comm)
