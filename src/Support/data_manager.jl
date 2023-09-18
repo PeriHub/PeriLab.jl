@@ -17,6 +17,7 @@ export get_physics_options
 export get_properties
 export get_property
 export get_rank
+export get_nslaves
 export init_property
 export set_block_list
 export set_glob_to_loc
@@ -313,16 +314,30 @@ function get_nnsets()
     return nnsets
 end
 
+"""
+get_nsets()
+
+Get the node sets
+
+Returns:
+- `nsets::Dict{String,Vector{Int64}}`: The node sets dictionary.
+"""
+
 function get_nsets()
-    """
-    get_nsets()
-
-    Get the node sets
-
-    Returns:
-    - `nsets::Dict{String,Vector{Int64}}`: The node sets dictionary.
-    """
     return nsets
+end
+
+"""
+get_nslaves()
+
+Get the the number of slave nodes
+
+Returns:
+- `nslaves::Int64`: The number of slave nodes
+"""
+
+function get_nslaves()
+    return nslaves
 end
 
 function get_overlap_map()
@@ -366,8 +381,6 @@ end
 function get_rank()
     return rank
 end
-
-
 
 function init_property()
     for iblock in get_block_list()
@@ -437,32 +450,32 @@ function set_nnodes()
 end
 
 """
- set_nmasters(n)
+ set_nmasters(n::Int64)
 
  Sets the number of master nodes globally. For one core the number of nodes is equal to the number of master nodes.
 
  Parameters:
- - `n` (integer): The value to set as the number of nodes.
+ - `n::Int64`: The value to set as the number of nodes.
 
  Example:
  ```julia
  set_nmasters(10)  # sets the number of nodes to 10
  ```
  """
-function set_nmasters(n)
+function set_nmasters(n::Int64)
     global nmasters = n
     set_nnodes()
 end
 """
-set_nnsets(n)
+set_nnsets(n::Int64)
 
 Set the number of node sets.
 
 Parameters:
-- `n::Int`: The number of node sets to be set.
+- `n::Int64`: The number of node sets to be set.
 
 """
-function set_nnsets(n)
+function set_nnsets(n::Int64)
 
     global nnsets = n
 end
@@ -486,22 +499,21 @@ function set_nset(name::String, nodes::Vector{Int})
 end
 
 """
-set_nslaves(n)
+set_nslaves(n::Int64)
 
 Sets the number of slave nodes globally. For one core the number of slave is zero. Slaves hold the information of the neighbors, of one node, but are not evaluated.
 
 Parameters:
-- `n` (integer): The value to set as the number of nodes.
+- `n::Int64`: The value to set as the number of nodes.
 
 Example:
 ```julia
-set_nslaves(10)  # sets the number of nodes to 10
+set_nslaves(10)  # sets the number of slave nodes to 10
 ```
 """
 function set_nslaves(n)
-
     global nslaves = n
-    set_nmasters()
+    set_nnodes()
 end
 
 function set_overlap_map(topo)
