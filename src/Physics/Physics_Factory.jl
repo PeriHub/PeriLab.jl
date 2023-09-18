@@ -56,10 +56,11 @@ function init_material_model_fields(datamanager)
     datamanager.create_node_field("Displacements", Float32, dof)
     datamanager.create_constant_node_field("Acceleration", Float32, dof)
     datamanager.create_node_field("Velocity", Float32, dof)
-    datamanager.set_synch("Forces", true, false)
+    datamanager.set_synch("Force Densities", true, false)
     datamanager.set_synch("Velocity", false, true)
     datamanager.set_synch("Displacements", false, true)
-    datamanager.set_synch("Deformed Coordinates", false, true)
+    datamanager.set_synch("Acceleration", false, true)
+
     return datamanager
 end
 
@@ -85,7 +86,6 @@ function init_pre_calculation(datamanager, options)
 
     if options["Calculate Deformed Bond Geometry"]
         bond_defN, bond_defNP1 = datamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
-
     end
     if options["Calculate Shape Tensor"]
 
@@ -111,7 +111,7 @@ function pre_calculation(datamanager, nodes, options)
     defCoor = datamanager.get_field("Deformed Coordinates", "NP1")
     if options["Calculate Deformed Bond Geometry"]
         bond_defNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
-        bond_defNP1[nodes] = Geometry.bond_geometry(nodes, dof, nlist, defCoor, bond_defNP1)
+        bond_defNP1 = Geometry.bond_geometry(nodes, dof, nlist, defCoor, bond_defNP1)
     end
 
     if options["Calculate Shape Tensor"]

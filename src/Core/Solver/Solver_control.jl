@@ -24,15 +24,19 @@ function init(params, datamanager)
 
     # tbd in csv for global vars
     nnodes = datamanager.get_nnodes()
+    nslaves = datamanager.get_nslaves()
+    allBlockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes + nslaves)
     blockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes)
-    solver_options = get_solver_options(params)
     density = datamanager.create_constant_node_field("Density", Float32, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float32, 1)
+    density = set_density(params, allBlockNodes, density) # includes the neighbors
+    horizon = set_horizon(params, allBlockNodes, horizon) # includes the neighbors
+    solver_options = get_solver_options(params)
+
     omega = datamanager.create_constant_node_field("Influence Function", Float32, 1)
     bondDamageN, bondDamageNP1 = datamanager.create_bond_field("Bond Damage", Float32, 1)
     omega[:], bondDamageN, bondDamageNP1 = init_bondDamage_and_influence_function(omega, bondDamageN, bondDamageNP1)
-    density = set_density(params, blockNodes, density)
-    horizon = set_horizon(params, blockNodes, horizon)
+
     if solver_options["Material Models"]
         datamanager = Physics.init_material_model_fields(datamanager)
     end
@@ -87,24 +91,27 @@ function solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, wri
 
 end
 
-function synchronise(comm, data_manager, direction)
+function synchronise(comm, datamanager, direction)
     synch_fields = datamanager.get_synch_fields()
     overlap_map = datamanager.get_overlap_map()
     for synch_field in keys(synch_fields)
         if direction == "download_from_cores"
             if synch_fields[synch_field][direction]
-                set_overlap_information(comm, datamanager.get_field(synch_field), overlap_map)
-                synch_slaves_to_master(comm, overlapnodes, vector, synch_fields[synch_field]["dof"])
+                vector = datamanager.get_field(synch_field)
+                synch_slaves_to_master(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
             end
         end
         if direction == "upload_to_cores"
             if synch_fields[synch_field][direction]
-                synch_masters_to_slaves(comm, overlapnodes, vector, synch_fields[synch_field]["dof"])
+                vector = datamanager.get_field(synch_field)
+                synch_master_to_slaves(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
             end
         end
     end
 end
+
 function write_results(exos, step, dt, outputs, datamanager)
     return IO.write_results(exos, step, dt, outputs, datamanager)
 end
+
 end

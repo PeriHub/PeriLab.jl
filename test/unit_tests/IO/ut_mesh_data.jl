@@ -1,8 +1,9 @@
 include("../../../src/IO/mesh_data.jl")
+include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .Read_Mesh
-
+using .Data_manager
 
 @testset "ut__init_overlap_map_" begin
     overlap_map = Read_Mesh._init_overlap_map_(1)
