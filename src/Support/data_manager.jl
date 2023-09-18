@@ -278,11 +278,11 @@ function get_nnodes()
     Retrieves the number of nodes.
 
     Returns:
-    - `nnodes` (integer): The current number of nodes.
+    - `nmasters` (integer): The current number of nodes.
 
     Example:
     ```julia
-    get_nnodes()  # returns the current number of nodes 
+    get_nmasters()  # returns the current number of nodes 
     ```
     """
 
@@ -423,19 +423,16 @@ function set_material_type(key, value)
 end
 
 """
- set_nmasters(n)
+ set_nnodes()
 
- Sets the number all nodes of one core globally. For one core the number of nodes is equal to the number of master nodes.
+ Sets the number all nodes of one core globally.
 
  Parameters:
- - `n` (integer): The value to set as the number of nodes.
 
  Example:
- ```julia
- set_nmasters(10)  # sets the number of nodes to 10
  ```
  """
-function set_nmasters()
+function set_nnodes()
     global nnodes = nmasters + nslaves
 end
 
@@ -454,7 +451,7 @@ end
  """
 function set_nmasters(n)
     global nmasters = n
-    set_nmasters()
+    set_nnodes()
 end
 """
 set_nnsets(n)
