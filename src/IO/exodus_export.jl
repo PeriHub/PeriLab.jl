@@ -1,14 +1,14 @@
 module Write_Exodus_Results
 using Exodus
+using Pkg
 export get_paraviewCoordinates
 export init_result_file
 export init_write_results_in_exodus
 export write_results_in_exodus
-using Pkg
+export merge_exodus_file
+
 function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_node_sets)
-    if ".e" != filename[end-1:end]
-        filename = filename * ".e"
-    end
+
     if isfile(filename)
         rm(filename)
     end
@@ -113,5 +113,9 @@ function write_nodal_results_in_exodus(exo, step, output, datamanager)
         write_values(exo, NodalVariable, step, output[varname][2], varname, var)
     end
     return exo
+end
+
+function merge_exodus_file(file_name)
+    epu(file_name)
 end
 end

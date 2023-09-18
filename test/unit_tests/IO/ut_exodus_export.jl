@@ -66,12 +66,6 @@ end
     @test exo.init.num_elem_blks == 3
     close(exo)
     rm(filename)
-    filename = "./tmp/" * "test"
-    exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 3, 2)
-    @test exo.file_name == filename * ".e"
-    @test isfile(filename * ".e")
-    close(exo)
-    rm(filename * ".e")
 end
 filename = "./tmp/" * "test_2.e"
 nnodes = 5
@@ -194,6 +188,10 @@ test_disp_step_one = read_values(exo, NodalVariable, 2, 1, 1)
     @test ftest[4] == 0
     @test ftest[5] / 3.3 - 1 < 1e-8
 
+end
+
+@testset "ut_merge_exodus_file" begin
+    Write_Exodus_Results.merge_exodus_file(exo.file_name)
 end
 
 close(exo)

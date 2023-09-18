@@ -17,6 +17,7 @@ export get_physics_options
 export get_properties
 export get_property
 export get_rank
+export get_max_rank
 export init_property
 export set_block_list
 export set_glob_to_loc
@@ -26,6 +27,7 @@ export set_nslaves
 export set_physics_options
 export set_property
 export set_rank
+export set_max_rank
 export switch_NP1_to_N
 ##########################
 # Variables
@@ -367,6 +369,10 @@ function get_rank()
     return rank
 end
 
+function get_max_rank()
+    return max_rank
+end
+
 
 
 function init_property()
@@ -525,6 +531,10 @@ end
 
 function set_rank(value)
     global rank = value
+end
+
+function set_max_rank(value)
+    global max_rank = value
 end
 
 function set_synch(name, upload_to_cores, download_from_cores)
