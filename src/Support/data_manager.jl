@@ -539,7 +539,7 @@ end
 function set_synch(name, upload_to_cores, download_from_cores)
     if name in get_all_field_keys()
         field = get_field(name)
-        fields_to_synch[name] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, dof => length(field[1, :]))
+        fields_to_synch[name] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, "dof" => length(field[1, :]))
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name * "NP1")
         fields_to_synch[name*"NP1"] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, "dof" => length(field[1, :]))
