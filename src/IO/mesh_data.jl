@@ -72,12 +72,12 @@ function get_local_overlap_map(overlap_map, distribution, ranks)
         ilocal = glob_to_loc(distribution[irank])
         for jrank in 1:ranks
             if irank != jrank
-                overlap_map[irank][jrank]["Send"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Send"])
-                overlap_map[irank][jrank]["Receive"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Receive"])
+                overlap_map[irank][jrank]["Slave"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Slave"])
+                overlap_map[irank][jrank]["Master"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Master"])
             end
         end
     end
-    return overlap_map
+    return sort(overlap_map)
 end
 
 function local_nodes_from_dict(glob_to_loc, global_nodes)
@@ -382,8 +382,8 @@ function create_overlap_map(distribution, ptc, size)
                 continue
             end
             indices = findall(item -> item == jcoreID, ptc[vector])
-            overlap_map[icoreID][jcoreID]["Send"] = vector[indices]
-            overlap_map[jcoreID][icoreID]["Receive"] = vector[indices]
+            overlap_map[icoreID][jcoreID]["Slave"] = vector[indices]
+            overlap_map[jcoreID][icoreID]["Master"] = vector[indices]
         end
     end
     return overlap_map
