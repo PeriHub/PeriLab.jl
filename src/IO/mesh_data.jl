@@ -41,7 +41,7 @@ function init_data(params, datamanager, comm)
     define_nsets(params, datamanager)
     # defines the order of the global nodes to the local core nodes
     datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
-    overlap_map[:] = get_local_overlap_map(overlap_map, distribution, ranks)
+    overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
@@ -63,7 +63,7 @@ end
     ```julia
     get_local_overlap_map(overlap_map, distribution, ranks)  # returns local nodes 
     ```
-    """
+"""
 function get_local_overlap_map(overlap_map, distribution, ranks)
     if ranks == 1
         return overlap_map
