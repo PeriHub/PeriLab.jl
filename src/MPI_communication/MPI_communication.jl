@@ -122,7 +122,11 @@ function synch_master_to_slaves(comm, overlapnodes, vector, dof)
                 recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Slave"], :])
             end
             MPI.Recv!(recv_msg, jcore - 1, 0, comm)
-            vector[overlapnodes[rank+1][jcore]["Slave"]] = recv_msg
+            if dof == 1
+                vector[overlapnodes[rank+1][jcore]["Slave"]] = recv_msg
+            else
+                vector[overlapnodes[rank+1][jcore]["Slave"], :] = recv_msg
+            end
         end
     end
     return vector
