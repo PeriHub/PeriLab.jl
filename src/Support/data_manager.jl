@@ -538,8 +538,10 @@ function set_max_rank(value)
 end
 
 function set_synch(name, upload_to_cores, download_from_cores)
+
     if name in get_all_field_keys()
-        fields_to_synch[name] = Dict{String,Bool}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores)
+        field = get_field(name)
+        fields_to_synch[name] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, dof => length(field[1, :]))
     end
 end
 function switch_NP1_to_N()
