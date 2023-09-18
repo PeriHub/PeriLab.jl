@@ -13,7 +13,6 @@ function compute_thermodynamic_crititical_time_step(nodes, datamanager, lambda, 
     criticalTimeStep = 1.0e50
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
-    nnodes = datamanager.get_nnodes()
     density = datamanager.get_field("Density")
     bondgeometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
@@ -60,23 +59,23 @@ function test_timestep(t, criticalTimeStep)
     end
     return criticalTimeStep
 end
+
 function compute_crititical_time_step(datamanager, blockNodes, mechanical, thermo)
     criticalTimeStep = 1.0e50
     blocks = datamanager.get_block_list()
-    nnodes = datamanager.get_nnodes() #  only master nodes are evaluated
     for iblock in blocks
         if thermo
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
             Cv = datamanager.get_property(iblock, "Thermal Model", "Specific Heat Capacity")
             if (lambda != Nothing) && (Cv != Nothing)
-                t = compute_thermodynamic_crititical_time_step(blockNodes[iblock][1:nnodes], datamanager, lambda, Cv)
+                t = compute_thermodynamic_crititical_time_step(blockNodes[iblock], datamanager, lambda, Cv)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
         if mechanical
             bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
             if (bulkModulus != Nothing)
-                t = compute_mechanical_crititical_time_step(blockNodes[iblock][1:nnodes], datamanager, bulkModulus)
+                t = compute_mechanical_crititical_time_step(blockNodes[iblock], datamanager, bulkModulus)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
@@ -122,8 +121,9 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to, silent)
+function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to, silent::Bool)
     @info "Run Verlet Solver"
+    comm = datamanager.comm()
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     forces = datamanager.get_field("Forces", "NP1")
@@ -149,13 +149,13 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             vNP1[1:nnodes, :] = vN[1:nnodes, :] + 0.5 * dt .* a[1:nnodes, :]
             # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
             uNP1[1:nnodes, :] = uN[1:nnodes, :] + dt .* vNP1[1:nnodes, :]
-
-            @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
             defCoorNP1[1:nnodes, :] = coor[1:nnodes, :] + uNP1[1:nnodes, :]
+            @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
             synchronise(comm, datamanager, "upload_to_cores")
+
             # synch
             for block in eachindex(blockNodes)
-                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block][1:nnodes], block, dt, time, to)
+                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, time, to)
             end
             synchronise(comm, datamanager, "download_from_cores")
             # synch

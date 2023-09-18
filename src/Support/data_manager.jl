@@ -536,7 +536,7 @@ function set_rank(value)
     global rank = value
 end
 
-function set_synch(name, upload_to_cores, download_from_cores)
+function set_synch(name, download_from_cores, upload_to_cores)
     if name in get_all_field_keys()
         field = get_field(name)
         fields_to_synch[name] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, "dof" => length(field[1, :]))

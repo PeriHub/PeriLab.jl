@@ -60,7 +60,7 @@ function init_material_model_fields(datamanager)
     datamanager.set_synch("Velocity", false, true)
     datamanager.set_synch("Displacements", false, true)
     datamanager.set_synch("Acceleration", false, true)
-
+    datamanager.set_synch("Deformed Coordinates", false, true)
     return datamanager
 end
 
