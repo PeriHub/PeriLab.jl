@@ -152,12 +152,12 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
 
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
             defCoorNP1[1:nnodes, :] = coor[1:nnodes, :] + uNP1[1:nnodes, :]
-            synchronise(comm, "upload_to_cores")
+            synchronise(comm, datamanager, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
                 @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block][1:nnodes], block, dt, time, to)
             end
-            synchronise(comm, "download_from_cores")
+            synchronise(comm, datamanager, "download_from_cores")
             # synch
 
             check_inf_or_nan(forces_density, "Forces")
