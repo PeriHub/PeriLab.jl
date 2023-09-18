@@ -11,11 +11,11 @@ function check_inf_or_nan(array, msg)
     end
     return false
 end
-
+"""
+include a scalar or an array and reshape it to style needed for LinearAlgebra package
+"""
 function matrix_style(A)
-    """
-    include a scalar or an array and reshape it to style needed for LinearAlgebra package
-    """
+
     if length(size(A)) == 0
         A = [A]
     end
@@ -25,20 +25,20 @@ end
 
 
 """
-    progress_bar(rank::Int64, nsteps::Int64)
+    progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
 
     Create a progress bar if the rank is 0. The progress bar ranges from 1 to nsteps + 1.
 
     Parameters:
-    - rank (Int64): An integer to determine if the progress bar should be created.
-    - nsteps (Int64): The total number of steps in the progress bar.
-
+    - rank::Int64: An integer to determine if the progress bar should be created.
+    - nsteps::Int64: The total number of steps in the progress bar.
+    - silent::Bool: de/activates the progress bar
     Returns:
     - ProgressBar or UnitRange: If rank is 0, a ProgressBar object is returned. Otherwise, a range from 1 to nsteps + 1 is returned.
 """
-function progress_bar(rank::Int64, nsteps::Int64)
+function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
     # Check if rank is equal to 0.
-    if rank == 0
+    if rank == 0 | !silent
         # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
         return ProgressBar(1:nsteps+1)
     end
