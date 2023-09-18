@@ -14,6 +14,7 @@ default:
     - julia -e 'import Pkg; Pkg.add("Coverage");
       using Coverage; cl, tl = get_summary(process_folder());
       println("(", cl/tl*100, "%) covered")'
+  coverage: '/\(\d+.\d+\%\) covered/'
 
 pages:
   stage: deploy
