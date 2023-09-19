@@ -546,7 +546,7 @@ function set_max_rank(value)
     global max_rank = value
 end
 
-function set_synch(name, upload_to_cores, download_from_cores)
+function set_synch(name, download_from_cores, upload_to_cores)
 
     if name in get_all_field_keys()
         field = get_field(name)
