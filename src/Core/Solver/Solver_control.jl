@@ -21,7 +21,7 @@ function init_bondDamage_and_influence_function(A, B, C)
 end
 
 function init(params, datamanager)
-
+    @info "Init Solver"
     # tbd in csv for global vars
     nnodes = datamanager.get_nnodes()
     nslaves = datamanager.get_nslaves()
@@ -56,7 +56,7 @@ function init(params, datamanager)
     if get_solver_name(params) == "Verlet"
         solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"] = init_Verlet(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
     end
-
+    @info "Finished Init Solver"
     return blockNodes, bcs, datamanager, solver_options
 end
 

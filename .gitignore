@@ -30,3 +30,11 @@ test/tensile_test/tensile_test.yaml
 test/test_MPI/strain_xy.yaml
 test/test_MPI/test_mesh.txt
 test/test_PD_Solid_Elastic/strain_yy_0.e
+Dogbone_Output1_1.e
+Dogbone_Output1_2.e
+Dogbone_Output1_3.e
+Dogbone_Output1_4.e
+Dogbone_Output1_5.e
+Dogbone_Output1_6.e
+Dogbone_Output1_7.e
+Dogbone_Output1.e

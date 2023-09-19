@@ -44,6 +44,7 @@ function init_data(params, datamanager, comm)
     overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
+    datamanager.set_block_list(datamanager.get_field("Block_Id"))
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
     @info "Finish init data"
     return datamanager, params
@@ -128,91 +129,104 @@ end
 
 function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     # init blockID field
-
-    blockID = datamanager.create_constant_node_field("Block_Id", Int64, 1)
-    # set value for all cores as send_msg
-    # only used for rank = 0
-    send_msg = 0
-    # distribute blocks
-    if MPI.Comm_rank(comm) == 0
-        mnames = names(mesh)
-        if ("block_id" in mnames) == false
-            @error "No blocks defined"
-        end
-        send_msg = mesh[!, "block_id"]
+    rank = MPI.Comm_rank(comm)
+    if rank == 0
+        meshdata = check_mesh_elements(mesh, dof)
+    else
+        meshdata = Dict()
     end
-    # must be [:] -> to map it in datamanager
-    blockID[:] = send_vector_from_root_to_core_i(comm, send_msg, blockID, distribution)
-    datamanager.set_block_list(blockID)
-    # init coordinate field
-    coor = datamanager.create_constant_node_field("Coordinates", Float32, dof)
-    # distribute coordinates
-    for idof in 1:dof
-        if MPI.Comm_rank(comm) == 0
-            send_msg = Float32.(mesh[!, names(mesh)[idof]])
-        end
-        coor[:, idof] = send_vector_from_root_to_core_i(comm, send_msg, coor[:, idof], distribution)
-    end
-    volume = datamanager.create_constant_node_field("Volume", Float32, 1)
-    # distribute blocks
-    if MPI.Comm_rank(comm) == 0
-        send_msg = Float32.(mesh[!, "volume"]) # because mesh is read as Float64
-    end
-    volume[:] = send_vector_from_root_to_core_i(comm, send_msg, volume, distribution)
-    # additional fields as angles and pointtime can be add automatically
-
-    # send header to all cores
-    # create fields
-    # check in advance x,yz for dof>1 fields
-    # transfer data
-    # upload=Dict()
-    # if MPI.Comm_rank(comm) == 0
-    #     upload=check_elements(mesh, dof)
-    # end
-    # upload = send_vectors_to_cores(comm, 0, upload)
-    # #for name in mesh[!, "volume"]
-    # #    send_msg = Float32.(mesh[!, "volume"])
-    # end
-    # for upload in uploadDict
-    #     var = datamanager.create_constant_node_field(upload["Name"], upload["Type"], upload["Dof"])
-    # end
-    return datamanager
-end
-
-function check_elements(mesh, dof)
-    mnames = names(mesh)
-
-    uploadDict = []
-    count = 0
-    for nam in mnames
-        count += 1
-        fieldDof = 1
-        if "x" == nam
-            name = "Coordinates"
-            meshentry = collect(count:count+dof)
-            fieldDof = dof
-
-        elseif "volume" == nam
-            name = "Volume"
-            meshentry = collect(count:count)
-
-        elseif "block_id" == nam
-            name = "Block_Id"
-            meshentry = collect(count:count)
-        else
-            if "x" in nam
-                meshentry = collect(count:count+dof)
-                name = nam[1:length(nam)-2]
+    meshdata = send_value(comm, 0, meshdata)
+    for fieldname in keys(meshdata)
+        fieldDof = length(meshdata[fieldname]["Mesh ID"])
+        datafield = datamanager.create_constant_node_field(fieldname, meshdata[fieldname]["Type"], fieldDof)
+        for (localDof, meshID) in enumerate(meshdata[fieldname]["Mesh ID"])
+            if rank == 0
+                send_msg = meshdata[fieldname]["Type"].(mesh[!, meshID])
+                # example send_msg = Float32.(mesh[!, names(mesh)[idof]])
+                # redefine from Float64 standard to Float32 for MPI
             else
-                meshentry = collect(count:count)
-                name = nam
+                send_msg = 0
+            end
+            if fieldDof == 1
+                datafield[:] = send_vector_from_root_to_core_i(comm, send_msg, datafield, distribution)
+            else
+                datafield[:, localDof] = send_vector_from_root_to_core_i(comm, send_msg, datafield[:, localDof], distribution)
             end
         end
-
-        append!(uploadDict, Dict("Name" => name, "Pos" => meshentry, "Type" => typeof(mesh[nam][1]), "Dof" => fieldDof))
-
     end
-    return uploadDict
+    return datamanager
+end
+"""
+    check_mesh_elements(mesh, dof)
+
+Process and analyze mesh data to create an dictionary containing information
+about mesh elements for further processing.
+
+# Arguments
+- `mesh::DataFrame`: The input mesh data represented as a DataFrame.
+- `dof::Int`: The degrees of freedom (DOF) for the mesh elements.
+
+# Returns
+A dictionary containing information about mesh elements, which can be used for
+further processing or uploading.
+
+# Example
+```julia
+mesh_data = DataFrame(x1 = [1.0, 2.0, 3.0], x2 = [4.0, 5.0, 6.0], volume = [10.0, 20.0, 30.0])
+dof = 3
+result = check_mesh_elements(mesh_data, dof)
+"""
+function check_mesh_elements(mesh, dof)
+    mnames = names(mesh)
+    meshInfoDict = Dict{String,Dict{String,Any}}()
+
+    for (id, mesh_entry) in enumerate(mnames)
+        fieldDof = 1
+        if ("y" == mesh_entry) | ("z" == mesh_entry) | (mesh_entry[1:end-1] in keys(meshInfoDict))
+            continue
+        end
+
+        if "x" == mesh_entry
+            name = "Coordinates"
+            meshID = ["x", "y"]
+            if dof == 3
+                meshID = ["x", "y", "z"]
+            end
+        elseif "volume" == mesh_entry
+            name = "Volume"
+            meshID = ["volume"]
+        elseif "block_id" == mesh_entry
+            name = "Block_Id"
+            meshID = ["block_id"]
+        else
+            if 'x' == mesh_entry[end] # -> char instead of string
+                if id + 1 <= length(mnames)
+                    if mnames[id+1][end] == 'y' # -> char instead of string
+                        name = mesh_entry[1:end-1]
+                        meshID = [name * "x", name * "y"]
+                        if dof == 3
+                            meshID = [name * "x", name * "y", name * "z"]
+                        end
+                    end
+                end
+            else
+                name = mesh_entry
+                meshID = [name]
+            end
+        end
+        vartype = typeof(sum(sum(mesh[:, id]) for id in meshID))
+        if vartype == Float64
+            vartype = Float32
+        end
+        meshInfoDict[name] = Dict{String,Any}("Mesh ID" => meshID, "Type" => vartype)
+    end
+    if !("Block_Id" in keys(meshInfoDict))
+        @error "No blocks defined"
+    end
+    if !("Volume" in keys(meshInfoDict))
+        @error "No volumes defined"
+    end
+    return meshInfoDict
 end
 
 function get_header(filename)
@@ -325,25 +339,6 @@ function node_distribution(nlist, size)
     return distribution, ptc, ntype
 end
 
-"""
-function _init_overlap_map_(size)
-    #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
-    overlap_map = []
-    for i in 1:size
-        append!(overlap_map, [[]])
-        for j in 1:size
-            append!(overlap_map[i], [[]])
-        end
-    end
-    for i in 1:size
-        for j in 1:size
-            append!(overlap_map[i][j], [Int64[], Int64[]])
-        end
-    end
-    return overlap_map
-end
-"""
-
 
 #dict instead of arrays, because it is more readable
 
@@ -355,7 +350,7 @@ function _init_overlap_map_(size)
         overlap_map[i] = Dict{Int64,Dict{String,Vector{Int64}}}()
         for j in 1:size
             if i != j
-                overlap_map[i][j] = Dict{String,Vector{Int64}}("Send" => Int64[], "Receive" => Int64[])
+                overlap_map[i][j] = Dict{String,Vector{Int64}}("Slave" => Int64[], "Master" => Int64[])
             end
         end
     end
