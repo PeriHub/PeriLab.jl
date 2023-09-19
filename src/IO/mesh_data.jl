@@ -44,6 +44,7 @@ function init_data(params, datamanager, comm)
     overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
     datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
     datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
+    datamanager.set_block_list(datamanager.get_field("Block_Id"))
     datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
     @info "Finish init data"
     return datamanager, params
