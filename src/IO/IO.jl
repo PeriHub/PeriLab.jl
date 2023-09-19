@@ -16,8 +16,11 @@ export merge_exodus_files
 
 function merge_exodus_files(exos)
     for exo in exos
-        @info "Merge output file " * exo.file_name
-        Write_Exodus_Results.merge_exodus_file(exo)
+        filename = exo.file_name
+        if ".0" == filename[end-1:end]
+            @info "Merge output file " * filename
+            Write_Exodus_Results.merge_exodus_file(filename)
+        end
     end
 end
 
@@ -107,7 +110,7 @@ function init_write_results(params, datamanager)
         if ".e" != filename[end-1:end]
             filename = filename * ".e"
         end
-        if datamanager.get_rank() > 0
+        if datamanager.get_max_rank() > 1
             filename = filename * "." * string(datamanager.get_max_rank()) * "." * string(datamanager.get_rank())
         end
         push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id[1:nnodes]), nnsets))

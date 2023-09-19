@@ -62,7 +62,6 @@ end
 
 function compute_crititical_time_step(datamanager, blockNodes, mechanical, thermo)
     criticalTimeStep = 1.0e50
-
     for iblock in eachindex(blockNodes)
         if thermo
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
