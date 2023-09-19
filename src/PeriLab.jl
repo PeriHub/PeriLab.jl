@@ -148,7 +148,6 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         end
         MPI.Finalize()
 
-        println(rank)
         if rank == 0
             # IO.merge_exodus_files(exos)
         end
