@@ -7,7 +7,6 @@ include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
 using MPI
 using TimerOutputs
-using TimerOutputs
 using LoggingExtras
 const to = TimerOutput()
 # using HDF5
@@ -83,7 +82,7 @@ Main function that performs the core functionality of the program.
 - `dry_run`: If `true`, performs a dry run without actually moving the file. Default is `false`.
 - `verbose`: If `true`, prints additional information during the execution. Default is `false`.
 """
-function main(filename, silent=false, dry_run=false, verbose=false, debug=false)
+function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
 
     if debug
         demux_logger = TeeLogger(
@@ -115,7 +114,7 @@ function main(filename, silent=false, dry_run=false, verbose=false, debug=false)
         filename = juliaPath * filename
         # @info filename
 
-        @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm)
+        @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm, to)
 
         @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
         @timeit to "IO.init_write_results" exos, outputs = IO.init_write_results(params, datamanager)

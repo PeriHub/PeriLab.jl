@@ -3,9 +3,9 @@ include("read_inputdeck.jl")
 include("mesh_data.jl")
 include("exodus_export.jl")
 include("../Support/Parameters/parameter_handling.jl")
-import .Read_Input_Deck
-import .Read_Mesh
-import .Write_Exodus_Results
+using .Read_Input_Deck
+using .Read_Mesh
+using .Write_Exodus_Results
 using MPI
 using TimerOutputs
 export close_files
@@ -87,11 +87,15 @@ function get_results_mapping(params, datamanager)
     return mapping
 end
 
-function initialize_data(filename, datamanager, comm)
-    datamanager.set_rank(MPI.Comm_rank(comm))
-    datamanager.set_max_rank(MPI.Comm_size(comm))
-    datamanager.set_comm(comm)
-    return Read_Mesh.init_data(read_input_file(filename), datamanager, comm)
+function initialize_data(filename, datamanager, comm, to)
+
+    @timeit to "MPI init data" begin
+        datamanager.set_rank(MPI.Comm_rank(comm))
+        datamanager.set_max_rank(MPI.Comm_size(comm))
+        datamanager.set_comm(comm)
+    end
+    return Read_Mesh.init_data(read_input_file(filename), datamanager, comm, to)
+
 end
 
 function init_write_results(params, datamanager)

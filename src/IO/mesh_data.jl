@@ -2,7 +2,7 @@ module Read_Mesh
 using CSV
 using DataFrames
 using MPI
-
+using TimerOutputs
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
 include("../Support/Parameters/parameter_handling.jl")
@@ -13,40 +13,42 @@ using .Geometry
 #export read_mesh
 #export load_mesh_and_distribute
 export init_data
-function init_data(params, datamanager, comm)
-    ranks = MPI.Comm_size(comm)
-    if (MPI.Comm_rank(comm)) == 0
-        distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params, ranks)
-    else
-        nmasters = 0
-        nslaves = 0
-        ntype = Dict("masters" => 0, "slaves" => 0)
-        nlist = 0
-        dof = 0
-        mesh = []
-        overlap_map = nothing
-        distribution = nothing
-    end
-    dof = send_value(comm, 0, dof)
-    dof = datamanager.set_dof(dof)
-    overlap_map = send_value(comm, 0, overlap_map)
+function init_data(params, datamanager, comm, to)
+    @timeit to "init_data - mesh_data,jl" begin
+        ranks = MPI.Comm_size(comm)
+        if (MPI.Comm_rank(comm)) == 0
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params, ranks)
+        else
+            nmasters = 0
+            nslaves = 0
+            ntype = Dict("masters" => 0, "slaves" => 0)
+            nlist = 0
+            dof = 0
+            mesh = []
+            overlap_map = nothing
+            distribution = nothing
+        end
+        dof = send_value(comm, 0, dof)
+        dof = datamanager.set_dof(dof)
+        overlap_map = send_value(comm, 0, overlap_map)
 
-    distribution = send_value(comm, 0, distribution)
-    nlist = send_value(comm, 0, nlist)
-    datamanager.set_overlap_map(overlap_map)
-    nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
-    nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
-    datamanager.set_nmasters(nmasters)
-    datamanager.set_nslaves(nslaves)
-    define_nsets(params, datamanager)
-    # defines the order of the global nodes to the local core nodes
-    datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
-    overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
-    datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
-    datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
-    datamanager.set_block_list(datamanager.get_field("Block_Id"))
-    datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
-    @info "Finish init data"
+        distribution = send_value(comm, 0, distribution)
+        nlist = send_value(comm, 0, nlist)
+        datamanager.set_overlap_map(overlap_map)
+        nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
+        nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
+        datamanager.set_nmasters(nmasters)
+        datamanager.set_nslaves(nslaves)
+        define_nsets(params, datamanager)
+        # defines the order of the global nodes to the local core nodes
+        datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
+        @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
+        @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
+        @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
+        datamanager.set_block_list(datamanager.get_field("Block_Id"))
+        datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
+        @info "Finish init data"
+    end
     return datamanager, params
 end
 """
