@@ -12,6 +12,7 @@ dof = 2
 nnodes = 5
 testDatamanager.set_nmasters(nnodes)
 testDatamanager.set_dof(dof)
+testDatamanager.set_max_rank(1)
 testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
 coordinates = testDatamanager.get_field("Coordinates")
 testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
