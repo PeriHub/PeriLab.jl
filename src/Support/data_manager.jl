@@ -398,38 +398,38 @@ end
 function set_block_list(blocks)
     global block_list = sort(unique(blocks))
 end
+"""
+set_dof(n)
 
+Sets the degree of freedom (dof) value globally.
+
+Parameters:
+- `n` (integer): The value to set as the degree of freedom.
+
+Example:
+```julia
+set_dof(3)  # sets the degree of freedom to 3
+```
+"""
 function set_dof(n)
-    """
-    set_dof(n)
 
-    Sets the degree of freedom (dof) value globally.
-
-    Parameters:
-    - `n` (integer): The value to set as the degree of freedom.
-
-    Example:
-    ```julia
-    set_dof(3)  # sets the degree of freedom to 3
-    ```
-    """
     global dof = n
 end
+"""
+set_glob_to_loc(dict)
 
+Sets the global-to-local mapping dict globally.
+
+Parameters:
+- `dict` (array): The dict representing the global-to-local mapping.
+
+Example:
+```julia
+set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping dict
+```
+"""
 function set_glob_to_loc(dict)
-    """
-    set_glob_to_loc(dict)
 
-    Sets the global-to-local mapping dict globally.
-
-    Parameters:
-    - `dict` (array): The dict representing the global-to-local mapping.
-
-    Example:
-    ```julia
-    set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping dict
-    ```
-    """
     global glob_to_loc = dict
 end
 
