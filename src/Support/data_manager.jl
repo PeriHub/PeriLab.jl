@@ -18,6 +18,7 @@ export get_properties
 export get_property
 export get_rank
 export get_nslaves
+export get_max_rank
 export init_property
 export set_block_list
 export set_glob_to_loc
@@ -27,6 +28,7 @@ export set_nslaves
 export set_physics_options
 export set_property
 export set_rank
+export set_max_rank
 export switch_NP1_to_N
 ##########################
 # Variables
@@ -382,6 +384,10 @@ function get_rank()
     return rank
 end
 
+function get_max_rank()
+    return max_rank
+end
+
 function init_property()
     for iblock in get_block_list()
         properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
@@ -536,7 +542,12 @@ function set_rank(value)
     global rank = value
 end
 
-function set_synch(name, download_from_cores, upload_to_cores)
+function set_max_rank(value)
+    global max_rank = value
+end
+
+function set_synch(name, upload_to_cores, download_from_cores)
+
     if name in get_all_field_keys()
         field = get_field(name)
         fields_to_synch[name] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, "dof" => length(field[1, :]))

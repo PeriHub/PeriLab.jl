@@ -12,6 +12,14 @@ export close_files
 export initialize_data
 export init_write_results
 export write_results
+export merge_exodus_files
+
+function merge_exodus_files(exos)
+    for exo in exos
+        @info "Merge output file " * exo.file_name
+        Write_Exodus_Results.merge_exodus_file(exo)
+    end
+end
 
 function close_files(exos)
     for exo in exos
@@ -78,6 +86,7 @@ end
 
 function initialize_data(filename, datamanager, comm)
     datamanager.set_rank(MPI.Comm_rank(comm))
+    datamanager.set_max_rank(MPI.Comm_size(comm))
     datamanager.set_comm(comm)
     return Read_Mesh.init_data(read_input_file(filename), datamanager, comm)
 end
@@ -95,8 +104,11 @@ function init_write_results(params, datamanager)
     block_Id = datamanager.get_field("Block_Id")
     nsets = datamanager.get_nsets()
     for filename in filenames
+        if ".e" != filename[end-1:end]
+            filename = filename * ".e"
+        end
         if datamanager.get_rank() > 0
-            filename = filename * "_" * string(datamanager.get_rank())
+            filename = filename * "." * string(datamanager.get_max_rank()) * "." * string(datamanager.get_rank())
         end
         push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id[1:nnodes]), nnsets))
     end

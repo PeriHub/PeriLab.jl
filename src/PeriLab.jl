@@ -148,12 +148,16 @@ function main(filename, silent=false, dry_run=false, verbose=false, debug=false)
             IO.delete_files(exos)
         end
 
-        return MPI.Finalize()
+        MPI.Finalize()
+
+        IO.merge_exodus_files(exos)
     end
 
     if verbose
         @info demux_logger to
     end
 end
+
+# main()
 
 end # module
