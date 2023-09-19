@@ -64,9 +64,11 @@ end
 
 function main()
     parsed_args = parse_commandline()
-    println("Parsed args:")
-    for (arg, val) in parsed_args
-        println("  $arg  =>  $val")
+    if parsed_args["verbose"]
+        println("Parsed args:")
+        for (arg, val) in parsed_args
+            println("  $arg  =>  $val")
+        end
     end
     main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
 end
@@ -83,10 +85,6 @@ Main function that performs the core functionality of the program.
 """
 function main(filename, silent=false, dry_run=false, verbose=false, debug=false)
 
-    if silent
-        Logging.disable_logging(Logging.Error)
-    end
-
     if debug
         demux_logger = TeeLogger(
             MinLevelLogger(FileLogger(split(filename, ".")[1] * ".log"), Logging.Debug),
@@ -102,11 +100,13 @@ function main(filename, silent=false, dry_run=false, verbose=false, debug=false)
 
     @timeit to "PeriLab" begin
         # init MPI as always ...
-        # if MPI.Initialized()
         MPI.Init()
         comm = MPI.COMM_WORLD
-        if MPI.Comm_rank(comm) == 0 && !silent
+        rank = MPI.Comm_rank(comm)
+        if rank == 0 && !silent
             print_banner()
+        else
+            Logging.disable_logging(Logging.Error)
         end
         #global juliaPath = Base.Filesystem.pwd() * "/"
         global juliaPath = "./"
@@ -147,10 +147,13 @@ function main(filename, silent=false, dry_run=false, verbose=false, debug=false)
         if dry_run
             IO.delete_files(exos)
         end
-
         MPI.Finalize()
 
-        IO.merge_exodus_files(exos)
+        println(rank)
+        if rank == 0
+            # IO.merge_exodus_files(exos)
+        end
+        # IO.delete_files(exos)
     end
 
     if verbose

@@ -62,7 +62,7 @@ end
 
 function get_blockNodes(blockIDs, nnodes)
     blockNodes = Dict{Int64,Vector{Int64}}()
-    for i in unique(blockIDs)
+    for i in unique(blockIDs[1:nnodes])
         blockNodes[i] = find_indices(blockIDs[1:nnodes], i)
     end
     return blockNodes
