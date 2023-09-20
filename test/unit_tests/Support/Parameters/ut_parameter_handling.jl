@@ -69,14 +69,14 @@ end
     freq = get_output_frequency(params, nsteps, deltaT)
     @test freq["Output1"] == 2
     @test freq["Output2"] == 40
-    params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20), "Output2" => Dict("Output Frequency" => 10)))
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20), "Output2" => Dict("Number of Outputs" => 10)))
     freq = get_output_frequency(params, nsteps, deltaT)
     @test freq["Output1"] == 20
-    @test freq["Output2"] == 10
+    @test freq["Output2"] == 4
     nsteps = 1000
     freq = get_output_frequency(params, nsteps, deltaT)
     @test freq["Output1"] == 20
-    @test freq["Output2"] == 10
+    @test freq["Output2"] == 100
 end
 
 @testset "ut_get_outputs" begin
