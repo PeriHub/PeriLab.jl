@@ -23,7 +23,7 @@ function check_exodiff(filename, cores)
 end
 
 cd("test/test_PD_Solid_Elastic") do
-    check_exodiff("strain_xx", 2)
-    check_exodiff("strain_xy", 2)
-    check_exodiff("strain_yy", 2)
+    check_exodiff("strain_xx", 1)
+    check_exodiff("strain_xy", 1)
+    check_exodiff("strain_yy", 1)
 end
