@@ -18,7 +18,10 @@ function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_nod
     float_type = Float64
     num_elems = num_nodes
     num_side_sets = 0
-    num_node_sets = num_node_sets
+    if num_node_sets > 0
+        @warn "Number of node sets are set to zero"
+    end
+    num_node_sets = 0
     init = Initialization{bulk_int_type}(
         Int32(num_dim), Int32(num_nodes), Int32(num_elems),
         Int32(num_elem_blks), Int32(num_node_sets), Int32(num_side_sets)
