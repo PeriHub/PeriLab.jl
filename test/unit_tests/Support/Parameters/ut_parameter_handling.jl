@@ -60,6 +60,25 @@ end
     @test filenames[1] == "1.e"
     @test filenames[2] == "2.e"
 end
+
+@testset "get_output_frequency" begin
+    nsteps = 40
+    deltaT = 0
+    params = Dict()
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 2), "Output2" => Dict("Number of Outputs" => 1, "Output Frequency" => 1)))
+    freq = get_output_frequency(params, nsteps, deltaT)
+    @test freq["Output1"] == 2
+    @test freq["Output2"] == 40
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20), "Output2" => Dict("Output Frequency" => 10)))
+    freq = get_output_frequency(params, nsteps, deltaT)
+    @test freq["Output1"] == 20
+    @test freq["Output2"] == 10
+    nsteps = 1000
+    freq = get_output_frequency(params, nsteps, deltaT)
+    @test freq["Output1"] == 20
+    @test freq["Output2"] == 10
+end
+
 @testset "ut_get_outputs" begin
     testDatamanager = Data_manager
     testDatamanager.set_nmasters(5)
