@@ -66,3 +66,34 @@ function get_outputs(params, variables)
     end
     return return_outputs
 end
+
+function get_output_frequency(params, nsteps, deltaT)
+    freq = Dict{String,Int64}()
+    num = 0
+
+    if check_element(params, "Outputs")
+        outputs = params["Outputs"]
+        for output in keys(outputs)
+            output_options = Dict("Output Frequency" => false, "Number of Outputs" => false)
+            freq[output] = 0
+            for output_option in keys(output_options)
+                if check_element(outputs[output], output_option)
+                    if output_options[output_option]
+                        @warn "Double output step / frequency definition. First option is used. $output_option is ignored."
+                        continue
+                    end
+
+                    output_options[output_option] = true
+                    freq[output] = outputs[output][output_option]
+                    if output_options["Number of Outputs"]
+                        freq[output] = Int64(ceil(nsteps / freq[output]))
+                    end
+                end
+            end
+            if length(keys(freq[output])) == 0
+                freq[output] = 1
+            end
+        end
+    end
+    return freq
+end

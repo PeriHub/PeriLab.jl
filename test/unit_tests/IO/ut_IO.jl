@@ -97,20 +97,27 @@ end
             end
         end
     end
-    IO.write_results(exos, 2, 1.5, outputs, testDatamanager)
+
+    IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
+    IO.write_results(exos, 1.5, outputs, testDatamanager)
+
     @test read_time(exos[1], 2) == 1.5
     @test read_time(exos[2], 2) == 1.5
-    IO.write_results([], 3, 1.6, outputs, testDatamanager)
+    IO.write_results(exos, 1.6, outputs, testDatamanager)
+
+    @test read_time(exos[1], 3) == 1.6
+    @test read_time(exos[2], 3) == 1.6
+    IO.write_results([], 1.6, outputs, testDatamanager)
     testBool = false
     try
-        read_time(exos[1], 3) == 1.6
+        read_time(exos[1], 4) == 1.6
     catch
         testBool = true
     end
     @test testBool
     testBool = false
     try
-        read_time(exos[2], 3) == 1.6
+        read_time(exos[2], 4) == 1.6
     catch
         testBool = true
     end

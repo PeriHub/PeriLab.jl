@@ -98,7 +98,9 @@ MPI.Init()
         @testset "ut_Physics_Factory" begin
             include("unit_tests/Physics/ut_Physics_Factory.jl")
         end
-
+        @testset "ut_Damage" begin
+            include("unit_tests/Physics/Damage/ut_Damage_Factory.jl")
+        end
     end
 
     @testset "Test_PD_Solid_Elastic" begin

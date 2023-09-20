@@ -140,7 +140,6 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     dt = solver_options["dt"]
     nsteps = solver_options["nsteps"]
     time::Float32 = solver_options["Initial Time"]
-
     for idt in progress_bar(datamanager.get_rank(), nsteps, silent)
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
@@ -162,7 +161,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             check_inf_or_nan(forces_density, "Forces")
             a[1:nnodes, :] = forces_density[1:nnodes, :] ./ density[1:nnodes] # element wise
             forces[1:nnodes, :] = forces_density[1:nnodes, :] .* volume[1:nnodes]
-            exos = write_results(exos, idt, time, outputs, datamanager)
+            exos = write_results(exos, time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
             time += dt
         end

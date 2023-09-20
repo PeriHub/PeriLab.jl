@@ -14,7 +14,7 @@ export initialize_data
 export init_write_results
 export write_results
 export merge_exodus_files
-
+output_frequency = []
 function merge_exodus_files(exos)
     for exo in exos
         filename = exo.file_name
@@ -127,6 +127,7 @@ function init_write_results(params, datamanager)
     for id in eachindex(exos)
         exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, Array(1:max_block_id), nsets)
     end
+
     return exos, outputs
 end
 
@@ -134,11 +135,16 @@ function read_input_file(filename)
     return Read_Input_Deck.read_input_file(filename)
 end
 
-function write_results(exos, step, time, outputs, datamanager)
+function write_results(exos, time, outputs, datamanager)
     for id in eachindex(exos)
         # step 1 ist the zero step?!
-        exos[id] = Write_Exodus_Results.write_step_and_time(exos[id], step, time)
-        exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exos[id], step, outputs[id], datamanager)
+        output_frequency[id]["Counter"] += 1
+        if output_frequency[id]["Output Frequency"] == output_frequency[id]["Counter"]
+            output_frequency[id]["Step"] += 1
+            exos[id] = Write_Exodus_Results.write_step_and_time(exos[id], output_frequency[id]["Step"], time)
+            exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exos[id], output_frequency[id]["Step"], outputs[id], datamanager)
+            output_frequency[id]["Counter"] = 0
+        end
     end
     return exos
 end
