@@ -19,9 +19,10 @@ function check_exodiff(filename, cores)
     @test occursin("Files are the same", read("exodiff.log", String))
     rm("exodiff.log")
     rm(filename * ".e")
+    rm(filename * ".log")
 end
 
-cd("test/test_PD_Solid_Elastic") do
+cd("test_PD_Solid_Elastic") do
     check_exodiff("strain_xx", 1)
     check_exodiff("strain_xy", 1)
     check_exodiff("strain_yy", 1)

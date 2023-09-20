@@ -64,8 +64,9 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
     info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
     nsetsExo = read_sets(exo, NodeSet)
     write_info(exo, info)
-    if (typeof(coords) == Matrix{Float32})
-        coords = convert(Array{Float64}, coords)
+    # check if type of coords is int or float32
+    if typeof(coords) in [Matrix{Int64}, Matrix{Float32}]
+       coords = convert(Matrix{Float64}, coords)
     end
 
     write_coordinates(exo, coords)

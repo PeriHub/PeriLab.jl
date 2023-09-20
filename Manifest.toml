@@ -146,9 +146,9 @@ version = "1.6.0"
 
 [[deps.Exodus]]
 deps = ["DocStringExtensions", "Exodus_jll", "Parameters", "Pkg", "Suppressor"]
-git-tree-sha1 = "6cbd82fa3e03f1bf2eb057dc06e139a2c9a05fb1"
+git-tree-sha1 = "6ccfefdf096020d3e620aacab8c5308d88499a2d"
 uuid = "f57ae99e-f805-4780-bdca-96e224be1e5a"
-version = "0.8.0"
+version = "0.8.1"
 
 [[deps.Exodus_jll]]
 deps = ["Artifacts", "Fmt_jll", "HDF5_jll", "JLLWrappers", "Libdl", "NetCDF_jll", "Zlib_jll"]
