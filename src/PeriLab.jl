@@ -102,6 +102,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         MPI.Init()
         comm = MPI.COMM_WORLD
         rank = MPI.Comm_rank(comm)
+        size = MPI.Comm_size(comm)
         if rank == 0 && !silent
             print_banner()
         else
@@ -149,9 +150,11 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         MPI.Finalize()
 
         if rank == 0
-            # IO.merge_exodus_files(exos)
+            IO.merge_exodus_files(exos)
         end
-        # IO.delete_files(exos)
+        if size > 1
+            # IO.delete_files(exos)
+        end
     end
 
     if verbose
