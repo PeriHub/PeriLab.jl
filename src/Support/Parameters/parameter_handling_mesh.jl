@@ -16,7 +16,7 @@ function get_topology_name(params)
     return check, topoFile
 end
 
-function get_bond_filter(params)
+function get_bond_filters(params)
     check = check_element(params["Discretization"], "Bond Filters")
     bfList = Any
     if check

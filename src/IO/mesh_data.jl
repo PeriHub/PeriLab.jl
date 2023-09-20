@@ -13,6 +13,9 @@ using .Geometry
 #export read_mesh
 #export load_mesh_and_distribute
 export init_data
+
+TOLERANCE = 1.0e-14
+
 function init_data(params, datamanager, comm, to)
     @timeit to "init_data - mesh_data,jl" begin
         ranks = MPI.Comm_size(comm)
@@ -264,6 +267,7 @@ function load_and_evaluate_mesh(params, ranksize)
     mesh = read_mesh(get_mesh_name(params))
     dof = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params, dof)
+    nlist = apply_bond_filters(nlist, mesh, params, dof)
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
     @info "Finished distribution"
@@ -437,6 +441,71 @@ function neighbors(mesh, params, coor)
         deleteat!(neighborList[i], index)
     end
     return neighborList
+end
+
+function bondNotIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
+    numerator = sum((center .- p0) .* normal)
+    denominator = sum((p1 .- p0) .* normal)
+    if abs(denominator) < TOLERANCE
+        # Line is parallel to the plane, may or may not lie on the plane
+        # If it does lie on the plane, then the numerator will be zero
+        # In either case, this function will return "no intersection"
+        t = Inf
+    else
+        # The line intersects the plane
+        t = numerator / denominator
+    end
+
+    if t < 0.0 || t > 1.0
+        return true
+    end
+
+    # Intersection point
+    x = p0 .+ t .* (p1 .- p0)
+
+    # Check if the intersection point is within the disk
+    distance_squared = sum((x .- center) .^ 2)
+
+    if distance_squared < radius^2
+        return false
+    end
+
+    return true
+end
+
+function apply_bond_filters(nlist, mesh, params, dof)
+    bond_filters = get_bond_filters(params)
+    if bond_filters[1]
+        coor = names(mesh)[1:dof]
+        nnodes = length(mesh[!, coor[1]])
+        data = zeros(dof, nnodes)
+        for i in 1:dof
+            data[i, :] = values(mesh[!, coor[i]])
+        end
+        # balltree = BallTree(data)
+
+        # println(bond_filters)
+        for (name, filter) in bond_filters[2]
+            println(filter)
+
+            if filter["Type"] == "Disk"
+                center = [filter["Center_X"], filter["Center_Y"], filter["Center_Z"]]
+                normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
+                for i in 1:nnodes
+                    filter_flag = fill(true, length(nlist[i]))
+                    for (jId, neighbor) in enumerate(nlist[i])
+                        filter_flag[jId] = bondNotIntersectsDisk(data[:, i], data[:, neighbor], center, normal, filter["Radius"])
+                    end
+                    nlist[i] = nlist[i][filter_flag]
+                end
+
+            elseif filter["Type"] == "Rectangular_Plane"
+
+            end
+        end
+        @info "Finished apply Bond Filters"
+    end
+    return nlist
 end
 
 function glob_to_loc(distribution)
