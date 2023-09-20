@@ -6,7 +6,7 @@ using Test
     comm = MPI.COMM_WORLD
     testDatamanager = Data_manager
     testDatamanager.set_comm(comm)
-    b = testDatamanager.comm()
+    b = testDatamanager.get_comm()
     @test comm == b
     # MPI.Finalize()
 end

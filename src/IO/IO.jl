@@ -3,6 +3,7 @@ include("read_inputdeck.jl")
 include("mesh_data.jl")
 include("exodus_export.jl")
 include("../Support/Parameters/parameter_handling.jl")
+include("../MPI_communication/MPI_communication.jl")
 using .Read_Input_Deck
 using .Read_Mesh
 using .Write_Exodus_Results
@@ -109,6 +110,8 @@ function init_write_results(params, datamanager)
     nnsets = datamanager.get_nnsets()
     coordinates = datamanager.get_field("Coordinates")
     block_Id = datamanager.get_field("Block_Id")
+    max_block_id = maximum(block_Id)
+    max_block_id = find_and_set_core_value_max(datamanager.get_comm(), max_block_id)
     nsets = datamanager.get_nsets()
     for filename in filenames
         if ".e" != filename[end-1:end]
@@ -117,12 +120,12 @@ function init_write_results(params, datamanager)
         if datamanager.get_max_rank() > 1
             filename = filename * "." * string(datamanager.get_max_rank()) * "." * string(datamanager.get_rank())
         end
-        push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id[1:nnodes]), nnsets))
+        push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, max_block_id, nnsets))
     end
     coords = vcat(transpose(coordinates[1:nnodes, :]))
     outputs = get_results_mapping(params, datamanager)
     for id in eachindex(exos)
-        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id[1:nnodes], nsets)
+        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, Array(1:max_block_id), nsets)
     end
     return exos, outputs
 end
