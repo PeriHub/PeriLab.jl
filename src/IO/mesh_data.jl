@@ -486,7 +486,6 @@ function apply_bond_filters(nlist, mesh, params, dof)
 
         # println(bond_filters)
         for (name, filter) in bond_filters[2]
-            println(filter)
 
             if filter["Type"] == "Disk"
                 center = [filter["Center_X"], filter["Center_Y"], filter["Center_Z"]]
