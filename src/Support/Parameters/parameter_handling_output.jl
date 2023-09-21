@@ -83,7 +83,6 @@ function get_output_frequency(params, nsteps)
                         @warn "Double output step / frequency definition. First option is used. $output_option is ignored."
                         continue
                     end
-
                     output_options[output_option] = true
                     freq[id] = outputs[output][output_option]
                     if output_options["Number of Outputs"]
@@ -91,6 +90,9 @@ function get_output_frequency(params, nsteps)
                         if freq[id] < 1
                             freq[id] = 1
                         end
+                    end
+                    if freq[id] > nsteps
+                        freq[id] = nsteps
                     end
                 end
             end
