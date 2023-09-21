@@ -12,9 +12,12 @@ function get_model_parameter(params, model, id)
 end
 
 function get_physics_options(params, options)
+    if !check_element(params["Physics"], "Pre Calculation")
+        return options
+    end
     for option in keys(options)
-        if check_element(params["Physics"], option)
-            options[option] = params["Physics"][option]
+        if check_element(params["Physics"]["Pre Calculation"], option)
+            options[option] = params["Physics"]["Pre Calculation"][option]
         end
     end
     return options

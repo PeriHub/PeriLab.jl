@@ -9,11 +9,12 @@ PeriLab:
             b1:
                 
     Physics:
-        Calculate Deformed Bond Geometry: true
-        Calculate Deformation Gradient: false
-        Calculate Shape Tensor: false
-        Calculate Bond Associated Shape Tensor: false
-        Calculate Bond Associated Deformation Gradient: false
+        Pre Calculation:
+            Deformed Bond Geometry: true
+            Deformation Gradient: false
+            Shape Tensor: false
+            Bond Associated Shape Tensor: false
+            Bond Associated Deformation Gradient: false
         Material Models: 
             Mat_1: 
                 Material Model: "PD Solid Elastic"
