@@ -98,12 +98,13 @@ function initialize_data(filename, datamanager, comm, to)
 
 end
 
-function init_write_results(params, datamanager)
+function init_write_results(params, datamanager, nsteps)
     filenames = get_output_filenames(params)
     if length(filenames) == 0
         @warn "No futput file or output defined"
     end
     exos = []
+
     nnodes = datamanager.get_nnodes()
     dof = datamanager.get_dof()
     nnsets = datamanager.get_nnsets()
@@ -121,9 +122,10 @@ function init_write_results(params, datamanager)
     end
     coords = vcat(transpose(coordinates[1:nnodes, :]))
     outputs = get_results_mapping(params, datamanager)
+    output_steps = get_output_frequency(params, nsteps)
     for id in eachindex(exos)
-
         exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id[1:nnodes], nsets)
+        push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => output_steps[id]))
     end
 
     return exos, outputs
