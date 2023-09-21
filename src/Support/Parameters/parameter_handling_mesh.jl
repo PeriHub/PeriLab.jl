@@ -32,7 +32,9 @@ function get_node_sets(params)
     end
     nodesets = params["Discretization"]["Node Sets"]
     for entry in keys(nodesets)
-        if occursin(".txt", nodesets[entry])
+        if (typeof(nodesets[entry]) == Int64) | (typeof(nodesets[entry]) == Int32)
+            nsets[entry] = [nodesets[entry]]
+        elseif occursin(".txt", nodesets[entry])
             nodes = CSV.read(nodesets[entry], DataFrame; delim=" ", header=false)
             if size(nodes) == (0, 0)
                 @error "Node set file is empty " * nodesets[entry]

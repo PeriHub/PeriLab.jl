@@ -20,34 +20,34 @@ using .Damage
     bdNP1[1][:] .= 1
     bdNP1[2][:] .= 1
     bdNP1[3][:] .= 1
-    Damage.damage_index(1:3, testDatamanager)
+    Damage.damage_index(testDatamanager, 1:3)
     @test damageNP1_test[1] == 0
     @test damageNP1_test[2] == 0
     @test damageNP1_test[3] == 0
     bdNP1[1][:] .= 0
-    Damage.damage_index(1:3, testDatamanager)
+    Damage.damage_index(testDatamanager, 1:3)
     @test damageNP1_test[1] == 1
     @test damageNP1_test[2] == 0
     @test damageNP1_test[3] == 0
     bdNP1[2][1] = 0
-    Damage.damage_index(1:3, testDatamanager)
+    Damage.damage_index(testDatamanager, 1:3)
     @test damageNP1_test[1] == 1
     @test damageNP1_test[2] == 0.25
     @test damageNP1_test[3] == 0
     bdNP1[2][1] = 1
     bdNP1[2][2] = 0
-    Damage.damage_index(1:3, testDatamanager)
+    Damage.damage_index(testDatamanager, 1:3)
     @test damageNP1_test[1] == 1
     @test damageNP1_test[2] == 0.75
     @test damageNP1_test[3] == 0
     bdNP1[2][1] = 0
     bdNP1[2][2] = 0
-    Damage.damage_index(1:3, testDatamanager)
+    Damage.damage_index(testDatamanager, 1:3)
     @test damageNP1_test[1] == 1
     @test damageNP1_test[2] == 1
     @test damageNP1_test[3] == 0
     bdNP1[3][:] .= 0
-    Damage.damage_index(1:3, testDatamanager)
+    Damage.damage_index(testDatamanager, 1:3)
     @test damageNP1_test[1] == 1
     @test damageNP1_test[2] == 1
     @test damageNP1_test[3] == 1
