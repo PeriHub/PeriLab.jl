@@ -59,10 +59,12 @@ PeriLab:
             Coordinate: "y"
             Value: "0.1*y"
     Solver: 
-        Solve For Displacement: True
+        Material Models: True
+        Damage Models: True
+        Thermal Models: True
+        Additive Models: False
         Initial Time: 0.0
         Final Time: 5.0e-6
-        End step after damage: 3
         Verlet: 
             Safety Factor: 1.0
     Outputs: 
