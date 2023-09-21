@@ -39,10 +39,11 @@ Each vector entry for a value exists for all nodes, also if the node does not ha
 
 ## Issues
     for n=4 -> errors    
+    MPI_Neighbor_alltoall -> might be easier
 ## planned feature
     test if blocks are defined in yaml, but missing in mesh
     https://github.com/StephenVavasis/Unroll.jl
-    static arrays package -> speed up
+    static arrays package -> speed up -> only for arrays smaller 100; inverte of Jacobian, etc.
     integration of FEM Julia package -> coupling might be better, becaus of more functionality
     time step minimum for all cores -> parallel computing! -> done
     matrix -> reshape from vector for better use

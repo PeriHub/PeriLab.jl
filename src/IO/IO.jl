@@ -128,7 +128,7 @@ function init_write_results(params, datamanager, nsteps)
     output_steps = get_output_frequency(params, nsteps)
     for id in eachindex(exos)
 
-        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, Array(1:max_block_id), nsets)
+        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id[1:nnodes], Vector{Int32}(1:max_block_id), nsets)
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => output_steps[id]))
 
     end
