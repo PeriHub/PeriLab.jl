@@ -53,7 +53,7 @@ function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, w
     return bond_force
 end
 
-function compute_forces(datamanager, nodes, material, time, dt)
+function compute_forces(datamanager, nodes, material_parameter, time, dt)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     force_densities = datamanager.get_field("Force Densities", "NP1")
@@ -70,7 +70,7 @@ function compute_forces(datamanager, nodes, material, time, dt)
 
     weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
     theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
-    bond_force = elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
+    bond_force = elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force)
 
     force_densities[:] = distribute_forces(nodes, nlist, bond_force, volume, force_densities)
     return datamanager
