@@ -66,7 +66,7 @@ function init_results_in_exodus(exo, output, coords, block_Id, nsets)
     write_info(exo, info)
     # check if type of coords is int or float32
     if typeof(coords) in [Matrix{Int64}, Matrix{Float32}]
-       coords = convert(Matrix{Float64}, coords)
+        coords = convert(Matrix{Float64}, coords)
     end
 
     write_coordinates(exo, coords)

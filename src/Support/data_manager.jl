@@ -7,6 +7,7 @@ export create_constant_node_field
 export create_node_field
 export get_all_field_keys
 export get_block_list
+export get_comm
 export get_field
 export get_local_nodes
 export get_nlist
@@ -53,7 +54,7 @@ physicsOptions = Dict{String,Bool}("Calculate Deformed Bond Geometry" => true,
     "Calculate Bond Associated Deformation Gradient" => false)
 rank::Int64 = 0
 commMPi = Any
-function comm()
+function get_comm()
     return commMPi
 end
 function set_comm(value)

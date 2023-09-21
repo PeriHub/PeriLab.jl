@@ -101,7 +101,7 @@ function init_Verlet(params, datamanager, blockNodes, mechanical, thermo)
     end
 
     nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * dt)
-    comm = datamanager.comm()
+    comm = datamanager.get_comm()
     dt = find_and_set_core_value_min(comm, dt)
     nsteps = find_and_set_core_value_max(comm, nsteps)
 
@@ -122,7 +122,7 @@ end
 
 function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to, silent::Bool)
     @info "Run Verlet Solver"
-    comm = datamanager.comm()
+    comm = datamanager.get_comm()
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     forces = datamanager.get_field("Forces", "NP1")

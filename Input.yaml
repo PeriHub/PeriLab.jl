@@ -6,6 +6,16 @@ PeriLab:
     Type: "Text File"
     Input Mesh File: "simpleMesh.txt"
     #Input Mesh File: "biggerMesh.txt"
+    Bond Filters:
+      bf_1:
+        Type: "Disk"
+        Normal_X: 0.0
+        Normal_Y: 1.0
+        Normal_Z: 0.0
+        Center_X: 0.0
+        Center_Y: 1.5
+        Center_Z: 0.0
+        Radius: 5.0
   Physics:
     Material Models:
       Aluminium:
@@ -25,22 +35,22 @@ PeriLab:
       Horizon: 2.7221534653465347
     block_2:
       Block Names: "block_2"
-      Material: "Aluminium"
+      Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_3:
       Block Names: "block_3"
-      Material: "Aluminium"
+      Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_4:
       Block Names: "block_4"
-      Material: "Aluminium"
+      Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_5:
       Block Names: "block_5"
-      Material: "Aluminium"
+      Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347
   Boundary Conditions:
@@ -103,3 +113,4 @@ PeriLab:
       Output Variables:
         Displacements: True
         Volume: True
+        Number of Neighbors: True
