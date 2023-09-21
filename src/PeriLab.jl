@@ -62,12 +62,12 @@ end
 
 function main()
     parsed_args = parse_commandline()
-    if parsed_args["verbose"]
-        println("Parsed args:")
-        for (arg, val) in parsed_args
-            println("  $arg  =>  $val")
-        end
-    end
+    # if parsed_args["verbose"]
+    #     println("Parsed args:")
+    #     for (arg, val) in parsed_args
+    #         println("  $arg  =>  $val")
+    #     end
+    # end
     main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
 end
 """
