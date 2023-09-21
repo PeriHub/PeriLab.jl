@@ -67,16 +67,16 @@ end
     params = Dict()
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 2), "Output2" => Dict("Number of Outputs" => 1, "Output Frequency" => 1)))
     freq = get_output_frequency(params, nsteps)
-    @test freq["Output1"] == 2
-    @test freq["Output2"] == 40
+    @test freq[1] == 2
+    @test freq[2] == 40
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20), "Output2" => Dict("Number of Outputs" => 10)))
     freq = get_output_frequency(params, nsteps)
-    @test freq["Output1"] == 20
-    @test freq["Output2"] == 4
+    @test freq[1] == 20
+    @test freq[2] == 4
     nsteps = 1000
     freq = get_output_frequency(params, nsteps)
-    @test freq["Output1"] == 20
-    @test freq["Output2"] == 100
+    @test freq[1] == 20
+    @test freq[2] == 100
 end
 
 @testset "ut_get_outputs" begin
@@ -210,28 +210,28 @@ params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, 
     @test testData["Damage Model"]["d"] == 1.1
 end
 @testset "get_physics_option" begin
-    params = Dict("Physics" => Dict{String,Bool}("Calculate Deformed Bond Geometry" => false,
-        "Calculate Deformation Gradient" => false,
-        "Calculate Shape Tensor" => true,
-        "Calculate Bond Associated Shape Tensor" => false,
-        "Calculate Bond Associated Deformation Gradient" => false))
+    params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => false,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => true,
+        "Bond Associated Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)))
 
-    options = Dict{String,Bool}("Calculate Deformed Bond Geometry" => true,
-        "Calculate Deformation Gradient" => false,
-        "Calculate Shape Tensor" => false,
-        "Calculate Bond Associated Shape Tensor" => false,
-        "Calculate Bond Associated Deformation Gradient" => false)
+    options = Dict{String,Bool}("Deformed Bond Geometry" => true,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => false,
+        "Bond Associated Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)
 
     optionTest = get_physics_options(params, options)
 
-    @test optionTest == params["Physics"]
+    @test optionTest == params["Physics"]["Pre Calculation"]
 
-    params = Dict("Physics" => Dict{String,Bool}("Calculate Deformed Bond Geometry" => true,
-        "Calculate Deformation Gradient" => true,
-        "Calculate Shape Tensor" => false,
-        "Calculate Bond Associated Shape Tensor" => false,
-        "Calculate Bond Associated Deformation Gradient" => true))
+    params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => true,
+        "Deformation Gradient" => true,
+        "Shape Tensor" => false,
+        "Bond Associated Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => true)))
     optionTest = get_physics_options(params, options)
 
-    @test optionTest == params["Physics"]
+    @test optionTest == params["Physics"]["Pre Calculation"]
 end
