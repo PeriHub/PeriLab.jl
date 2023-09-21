@@ -4,7 +4,7 @@ if isfile("Project.toml") && isfile("Manifest.toml")
 
     Pkg.instantiate()
 end
-using Revise
+# using Revise
 import PeriLab
 
 PeriLab.main()

@@ -4,14 +4,18 @@ using MPI
 # import PeriLab
 
 function check_exodiff(filename, cores)
-    mpiexec() do exe  # MPI wrapper
+    if cores == 1
+        run(`$(Base.julia_cmd()) ../../src/main.jl -v $(filename).yaml`)
+    else
+        mpiexec() do exe  # MPI wrapper
 
-        run(`$exe -n $cores $(Base.julia_cmd()) ../../src/main.jl -s $(filename).yaml`)
-        # cmd = """$exe -n $n $($(Base.julia_cmd())) [...]/main.jl $filename.yaml"""
-        # run(cmd)
-        # alternatively:
-        # p = run(ignorestatus(`...`))
-        # @test success(p)
+            run(`$exe -n $cores $(Base.julia_cmd()) ../../src/main.jl -s $(filename).yaml`)
+            # cmd = """$exe -n $n $($(Base.julia_cmd())) [...]/main.jl $filename.yaml"""
+            # run(cmd)
+            # alternatively:
+            # p = run(ignorestatus(`...`))
+            # @test success(p)
+        end
     end
     # PeriLab.main(filename * ".yaml", true)
     exodiff(filename * ".e", "./Reference/" * filename * ".e")

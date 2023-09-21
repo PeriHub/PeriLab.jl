@@ -490,15 +490,15 @@ function bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lo
     end
 
     # Determine if the line segment intersects the plane
-    no_intersection = true
+    intersection = false
     if 0.0 <= t <= 1.0
-        no_intersection = false
+        intersection = true
     end
 
     # Intersection point
     x = p0 .+ t .* (p1 .- p0)
 
-    return no_intersection, x
+    return intersection, x
 end
 
 function bondIntersect(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
@@ -556,7 +556,7 @@ function apply_bond_filters(nlist, mesh, params, dof)
                     for (jId, neighbor) in enumerate(nlist[i])
                         intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, i], data[:, neighbor], lower_left_corner, normal)
                         bond_intersect = bondIntersect(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
-                        filter_flag[jId] = !intersect_inf_plane && !bond_intersect
+                        filter_flag[jId] = !(intersect_inf_plane && bond_intersect)
                     end
                     nlist[i] = nlist[i][filter_flag]
                 end

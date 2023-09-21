@@ -38,7 +38,7 @@ end
 """
 function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
     # Check if rank is equal to 0.
-    if rank == 0 | !silent
+    if rank == 0 && !silent
         # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
         return ProgressBar(1:nsteps+1)
     end
