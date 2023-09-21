@@ -1,9 +1,17 @@
 module Damage
-export get_damage
+include("./Critical_Stretch.jl")
+using .Critical_stretch
+export compute_damage
 
-function get_damage(nodes, params, datamanager)
-    if damage["Damage Model"] == "Test"
+function compute_damage(datamanager, nodes, damage_parameter, time, dt)
+    bondDamageN = datamanager.get_field("Bond Damage", "N")
+    bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
+    bondDamageNP1 = copy(bondDamageN)
+    if damage_parameter["Damage Model"] == "Test"
         return testing_damage(datamanager, time)
+    end
+    if damage_parameter["Damage Model"] == Critical_stretch.damage_name()
+        datamanager = Critical_stretch.compute_damage(datamanager, nodes, damage_parameter, time, dt)
     end
     datamanager = damage_index(datamanager, nodes)
     return datamanager
@@ -20,7 +28,7 @@ end
     - `datamanager::Data_manager`: all model data
 
 """
-function damage_index(nodes, datamananager)
+function damage_index(datamananager, nodes)
     nlist = datamananager.get_nlist()
     volume = datamananager.get_field("Volume")
     bondDamageNP1 = datamananager.get_field("Bond Damage", "NP1")
