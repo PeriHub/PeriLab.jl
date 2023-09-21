@@ -118,7 +118,8 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm, to)
 
         @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
-        @timeit to "IO.init_write_results" exos, outputs = IO.init_write_results(params, datamanager)
+
+        @timeit to "IO.init_write_results" exos, outputs = IO.init_write_results(params, datamanager, solver_options["nsteps"])
 
         # h5write("/tmp/test.h5", "solver_options", solver_options)
         # h5write("/tmp/test.h5", "blockNodes", blockNodes)

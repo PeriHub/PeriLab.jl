@@ -110,8 +110,8 @@ function synchronise(comm, datamanager, direction)
     end
 end
 
-function write_results(exos, step, dt, outputs, datamanager)
-    return IO.write_results(exos, step, dt, outputs, datamanager)
+function write_results(exos, dt, outputs, datamanager)
+    return IO.write_results(exos, dt, outputs, datamanager)
 end
 
 end

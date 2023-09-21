@@ -67,7 +67,7 @@ function get_outputs(params, variables)
     return return_outputs
 end
 
-function get_output_frequency(params, nsteps, deltaT)
+function get_output_frequency(params, nsteps)
     freq = Dict{String,Int64}()
     num = 0
 
