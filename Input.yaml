@@ -22,7 +22,7 @@ PeriLab:
         Normal_Y: 1.0
         Normal_Z: 0.0
         Lower_Left_Corner_X: -0.5
-        Lower_Left_Corner_Y: 0.0
+        Lower_Left_Corner_Y: 0.5
         Lower_Left_Corner_Z: -1.0
         Bottom_Unit_Vector_X: 1.0
         Bottom_Unit_Vector_Y: 0.0
