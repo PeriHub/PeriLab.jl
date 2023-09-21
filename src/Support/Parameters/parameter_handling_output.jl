@@ -68,14 +68,15 @@ function get_outputs(params, variables)
 end
 
 function get_output_frequency(params, nsteps)
-    freq = Dict{String,Int64}()
+
     num = 0
 
     if check_element(params, "Outputs")
         outputs = params["Outputs"]
-        for output in keys(outputs)
+        freq = zeros(Int64, length(keys(outputs)))
+        for (id, output) in enumerate(keys(outputs))
             output_options = Dict("Output Frequency" => false, "Number of Outputs" => false)
-            freq[output] = 0
+            freq[id] = 1
             for output_option in keys(output_options)
                 if check_element(outputs[output], output_option)
                     if output_options[output_option]
@@ -84,15 +85,16 @@ function get_output_frequency(params, nsteps)
                     end
 
                     output_options[output_option] = true
-                    freq[output] = outputs[output][output_option]
+                    freq[id] = outputs[output][output_option]
                     if output_options["Number of Outputs"]
-                        freq[output] = Int64(ceil(nsteps / freq[output]))
+                        freq[id] = Int64(ceil(nsteps / freq[output]))
+                        if freq[id] < 1
+                            freq[id] = 1
+                        end
                     end
                 end
             end
-            if length(keys(freq[output])) == 0
-                freq[output] = 1
-            end
+
         end
     end
     return freq
