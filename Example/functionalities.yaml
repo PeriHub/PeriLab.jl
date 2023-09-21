@@ -32,7 +32,7 @@ PeriLab:
                 Thermal Model: "tbd"
         Addititve Models:        
             A_1:
-                Damage Model: "tbd"
+                Addititve Model: "tbd"
     Blocks: 
         block_1: 
             Block Names: "block_1"
