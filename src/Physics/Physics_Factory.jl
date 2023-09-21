@@ -95,19 +95,19 @@ function init_pre_calculation(datamanager, options)
 
     dof = datamanager.get_dof()
 
-    if options["Calculate Deformed Bond Geometry"]
+    if options["Deformed Bond Geometry"]
         bond_defN, bond_defNP1 = datamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
     end
-    if options["Calculate Shape Tensor"]
+    if options["Shape Tensor"]
 
     end
-    if options["Calculate Deformation Gradient"]
+    if options["Deformation Gradient"]
 
     end
-    if options["Calculate Bond Associated Shape Tensor"]
+    if options["Bond Associated Shape Tensor"]
 
     end
-    if options["Calculate Bond Associated Deformation Gradient"]
+    if options["Bond Associated Deformation Gradient"]
 
     end
 
