@@ -24,8 +24,7 @@ before_script:
 benchmark:
   stage: test
   script:
-    - julia --project=@. -e 'import PeriLab'
-    # - julia --project=@. -e 'import Pkg; Pkg.instantiate()'
+    - julia --project=@. -e 'import Pkg; Pkg.add(path=".")'
     - julia --project=@. test/benchmarks/benchmark.jl
   artifacts:
     paths:
