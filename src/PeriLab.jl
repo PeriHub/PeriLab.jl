@@ -162,6 +162,4 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
     end
 end
 
-main()
-
 end # module
