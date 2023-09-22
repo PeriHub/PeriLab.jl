@@ -21,12 +21,23 @@ export init_thermal_model_fields
 function init_models(datamanager)
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
-function compute_models(datamanager, nodes, block, dt, time, to)
+function compute_models(datamanager, nodes, block, dt, time, options, to)
 
     @timeit to "pre_calculation" datamanager = pre_calculation(datamanager, nodes, datamanager.get_physics_options())
 
-    @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+    if options["Damage Models"]
+        @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
+    end
+    if options["Material Models"]
+        @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+    end
 
+    if options["Thermal Models"]
+        @warn "Thermal Models not included yet"
+    end
+    if options["Additive Models"]
+        @warn "Additive Models not included yet"
+    end
     return datamanager
 
 end
@@ -84,19 +95,19 @@ function init_pre_calculation(datamanager, options)
 
     dof = datamanager.get_dof()
 
-    if options["Calculate Deformed Bond Geometry"]
+    if options["Deformed Bond Geometry"]
         bond_defN, bond_defNP1 = datamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
     end
-    if options["Calculate Shape Tensor"]
+    if options["Shape Tensor"]
 
     end
-    if options["Calculate Deformation Gradient"]
+    if options["Deformation Gradient"]
 
     end
-    if options["Calculate Bond Associated Shape Tensor"]
+    if options["Bond Associated Shape Tensor"]
 
     end
-    if options["Calculate Bond Associated Deformation Gradient"]
+    if options["Bond Associated Deformation Gradient"]
 
     end
 
@@ -109,21 +120,21 @@ function pre_calculation(datamanager, nodes, options)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     defCoor = datamanager.get_field("Deformed Coordinates", "NP1")
-    if options["Calculate Deformed Bond Geometry"]
+    if options["Deformed Bond Geometry"]
         bond_defNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
         bond_defNP1 = Geometry.bond_geometry(nodes, dof, nlist, defCoor, bond_defNP1)
     end
 
-    if options["Calculate Shape Tensor"]
+    if options["Shape Tensor"]
 
     end
-    if options["Calculate Deformation Gradient"]
+    if options["Deformation Gradient"]
 
     end
-    if options["Calculate Bond Associated Shape Tensor"]
+    if options["Bond Associated Shape Tensor"]
 
     end
-    if options["Calculate Bond Associated Deformation Gradient"]
+    if options["Bond Associated Deformation Gradient"]
 
     end
 

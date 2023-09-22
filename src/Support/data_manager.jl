@@ -47,11 +47,11 @@ fieldnames = Dict{String,DataType}()
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
-physicsOptions = Dict{String,Bool}("Calculate Deformed Bond Geometry" => true,
-    "Calculate Deformation Gradient" => false,
-    "Calculate Shape Tensor" => false,
-    "Calculate Bond Associated Shape Tensor" => false,
-    "Calculate Bond Associated Deformation Gradient" => false)
+physicsOptions = Dict{String,Bool}("Deformed Bond Geometry" => true,
+    "Deformation Gradient" => false,
+    "Shape Tensor" => false,
+    "Bond Associated Shape Tensor" => false,
+    "Bond Associated Deformation Gradient" => false)
 rank::Int64 = 0
 commMPi = Any
 function get_comm()
@@ -352,15 +352,15 @@ function get_synch_fields()
 end
 
 function get_physics_options()
-    if physicsOptions["Calculate Deformation Gradient"]
-        physicsOptions["Calculate Shape Tensor"] = true
-        physicsOptions["Calculate Deformed Bond Geometry"] = true
+    if physicsOptions["Deformation Gradient"]
+        physicsOptions["Shape Tensor"] = true
+        physicsOptions["Deformed Bond Geometry"] = true
     end
-    if physicsOptions["Calculate Bond Associated Deformation Gradient"]
-        physicsOptions["Calculate Deformation Gradient"] = true
-        physicsOptions["Calculate Bond Associated Shape Tensor"] = true
-        physicsOptions["Calculate Shape Tensor"] = true
-        physicsOptions["Calculate Deformed Bond Geometry"] = true
+    if physicsOptions["Bond Associated Deformation Gradient"]
+        physicsOptions["Deformation Gradient"] = true
+        physicsOptions["Bond Associated Shape Tensor"] = true
+        physicsOptions["Shape Tensor"] = true
+        physicsOptions["Deformed Bond Geometry"] = true
     end
     return physicsOptions
 end

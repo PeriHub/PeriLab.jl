@@ -86,7 +86,7 @@ function get_output_frequency(params, nsteps)
                     output_options[output_option] = true
                     freq[id] = outputs[output][output_option]
                     if output_options["Number of Outputs"]
-                        freq[id] = Int64(ceil(nsteps / freq[output]))
+                        freq[id] = Int64(ceil(nsteps / freq[id]))
                         if freq[id] < 1
                             freq[id] = 1
                         end

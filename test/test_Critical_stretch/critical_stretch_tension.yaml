@@ -1,20 +1,11 @@
 PeriLab:
     Discretization: 
         Node Sets:
-            Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12
-            Node Set 2: "nodeset.txt"
+            Node Set 1: 1
+            Node Set 2: 2
         Type: "Text File"
         Input Mesh File: "test_mesh.txt"
-        Bond Filters:
-            b1:
-                
     Physics:
-        Pre Calculation:
-            Deformed Bond Geometry: true
-            Deformation Gradient: false
-            Shape Tensor: false
-            Bond Associated Shape Tensor: false
-            Bond Associated Deformation Gradient: false
         Material Models: 
             Mat_1: 
                 Material Model: "PD Solid Elastic"
@@ -24,28 +15,24 @@ PeriLab:
                 Material Model: "PD Solid Elastic"
                 Bulk Modulus: 3.5e+3
                 Shear Modulus: 2.15e3
-        Damage Models:
-            D_1:
+        Damage Models: 
+            Dam_1:                 
                 Damage Model: "Critical Stretch"
                 Critical Stretch: 0.1
-        Thermal Models:
-            T_1:
-                Thermal Model: "tbd"
-        Addititve Models:        
-            A_1:
-                Addititve Model: "tbd"
+            Dam_2:                 
+                Damage Model: "Critical Stretch"
+                Critical Stretch: 0.1
     Blocks: 
         block_1: 
             Block Names: "block_1"
             Material Model: "Mat_1"
-            Damage Model: D_1
-            Thermal Model: T_1
-            Addititve Model: A_1
+            Damage Model: Dam_1
             Density: 2.7e-9
             Horizon: 2.1
         block_2: 
             Block Names: "block_2"
             Material Model: "Mat_2"
+            Damage Model: Dam_2
             Density: 2.7e-9
             Horizon: 2.1
     Boundary Conditions: 
@@ -53,29 +40,25 @@ PeriLab:
             Type: "Displacements"
             Node Set: "Node Set 1"
             Coordinate: "x"
-            Value: "0.0"
+            Value: "-1."
         BC_2: 
             Type: "Displacements"
-            Node Set: "Node Set 1"
-            Coordinate: "y"
-            Value: "0.1*y"
+            Node Set: "Node Set 2"
+            Coordinate: "x"
+            Value: "0.0"
     Solver: 
-        Material Models: True
         Damage Models: True
-        Thermal Models: True
-        Additive Models: False
         Initial Time: 0.0
         Final Time: 5.0e-6
         Verlet: 
+            Fixed dt: 5.0e-6
             Safety Factor: 1.0
     Outputs: 
         Output1:
-            Output Filename: "Name"
+            Output Filename: "critical_stretch_tension"
             Output Frequency: 1
-            Number of Outputs: 1
             Output Variables: 
                 Displacements: True
-                Forces: True
-                Volume: True
+                Damage: True
             
 

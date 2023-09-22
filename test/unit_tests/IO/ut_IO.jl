@@ -4,7 +4,6 @@ include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .IO
 using Exodus
-
 testDatamanager = Data_manager
 filename1 = "test1.e"
 filename2 = "test2.e"
@@ -59,7 +58,7 @@ block_Id[end] = 2
 end
 
 @testset "ut_init_write_result_and_write_results" begin
-    exos, outputs = IO.init_write_results(params, testDatamanager)
+    exos, outputs = IO.init_write_results(params, testDatamanager, 2)
 
     @test length(exos) == 2
     @test length(exos[1].nodal_var_name_dict) == 6
@@ -97,17 +96,17 @@ end
             end
         end
     end
-
+    to = TimerOutput()
     IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
-    IO.write_results(exos, 1.5, outputs, testDatamanager)
+    IO.write_results(exos, 1.5, outputs, testDatamanager, to, true)
 
     @test read_time(exos[1], 2) == 1.5
     @test read_time(exos[2], 2) == 1.5
-    IO.write_results(exos, 1.6, outputs, testDatamanager)
+    IO.write_results(exos, 1.6, outputs, testDatamanager, to, true)
 
     @test read_time(exos[1], 3) == 1.6
     @test read_time(exos[2], 3) == 1.6
-    IO.write_results([], 1.6, outputs, testDatamanager)
+    IO.write_results([], 1.6, outputs, testDatamanager, to, true)
     testBool = false
     try
         read_time(exos[1], 4) == 1.6

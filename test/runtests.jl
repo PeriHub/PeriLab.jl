@@ -103,9 +103,15 @@ MPI.Init()
         end
     end
 
-    @testset "Test_PD_Solid_Elastic" begin
+    @testset "test_PD_Solid_Elastic" begin
 
         include("test_PD_Solid_Elastic/test_PD_Solid_Elastic.jl")
+
+    end
+
+    @testset "test_Critical_stretch" begin
+
+        include("test_Critical_stretch/test_Critical_stretch.jl")
 
     end
 end
