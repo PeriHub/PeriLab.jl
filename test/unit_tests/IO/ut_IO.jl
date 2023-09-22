@@ -4,12 +4,16 @@ include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .IO
 using Exodus
+using MPI
+
 testDatamanager = Data_manager
 filename1 = "test1.e"
 filename2 = "test2.e"
 dof = 2
 nnodes = 5
+comm = MPI.COMM_WORLD
 testDatamanager.set_nmasters(nnodes)
+testDatamanager.set_comm(comm)
 testDatamanager.set_dof(dof)
 testDatamanager.set_max_rank(1)
 testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
@@ -96,17 +100,16 @@ end
             end
         end
     end
-    to = TimerOutput()
     IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
-    IO.write_results(exos, 1.5, outputs, testDatamanager, to, true)
+    IO.write_results(exos, 1.5, outputs, testDatamanager)
 
     @test read_time(exos[1], 2) == 1.5
     @test read_time(exos[2], 2) == 1.5
-    IO.write_results(exos, 1.6, outputs, testDatamanager, to, true)
+    IO.write_results(exos, 1.6, outputs, testDatamanager)
 
     @test read_time(exos[1], 3) == 1.6
     @test read_time(exos[2], 3) == 1.6
-    IO.write_results([], 1.6, outputs, testDatamanager, to, true)
+    IO.write_results([], 1.6, outputs, testDatamanager)
     testBool = false
     try
         read_time(exos[1], 4) == 1.6

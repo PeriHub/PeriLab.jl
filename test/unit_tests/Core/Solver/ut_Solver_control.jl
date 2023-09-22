@@ -1,6 +1,6 @@
 using Test
 using MPI
-import TimerOutputs
+using TimerOutputs
 include("../../../../src/Core/Solver/Solver_control.jl")
 include("../../../../src/Support/geometry.jl")
 if !isdefined(@__MODULE__, :Data_manager)
