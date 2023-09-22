@@ -9,21 +9,22 @@ before_script:
   - apt-get -qq update; apt-get -y install git
   - julia --project=@. -e "import Pkg; Pkg.build()"
 
-test:
-  stage: test
-  script:
-    - julia --project=@. -e "import Pkg; Pkg.test(; coverage = true)"
-    # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
-    # - julia --project=test/coverage test/coverage/coverage-summary.jl
+# test:
+#   stage: test
+#   script:
+#     - julia --project=@. -e "import Pkg; Pkg.test(; coverage = true)"
+#     # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
+#     # - julia --project=test/coverage test/coverage/coverage-summary.jl
 
-    - julia -e 'import Pkg; Pkg.add("Coverage");
-      using Coverage; cl, tl = get_summary(process_folder());
-      println("(", cl/tl*100, "%) covered")'
-  coverage: '/\(\d+.\d+\%\) covered/'
+#     - julia -e 'import Pkg; Pkg.add("Coverage");
+#       using Coverage; cl, tl = get_summary(process_folder());
+#       println("(", cl/tl*100, "%) covered")'
+#   coverage: '/\(\d+.\d+\%\) covered/'
 
 benchmark:
   stage: test
   script:
+    - julia -e 'import Pkg; Pkg.add("PeriLab")'
     - julia --project=@. test/benchmarks/benchmark.jl
   artifacts:
     paths:

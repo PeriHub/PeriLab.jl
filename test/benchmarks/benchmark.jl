@@ -1,6 +1,5 @@
 using TimerOutputs
 using JSON3
-using PeriLab
 const to = TimerOutput()
 
 include("../helper.jl")
