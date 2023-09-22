@@ -25,6 +25,7 @@ benchmark:
   stage: test
   script:
     - julia -e 'import Pkg; Pkg.activate(".")'
+    - julia -e 'import Pkg; Pkg.instantiate()'
     - julia test/benchmarks/benchmark.jl
   artifacts:
     paths:
