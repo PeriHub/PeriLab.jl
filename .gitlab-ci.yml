@@ -24,8 +24,8 @@ before_script:
 benchmark:
   stage: test
   script:
-    - julia --project=@. -e 'import Pkg; Pkg.add(path=".")'
-    - julia --project=@. test/benchmarks/benchmark.jl
+    - julia -e 'import Pkg; Pkg.add(path=".")'
+    - julia --project=. test/benchmarks/benchmark.jl
   artifacts:
     paths:
       - benchmark_results.json
