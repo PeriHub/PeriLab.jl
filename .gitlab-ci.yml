@@ -24,10 +24,12 @@ test:
 
 benchmark:
   stage: benchmark
+  variables:
+    DEPLOY_CURL_COMMAND: 'curl -o benchmark_old_results.json --header "PRIVATE-TOKEN: glpat-imAENnk33mhBQycGWMNb" "https://gitlab.com/api/v4/projects/50476615/jobs/artifacts/main/raw/benchmark_results.json?job=benchmark"'
   script:
     - julia -e 'import Pkg; Pkg.add(path=".")'
     - julia --project=. test/benchmarks/benchmark.jl
-    - curl -o benchmark_old_results.json --header "PRIVATE-TOKEN: glpat-imAENnk33mhBQycGWMNb" "https://gitlab.com/api/v4/projects/50476615/jobs/artifacts/main/raw/benchmark_results.json?job=benchmark"
+    - 'eval "$DEPLOY_CURL_COMMAND"'
     - value_old_ns=$(jq -r '.total_time_ns' benchmark_old_results.json)
     - value_new_ns=$(jq -r '.total_time_ns' benchmark_results.json)
     - value_old_s=$(echo "$value_old_ns / 1000000000" | bc)
