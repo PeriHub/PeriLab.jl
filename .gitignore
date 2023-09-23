@@ -61,3 +61,16 @@ strain_yy.e.4.0
 strain_yy.e.4.1
 strain_yy.e.4.2
 strain_yy.e.4.3
+strain.yaml
+test_data_exchange.jl
+test_mesh.txt
+test/multifunctional_test/test_MPI_data_manager.jl
+test/tensile_test/tensile_test.yaml
+test/test_PD_Solid_Elastic/strain_yy.e
+test/tryout/critical_stretch_pressure.e
+test/tryout/critical_stretch_pressure.yaml
+test/tryout/critical_stretch_tension.e
+test/tryout/critical_stretch_tension.yaml
+test/tryout/strain_yy.e
+test/multifunctional_test/test_MPI_data_manager.jl
+test/tensile_test/tensile_test.yaml
