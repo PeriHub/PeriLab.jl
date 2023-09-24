@@ -22,7 +22,7 @@ export main
 
 function print_banner()
     println("""
-    \e[1;36m8888888b.\e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Documentation: https://docs.julialang.org
+    \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Documentation: https://docs.julialang.org
     \e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |
     \e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Type "?" for help, "]?" for Pkg help.
     \e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |
