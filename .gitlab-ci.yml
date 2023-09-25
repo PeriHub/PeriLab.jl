@@ -37,14 +37,16 @@ benchmark:
     - diff=$(echo "$value_old_s - $value_new_s" | bc)
     - if [ "$value_old_s" < "$value_new_s" ]; then
       echo "Benchmark is $diff [s] slower";
-      exit 1
+      exit 1;
       else
       echo "Benchmark is $diff [s] faster";
       fi
   artifacts:
     paths:
       - benchmark_results.json
-  allow_failure: true
+  allow_failure:
+    exit_codes:
+      - 1
 
 pages:
   stage: deploy
