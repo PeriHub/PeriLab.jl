@@ -62,8 +62,7 @@ end
     @test exo.file_name == filename
     @test exo.init.num_dim == dof
     @test exo.init.num_nodes == nnodes
-    @warn "exo.init.num_node_sets deactivated"
-    #@test exo.init.num_node_sets == 2
+    @test exo.init.num_node_sets == 2
     @test exo.init.num_elem_blks == 3
     close(exo)
     rm(filename)

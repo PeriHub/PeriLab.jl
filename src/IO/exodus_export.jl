@@ -18,10 +18,6 @@ function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_nod
     float_type = Float64
     num_elems = num_nodes
     num_side_sets = 0
-    if num_node_sets > 0
-        @warn "Number of node sets are set to zero"
-    end
-    num_node_sets = 0
     init = Initialization{bulk_int_type}(
         Int32(num_dim), Int32(num_nodes), Int32(num_elems),
         Int32(num_elem_blks), Int32(num_node_sets), Int32(num_side_sets)
@@ -70,15 +66,15 @@ function init_results_in_exodus(exo, output, coords, block_Id, uniqueBlocks, nse
     end
 
     write_coordinates(exo, coords)
-    """
-        id = 0
-        for name in eachindex(nsets)
-            id += 1
-            nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name]))
-            write_set(exo, nsetExo)
-            write_name(exo, NodeSet, name)
-        end
-    """
+
+    id::Int32 = 0
+    for name in eachindex(nsets)
+        id += Int32(1)
+        nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name]))
+        write_set(exo, nsetExo)
+        write_name(exo, nsetExo, name)
+    end
+
     for block in uniqueBlocks
         conn = get_block_nodes(block_Id, block)# virtual elements     
         write_block(exo, block, "SPHERE", conn)

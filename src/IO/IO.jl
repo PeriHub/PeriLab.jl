@@ -33,7 +33,6 @@ function close_files(exos)
 end
 
 function delete_files(exos)
-
     for exo in exos
         @info "Delete output file " * exo.file_name
         rm(exo.file_name)
