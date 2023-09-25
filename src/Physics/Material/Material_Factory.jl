@@ -1,8 +1,7 @@
 module Material
 include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
-global PeriLabPath = abspath(joinpath(@__DIR__, "..", "..", ".."))
-global module_list = Set_modules.find_module_files(PeriLabPath * "src/Physics/Material/", "material_name")
+global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
 Set_modules.include_files(module_list)
 
 export compute_forces
