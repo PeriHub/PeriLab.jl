@@ -2,11 +2,6 @@ include("../material_basis.jl")
 module Ordinary
 
 export compute_force
-export material_name
-
-function material_name()
-    return "PD Solid Elastic"
-end
 
 function compute_weighted_volume(nodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
     """
