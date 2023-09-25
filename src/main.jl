@@ -6,5 +6,5 @@ if isfile("Project.toml") && isfile("Manifest.toml")
 end
 # using Revise
 import PeriLab
-
+global PeriLabPath = "/home/will_cr/julia_projects/perilab/"
 PeriLab.main()
