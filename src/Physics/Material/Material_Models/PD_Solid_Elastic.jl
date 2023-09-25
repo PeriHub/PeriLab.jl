@@ -1,6 +1,7 @@
 
-include("../material_basis.jl")
+
 module PD_Solid_Elastic
+include("../material_basis.jl")
 include("./Ordinary/Ordinary.jl")
 import .Ordinary
 export compute_force

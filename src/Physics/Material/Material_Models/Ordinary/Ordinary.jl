@@ -1,7 +1,7 @@
-include("../material_basis.jl")
 module Ordinary
 
-export compute_force
+export compute_dilatation
+export compute_weighted_volume
 
 function compute_weighted_volume(nodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
     """
