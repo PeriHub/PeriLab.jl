@@ -9,7 +9,7 @@ export material_name
    Parameters:
 
    Returns:
-   - `name` (string): The name of the material.
+   - `name::String`: The name of the material.
 
    Example:
    ```julia
@@ -18,7 +18,7 @@ export material_name
    ```
    """
 function material_name()
-    return "Material Template"
+  return "Material Template"
 end
 """
    compute_force(datamanager, nodes, material_parameter, time, dt)
@@ -28,7 +28,7 @@ end
    Parameters:
         - `datamanager::Data_manager`: Datamanager.
         - `nodes::Vector{Int64}`: List of block nodes.
-        - `material parameter::Dict(String, Any)`: Dictionary with material parameter.
+        - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
         - `time::Float32`: The current time.
         - `dt::Float32`: The current time step.
    Returns:
@@ -38,12 +38,12 @@ end
      ```
    """
 function compute_force(datamanager, nodes, material_parameter, time, dt)
-    @info "Please write a material name in material_name()."
-    @info "You can call your routine within the yaml file."
-    @info "Fill the compute_force(datamanager, nodes, material_parameter, time, dt) function."
-    @info "The datamanger and material_parameter holds all you need to solve your problem on material level."
-    @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-    return datamanager
+  @info "Please write a material name in material_name()."
+  @info "You can call your routine within the yaml file."
+  @info "Fill the compute_force(datamanager, nodes, material_parameter, time, dt) function."
+  @info "The datamanger and material_parameter holds all you need to solve your problem on material level."
+  @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+  return datamanager
 end
 
 end
