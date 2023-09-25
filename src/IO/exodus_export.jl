@@ -67,6 +67,8 @@ function init_results_in_exodus(exo, output, coords, block_Id, uniqueBlocks, nse
     write_coordinates(exo, coords)
 
     id::Int32 = 0
+    # tbd all nodessets init_results_in_exodus
+    # bloecke checken
     for name in eachindex(nsets)
         id += Int32(1)
         nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name]))

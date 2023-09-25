@@ -87,12 +87,7 @@ MPI.Init()
 
         @testset "Thermal" begin end
         @testset "Correspondence" begin
-
-
             include("unit_tests/Physics/Thermal/Correspondence/ut_Thermal_correspondence.jl")
-
-
-
         end
 
         @testset "ut_Physics_Factory" begin
@@ -101,18 +96,22 @@ MPI.Init()
         @testset "ut_Damage" begin
             include("unit_tests/Physics/Damage/ut_Damage_Factory.jl")
         end
+        @testset "ut_Material" begin
+            @testset "ut_material_basis" begin
+                include("unit_tests/Physics/Material/ut_material_basis.jl")
+            end
+            @testset "ut_ordinary" begin
+                include("unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary.jl")
+            end
+        end
     end
 
     @testset "test_PD_Solid_Elastic" begin
-
         include("test_PD_Solid_Elastic/test_PD_Solid_Elastic.jl")
-
     end
 
     @testset "test_Critical_stretch" begin
-
         include("test_Critical_stretch/test_Critical_stretch.jl")
-
     end
 end
 
