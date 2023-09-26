@@ -71,13 +71,14 @@ material_type = Dict{String,Bool}("Bond-Based" => false, "Ordinary" => false, "C
    Creates a bond field with the given name, data type, and degree of freedom.
 
    Parameters:
-   - `name` (string): The name of the bond field.
-   - `type` (DataType): The data type of the bond field.
-   - `dof` (Int64): The degree of freedom of each bond.
+    - `name::String`: The name of the bond field.
+    - `vartype::DataType`: The data type of the bond field.
+    - `dof::Int64`: The degrees of freedom per bond.
+    - `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
 
    Returns:
-   - `bond_field` (Field): The created bond field for the current time step.
-   - `bond_field_np1` (Field): The created bond field for the next time step.
+   - `bond_field::Field`: The created bond field for the current time step.
+   - `bond_field_np1::Field`: The created bond field for the next time step.
 
    Example:
    ```julia
@@ -88,18 +89,25 @@ function create_bond_field(name::String, type::DataType, dof::Int64)
 
     return create_field(name * "N", type, "Bond_Field", dof), create_field(name * "NP1", type, "Bond_Field", dof)
 end
+
+function create_bond_field(name::String, type::DataType, VectorOrArray::String, dof::Int64)
+
+    return create_field(name * "N", type, "Bond_Field", dof), create_field(name * "NP1", type, "Bond_Field", dof)
+end
+
 """
    create_constant_bond_field(name::String, type::DataType, dof::Int64)
 
    Creates a constant bond field with the given name, data type, and degree of freedom.
 
    Parameters:
-   - `name` (string): The name of the constant bond field.
-   - `type` (DataType): The data type of the constant bond field.
-   - `dof` (Int64): The degree of freedom for each bond.
+    - `name::String`: The name of the bond field.
+    - `vartype::DataType`: The data type of the bond field.
+    - `dof::Int64`: The degrees of freedom per bond.
+    - `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
 
    Returns:
-   - `constant_bond_field` (Field): The created constant bond field.
+   - `constant_bond_field::Field`: The created constant bond field.
 
    Example:
    ```julia
@@ -109,18 +117,24 @@ end
 function create_constant_bond_field(name::String, type::DataType, dof::Int64)
     return create_field(name, type, "Bond_Field", dof)
 end
+
+function create_constant_bond_field(name::String, type::DataType, VectorOrArray::String, dof::Int64)
+    return create_field(name, type, "Bond_Field", dof)
+end
+
 """
 create_constant_node_field(name::String, type::DataType, dof::Int64)
 
 Creates a constant node field with the given name, data type, and degree of freedom.
 
 Parameters:
-- `name` (string): The name of the constant node field.
-- `type` (DataType): The data type of the constant node field.
-- `dof` (Int64): The degree of freedom of each node.
+- `name::String`: The name of the node field.
+- `vartype::DataType`: The data type of the node field.
+- `dof::Int64`: The degrees of freedom per node.
+- `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
 
 Returns:
-- `constant_node_field` (Field): The created constant node field.
+- `constant_node_field::Field`: The created constant node field.
 
 Example:
 ```julia
@@ -128,6 +142,10 @@ create_constant_node_field("temperature", Float64, 1)  # creates a temperature c
 ```
 """
 function create_constant_node_field(name::String, type::DataType, dof::Int64)
+
+    return create_field(name, type, "Node_Field", dof)
+end
+function create_constant_node_field(name::String, type::DataType, VectorOrArray::String, dof::Int64)
 
     return create_field(name, type, "Node_Field", dof)
 end
@@ -177,27 +195,31 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
     global fieldnames[name] = vartype
     return fields[vartype][name]
 end
+"""
+   create_node_field(name::String, type::DataType, dof::Int64)
 
+   Creates a node field with the given name, data type, and degree of freedom.
+
+   Parameters:
+   - `name::String`: The name of the node field.
+   - `type::DataType`: The data type of the node field.
+   - `dof::Int64`: The degree of freedom of each node.
+   - `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
+   Returns:
+   - `node_field::Field`: The created node field for the current time step.
+   - `node_field_np1::Field`: The created node field for the next time step.
+
+   Example:
+   ```julia
+   create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
+   ```
+   """
 function create_node_field(name::String, type::DataType, dof::Int64)
-    """
-    create_node_field(name::String, type::DataType, dof::Int64)
 
-    Creates a node field with the given name, data type, and degree of freedom.
+    return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
+end
 
-    Parameters:
-    - `name` (string): The name of the node field.
-    - `type` (DataType): The data type of the node field.
-    - `dof` (Int64): The degree of freedom of each node.
-
-    Returns:
-    - `node_field` (Field): The created node field for the current time step.
-    - `node_field_np1` (Field): The created node field for the next time step.
-
-    Example:
-    ```julia
-    create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
-    ```
-    """
+function create_node_field(name::String, type::DataType, VectorOrArray::String, dof::Int64)
     return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
 end
 
