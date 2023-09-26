@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+
+SPDX-License-Identifier: BSD-3-Clause
+-->
+
 # PeriLab documentation
 
 This package is a minimal working example of setting up CI and documentation generation for Julia projects using [Gitlab](https://gitlab.com/).

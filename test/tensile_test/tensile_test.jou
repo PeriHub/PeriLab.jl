@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
 #  Example of call to loadbal to create parallel input files:
 #
 #  loadbal -No_subdirectory -suffix_mesh g -suffix_spread g -p 2 tensile_test 2

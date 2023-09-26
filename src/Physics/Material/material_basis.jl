@@ -1,4 +1,6 @@
-
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 function get_all_elastic_moduli(parameter::Dict{String,Float32})
     K::Float32 = 0
