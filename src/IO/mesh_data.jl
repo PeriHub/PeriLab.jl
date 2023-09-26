@@ -241,10 +241,12 @@ end
 
 function get_header(filename)
     file = open(filename, "r")
-    for line in eachline(file)
-        if contains(line, '#')
+    header_line = 0
+    for line in eachline(file)#
+        header_line += 1
+        if contains(line, "header:")
             close(file)
-            return convert(Vector{String}, split(line[3:end], ' '))
+            return header_line, convert(Vector{String}, split(line[9:end], ' '))
         end
     end
 end
@@ -254,8 +256,8 @@ function read_mesh(filename::String)
         @error "File $filename does not exist"
     end
     @info "Read Mesh File $filename"
-    header = get_header(filename)
-    return CSV.read(filename, DataFrame; delim=" ", header=header, skipto=2)
+    header_line, header = get_header(filename)
+    return CSV.read(filename, DataFrame; delim=" ", header=header, skipto=header_line + 1)
 end
 
 function set_dof(mesh)
