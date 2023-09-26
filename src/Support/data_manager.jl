@@ -43,7 +43,8 @@ block_list = Int64[]
 properties = Dict{Int,Dict}()
 glob_to_loc = Dict{Int64,Int64}()
 fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
-fieldnames = Dict{String,DataType}()
+field_array_type = Dict{String,Dict{String,Any}}()
+field_names = Dict{String,DataType}()
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Ref([[[[]]]])
@@ -92,7 +93,7 @@ end
 
 function create_bond_field(name::String, type::DataType, VectorOrArray::String, dof::Int64)
 
-    return create_field(name * "N", type, "Bond_Field", dof), create_field(name * "NP1", type, "Bond_Field", dof)
+    return create_field(name * "N", type, "Bond_Field", VectorOrArray, dof), create_field(name * "NP1", type, "Bond_Field", VectorOrArray, dof)
 end
 
 """
@@ -119,7 +120,7 @@ function create_constant_bond_field(name::String, type::DataType, dof::Int64)
 end
 
 function create_constant_bond_field(name::String, type::DataType, VectorOrArray::String, dof::Int64)
-    return create_field(name, type, "Bond_Field", dof)
+    return create_field(name, type, "Bond_Field", VectorOrArray, dof)
 end
 
 """
@@ -147,7 +148,7 @@ function create_constant_node_field(name::String, type::DataType, dof::Int64)
 end
 function create_constant_node_field(name::String, type::DataType, VectorOrArray::String, dof::Int64)
 
-    return create_field(name, type, "Node_Field", dof)
+    return create_field(name, type, "Node_Field", VectorOrArray, dof)
 end
 """
 create_field(name::String, vartype::DataType, bondNode::String, dof::Int64)
@@ -163,20 +164,27 @@ Create a field with the given `name` for the specified `vartype`. If the field a
 The field with the given `name` and specified characteristics.
 
 """
-function create_field(name::String, vartype::DataType, bondOrNode::String, dof::Int64)
 
+function create_field(name::String, vartype::DataType, bondOrNode::String, dof::Int64)
+    create_field(name, vartype, bondOrNode, "Vector", dof)
+end
+
+function create_field(name::String, vartype::DataType, bondOrNode::String, VectorOrArray::String, dof::Int64)
+    field_dof = dof
     if haskey(fields, vartype) == false
         fields[vartype] = Dict{String,Any}()
     end
     if name in get_all_field_keys()
         return get_field(name)
     end
-
+    if VectorOrArray == "Matrix"
+        field_dof *= dof
+    end
     if bondOrNode == "Node_Field"
         if dof == 1
             fields[vartype][name] = zeros(vartype, nnodes)
         else
-            fields[vartype][name] = zeros(vartype, nnodes, dof)
+            fields[vartype][name] = zeros(vartype, nnodes, field_dof)
         end
     elseif bondOrNode == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
@@ -187,13 +195,15 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, dof::
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
                 fill!(fields[vartype][name][end], vartype(0))
             else
-                append!(fields[vartype][name], [Matrix{vartype}(undef, nBonds[i], dof)])
+                append!(fields[vartype][name], [Matrix{vartype}(undef, nBonds[i], field_dof)])
                 fill!(fields[vartype][name][end], vartype(0))
             end
         end
     end
-    global fieldnames[name] = vartype
-    return fields[vartype][name]
+    field_names[name] = vartype
+    field_array_type[name] = Dict("Type" => VectorOrArray, "Dof" => dof)
+
+    return get_field(name)
 end
 """
    create_node_field(name::String, type::DataType, dof::Int64)
@@ -220,11 +230,11 @@ function create_node_field(name::String, type::DataType, dof::Int64)
 end
 
 function create_node_field(name::String, type::DataType, VectorOrArray::String, dof::Int64)
-    return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
+    return create_field(name * "N", type, "Node_Field", VectorOrArray, dof), create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof)
 end
 
 function get_all_field_keys()
-    return collect(keys(fieldnames))
+    return collect(keys(field_names))
 end
 
 function get_block_list()
@@ -262,10 +272,10 @@ function get_field(name::String)
     # view() to get SubArray references
     # https://docs.julialang.org/en/v1/base/arrays/#Views-(SubArrays-and-other-view-types)
     if name in get_all_field_keys()
-        if length(size(fields[fieldnames[name]][name])) > 1
-            return view(fields[fieldnames[name]][name], :, :)
+        if length(size(fields[field_names[name]][name])) > 1
+            return view(fields[field_names[name]][name], :, :)
         end
-        return view(fields[fieldnames[name]][name], :,)
+        return view(fields[field_names[name]][name], :,)
     end
     @error "Field " * name * " does not exist. Check if it is initialized as constant."
     return []
@@ -588,14 +598,14 @@ function switch_NP1_to_N()
         field_N = get_field(temp_field_name)
         field_N[:] = field_NP1[:]
         if size(field_NP1[1]) == ()
-            field_NP1[:] = fill(fieldnames[NP1](0), size(field_NP1))
+            field_NP1[:] = fill(field_names[NP1](0), size(field_NP1))
         else
             value = 0
             if "Bond DamageNP1" == NP1
                 value = 1
             end
             for fieldID in eachindex(field_NP1)
-                field_NP1[fieldID] = fill(fieldnames[NP1](value), size(field_NP1[fieldID]))
+                field_NP1[fieldID] = fill(field_names[NP1](value), size(field_NP1[fieldID]))
             end
         end
     end
