@@ -181,7 +181,31 @@ end
     test1, test2 = testDatamanager.create_bond_field("test8", Float32, 3)
     @test test1 == testDatamanager.get_field("test8", "N")
     @test test2 == testDatamanager.get_field("test8", "NP1")
+
 end
+
+@testset "Matrix" begin
+    #Arrays
+    test = testDatamanager.create_constant_node_field("test9", Float32, "Matrix", 2)
+    test[1, 1, 1] = 1.2
+    test[1, 2, 1] = -1.2
+    test[1, 1, 2] = 1.4
+    test[1, 2, 2] = 1.2
+    @test test == testDatamanager.get_field("test9")
+    test = testDatamanager.create_constant_bond_field("test10", Float32, "Matrix", 3)
+    test[1][1, 1, 1] = 1.2
+    test[2][1, 2, 1] = -1.2
+    test[2][1, 1, 3] = 1.4
+    test[2][1, 2, 2] = 1.2
+    @test test == testDatamanager.get_field("test10")
+    test1, test2 = testDatamanager.create_bond_field("test11", Float32, "Matrix", 6)
+    @test test1 == testDatamanager.get_field("test11", "N")
+    @test test2 == testDatamanager.get_field("test11", "NP1")
+    test1, test2 = testDatamanager.create_node_field("test12", Float32, "Matrix", 3)
+    @test test1 == testDatamanager.get_field("test12", "N")
+    @test test2 == testDatamanager.get_field("test12", "NP1")
+end
+
 
 testNP1NDict = testDatamanager.get_NP1_to_N_Dict()
 

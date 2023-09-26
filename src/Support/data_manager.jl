@@ -273,7 +273,15 @@ function get_field(name::String)
     # https://docs.julialang.org/en/v1/base/arrays/#Views-(SubArrays-and-other-view-types)
     if name in get_all_field_keys()
         if length(size(fields[field_names[name]][name])) > 1
+            if field_array_type[name]["Type"] == "Matrix"
+                field_dof = field_array_type[name]["Dof"]
+                return view(reshape(fields[field_names[name]][name], (:, field_dof, field_dof)), :, :, :)
+            end
             return view(fields[field_names[name]][name], :, :)
+        end
+        if field_array_type[name]["Type"] == "Matrix"
+            field_dof = field_array_type[name]["Dof"]
+            return view([reshape(field, (:, field_dof, field_dof)) for field in fields[field_names[name]][name]], :,)
         end
         return view(fields[field_names[name]][name], :,)
     end
