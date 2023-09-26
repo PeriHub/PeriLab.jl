@@ -88,7 +88,7 @@ function get_local_overlap_map(overlap_map, distribution, ranks)
 end
 
 function local_nodes_from_dict(glob_to_loc, global_nodes)
-    return [glob_to_loc[global_node] for global_node in global_nodes if global_node in keys(glob_to_loc)]
+    return [glob_to_loc[global_node] for global_node in global_nodes if haskey(glob_to_loc, global_node)]
 end
 
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
@@ -226,10 +226,10 @@ function check_mesh_elements(mesh, dof)
         end
         meshInfoDict[name] = Dict{String,Any}("Mesh ID" => meshID, "Type" => vartype)
     end
-    if !("Block_Id" in keys(meshInfoDict))
+    if !(haskey(keys(meshInfoDict), "Block_Id"))
         @error "No blocks defined"
     end
-    if !("Volume" in keys(meshInfoDict))
+    if !(haskey(keys(meshInfoDict), "Volume"))
         @error "No volumes defined"
     end
     return meshInfoDict
