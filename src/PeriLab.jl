@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 "Simple dummy project module to demonstrate how a project can be organized."
 module PeriLab
 # using PrecompileTools

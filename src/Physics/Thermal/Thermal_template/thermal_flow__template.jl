@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 module Thermal_template
 export compute_thermal_flow
 export thermal_flow_name

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 function get_density(params, blockID)
     if check_element(params["Blocks"]["block_"*string(blockID)], "Density")

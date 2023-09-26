@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+
+SPDX-License-Identifier: BSD-3-Clause
+-->
+
 ## Dev Steps
     1. dof für koordinaten an alle cores verteilen verteilen -> done
     2. nslave nmaster verteilen -> done
