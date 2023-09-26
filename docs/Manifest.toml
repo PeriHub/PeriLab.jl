@@ -509,7 +509,6 @@ version = "2.7.2"
 
 [[deps.PeriLab]]
 deps = ["Aqua", "CSV", "DataFrames", "Exodus", "HDF5", "LinearAlgebra", "Logging", "LoggingExtras", "MPI", "NearestNeighbors", "Pkg", "PrecompileTools", "ProgressBars", "Random", "Revise", "Tensorial", "Test", "TimerOutputs", "YAML"]
-path = "/home/jt/perilab"
 uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
 version = "1.1.0"
 

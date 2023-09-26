@@ -16,15 +16,15 @@ Peridigm:
 #       divided by the initial cross-sectional area.
 #
 #     Units are CGS
-#       mass          g
-#       length        cm
+#       mass          kg
+#       length        m
 #       time          s
-#       density       g/cm^3
-#       force         dyne
-#       pressure      dyne/cm^2
-#       velocity      cm/s
-#       acceleration  cm/s^2
-#       energy        erg
+#       density       kg/m^3
+#       force         N
+#       pressure      N/m^2
+#       velocity      m/s
+#       acceleration  m/s^2
+#       energy        Nm
 
   Verbose: false
   Discretization:
@@ -33,7 +33,7 @@ Peridigm:
 
   Materials:
       My Material:
-        Material Model: "Elastic Correspondence"
+        Material Models: "Elastic Correspondence"
         Density: 8.0
         Bulk Modulus: 1.500e12
         Shear Modulus: 6.923e11
@@ -46,33 +46,33 @@ Peridigm:
         Horizon: 0.16
 
   Boundary Conditions:
-      Prescribed Displacement Bottom:
-        Type: "Prescribed Displacement"
+      Displacement Bottom:
+        Type: "Displacement"
         Node Set: "nodelist_1"
         Coordinate: "y"
         Value: "y*0.005*t"
-      Prescribed Displacement Top:
-        Type: "Prescribed Displacement"
+      Displacement Top:
+        Type: "Displacement"
         Node Set: "nodelist_2"
         Coordinate: "y"
         Value: "y*0.005*t"
-      Prescribed Displacement Fix Bottom Rigid Body Motion In X:
-        Type: "Prescribed Displacement"
+      Displacement Fix Bottom Rigid Body Motion In X:
+        Type: "Displacement"
         Node Set: "nodelist_3"
         Coordinate: "x"
         Value: "0.0"
-      Prescribed Displacement Fix Bottom Rigid Body Motion In Z:
-        Type: "Prescribed Displacement"
+      Displacement Fix Bottom Rigid Body Motion In Z:
+        Type: "Displacement"
         Node Set: "nodelist_4"
         Coordinate: "z"
         Value: "0.0"
-      Prescribed Displacement Fix Top Rigid Body Motion In X:
-        Type: "Prescribed Displacement"
+      Displacement Fix Top Rigid Body Motion In X:
+        Type: "Displacement"
         Node Set: "nodelist_5"
         Coordinate: "x"
         Value: "0.0"
-      Prescribed Displacement Fix Top Rigid Body Motion In Z:
-        Type: "Prescribed Displacement"
+      Displacement Fix Top Rigid Body Motion In Z:
+        Type: "Displacement"
         Node Set: "nodelist_6"
         Coordinate: "z"
         Value: "0.0"

@@ -21,7 +21,7 @@ else
     nnodes = 4
     nneighbors = [2, 3, 2, 5]
 end
-testDatamanager.set_nnodes(nnodes)
+testDatamanager.set_nmasters(nnodes)
 nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
 nn[:] = nneighbors
 nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
@@ -40,6 +40,5 @@ glob_to_loc = Read_Mesh.glob_to_loc(distribution)
     lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
     nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 
-    println("nlistcore ", MPI.Comm_rank(comm), " ", nlistCore)
 end
 MPI.Finalize()

@@ -11,19 +11,19 @@ function get_all_elastic_moduli(parameter::Dict{String,Float32})
     Youngs = false
     shear = false
     Poissons = false
-    if "Bulk Modulus" in keys(parameter)
+    if haskey(parameter, "Bulk Modulus")
         K = parameter["Bulk Modulus"]
         bulk = true
     end
-    if "Young's Modulus" in keys(parameter)
+    if haskey(parameter, "Young's Modulus")
         E = parameter["Young's Modulus"]
         Youngs = true
     end
-    if "Shear Modulus" in keys(parameter)
+    if haskey(parameter, "Shear Modulus")
         G = parameter["Shear Modulus"]
         shear = true
     end
-    if "Poisson's Ratio" in keys(parameter)
+    if haskey(parameter, "Poisson's Ratio")
         nu = parameter["Poisson's Ratio"]
         Poissons = true
     end

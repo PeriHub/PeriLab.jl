@@ -64,11 +64,11 @@ end
 
     Changes entries in the overlap map from the global numbering to the local computer core one.
     Inputs:
-    - `overlap_map` (array): overlap map with global nodes.
-    - `distribution` (array): global nodes distribution at cores, needed for the gobal to local mapping
-    - `ranks` (Int): number of used computer cores
+    - `overlap_map::Dict{Int64, Dict{Int64, String}}`: overlap map with global nodes.
+    - `distribution Array{Int64}`: global nodes distribution at cores, needed for the gobal to local mapping
+    - `ranks Array{Int64}` : number of used computer cores
     Returns:
-    - `overlap_map` (array): returns overlap map with local nodes.
+    - `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
 
     Example:
     ```julia
@@ -92,7 +92,7 @@ function get_local_overlap_map(overlap_map, distribution, ranks)
 end
 
 function local_nodes_from_dict(glob_to_loc, global_nodes)
-    return [glob_to_loc[global_node] for global_node in global_nodes if global_node in keys(glob_to_loc)]
+    return [glob_to_loc[global_node] for global_node in global_nodes if haskey(glob_to_loc, global_node)]
 end
 
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
@@ -174,7 +174,7 @@ about mesh elements for further processing.
 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-- `dof::Int`: The degrees of freedom (DOF) for the mesh elements.
+- `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 
 # Returns
 A dictionary containing information about mesh elements, which can be used for
@@ -224,16 +224,25 @@ function check_mesh_elements(mesh, dof)
                 meshID = [name]
             end
         end
-        vartype = typeof(sum(sum(mesh[:, id]) for id in meshID))
+
+        if typeof(mesh[1, meshID[1]]) == Bool
+            vartype = Bool
+        else
+            vartype = typeof(sum(sum(mesh[:, mid])
+                                 for mid in meshID))
+        end
         if vartype == Float64
             vartype = Float32
         end
         meshInfoDict[name] = Dict{String,Any}("Mesh ID" => meshID, "Type" => vartype)
     end
-    if !("Block_Id" in keys(meshInfoDict))
+    if !(haskey(meshInfoDict, "Coordinates"))
+        @error "No coordi defined"
+    end
+    if !(haskey(meshInfoDict, "Block_Id"))
         @error "No blocks defined"
     end
-    if !("Volume" in keys(meshInfoDict))
+    if !(haskey(meshInfoDict, "Volume"))
         @error "No volumes defined"
     end
     return meshInfoDict
