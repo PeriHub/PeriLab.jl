@@ -75,7 +75,11 @@ function init_results_in_exodus(exo, output, coords, block_Id, uniqueBlocks, nse
     # bloecke checken
     for name in eachindex(nsets)
         id += Int32(1)
-        nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name][1:length(block_Id)]))
+        if length(block_Id) < length(nsets[name])
+            nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name][1:length(block_Id)]))
+        else
+            nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name]))
+        end
         write_set(exo, nsetExo)
         write_name(exo, nsetExo, name)
     end
