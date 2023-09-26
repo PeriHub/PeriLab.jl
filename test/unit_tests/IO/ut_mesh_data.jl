@@ -6,9 +6,60 @@ include("../../../src/IO/mesh_data.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
-import .Read_Mesh
+using .Read_Mesh
 using .Data_manager
+using DataFrames
 
+
+@testset "ut_check_mesh_elements" begin
+    data = Dict(
+        "x" => [1.0, 1.1, 3],
+        "y" => [25, 30, 22],
+        "volume" => [1, 1, 1],
+        "block_id" => [1, 1, 1],
+        "active" => [true, true, false]
+    )
+
+    df = DataFrame(data)
+    meshInfoDict = Read_Mesh.check_mesh_elements(df, 2)
+    @test haskey(meshInfoDict, "Coordinates")
+    @test haskey(meshInfoDict, "Block_Id")
+    @test haskey(meshInfoDict, "Volume")
+    @test haskey(meshInfoDict, "active")
+    @test meshInfoDict["Coordinates"]["Mesh ID"] == ["x", "y"]
+    @test meshInfoDict["Coordinates"]["Type"] == Float32
+    @test meshInfoDict["Block_Id"]["Mesh ID"] == ["block_id"]
+    @test meshInfoDict["Block_Id"]["Type"] == Int64
+    @test meshInfoDict["Volume"]["Mesh ID"] == ["volume"]
+    @test meshInfoDict["Volume"]["Type"] == Int64
+    @test meshInfoDict["active"]["Mesh ID"] == ["active"]
+    @test meshInfoDict["active"]["Type"] == Bool
+    data = Dict(
+        "x" => [1, 1, 3],
+        "y" => [25, 30, 22],
+        "z" => [25, 30, 22],
+        "volume" => [1.2, 0.8, 1],
+        "block_id" => [1, 2, 1],
+        "activex" => [true, true, false],
+        "activey" => [true, true, false],
+        "activez" => [true, true, false],
+        "field" => [1.0, 3.3, 2.3]
+    )
+    df = DataFrame(data)
+    meshInfoDict = Read_Mesh.check_mesh_elements(df, 3)
+
+    @test meshInfoDict["Coordinates"]["Mesh ID"] == ["x", "y", "z"]
+    @test meshInfoDict["Coordinates"]["Type"] == Int64
+    @test meshInfoDict["Block_Id"]["Mesh ID"] == ["block_id"]
+    @test meshInfoDict["Block_Id"]["Type"] == Int64
+    @test meshInfoDict["Volume"]["Mesh ID"] == ["volume"]
+    @test meshInfoDict["Volume"]["Type"] == Float32
+    @test meshInfoDict["active"]["Mesh ID"] == ["activex", "activey", "activez"]
+    @test meshInfoDict["active"]["Type"] == Bool
+    @test meshInfoDict["field"]["Mesh ID"] == ["field"]
+    @test meshInfoDict["field"]["Type"] == Float32
+
+end
 @testset "ut__init_overlap_map_" begin
     overlap_map = Read_Mesh._init_overlap_map_(1)
     @test sort(collect(keys(overlap_map))) == [1]

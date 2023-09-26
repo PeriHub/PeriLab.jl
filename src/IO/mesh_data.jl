@@ -224,16 +224,22 @@ function check_mesh_elements(mesh, dof)
                 meshID = [name]
             end
         end
-        vartype = typeof(sum(sum(mesh[:, id]) for id in meshID))
+
+        if typeof(mesh[1, meshID[1]]) == Bool
+            vartype = Bool
+        else
+            vartype = typeof(sum(sum(mesh[:, mid])
+                                 for mid in meshID))
+        end
         if vartype == Float64
             vartype = Float32
         end
         meshInfoDict[name] = Dict{String,Any}("Mesh ID" => meshID, "Type" => vartype)
     end
-    if !(haskey(meshInfoDict, "Coordinates" in keys))
-        @error "No coordinates defined"
+    if !(haskey(meshInfoDict, "Coordinates"))
+        @error "No coordi defined"
     end
-    if !(haskey(meshInfoDict, "Block_Id" in keys))
+    if !(haskey(meshInfoDict, "Block_Id"))
         @error "No blocks defined"
     end
     if !(haskey(meshInfoDict, "Volume"))
