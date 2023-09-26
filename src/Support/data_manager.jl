@@ -50,7 +50,7 @@ field_array_type = Dict{String,Dict{String,Any}}()
 field_names = Dict{String,DataType}()
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
-overlap_map = Ref([[[[]]]])
+overlap_map = Dict{Int64,Any}()
 physicsOptions = Dict{String,Bool}("Deformed Bond Geometry" => true,
     "Deformation Gradient" => false,
     "Shape Tensor" => false,
