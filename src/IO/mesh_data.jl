@@ -64,11 +64,11 @@ end
 
     Changes entries in the overlap map from the global numbering to the local computer core one.
     Inputs:
-    - `overlap_map` (array): overlap map with global nodes.
-    - `distribution` (array): global nodes distribution at cores, needed for the gobal to local mapping
-    - `ranks` (Int): number of used computer cores
+    - `overlap_map::Dict{Int64, Dict{Int64, String}}`: overlap map with global nodes.
+    - `distribution Array{Int64}`: global nodes distribution at cores, needed for the gobal to local mapping
+    - `ranks Array{Int64}` : number of used computer cores
     Returns:
-    - `overlap_map` (array): returns overlap map with local nodes.
+    - `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
 
     Example:
     ```julia
@@ -174,7 +174,7 @@ about mesh elements for further processing.
 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-- `dof::Int`: The degrees of freedom (DOF) for the mesh elements.
+- `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 
 # Returns
 A dictionary containing information about mesh elements, which can be used for
@@ -230,10 +230,13 @@ function check_mesh_elements(mesh, dof)
         end
         meshInfoDict[name] = Dict{String,Any}("Mesh ID" => meshID, "Type" => vartype)
     end
-    if !(haskey(keys(meshInfoDict), "Block_Id"))
+    if !(haskey(meshInfoDict, "Coordinates" in keys))
+        @error "No coordinates defined"
+    end
+    if !(haskey(meshInfoDict, "Block_Id" in keys))
         @error "No blocks defined"
     end
-    if !(haskey(keys(meshInfoDict), "Volume"))
+    if !(haskey(meshInfoDict, "Volume"))
         @error "No volumes defined"
     end
     return meshInfoDict
