@@ -408,7 +408,7 @@ function get_physics_options()
     return physicsOptions
 end
 function get_properties(blockId, property)
-    if property in keys(properties[blockId])
+    if haskey(properties[blockId], property)
         return properties[blockId][property]
     end
     return Dict()
