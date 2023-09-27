@@ -37,7 +37,7 @@ function get_output_filenames(params)
 end
 
 function get_output_variables(outputs, variables)
-    return_outputs = []
+    return_outputs = String[]
     for output in keys(outputs)
         if outputs[output]
             if output in variables
@@ -53,7 +53,7 @@ function get_output_variables(outputs, variables)
 end
 
 function get_outputs(params, variables)
-    return_outputs = Dict{Int64,Any}()
+    return_outputs = Dict{Int64,Vector{String}}()
     num = 0
     if check_element(params, "Outputs")
         outputs = params["Outputs"]
@@ -71,8 +71,6 @@ function get_outputs(params, variables)
 end
 
 function get_output_frequency(params, nsteps)
-
-    num = 0
 
     if check_element(params, "Outputs")
         outputs = params["Outputs"]
