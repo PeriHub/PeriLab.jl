@@ -15,11 +15,12 @@ using .Boundary_conditions
 using TimerOutputs
 
 function init_bondDamage_and_influence_function(A, B, C)
-    for id in eachindex(B)
+    for id in eachindex(A)
+        A[id] = fill(1.0, size(A[id]))
         B[id] = fill(1.0, size(B[id]))
         C[id] = fill(1.0, size(C[id]))
     end
-    return fill(1.0, size(A)), B, C
+    return A, B, C
 end
 
 function init(params, datamanager)
@@ -35,7 +36,7 @@ function init(params, datamanager)
     horizon = set_horizon(params, allBlockNodes, horizon) # includes the neighbors
     solver_options = get_solver_options(params)
 
-    omega = datamanager.create_constant_node_field("Influence Function", Float32, 1)
+    omega = datamanager.create_constant_bond_field("Influence Function", Float32, 1)
     bondDamageN, bondDamageNP1 = datamanager.create_bond_field("Bond Damage", Float32, 1)
     omega[:], bondDamageN, bondDamageNP1 = init_bondDamage_and_influence_function(omega, bondDamageN, bondDamageNP1)
 
