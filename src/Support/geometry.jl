@@ -94,10 +94,10 @@ function shape_tensor(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bo
         shapeTensor[iID, :, :] = zeros(Float32, dof, dof)
         for i in 1:dof
             for j in 1:dof
-                shapeTensor[iID, i, j] = sum(bondDamage[iID][:] .* bondGeometry[iID][:, i] .* bondGeometry[iID][:, j] .* volume[nlist[iID, :].*omega[iID][:]])
+                shapeTensor[iID, i, j] = sum(bondDamage[iID][:] .* bondGeometry[iID][:, i] .* bondGeometry[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
             end
         end
-        invK[iID, :, :] = inv(shapeTensor[iID, :, :])
+        invShapeTensor[iID, :, :] = inv(shapeTensor[iID, :, :])
     end
 
     return shapeTensor, invShapeTensor
