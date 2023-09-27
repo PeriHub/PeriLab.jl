@@ -32,7 +32,7 @@ import .Geometry
     coor[4, 1] = 0
     coor[4, 2] = 1
 
-    bondGeom = Geometry.bond_geometry(1:nnodes, dof, nlist, coor, bondGeom)
+    bondGeom = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bondGeom)
 
     @test bondGeom[1][1, 1] == 0.5
     @test bondGeom[1][1, 2] == 0.5

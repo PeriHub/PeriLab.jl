@@ -69,7 +69,7 @@ volume[:] = [0.5, 0.5, 0.5, 0.5, 0.5]
 density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
 horizon[:] = [3.1, 3.1, 3.1, 3.1, 3.1]
 
-bondGeom = Geometry.bond_geometry(1:nnodes, dof, nlist, coor, bondGeom)
+bondGeom = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bondGeom)
 
 blocks[:] = [1, 1, 2, 2, 1]
 blocks = testDatamanager.set_block_list(blocks)
