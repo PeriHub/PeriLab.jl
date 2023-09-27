@@ -103,4 +103,59 @@ function shape_tensor(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bo
     return shapeTensor, invShapeTensor
 end
 
+"""
+    deformation_gradient(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
+
+Calculate the deformation gradient tensor for a set of nodes in a computational mechanics context.
+
+# Arguments
+- `nodes::Vector{Int64}`: A vector of integers representing node IDs.
+- `dof::Int64`: An integer representing the degrees of freedom.
+- `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
+- `volume`: A vector or array containing volume information for each node.
+- `omega`: A vector or array containing omega information for each node.
+- `bondDamage`: A data structure representing bond damage for each node.
+- `bondGeometry`: A data structure representing bond geometries for each node.
+- `deformed_bond`: A data structure representing deformed bond properties for each node.
+- `invShapeTensor`: A data structure representing the inverse shape tensors for each node.
+- `defGrad`: A preallocated 3D array to store the deformation gradient tensors for each node.
+
+# Output
+- `defGrad`: An updated `defGrad` array with calculated deformation gradient tensors.
+
+# Description
+This function calculates the deformation gradient tensor for a set of nodes in a computational mechanics context. The deformation gradient tensor characterizes the deformation of a material.
+
+For each node in `nodes`, the function iterates through degrees of freedom (`dof`) and computes elements of the deformation gradient tensor based on bond damage, deformed bond properties, bond geometries, volume, and omega information. The calculated deformation gradient tensor is stored in `defGrad`.
+
+# Example
+```julia
+nodes = [1, 2, 3]
+dof = 3
+nlist = [[2, 3], [1, 3], [1, 2]]
+volume = [0.1, 0.2, 0.3]
+omega = [0.5, 0.4, 0.6]
+bondDamage = zeros(Float32, length(nodes), length(nlist[1]))
+bondGeometry = rand(Float32, length(nodes), length(nlist[1]), dof)
+deformed_bond = rand(Float32, length(nodes), length(nlist[1]), dof)
+invShapeTensor = rand(Float32, length(nodes), dof, dof)
+defGrad = zeros(Float32, length(nodes), dof, dof)
+
+deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
+"""
+
+function deformation_gradient(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
+    for iID in nodes
+        defGrad[iID, :, :] = zeros(Float32, dof, dof)
+        for i in 1:dof
+            for j in 1:dof
+                defGrad[iID, i, j] = sum(bondDamage[iID][:] .* deformed_bond[iID][:, i] .* bondGeometry[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
+            end
+        end
+        defGrad[iID, :, :] *= invShapeTensor[iID, :, :]
+    end
+
+    return defGrad
+
+end
 end
