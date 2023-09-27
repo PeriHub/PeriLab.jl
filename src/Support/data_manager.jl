@@ -415,7 +415,7 @@ function get_properties(blockId, property)
 end
 
 function get_property(blockId, property, value_name)
-    if property in keys(properties[blockId])
+    if haskey(properties[blockId], property)
         if value_name in keys(properties[blockId][property])
             return properties[blockId][property][value_name]
         end
