@@ -23,8 +23,6 @@ export init_material_model_fields
 export init_thermal_model_fields
 
 function init_models(datamanager)
-
-
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
 function compute_models(datamanager, nodes, block, dt, time, options, to)
@@ -107,8 +105,12 @@ function read_properties(params, datamanager)
     prop_keys = datamanager.init_property()
     physics_options = datamanager.get_physics_options()
     datamanager.set_physics_options(get_physics_options(params, physics_options))
+
     for block in blocks
         get_block_model_definition(params, block, prop_keys, datamanager.set_properties)
+    end
+    for block in blocks
+        props = Material.determine_isotropic_parameter(datamanager.get_properties(block, "Material Model"))
     end
 end
 

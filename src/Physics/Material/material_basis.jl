@@ -2,7 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function get_all_elastic_moduli(parameter::Dict{String,Float32})
+function get_all_elastic_moduli(parameter::Dict{Any,Any})
+    if parameter == Dict()
+        return parameter
+    end
     K::Float32 = 0
     E::Float32 = 0
     nu::Float32 = 0
@@ -56,6 +59,7 @@ function get_all_elastic_moduli(parameter::Dict{String,Float32})
         K = E / (3 - 6 * nu)
         G = E / (2 + 2 * nu)
     end
+    # tbd non isotropic material check
     if bulk + Youngs + shear + Poissons < 2
         @error "Minimum of two parameters are needed for isotropic material"
     end

@@ -4,7 +4,9 @@
 
 module Material
 include("../../Core/Module_inclusion/set_Modules.jl")
+include("material_basis.jl")
 using .Set_modules
+
 global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
 Set_modules.include_files(module_list)
 
@@ -18,5 +20,7 @@ function compute_forces(datamanager, nodes, material, time, dt)
     end
     return datamanager
 end
-
+function determine_isotropic_parameter(prop)
+    return get_all_elastic_moduli(prop)
+end
 end
