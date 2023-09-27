@@ -119,25 +119,25 @@ function get_local_neighbors(mapping, nlistCore)
     return nlistCore
 end
 
-function get_bond_geometry(datamanager)
+function get_bond_geometry(datamanager::Module)
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     nlist = datamanager.get_field("Neighborhoodlist")
     coor = datamanager.get_field("Coordinates")
     bondgeom = datamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
     bondDamage = datamanager.create_constant_bond_field("Bond Damage", Float32, 1)
-    bondgeom = Geometry.bond_geometry(1:nnodes, dof, nlist, coor, bondgeom)
+    bondgeom = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bondgeom)
     return datamanager
 end
 
-function define_nsets(params, datamanager)
+function define_nsets(params, datamanager::Module)
     nsets = get_node_sets(params)
     for nset in keys(nsets)
         datamanager.set_nset(nset, nsets[nset])
     end
 end
 
-function distribution_to_cores(comm, datamanager, mesh, distribution, dof)
+function distribution_to_cores(comm, datamanager::Module, mesh, distribution, dof)
     # init blockID field
     rank = MPI.Comm_rank(comm)
     if rank == 0

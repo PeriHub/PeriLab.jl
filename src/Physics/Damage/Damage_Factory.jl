@@ -21,18 +21,18 @@ function compute_damage(datamanager, nodes, damage_parameter, time, dt)
     return datamanager
 end
 """
-  damage_index(nodes,datamananager)
+  damage_index(datamananager,nodes::Vector{Int64})
 
     Function calculates the damage index related to the neighborhood volume for a set of corresponding nodes. 
     The damage index is defined as damaged volume in relation the neighborhood volume.
     damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 
     Parameters:
-    - `nodes::Vector{Int64}`: corresponding nodes to this model
     - `datamanager::Data_manager`: all model data
+    - `nodes::Vector{Int64}`: corresponding nodes to this model
 
 """
-function damage_index(datamananager, nodes)
+function damage_index(datamananager, nodes::Vector{Int64})
     nlist = datamananager.get_nlist()
     volume = datamananager.get_field("Volume")
     bondDamageNP1 = datamananager.get_field("Bond Damage", "NP1")

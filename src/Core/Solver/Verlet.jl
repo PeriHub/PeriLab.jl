@@ -8,7 +8,7 @@ using TimerOutputs
 include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
 
-function compute_thermodynamic_crititical_time_step(nodes, datamanager, lambda, Cv)
+function compute_thermodynamic_crititical_time_step(nodes::Vector{Int64}, datamanager, lambda, Cv)
     """
     critical time step for a thermodynamic problem
     Selda Oterkus, Erdogan Madenci, and Abigail G. Agwai.  Fully coupled peridynamic thermomechanics
@@ -34,11 +34,10 @@ end
 function get_cs_denominator(volume, bondgeometry)
     return sum(volume ./ bondgeometry)
 end
-function compute_mechanical_crititical_time_step(nodes, datamanager, bulkModulus)
+function compute_mechanical_crititical_time_step(nodes::Vector{Int64}, datamanager, bulkModulus)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
-    nneighbors = datamanager.get_field("Number of Neighbors")
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
     bondgeometry = datamanager.get_field("Bond Geometry")
