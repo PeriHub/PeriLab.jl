@@ -69,6 +69,10 @@ function get_results_mapping(params, datamanager)
         mapping[id] = Dict{String,Vector{Any}}()
         for fieldname in outputs[id]
             result_id += 1
+            if datamanager.field_array_type[fieldname]["Type"] == "Matrix"
+                @warn "Matrix types not supported"
+                continue
+            end
             datafield = datamanager.get_field(fieldname)
             sizedatafield = size(datafield)
             if length(sizedatafield) == 0
