@@ -33,7 +33,7 @@ using .Ordinary
 
     volume = Float32[0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883]
 
-    weighted_volume = Ordinary.compute_weighted_volume(1:nnodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
+    weighted_volume = Ordinary.compute_weighted_volume(Vector(1:nnodes), nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
 
     for iID in 1:nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
@@ -71,7 +71,7 @@ nlist = [Vector{Int64}(undef, 1), Vector{Int64}(undef, 1)]
 nlist[1][1] = 2
 nlist[2][1] = 2
 @testset "compute_dilatation" begin
-    theta = Ordinary.compute_dilatation(1:nnodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    theta = Ordinary.compute_dilatation(Vector(1:nnodes), nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     @test theta[1] == 3.0
     @test theta[2] == 3.0
 end

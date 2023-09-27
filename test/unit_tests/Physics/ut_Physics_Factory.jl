@@ -31,7 +31,7 @@ end
     block_list = [1, 2, 3]
     testDatamanager_read_properties.set_block_list(block_list)
 
-    params = Dict("Blocks" => Dict("block_1" => Dict("Material Model" => "a"), "block_2" => Dict("Material Model" => "c"), "block_3" => Dict("Material Model" => "a", "Damage Model" => "a", "Thermal Model" => "therm")), "Physics" => Dict("Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1)), "Damage Models" => Dict("a" => Dict("value" => 3), "c" => Dict("value" => [1 2], "value2" => 1)), "Thermal Models" => Dict("therm" => Dict("value" => "hot", "bool" => true))))
+    params = Dict("Blocks" => Dict("block_1" => Dict("Material Model" => "a"), "block_2" => Dict("Material Model" => "c"), "block_3" => Dict("Material Model" => "a", "Damage Model" => "a", "Thermal Model" => "therm")), "Physics" => Dict("Material Models" => Dict("a" => Dict("value" => 1, "name" => "t4"), "c" => Dict("value" => [1 2], "value2" => 1, "name" => "t4")), "Damage Models" => Dict("a" => Dict("value" => 3, "name" => "t"), "c" => Dict("value" => [1 2], "value2" => 1, "name" => "t2")), "Thermal Models" => Dict("therm" => Dict("value" => "hot", "bool" => true, "name" => "t3"))))
 
     Physics.read_properties(params, testDatamanager_read_properties)
 
