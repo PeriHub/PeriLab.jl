@@ -7,13 +7,13 @@ include("./Additive/Additive_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
-include("../Support/geometry.jl")
+include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
 using .Additive
 using .Damage
 using .Material
+using .Pre_calculation
 using .Thermal
-using .Geometry
 using TimerOutputs
 export compute_models
 export read_properties
@@ -23,11 +23,13 @@ export init_material_model_fields
 export init_thermal_model_fields
 
 function init_models(datamanager)
+
+
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
 function compute_models(datamanager, nodes, block, dt, time, options, to)
 
-    @timeit to "pre_calculation" datamanager = pre_calculation(datamanager, nodes, datamanager.get_physics_options())
+    @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
 
     if options["Damage Models"]
         @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
@@ -96,53 +98,7 @@ function init_additive_model_fields(datamanager)
 end
 
 function init_pre_calculation(datamanager, options)
-
-    dof = datamanager.get_dof()
-
-    if options["Deformed Bond Geometry"]
-        bond_defN, bond_defNP1 = datamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
-    end
-    if options["Shape Tensor"]
-
-    end
-    if options["Deformation Gradient"]
-
-    end
-    if options["Bond Associated Shape Tensor"]
-
-    end
-    if options["Bond Associated Deformation Gradient"]
-
-    end
-
-    return datamanager
-end
-
-function pre_calculation(datamanager, nodes, options)
-    ## function for specific pre-calculations
-    # sub functions in material, damage, etc.
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
-    defCoor = datamanager.get_field("Deformed Coordinates", "NP1")
-    if options["Deformed Bond Geometry"]
-        bond_defNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
-        bond_defNP1 = Geometry.bond_geometry(nodes, dof, nlist, defCoor, bond_defNP1)
-    end
-
-    if options["Shape Tensor"]
-
-    end
-    if options["Deformation Gradient"]
-
-    end
-    if options["Bond Associated Shape Tensor"]
-
-    end
-    if options["Bond Associated Deformation Gradient"]
-
-    end
-
-    return datamanager
+    return Pre_calculation.init_pre_calculation(datamanager, options)
 end
 
 function read_properties(params, datamanager)
