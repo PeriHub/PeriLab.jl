@@ -12,6 +12,7 @@
 ./src/*.e
 *.json
 *build/
+Manifest.toml
 biggerMesh.txt
 Dogbone_Output1_0.e
 Dogbone.txt
