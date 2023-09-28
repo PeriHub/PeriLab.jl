@@ -191,8 +191,11 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, Vecto
         end
     elseif bondOrNode == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
-        fields[vartype][name] = []
-
+        if dof == 1
+            fields[vartype][name] = Vector{vartype}[]
+        else
+            fields[vartype][name] = Matrix{vartype}[]
+        end
         for i in 1:nmasters
             if dof == 1
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
