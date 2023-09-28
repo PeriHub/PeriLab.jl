@@ -139,8 +139,8 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     vN = datamanager.get_field("Velocity", "N")
     vNP1 = datamanager.get_field("Velocity", "NP1")
     a = datamanager.get_field("Acceleration")
-    dt = solver_options["dt"]
-    nsteps = solver_options["nsteps"]
+    dt::Float32 = solver_options["dt"]
+    nsteps::Int64 = solver_options["nsteps"]
     time::Float32 = solver_options["Initial Time"]
     for idt in progress_bar(datamanager.get_rank(), nsteps, silent)
         @timeit to "Verlet" begin
