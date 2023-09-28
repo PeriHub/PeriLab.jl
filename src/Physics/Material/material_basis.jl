@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function get_all_elastic_moduli(parameter::Dict{String,Any})
+function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
     if parameter == Dict()
         return parameter
     end
