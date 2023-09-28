@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence
+using LinearAlgebra
 include("Correspondence_Elastic.jl")
+include("../material_basis.jl")
 include("../../../Support/geometry.jl")
 using .Correspondence_Elastic
 using .Geometry
@@ -52,13 +54,16 @@ function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_para
     angles = datamanager.get_field("Angles")
   end
   dof = datamanager.get_dof()
+  nlist = datamanager.get_nlist()
+  volume = datamanager.get_field("Volume")
   strainInc = datamanager.create_constant_node_field("Strain Increment", Float32, "Matrix", dof)
   defGradN = datamanager.get_field("Deformation Gradient", "N")
   defGradNP1 = datamanager.get_field("Deformation Gradient", "NP1")
   stressN, stressNP1 = datamanager.create_node_field("Cauchy Stress", Float32, "Matrix", dof)
   bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, dof)
   force_densities = datamanager.get_field("Force Densities", "NP1")
-
+  bondGeom = datamanager.get_field("Bond Geometry")
+  invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
   strainInc = Geometry.strain_increment(nodes, defGradNP1, defGradN, strainInc)
 
   if rotation
@@ -67,7 +72,7 @@ function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_para
   end
 
   # in future this part can be changed
-  stressNP1, datamanager = Correspondence_Elastic.compute_stresses(datamanager, nodes, material_parameter, time, dt, strainInc, stressN, stressNP1)
+  stressNP1, datamanager = Correspondence_Elastic.compute_stresses(datamanager, nodes, dof, material_parameter, time, dt, strainInc, stressN, stressNP1)
   bond_force[:] = calculate_bond_force(nodes, defGradNP1, bondGeom, invShapeTensor, stressNP1, bond_force)
 
   if rotation
@@ -83,7 +88,7 @@ function calculate_bond_force(nodes::Vector{Int64}, defGrad, bondGeom, invShapeT
   for iID in nodes
     jacobian = det(defGrad[iID, :, :])
     invDefGrad = inv(defGrad[iID, :, :])
-    bond_force[iID][:, :] = jacobian * invDefGrad * stressNP1[iID, :, :] * invShapeTensor[iID, :, :] * bondGeom[iID][:, :]
+    bond_force[iID][:, :] = transpose(jacobian .* invDefGrad * stressNP1[iID, :, :] * invShapeTensor[iID, :, :] * transpose(bondGeom[iID][:, 1:end-1]))
   end
 
   return bond_force
