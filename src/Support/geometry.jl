@@ -144,7 +144,7 @@ defGrad = zeros(Float32, length(nodes), dof, dof)
 deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
 """
 
-function deformation_gradient(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
+function deformation_gradient(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bondDamage, deformed_bond, bondGeometry, invShapeTensor, defGrad)
     for iID in nodes
         defGrad[iID, :, :] = zeros(Float32, dof, dof)
         for i in 1:dof
