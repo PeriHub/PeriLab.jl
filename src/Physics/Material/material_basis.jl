@@ -75,7 +75,7 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
     return parameter
 end
 
-function get_Hook_matrix(parameter, symmetry, dof)
+function get_Hooke_matrix(parameter, symmetry, dof)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
     if occursin("isotropic", symmetry)
@@ -163,4 +163,28 @@ function distribute_forces(nnodes, nlist, bond_force, volume, force_densities)
         end
     end
     return force_densities
+end
+
+# Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
+function matrix_to_voigt(matrix)
+    if size(matrix) == (2, 2)
+        return [matrix[1, 1]; matrix[2, 2]; matrix[1, 2]]
+    elseif size(matrix) == (3, 3)
+        return [matrix[1, 1]; matrix[2, 2]; matrix[3, 3]; matrix[1, 2]; matrix[2, 1]; matrix[1, 3]]
+    else
+        error("Unsupported matrix size")
+    end
+end
+
+# Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
+function voigt_to_matrix(voigt)
+    if length(voigt) == 3
+        return [voigt[1] voigt[3]; voigt[3] voigt[2]]
+    elseif length(voigt) == 6
+        return [voigt[1] voigt[4] voigt[6]
+            voigt[4] voigt[2] voigt[5]
+            voigt[6] voigt[5] voigt[3]]
+    else
+        error("Unsupported Voigt vector size")
+    end
 end
