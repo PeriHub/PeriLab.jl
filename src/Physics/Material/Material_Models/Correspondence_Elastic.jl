@@ -43,8 +43,8 @@ end
      ```
    """
 function compute_stresses(datamanager::Module, nodes::Vector{Int64}, dof::Int64, material_parameter, time::Float32, dt::Float32, strainInc, stressN, stressNP1)
-  @warn "symmetry not yet given by the material parameter input"
-  hookeMatrix = get_Hooke_matrix(material_parameter, "isotropic_plain_strain", dof)
+
+  hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
   for iID in nodes
     stressNP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strainInc[iID, :, :])) + stressN[iID, :, :]
