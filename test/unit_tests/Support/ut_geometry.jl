@@ -189,7 +189,7 @@ end
 
     defGrad = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
     defGradNP1 = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGradNP1)
-    strainInc = Geometry.strain_increment(Vector(1:nnodes), defGradNP1, defGrad, strainInc)
+    strainInc = Geometry.strain_increment(defGradNP1, defGrad)
 
     for i in 1:nnodes
         @test strainInc[i, 1, 1] == 0
@@ -213,7 +213,7 @@ end
     defGradNP1[1, 3, 2] = -1.0
     defGradNP1[1, 3, 3] = 3.0
 
-    strainInc = Geometry.strain_increment(Vector(1:1), defGradNP1, defGrad, strainInc)
+    strainInc = Geometry.strain_increment(defGradNP1, defGrad)
     for i in 1:dof
         for j in 1:dof
             @test strainInc[1, i, j] == defGradNP1[1, i, j]
