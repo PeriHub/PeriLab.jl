@@ -98,15 +98,15 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[5, 5] = G
             matrix[6, 6] = G
             return matrix
-        elseif occursin("plain_strain", symmetry)
+        elseif occursin("plane strain", symmetry)
             matrix = zeros(Float32, dof + 1, dof + 1)
-            matrix[1, 1] = E * (1 - nu) * temp
-            matrix[2, 2] = E * (1 - nu) * temp
+            matrix[1, 1] = (1 - nu) * temp
+            matrix[2, 2] = (1 - nu) * temp
             matrix[3, 3] = G
-            matrix[1, 2] = E * nu * temp
-            matrix[2, 1] = E * nu * temp
+            matrix[1, 2] = nu * temp
+            matrix[2, 1] = nu * temp
             return matrix
-        elseif occursin("plain_stress", symmetry)
+        elseif occursin("plane stress", symmetry)
             matrix = zeros(Float32, dof + 1, dof + 1)
             matrix[1, 1] = E / (1 - nu * nu)
             matrix[1, 2] = E * nu / (1 - nu * nu)
@@ -132,14 +132,14 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             end
             if dof == 3
                 return anisoMatrix
-            elseif occursin("plain_strain", symmetry)
+            elseif occursin("plane strain", symmetry)
                 matrix = zeros(Float32, dof + 1, dof + 1)
                 matrix[1:2, 1:2] = anisoMatrix[1:2, 1:2]
                 matrix[3, 1:2] = anisoMatrix[6, 1:2]
                 matrix[1:2, 3] = anisoMatrix[1:2, 6]
                 matrix[3, 3] = anisoMatrix[6, 6]
                 return matrix
-            elseif occursin("plain_stress", symmetry)
+            elseif occursin("plane stress", symmetry)
                 matrix = zeros(Float32, dof + 1, dof + 1)
                 invAniso = inv(anisoMatrix)
                 matrix[1:2, 1:2] = invAniso[1:2, 1:2]
