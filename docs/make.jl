@@ -50,6 +50,7 @@ makedocs(
             "Material" => [
                 "material_basis" => "Physics/Material/material_basis.md",
                 "Material_Factory" => "Physics/Material/Material_Factory.md",
+                "Correspondence" => "Physics/Material/Correspondence.md",
                 "BondBased" => [
                     "BondBased" => "Physics/Material/BondBased/Bondbased.md",
                     "Elastic" => "Physics/Material/BondBased/Elastic.md"

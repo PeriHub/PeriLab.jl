@@ -5,7 +5,7 @@ SPDX-License-Identifier: BSD-3-Clause
 -->
 
 ```@autodocs
-Modules = [PeriLab.Solver.Physics.Material.Set_modules.Correspondence.Correspondence_Elastic]
+Modules = [PeriLab.Solver.Physics.Material.Set_modules.Correspondence]
 Order   = [:function, :type]
 ```
 
