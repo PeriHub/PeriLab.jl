@@ -87,11 +87,11 @@ end
 function calculate_bond_force(nodes::Vector{Int64}, defGrad, bondGeom, invShapeTensor, stressNP1, bond_force)
   for iID in nodes
     jacobian = det(defGrad[iID, :, :])
-    try
-      invDefGrad = inv(defGrad[iID, :, :])
-    catch ex
-      @error "Deformation Gradient is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
+    if jacobian <= 1e-8
+      @error "Deformation Gradient is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
     end
+    invDefGrad = inv(defGrad[iID, :, :])
+
     bond_force[iID][:, :] = transpose(jacobian .* invDefGrad * stressNP1[iID, :, :] * invShapeTensor[iID, :, :] * transpose(bondGeom[iID][:, 1:end-1]))
   end
 
