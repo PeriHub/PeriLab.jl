@@ -28,6 +28,11 @@ test:
 
 benchmark:
   stage: benchmark
+  only:
+    refs:
+      - main
+    changes:
+      - src/**/*
   variables:
     DEPLOY_CURL_COMMAND: 'curl -o benchmark_old_results.json --header "PRIVATE-TOKEN: glpat-imAENnk33mhBQycGWMNb" "https://gitlab.com/api/v4/projects/50476615/jobs/artifacts/main/raw/benchmark_results.json?job=benchmark"'
   script:
@@ -52,8 +57,23 @@ benchmark:
     exit_codes:
       - 1
 
+deploy:
+  stage: deploy
+  extends: [.deploy_before_script_template]
+  only:
+    refs:
+      - main
+    changes:
+      - src/**/*
+  script:
+    - docker build -t perihub/perilab .
+    - docker push perihub/perilab
+
 pages:
   stage: deploy
+  only:
+    refs:
+      - main
   script:
     - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
     - julia --project=docs --color=yes docs/make.jl
@@ -63,3 +83,12 @@ pages:
       - public
   only:
     - main
+
+.deploy_before_script_template:
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+  after_script:
+    - docker logout
