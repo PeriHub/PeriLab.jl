@@ -166,7 +166,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             forces[1:nnodes, :] = forces_density[1:nnodes, :] .* volume[1:nnodes]
             exos = write_results(exos, start_time + step_time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
-            steptime += dt
+            step_time += dt
         end
     end
     return exos
