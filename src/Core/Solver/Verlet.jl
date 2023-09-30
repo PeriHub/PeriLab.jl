@@ -142,7 +142,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     dt::Float32 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float32 = solver_options["Initial Time"]
-    steptime::Float32 = 0
+    step_time::Float32 = 0
     for idt in progress_bar(datamanager.get_rank(), nsteps, silent)
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
