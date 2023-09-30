@@ -74,7 +74,7 @@ function main()
     main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
 end
 """
-    main(filename, to, dry_run, verbose)
+    main(filename, dry_run, verbose, debug, silent)
 
 Main function that performs the core functionality of the program.
 

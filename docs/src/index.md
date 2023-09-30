@@ -17,7 +17,10 @@ CurrentModule = PeriLab
 ```
 
 ```@docs
-main(filename, to, dry_run, verbose)
+main(filename, dry_run, verbose, debug, silent)
+```
+```@docs
+PeriLab
 ```
 
 ```@example

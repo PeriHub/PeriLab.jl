@@ -7,12 +7,12 @@ using Documenter, PeriLab, DocumenterCitations
 bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"))
 
 makedocs(
-    bib,
+    plugins=[bib],
     modules=[PeriLab],
     authors="Christian Willberg <christian.willberg@dlr.de> and Jan-Timo Hesse <jan-timo.hesse@dlr.de>",
     checkdocs=:exports,
     sitename="PeriLab",
-    repo="https://gitlab.dlr.de/fa_sw/peridynamik/perilab.git/blob/{commit}{path}#{line}",
+    repo=Documenter.Remotes.GitLab("dlr-PeriHub", "PeriLab"),
     pages=[
         "index.md",
         "Dev Log" => "devLog.md",
@@ -59,8 +59,11 @@ makedocs(
                 ],
                 "Ordinary" => [
                     "Ordinary" => "Physics/Material/Ordinary/Ordinary.md",
-                    "PD_Solid_Elastic" => "Physics/Material/Ordinary/PD_Solid_Elastic.md"
-                ]
+                ],
+                "Material_Models" => [
+                    "PD_Solid_Elastic" => "Physics/Material/Material_Models/PD_Solid_Elastic.md"
+                    "Correspondence_Elastic" => "Physics/Material/Material_Models/Correspondence_Elastic.md"
+                ],
             ],
             "Thermal" => [
                 "Thermal_Factory" => "Physics/Thermal/Thermal_Factory.md",
