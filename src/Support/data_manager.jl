@@ -604,7 +604,12 @@ function set_synch(name, download_from_cores, upload_to_cores)
     end
 
 end
-function switch(NP1)
+
+function switch(name::String, NP1::String)
+    switch(name * NP1)
+end
+
+function switch(NP1::String)
     NP1_to_N = get_NP1_to_N_Dict()
     if field_array_type[NP1]["Type"] == "Matrix"
         field_array_type[NP1]["Type"] = "Vector"
