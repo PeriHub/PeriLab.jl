@@ -604,34 +604,39 @@ function set_synch(name, download_from_cores, upload_to_cores)
     end
 
 end
+function switch(NP1)
+    NP1_to_N = get_NP1_to_N_Dict()
+    if field_array_type[NP1]["Type"] == "Matrix"
+        field_array_type[NP1]["Type"] = "Vector"
+        field_NP1 = get_field(NP1)
+        field_array_type[NP1]["Type"] = "Matrix"
+        N = NP1_to_N[NP1]
+        field_array_type[N]["Type"] = "Vector"
+        field_N = get_field(N)
+        field_array_type[N]["Type"] = "Matrix"
+    else
+        field_NP1 = get_field(NP1)
+        N = NP1_to_N[NP1]
+        field_N = get_field(N)
+    end
+    field_N[:] = field_NP1[:]
+    if size(field_NP1[1]) == ()
+        field_NP1[:] = fill(field_names[NP1](0), size(field_NP1))
+    else
+        value = 0
+        if "Bond DamageNP1" == NP1
+            value = 1
+        end
+        for fieldID in eachindex(field_NP1)
+            field_NP1[fieldID] = fill(field_names[NP1](value), size(field_NP1[fieldID]))
+        end
+    end
+end
+
 function switch_NP1_to_N()
     NP1_to_N = get_NP1_to_N_Dict()
     for NP1 in keys(NP1_to_N)
-        if field_array_type[NP1]["Type"] == "Matrix"
-            field_array_type[NP1]["Type"] = "Vector"
-            field_NP1 = get_field(NP1)
-            field_array_type[NP1]["Type"] = "Matrix"
-            N = NP1_to_N[NP1]
-            field_array_type[N]["Type"] = "Vector"
-            field_N = get_field(N)
-            field_array_type[N]["Type"] = "Matrix"
-        else
-            field_NP1 = get_field(NP1)
-            N = NP1_to_N[NP1]
-            field_N = get_field(N)
-        end
-        field_N[:] = field_NP1[:]
-        if size(field_NP1[1]) == ()
-            field_NP1[:] = fill(field_names[NP1](0), size(field_NP1))
-        else
-            value = 0
-            if "Bond DamageNP1" == NP1
-                value = 1
-            end
-            for fieldID in eachindex(field_NP1)
-                field_NP1[fieldID] = fill(field_names[NP1](value), size(field_NP1[fieldID]))
-            end
-        end
+        switch(NP1)
     end
 end
 function synch_manager()
