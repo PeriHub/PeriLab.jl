@@ -70,7 +70,7 @@ function get_results_mapping(params, datamanager)
         for fieldname in outputs[id]
             result_id += 1
             if datamanager.field_array_type[fieldname]["Type"] == "Matrix"
-                @warn "Matrix types not supported"
+                @warn "Matrix types not supported in Exodus export"
                 continue
             end
             datafield = datamanager.get_field(fieldname)

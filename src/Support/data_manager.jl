@@ -191,8 +191,11 @@ function create_field(name::String, vartype::DataType, bondOrNode::String, Vecto
         end
     elseif bondOrNode == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
-        fields[vartype][name] = []
-
+        if dof == 1
+            fields[vartype][name] = Vector{vartype}[]
+        else
+            fields[vartype][name] = Matrix{vartype}[]
+        end
         for i in 1:nmasters
             if dof == 1
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
@@ -601,12 +604,45 @@ function set_synch(name, download_from_cores, upload_to_cores)
     end
 
 end
+
+function set_fields_equal(name::String, NP1::String)
+    set_fields_equal(name * NP1)
+end
+
+function set_fields_equal(NP1::String)
+    NP1_to_N = get_NP1_to_N_Dict()
+    if field_array_type[NP1]["Type"] == "Matrix"
+        field_array_type[NP1]["Type"] = "Vector"
+        field_NP1 = get_field(NP1)
+        field_array_type[NP1]["Type"] = "Matrix"
+        N = NP1_to_N[NP1]
+        field_array_type[N]["Type"] = "Vector"
+        field_N = get_field(N)
+        field_array_type[N]["Type"] = "Matrix"
+    else
+        field_NP1 = get_field(NP1)
+        N = NP1_to_N[NP1]
+        field_N = get_field(N)
+    end
+    field_N[:] = field_NP1[:]
+end
+
 function switch_NP1_to_N()
     NP1_to_N = get_NP1_to_N_Dict()
     for NP1 in keys(NP1_to_N)
-        field_NP1 = get_field(NP1)
-        temp_field_name = NP1_to_N[NP1]
-        field_N = get_field(temp_field_name)
+        if field_array_type[NP1]["Type"] == "Matrix"
+            field_array_type[NP1]["Type"] = "Vector"
+            field_NP1 = get_field(NP1)
+            field_array_type[NP1]["Type"] = "Matrix"
+            N = NP1_to_N[NP1]
+            field_array_type[N]["Type"] = "Vector"
+            field_N = get_field(N)
+            field_array_type[N]["Type"] = "Matrix"
+        else
+            field_NP1 = get_field(NP1)
+            N = NP1_to_N[NP1]
+            field_N = get_field(N)
+        end
         field_N[:] = field_NP1[:]
         if size(field_NP1[1]) == ()
             field_NP1[:] = fill(field_names[NP1](0), size(field_NP1))

@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_Elastic
-export compute_force
-export material_name
+include("../material_basis.jl")
+export compute_stresses
+export correspondence_name
 """
-   material_name()
+   correspondence_name()
 
    Gives the material name. It is needed for comparison with the yaml input deck.
 
@@ -21,8 +22,8 @@ export material_name
    "Material Template"
    ```
    """
-function material_name()
-  return "Correspondence_Elastic"
+function correspondence_name()
+  return "Correspondence Elastic"
 end
 """
    compute_force(datamanager, nodes, material_parameter, time, dt)
@@ -41,42 +42,18 @@ end
    ```julia
      ```
    """
-function compute_force(datamanager, nodes, material_parameter, time, dt)
-  rotation::Bool = false
-  if "Angles" in datamanager.get_all_field_keys()
-    rotation = true
-    angles = datamanager.get_field("Angles")
+function compute_stresses(datamanager::Module, nodes::Vector{Int64}, dof::Int64, material_parameter, time::Float32, dt::Float32, strainInc, stressN, stressNP1)
+
+  hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
+
+  for iID in nodes
+    stressNP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strainInc[iID, :, :])) + stressN[iID, :, :]
   end
-  dof = datamanager.get_dof()
-  strainN = datamanager.get_field("Strain", "N")
-  strainNP1 = datamanager.get_field("Strain", "NP1")
-  stressN, stressNP1 = datamanager.create_field("Cauchy Stress")
-  bond_forceN, bond_forceNP1 = datamanager.create_bond_field("Bond Force")
-  force_densities = datamanager.get_field("Force Densities", "NP1")
 
-  hookMatrix = get_Hook_matrix(material_parameter, dof)
-  bond_force = elastic(nodes, hookMatrix, angles, rotation, bond_force)
-
-  force_densities[:] = distribute_forces(nodes, nlist, bond_force, volume, force_densities)
-
-  return datamanager
+  return stressNP1, datamanager
 end
 
 
-function elastic(nodes, hookMatrix, angles, rotation, bond_force)
-  for node in nodes
-    if rotation
 
-    end
-    MATRICES::tensorRotation(angles, sigmaNP1, false, sigmaNP1)
-
-    MATRICES::tensorRotation(angles, sigmaNP1, false, sigmaNP1)
-    if rotation
-
-    end
-
-  end
-  return bond_force
-end
 
 end

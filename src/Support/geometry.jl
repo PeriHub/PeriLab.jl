@@ -4,6 +4,7 @@
 
 module Geometry
 using LinearAlgebra
+using Rotations
 export bond_geometry
 export shape_tensor
 # """
@@ -96,8 +97,13 @@ function shape_tensor(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bo
             for j in 1:dof
                 shapeTensor[iID, i, j] = sum(bondDamage[iID][:] .* bondGeometry[iID][:, i] .* bondGeometry[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
             end
+
         end
-        invShapeTensor[iID, :, :] = inv(shapeTensor[iID, :, :])
+        try
+            invShapeTensor[iID, :, :] = inv(shapeTensor[iID, :, :])
+        catch ex
+            @error "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
+        end
     end
 
     return shapeTensor, invShapeTensor
@@ -159,32 +165,27 @@ function deformation_gradient(nodes::Vector{Int64}, dof::Int64, nlist, volume, o
 
 end
 """
-    function strain_increment(nodes::Vector{Int64}, defGradNP1, defGrad, strainInc)
+    function strain_increment(defGradNP1, defGrad)
 
 Calculate strain increments for specified nodes based on deformation gradients.
 
 ## Arguments
 
-- `nodes::Vector{Int64}`: A vector of integers representing node IDs.
 - `defGradNP1`: Deformation gradient at time step "n+1" (2D or 3D array).
 - `defGrad`: Deformation gradient at the current time step (2D or 3D array).
-- `strainInc`: Storage for calculated strain increments (2D or 3D array).
 
 ## Returns
 
-- `strainInc`: Updated `strainInc` array containing strain increments.
+- Updated `strainInc` array containing strain increments.
 
 This function iterates over the specified nodes and computes strain increments using the given deformation gradients.
 
 """
 
-function strain_increment(nodes::Vector{Int64}, defGradNP1, defGrad, strainInc)
+function strain_increment(defGradNP1, defGrad)
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     # First equation gives Strain increment as shown
-    for iID in nodes
-        strainInc[iID, :, :] = defGradNP1[iID, :, :] - defGrad[iID, :, :]
-    end
-    return strainInc
+    return defGradNP1 - defGrad
 end
 
 

@@ -5,7 +5,6 @@
 *.log
 *.cov
 ./*.yaml
-./*.txt
 ./*.e
 ./src/*.yaml
 ./src/*.txt
@@ -68,7 +67,6 @@ strain_yy.e.4.2
 strain_yy.e.4.3
 strain.yaml
 test_data_exchange.jl
-test_mesh.txt
 test/multifunctional_test/test_MPI_data_manager.jl
 test/tensile_test/tensile_test.yaml
 test/test_PD_Solid_Elastic/strain_yy.e
