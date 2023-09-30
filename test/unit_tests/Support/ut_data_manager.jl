@@ -232,10 +232,11 @@ DNP1 = testDatamanager.get_field("DNP1")
 IN = testDatamanager.get_field("IN")
 INP1 = testDatamanager.get_field("INP1")
 bd = testDatamanager.create_bond_field("Bond Damage", Float32, 1)
-bmatrixN, bmatrixNP1 = testDatamanager.create_bond_field("Bmat", Float32, "Matrix", 2)
-nmatrixN, nmatrixNP1 = testDatamanager.create_node_field("Nmat", Float32, "Matrix", 2)
-IN[2][1, 3] = 0
 @testset "switch_NP1_to_N" begin
+    bmatrixN, bmatrixNP1 = testDatamanager.create_bond_field("Bmat", Float32, "Matrix", 2)
+    nmatrixN, nmatrixNP1 = testDatamanager.create_node_field("Nmat", Float32, "Matrix", 2)
+    IN[2][1, 3] = 0
+
     DNP1[2, 3] = 5
     @test DN[2, 3] == 0
     @test DNP1[2, 3] == 5
@@ -247,10 +248,15 @@ IN[2][1, 3] = 0
     nmatrixNP1[1, 1, 2] = 2
     nmatrixNP1[1, 2, 1] = 3
     nmatrixNP1[1, 2, 2] = 4
+    bmatrixNP1[1][1, 1, 1] = 2
+    bmatrixNP1[1][2, 1, 2] = 2
+    bmatrixNP1[1][1, 2, 1] = 3
+    bmatrixNP1[1][2, 2, 2] = 4
     # extra test, because Bond Damage is set to one, to avoid unneccessary operations
     bd = testDatamanager.get_field("Bond Damage", "NP1")
     @test sum(maximum(bd)) == 0
     testDatamanager.switch_NP1_to_N()
+
     @test DN[2, 3] == 5
     @test nmatrixN[1, 1, 1] == 2
     @test nmatrixN[1, 1, 2] == 2
@@ -260,6 +266,16 @@ IN[2][1, 3] = 0
     @test nmatrixNP1[1, 1, 2] == 0.0
     @test nmatrixNP1[1, 2, 1] == 0.0
     @test nmatrixNP1[1, 2, 2] == 0.0
+    bmatrixN = testDatamanager.get_field("Bmat", "N")
+    bmatrixNP1 = testDatamanager.get_field("Bmat", "NP1")
+    @test bmatrixN[1][1, 1, 1] == 2
+    @test bmatrixN[1][2, 1, 2] == 2
+    @test bmatrixN[1][1, 2, 1] == 3
+    @test bmatrixN[1][2, 2, 2] == 4
+    @test bmatrixNP1[1][1, 1, 1] == 0.0
+    @test bmatrixNP1[1][2, 1, 2] == 0.0
+    @test bmatrixNP1[1][1, 2, 1] == 0.0
+    @test bmatrixNP1[1][2, 2, 2] == 0.0
     # dependency test
 
     @test DNP1[2, 3] == 0
