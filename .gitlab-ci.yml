@@ -16,6 +16,9 @@ before_script:
 
 test:
   stage: test
+  only:
+    changes:
+      - src/**/*
   script:
     - julia --project=@. -e "import Pkg; Pkg.test(; coverage = true)"
     # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
@@ -75,8 +78,8 @@ pages:
     refs:
       - main
   script:
-    - julia -e 'import Pkg; Pkg.add(path=".")'
-    - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.develop(PackageSpec(path=pwd()))'
+    # - julia -e 'import Pkg; Pkg.add(path=".")' # i think this is to much, tbd
+    - julia --project=docs -e 'using Pkg; Pkg.add("Documenter"); Pkg.add("DocumenterCitations")'
     - julia --project=docs --color=yes docs/make.jl
     - mv docs/build public # move to the directory picked up by Gitlab pages
   artifacts:
