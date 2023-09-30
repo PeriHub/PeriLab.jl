@@ -141,7 +141,8 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     a = datamanager.get_field("Acceleration")
     dt::Float32 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
-    time::Float32 = solver_options["Initial Time"]
+    start_time::Float32 = solver_options["Initial Time"]
+    steptime::Float32 = 0
     for idt in progress_bar(datamanager.get_rank(), nsteps, silent)
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
@@ -150,12 +151,12 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
             uNP1[1:nnodes, :] = uN[1:nnodes, :] + dt .* vNP1[1:nnodes, :]
             defCoorNP1[1:nnodes, :] = coor[1:nnodes, :] + uNP1[1:nnodes, :]
-            @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, time)
+            @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
             synchronise(comm, datamanager, "upload_to_cores")
 
             # synch
             for block in eachindex(blockNodes)
-                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, time, solver_options, to)
+                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, step_time, solver_options, to)
             end
             synchronise(comm, datamanager, "download_from_cores")
             # synch
@@ -163,9 +164,9 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             check_inf_or_nan(forces_density, "Forces")
             a[1:nnodes, :] = forces_density[1:nnodes, :] ./ density[1:nnodes] # element wise
             forces[1:nnodes, :] = forces_density[1:nnodes, :] .* volume[1:nnodes]
-            exos = write_results(exos, time, outputs, datamanager)
+            exos = write_results(exos, start_time + step_time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
-            time += dt
+            steptime += dt
         end
     end
     return exos
