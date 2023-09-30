@@ -33,9 +33,6 @@ function print_banner()
     \e[1;36m888\e[0m       \e[1;36m88888888\e[0m \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m.d888888\e[0m \e[1;36m888  888\e[0m  |
     \e[1;36m888\e[0m       \e[1;36mY8b.\e[0m     \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m888  888\e[0m \e[1;36m888 d88P\e[0m  |  Official https://julialang.org/ release
     \e[1;36m888\e[0m        \e[1;36m"Y8888\e[0m  \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m88888888\e[0m \e[1;36m"Y888888\e[0m \e[1;36m88888P"\e[0m   |                                                  
-    Version: """ * string(Pkg.project().version) * """ 
-    Copyright: Dr.-Ing. Christian Willberg
-    Contact:   christian.willberg@dlr.de
     """)
 end
 
@@ -73,11 +70,18 @@ function main()
     # end
     main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
 end
+
+function progess_filter(log_args)
+    if typeof(log_args.message) == TimerOutputs.TimerOutput
+        return true
+    end
+    !startswith(log_args.message, "Steps:")
+end
+
 """
     main(filename, dry_run, verbose, debug, silent)
 
 Main function that performs the core functionality of the program.
-
 # Arguments
 - `filename`: The name of the file to process.
 - `to`: The destination directory.
@@ -86,15 +90,23 @@ Main function that performs the core functionality of the program.
 """
 function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
 
+    file_logger = FormatLogger(split(filename, ".")[1] * ".log"; append=false) do io, args
+        if debug
+            println(io, args._module, " | ", "[", args.level, "] ", args.message)
+        else
+            println(io, "[", args.level, "] ", args.message)
+        end
+    end
+    filtered_logger = ActiveFilteredLogger(progess_filter, ConsoleLogger(stderr))
     if debug
         demux_logger = TeeLogger(
-            MinLevelLogger(FileLogger(split(filename, ".")[1] * ".log"), Logging.Debug),
-            MinLevelLogger(ConsoleLogger(stderr), Logging.Debug),
+            MinLevelLogger(file_logger, Logging.Debug),
+            MinLevelLogger(filtered_logger, Logging.Debug),
         )
     else
         demux_logger = TeeLogger(
-            MinLevelLogger(FileLogger(split(filename, ".")[1] * ".log"), Logging.Info),
-            MinLevelLogger(ConsoleLogger(stderr), Logging.Info),
+            MinLevelLogger(file_logger, Logging.Info),
+            MinLevelLogger(filtered_logger, Logging.Info),
         )
     end
     global_logger(demux_logger)
@@ -107,7 +119,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         size = MPI.Comm_size(comm)
         if rank == 0 && !silent
             print_banner()
-            @info "PeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M. Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab:\n Github:\n doi: \n Licence: BSD 3\n ---------------------------------------------------------------"
+            @info "\nPeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M. Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n Licence: BSD-3-Clause\n ---------------------------------------------------------------"
         else
             Logging.disable_logging(Logging.Error)
         end
@@ -162,7 +174,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
     end
 
     if verbose
-        @info demux_logger to
+        @info to
     end
 end
 
