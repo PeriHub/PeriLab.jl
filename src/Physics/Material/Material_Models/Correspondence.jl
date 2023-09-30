@@ -64,7 +64,7 @@ function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_para
   force_densities = datamanager.get_field("Force Densities", "NP1")
   bondGeom = datamanager.get_field("Bond Geometry")
   invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
-  strainInc = Geometry.strain_increment(nodes, defGradNP1, defGradN, strainInc)
+  strainInc = Geometry.strain_increment(defGradNP1, defGradN)
 
   if rotation
     @info "not implemented"
@@ -87,7 +87,11 @@ end
 function calculate_bond_force(nodes::Vector{Int64}, defGrad, bondGeom, invShapeTensor, stressNP1, bond_force)
   for iID in nodes
     jacobian = det(defGrad[iID, :, :])
-    invDefGrad = inv(defGrad[iID, :, :])
+    try
+      invDefGrad = inv(defGrad[iID, :, :])
+    catch ex
+      @error "Deformation Gradient is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
+    end
     bond_force[iID][:, :] = transpose(jacobian .* invDefGrad * stressNP1[iID, :, :] * invShapeTensor[iID, :, :] * transpose(bondGeom[iID][:, 1:end-1]))
   end
 
