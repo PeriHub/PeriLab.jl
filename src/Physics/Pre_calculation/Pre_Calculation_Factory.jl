@@ -20,7 +20,7 @@ export init_pre_calculation
 function compute(datamanager, nodes, options, time, dt)
 
     if options["Deformed Bond Geometry"]
-        datamanager = Bond_Deformation.compute(datamanager, nodes)
+        datamanager = Bond_Deformation.compute(datamanager, nodes, time)
     end
     if options["Shape Tensor"]
         datamanager = Shape_Tensor.compute(datamanager, nodes)
