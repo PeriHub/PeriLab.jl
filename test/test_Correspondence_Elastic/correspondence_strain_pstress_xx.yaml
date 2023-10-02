@@ -42,12 +42,12 @@ PeriLab:
             Type: "Displacements"
             Node Set: "Node Set 1"
             Coordinate: "x"
-            Value: "0.1*y"
+            Value: "0.1*x"
         BC_2: 
             Type: "Displacements"
             Node Set: "Node Set 1"
             Coordinate: "y"
-            Value: "0.1*x"
+            Value: "0.0"
     Solver: 
         Solve For Displacement: True
         Initial Time: 0.0
