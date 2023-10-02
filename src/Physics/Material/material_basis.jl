@@ -171,7 +171,7 @@ function matrix_to_voigt(matrix)
     if size(matrix) == (2, 2)
         return [matrix[1, 1]; matrix[2, 2]; matrix[1, 2]]
     elseif size(matrix) == (3, 3)
-        return [matrix[1, 1]; matrix[2, 2]; matrix[3, 3]; matrix[1, 2]; matrix[2, 1]; matrix[1, 3]]
+        return [matrix[1, 1]; matrix[2, 2]; matrix[3, 3]; matrix[2, 3]; matrix[1, 3]; matrix[1, 2]]
     else
         @error "Unsupported matrix size for matrix_to_voigt"
     end
@@ -182,9 +182,9 @@ function voigt_to_matrix(voigt)
     if length(voigt) == 3
         return [voigt[1] voigt[3]; voigt[3] voigt[2]]
     elseif length(voigt) == 6
-        return [voigt[1] voigt[4] voigt[6]
-            voigt[4] voigt[2] voigt[5]
-            voigt[6] voigt[5] voigt[3]]
+        return [voigt[1] voigt[6] voigt[5]
+            voigt[6] voigt[2] voigt[4]
+            voigt[5] voigt[4] voigt[3]]
     else
         @error "Unsupported matrix size for voigt_to_matrix"
     end
