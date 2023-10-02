@@ -176,6 +176,7 @@ end
     testDatamanager = Data_manager
     dof = testDatamanager.get_dof()
     nnodes = 4
+    nodes = Vector{Int64}(1:nnodes)
     defGrad, defGradNP1 = testDatamanager.create_node_field("Deformation Gradient", Float32, "Matrix", dof)
     strainInc = testDatamanager.create_constant_node_field("Strain Increment", Float32, "Matrix", dof)
     nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
@@ -187,9 +188,9 @@ end
     invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float32, "Matrix", dof)
     defGrad, defGradNP1 = testDatamanager.create_node_field("Deformation Gradient", Float32, "Matrix", dof)
 
-    defGrad = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
-    defGradNP1 = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGradNP1)
-    strainInc = Geometry.strain_increment(defGradNP1, defGrad)
+    defGrad = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
+    defGradNP1 = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGradNP1)
+    strainInc = Geometry.strain_increment(nodes, defGradNP1, defGrad, strainInc)
 
     for i in 1:nnodes
         @test strainInc[i, 1, 1] == 0
@@ -213,7 +214,7 @@ end
     defGradNP1[1, 3, 2] = -1.0
     defGradNP1[1, 3, 3] = 3.0
 
-    strainInc = Geometry.strain_increment(defGradNP1, defGrad)
+    strainInc = Geometry.strain_increment(nodes, defGradNP1, defGrad, strainInc)
     for i in 1:dof
         for j in 1:dof
             @test strainInc[1, i, j] == defGradNP1[1, i, j]

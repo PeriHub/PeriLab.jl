@@ -182,10 +182,13 @@ This function iterates over the specified nodes and computes strain increments u
 
 """
 
-function strain_increment(defGradNP1, defGrad)
+function strain_increment(nodes::Vector{Int64}, defGradNP1, defGrad, strainInc)
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     # First equation gives Strain increment as shown
-    return defGradNP1 - defGrad
+    for iID in nodes
+        strainInc[iID, :, :] = 0.5 * (transpose(defGradNP1[iID, :, :]) * defGradNP1[iID, :, :] - transpose(defGrad[iID, :, :]) * defGrad[iID, :, :])
+    end
+    return strainInc
 end
 
 
