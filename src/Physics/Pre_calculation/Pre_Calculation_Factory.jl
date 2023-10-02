@@ -27,10 +27,6 @@ function compute(datamanager, nodes, options, time, dt)
     end
     if options["Deformation Gradient"]
         datamanager = Deformation_Gradient.compute(datamanager, nodes)
-        if time == 0.0 # is step time
-            # avoids stresses because of strain increment calculation
-            datamanager.set_fields_equal("Deformation Gradient", "NP1")
-        end
     end
     if options["Bond Associated Shape Tensor"]
         datamanager = Bond_Shape_Tensor.compute(datamanager, nodes)

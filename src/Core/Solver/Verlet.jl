@@ -150,10 +150,9 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             vNP1[1:nnodes, :] = vN[1:nnodes, :] + 0.5 * dt .* a[1:nnodes, :]
             # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
             uNP1[1:nnodes, :] = uN[1:nnodes, :] + dt .* vNP1[1:nnodes, :]
-            defCoorNP1[1:nnodes, :] = coor[1:nnodes, :] + uNP1[1:nnodes, :]
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
+            defCoorNP1[1:nnodes, :] = coor[1:nnodes, :] + uNP1[1:nnodes, :]
             synchronise(comm, datamanager, "upload_to_cores")
-
             # synch
             for block in eachindex(blockNodes)
                 @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, step_time, solver_options, to)
