@@ -169,9 +169,9 @@ end
 # Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
 function matrix_to_voigt(matrix)
     if size(matrix) == (2, 2)
-        return [matrix[1, 1]; matrix[2, 2]; matrix[1, 2]]
+        return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
     elseif size(matrix) == (3, 3)
-        return [matrix[1, 1]; matrix[2, 2]; matrix[3, 3]; matrix[2, 3]; matrix[1, 3]; matrix[1, 2]]
+        return [matrix[1, 1]; matrix[2, 2]; matrix[3, 3]; 0.5 * (matrix[2, 3] + matrix[3, 2]); 0.5 * (matrix[1, 3] + matrix[3, 1]); 0.5 * (matrix[1, 2] + matrix[2, 1])]
     else
         @error "Unsupported matrix size for matrix_to_voigt"
     end
