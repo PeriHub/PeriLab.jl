@@ -64,7 +64,7 @@ function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_para
   force_densities = datamanager.get_field("Force Densities", "NP1")
   bondGeom = datamanager.get_field("Bond Geometry")
   invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
-  strainInc = Geometry.strain_increment(defGradNP1, defGradN)
+  strainInc = Geometry.strain_increment(nodes, defGradNP1, defGradN, strainInc)
 
   if rotation
     @info "not implemented"
