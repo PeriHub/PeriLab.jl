@@ -5,6 +5,9 @@ SPDX-License-Identifier: BSD-3-Clause
 -->
 
 ```@autodocs
-Modules = [PeriLab.IO.Read_Mesh.Geometry]
+Modules = [PeriLab.Solver.Physics.Material.Set_modules.Correspondence]
 Order   = [:function, :type]
+```
+
+```@bibliography
 ```
