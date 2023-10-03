@@ -19,7 +19,7 @@ function compute_damage(datamanager, nodes, model_param, time, dt)
 
     datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
     if isnothing(datamanager)
-        @error "No damage model of name " * material["Damage Model"] * " exists."
+        @error "No damage model of name " * model_param["Damage Model"] * " exists."
     end
 
     datamanager = damage_index(datamanager, nodes)
