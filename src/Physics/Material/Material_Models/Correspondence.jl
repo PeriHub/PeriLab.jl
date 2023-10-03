@@ -65,7 +65,7 @@ function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_para
   bondGeom = datamanager.get_field("Deformed Bond Geometry", "N") # not to original configuration as in Peridigm, but the last one
 
   invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
-  strainInc = Geometry.strain_increment(nodes, defGradNP1, defGradN, strainInc)
+  strainInc = Geometry.strain_increment(nodes, defGradNP1, strainInc)
 
   if rotation
     @info "not implemented"
