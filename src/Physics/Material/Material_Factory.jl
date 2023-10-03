@@ -12,9 +12,9 @@ Set_modules.include_files(module_list)
 
 export compute_forces
 
-function compute_forces(datamanager, nodes, material, time, dt)
+function compute_forces(datamanager, nodes, model_param, time, dt)
     specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")
-    datamanager = Set_modules.create_module_specifics(material["Material Model"], module_list, specifics, (datamanager, nodes, material, time, dt))
+    datamanager = Set_modules.create_module_specifics(model_param["Material Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
     if isnothing(datamanager)
         @error "No material of name " * material["Material Model"] * " exists."
     end
