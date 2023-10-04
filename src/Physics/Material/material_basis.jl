@@ -152,6 +152,14 @@ function get_Hooke_matrix(parameter, symmetry, dof)
                 @error "2D model defintion is missing; plain_stress or plain_strain "
             end
         end
+    else
+        @warn "material model defintion is missing; assuming isotropic plain_stress "
+        matrix = zeros(Float32, dof + 1, dof + 1)
+        matrix[1, 1] = E / (1 - nu * nu)
+        matrix[1, 2] = E * nu / (1 - nu * nu)
+        matrix[2, 1] = E * nu / (1 - nu * nu)
+        matrix[2, 2] = E / (1 - nu * nu)
+        matrix[3, 3] = G
     end
     return matrix
 end
