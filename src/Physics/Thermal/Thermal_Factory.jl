@@ -5,7 +5,7 @@
 module Thermal
 
 include("../../Core/Module_inclusion/set_Modules.jl")
-using .Set_module
+using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "thermal_model_name")
 Set_modules.include_files(module_list)
 
