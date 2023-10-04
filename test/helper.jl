@@ -10,11 +10,15 @@ export run_perilab
 
 function run_perilab(filename, cores, compare)
     if cores == 1
-        run(`$(Base.julia_cmd()) ../../src/main.jl -s $(filename).yaml`)
+        cmd = `$(Base.julia_cmd()) ../../src/main.jl -s $(filename).yaml`
+        exit_code = run(cmd).exitcode
+        @test exit_code == 0
     else
         mpiexec() do exe  # MPI wrapper
 
-            run(`$exe -n $cores $(Base.julia_cmd()) ../../src/main.jl -s $(filename).yaml`)
+            cmd = `$exe -n $cores $(Base.julia_cmd()) ../../src/main.jl -s $(filename).yaml`
+            exit_code = run(cmd).exitcode
+            @test exit_code == 0
         end
     end
     if compare
