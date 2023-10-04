@@ -20,7 +20,7 @@ include("../../../../src/Physics/Material/material_basis.jl")
     println()
     test = get_all_elastic_moduli(Dict{String,Any}("Bulk Modulus" => 10, "Shear Modulus" => 10))
     @test test["Young's Modulus"] == Float32(22.5)
-    @test test["Poisson's Ratio"] == Float32(0.25)
+    @test test["Poisson's Ratio"] == Float32(0.125)
     @test test["Bulk Modulus"] == 10
     @test test["Shear Modulus"] == 10
 
@@ -45,7 +45,7 @@ include("../../../../src/Physics/Material/material_basis.jl")
     @test test["Young's Modulus"] == 5
 end
 """
-@testset "get_Hook_matrix" begin
+@testset "get_Hooke_matrix" begin
     parameter = get_all_elastic_moduli(Dict{String,Float32}("Bulk Modulus" => 5, "Shear Modulus" => 1.25))
 
     symmetry = "isotropic"
@@ -64,7 +64,7 @@ end
     end
 
     symmetry = "isotropic_plain_strain"
-    C2D = get_Hook_matrix(parameter, symmetry, 2)
+    C2D = get_Hooke_matrix(parameter, symmetry, 2)
     for iID in 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
         for jID in 1:2
@@ -80,7 +80,7 @@ end
     C2D_test[1:2, 1:2] = Cinv[1:2, 1:2]
     C2D_test[3, 3] = Cinv[6, 6]
     C2D_test = inv(C2D_test)
-    C = get_Hook_matrix(parameter, symmetry, 2)
+    C = get_Hooke_matrix(parameter, symmetry, 2)
     for iID in 1:3
         for jID in 1:3
             if C2D_test[iID, jID] != 0
@@ -96,7 +96,7 @@ end
         end
     end
     symmetry = "anisotropic"
-    C = get_Hook_matrix(parameter, symmetry, 3)
+    C = get_Hooke_matrix(parameter, symmetry, 3)
     for iID in 1:6
         for jID in 1:6
             @test C[iID, jID] == C[jID, iID]

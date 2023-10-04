@@ -176,6 +176,7 @@ end
     testDatamanager = Data_manager
     dof = testDatamanager.get_dof()
     nnodes = 4
+    nodes = Vector{Int64}(1:nnodes)
     defGrad, defGradNP1 = testDatamanager.create_node_field("Deformation Gradient", Float32, "Matrix", dof)
     strainInc = testDatamanager.create_constant_node_field("Strain Increment", Float32, "Matrix", dof)
     nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
@@ -187,9 +188,9 @@ end
     invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float32, "Matrix", dof)
     defGrad, defGradNP1 = testDatamanager.create_node_field("Deformation Gradient", Float32, "Matrix", dof)
 
-    defGrad = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
-    defGradNP1 = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGradNP1)
-    strainInc = Geometry.strain_increment(defGradNP1, defGrad)
+    defGrad = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
+    defGradNP1 = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGradNP1)
+    strainInc = Geometry.strain_increment(nodes, defGradNP1, strainInc)
 
     for i in 1:nnodes
         @test strainInc[i, 1, 1] == 0
@@ -198,7 +199,6 @@ end
         @test strainInc[i, 2, 2] == 0
     end
 
-    defGrad = zeros(4, 3, 3)
     defGradNP1 = zeros(4, 3, 3)
     strainInc = zeros(4, 3, 3)
 
@@ -213,10 +213,15 @@ end
     defGradNP1[1, 3, 2] = -1.0
     defGradNP1[1, 3, 3] = 3.0
 
-    strainInc = Geometry.strain_increment(defGradNP1, defGrad)
+    strainInc = Geometry.strain_increment(nodes, defGradNP1, strainInc)
+    identity = zeros(3, 3)
+    identity[1, 1] = 1
+    identity[2, 2] = 1
+    identity[3, 3] = 1
+    test = 0.5 * (transpose(defGradNP1[1, :, :]) * defGradNP1[1, :, :] - identity)
     for i in 1:dof
         for j in 1:dof
-            @test strainInc[1, i, j] == defGradNP1[1, i, j]
+            @test strainInc[1, i, j] == test[i, j]
         end
     end
 end

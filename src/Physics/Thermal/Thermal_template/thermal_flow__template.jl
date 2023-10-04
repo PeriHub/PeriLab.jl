@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal_template
-export compute_thermal_flow
-export thermal_flow_name
+export compute_thermal_model
+export thermal_model_name
 """
    thermal_flow_name()
 
@@ -21,7 +21,7 @@ export thermal_flow_name
    "Thermal Template"
    ```
    """
-function thermal_flow_name()
+function thermal_model_name()
   return "Thermal Template"
 end
 """
@@ -41,7 +41,7 @@ end
    ```julia
      ```
    """
-function compute_thermal_flow(datamanager, nodes, flow_parameter, time, dt)
+function compute_thermal_model(datamanager, nodes, flow_parameter, time, dt)
   @info "Please write a thermal flow model name in thermal_flow_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, flow_parameter, time, dt) function."

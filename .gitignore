@@ -77,3 +77,8 @@ test/tryout/critical_stretch_tension.yaml
 test/tryout/strain_yy.e
 test/multifunctional_test/test_MPI_data_manager.jl
 test/tensile_test/tensile_test.yaml
+src/Physics/Material/material_basis.jl
+test/tryout/test_mesh.txt
+test/tryout/test.yaml
+.gitignore
+test_mesh.txt

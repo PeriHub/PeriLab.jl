@@ -62,9 +62,10 @@ function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_para
   stressN, stressNP1 = datamanager.create_node_field("Cauchy Stress", Float32, "Matrix", dof)
   bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, dof)
   force_densities = datamanager.get_field("Force Densities", "NP1")
-  bondGeom = datamanager.get_field("Bond Geometry")
+  bondGeom = datamanager.get_field("Deformed Bond Geometry", "N") # not to original configuration as in Peridigm, but the last one
+
   invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
-  strainInc = Geometry.strain_increment(defGradNP1, defGradN)
+  strainInc = Geometry.strain_increment(nodes, defGradNP1, strainInc)
 
   if rotation
     @info "not implemented"
@@ -90,9 +91,13 @@ function calculate_bond_force(nodes::Vector{Int64}, defGrad, bondGeom, invShapeT
     if jacobian <= 1e-8
       @error "Deformation Gradient is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
     end
+    # taken from corresponcence.cxx -> computeForcesAndStresses
     invDefGrad = inv(defGrad[iID, :, :])
-
-    bond_force[iID][:, :] = transpose(jacobian .* invDefGrad * stressNP1[iID, :, :] * invShapeTensor[iID, :, :] * transpose(bondGeom[iID][:, 1:end-1]))
+    piolaStress = jacobian .* invDefGrad * stressNP1[iID, :, :]
+    temp = piolaStress * invShapeTensor[iID, :, :]
+    for jID in eachindex(bond_force[iID][:, 1])
+      bond_force[iID][jID, :] = temp * bondGeom[iID][jID, 1:end-1]
+    end
   end
 
   return bond_force

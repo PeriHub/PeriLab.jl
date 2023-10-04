@@ -42,7 +42,7 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
 
     if bulk && shear
         E = 9 * K * G / (3 * K + G)
-        nu = (3 * K - 2 * G) / (6 * K - 2 * G)
+        nu = (3 * K - 2 * G) / (6 * K + 2 * G)
     end
 
     if Youngs && shear
@@ -84,6 +84,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
         E = parameter["Young's Modulus"]
         G = parameter["Shear Modulus"]
         temp = E / ((1 + nu) * (1 - 2 * nu))
+
         if dof == 3
             matrix[1, 1] = (1 - nu) * temp
             matrix[2, 2] = (1 - nu) * temp
@@ -168,11 +169,11 @@ end
 # Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
 function matrix_to_voigt(matrix)
     if size(matrix) == (2, 2)
-        return [matrix[1, 1]; matrix[2, 2]; matrix[1, 2]]
+        return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
     elseif size(matrix) == (3, 3)
-        return [matrix[1, 1]; matrix[2, 2]; matrix[3, 3]; matrix[1, 2]; matrix[2, 1]; matrix[1, 3]]
+        return [matrix[1, 1]; matrix[2, 2]; matrix[3, 3]; 0.5 * (matrix[2, 3] + matrix[3, 2]); 0.5 * (matrix[1, 3] + matrix[3, 1]); 0.5 * (matrix[1, 2] + matrix[2, 1])]
     else
-        error("Unsupported matrix size")
+        @error "Unsupported matrix size for matrix_to_voigt"
     end
 end
 
@@ -181,10 +182,10 @@ function voigt_to_matrix(voigt)
     if length(voigt) == 3
         return [voigt[1] voigt[3]; voigt[3] voigt[2]]
     elseif length(voigt) == 6
-        return [voigt[1] voigt[4] voigt[6]
-            voigt[4] voigt[2] voigt[5]
-            voigt[6] voigt[5] voigt[3]]
+        return [voigt[1] voigt[6] voigt[5]
+            voigt[6] voigt[2] voigt[4]
+            voigt[5] voigt[4] voigt[3]]
     else
-        error("Unsupported Voigt vector size")
+        @error "Unsupported matrix size for voigt_to_matrix"
     end
 end

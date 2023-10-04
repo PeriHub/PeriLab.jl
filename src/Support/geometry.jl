@@ -165,12 +165,12 @@ function deformation_gradient(nodes::Vector{Int64}, dof::Int64, nlist, volume, o
 
 end
 """
-    function strain_increment(defGradNP1, defGrad)
+    function strain_increment(nodes::Vector{Int64}, defGradNP1, strainInc)
 
 Calculate strain increments for specified nodes based on deformation gradients.
 
 ## Arguments
-
+-  `nodes::Vector{Int64}`: List of nodes
 - `defGradNP1`: Deformation gradient at time step "n+1" (2D or 3D array).
 - `defGrad`: Deformation gradient at the current time step (2D or 3D array).
 
@@ -182,10 +182,15 @@ This function iterates over the specified nodes and computes strain increments u
 
 """
 
-function strain_increment(defGradNP1, defGrad)
+function strain_increment(nodes::Vector{Int64}, defGradNP1, strainInc)
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     # First equation gives Strain increment as shown
-    return defGradNP1 - defGrad
+    for iID in nodes
+        strainInc[iID, :, :] = 0.5 * (transpose(defGradNP1[iID, :, :]) * defGradNP1[iID, :, :] - I)
+        #strainInc[iID, :, :] = 0.5 * (transpose(defGradNP1[iID, :, :]) * defGradNP1[iID, :, :] - Diagonal(ones(2)))
+    end
+    return strainInc
+    #return defGradNP1 - defGrad
 end
 
 

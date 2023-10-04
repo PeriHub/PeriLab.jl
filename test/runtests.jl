@@ -117,6 +117,10 @@ MPI.Init()
     @testset "test_Critical_stretch" begin
         include("test_Critical_stretch/test_Critical_stretch.jl")
     end
+
+    @testset "test_Correspondence_Elastic" begin
+        include("test_Correspondence_Elastic/test_Correspondence_Elastic.jl")
+    end
 end
 
 MPI.Finalize()

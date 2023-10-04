@@ -3,20 +3,25 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Damage
-include("./Critical_Stretch.jl")
-using .Critical_stretch
+include("../../Core/Module_inclusion/set_Modules.jl")
+using .Set_modules
+global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
+Set_modules.include_files(module_list)
+
 export compute_damage
 
-function compute_damage(datamanager, nodes, damage_parameter, time, dt)
+function compute_damage(datamanager, nodes, model_param, time, dt)
     bondDamageN = datamanager.get_field("Bond Damage", "N")
     bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
     bondDamageNP1 = copy(bondDamageN)
-    if damage_parameter["Damage Model"] == "Test"
-        return testing_damage(datamanager, time)
+
+    specifics = Dict{String,String}("Call Function" => "compute_damage", "Name" => "damage_name")
+
+    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
+    if isnothing(datamanager)
+        @error "No damage model of name " * model_param["Damage Model"] * " exists."
     end
-    if damage_parameter["Damage Model"] == Critical_stretch.damage_name()
-        datamanager = Critical_stretch.compute_damage(datamanager, nodes, damage_parameter, time, dt)
-    end
+
     datamanager = damage_index(datamanager, nodes)
     return datamanager
 end

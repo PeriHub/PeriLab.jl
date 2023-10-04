@@ -121,7 +121,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         size = MPI.Comm_size(comm)
         if rank == 0 && !silent
             print_banner()
-            @info "\nPeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M. Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n Licence: BSD-3-Clause\n ---------------------------------------------------------------"
+            @info "\nPeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M. Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------"
         else
             Logging.disable_logging(Logging.Error)
         end
