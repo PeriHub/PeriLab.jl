@@ -71,7 +71,7 @@ function main()
     main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
 end
 
-function progess_filter(log_args)
+function progress_filter(log_args)
     if typeof(log_args.message) == TimerOutputs.TimerOutput
         return true
     end
@@ -91,13 +91,15 @@ Main function that performs the core functionality of the program.
 function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
 
     file_logger = FormatLogger(split(filename, ".")[1] * ".log"; append=false) do io, args
-        if debug
-            println(io, args._module, " | ", "[", args.level, "] ", args.message)
-        else
-            println(io, "[", args.level, "] ", args.message)
+        if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
+            if debug
+                println(io, args._module, " | ", "[", args.level, "] ", args.message)
+            else
+                println(io, "[", args.level, "] ", args.message)
+            end
         end
     end
-    filtered_logger = ActiveFilteredLogger(progess_filter, ConsoleLogger(stderr))
+    filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
     if debug
         demux_logger = TeeLogger(
             MinLevelLogger(file_logger, Logging.Debug),

@@ -7,7 +7,8 @@ WORKDIR /env
 COPY . . 
 
 # RUN julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate();'
-RUN julia -e 'import Pkg; Pkg.add(path=".")'
+# RUN julia -e 'import Pkg; Pkg.add(path=".")'
+RUN julia -e 'import Pkg; Pkg.build()'
 
 RUN apt-get -yq update
 RUN apt-get -yq install openssh-server
