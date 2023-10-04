@@ -90,28 +90,30 @@ Main function that performs the core functionality of the program.
 """
 function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
 
-    file_logger = FormatLogger(split(filename, ".")[1] * ".log"; append=false) do io, args
-        if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
-            if debug
-                println(io, args._module, " | ", "[", args.level, "] ", args.message)
-            else
-                println(io, "[", args.level, "] ", args.message)
+    if !silent
+        file_logger = FormatLogger(split(filename, ".")[1] * ".log"; append=false) do io, args
+            if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
+                if debug
+                    println(io, args._module, " | ", "[", args.level, "] ", args.message)
+                else
+                    println(io, "[", args.level, "] ", args.message)
+                end
             end
         end
+        filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
+        if debug
+            demux_logger = TeeLogger(
+                MinLevelLogger(file_logger, Logging.Debug),
+                MinLevelLogger(filtered_logger, Logging.Debug),
+            )
+        else
+            demux_logger = TeeLogger(
+                MinLevelLogger(file_logger, Logging.Info),
+                MinLevelLogger(filtered_logger, Logging.Info),
+            )
+        end
+        global_logger(demux_logger)
     end
-    filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
-    if debug
-        demux_logger = TeeLogger(
-            MinLevelLogger(file_logger, Logging.Debug),
-            MinLevelLogger(filtered_logger, Logging.Debug),
-        )
-    else
-        demux_logger = TeeLogger(
-            MinLevelLogger(file_logger, Logging.Info),
-            MinLevelLogger(filtered_logger, Logging.Info),
-        )
-    end
-    global_logger(demux_logger)
 
     @timeit to "PeriLab" begin
         # init MPI as always ...
