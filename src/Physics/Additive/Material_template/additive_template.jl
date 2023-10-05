@@ -21,7 +21,7 @@ export additive_name
    "additive Template"
    ```
    """
-function Additive_name()
+function additive_name()
   return "Additive Template"
 end
 """
