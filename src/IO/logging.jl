@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Logging_module
+using Logging
 using LoggingExtras
 using TimerOutputs
 export init_logging
@@ -11,7 +12,12 @@ function progress_filter(log_args)
     if typeof(log_args.message) == TimerOutputs.TimerOutput
         return true
     end
-    !startswith(log_args.message, "Steps:")
+    if startswith(log_args.message, "Steps:")
+        return false
+    end
+    if startswith(log_args.message, "\n PeriLab version:")
+        return false
+    end
 end
 
 function init_logging(filename, debug)
