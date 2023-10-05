@@ -59,7 +59,6 @@ function apply_bc(bcs, datamanager, time)
         end
         field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates[bc["Node Set"], :], time, dof)
     end
-    return datamanager
 end
 
 function clean_up(bc)
