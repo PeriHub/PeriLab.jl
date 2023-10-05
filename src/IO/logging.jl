@@ -18,6 +18,7 @@ function progress_filter(log_args)
     if startswith(log_args.message, "\n PeriLab version:")
         return false
     end
+    return true
 end
 
 function init_logging(filename, debug)

@@ -26,7 +26,7 @@ export main
 
 function print_banner()
     println("""
-    \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: """ * string(Pkg.project().version) * """
+    \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: """ * string(Pkg.project().version) * """ 
     \e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |
     \e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse | License: BSD-3-Clause
     \e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |
