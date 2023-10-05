@@ -193,5 +193,11 @@ function strain_increment(nodes::Vector{Int64}, defGradNP1, strainInc)
     #return defGradNP1 - defGrad
 end
 
+function rotation_tensor(angles)
+    if length(angles) == 3
+        return RotXYZ(angles[1], angles[2], angles[3])
+    end
+    return RotXYZ(angles[1], 0, 0)
+end
 
 end

@@ -82,3 +82,9 @@ test/tryout/test_mesh.txt
 test/tryout/test.yaml
 .gitignore
 test_mesh.txt
+test/tryout/correspondence_strain_xx_hg.e
+test/tryout/macro_test_zone/call.jl
+test/tryout/macro_test_zone/combineModules.jl
+test/tryout/macro_test_zone/combineModulesMacro.jl
+test/tryout/macro_test_zone/Modules/moduleB.jl
+test/tryout/macro_test_zone/Modules/modA/moduleA.jl

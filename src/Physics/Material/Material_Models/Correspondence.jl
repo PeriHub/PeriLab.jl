@@ -4,9 +4,12 @@
 
 module Correspondence
 using LinearAlgebra
+using TensorOperations
 include("Correspondence_Elastic.jl")
+include("./Zero_Energy_Control/global_control.jl")
 include("../material_basis.jl")
 include("../../../Support/geometry.jl")
+using .global_zero_energy_control
 using .Correspondence_Elastic
 using .Geometry
 export compute_force
@@ -68,21 +71,45 @@ function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_para
   strainInc = Geometry.strain_increment(nodes, defGradNP1, strainInc)
 
   if rotation
-    @info "not implemented"
-    # rotation of strain increments and stresses N
+    stressN = rotate(nodes, dof, stressN, angles, false)
+    strainInc = rotate(nodes, dof, strainInc, angles, false)
   end
 
-  # in future this part can be changed
+  # in future this part must be changed -> using set Modules
   stressNP1, datamanager = Correspondence_Elastic.compute_stresses(datamanager, nodes, dof, material_parameter, time, dt, strainInc, stressN, stressNP1)
-  bond_force[:] = calculate_bond_force(nodes, defGradNP1, bondGeom, invShapeTensor, stressNP1, bond_force)
 
   if rotation
-    # rotation of stresses NP1
+    stressNP1 = rotate(nodes, dof, stressNP1, angles, true)
   end
+  bond_force[:] = calculate_bond_force(nodes, defGradNP1, bondGeom, invShapeTensor, stressNP1, bond_force)
+  # general interface, because it might be a flexbile Set_modules interface in future
+  datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
 
   force_densities[:] = distribute_forces(nodes, nlist, bond_force, volume, force_densities)
 
   return datamanager
+end
+
+"""
+Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
+"""
+function zero_energy_mode_compensation(datamanager::Module, nodes::Vector{Int64}, material_parameter, time::Float32, dt::Float32)
+  if !haskey(material_parameter, "Zero Energy Mode Control")
+    return datamanager
+  end
+  if material_parameter["Zero Energy Mode Control"] == global_zero_energy_control.get_name_control()
+    datamanager = global_zero_energy_control.compute_control(datamanager, nodes, material_parameter, time, dt)
+  end
+
+
+  return datamanager
+end
+
+function get_zero_energy_mode_forde(nodes, zstiff, defGradNP1, bondGeom, bondGeomNP1, bond_force)
+  for iID in nodes
+    bond_force[iID][:, :] = zStiff[iID, :, :] * (defGradNP1[iID, :, :] * bondGeom[iID][:, :] - bondGeom[iID][:, :])
+  end
+  return force_densities
 end
 
 function calculate_bond_force(nodes::Vector{Int64}, defGrad, bondGeom, invShapeTensor, stressNP1, bond_force)
@@ -102,4 +129,30 @@ function calculate_bond_force(nodes::Vector{Int64}, defGrad, bondGeom, invShapeT
 
   return bond_force
 end
+
+
+function rotate(nodes::Vector{Int64}, dof::Int64, matrix, angles, back::Bool)
+  for iID in nodes
+    matrix[iID, :, :] = rotate_second_order_tensor(angles[iID, :], matrix[iID, :, :], dof, back)
+  end
+  return matrix
+
+end
+function rotate_second_order_tensor(angles, tensor, dof::Int64, back::Bool)
+  rot = Geometry.rotation_tensor(angles)
+
+  R = rot[1:dof, dof]
+
+  if back
+    @tensor begin
+      tensor[i, j] = tensor[i, j] * R[m, i] * R[n, j]
+    end
+  else
+    @tensor begin
+      tensor[i, j] = tensor[i, j] * R[i, m] * R[j, n]
+    end
+  end
+end
+
+
 end
