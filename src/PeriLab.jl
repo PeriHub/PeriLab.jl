@@ -7,14 +7,15 @@ module PeriLab
 # using PrecompileTools
 # @compile_workload begin
 include("./Support/data_manager.jl")
+include("./IO/logging.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
 using MPI
 using Pkg
 using TimerOutputs
-using LoggingExtras
 const to = TimerOutput()
 using .Data_manager
+using .Logging_module
 import .IO
 import .Solver
 # end
@@ -62,20 +63,13 @@ end
 
 function main()
     parsed_args = parse_commandline()
-    # if parsed_args["verbose"]
-    #     println("Parsed args:")
-    #     for (arg, val) in parsed_args
-    #         println("  $arg  =>  $val")
-    #     end
-    # end
-    main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
-end
-
-function progress_filter(log_args)
-    if typeof(log_args.message) == TimerOutputs.TimerOutput
-        return true
+    if parsed_args["verbose"]
+        @info "Parsed args:"
+        for (arg, val) in parsed_args
+            @info "  $arg  =>  $val"
+        end
     end
-    !startswith(log_args.message, "Steps:")
+    main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
 end
 
 """
@@ -90,32 +84,12 @@ Main function that performs the core functionality of the program.
 """
 function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
 
-    if !silent
-        file_logger = FormatLogger(split(filename, ".")[1] * ".log"; append=false) do io, args
-            if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
-                if debug
-                    println(io, args._module, " | ", "[", args.level, "] ", args.message)
-                else
-                    println(io, "[", args.level, "] ", args.message)
-                end
-            end
-        end
-        filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
-        if debug
-            demux_logger = TeeLogger(
-                MinLevelLogger(file_logger, Logging.Debug),
-                MinLevelLogger(filtered_logger, Logging.Debug),
-            )
-        else
-            demux_logger = TeeLogger(
-                MinLevelLogger(file_logger, Logging.Info),
-                MinLevelLogger(filtered_logger, Logging.Info),
-            )
-        end
-        global_logger(demux_logger)
-    end
-
     @timeit to "PeriLab" begin
+
+        if !silent
+            @timeit to "Logging.init_logging" Logging_module.init_logging(filename, debug)
+        end
+
         # init MPI as always ...
         MPI.Init()
         comm = MPI.COMM_WORLD
