@@ -12,7 +12,7 @@ function progress_filter(log_args)
     if typeof(log_args.message) == TimerOutputs.TimerOutput
         return true
     end
-    if startswith(log_args.message, "Steps:")
+    if startswith(log_args.message, "Step:")
         return false
     end
     if startswith(log_args.message, "\n PeriLab version:")
