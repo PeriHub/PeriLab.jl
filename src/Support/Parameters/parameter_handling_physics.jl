@@ -23,17 +23,25 @@ function get_physics_options(params, options)
             end
         end
     end
+    if !haskey(params["Physics"], "Material Models")
+        @error "Material Models missing!"
+    end
     materials = params["Physics"]["Material Models"]
     for material in eachindex(materials)
-        if occursin("Correspondence", materials[material]["Material Model"])
-            options["Shape Tensor"] = true
-            options["Deformation Gradient"] = true
-            options["Deformed Bond Geometry"] = true
-        end
-        if occursin("Bond Associated", materials[material]["Material Model"])
-            options["Shape Tensor"] = true
-            options["Bond Associated Shape Tensor"] = true
-            options["Bond Associated Deformation Gradient"] = true
+        if haskey(materials[material], "Material Model")
+            if occursin("Correspondence", materials[material]["Material Model"])
+                options["Shape Tensor"] = true
+                options["Deformation Gradient"] = true
+                options["Deformed Bond Geometry"] = true
+            elseif occursin("Bond Associated", materials[material]["Material Model"])
+                options["Shape Tensor"] = true
+                options["Bond Associated Shape Tensor"] = true
+                options["Bond Associated Deformation Gradient"] = true
+            else
+                @error "Material Model from $material is unknown!"
+            end
+        else
+            @error "Material $material is missing 'Material Model'!"
         end
     end
     return options
