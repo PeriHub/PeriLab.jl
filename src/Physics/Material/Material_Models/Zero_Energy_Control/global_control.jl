@@ -3,12 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module global_zero_energy_control
-using TensorOperations
-
-export get_name_control
+include("../../../../Support/tools.jl")
+export control_name
 export compute_control
 
-function get_name_control()
+function control_name()
     return "Global"
 end
 
@@ -48,7 +47,6 @@ function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVo
     return zStiff
 end
 
-
 function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVoigt, angles, Kinv, zStiff)
     C = get_fourth_order(CVoigt, dof)
     for iID in nodes
@@ -78,45 +76,5 @@ function rotate_fourth_order_tensor(angles, C, dof::Int64, back::Bool)
 end
 
 
-function get_fourth_order(CVoigt, dof)
-    C = zeros(dof, dof, dof, dof)
-    for i in 1:dof
-        for j in j:dof
-            C[i, i, j, j] = CVoigt[i, j]#9
-        end
-    end
 
-    if dof == 2
-        C[1, 2, 1, 2] = C[2, 1, 2, 1] = C[1, 2, 2, 1] = C[1, 2, 2, 1] = CVoigt[3, 3]
-        C[2, 1, 1, 1] = C[1, 2, 1, 1] = C[1, 1, 2, 1] = C[1, 1, 1, 2] = CVoigt[1, 3]
-        C[1, 2, 2, 2] = C[2, 1, 2, 2] = C[2, 2, 1, 2] = C[2, 2, 2, 1] = CVoigt[2, 3]#12
-    end
-    #----------------------------------
-    if dof == 3 # 81
-        C[2, 3, 2, 3] = C[2, 3, 2, 3] = CVoigt[4, 4]#2
-        C[2, 3, 1, 1] = C[3, 2, 1, 1] = C[1, 1, 2, 3] = C[1, 1, 3, 2] = CVoigt[1, 4]
-        C[3, 2, 2, 2] = C[2, 3, 2, 2] = C[2, 2, 3, 2] = C[2, 2, 2, 3] = CVoigt[2, 4]
-        C[3, 2, 3, 3] = C[2, 3, 3, 3] = C[3, 3, 3, 2] = C[3, 3, 2, 3] = CVoigt[3, 4]#12
-        C[1, 3, 1, 3] = C[3, 1, 3, 1] = CVoigt[5, 5]#2
-        C[3, 1, 1, 1] = C[1, 3, 1, 1] = C[1, 1, 3, 1] = C[1, 1, 1, 3] = CVoigt[1, 5]
-        C[1, 3, 2, 2] = C[3, 1, 2, 2] = C[2, 2, 1, 3] = C[2, 2, 3, 1] = CVoigt[2, 5]
-        C[1, 3, 3, 3] = C[3, 1, 3, 3] = C[3, 3, 1, 3] = C[3, 3, 3, 1] = CVoigt[3, 5]#12
-        C[1, 2, 1, 2] = C[2, 1, 2, 1] = CVoigt[6, 6]#2
-        C[2, 1, 1, 1] = C[1, 2, 1, 1] = C[1, 1, 2, 1] = C[1, 1, 1, 2] = CVoigt[1, 6]
-        C[1, 2, 2, 2] = C[2, 1, 2, 2] = C[2, 2, 1, 2] = C[2, 2, 2, 1] = CVoigt[2, 6]
-        C[1, 2, 3, 3] = C[2, 1, 3, 3] = C[3, 3, 1, 2] = C[3, 3, 2, 1] = CVoigt[3, 6]#12
-        #----------------------------------
-        C[1, 3, 1, 2] = C[1, 2, 1, 3] = C[3, 1, 1, 2] = C[2, 1, 1, 3] = C[1, 2, 1, 3] = CVoigt[5, 6]
-        C[3, 1, 2, 1] = C[2, 1, 3, 1] = C[2, 1, 1, 3] = C[3, 1, 1, 2] = C[2, 1, 3, 1] = CVoigt[5, 6]
-
-        C[2, 3, 1, 2] = C[3, 2, 1, 2] = C[3, 2, 2, 1] = C[2, 3, 2, 1] = C[1, 2, 2, 3] = CVoigt[4, 6]
-        C[3, 2, 2, 1] = C[2, 3, 2, 1] = C[2, 3, 1, 2] = C[3, 2, 1, 2] = C[2, 1, 3, 2] = CVoigt[4, 6]
-
-        C[2, 3, 1, 3] = C[3, 2, 1, 3] = C[3, 2, 3, 1] = C[2, 3, 3, 1] = C[1, 3, 2, 3] = CVoigt[4, 5]
-        C[3, 2, 3, 1] = C[2, 3, 3, 1] = C[2, 3, 1, 3] = C[3, 2, 1, 3] = C[3, 1, 3, 2] = CVoigt[4, 5]#30
-
-
-    end
-    return C
-end
 end
