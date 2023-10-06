@@ -97,20 +97,13 @@ function zero_energy_mode_compensation(datamanager::Module, nodes::Vector{Int64}
   if !haskey(material_parameter, "Zero Energy Mode Control")
     return datamanager
   end
-  if material_parameter["Zero Energy Mode Control"] == global_zero_energy_control.get_name_control()
+  if material_parameter["Zero Energy Mode Control"] == global_zero_energy_control.control_name()
     datamanager = global_zero_energy_control.compute_control(datamanager, nodes, material_parameter, time, dt)
   end
-
-
   return datamanager
 end
 
-function get_zero_energy_mode_forde(nodes, zstiff, defGradNP1, bondGeom, bondGeomNP1, bond_force)
-  for iID in nodes
-    bond_force[iID][:, :] = zStiff[iID, :, :] * (defGradNP1[iID, :, :] * bondGeom[iID][:, :] - bondGeom[iID][:, :])
-  end
-  return force_densities
-end
+
 
 function calculate_bond_force(nodes::Vector{Int64}, defGrad, bondGeom, invShapeTensor, stressNP1, bond_force)
   for iID in nodes

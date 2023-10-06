@@ -4,6 +4,8 @@
 
 module global_zero_energy_control
 include("../../../../Support/tools.jl")
+include("../../material_basis.jl")
+using TensorOperations
 export control_name
 export compute_control
 
@@ -16,6 +18,8 @@ function compute_control(datamanager::Module, nodes::Vector{Int64}, material_par
     if "Angles" in datamanager.get_all_field_keys()
         rotation = true
         angles = datamanager.get_field("Angles")
+    else
+        angles = nothing
     end
     dof = datamanager.get_dof()
     defGradNP1 = datamanager.get_field("Deformation Gradient", "NP1")
@@ -25,9 +29,16 @@ function compute_control(datamanager::Module, nodes::Vector{Int64}, material_par
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness", Float32, "Matrix", dof)
     CVoigt = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
-    zstiff = create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff, rotation)
-    bond_force = get_zero_energy_mode_forde(nodes, zstiff, defGradNP1, bondGeom, bondGeomNP1, bond_force)
+    zStiff = create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff, rotation)
+    bond_force = get_zero_energy_mode_force(nodes, zStiff, defGradNP1, bondGeom, bondGeomNP1, bond_force)
     return datamanager
+end
+
+function get_zero_energy_mode_force(nodes, zStiff, defGradNP1, bondGeom, bondGeomNP1, bond_force)
+    for iID in nodes
+        bond_force[iID][:, :] -= (bondGeom[iID][:, 1:end-1] * defGradNP1[iID, :, :] - bondGeomNP1[iID][:, 1:end-1]) * zStiff[iID, :, :]
+    end
+    return bond_force
 end
 
 function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVoigt, angles, Kinv, zStiff, rotation::Bool)
@@ -38,7 +49,7 @@ function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVo
 end
 
 function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVoigt, Kinv, zStiff)
-    C = get_fourth_order(CVoigt, dof)
+    C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
         @tensor begin
             zStiff[iID, i, j] = C[i, j, k, l] * Kinv[iID, k, l]
@@ -48,7 +59,7 @@ function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVo
 end
 
 function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVoigt, angles, Kinv, zStiff)
-    C = get_fourth_order(CVoigt, dof)
+    C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
         C = rotate_stiffness_tensor(angles[iID, :, :], dof, C)
         @tensor begin
