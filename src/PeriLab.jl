@@ -11,9 +11,10 @@ include("./Core/Solver/Solver_control.jl")
 using MPI
 using Pkg
 using TimerOutputs
+using Logging
 const to = TimerOutput()
 using .Data_manager
-using .Logging_module
+import .Logging_module
 import .IO
 import .Solver
 # end

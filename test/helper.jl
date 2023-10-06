@@ -29,6 +29,8 @@ function run_perilab(filename, cores, compare, folder_name="")
     if same
         rm("exodiff.log")
         rm(filename * ".e")
-        rm(filename * ".log")
+        # rm(filename * ".log")
+    else
+        mv("exodiff.log", filename * "_exodiff.log", force=true)
     end
 end

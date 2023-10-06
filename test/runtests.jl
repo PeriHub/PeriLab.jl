@@ -6,8 +6,10 @@ using Test
 using TestSetExtensions
 using Aqua
 using Logging
+using MPI
 using PeriLab
 Logging.disable_logging(Logging.Error)
+MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
 
