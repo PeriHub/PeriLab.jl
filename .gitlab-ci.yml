@@ -28,6 +28,9 @@ test:
       using Coverage; cl, tl = get_summary(process_folder());
       println("(", cl/tl*100, "%) covered")'
   coverage: '/\(\d+.\d+\%\) covered/'
+  artifacts:
+    paths:
+      - test
 
 benchmark:
   stage: benchmark

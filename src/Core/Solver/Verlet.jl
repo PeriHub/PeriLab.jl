@@ -166,7 +166,9 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             exos = write_results(exos, start_time + step_time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
             step_time += dt
-            @info "Steps: $idt / $nsteps [$step_time s]"
+            if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
+                @info "Step: $idt / $nsteps [$step_time s]"
+            end
         end
     end
     return exos

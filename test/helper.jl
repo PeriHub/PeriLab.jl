@@ -8,7 +8,7 @@ using MPI
 
 export run_perilab
 
-function run_perilab(filename, cores, compare)
+function run_perilab(filename, cores, compare, folder_name="")
     if cores == 1
         cmd = `$(Base.julia_cmd()) ../../src/main.jl -s $(filename).yaml`
         exit_code = run(cmd).exitcode
@@ -21,11 +21,14 @@ function run_perilab(filename, cores, compare)
             @test exit_code == 0
         end
     end
+    same = true
     if compare
-        exodiff(filename * ".e", "./Reference/" * filename * ".e")
-        @test occursin("Files are the same", read("exodiff.log", String))
-        rm("exodiff.log")
+        same = exodiff(filename * ".e", "./Reference/" * filename * ".e"; command_file=folder_name * ".cmd")
+        @test same
     end
-    rm(filename * ".e")
-    rm(filename * ".log")
+    if same
+        rm("exodiff.log")
+        rm(filename * ".e")
+        rm(filename * ".log")
+    end
 end
