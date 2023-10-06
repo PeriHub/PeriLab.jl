@@ -23,13 +23,14 @@ function get_physics_options(params, options)
             end
         end
     end
-    for material in params["Physics"]["Material Models"]
-        if occursin("Correspondence", material["Material Model"])
+    materials = params["Physics"]["Material Models"]
+    for material in eachindex(materials)
+        if occursin("Correspondence", materials[material]["Material Model"])
             options["Shape Tensor"] = true
             options["Deformation Gradient"] = true
             options["Deformed Bond Geometry"] = true
         end
-        if occursin("Bond Associated", material["Material Model"])
+        if occursin("Bond Associated", material[material]["Material Model"])
             options["Shape Tensor"] = true
             options["Bond Associated Shape Tensor"] = true
             options["Bond Associated Deformation Gradient"] = true
