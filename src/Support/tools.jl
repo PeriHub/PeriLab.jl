@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using ProgressBars
+using Tensorial
 function find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
     file_list = filter(x -> isfile(joinpath(folder_path, x)) && endswith(x, file_ending), readdir(folder_path))
     return file_list
@@ -48,4 +49,9 @@ function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
     end
     # If rank is not 0, return a range from 1 to nsteps + 1.
     return 1:nsteps+1
+end
+
+function get_fourth_order(CVoigt, dof)
+    C = fromvoigt(FourthOrderTensor(dof), CVoigt)
+    return C
 end
