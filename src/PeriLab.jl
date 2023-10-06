@@ -4,8 +4,6 @@
 
 "Simple dummy project module to demonstrate how a project can be organized."
 module PeriLab
-# using PrecompileTools
-# @compile_workload begin
 include("./Support/data_manager.jl")
 include("./IO/logging.jl")
 include("./IO/IO.jl")

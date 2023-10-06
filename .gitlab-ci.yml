@@ -19,6 +19,7 @@ test:
   only:
     changes:
       - src/**/*
+      - test/**/*
   script:
     - julia --project=@. -e "import Pkg; Pkg.test(; coverage = true)"
     # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'

@@ -119,4 +119,5 @@ Logging.disable_logging(Logging.Error)
     # end
 end
 
+MPI.Finalize()
 # Aqua.test_all(PeriLab)
