@@ -50,8 +50,29 @@ function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
     # If rank is not 0, return a range from 1 to nsteps + 1.
     return 1:nsteps+1
 end
+"""
+    get_fourth_order(CVoigt, dof)
 
-function get_fourth_order(CVoigt, dof)
-    C = fromvoigt(FourthOrderTensor(dof), CVoigt)
-    return C
+Constructs a symmetric fourth-order tensor from a Voigt notation vector. It uses Tensorial.jl package.
+
+This function takes a Voigt notation vector `CVoigt` and the degree of freedom `dof` 
+to create a symmetric fourth-order tensor. The `CVoigt` vector contains components 
+that represent the tensor in Voigt notation, and `dof` specifies the dimension 
+of the tensor.
+
+# Arguments
+- `CVoigt::Matrix{Float64}`: A vector containing components of the tensor in Voigt notation.
+- `dof::Int64`: The dimension of the resulting symmetric fourth-order tensor.
+
+# Returns
+- `SymmetricFourthOrderTensor{dof}`: A symmetric fourth-order tensor of dimension `dof`.
+
+# Example
+```julia
+CVoigt = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+dof = 3
+result = get_fourth_order(CVoigt, dof)
+"""
+function get_fourth_order(CVoigt::Matrix{Float32}, dof::Int64)
+    return fromvoigt(SymmetricFourthOrderTensor{dof}, CVoigt)
 end
