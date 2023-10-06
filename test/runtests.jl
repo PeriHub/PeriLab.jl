@@ -2,16 +2,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# include("../src/PeriLab.jl")
-# import .PeriLab
 using Test
 using TestSetExtensions
 using Aqua
 using Logging
 using PeriLab
-using MPI
 Logging.disable_logging(Logging.Error)
-MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
 
@@ -123,5 +119,4 @@ MPI.Init()
     # end
 end
 
-MPI.Finalize()
 # Aqua.test_all(PeriLab)
