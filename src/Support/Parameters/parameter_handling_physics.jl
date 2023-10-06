@@ -16,12 +16,23 @@ function get_model_parameter(params, model, id)
 end
 
 function get_physics_options(params, options)
-    if !check_element(params["Physics"], "Pre Calculation")
-        return options
+    if check_element(params["Physics"], "Pre Calculation")
+        for option in keys(options)
+            if check_element(params["Physics"]["Pre Calculation"], option)
+                options[option] = params["Physics"]["Pre Calculation"][option]
+            end
+        end
     end
-    for option in keys(options)
-        if check_element(params["Physics"]["Pre Calculation"], option)
-            options[option] = params["Physics"]["Pre Calculation"][option]
+    for material in params["Physics"]["Material Models"]
+        if occursin("Correspondence", material["Material Model"])
+            options["Shape Tensor"] = true
+            options["Deformation Gradient"] = true
+            options["Deformed Bond Geometry"] = true
+        end
+        if occursin("Bond Associated", material["Material Model"])
+            options["Shape Tensor"] = true
+            options["Bond Associated Shape Tensor"] = true
+            options["Bond Associated Deformation Gradient"] = true
         end
     end
     return options
