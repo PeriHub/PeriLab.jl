@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module global_zero_energy_control
+using TensorOperations
 include("../../../../Support/tools.jl")
 include("../../material_basis.jl")
 using TensorOperations
