@@ -195,9 +195,9 @@ end
 
 function rotation_tensor(angles)
     if length(angles) == 3
-        return RotXYZ(angles[1], angles[2], angles[3])
+        return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end
-    return RotXYZ(angles[1], 0, 0)
+    return RotXYZ(0, 0, angles[1] / 180 * pi)
 end
 
 end
