@@ -157,7 +157,8 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             synchronise(comm, datamanager, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
-                activeBlockNodes = blockNodes[block][find_active(active[1:nnodes])]
+                bNodes = blockNodes[block]
+                activeBlockNodes = bNodes[find_active(active[bNodes])]
                 @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, activeBlockNodes, block, dt, step_time, solver_options, to)
             end
             synchronise(comm, datamanager, "download_from_cores")
