@@ -90,8 +90,24 @@ function init_thermal_model_fields(datamanager)
     datamanager.create_node_field("Heat Flow", Float32, dof)
     return datamanager
 end
+
 function init_additive_model_fields(datamanager)
-    datamanager.create_constant_node_field("Activated", Bool, 1)
+    if !("Activation Time" in datamanager.get_all_field_keys)
+        @error "'Activation Time' is missing. Please define an 'Activation Time' for each point in the mesh file."
+    end
+
+    datamanager.create_node_field("Temperature Flux", Float32, 1)
+    active = datamanager.get_field("Active")
+    bond_damageN = datamanager.get_field("Bond Damage", "N")
+    bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")
+    nnodes = datamanager.get_nodes()
+
+    for iID in 1:nnodes
+        active[iID] = false
+        bond_damageN[iID][:, :] = 0
+        bond_damageNP1[iID][:, :] = 0
+    end
+
     return datamanager
 end
 

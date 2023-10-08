@@ -139,6 +139,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     vN = datamanager.get_field("Velocity", "N")
     vNP1 = datamanager.get_field("Velocity", "NP1")
     a = datamanager.get_field("Acceleration")
+    active = datamanager.get_field("Active")
     dt::Float32 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float32 = solver_options["Initial Time"]
@@ -147,22 +148,26 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
 
-            vNP1[1:nnodes, :] = vN[1:nnodes, :] + 0.5 * dt .* a[1:nnodes, :]
+            vNP1[find_active(active[1:nnodes]), :] = vN[find_active(active[1:nnodes]), :] + 0.5 * dt .* a[find_active(active[1:nnodes]), :]
             # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
-            uNP1[1:nnodes, :] = uN[1:nnodes, :] + dt .* vNP1[1:nnodes, :]
+            uNP1[find_active(active[1:nnodes]), :] = uN[find_active(active[1:nnodes]), :] + dt .* vNP1[find_active(active[1:nnodes]), :]
+
             @timeit to "apply_bc" Boundary_conditions.apply_bc(bcs, datamanager, step_time)
             defCoorNP1[1:nnodes, :] = coor[1:nnodes, :] + uNP1[1:nnodes, :]
             synchronise(comm, datamanager, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
-                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, step_time, solver_options, to)
+                activeBlockNodes = blockNodes[block][find_active(active[1:nnodes])]
+                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, activeBlockNodes, block, dt, step_time, solver_options, to)
             end
             synchronise(comm, datamanager, "download_from_cores")
             # synch
 
             check_inf_or_nan(forces_density, "Forces")
-            a[1:nnodes, :] = forces_density[1:nnodes, :] ./ density[1:nnodes] # element wise
-            forces[1:nnodes, :] = forces_density[1:nnodes, :] .* volume[1:nnodes]
+
+            a[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] ./ density[find_active(active[1:nnodes])] # element wise
+            forces[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] .* volume[find_active(active[1:nnodes])]
+
             exos = write_results(exos, start_time + step_time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
             step_time += dt
@@ -174,3 +179,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     return exos
 end
 
+
+function find_active(active)
+    return [i for (i, is_active) in enumerate(active) if is_active]
+end
