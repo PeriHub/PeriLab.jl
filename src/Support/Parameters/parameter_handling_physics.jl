@@ -37,8 +37,6 @@ function get_physics_options(params, options)
                 options["Shape Tensor"] = true
                 options["Bond Associated Shape Tensor"] = true
                 options["Bond Associated Deformation Gradient"] = true
-            else
-                @error "Material Model from $material is unknown!"
             end
         else
             @error "Material $material is missing 'Material Model'!"
