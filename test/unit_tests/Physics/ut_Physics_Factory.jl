@@ -88,7 +88,20 @@ end
     testDatamanager = Data_manager
     testDatamanager.set_dof(3)
     testDatamanager.set_nmasters(4)
-    Physics.init_additive_model_fields(testDatamanager)
+    active = testDatamanager.create_constant_node_field("Active", Bool, 1)
+    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 1
+    nn[2] = 2
+    nn[3] = 1
+    nn[4] = 2
+
+    active[:] .= true
+    testDatamanager.create_bond_field("Bond Damage", Float32, 1)
+    testDatamanager = Physics.init_additive_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
-    @test "Activated" in fieldkeys
+    @test "Active" in fieldkeys
+    active = testDatamanager.get_field("Active")
+    for iID in 1:4
+        @test active[iID] == false
+    end
 end

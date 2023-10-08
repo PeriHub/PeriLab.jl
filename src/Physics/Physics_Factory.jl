@@ -92,7 +92,7 @@ function init_thermal_model_fields(datamanager)
 end
 
 function init_additive_model_fields(datamanager)
-    if !("Activation Time" in datamanager.get_all_field_keys)
+    if !("Activation Time" in datamanager.get_all_field_keys())
         @error "'Activation Time' is missing. Please define an 'Activation Time' for each point in the mesh file."
     end
 
@@ -100,12 +100,12 @@ function init_additive_model_fields(datamanager)
     active = datamanager.get_field("Active")
     bond_damageN = datamanager.get_field("Bond Damage", "N")
     bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")
-    nnodes = datamanager.get_nodes()
+    nnodes = datamanager.get_nnodes()
 
     for iID in 1:nnodes
         active[iID] = false
-        bond_damageN[iID][:, :] = 0
-        bond_damageNP1[iID][:, :] = 0
+        bond_damageN[iID][:, :] .= 0
+        bond_damageNP1[iID][:, :] .= 0
     end
 
     return datamanager
