@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function get_forces_from_force_density(datamanager)
+function get_forces_from_force_density(datamanager::Module)
     force_density = datamanager.get_field("Force Densities", "NP1")
     forces = datamanager.get_field("Forces", "NP1")
     volume = datamanager.get_field("Volume")
     forces[:] = force_density .* volume
-    return data
+    return datamanager
 end
