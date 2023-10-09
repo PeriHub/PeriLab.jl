@@ -30,17 +30,19 @@ function compute_models(datamanager, nodes, block, dt, time, options, to)
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
 
     if options["Damage Models"]
-        @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+        @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
         @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
     end
+
     if options["Material Models"]
-        @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
-        datamanager = Material.distribute_force_densities(datamanager, nodes)
+        @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+        @timeit to "compute_forces" datamanager = Material.distribute_force_densities(datamanager, nodes)
     end
 
     if options["Thermal Models"]
         @warn "Thermal Models not included yet"
     end
+
     if options["Additive Models"]
         @warn "Additive Models not included yet"
     end
