@@ -122,7 +122,7 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to, silent::Bool)
+function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs, exos::Vector{Any}, write_results, to, silent::Bool)
     @info "Run Verlet Solver"
     comm = datamanager.get_comm()
     dof = datamanager.get_dof()
@@ -140,6 +140,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     vNP1 = datamanager.get_field("Velocity", "NP1")
     a = datamanager.get_field("Acceleration")
     active = datamanager.get_field("Active")
+    update_list = datamanager.get_field("Update List")
     dt::Float32 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float32 = solver_options["Initial Time"]
@@ -175,6 +176,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
                 @info "Step: $idt / $nsteps [$step_time s]"
             end
+            update_list .= true
         end
     end
     return exos

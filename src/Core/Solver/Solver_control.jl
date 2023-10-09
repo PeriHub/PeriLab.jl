@@ -34,6 +34,8 @@ function init(params, datamanager)
     horizon = datamanager.create_constant_node_field("Horizon", Float32, 1)
     active = datamanager.create_constant_node_field("Active", Bool, 1)
     active .= true
+    update_list = datamanager.create_constant_node_field("Update List", Bool, 1)
+    update_list .= true
     density = set_density(params, allBlockNodes, density) # includes the neighbors
     horizon = set_horizon(params, allBlockNodes, horizon) # includes the neighbors
     solver_options = get_solver_options(params)

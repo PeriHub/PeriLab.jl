@@ -37,6 +37,7 @@ function compute_models(datamanager, nodes, block, dt, time, options, to)
     if options["Material Models"]
         @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
         @timeit to "compute_forces" datamanager = Material.distribute_force_densities(datamanager, nodes)
+
     end
 
     if options["Thermal Models"]
