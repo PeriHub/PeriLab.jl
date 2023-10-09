@@ -64,7 +64,6 @@ function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_para
   defGradNP1 = datamanager.get_field("Deformation Gradient", "NP1")
   stressN, stressNP1 = datamanager.create_node_field("Cauchy Stress", Float32, "Matrix", dof)
   bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, dof)
-  force_densities = datamanager.get_field("Force Densities", "NP1")
   bondGeom = datamanager.get_field("Deformed Bond Geometry", "N") # not to original configuration as in Peridigm, but the last one
 
   invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
