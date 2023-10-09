@@ -15,4 +15,7 @@ function find_indices(vector, what)
     return findall(item -> item == what, vector)
 end
 
+function find_active(active::Vector{Bool})
+    return [i for (i, is_active) in enumerate(active) if is_active]
+end
 

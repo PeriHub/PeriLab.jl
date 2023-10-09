@@ -9,9 +9,11 @@ include("../../IO/IO.jl")
 include("Verlet.jl")
 include("../../Support/Parameters/parameter_handling.jl")
 include("../BC_manager.jl")
+include("../../MPI_communication/MPI_communication.jl")
 using .IO
 using .Physics
 using .Boundary_conditions
+using .Verlet
 using TimerOutputs
 
 function init_bondDamage_and_influence_function(A, B, C)
@@ -34,6 +36,8 @@ function init(params, datamanager)
     horizon = datamanager.create_constant_node_field("Horizon", Float32, 1)
     active = datamanager.create_constant_node_field("Active", Bool, 1)
     active .= true
+    update_list = datamanager.create_constant_node_field("Update List", Bool, 1)
+    update_list .= true
     density = set_density(params, allBlockNodes, density) # includes the neighbors
     horizon = set_horizon(params, allBlockNodes, horizon) # includes the neighbors
     solver_options = get_solver_options(params)
@@ -59,7 +63,7 @@ function init(params, datamanager)
     Physics.init_models(datamanager)
     bcs = Boundary_conditions.init_BCs(params, datamanager)
     if get_solver_name(params) == "Verlet"
-        solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"] = init_Verlet(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
+        solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"] = Verlet.init_solver(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
     end
     @info "Finished Init Solver"
     return blockNodes, bcs, datamanager, solver_options
@@ -92,7 +96,7 @@ function solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, wri
     #blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
-    return run_Verlet_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results, to, silent)
+    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, synchronise, write_results, to, silent)
 
 end
 

@@ -193,7 +193,22 @@ function strain_increment(nodes::Vector{Int64}, defGradNP1, strainInc)
     #return defGradNP1 - defGrad
 end
 
-function rotation_tensor(angles)
+"""
+    function rotation_tensor(angles::Vector{Float32})
+
+Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package.
+
+## Arguments
+-  `angles::Vector{Float32}`: Vector of angles definede in degrees of length one or three
+
+
+## Returns
+
+- Rotation tensor
+
+"""
+
+function rotation_tensor(angles::Vector{Float32})
     if length(angles) == 3
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end

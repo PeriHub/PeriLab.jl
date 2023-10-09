@@ -7,6 +7,30 @@ export include_files
 export include_modules
 export find_module_files
 
+"""
+find_jl_files(directory::AbstractString)
+
+Recursively find Julia files (.jl) in a directory.
+
+This function recursively searches for Julia source files with the ".jl" extension
+in the specified directory and its subdirectories. It returns a vector of file paths
+for all the found .jl files.
+
+# Arguments
+- `directory::AbstractString`: The directory in which to search for .jl files.
+
+# Returns
+A vector of strings, where each string is a file path to a .jl file found in the
+specified directory and its subdirectories.
+
+# Example
+```julia
+jl_files = find_jl_files("/path/to/modules")
+for jl_file in jl_files
+    println("Found Julia file: ", jl_file)
+end
+"""
+
 function find_jl_files(directory::AbstractString)
     jl_files = Vector{String}()
     if !isdir(directory)
@@ -31,7 +55,36 @@ function find_jl_files(directory::AbstractString)
     return jl_files
 end
 
-function find_module_files(directory::AbstractString, specific)
+"""
+find_module_files(directory::AbstractString, specific::String)
+
+Search for Julia modules containing a specific function in a given directory.
+
+This function searches for Julia modules (files with `.jl` extension) in the specified
+directory and checks if they contain a specific function. It returns a list of dictionaries
+where each dictionary contains the file path and the name of the module where the specific
+function is found.
+
+# Arguments
+- `directory::AbstractString`: The directory to search for Julia modules.
+- `specific::String`: The name of the specific function to search for.
+
+# Returns
+An array of dictionaries, where each dictionary has the following keys:
+- `"File"`: The file path to the module where the specific function is found.
+- `"Module Name"`: The name of the module where the specific function is found.
+
+# Example
+```julia
+result = find_module_files("/path/to/modules", "my_function")
+for module_info in result
+    println("Function found in module: ", module_info["Module Name"])
+    println("Module file path: ", module_info["File"])
+end
+"""
+
+function find_module_files(directory::AbstractString, specific::String)
+
     files_in_folder = find_jl_files(directory)
     module_list = []
     module_name = ""
@@ -52,14 +105,49 @@ function find_module_files(directory::AbstractString, specific)
     return module_list
 end
 
-function include_files(module_list)
+"""
+include_files(module_list::Vector{Any})
+
+Include files specified in a list of modules.
+
+This function iterates over a list of modules and includes the files specified
+in each module's "File" key.
+
+# Arguments
+- `module_list::Vector{Any}`: A list of modules where each module is expected to
+  be a dictionary-like object with a "File" key specifying the file path.
+
+# Examples
+```julia
+include_files([Dict("File" => "module1.jl"), Dict("File" => "module2.jl")])
+"""
+
+function include_files(module_list::Vector{Any})
     for mod in module_list
-        #include(pwd() * mod["File"][2:end])
         include(mod["File"])
     end
 end
 
-function include_modules(module_list)
+"""
+include_modules(module_list::Vector{Any})
+
+Include Julia modules specified in a list.
+
+This function takes a list of module names and uses the `using` statement to include
+each specified module. The module names should be relative to the current module.
+The function evaluates each `using` statement using `eval`.
+
+# Arguments
+- `module_list::Vector{Any}`: A list of dictionaries, where each dictionary should
+  have a key `"Module Name"` specifying the name of the module to include.
+
+# Example
+```julia
+module_list = [{"Module Name" => "Module1"}, {"Module Name" => "Module2"}]
+include_modules(module_list)
+"""
+
+function include_modules(module_list::Vector{Any})
     for m in module_list
         parse_statement = "using ." * m["Module Name"]
         eval(Meta.parse(parse_statement))

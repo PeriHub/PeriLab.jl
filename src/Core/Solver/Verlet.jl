@@ -2,11 +2,23 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using LinearAlgebra
 
+module Verlet
+using LinearAlgebra
 using TimerOutputs
+
+include("../../Support/helpers.jl")
 include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
+include("../../Support/Parameters/parameter_handling.jl")
+include("../BC_manager.jl")
+
+include("../../Physics/Physics_Factory.jl")
+using .Physics
+using .Boundary_conditions
+
+export init_solver
+export run_solver
 
 """
 [Oterkus2014](@cite)
@@ -34,7 +46,7 @@ end
 function get_cs_denominator(volume, bondgeometry)
     return sum(volume ./ bondgeometry)
 end
-function compute_mechanical_critical_time_step(nodes::Vector{Int64}, datamanager, bulkModulus)
+function compute_mechanical_critical_time_step(nodes::Vector{Int64}, datamanager::Module, bulkModulus::Float32)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
@@ -62,7 +74,7 @@ function test_timestep(t, criticalTimeStep)
     return criticalTimeStep
 end
 
-function compute_crititical_time_step(datamanager, blockNodes, mechanical, thermo)
+function compute_crititical_time_step(datamanager, blockNodes::Dict{Int64,Vector{Int64}}, mechanical, thermo)
     criticalTimeStep = 1.0e50
     for iblock in eachindex(blockNodes)
         if thermo
@@ -84,7 +96,7 @@ function compute_crititical_time_step(datamanager, blockNodes, mechanical, therm
     return criticalTimeStep
 end
 
-function init_Verlet(params, datamanager, blockNodes, mechanical, thermo)
+function init_solver(params, datamanager, blockNodes, mechanical, thermo)
     @info "======================="
     @info "==== Verlet Solver ===="
     @info "======================="
@@ -122,7 +134,7 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager, outputs, exos::Vector{Any}, write_results, to, silent::Bool)
+function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{String,Vector{Any}}}, exos::Vector{Any}, synchronise, write_results, to, silent::Bool)
     @info "Run Verlet Solver"
     comm = datamanager.get_comm()
     dof = datamanager.get_dof()
@@ -140,6 +152,7 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     vNP1 = datamanager.get_field("Velocity", "NP1")
     a = datamanager.get_field("Acceleration")
     active = datamanager.get_field("Active")
+    update_list = datamanager.get_field("Update List")
     dt::Float32 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float32 = solver_options["Initial Time"]
@@ -175,12 +188,10 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
             if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
                 @info "Step: $idt / $nsteps [$step_time s]"
             end
+            update_list .= true
         end
     end
     return exos
 end
 
-
-function find_active(active)
-    return [i for (i, is_active) in enumerate(active) if is_active]
 end
