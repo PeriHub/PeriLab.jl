@@ -7,6 +7,7 @@ using LinearAlgebra
 using TimerOutputs
 include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
+include("../../Support/helpers.jl")
 
 function compute_thermodynamic_crititical_time_step(nodes::Vector{Int64}, datamanager, lambda, Cv)
     """
@@ -182,7 +183,3 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     return exos
 end
 
-
-function find_active(active)
-    return [i for (i, is_active) in enumerate(active) if is_active]
-end
