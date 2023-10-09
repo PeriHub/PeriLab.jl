@@ -2,14 +2,15 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 module Verlet
 using LinearAlgebra
 using TimerOutputs
 
 include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
+include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
-
 export init_solver
 export run_solver
 
@@ -39,7 +40,7 @@ end
 function get_cs_denominator(volume, bondgeometry)
     return sum(volume ./ bondgeometry)
 end
-function compute_mechanical_crititical_time_step(nodes::Vector{Int64}, datamanager, bulkModulus)
+function compute_mechanical_crititical_time_step(nodes::Vector{Int64}, datamanager::Module, bulkModulus::Float64)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
@@ -67,7 +68,7 @@ function test_timestep(t, criticalTimeStep)
     return criticalTimeStep
 end
 
-function compute_crititical_time_step(datamanager, blockNodes, mechanical, thermo)
+function compute_crititical_time_step(datamanager, blockNodes::Dict{Int64,Vector{Int64}}, mechanical, thermo)
     criticalTimeStep = 1.0e50
     for iblock in eachindex(blockNodes)
         if thermo

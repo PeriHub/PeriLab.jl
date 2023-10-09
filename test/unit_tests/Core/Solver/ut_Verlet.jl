@@ -4,10 +4,12 @@
 
 using Test
 using MPI
+
 include("../../../../src/Core/BC_manager.jl")
 include("../../../../src/Core/Solver/Verlet.jl")
 include("../../../../src/Core/Solver/Solver_control.jl")
 include("../../../../src/Support/geometry.jl")
+
 if !isdefined(@__MODULE__, :Data_manager)
     include("../../../../src/Support/data_manager.jl")
 end
@@ -16,20 +18,21 @@ using .Data_manager
 using .Geometry
 using .Boundary_conditions
 using .Solver
+using .Verlet
 @testset "ut_test_timestep" begin
-    @test test_timestep(1, 2) == 1
-    @test test_timestep(2, 1.1) == 1.1
-    @test test_timestep(2, 2) == 2
+    @test Verlet.test_timestep(1, 2) == 1
+    @test Verlet.test_timestep(2, 1.1) == 1.1
+    @test Verlet.test_timestep(2, 2) == 2
 end
 
 @testset "ut_get_cs_denominator" begin
     volume = [1, 2, 3]
     bondgeometry = [1, 2, 3]
-    @test get_cs_denominator(volume, bondgeometry) == 3
+    @test Verlet.get_cs_denominator(volume, bondgeometry) == 3
     bondgeometry = [2, 4, 6]
-    @test get_cs_denominator(volume, bondgeometry) == 1.5
+    @test Verlet.get_cs_denominator(volume, bondgeometry) == 1.5
     bondgeometry = [1, 0.5, 2]
-    @test get_cs_denominator(volume, bondgeometry) == 6.5
+    @test Verlet.get_cs_denominator(volume, bondgeometry) == 6.5
 end
 
 nnodes = 5
@@ -81,7 +84,7 @@ testDatamanager.set_comm(comm)
 # from Peridigm
 @testset "ut_crititical_time_step" begin
 
-    t = compute_mechanical_crititical_time_step(1:nnodes, testDatamanager, 140.0)
+    t = Verlet.compute_mechanical_crititical_time_step(Vector{Int64}(1:nnodes), testDatamanager, 140.0)
     @test testValmech / t - 1 < 1e-6
     testVal = 1e50 # to take from Peridigm
     #t = compute_thermodynamic_crititical_time_step(1:nnodes, testDatamanager, 140.0, 5.1)
@@ -94,7 +97,7 @@ testDatamanager.set_property(1, "Material Model", "Bulk Modulus", 140.0)
 testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
 @testset "ut_init_Verlet" begin
     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)))
-    start_time, dt, nsteps = init_Verlet(params, testDatamanager, 1:nnodes, true, false)
+    start_time, dt, nsteps = Verlet.init_solver(params, testDatamanager, Dict{Int64,Vector{Int64}}(1 => Vector{Int64}(1:nnodes)), true, false)
 
     @test start_time == params["Solver"]["Initial Time"]
     testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / testValmech))
@@ -106,7 +109,7 @@ testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
 
     @test testDt / dt - 1 < 1e-6
     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0, "Fixed dt" => 1e-5)))
-    start_time, dt, nsteps = init_Verlet(params, testDatamanager, 1:nnodes, true, false)
+    start_time, dt, nsteps = Verlet.init_solver(params, testDatamanager, 1:nnodes, true, false)
 
     testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / 1e-5))
     @test testStep == nsteps
