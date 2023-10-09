@@ -39,7 +39,8 @@ function get_node_sets(params)
         if (typeof(nodesets[entry]) == Int64) | (typeof(nodesets[entry]) == Int32)
             nsets[entry] = [nodesets[entry]]
         elseif occursin(".txt", nodesets[entry])
-            nodes = CSV.read(nodesets[entry], DataFrame; delim=" ", header=false)
+            # tbd make sure that skip works
+            nodes = CSV.read(nodesets[entry], DataFrame; delim=" ", header=false, skipto=4)
             if size(nodes) == (0, 0)
                 @error "Node set file is empty " * nodesets[entry]
             end
