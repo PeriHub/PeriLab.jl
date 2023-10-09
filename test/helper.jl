@@ -21,16 +21,15 @@ function run_perilab(filename, cores, compare, folder_name="")
             @test exit_code == 0
         end
     end
-    same = true
     if compare
         same = exodiff(filename * ".e", "./Reference/" * filename * ".e"; command_file=folder_name * ".cmd")
         @test same
-    end
-    if same
-        rm("exodiff.log")
-        rm(filename * ".e")
-        # rm(filename * ".log")
-    else
-        mv("exodiff.log", filename * "_exodiff.log", force=true)
+        if same
+            rm("exodiff.log")
+            rm(filename * ".e")
+            # rm(filename * ".log")
+        else
+            mv("exodiff.log", filename * "_exodiff.log", force=true)
+        end
     end
 end
