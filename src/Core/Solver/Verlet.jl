@@ -40,7 +40,7 @@ end
 function get_cs_denominator(volume, bondgeometry)
     return sum(volume ./ bondgeometry)
 end
-function compute_mechanical_crititical_time_step(nodes::Vector{Int64}, datamanager::Module, bulkModulus::Float64)
+function compute_mechanical_crititical_time_step(nodes::Vector{Int64}, datamanager::Module, bulkModulus::Float32)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50

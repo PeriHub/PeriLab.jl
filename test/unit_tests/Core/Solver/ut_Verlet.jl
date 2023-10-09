@@ -84,7 +84,7 @@ testDatamanager.set_comm(comm)
 # from Peridigm
 @testset "ut_crititical_time_step" begin
 
-    t = Verlet.compute_mechanical_crititical_time_step(Vector{Int64}(1:nnodes), testDatamanager, 140.0)
+    t = Verlet.compute_mechanical_crititical_time_step(Vector{Int64}(1:nnodes), testDatamanager, Float32(140.0))
     @test testValmech / t - 1 < 1e-6
     testVal = 1e50 # to take from Peridigm
     #t = compute_thermodynamic_crititical_time_step(1:nnodes, testDatamanager, 140.0, 5.1)
@@ -93,8 +93,8 @@ testDatamanager.set_comm(comm)
 end
 
 testDatamanager.init_property()
-testDatamanager.set_property(1, "Material Model", "Bulk Modulus", 140.0)
-testDatamanager.set_property(2, "Material Model", "Bulk Modulus", 140.0)
+testDatamanager.set_property(1, "Material Model", "Bulk Modulus", Float32(140.0))
+testDatamanager.set_property(2, "Material Model", "Bulk Modulus", Float32(140.0))
 @testset "ut_init_Verlet" begin
     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)))
     start_time, dt, nsteps = Verlet.init_solver(params, testDatamanager, Dict{Int64,Vector{Int64}}(1 => Vector{Int64}(1:nnodes)), true, false)
