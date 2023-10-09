@@ -9,6 +9,7 @@ include("../../IO/IO.jl")
 include("Verlet.jl")
 include("../../Support/Parameters/parameter_handling.jl")
 include("../BC_manager.jl")
+include("../../MPI_communication/MPI_communication.jl")
 using .IO
 using .Physics
 using .Boundary_conditions
@@ -95,7 +96,7 @@ function solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, wri
     #blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
-    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results, to, silent)
+    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, synchronise, write_results, to, silent)
 
 end
 

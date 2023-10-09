@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Physics
+include("../Support/helpers.jl")
 include("./Additive/Additive_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
+
 using .Additive
 using .Damage
 using .Material
@@ -32,10 +34,15 @@ function compute_models(datamanager, nodes, block, dt, time, options, to)
     if options["Damage Models"]
         @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
         @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
+        update_list = datamanager.get_field("Update List")
+        datamanager = Pre_calculation.compute(datamanager, find_active(update_list[nodes]), datamanager.get_physics_options(), time, dt)
     end
 
     if options["Material Models"]
-        @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+        update_list = datamanager.get_field("Update List")
+        @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, find_active(update_list[nodes]), datamanager.get_properties(block, "Material Model"), time, dt)
+        # all nodes, because update list is only needed to informations which are used in damage already
+
         @timeit to "compute_forces" datamanager = Material.distribute_force_densities(datamanager, nodes)
 
     end

@@ -7,10 +7,16 @@ module Verlet
 using LinearAlgebra
 using TimerOutputs
 
+include("../../Support/helpers.jl")
 include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../../Support/Parameters/parameter_handling.jl")
-include("../../Support/helpers.jl")
+include("../BC_manager.jl")
+
+include("../../Physics/Physics_Factory.jl")
+using .Physics
+using .Boundary_conditions
+
 export init_solver
 export run_solver
 
@@ -128,7 +134,7 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs, exos::Vector{Any}, write_results, to, silent::Bool)
+function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{String,Vector{Any}}}, exos::Vector{Any}, synchronise, write_results, to, silent::Bool)
     @info "Run Verlet Solver"
     comm = datamanager.get_comm()
     dof = datamanager.get_dof()
