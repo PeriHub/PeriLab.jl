@@ -2,12 +2,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+module Verlet
 using LinearAlgebra
-
 using TimerOutputs
+
 include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../../Support/helpers.jl")
+
+export init_solver
+export run_solver
 
 function compute_thermodynamic_crititical_time_step(nodes::Vector{Int64}, datamanager, lambda, Cv)
     """
@@ -85,7 +89,7 @@ function compute_crititical_time_step(datamanager, blockNodes, mechanical, therm
     return criticalTimeStep
 end
 
-function init_Verlet(params, datamanager, blockNodes, mechanical, thermo)
+function init_solver(params, datamanager, blockNodes, mechanical, thermo)
     @info "======================="
     @info "==== Verlet Solver ===="
     @info "======================="
@@ -123,7 +127,7 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs, exos::Vector{Any}, write_results, to, silent::Bool)
+function run_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs, exos::Vector{Any}, write_results, to, silent::Bool)
     @info "Run Verlet Solver"
     comm = datamanager.get_comm()
     dof = datamanager.get_dof()
@@ -183,3 +187,4 @@ function run_Verlet_solver(solver_options, blockNodes::Dict{Int64,Vector{Int64}}
     return exos
 end
 
+end
