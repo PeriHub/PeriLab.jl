@@ -13,6 +13,7 @@ using NearestNeighbors: inrange
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_init.jl")
 include("../Support/geometry.jl")
+include("../Support/helpers.jl")
 using .Geometry
 
 #export read_mesh
@@ -246,18 +247,6 @@ function check_mesh_elements(mesh, dof)
         @error "No volumes defined"
     end
     return meshInfoDict
-end
-
-function get_header(filename)
-    file = open(filename, "r")
-    header_line = 0
-    for line in eachline(file)#
-        header_line += 1
-        if contains(line, "header:")
-            close(file)
-            return header_line, convert(Vector{String}, split(line[9:end], ' '))
-        end
-    end
 end
 
 function read_mesh(filename::String)
