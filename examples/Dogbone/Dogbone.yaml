@@ -1,0 +1,105 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1:
+      Block Names: block_1
+      Density: 140000.0
+      Horizon: 0.401
+      Material Model: PMMAElast
+    block_2:
+      Block Names: block_2
+      Density: 140000.0
+      Horizon: 0.401
+      Material Model: PMMAElast
+    block_3:
+      Block Names: block_3
+      Density: 140000.0
+      Horizon: 0.401
+      Material Model: PMMA
+    block_4:
+      Block Names: block_4
+      Density: 140000.0
+      Horizon: 0.401
+      Material Model: PMMAElast
+    block_5:
+      Block Names: block_5
+      Density: 140000.0
+      Horizon: 0.401
+      Material Model: PMMAElast
+  Bond Filters: {}
+  Boundary Conditions:
+    BC_1:
+      Coordinate: x
+      Node Set: Node Set 1
+      Type: Prescribed Displacement
+      Value: 0*t
+    BC_2:
+      Coordinate: x
+      Node Set: Node Set 2
+      Type: Prescribed Displacement
+      Value: 0.05*t
+  Compute Class Parameters: {}
+  Discretization:
+    Input Mesh File: Dogbone.txt
+    Node Sets:
+      Node Set 1: ns_Dogbone_1.txt
+      Node Set 2: ns_Dogbone_2.txt
+    Type: Text File
+  Outputs:
+    Output1:
+      Number of Output Steps: 100
+      Output File Type: ExodusII
+      Output Filename: Dogbone_Output1
+      Output Format: BINARY
+      Output Variables:
+        Damage: true
+        Displacements: true
+        Force: true
+        Partial_Stress: true
+        Velocity: true
+      Parallel Write: true
+  Physics:
+    Damage Models:
+      PMMADamage:
+        Critical Energy: 10.1
+        Damage Model: Critical Energy Correspondence
+        Detached Nodes Check: true
+        Hourglass Coefficient: 1.0
+        Only Tension: false
+        Plane Stress: true
+        Stabilization Type: Global Stiffness
+        Thickness: 10.0
+    Material Models:
+      PMMA:
+        Density: 140000.0
+        Hourglass Coefficient: 1.0
+        Material Model: PD Solid Elastic
+        Non linear: true
+        Plane Stress: true
+        Poisson's Ratio: 0.3
+        Stabilization Type: Global Stiffness
+        Thermal Bond Based: true
+        Thickness: 0.01
+        Young's Modulus: 2997000000.0
+      PMMAElast:
+        Density: 140000.0
+        Hourglass Coefficient: 1.0
+        Material Model: PD Solid Elastic
+        Non linear: true
+        Plane Stress: true
+        Poisson's Ratio: 0.3
+        Stabilization Type: Global Stiffness
+        Thermal Bond Based: true
+        Thickness: 0.01
+        Young's Modulus: 2997000000.0
+  Solver:
+    Final Time: 0.00075
+    Initial Time: 0.0
+    Solve For Displacement: true
+    Verbose: false
+    Verlet:
+      Numerical Damping: 0.0005
+      Safety Factor: 0.9
