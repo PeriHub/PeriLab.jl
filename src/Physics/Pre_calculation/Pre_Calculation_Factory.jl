@@ -17,7 +17,7 @@ using .Shape_Tensor
 export compute
 export init_pre_calculation
 
-function compute(datamanager, nodes, options, time, dt)
+function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float32, dt::Float32)
 
     if options["Deformed Bond Geometry"]
         datamanager = Bond_Deformation.compute(datamanager, nodes, time)

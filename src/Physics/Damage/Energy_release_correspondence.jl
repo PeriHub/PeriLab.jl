@@ -31,7 +31,7 @@ end
 
    Parameters:
         - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Vector{Int64}`: List of block nodes.
+        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
         - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
         - `time::Float32`: The current time.
         - `dt::Float32`: The current time step.
@@ -41,7 +41,7 @@ end
    ```julia
      ```
    """
-function compute_damage(datamanager, nodes, damage_parameter, time, dt)
+function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float32, dt::Float32)
   # synch of bond force missing
   dof::Int64 = datamanager.get_dof()
   update_list = datamanager.get_field("Update List")

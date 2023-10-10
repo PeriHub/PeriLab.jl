@@ -31,7 +31,7 @@ end
 
    Parameters:
         - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Vector{Int64}`: List of block nodes.
+        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
         - `Pre_calculation_parameter::Dict(String, Any)`: Dictionary with material parameter.
         - `time::Float32`: The current time.
         - `dt::Float32`: The current time step.
@@ -41,7 +41,8 @@ end
    ```julia
      ```
    """
-function pre_calculation(datamanager, nodes, Pre_calculation_parameter, time, dt)
+
+function pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, Pre_calculation_parameter::Dict, time::Float32, dt::Float32)
   @info "Please write a possible precalculation routines in pre_calculation_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, Pre_calculation_parameter, time, dt) function."

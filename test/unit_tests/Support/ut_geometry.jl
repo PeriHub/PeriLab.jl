@@ -63,6 +63,7 @@ end
 @testset "ut_shapeTenorAndDefGrad" begin
     nnodes = 4
     dof = 2
+    nodes = Vector{Int64}(1:nnodes)
     testDatamanager = Data_manager
     testDatamanager.set_nmasters(nnodes)
     testDatamanager.set_dof(dof)
@@ -108,11 +109,11 @@ end
     coor[4, 2] = 0.5
 
     bondGeom = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bondGeom)
-    shapeTensor, invShapeTensor = Geometry.shape_tensor(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, bondGeom, shapeTensor, invShapeTensor)
+    shapeTensor, invShapeTensor = Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, shapeTensor, invShapeTensor)
 
     defcoor = copy(coor)
 
-    defGrad = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
+    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
     for i in 1:nnodes
         @test defGrad[i, 1, 1] - 1 < 1e-7
         @test defGrad[i, 1, 2] < 1e-7
@@ -125,7 +126,7 @@ end
     defcoor[4, 1] = 0.25
 
     deformedBond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, defcoor, deformedBond)
-    defGrad = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, deformedBond, bondGeom, invShapeTensor, defGrad)
+    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, deformedBond, bondGeom, invShapeTensor, defGrad)
 
     for i in 1:nnodes
         for j in 1:nn[i]
@@ -141,7 +142,7 @@ end
     defcoor[4, 2] = 1.5
 
     deformedBond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, defcoor, deformedBond)
-    defGrad = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, deformedBond, bondGeom, invShapeTensor, defGrad)
+    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, deformedBond, bondGeom, invShapeTensor, defGrad)
     for i in 1:nnodes
         for j in nn[i]
             testVec = defGrad[i, :, :] * bondGeom[i][j, 1:dof] - deformedBond[i][j, 1:dof]
@@ -161,7 +162,7 @@ end
     defcoor[4, 2] = 0.5
 
     deformedBond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, defcoor, deformedBond)
-    defGrad = Geometry.deformation_gradient(Vector(1:nnodes), dof, nlist, volume, omega, bondDamage, deformedBond, bondGeom, invShapeTensor, defGrad)
+    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, deformedBond, bondGeom, invShapeTensor, defGrad)
     for i in 1:nnodes
         for j in nn[i]
             testVec = defGrad[i, :, :] * bondGeom[i][j, 1:dof] - deformedBond[i][j, 1:dof]
@@ -188,9 +189,9 @@ end
     invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float32, "Matrix", dof)
     defGrad, defGradNP1 = testDatamanager.create_node_field("Deformation Gradient", Float32, "Matrix", dof)
 
-    defGrad = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
-    defGradNP1 = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGradNP1)
-    strainInc = Geometry.strain_increment(nodes, defGradNP1, strainInc)
+    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
+    defGradNP1 = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGradNP1)
+    strainInc = Geometry.strain_increment(view(nodes, eachindex(nodes)), defGradNP1, strainInc)
 
     for i in 1:nnodes
         @test strainInc[i, 1, 1] == 0
@@ -213,7 +214,7 @@ end
     defGradNP1[1, 3, 2] = -1.0
     defGradNP1[1, 3, 3] = 3.0
 
-    strainInc = Geometry.strain_increment(nodes, defGradNP1, strainInc)
+    strainInc = Geometry.strain_increment(view(nodes, eachindex(nodes)), defGradNP1, strainInc)
     identity = zeros(3, 3)
     identity[1, 1] = 1
     identity[2, 2] = 1

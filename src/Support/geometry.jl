@@ -8,12 +8,12 @@ using Rotations
 export bond_geometry
 export shape_tensor
 # """
-#     bond_geometry(nodes::Vector{Int64}, dof::Int64, nlist, coor, bondgeom)
+#     bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, bondgeom)
 
 # Calculate bond geometries between nodes based on their coordinates.
 
 # # Arguments
-# - `nodes::Vector{Int64}`: A vector of integers representing node IDs.
+# - `nodes::Union{SubArray,Vector{Int64}}`: A vector of integers representing node IDs.
 # - `dof::Int64`: An integer representing the degrees of freedom.
 # - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
 # - `coor`: A matrix representing the coordinates of each node.
@@ -37,7 +37,7 @@ export shape_tensor
 
 # bond_geometry(nodes, dof, nlist, coor, bondgeom)
 # """
-function bond_geometry(nodes::Vector{Int64}, dof::Int64, nlist, coor, bondgeom)
+function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, bondgeom)
     for iID in nodes
         for jID in eachindex(nlist[iID])
             bondgeom[iID][jID, 1:dof] = coor[nlist[iID][jID], :] - coor[iID, :]
@@ -50,12 +50,12 @@ function bond_geometry(nodes::Vector{Int64}, dof::Int64, nlist, coor, bondgeom)
     return bondgeom
 end
 """
-    shape_tensor(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, shapeTensor, invShapeTensor)
+    shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, shapeTensor, invShapeTensor)
 
 Calculate the shape tensor and its inverse for a set of nodes in a computational mechanics context.
 
 # Arguments
-- `nodes::Vector{Int64}`: A vector of integers representing node IDs.
+- `nodes::Union{SubArray, Vector{Int64}}`: A vector of integers representing node IDs.
 - `dof::Int64`: An integer representing the degrees of freedom.
 - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
 - `volume`: A vector or array containing volume information for each node.
@@ -89,7 +89,7 @@ invShapeTensor = zeros(Float32, length(nodes), dof, dof)
 shape_tensor(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, shapeTensor, invShapeTensor)
 """
 
-function shape_tensor(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, shapeTensor, invShapeTensor)
+function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, shapeTensor, invShapeTensor)
 
     for iID in nodes
         shapeTensor[iID, :, :] = zeros(Float32, dof, dof)
@@ -110,12 +110,12 @@ function shape_tensor(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bo
 end
 
 """
-    deformation_gradient(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
+    deformation_gradient(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
 
 Calculate the deformation gradient tensor for a set of nodes in a computational mechanics context.
 
 # Arguments
-- `nodes::Vector{Int64}`: A vector of integers representing node IDs.
+- `nodes::Union{SubArray, Vector{Int64}}`: A vector of integers representing node IDs.
 - `dof::Int64`: An integer representing the degrees of freedom.
 - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
 - `volume`: A vector or array containing volume information for each node.
@@ -150,7 +150,7 @@ defGrad = zeros(Float32, length(nodes), dof, dof)
 deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
 """
 
-function deformation_gradient(nodes::Vector{Int64}, dof::Int64, nlist, volume, omega, bondDamage, deformed_bond, bondGeometry, invShapeTensor, defGrad)
+function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bondDamage, deformed_bond, bondGeometry, invShapeTensor, defGrad)
     for iID in nodes
         defGrad[iID, :, :] = zeros(Float32, dof, dof)
         for i in 1:dof
@@ -165,12 +165,12 @@ function deformation_gradient(nodes::Vector{Int64}, dof::Int64, nlist, volume, o
 
 end
 """
-    function strain_increment(nodes::Vector{Int64}, defGradNP1, strainInc)
+    function strain_increment(nodes::Union{SubArray, Vector{Int64}}, defGradNP1, strainInc)
 
 Calculate strain increments for specified nodes based on deformation gradients.
 
 ## Arguments
--  `nodes::Vector{Int64}`: List of nodes
+-  `nodes::Union{SubArray, Vector{Int64}}`: List of nodes
 - `defGradNP1`: Deformation gradient at time step "n+1" (2D or 3D array).
 - `defGrad`: Deformation gradient at the current time step (2D or 3D array).
 
@@ -182,7 +182,7 @@ This function iterates over the specified nodes and computes strain increments u
 
 """
 
-function strain_increment(nodes::Vector{Int64}, defGradNP1, strainInc)
+function strain_increment(nodes::Union{SubArray,Vector{Int64}}, defGradNP1, strainInc)
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     # First equation gives Strain increment as shown
     for iID in nodes

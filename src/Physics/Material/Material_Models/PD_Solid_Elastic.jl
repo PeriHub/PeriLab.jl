@@ -13,7 +13,7 @@ function material_name()
     return "PD Solid Elastic"
 end
 
-function compute_forces(datamanager::Module, nodes::SubArray, material_parameter::Dict, time::Float32, dt::Float32)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float32, dt::Float32)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
 

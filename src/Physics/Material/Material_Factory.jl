@@ -12,7 +12,7 @@ Set_modules.include_files(module_list)
 
 export compute_forces
 
-function compute_forces(datamanager::Module, nodes::SubArray, model_param::Dict, time::Float32, dt::Float32)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float32, dt::Float32)
     specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")
     datamanager = Set_modules.create_module_specifics(model_param["Material Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
     if isnothing(datamanager)

@@ -7,7 +7,7 @@ module Ordinary
 export compute_dilatation
 export compute_weighted_volume
 
-function compute_weighted_volume(nodes::SubArray, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
+function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
     """
     taken from Peridigm
     """
@@ -22,7 +22,7 @@ function compute_weighted_volume(nodes::SubArray, nneighbors, nlist, bond_geomet
     return weighted_volume
 end
 
-function compute_dilatation(nodes::SubArray, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
     theta = zeros(Float32, maximum(nodes))
     for iID in nodes

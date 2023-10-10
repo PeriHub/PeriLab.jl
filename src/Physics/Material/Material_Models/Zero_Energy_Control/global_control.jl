@@ -14,7 +14,7 @@ function control_name()
     return "Global"
 end
 
-function compute_control(datamanager::Module, nodes::Vector{Int64}, material_parameter, time::Float32, dt::Float32)
+function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter, time::Float32, dt::Float32)
     rotation::Bool = false
     if "Angles" in datamanager.get_all_field_keys()
         rotation = true
@@ -42,14 +42,14 @@ function get_zero_energy_mode_force(nodes, zStiff, defGradNP1, bondGeom, bondGeo
     return bond_force
 end
 
-function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVoigt, angles, Kinv, zStiff, rotation::Bool)
+function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt, angles, Kinv, zStiff, rotation::Bool)
     if rotation
         return create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff)
     end
     return create_zero_energy_mode_stiffness(nodes, dof, CVoigt, Kinv, zStiff)
 end
 
-function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVoigt, Kinv, zStiff)
+function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt, Kinv, zStiff)
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
         @tensor begin
@@ -59,7 +59,7 @@ function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVo
     return zStiff
 end
 
-function create_zero_energy_mode_stiffness(nodes::Vector{Int64}, dof::Int64, CVoigt, angles, Kinv, zStiff)
+function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt, angles, Kinv, zStiff)
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
         C = rotate_stiffness_tensor(angles[iID, :, :], dof, C)
