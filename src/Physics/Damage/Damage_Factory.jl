@@ -10,7 +10,7 @@ Set_modules.include_files(module_list)
 
 export compute_damage
 
-function compute_damage(datamanager, nodes, model_param, time, dt)
+function compute_damage(datamanager::Module, nodes::SubArray, model_param::Dict, time::Float32, dt::Float32)
     bondDamageN = datamanager.get_field("Bond Damage", "N")
     bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
     bondDamageNP1 = copy(bondDamageN)
@@ -25,7 +25,7 @@ function compute_damage(datamanager, nodes, model_param, time, dt)
     return datamanager
 end
 """
-  damage_index(datamananager,nodes::Vector{Int64})
+  damage_index(datamananager,nodes::SubArray)
 
     Function calculates the damage index related to the neighborhood volume for a set of corresponding nodes. 
     The damage index is defined as damaged volume in relation the neighborhood volume.
@@ -33,10 +33,10 @@ end
 
     Parameters:
     - `datamanager::Data_manager`: all model data
-    - `nodes::Vector{Int64}`: corresponding nodes to this model
+    - `nodes::SubArray`: corresponding nodes to this model
 
 """
-function damage_index(datamananager, nodes::Vector{Int64})
+function damage_index(datamananager::Modules, nodes::SubArray)
     nlist = datamananager.get_nlist()
     volume = datamananager.get_field("Volume")
     bondDamageNP1 = datamananager.get_field("Bond Damage", "NP1")
