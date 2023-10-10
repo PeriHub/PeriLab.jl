@@ -41,7 +41,7 @@ end
    ```julia
      ```
    """
-function compute_additive(datamanager, nodes, additive_parameter, time, dt)
+function compute_additive(datamanager::Module, nodes::SubArray, additive_parameter::Dict, time::Float32, dt::Float32)
   @info "Please write a additive name in additive_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, additive_parameter, time, dt) function."

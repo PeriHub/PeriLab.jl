@@ -36,7 +36,7 @@ end
     - `nodes::SubArray`: corresponding nodes to this model
 
 """
-function damage_index(datamananager::Modules, nodes::SubArray)
+function damage_index(datamananager::Module, nodes::Vector{Int64})
     nlist = datamananager.get_nlist()
     volume = datamananager.get_field("Volume")
     bondDamageNP1 = datamananager.get_field("Bond Damage", "NP1")

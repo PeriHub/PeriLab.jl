@@ -41,7 +41,7 @@ end
    ```julia
      ```
    """
-function compute_thermal_model(datamanager, nodes, flow_parameter, time, dt)
+function compute_thermal_model(datamanager::Module, nodes::SubArray, flow_parameter::Dict, time::Float32, dt::Float32)
   @info "Please write a thermal flow model name in thermal_flow_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, flow_parameter, time, dt) function."

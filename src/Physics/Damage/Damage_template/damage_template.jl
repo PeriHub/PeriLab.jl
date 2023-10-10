@@ -41,7 +41,7 @@ end
    ```julia
      ```
    """
-function compute_damage(datamanager, nodes, damage_parameter, time, dt)
+function compute_damage(datamanager::Module, nodes::SubArray, damage_parameter::Dict, time::Float32, dt::Float32)
   @info "Please write a damage model name in damage_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, damage_parameter, time, dt) function."
