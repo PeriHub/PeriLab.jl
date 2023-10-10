@@ -30,6 +30,11 @@ end
 function compute_models(datamanager, nodes, block, dt, time, options, to)
 
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
+    if options["Additive Models"]
+        @warn "Additive Models not included yet"
+        activeNodes = find_active[nodes] # -> tbd implemented for the other routines
+    end
+
 
     if options["Damage Models"]
         @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
@@ -51,9 +56,7 @@ function compute_models(datamanager, nodes, block, dt, time, options, to)
         @warn "Thermal Models not included yet"
     end
 
-    if options["Additive Models"]
-        @warn "Additive Models not included yet"
-    end
+
     return datamanager
 
 end
