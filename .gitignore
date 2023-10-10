@@ -27,7 +27,6 @@ strain_xy_0.e
 strain_xy_1.e
 strain_xy_2.e
 strain_xy_3.e
-strain_xy.yaml
 test_func.jl
 think.md
 test/tensile_test/tensile_test.yaml
@@ -80,8 +79,6 @@ test/tensile_test/tensile_test.yaml
 src/Physics/Material/material_basis.jl
 test/tryout/test_mesh.txt
 test/tryout/test.yaml
-.gitignore
-test_mesh.txt
 test/tryout/correspondence_strain_xx_hg.e
 test/tryout/macro_test_zone/call.jl
 test/tryout/macro_test_zone/combineModules.jl

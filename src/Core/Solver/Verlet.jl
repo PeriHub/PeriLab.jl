@@ -20,11 +20,11 @@ using .Boundary_conditions
 export init_solver
 export run_solver
 
-function compute_thermodynamic_crititical_time_step(nodes::Vector{Int64}, datamanager, lambda, Cv)
-    """
-    critical time step for a thermodynamic problem
-    Selda Oterkus, Erdogan Madenci, and Abigail G. Agwai.  Fully coupled peridynamic thermomechanics
-    """
+"""
+[Oterkus2014](@cite)
+"""
+function compute_thermodynamic_critical_time_step(nodes::Vector{Int64}, datamanager, lambda, Cv)
+
     criticalTimeStep = 1.0e50
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
@@ -46,7 +46,7 @@ end
 function get_cs_denominator(volume, bondgeometry)
     return sum(volume ./ bondgeometry)
 end
-function compute_mechanical_crititical_time_step(nodes::Vector{Int64}, datamanager::Module, bulkModulus::Float32)
+function compute_mechanical_critical_time_step(nodes::Vector{Int64}, datamanager::Module, bulkModulus::Float32)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
@@ -81,14 +81,14 @@ function compute_crititical_time_step(datamanager, blockNodes::Dict{Int64,Vector
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
             Cv = datamanager.get_property(iblock, "Thermal Model", "Specific Heat Capacity")
             if (lambda != Nothing) && (Cv != Nothing)
-                t = compute_thermodynamic_crititical_time_step(blockNodes[iblock], datamanager, lambda, Cv)
+                t = compute_thermodynamic_critical_time_step(blockNodes[iblock], datamanager, lambda, Cv)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
         if mechanical
             bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
             if (bulkModulus != Nothing)
-                t = compute_mechanical_crititical_time_step(blockNodes[iblock], datamanager, bulkModulus)
+                t = compute_mechanical_critical_time_step(blockNodes[iblock], datamanager, bulkModulus)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end

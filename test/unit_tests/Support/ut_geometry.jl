@@ -226,7 +226,7 @@ end
     end
 end
 @testset "ut_rotation_tensor" begin
-    rot = Geometry.rotation_tensor([0])
+    rot = Geometry.rotation_tensor(fill(Float32(0), (1)))
     @test rot[1, 1] == 1
     @test rot[1, 2] == 0
     @test rot[1, 3] == 0
@@ -236,7 +236,7 @@ end
     @test rot[3, 1] == 0
     @test rot[3, 2] == 0
     @test rot[3, 3] == 1
-    rot = Geometry.rotation_tensor([0, 0, 0])
+    rot = Geometry.rotation_tensor(fill(Float32(0), (3)))
     @test rot[1, 1] == 1
     @test rot[1, 2] == 0
     @test rot[1, 3] == 0
@@ -246,7 +246,7 @@ end
     @test rot[3, 1] == 0
     @test rot[3, 2] == 0
     @test rot[3, 3] == 1
-    rot = Geometry.rotation_tensor([90])
+    rot = Geometry.rotation_tensor(fill(Float32(90), (1)))
     @test rot[1, 1] < 1e-10
     @test rot[1, 2] == -1
     @test rot[1, 3] < 1e-10

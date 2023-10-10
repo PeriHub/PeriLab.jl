@@ -78,17 +78,22 @@ blocks[:] = [1, 1, 2, 2, 1]
 blocks = testDatamanager.set_block_list(blocks)
 # from Peridigm
 testValmech = 0.0002853254715348906
+testVal = 72.82376628733019
 MPI.Init()
 comm = MPI.COMM_WORLD
 testDatamanager.set_comm(comm)
 # from Peridigm
-@testset "ut_crititical_time_step" begin
+@testset "ut_mechanical_critical_time_step" begin
 
-    t = Verlet.compute_mechanical_crititical_time_step(Vector{Int64}(1:nnodes), testDatamanager, Float32(140.0))
-    @test testValmech / t - 1 < 1e-6
-    testVal = 1e50 # to take from Peridigm
-    #t = compute_thermodynamic_crititical_time_step(1:nnodes, testDatamanager, 140.0, 5.1)
-    #@test testVal / t - 1 < 1e-6
+    t = Verlet.compute_mechanical_critical_time_step(Vector{Int64}(1:nnodes), testDatamanager, Float32(140.0))
+    @test abs(testValmech / t - 1) < 1e-6
+
+end
+# from Peridigm
+@testset "ut_thermodynamic_crititical_time_step" begin
+
+    t = Verlet.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes), testDatamanager, Float32(0.12), Float32(1.8e9))
+    @test abs(testVal / t - 1) < 1e-6
 
 end
 
