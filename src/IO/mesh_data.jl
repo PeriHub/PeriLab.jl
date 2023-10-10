@@ -50,7 +50,6 @@ function init_data(params, datamanager, comm, to)
         datamanager.set_nslaves(nslaves)
         @info "Get node sets"
         define_nsets(params, datamanager)
-        @info "done node sets"
         # defines the order of the global nodes to the local core nodes
         datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
         @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)

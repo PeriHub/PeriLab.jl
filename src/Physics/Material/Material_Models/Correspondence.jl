@@ -84,8 +84,6 @@ function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_para
   # general interface, because it might be a flexbile Set_modules interface in future
   datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
 
-  force_densities[:] = distribute_forces(nodes, nlist, bond_force, volume, force_densities)
-
   return datamanager
 end
 
