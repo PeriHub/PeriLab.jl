@@ -16,7 +16,6 @@ function compute_damage(datamanager, nodes, model_param, time, dt)
     bondDamageNP1 = copy(bondDamageN)
 
     specifics = Dict{String,String}("Call Function" => "compute_damage", "Name" => "damage_name")
-
     datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
     if isnothing(datamanager)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."

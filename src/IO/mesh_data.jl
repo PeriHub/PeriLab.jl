@@ -48,6 +48,7 @@ function init_data(params, datamanager, comm, to)
         nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
         datamanager.set_nmasters(nmasters)
         datamanager.set_nslaves(nslaves)
+        @info "Get node sets"
         define_nsets(params, datamanager)
         # defines the order of the global nodes to the local core nodes
         datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))

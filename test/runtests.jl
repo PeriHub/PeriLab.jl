@@ -74,7 +74,9 @@ MPI.Init()
             include("unit_tests/IO/ut_mesh_data.jl")
         end
     end
-
+    @testset "Compute" begin
+        include("unit_tests/Compute/ut_compute_force.jl")
+    end
 
     @testset "MPI" begin
 

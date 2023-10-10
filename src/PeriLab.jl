@@ -108,9 +108,9 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         # @info filename
 
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm, to)
-
+        @info "Solver init"
         @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
-
+        @info "Init write results"
         @timeit to "IO.init_write_results" exos, outputs = IO.init_write_results(params, datamanager, solver_options["nsteps"])
 
         if dry_run
