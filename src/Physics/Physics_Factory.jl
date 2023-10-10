@@ -27,7 +27,7 @@ export init_thermal_model_fields
 function init_models(datamanager)
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
-function compute_models(datamanager, nodes, block, dt, time, options, to)
+function compute_models(datamanager::Module, nodes, block::Int64, dt::Float32, time::Float32, options, to)
 
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
     if options["Additive Models"]
@@ -41,8 +41,8 @@ function compute_models(datamanager, nodes, block, dt, time, options, to)
     if options["Damage Models"]
         if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
             println(datamanager.check_property(block, "Damage Model"), datamanager.get_properties(block, "Damage Model"))
-            @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
-            @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
+            @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, view(nodes, eachindex(nodes)), datamanager.get_properties(block, "Material Model"), time, dt)
+            @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, view(nodes, eachindex(nodes)), datamanager.get_properties(block, "Damage Model"), time, dt)
             update_list = datamanager.get_field("Update List")
             update_nodes = view(nodes, find_active(update_list[nodes]))
             datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
