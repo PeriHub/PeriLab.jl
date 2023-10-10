@@ -4,6 +4,7 @@
 
 module Data_manager
 
+export check_properties
 export create_bond_field
 export create_constant_bond_field
 export create_constant_node_field
@@ -43,7 +44,7 @@ nslaves = 0
 nnsets = 0
 dof = 1
 block_list = Int64[]
-properties = Dict{Int,Dict}()
+properties = Dict{Int64,Dict{String,Any}}()
 glob_to_loc = Dict{Int64,Int64}()
 fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
 field_array_type = Dict{String,Dict{String,Any}}()
@@ -69,6 +70,14 @@ end
 ##########################
 material_type = Dict{String,Bool}("Bond-Based" => false, "Ordinary" => false, "Correspondence" => true, "Bond-Associated" => false)
 ##########################
+
+function check_property(blockId::Int64, property::String)
+    if haskey(properties[blockId], property)
+        return length(properties[blockId][property]) > 0
+    end
+    return false
+end
+
 """
    create_bond_field(name::String, type::DataType, dof::Int64)
 
@@ -89,6 +98,7 @@ material_type = Dict{String,Bool}("Bond-Based" => false, "Ordinary" => false, "C
    create_bond_field("stress", Float64, 6)  # creates a stress bond field with 6 degrees of freedom
    ```
    """
+
 function create_bond_field(name::String, type::DataType, dof::Int64)
 
     return create_field(name * "N", type, "Bond_Field", dof), create_field(name * "NP1", type, "Bond_Field", dof)
@@ -411,14 +421,14 @@ function get_physics_options()
     return physicsOptions
 end
 function get_properties(blockId, property)
-    if haskey(properties[blockId], property)
+    if check_property(blockId, property)
         return properties[blockId][property]
     end
     return Dict()
 end
 
 function get_property(blockId, property, value_name)
-    if haskey(properties[blockId], property)
+    if check_property(blockId, property)
         if value_name in keys(properties[blockId][property])
             return properties[blockId][property][value_name]
         end
