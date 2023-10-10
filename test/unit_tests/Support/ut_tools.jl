@@ -35,3 +35,23 @@ end
     Atest = matrix_style(A)
     @test sum(size(A)) == 6
 end
+
+@testset "ut_find_files_with_ending" begin
+    # Create a temporary test directory with sample files
+    tmpdir = mktempdir()
+    touch(joinpath(tmpdir, "file1.txt"))
+    touch(joinpath(tmpdir, "file2.txt"))
+    touch(joinpath(tmpdir, "file3.csv"))
+    touch(joinpath(tmpdir, "file4.csv"))
+    mkdir(joinpath(tmpdir, "subdir"))
+
+
+    # Test case 1: Find .txt files
+    @test find_files_with_ending(tmpdir, ".txt") == ["file1.txt", "file2.txt"]
+
+    # Test case 2: Find .csv files
+    @test find_files_with_ending(tmpdir, ".csv") == ["file3.csv", "file4.csv"]
+
+    # Clean up: Remove the temporary test directory and files
+    rm(tmpdir; recursive=true)
+end
