@@ -41,7 +41,7 @@ end
    ```julia
      ```
    """
-function compute_force(datamanager, nodes, material_parameter, time, dt)
+function compute_force(datamanager::Module, nodes::SubArray, material_parameter::Dict, time::Float32, dt::Float32)
   @info "Please write a material name in material_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, material_parameter, time, dt) function."

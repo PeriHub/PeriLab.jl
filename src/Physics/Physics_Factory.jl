@@ -34,7 +34,7 @@ function compute_models(datamanager, nodes, block, dt, time, options, to)
         if datamanager.check_property(block, "Additive Model")
             @warn "Additive Models not included yet"
         end
-        activeNodes = find_active[nodes] # -> tbd implemented for the other routines
+        #activeNodes = view(nodes, find_active(active_list[nodes]))# -> tbd implemented for the other routines
     end
 
 
@@ -44,14 +44,16 @@ function compute_models(datamanager, nodes, block, dt, time, options, to)
             @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
             @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
             update_list = datamanager.get_field("Update List")
-            datamanager = Pre_calculation.compute(datamanager, find_active(update_list[nodes]), datamanager.get_physics_options(), time, dt)
+            update_nodes = view(nodes, find_active(update_list[nodes]))
+            datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
         end
     end
 
     if options["Material Models"]
         if datamanager.check_property(block, "Material Model")
             update_list = datamanager.get_field("Update List")
-            @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, find_active(update_list[nodes]), datamanager.get_properties(block, "Material Model"), time, dt)
+            update_nodes = view(nodes, find_active(update_list[nodes]))
+            @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
             # all nodes, because update list is only needed to informations which are used in damage already
 
             @timeit to "compute_forces" datamanager = Material.distribute_force_densities(datamanager, nodes)

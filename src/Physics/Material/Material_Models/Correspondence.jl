@@ -40,7 +40,7 @@ end
 
    Parameters:
         - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Vector{Int64}`: List of block nodes.
+        - `nodes::SubArray`: List of block nodes.
         - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
         - `time::Float32`: The current time.
         - `dt::Float32`: The current time step.
@@ -50,7 +50,7 @@ end
    ```julia
      ```
    """
-function compute_forces(datamanager::Module, nodes::Vector{Int64}, material_parameter, time::Float32, dt::Float32)
+function compute_forces(datamanager::Module, nodes::SubArray, material_parameter::Dict, time::Float32, dt::Float32)
   rotation::Bool = false
   if "Angles" in datamanager.get_all_field_keys()
     rotation = true
@@ -90,7 +90,7 @@ end
 """
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 """
-function zero_energy_mode_compensation(datamanager::Module, nodes::Vector{Int64}, material_parameter, time::Float32, dt::Float32)
+function zero_energy_mode_compensation(datamanager::Module, nodes::SubArray, material_parameter, time::Float32, dt::Float32)
   if !haskey(material_parameter, "Zero Energy Mode Control")
     return datamanager
   end
@@ -102,7 +102,7 @@ end
 
 
 
-function calculate_bond_force(nodes::Vector{Int64}, defGrad, bondGeom, invShapeTensor, stressNP1, bond_force)
+function calculate_bond_force(nodes::SubArray, defGrad, bondGeom, invShapeTensor, stressNP1, bond_force)
   for iID in nodes
     jacobian = det(defGrad[iID, :, :])
     if jacobian <= 1e-8
@@ -121,7 +121,7 @@ function calculate_bond_force(nodes::Vector{Int64}, defGrad, bondGeom, invShapeT
 end
 
 
-function rotate(nodes::Vector{Int64}, dof::Int64, matrix, angles, back::Bool)
+function rotate(nodes::SubArray, dof::Int64, matrix, angles, back::Bool)
   for iID in nodes
     matrix[iID, :, :] = rotate_second_order_tensor(angles[iID, :], matrix[iID, :, :], dof, back)
   end
