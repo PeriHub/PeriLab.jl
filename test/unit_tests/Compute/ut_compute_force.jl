@@ -21,7 +21,6 @@ include("../../../src/Compute/compute_forces.jl")
     forces = testDatamanager.get_field("Forces", "NP1")
     for i in 1:5
         for j in 1:3
-            println()
             @test forces[i, j] / (fdNP1[i, j] * volume[i]) - 1 < 1e-8
         end
     end

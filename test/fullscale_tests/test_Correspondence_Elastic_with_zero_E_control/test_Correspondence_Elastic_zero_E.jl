@@ -5,7 +5,7 @@
 include("../../helper.jl")
 
 folder_name = basename(@__FILE__)[1:end-3]
-cd(folder_name) do
+cd("fullscale_tests/" * folder_name) do
     run_perilab("correspondence_strain_pstrain_xx_hg", 1, true, folder_name)
     run_perilab("correspondence_strain_pstrain_xy_hg", 1, true, folder_name)
     run_perilab("correspondence_strain_pstrain_yy_hg", 1, true, folder_name)

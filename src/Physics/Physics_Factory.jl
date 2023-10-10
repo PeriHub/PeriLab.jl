@@ -40,7 +40,6 @@ function compute_models(datamanager, nodes, block, dt, time, options, to)
 
     if options["Damage Models"]
         if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
-            println(datamanager.check_property(block, "Damage Model"), datamanager.get_properties(block, "Damage Model"))
             @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
             @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
             update_list = datamanager.get_field("Update List")
@@ -146,7 +145,7 @@ function read_properties(params, datamanager)
     blocks = datamanager.get_block_list()
     prop_keys = datamanager.init_property()
     physics_options = datamanager.get_physics_options()
-    datamanager.set_physics_options(get_physics_options(params, physics_options))
+    datamanager.set_physics_options(get_physics_option(params, physics_options))
 
     for block in blocks
         get_block_model_definition(params, block, prop_keys, datamanager.set_properties)

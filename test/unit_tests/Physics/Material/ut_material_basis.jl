@@ -17,7 +17,6 @@ include("../../../../src/Physics/Material/material_basis.jl")
     test = get_all_elastic_moduli(Dict{String,Any}("Bulk Modulus" => 1, "Shear Modulus" => 10, "Poisson's Ratio" => 0.2))
     @test sort(collect(keys(test))) == sort(collect(keys(parameter)))
 
-    println()
     test = get_all_elastic_moduli(Dict{String,Any}("Bulk Modulus" => 10, "Shear Modulus" => 10))
     @test test["Young's Modulus"] == Float32(22.5)
     @test test["Poisson's Ratio"] == Float32(0.125)

@@ -6,6 +6,7 @@ if !isdefined(@__MODULE__, :Data_manager)
     include("../../../../src/Support/data_manager.jl")
 end
 include("../../../../src/Support/Parameters/parameter_handling.jl")
+include("../../../../src/Support/helpers.jl")
 
 using Test
 using Random
@@ -228,7 +229,7 @@ end
         "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
 
-    optionTest = get_physics_options(params, options)
+    optionTest = get_physics_option(params, options)
 
     @test optionTest == params["Physics"]["Pre Calculation"]
 
@@ -238,7 +239,7 @@ end
             "Bond Associated Shape Tensor" => false,
             "Bond Associated Deformation Gradient" => true),
         "Material Models" => Dict("a" => Dict("value" => 1, "name" => "t4"), "c" => Dict("value" => [1 2], "value2" => 1, "name" => "t4"))))
-    optionTest = get_physics_options(params, options)
+    optionTest = get_physics_option(params, options)
 
     @test optionTest == params["Physics"]["Pre Calculation"]
 end
