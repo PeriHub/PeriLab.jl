@@ -29,4 +29,5 @@ function get_header(filename)
             return header_line, convert(Vector{String}, split(line[9:end], ' '))
         end
     end
+    @error "No header exists in $filename. Please insert 'header: global_id' above the first node"
 end
