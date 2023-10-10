@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-# using TestSetExtensions
+using TestSetExtensions
 using Aqua
 using Logging
 using MPI
@@ -11,117 +11,118 @@ using PeriLab
 Logging.disable_logging(Logging.Error)
 MPI.Init()
 
-# @testset ExtendedTestSet "PeriLab" begin
+@testset ExtendedTestSet "PeriLab" begin
 
-@testset "Support" begin
+    @testset "Support" begin
 
-    @testset "Parameters" begin
+        @testset "Parameters" begin
 
-        @testset "ut_parameter_handling" begin
-            include("unit_tests/Support/Parameters/ut_parameter_handling.jl")
+            @testset "ut_parameter_handling" begin
+                @includetests["unit_tests/Support/Parameters/ut_parameter_handling"]
+            end
+
+        end
+
+        @testset "ut_data_manager" begin
+            @includetests["unit_tests/Support/ut_data_manager"]
+        end
+
+        @testset "ut_helpers" begin
+            @includetests["unit_tests/Support/ut_helpers"]
+        end
+
+        @testset "ut_tools" begin
+            @includetests["unit_tests/Support/ut_tools"]
+        end
+
+        @testset "ut_geometry" begin
+            @includetests["unit_tests/Support/ut_geometry"]
+        end
+    end
+
+    @testset "Core" begin
+
+
+        @testset "Solver" begin
+
+            # @testset "ut_Solver_control" begin
+            #     include("unit_tests/Core/Solver//ut_Solver_control.jl")
+            # end
+
+            # @testset "ut_Verlet" begin
+            # include("unit_tests/Core/Solver//ut_Verlet.jl")
+            # end
+
+        end
+
+        @testset "ut_BC_manager" begin
+            @includetests["unit_tests/Core/ut_BC_manager"]
+        end
+    end
+
+    @testset "IO" begin
+
+        @testset "ut_exodus_export" begin
+            @includetests["unit_tests/IO/ut_exodus_export"]
+            include("unit_tests/IO/ut_exodus_export.jl")
+        end
+
+        @testset "ut_IO" begin
+            @includetests["unit_tests/IO/ut_IO"]
+        end
+
+        @testset "ut_mesh_data" begin
+            @includetests["unit_tests/IO/ut_mesh_data"]
+        end
+    end
+    @testset "Compute" begin
+        @includetests["unit_tests/Compute/ut_compute_force"]
+    end
+
+    @testset "MPI" begin
+
+        @testset "ut_MPI" begin
+            #   include("unit_tests/MPI_communication/ut_MPI.jl")
         end
 
     end
 
-    @testset "ut_data_manager" begin
-        include("unit_tests/Support/ut_data_manager.jl")
-    end
 
-    @testset "ut_helpers" begin
-        include("unit_tests/Support/ut_helpers.jl")
-    end
+    @testset "Physics" begin
 
-    @testset "ut_tools" begin
-        include("unit_tests/Support/ut_tools.jl")
-    end
-
-    @testset "ut_geometry" begin
-        include("unit_tests/Support/ut_geometry.jl")
-    end
-end
-
-@testset "Core" begin
-
-
-    @testset "Solver" begin
-
-        # @testset "ut_Solver_control" begin
-        #     include("unit_tests/Core/Solver//ut_Solver_control.jl")
-        # end
-
-        # @testset "ut_Verlet" begin
-        # include("unit_tests/Core/Solver//ut_Verlet.jl")
-        # end
-
-    end
-
-    @testset "ut_BC_manager" begin
-        include("unit_tests/Core/ut_BC_manager.jl")
-    end
-end
-
-@testset "IO" begin
-
-    @testset "ut_exodus_export" begin
-        include("unit_tests/IO/ut_exodus_export.jl")
-    end
-
-    @testset "ut_IO" begin
-        include("unit_tests/IO/ut_IO.jl")
-    end
-
-    @testset "ut_mesh_data" begin
-        include("unit_tests/IO/ut_mesh_data.jl")
-    end
-end
-@testset "Compute" begin
-    include("unit_tests/Compute/ut_compute_force.jl")
-end
-
-@testset "MPI" begin
-
-    @testset "ut_MPI" begin
-        #   include("unit_tests/MPI_communication/ut_MPI.jl")
-    end
-
-end
-
-
-@testset "Physics" begin
-
-    @testset "Thermal" begin end
-    @testset "Correspondence" begin
-        include("unit_tests/Physics/Thermal/Correspondence/ut_Thermal_correspondence.jl")
-    end
-
-    @testset "ut_Physics_Factory" begin
-        include("unit_tests/Physics/ut_Physics_Factory.jl")
-    end
-    @testset "ut_Damage" begin
-        include("unit_tests/Physics/Damage/ut_Damage_Factory.jl")
-    end
-    @testset "ut_Material" begin
-        @testset "ut_material_basis" begin
-            include("unit_tests/Physics/Material/ut_material_basis.jl")
+        @testset "Thermal" begin end
+        @testset "Correspondence" begin
+            @includetests["unit_tests/Physics/Thermal/Correspondence/ut_Thermal_correspondence"]
         end
-        @testset "ut_ordinary" begin
-            include("unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary.jl")
+
+        @testset "ut_Physics_Factory" begin
+            @includetests["unit_tests/Physics/ut_Physics_Factory"]
+        end
+        @testset "ut_Damage" begin
+            @includetests["unit_tests/Physics/Damage/ut_Damage_Factory"]
+        end
+        @testset "ut_Material" begin
+            @testset "ut_material_basis" begin
+                @includetests["unit_tests/Physics/Material/ut_material_basis"]
+            end
+            @testset "ut_ordinary" begin
+                @includetests["unit_tests/Physics/Material_Models/Ordinary/ut_ordinary"]
+            end
         end
     end
-end
 
-@testset "test_PD_Solid_Elastic" begin
-    include("fullscale_tests/test_PD_Solid_Elastic/test_PD_Solid_Elastic.jl")
-end
+    @testset "test_PD_Solid_Elastic" begin
+        @includetests["fullscale_tests/test_PD_Solid_Elastic/test_PD_Solid_Elastic"]
+    end
 
-@testset "test_Critical_stretch" begin
-    include("fullscale_tests/test_Critical_stretch/test_Critical_stretch.jl")
-end
+    @testset "test_Critical_stretch" begin
+        @includetests["fullscale_tests/test_Critical_stretch/test_Critical_stretch"]
+    end
 
-@testset "test_Correspondence_Elastic" begin
-    include("fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic.jl")
+    @testset "test_Correspondence_Elastic" begin
+        @includetests["fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic"]
+    end
 end
-# end
 
 MPI.Finalize()
 # Aqua.test_all(PeriLab)

@@ -10,7 +10,7 @@ Set_modules.include_files(module_list)
 export compute_additive
 
 
-function compute_additive(datamanager, nodes, model_param, time, dt)
+function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float32, dt::Float32)
 
     specifics = Dict{String,String}("Call Function" => "compute_additive", "Name" => "additive_name")
 

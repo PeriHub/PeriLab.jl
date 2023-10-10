@@ -10,7 +10,7 @@ function damage_name()
     return "Critical Stretch"
 end
 
-function compute_damage(datamanager, nodes, damage_parameter, time, dt)
+function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float32, dt::Float32)
 
     bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
     bondGeom = datamanager.get_field("Bond Geometry")

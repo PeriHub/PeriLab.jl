@@ -7,7 +7,7 @@ include("../../Support/geometry.jl")
 using .Geometry
 export compute
 
-function compute(datamanager::Module, nodes::Vector{Int64})
+function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
@@ -19,6 +19,7 @@ function compute(datamanager::Module, nodes::Vector{Int64})
     shapeTensor, invShapeTensor = Geometry.shape_tensor(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, shapeTensor, invShapeTensor)
     return datamanager
 end
+
 
 
 end
