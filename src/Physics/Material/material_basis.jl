@@ -145,13 +145,23 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             end
         end
     else
-        @warn "material model defintion is missing; assuming isotropic plain_stress "
+
         matrix = zeros(Float32, dof + 1, dof + 1)
-        matrix[1, 1] = E / (1 - nu * nu)
-        matrix[1, 2] = E * nu / (1 - nu * nu)
-        matrix[2, 1] = E * nu / (1 - nu * nu)
-        matrix[2, 2] = E / (1 - nu * nu)
-        matrix[3, 3] = G
+        if haskey(parameter, "Poisson's Ratio") && haskey(parameter, "Young's Modulus")
+            @warn "material model defintion is missing; assuming isotropic plain_stress "
+            nu = parameter["Poisson's Ratio"]
+            E = parameter["Young's Modulus"]
+            G = parameter["Shear Modulus"]
+            matrix[1, 1] = E / (1 - nu * nu)
+            matrix[1, 2] = E * nu / (1 - nu * nu)
+            matrix[2, 1] = E * nu / (1 - nu * nu)
+            matrix[2, 2] = E / (1 - nu * nu)
+            matrix[3, 3] = G
+            return matrix
+        end
+        @error "no valid definition"
+        return matrix
+
     end
     return matrix
 end
