@@ -34,17 +34,14 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
         E = 3 * K * (1 - 2 * nu)
         G = 3 * K * (1 - nu / (2 + 2 * nu))
     end
-
     if shear && Poissons
         E = 2 * G * (1 + nu)
         K = 2 * G * (1 + nu) / (3 - 6 * nu)
     end
-
     if bulk && shear
         E = 9 * K * G / (3 * K + G)
         nu = (3 * K - 2 * G) / (6 * K + 2 * G)
     end
-
     if Youngs && shear
         K = E * G / (9 * G - 3 * E)
         nu = E / (2 * G) - 1
@@ -54,7 +51,6 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
         G = 3 * K * E / (9 * K - E)
         nu = (3 * K - E) / (6 * K)
     end
-
     if Youngs && Poissons
         K = E / (3 - 6 * nu)
         G = E / (2 + 2 * nu)
@@ -62,10 +58,6 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
     # tbd non isotropic material check
     if bulk + Youngs + shear + Poissons < 2
         @error "Minimum of two parameters are needed for isotropic material"
-    end
-
-    if bulk + Youngs + shear + Poissons > 2
-        @warn "More than two parameters for isotropic material. Please check consistency"
     end
 
     parameter["Bulk Modulus"] = K
