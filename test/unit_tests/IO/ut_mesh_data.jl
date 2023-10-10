@@ -191,7 +191,7 @@ end
     lenNumbers = length(numbers)
     filename = "test.txt"
     file = open(filename, "w")
-    println(file, "header: Global Nodes")
+    println(file, "header: global_id")
     for number in numbers
         println(file, number)
     end
