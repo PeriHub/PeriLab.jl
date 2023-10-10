@@ -238,7 +238,7 @@ function check_mesh_elements(mesh, dof)
         meshInfoDict[name] = Dict{String,Any}("Mesh ID" => meshID, "Type" => vartype)
     end
     if !(haskey(meshInfoDict, "Coordinates"))
-        @error "No coordi defined"
+        @error "No coordinates defined"
     end
     if !(haskey(meshInfoDict, "Block_Id"))
         @error "No blocks defined"
