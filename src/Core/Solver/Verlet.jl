@@ -170,9 +170,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             synchronise(comm, datamanager, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
-                bNodes = blockNodes[block]
-                activeBlockNodes = bNodes[find_active(active[bNodes])]
-                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, activeBlockNodes, block, dt, step_time, solver_options, to)
+                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, step_time, solver_options, to)
             end
             synchronise(comm, datamanager, "download_from_cores")
             # synch

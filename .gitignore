@@ -91,3 +91,5 @@ test/tryout/macro_test_zone/Modules/modA/moduleA.jl
 test/tryout/correspondence_strain_pstress_xx_zc.e
 test/tryout/correspondence_strain_pstress_yy_hg.e
 test/tryout/correspondence_strain_pstress_zc_xx.yaml
+test/test_critical_energy/dogbone.e
+test/test_Correspondence_Elastic/correspondence_strain_pstress_yy.e
