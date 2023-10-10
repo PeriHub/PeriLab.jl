@@ -19,3 +19,14 @@ function find_active(active::Vector{Bool})
     return [i for (i, is_active) in enumerate(active) if is_active]
 end
 
+function get_header(filename)
+    file = open(filename, "r")
+    header_line = 0
+    for line in eachline(file)#
+        header_line += 1
+        if contains(line, "header:")
+            close(file)
+            return header_line, convert(Vector{String}, split(line[9:end], ' '))
+        end
+    end
+end
