@@ -9,14 +9,15 @@ using MPI
 export run_perilab
 
 function run_perilab(filename, cores, compare, folder_name="")
+    main_path = dirname(@__FILE__)[1:end-4] * "src/main.jl"
+    command = `$(Base.julia_cmd()) $main_path -s $(filename).yaml`
     if cores == 1
-        cmd = `$(Base.julia_cmd()) ../../src/main.jl -s $(filename).yaml`
-        exit_code = run(cmd).exitcode
+        exit_code = run(command).exitcode
         @test exit_code == 0
     else
         mpiexec() do exe  # MPI wrapper
 
-            cmd = `$exe -n $cores $(Base.julia_cmd()) ../../src/main.jl -s $(filename).yaml`
+            cmd = `$exe -n $cores $command`
             exit_code = run(cmd).exitcode
             @test exit_code == 0
         end

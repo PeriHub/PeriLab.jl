@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../helper.jl")
+include("../../helper.jl")
 
 folder_name = basename(@__FILE__)[1:end-3]
-cd(folder_name) do
+cd("fullscale_tests/" * folder_name) do
     run_perilab("displacements", 1, false, folder_name)
 end

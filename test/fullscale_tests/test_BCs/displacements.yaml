@@ -5,7 +5,9 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12
+      Node Set 1: 1 2 3 4
+      Node Set 2: 5 6 7 8
+      Node Set 3: 9 10 11 12
     Type: "Text File"
     Input Mesh File: "test_mesh.txt"
   Physics:
@@ -25,17 +27,27 @@ PeriLab:
       Material Model: "Mat_1"
       Density: 2.7e-9
       Horizon: 2.1
+    block_3:
+      Block Names: "block_3"
+      Material Model: "Mat_1"
+      Density: 2.7e-9
+      Horizon: 2.1
   Boundary Conditions:
     BC_1:
       Type: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
-      Value: "0.1*x"
+      Value: "0.1"
     BC_2:
       Type: "Displacements"
-      Node Set: "Node Set 1"
+      Node Set: "Node Set 2"
       Coordinate: "y"
-      Value: "0.0"
+      Value: "0.1"
+    BC_2:
+      Type: "Displacements"
+      Node Set: "Node Set 3"
+      Coordinate: "z"
+      Value: "0.1"
   Solver:
     Solve For Displacement: True
     Initial Time: 0.0
