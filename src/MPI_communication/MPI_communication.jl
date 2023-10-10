@@ -200,12 +200,6 @@ function get_vector(comm, vector, topo)
     return vector
 end
 
-function synch_vector(comm, vector, topo)
-    vector = get_vector(comm, vector, topo)
-    vector = set_vector(comm, vector, topo)
-    return vector
-end
-
 function recv_vector_from_root(comm, recv_msg)
 
     #if rank == MPI.Comm_rank(comm)
