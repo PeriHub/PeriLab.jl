@@ -40,7 +40,6 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float32, t
 
     if options["Damage Models"]
         if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
-            println(datamanager.check_property(block, "Damage Model"), datamanager.get_properties(block, "Damage Model"))
             @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, view(nodes, eachindex(nodes)), datamanager.get_properties(block, "Material Model"), time, dt)
             @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, view(nodes, eachindex(nodes)), datamanager.get_properties(block, "Damage Model"), time, dt)
             update_list = datamanager.get_field("Update List")
