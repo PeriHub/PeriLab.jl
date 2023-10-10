@@ -114,13 +114,13 @@ MPI.Init()
         include("fullscale_tests/test_PD_Solid_Elastic/test_PD_Solid_Elastic.jl")
     end
 
-    # @testset "test_Critical_stretch" begin
-    #     include("test_Critical_stretch/test_Critical_stretch.jl")
-    # end
+    @testset "test_Critical_stretch" begin
+        include("fullscale_tests/test_Critical_stretch/test_Critical_stretch.jl")
+    end
 
-    # @testset "test_Correspondence_Elastic" begin
-    #     include("test_Correspondence_Elastic/test_Correspondence_Elastic.jl")
-    # end
+    @testset "test_Correspondence_Elastic" begin
+        include("fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic.jl")
+    end
 end
 
 MPI.Finalize()
