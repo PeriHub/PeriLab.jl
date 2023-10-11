@@ -60,8 +60,9 @@ function get_block_nodes(block_Id, block)
     return reshape(conn, 1, length(conn))
 end
 
-function init_results_in_exodus(exo, output, coords, block_Id, uniqueBlocks, nsets)
+function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,Vector{Any}}, coords::Union{Matrix{Int64},Matrix{Float32}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
     info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
+
     write_info(exo, info)
 
     # check if type of coords is int or float32
@@ -97,8 +98,8 @@ function init_results_in_exodus(exo, output, coords, block_Id, uniqueBlocks, nse
     write_number_of_variables(exo, NodalVariable, length(names))
     write_names(exo, NodalVariable, names)
     nnodes = exo.init.num_nodes
+    zero::Vector{Float32} = zeros(Float64, nnodes)
     for varname in keys(output)
-        zero = zeros(Float64, nnodes)
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, 1, output[varname][2], varname, zero)
     end
