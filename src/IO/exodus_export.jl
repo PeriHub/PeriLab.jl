@@ -99,7 +99,7 @@ function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,
     write_names(exo, NodalVariable, names)
     nnodes = exo.init.num_nodes
     zero::Vector{Float32} = zeros(Float64, nnodes)
-    for varname in keys(output)
+    for varname in names
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, 1, output[varname][2], varname, zero)
     end
