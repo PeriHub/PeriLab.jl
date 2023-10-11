@@ -24,7 +24,7 @@ function determine_isotropic_parameter(prop)
     return get_all_elastic_moduli(prop)
 end
 
-function distribute_force_densities(datamanager, nodes)
+function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     nlist = datamanager.get_nlist()
     bond_force = datamanager.get_field("Bond Forces")
     force_densities = datamanager.get_field("Force Densities", "NP1")
