@@ -68,20 +68,21 @@ function clean_up(bc::String)
     bc = replace(bc, "-" => " .- ")
     return bc
 end
-
-function eval_bc(bc::Union{Float32,Float64,Int64,String}, coordinates, time, dof)
+"""
+eval_bc(bc::Union{Float32,Float64,Int64,String}, coordinates::Matrix{Float32}, time::Float32, dof::Int64)
+Working with if-statements
+  "if t>2 0 else 20 end"
+  works for scalars. If you want to evaluate a vector, please use the Julia notation as input
+  "ifelse.(x .> y, 10, 20)"
+"""
+function eval_bc(bc::Union{Float32,Float64,Int64,String}, coordinates::Matrix{Float32}, time::Float32, dof::Int64)
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
     # the yaml input allows multiple types. But for further use this input has to be a string
     bc = string(bc)
     bc = clean_up(bc)
     bc_value = Meta.parse(bc)
-    """
-    Working with if-statements
-      "if t>2 0 else 20 end"
-      works for scalars. If you want to evaluate a vector, please use the Julia notation as input
-      "ifelse.(x .> y, 10, 20)"
-    """
+
     global x = coordinates[:, 1]
     global y = coordinates[:, 2]
     global t = time
