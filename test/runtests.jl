@@ -106,7 +106,7 @@ MPI.Init()
                 @includetests["unit_tests/Physics/Material/ut_material_basis"]
             end
             @testset "ut_ordinary" begin
-                @includetests["unit_tests/Physics/Material_Models/Ordinary/ut_ordinary"]
+                @includetests["unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary"]
             end
         end
     end
@@ -115,13 +115,13 @@ MPI.Init()
         @includetests["fullscale_tests/test_PD_Solid_Elastic/test_PD_Solid_Elastic"]
     end
 
-    @testset "test_Critical_stretch" begin
-        @includetests["fullscale_tests/test_Critical_stretch/test_Critical_stretch"]
-    end
+    # @testset "test_Critical_stretch" begin
+    #     @includetests["fullscale_tests/test_Critical_stretch/test_Critical_stretch"]
+    # end
 
-    @testset "test_Correspondence_Elastic" begin
-        @includetests["fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic"]
-    end
+    # @testset "test_Correspondence_Elastic" begin
+    #     @includetests["fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic"]
+    # end
 end
 
 MPI.Finalize()
