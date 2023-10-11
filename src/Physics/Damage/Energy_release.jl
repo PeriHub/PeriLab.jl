@@ -47,8 +47,8 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   update_list = datamanager.get_field("Update List")
   horizon = datamanager.get_field("Horizon")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
-  deformed_bondN = datamanager.get_field("Deformed Bond", "N")
-  deformed_bondNP1 = datamanager.get_field("Deformed Bond", "NP1")
+  deformed_bondN = datamanager.get_field("Deformed Bond Geometry", "N")
+  deformed_bondNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
   bond_force = datamanager.get_field("Bond Forces")
 
 
