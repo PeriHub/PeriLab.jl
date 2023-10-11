@@ -106,7 +106,7 @@ function initialize_data(filename, datamanager, comm, to)
 
 end
 
-function init_write_results(params, datamanager, nsteps)
+function init_write_results(params::Dict, datamanager::Module, nsteps::Int64)
     filenames = get_output_filenames(params)
     if length(filenames) == 0
         @warn "No futput file or output defined"
