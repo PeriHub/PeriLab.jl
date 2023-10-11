@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Critical_Energy_Correpondence_Model
+module Critical_Energy_Model
 export compute_damage
 export damage_name
 """
@@ -18,11 +18,11 @@ export damage_name
    Example:
    ```julia
    println(damage_name())
-   "Critical Energy Correspondence"
+   "Critical Energy"
    ```
    """
 function damage_name()
-  return "Critical Energy Correspondence"
+  return "Critical Energy"
 end
 """
    compute_damage(datamanager, nodes, damage_parameter, time, dt)
