@@ -108,7 +108,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[3, 3] = G
             return matrix
         else
-            @error "2D model defintion is missing; plain_stress or plain_strain "
+            @error "2D model defintion is missing; plain stress or plain strain "
         end
         if occursin("anisotropic", symmetry)
             anisoMatrix = zeros(Float32, 6, 6)
@@ -141,14 +141,14 @@ function get_Hooke_matrix(parameter, symmetry, dof)
                 matrix[3, 3] = invAniso[6, 6]
                 return inv(matrix)
             else
-                @error "2D model defintion is missing; plain_stress or plain_strain "
+                @error "2D model defintion is missing; plain stress or plain strain "
             end
         end
     else
 
         matrix = zeros(Float32, dof + 1, dof + 1)
         if haskey(parameter, "Poisson's Ratio") && haskey(parameter, "Young's Modulus")
-            @warn "material model defintion is missing; assuming isotropic plain_stress "
+            @warn "material model defintion is missing; assuming isotropic plain stress "
             nu = parameter["Poisson's Ratio"]
             E = parameter["Young's Modulus"]
             G = parameter["Shear Modulus"]
