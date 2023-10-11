@@ -33,7 +33,6 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, opti
     end
     if options["Bond Associated Deformation Gradient"]
         datamanager = Bond_Deformation_Gradient.compute(datamanager, nodes)
-        datamanager.set_fields_equal("Bond Associated Deformation Gradient", "NP1")
     end
     return datamanager
 end
@@ -48,14 +47,14 @@ function init_pre_calculation(datamanager, options)
         invShapeTensor = datamanager.create_constant_node_field("Inverse Shape Tensor", Float32, "Matrix", dof)
     end
     if options["Deformation Gradient"]
-        defGradN, defGradNP1 = datamanager.create_node_field("Deformation Gradient", Float32, "Matrix", dof)
+        defGrad = datamanager.create_constant_node_field("Deformation Gradient", Float32, "Matrix", dof)
     end
     if options["Bond Associated Shape Tensor"]
         bondShapeTensor = datamanager.create_constant_bond_field("Bond Associated Shape Tensor", Float32, "Matrix", dof)
         invBondShapeTensor = datamanager.create_constant_bond_field("Inverse Bond Associated Shape Tensor", Float32, "Matrix", dof)
     end
     if options["Bond Associated Deformation Gradient"]
-        bondDefGradN, bondDefGradNP1 = datamanager.create_bond_field("Bond Associated Deformation Gradient", Float32, "Matrix", dof)
+        bondDefGrad = datamanager.create_constant_bond_field("Bond Associated Deformation Gradient", Float32, "Matrix", dof)
     end
     return datamanager
 end

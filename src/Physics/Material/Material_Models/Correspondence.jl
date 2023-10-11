@@ -59,15 +59,19 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   dof = datamanager.get_dof()
   nlist = datamanager.get_nlist()
   volume = datamanager.get_field("Volume")
-  strainInc = datamanager.create_constant_node_field("Strain Increment", Float32, "Matrix", dof)
-  defGradN = datamanager.get_field("Deformation Gradient", "N")
-  defGradNP1 = datamanager.get_field("Deformation Gradient", "NP1")
-  stressN, stressNP1 = datamanager.create_node_field("Cauchy Stress", Float32, "Matrix", dof)
-  bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, dof)
-  bondGeom = datamanager.get_field("Deformed Bond Geometry", "N") # not to original configuration as in Peridigm, but the last one
 
+  defGrad = datamanager.get_field("Deformation Gradient")
+
+  bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, dof)
+  bond_damage = datamanager.get_field("Bond Damage", "NP1")
+
+  bondGeom = datamanager.get_field("Bond Geometry")
   invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
-  strainInc = Geometry.strain_increment(nodes, defGradNP1, strainInc)
+
+  strainN, strainNP1 = datamanager.create_node_field("Strain", Float32, "Matrix", dof)
+  stressN, stressNP1 = datamanager.create_node_field("Cauchy Stress", Float32, "Matrix", dof)
+  strainNP1 = Geometry.strain(nodes, defGrad, strainNP1)
+  strainInc = strainNP1 - strainN
 
   if rotation
     stressN = rotate(nodes, dof, stressN, angles, false)
@@ -80,7 +84,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   if rotation
     stressNP1 = rotate(nodes, dof, stressNP1, angles, true)
   end
-  bond_force[:] = calculate_bond_force(nodes, defGradNP1, bondGeom, invShapeTensor, stressNP1, bond_force)
+  bond_force[:] = calculate_bond_force(nodes, defGrad, bondGeom, bond_damage, invShapeTensor, stressNP1, bond_force)
   # general interface, because it might be a flexbile Set_modules interface in future
   datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
 
@@ -102,7 +106,7 @@ end
 
 
 
-function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, defGrad, bondGeom, invShapeTensor, stressNP1, bond_force)
+function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, defGrad, bondGeom, bond_damage, invShapeTensor, stressNP1, bond_force)
   for iID in nodes
     jacobian = det(defGrad[iID, :, :])
     if jacobian <= 1e-8
@@ -113,7 +117,7 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, defGrad, bon
     piolaStress = jacobian .* invDefGrad * stressNP1[iID, :, :]
     temp = piolaStress * invShapeTensor[iID, :, :]
     for jID in eachindex(bond_force[iID][:, 1])
-      bond_force[iID][jID, :] = temp * bondGeom[iID][jID, 1:end-1]
+      bond_force[iID][jID, :] = temp * (bond_damage[iID][jID] .* bondGeom[iID][jID, 1:end-1])
     end
   end
 

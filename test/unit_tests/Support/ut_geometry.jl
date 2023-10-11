@@ -85,7 +85,7 @@ end
     bondDamage = testDatamanager.create_constant_bond_field("Bond Damage", Float32, 1)
     shapeTensor = testDatamanager.create_constant_node_field("Shape Tensor", Float32, "Matrix", dof)
     invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float32, "Matrix", dof)
-    defGrad, defGradNP1 = testDatamanager.create_node_field("Deformation Gradient", Float32, "Matrix", dof)
+    defGrad = testDatamanager.create_constant_node_field("Deformation Gradient", Float32, "Matrix", dof)
     omega[1][:] .= 1
     omega[2][:] .= 1
     omega[3][:] .= 1
@@ -173,13 +173,13 @@ end
     end
 end
 
-@testset "ut_strain_increment" begin
+@testset "ut_strain" begin
     testDatamanager = Data_manager
     dof = testDatamanager.get_dof()
     nnodes = 4
     nodes = Vector{Int64}(1:nnodes)
-    defGrad, defGradNP1 = testDatamanager.create_node_field("Deformation Gradient", Float32, "Matrix", dof)
-    strainInc = testDatamanager.create_constant_node_field("Strain Increment", Float32, "Matrix", dof)
+    defGrad = testDatamanager.create_constant_node_field("Deformation Gradient", Float32, "Matrix", dof)
+    strainInc = testDatamanager.create_constant_node_field("Strain", Float32, "Matrix", dof)
     nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     volume = testDatamanager.create_constant_node_field("Volume", Float32, 1)
     omega = testDatamanager.create_constant_bond_field("Influence Function", Float32, 1)
@@ -187,11 +187,14 @@ end
     bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
     shapeTensor = testDatamanager.create_constant_node_field("Shape Tensor", Float32, "Matrix", dof)
     invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float32, "Matrix", dof)
-    defGrad, defGradNP1 = testDatamanager.create_node_field("Deformation Gradient", Float32, "Matrix", dof)
+
 
     defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
-    defGradNP1 = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGradNP1)
-    strainInc = Geometry.strain_increment(view(nodes, eachindex(nodes)), defGradNP1, strainInc)
+    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), defGrad, strainInc)
+    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
+    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), defGrad, strainInc) - strainInc
+    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), defGrad, strainInc) - strainInc
+
 
     for i in 1:nnodes
         @test strainInc[i, 1, 1] == 0
@@ -200,26 +203,26 @@ end
         @test strainInc[i, 2, 2] == 0
     end
 
-    defGradNP1 = zeros(4, 3, 3)
+    defGrad = zeros(4, 3, 3)
     strainInc = zeros(4, 3, 3)
 
 
-    defGradNP1[1, 1, 1] = 2.0
-    defGradNP1[1, 1, 2] = 1.0
-    defGradNP1[1, 1, 3] = 2.0
-    defGradNP1[1, 2, 1] = 2.0
-    defGradNP1[1, 2, 2] = 1.0
-    defGradNP1[1, 2, 3] = 2.3
-    defGradNP1[1, 3, 1] = 2.0
-    defGradNP1[1, 3, 2] = -1.0
-    defGradNP1[1, 3, 3] = 3.0
+    defGrad[1, 1, 1] = 2.0
+    defGrad[1, 1, 2] = 1.0
+    defGrad[1, 1, 3] = 2.0
+    defGrad[1, 2, 1] = 2.0
+    defGrad[1, 2, 2] = 1.0
+    defGrad[1, 2, 3] = 2.3
+    defGrad[1, 3, 1] = 2.0
+    defGrad[1, 3, 2] = -1.0
+    defGrad[1, 3, 3] = 3.0
 
-    strainInc = Geometry.strain_increment(view(nodes, eachindex(nodes)), defGradNP1, strainInc)
+    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), defGrad, strainInc)
     identity = zeros(3, 3)
     identity[1, 1] = 1
     identity[2, 2] = 1
     identity[3, 3] = 1
-    test = 0.5 * (transpose(defGradNP1[1, :, :]) * defGradNP1[1, :, :] - identity)
+    test = 0.5 * (transpose(defGrad[1, :, :]) * defGrad[1, :, :] - identity)
     for i in 1:dof
         for j in 1:dof
             @test strainInc[1, i, j] == test[i, j]

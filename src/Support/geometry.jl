@@ -150,7 +150,7 @@ defGrad = zeros(Float32, length(nodes), dof, dof)
 deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
 """
 
-function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bondDamage, deformed_bond, bondGeometry, invShapeTensor, defGrad)
+function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bondDamage, deformed_bond::Union{SubArray,Vector{Matrix{Float32}}}, bondGeometry, invShapeTensor, defGrad)
     for iID in nodes
         defGrad[iID, :, :] = zeros(Float32, dof, dof)
         for i in 1:dof
@@ -165,14 +165,13 @@ function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, 
 
 end
 """
-    function strain_increment(nodes::Union{SubArray, Vector{Int64}}, defGradNP1, strainInc)
+    function strain(nodes::Union{SubArray, Vector{Int64}}, defGrad, strainInc)
 
 Calculate strain increments for specified nodes based on deformation gradients.
 
 ## Arguments
 -  `nodes::Union{SubArray, Vector{Int64}}`: List of nodes
-- `defGradNP1`: Deformation gradient at time step "n+1" (2D or 3D array).
-- `defGrad`: Deformation gradient at the current time step (2D or 3D array).
+- `defGrad`: Deformation gradient at current time step (2D or 3D array).
 
 ## Returns
 
@@ -182,15 +181,13 @@ This function iterates over the specified nodes and computes strain increments u
 
 """
 
-function strain_increment(nodes::Union{SubArray,Vector{Int64}}, defGradNP1, strainInc)
+function strain(nodes::Union{SubArray,Vector{Int64}}, defGrad, strain)
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     # First equation gives Strain increment as shown
     for iID in nodes
-        strainInc[iID, :, :] = 0.5 * (transpose(defGradNP1[iID, :, :]) * defGradNP1[iID, :, :] - I)
-        #strainInc[iID, :, :] = 0.5 * (transpose(defGradNP1[iID, :, :]) * defGradNP1[iID, :, :] - Diagonal(ones(2)))
+        strain[iID, :, :] = 0.5 * (transpose(defGrad[iID, :, :]) * defGrad[iID, :, :] - I)
     end
-    return strainInc
-    #return defGradNP1 - defGrad
+    return strain
 end
 
 """

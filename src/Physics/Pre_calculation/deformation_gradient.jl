@@ -13,33 +13,15 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
     bondDamage = datamanager.get_field("Bond Damage", "NP1")
-    # bondGeometry = datamanager.get_field("Bond Geometry")
+    bondGeometry = datamanager.get_field("Bond Geometry")
     deformed_bondN = datamanager.get_field("Deformed Bond Geometry", "N")
     deformed_bondNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    defGradNP1 = datamanager.get_field("Deformation Gradient", "NP1")
+    defGrad = datamanager.get_field("Deformation Gradient")
     invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
 
-    defGradNP1 = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, deformed_bondN, deformed_bondNP1, invShapeTensor, defGradNP1)
+    defGrad = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, deformed_bondNP1, invShapeTensor, defGrad)
 
     return datamanager
 end
-
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    omega = datamanager.get_field("Influence Function")
-    bondDamage = datamanager.get_field("Bond Damage", "NP1")
-    # bondGeometry = datamanager.get_field("Bond Geometry")
-    deformed_bondN = datamanager.get_field("Deformed Bond Geometry", "N")
-    deformed_bondNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    defGradNP1 = datamanager.get_field("Deformation Gradient", "NP1")
-    invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
-
-    defGradNP1 = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, deformed_bondN, deformed_bondNP1, invShapeTensor, defGradNP1)
-
-    return datamanager
-end
-
 
 end
