@@ -166,7 +166,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             uNP1[find_active(active[1:nnodes]), :] = uN[find_active(active[1:nnodes]), :] + dt .* vNP1[find_active(active[1:nnodes]), :]
 
             @timeit to "apply_bc" Boundary_conditions.apply_bc(bcs, datamanager, step_time)
-            defCoorNP1[1:nnodes, :] = coor[1:nnodes, :] + uNP1[1:nnodes, :]
+            defCoorNP1[find_active(active[1:nnodes]), :] = coor[find_active(active[1:nnodes]), :] + uNP1[find_active(active[1:nnodes]), :]
             synchronise(comm, datamanager, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
@@ -182,11 +182,12 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
 
             exos = write_results(exos, start_time + step_time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
+            update_list .= true
             step_time += dt
             if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
                 @info "Step: $idt / $nsteps [$step_time s]"
             end
-            update_list .= true
+
         end
     end
     return exos
