@@ -5,27 +5,24 @@
 PeriLab:
     Discretization: 
         Node Sets:
-            Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12
+            Node Set 1: 1 5 9 
+            Node Set 2: 4 8 12
         Type: "Text File"
         Input Mesh File: "test_mesh.txt"
     Physics:
-        Pre Calculation:
-            Deformed Bond Geometry: true
-            Deformation Gradient: true
-            Shape Tensor: true
-            Bond Associated Shape Tensor: false
-            Bond Associated Deformation Gradient: false
         Material Models: 
             Mat_1: 
                 Material Model: "Correspondence Elastic"
-                Symmetry: "isotropic plane strain"
+                Symmetry: "isottropic plane stress"
                 Bulk Modulus: 2.5e+3
                 Shear Modulus: 1.15e3
+                Zero Energy Control: "Global"
             Mat_2: 
                 Material Model: "Correspondence Elastic"
-                Symmetry: "isotropic plane strain"
+                Symmetry: "isottropic plane stress"
                 Bulk Modulus: 3.5e+3
                 Shear Modulus: 2.15e3
+                Zero Energy Control: "Global"
     Blocks: 
         block_1: 
             Block Names: "block_1"
@@ -42,12 +39,12 @@ PeriLab:
             Type: "Displacements"
             Node Set: "Node Set 1"
             Coordinate: "x"
-            Value: "0.0"
+            Value: "0.1*x"
         BC_2: 
             Type: "Displacements"
-            Node Set: "Node Set 1"
-            Coordinate: "y"
-            Value: "0.1*y"
+            Node Set: "Node Set 2"
+            Coordinate: "x"
+            Value: "-0.1*x"
     Solver: 
         Solve For Displacement: True
         Initial Time: 0.0
@@ -57,7 +54,7 @@ PeriLab:
             Safety Factor: 1.0
     Outputs: 
         Output1:
-            Output Filename: "correspondence_strain_pstrain_yy"
+            Output Filename: "correspondence_strain_pstress_yy_hg"
             Output Frequency: 1
             Output Variables: 
                 Displacements: True

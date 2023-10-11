@@ -9,23 +9,19 @@ PeriLab:
         Type: "Text File"
         Input Mesh File: "test_mesh.txt"
     Physics:
-        Pre Calculation:
-            Deformed Bond Geometry: true
-            Deformation Gradient: true
-            Shape Tensor: true
-            Bond Associated Shape Tensor: false
-            Bond Associated Deformation Gradient: false
         Material Models: 
             Mat_1: 
                 Material Model: "Correspondence Elastic"
-                Symmetry: "isotropic plane strain"
+                Symmetry: "isottropic plane strain"
                 Bulk Modulus: 2.5e+3
                 Shear Modulus: 1.15e3
+                Zero Energy Control: "Global"
             Mat_2: 
                 Material Model: "Correspondence Elastic"
-                Symmetry: "isotropic plane strain"
+                Symmetry: "isottropic plane strain"
                 Bulk Modulus: 3.5e+3
                 Shear Modulus: 2.15e3
+                Zero Energy Control: "Global"
     Blocks: 
         block_1: 
             Block Names: "block_1"
@@ -57,7 +53,7 @@ PeriLab:
             Safety Factor: 1.0
     Outputs: 
         Output1:
-            Output Filename: "correspondence_strain_pstrain_yy"
+            Output Filename: "correspondence_strain_pstrain_xy_hg"
             Output Frequency: 1
             Output Variables: 
                 Displacements: True
