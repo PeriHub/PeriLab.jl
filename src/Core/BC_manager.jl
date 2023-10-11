@@ -61,7 +61,7 @@ function apply_bc(bcs, datamanager, time)
     end
 end
 
-function clean_up(bc)
+function clean_up(bc::String)
     bc = replace(bc, "*" => " .* ")
     bc = replace(bc, "/" => " ./ ")
     bc = replace(bc, "+" => " .+ ")
@@ -69,9 +69,11 @@ function clean_up(bc)
     return bc
 end
 
-function eval_bc(bc::String, coordinates, time, dof)
+function eval_bc(bc::Union{Float32,Float64,Int64,String}, coordinates, time, dof)
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
+    # the yaml input allows multiple types. But for further use this input has to be a string
+    bc = string(bc)
     bc = clean_up(bc)
     bc_value = Meta.parse(bc)
     """

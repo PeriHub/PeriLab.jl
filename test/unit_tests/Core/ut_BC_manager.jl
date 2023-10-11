@@ -12,7 +12,13 @@ using .Boundary_conditions
     dof = 2
     time = 2
     coor = zeros(3, 3)
-    bc = "10"
+    bc = Int64(10)
+    @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+    bc = Float32(10)
+    @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+    bc = Float64(10)
+    @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+    bc = string(10)
     @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
     bc = "x"
     for i in 1:4
