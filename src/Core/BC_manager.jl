@@ -47,7 +47,7 @@ function boundary_condition(params, datamanager)
     return bcs_out
 end
 
-function apply_bc(bcs, datamanager, time)
+function apply_bc(bcs::Dict, datamanager::Module, time::Float32)
     dof = datamanager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     coordinates = datamanager.get_field("Coordinates")
@@ -59,6 +59,7 @@ function apply_bc(bcs, datamanager, time)
         end
         field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates[bc["Node Set"], :], time, dof)
     end
+    return datamanager
 end
 
 function clean_up(bc::String)
