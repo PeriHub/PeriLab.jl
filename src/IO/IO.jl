@@ -95,7 +95,7 @@ function get_results_mapping(params, datamanager)
     return mapping
 end
 
-function initialize_data(filename, datamanager, comm, to)
+function initialize_data(filename::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
 
     @timeit to "MPI init data" begin
         datamanager.set_rank(MPI.Comm_rank(comm))
@@ -143,7 +143,7 @@ function init_write_results(params::Dict, datamanager::Module, nsteps::Int64)
     return exos, outputs
 end
 
-function read_input_file(filename)
+function read_input_file(filename::String)
     return Read_Input_Deck.read_input_file(filename)
 end
 

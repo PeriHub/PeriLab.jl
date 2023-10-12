@@ -268,10 +268,11 @@ function set_dof(mesh)
     end
 end
 
-function load_and_evaluate_mesh(params, ranksize)
+function load_and_evaluate_mesh(params::Dict, ranksize::Int64)
 
     mesh = read_mesh(get_mesh_name(params))
-    dof = set_dof(mesh)
+
+    dof::Int64 = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params, dof)
     nlist = apply_bond_filters(nlist, mesh, params, dof)
     @info "Start distribution"

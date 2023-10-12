@@ -13,6 +13,7 @@ function read_input(filename::String)
 end
 
 function read_input_file(filename::String)
+    params = Dict{String,Any}()
     if occursin("yaml", filename)
         # println("Load  $filename")
         @info "Read input file $filename"
