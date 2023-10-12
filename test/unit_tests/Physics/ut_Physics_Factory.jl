@@ -48,7 +48,7 @@ end
     testDatamanager = Data_manager
     testDatamanager.set_dof(3)
     testDatamanager.set_nmasters(4)
-    testDatamanager.create_constant_node_field("Coordinates", Float32, 3)
+    testDatamanager.create_constant_node_field("Coordinates", Float64, 3)
     Physics.init_material_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
     @test "ForcesN" in fieldkeys
@@ -96,7 +96,7 @@ end
     nn[4] = 2
 
     active[:] .= true
-    testDatamanager.create_bond_field("Bond Damage", Float32, 1)
+    testDatamanager.create_bond_field("Bond Damage", Float64, 1)
     testDatamanager = Physics.init_additive_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
     @test "Active" in fieldkeys

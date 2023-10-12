@@ -77,7 +77,7 @@ dof = 2
 testDatamanager = Data_manager
 testDatamanager.set_nmasters(nnodes)
 testDatamanager.set_dof(dof)
-coordinates = testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
+coordinates = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
@@ -98,7 +98,7 @@ testDatamanager.set_nset("Nset_2", [5])
 
 nsets = testDatamanager.get_nsets()
 coords = vcat(transpose(coordinates))
-outputs = Dict("Forcesxx" => ["ForcesNP1", 1, 1, Float32], "Forcesxy" => ["ForcesNP1", 1, 2, Float32], "Forcesxz" => ["ForcesNP1", 1, 3, Float32], "Forcesyx" => ["ForcesNP1", 1, 4, Float32], "Forcesyy" => ["ForcesNP1", 1, 5, Float32], "Forcesyz" => ["ForcesNP1", 1, 6, Float32], "Displacements" => ["DisplacementsNP1", 2, 1, Float32])
+outputs = Dict("Forcesxx" => ["ForcesNP1", 1, 1, Float64], "Forcesxy" => ["ForcesNP1", 1, 2, Float64], "Forcesxz" => ["ForcesNP1", 1, 3, Float64], "Forcesyx" => ["ForcesNP1", 1, 4, Float64], "Forcesyy" => ["ForcesNP1", 1, 5, Float64], "Forcesyz" => ["ForcesNP1", 1, 6, Float64], "Displacements" => ["DisplacementsNP1", 2, 1, Float64])
 exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
 exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets)
 exos = []
@@ -132,8 +132,8 @@ exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 6, 6.7)
 end
 
 
-testDatamanager.create_node_field("Forces", Float32, 6)
-testDatamanager.create_node_field("Displacements", Float32, 1)
+testDatamanager.create_node_field("Forces", Float64, 6)
+testDatamanager.create_node_field("Displacements", Float64, 1)
 force = testDatamanager.get_field("Forces", "NP1")
 disp = testDatamanager.get_field("Displacements", "NP1")
 force[5, 1:6] .= 3.3

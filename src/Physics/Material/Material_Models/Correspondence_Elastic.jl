@@ -34,15 +34,15 @@ end
         - `datamanager::Data_manager`: Datamanager.
         - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
         - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-        - `time::Float32`: The current time.
-        - `dt::Float32`: The current time step.
+        - `time::Float64`: The current time.
+        - `dt::Float64`: The current time step.
    Returns:
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia
      ```
    """
-function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter, time::Float32, dt::Float32, strainInc, stressN, stressNP1)
+function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter, time::Float64, dt::Float64, strainInc, stressN, stressNP1)
 
   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 

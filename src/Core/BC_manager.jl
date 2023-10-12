@@ -47,7 +47,7 @@ function boundary_condition(params, datamanager)
     return bcs_out
 end
 
-function apply_bc(bcs::Dict, datamanager::Module, time::Float32)
+function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
     dof = datamanager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     coordinates = datamanager.get_field("Coordinates")
@@ -57,7 +57,9 @@ function apply_bc(bcs::Dict, datamanager::Module, time::Float32)
         if length(field_to_apply_bc) == 0
             field_to_apply_bc = datamanager.get_field(bc["Type"])
         end
+
         field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates[bc["Node Set"], :], time, dof)
+
     end
     return datamanager
 end
@@ -70,13 +72,13 @@ function clean_up(bc::String)
     return bc
 end
 """
-eval_bc(bc::Union{Float32,Float64,Int64,String}, coordinates::Matrix{Float32}, time::Float32, dof::Int64)
+eval_bc(bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
 Working with if-statements
   "if t>2 0 else 20 end"
   works for scalars. If you want to evaluate a vector, please use the Julia notation as input
   "ifelse.(x .> y, 10, 20)"
 """
-function eval_bc(bc::Union{Float32,Float64,Int64,String}, coordinates::Matrix{Float32}, time::Float32, dof::Int64)
+function eval_bc(bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
     # the yaml input allows multiple types. But for further use this input has to be a string
@@ -93,7 +95,8 @@ function eval_bc(bc::Union{Float32,Float64,Int64,String}, coordinates::Matrix{Fl
     else
         global z = zeros(typeof(x[1]), length(x))
     end
-    return zeros(Float32, length(x)) .+ eval(bc_value)
+
+    return zeros(Float64, length(x)) .+ eval(bc_value)
 end
 
 end

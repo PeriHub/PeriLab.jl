@@ -20,12 +20,12 @@ testDatamanager.set_nmasters(nnodes)
 testDatamanager.set_comm(comm)
 testDatamanager.set_dof(dof)
 testDatamanager.set_max_rank(1)
-testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
+testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
 coordinates = testDatamanager.get_field("Coordinates")
 testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
 block_Id = testDatamanager.get_field("Block_Id")
-testDatamanager.create_node_field("Displacements", Float32, 2)
-testDatamanager.create_node_field("Forces", Float32, 6)
+testDatamanager.create_node_field("Displacements", Float64, 2)
+testDatamanager.create_node_field("Forces", Float64, 6)
 params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1, "Output Variables" => Dict("Forces" => true)), "Output2" => Dict("Output Filename" => filename2, "Output Variables" => Dict("Displacements" => true, "Forces" => true))))
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
@@ -53,13 +53,13 @@ block_Id[end] = 2
                 @test output[i][entry][1] == "ForcesNP1"
                 @test output[i][entry][2] == i
                 @test output[i][entry][3] == dofForce
-                @test output[i][entry][4] == Float32
+                @test output[i][entry][4] == Float64
             else
                 dofDisp += 1
                 @test output[i][entry][1] == "DisplacementsNP1"
                 @test output[i][entry][2] == 1
                 @test output[i][entry][3] == dofDisp
-                @test output[i][entry][4] == Float32
+                @test output[i][entry][4] == Float64
             end
         end
     end
@@ -94,13 +94,13 @@ end
                 @test outputs[i][entry][1] == "ForcesNP1"
                 @test outputs[i][entry][2] == i
                 @test outputs[i][entry][3] == dofForce
-                @test outputs[i][entry][4] == Float32
+                @test outputs[i][entry][4] == Float64
             else
                 dofDisp += 1
                 @test outputs[i][entry][1] == "DisplacementsNP1"
                 @test outputs[i][entry][2] == 1
                 @test outputs[i][entry][3] == dofDisp
-                @test outputs[i][entry][4] == Float32
+                @test outputs[i][entry][4] == Float64
             end
         end
     end

@@ -60,13 +60,13 @@ nn[3] = 2
 nn[4] = 2
 nn[5] = 5
 
-testDatamanager.create_constant_node_field("A", Float32, 1)
+testDatamanager.create_constant_node_field("A", Float64, 1)
 B = testDatamanager.create_node_field("B", Bool, 1)
-testDatamanager.create_constant_node_field("C", Float32, 4)
+testDatamanager.create_constant_node_field("C", Float64, 4)
 testDatamanager.create_node_field("D", Int64, 7)
-testDatamanager.create_constant_bond_field("F", Float32, 1)
+testDatamanager.create_constant_bond_field("F", Float64, 1)
 testDatamanager.create_bond_field("G", Bool, 1)
-testDatamanager.create_constant_bond_field("H", Float32, 4)
+testDatamanager.create_constant_bond_field("H", Float64, 4)
 testDatamanager.create_bond_field("I", Int64, 7)
 testfield_keys = testDatamanager.get_all_field_keys()
 @testset "create data fields -> get all fields" begin
@@ -115,7 +115,7 @@ end
 @testset "get_field" begin
 
     A = testDatamanager.get_field("A")
-    @test typeof(A[1]) == Float32
+    @test typeof(A[1]) == Float64
     @test length(A) == testDatamanager.nnodes == nmaster + nslave
 
     B = testDatamanager.get_field("BN")
@@ -123,7 +123,7 @@ end
     @test length(B) == testDatamanager.nnodes == nmaster + nslave
 
     C = testDatamanager.get_field("C")
-    @test typeof(C[1, 1]) == Float32
+    @test typeof(C[1, 1]) == Float64
     @test length(C[:, 1]) == testDatamanager.nnodes == nmaster + nslave
     @test length(C[1, :]) == 4
 
@@ -133,7 +133,7 @@ end
     @test length(D[1, :]) == 7
 
     F = testDatamanager.get_field("F")
-    @test typeof(F[1, 1][1]) == Float32
+    @test typeof(F[1, 1][1]) == Float64
     @test length(F[:, 1]) == nmaster # bonds are only of length nmaster
     @test length(F[1]) == nn[1]
     @test length(F[2]) == nn[2]
@@ -143,7 +143,7 @@ end
     @test length(G[:, 1]) == nmaster
 
     H = testDatamanager.get_field("H")
-    @test typeof(H[1][1, 1][1]) == Float32
+    @test typeof(H[1][1, 1][1]) == Float64
     @test length(H[1][:, 1]) == nn[1]
     @test length(H[1][1, :]) == 4
     @test length(H[:][:, :]) == nmaster
@@ -165,24 +165,24 @@ end
     nn[3] = 2
     nn[4] = 2
     nn[5] = 5
-    test = testDatamanager.create_constant_node_field("test", Float32, 1)
+    test = testDatamanager.create_constant_node_field("test", Float64, 1)
     @test test == testDatamanager.get_field("test")
-    test = testDatamanager.create_constant_node_field("test2", Float32, 3)
+    test = testDatamanager.create_constant_node_field("test2", Float64, 3)
     @test test == testDatamanager.get_field("test2")
-    test1, test2 = testDatamanager.create_node_field("test3", Float32, 1)
+    test1, test2 = testDatamanager.create_node_field("test3", Float64, 1)
     @test test1 == testDatamanager.get_field("test3N")
     @test test2 == testDatamanager.get_field("test3NP1")
-    test1, test2 = testDatamanager.create_node_field("test4", Float32, 3)
+    test1, test2 = testDatamanager.create_node_field("test4", Float64, 3)
     @test test1 == testDatamanager.get_field("test4N")
     @test test2 == testDatamanager.get_field("test4", "NP1")
-    test = testDatamanager.create_constant_bond_field("test5", Float32, 1)
+    test = testDatamanager.create_constant_bond_field("test5", Float64, 1)
     @test test == testDatamanager.get_field("test5")
-    test = testDatamanager.create_constant_bond_field("test6", Float32, 3)
+    test = testDatamanager.create_constant_bond_field("test6", Float64, 3)
     @test test == testDatamanager.get_field("test6")
-    test1, test2 = testDatamanager.create_bond_field("test7", Float32, 1)
+    test1, test2 = testDatamanager.create_bond_field("test7", Float64, 1)
     @test test1 == testDatamanager.get_field("test7", "N")
     @test test2 == testDatamanager.get_field("test7", "NP1")
-    test1, test2 = testDatamanager.create_bond_field("test8", Float32, 3)
+    test1, test2 = testDatamanager.create_bond_field("test8", Float64, 3)
     @test test1 == testDatamanager.get_field("test8", "N")
     @test test2 == testDatamanager.get_field("test8", "NP1")
 
@@ -190,22 +190,22 @@ end
 
 @testset "Matrix" begin
     #Arrays
-    test = testDatamanager.create_constant_node_field("test9", Float32, "Matrix", 2)
+    test = testDatamanager.create_constant_node_field("test9", Float64, "Matrix", 2)
     test[1, 1, 1] = 1.2
     test[1, 2, 1] = -1.2
     test[1, 1, 2] = 1.4
     test[1, 2, 2] = 1.2
     @test test == testDatamanager.get_field("test9")
-    test = testDatamanager.create_constant_bond_field("test10", Float32, "Matrix", 3)
+    test = testDatamanager.create_constant_bond_field("test10", Float64, "Matrix", 3)
     test[1][1, 1, 1] = 1.2
     test[2][1, 2, 1] = -1.2
     test[2][1, 1, 3] = 1.4
     test[2][1, 2, 2] = 1.2
     @test test == testDatamanager.get_field("test10")
-    test1, test2 = testDatamanager.create_bond_field("test11", Float32, "Matrix", 6)
+    test1, test2 = testDatamanager.create_bond_field("test11", Float64, "Matrix", 6)
     @test test1 == testDatamanager.get_field("test11", "N")
     @test test2 == testDatamanager.get_field("test11", "NP1")
-    test1, test2 = testDatamanager.create_node_field("test12", Float32, "Matrix", 3)
+    test1, test2 = testDatamanager.create_node_field("test12", Float64, "Matrix", 3)
     @test test1 == testDatamanager.get_field("test12", "N")
     @test test2 == testDatamanager.get_field("test12", "NP1")
 end
@@ -231,10 +231,10 @@ DNP1 = testDatamanager.get_field("DNP1")
 
 IN = testDatamanager.get_field("IN")
 INP1 = testDatamanager.get_field("INP1")
-bd = testDatamanager.create_bond_field("Bond Damage", Float32, 1)
+bd = testDatamanager.create_bond_field("Bond Damage", Float64, 1)
 @testset "switch_NP1_to_N" begin
-    bmatrixN, bmatrixNP1 = testDatamanager.create_bond_field("Bmat", Float32, "Matrix", 2)
-    nmatrixN, nmatrixNP1 = testDatamanager.create_node_field("Nmat", Float32, "Matrix", 2)
+    bmatrixN, bmatrixNP1 = testDatamanager.create_bond_field("Bmat", Float64, "Matrix", 2)
+    nmatrixN, nmatrixNP1 = testDatamanager.create_node_field("Nmat", Float64, "Matrix", 2)
     IN[2][1, 3] = 0
 
     DNP1[2, 3] = 5

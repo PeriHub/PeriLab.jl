@@ -32,8 +32,8 @@ function init(params, datamanager)
     nslaves = datamanager.get_nslaves()
     allBlockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes + nslaves)
     blockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes)
-    density = datamanager.create_constant_node_field("Density", Float32, 1)
-    horizon = datamanager.create_constant_node_field("Horizon", Float32, 1)
+    density = datamanager.create_constant_node_field("Density", Float64, 1)
+    horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
     active = datamanager.create_constant_node_field("Active", Bool, 1)
     active .= true
     update_list = datamanager.create_constant_node_field("Update List", Bool, 1)
@@ -42,8 +42,8 @@ function init(params, datamanager)
     horizon = set_horizon(params, allBlockNodes, horizon) # includes the neighbors
     solver_options = get_solver_options(params)
 
-    omega = datamanager.create_constant_bond_field("Influence Function", Float32, 1)
-    bondDamageN, bondDamageNP1 = datamanager.create_bond_field("Bond Damage", Float32, 1)
+    omega = datamanager.create_constant_bond_field("Influence Function", Float64, 1)
+    bondDamageN, bondDamageNP1 = datamanager.create_bond_field("Bond Damage", Float64, 1)
     omega[:], bondDamageN, bondDamageNP1 = init_bondDamage_and_influence_function(omega, bondDamageN, bondDamageNP1)
 
     if solver_options["Material Models"]

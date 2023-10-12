@@ -91,8 +91,8 @@ if ncores == 3
         testDatamanager.set_nslaves(2)
     end
     testDatamanager.set_dof(2)
-    A = testDatamanager.create_constant_node_field("A", Float32, 1)
-    B = testDatamanager.create_constant_node_field("B", Float32, 4)
+    A = testDatamanager.create_constant_node_field("A", Float64, 1)
+    B = testDatamanager.create_constant_node_field("B", Float64, 4)
     C = testDatamanager.create_constant_node_field("C", Int64, 1)
     D = testDatamanager.create_constant_node_field("D", Int64, 5)
     E = testDatamanager.create_constant_node_field("E", Bool, 1)
@@ -147,10 +147,10 @@ if ncores == 3
 
     if rank == 0
         @testset "synch_slaves_to_master_rank_0" begin
-            @test A[1] == Float32(-2.3 + 1.4)
+            @test A[1] == Float64(-2.3 + 1.4)
             @test A[2] == 3
             @test A[3] == 5
-            @test B[1, 4] == Float32(13.4)
+            @test B[1, 4] == Float64(13.4)
             @test B[3, 2] == -5
             @test C[1] == 3
             @test C[2] == 2
@@ -165,11 +165,11 @@ if ncores == 3
     if rank == 1
         @testset "synch_slaves_to_master_rank_1" begin
             @test A[1] == 3 + 1
-            @test A[2] == Float32(88 + 5 + 1.1)
-            @test A[3] == Float32(1.6)
-            @test B[1, 2] == Float32(10)
-            @test B[1, 4] == Float32(10.4)
-            @test B[2, 2] == Float32(-5)
+            @test A[2] == Float64(88 + 5 + 1.1)
+            @test A[3] == Float64(1.6)
+            @test B[1, 2] == Float64(10)
+            @test B[1, 4] == Float64(10.4)
+            @test B[2, 2] == Float64(-5)
             @test C[1] == 3
             @test C[2] == 8
             @test C[3] == 3
@@ -181,15 +181,15 @@ if ncores == 3
     end
     if rank == 2
         @testset "synch_slaves_to_master_rank_3" begin
-            @test A[1] == Float32(1.6)
-            @test A[2] == Float32(-2.3)
-            @test A[3] == Float32(1.1)
-            @test B[1, 1] == Float32(0.0)
-            @test B[1, 2] == Float32(0.0)
-            @test B[1, 3] == Float32(0.0)
-            @test B[1, 4] == Float32(0.0)
-            @test B[2, 3] == Float32(0.0)
-            @test B[2, 4] == Float32(3.0)
+            @test A[1] == Float64(1.6)
+            @test A[2] == Float64(-2.3)
+            @test A[3] == Float64(1.1)
+            @test B[1, 1] == Float64(0.0)
+            @test B[1, 2] == Float64(0.0)
+            @test B[1, 3] == Float64(0.0)
+            @test B[1, 4] == Float64(0.0)
+            @test B[2, 3] == Float64(0.0)
+            @test B[2, 4] == Float64(3.0)
 
             @test C[1] == 4
             @test C[2] == 2
@@ -212,13 +212,13 @@ if ncores == 3
     E[:] = synch_master_to_slaves(comm, overlap_map, E, 1)
     if rank == 0
         @testset "synch_master_to_slaves_rank_0" begin
-            @test A[1] == Float32(-0.9)
-            @test A[2] == Float32(4)
-            @test A[3] == Float32(94.1)
-            @test B[1, 4] == Float32(13.4)
-            @test B[2, 2] == Float32(10)
-            @test B[2, 4] == Float32(10.4)
-            @test B[3, 2] == Float32(-5.0)
+            @test A[1] == Float64(-0.9)
+            @test A[2] == Float64(4)
+            @test A[3] == Float64(94.1)
+            @test B[1, 4] == Float64(13.4)
+            @test B[2, 2] == Float64(10)
+            @test B[2, 4] == Float64(10.4)
+            @test B[3, 2] == Float64(-5.0)
             @test C[1] == 3
             @test C[2] == 3
             @test C[3] == 8
@@ -232,12 +232,12 @@ if ncores == 3
     end
     if rank == 1
         @testset "synch_master_to_slaves_rank_1" begin
-            @test A[1] == Float32(4.0)
-            @test A[2] == Float32(94.1)
-            @test A[3] == Float32(1.6)
-            @test B[1, 2] == Float32(10)
-            @test B[1, 4] == Float32(10.4)
-            @test B[2, 2] == Float32(-5)
+            @test A[1] == Float64(4.0)
+            @test A[2] == Float64(94.1)
+            @test A[3] == Float64(1.6)
+            @test B[1, 2] == Float64(10)
+            @test B[1, 4] == Float64(10.4)
+            @test B[2, 2] == Float64(-5)
             @test C[1] == 3
             @test C[2] == 8
             @test C[3] == 4
@@ -252,16 +252,16 @@ if ncores == 3
     end
     if rank == 2
         @testset "synch_master_to_slaves_rank_3" begin
-            @test A[1] == Float32(1.6)
-            @test A[2] == Float32(-0.9)
-            @test A[3] == Float32(94.1)
-            @test B[1, 1] == Float32(0.0)
-            @test B[1, 2] == Float32(0.0)
-            @test B[1, 3] == Float32(0.0)
-            @test B[1, 4] == Float32(0.0)
-            @test B[2, 3] == Float32(0.0)
-            @test B[2, 4] == Float32(13.4)
-            @test B[3, 2] == Float32(-5.0)
+            @test A[1] == Float64(1.6)
+            @test A[2] == Float64(-0.9)
+            @test A[3] == Float64(94.1)
+            @test B[1, 1] == Float64(0.0)
+            @test B[1, 2] == Float64(0.0)
+            @test B[1, 3] == Float64(0.0)
+            @test B[1, 4] == Float64(0.0)
+            @test B[2, 3] == Float64(0.0)
+            @test B[2, 4] == Float64(13.4)
+            @test B[3, 2] == Float64(-5.0)
             @test C[1] == 4
             @test C[2] == 3
             @test C[3] == 8

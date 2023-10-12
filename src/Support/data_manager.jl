@@ -46,7 +46,7 @@ dof = 1
 block_list = Int64[]
 properties = Dict{Int64,Dict{String,Any}}()
 glob_to_loc = Dict{Int64,Int64}()
-fields = Dict(Int64 => Dict{String,Any}(), Float32 => Dict{String,Any}(), Bool => Dict{String,Any}())
+fields = Dict(Int64 => Dict{String,Any}(), Float64 => Dict{String,Any}(), Bool => Dict{String,Any}())
 field_array_type = Dict{String,Dict{String,Any}}()
 field_names = Dict{String,DataType}()
 fields_to_synch = Dict{String,Any}()

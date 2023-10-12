@@ -8,13 +8,13 @@ include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 using .Boundary_conditions
 @testset "ut_evaluation" begin
-    unit = ones(Float32, 3)
+    unit = ones(Float64, 3)
     dof = 2
     time = 2
     coor = zeros(3, 3)
     bc = Int64(10)
     @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
-    bc = Float32(10)
+    bc = Float64(10)
     @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
     bc = Float64(10)
     @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
@@ -72,9 +72,9 @@ end
     testDatamanager = Data_manager
     testDatamanager.set_nmasters(10)
 
-    testDatamanager.create_constant_node_field("Coordinates", Float32, 3)
-    testDatamanager.create_constant_node_field("Forces", Float32, 3)
-    testDatamanager.create_node_field("Displacements", Float32, 3)
+    testDatamanager.create_constant_node_field("Coordinates", Float64, 3)
+    testDatamanager.create_constant_node_field("Forces", Float64, 3)
+    testDatamanager.create_node_field("Displacements", Float64, 3)
     testDatamanager.set_dof(2)
 
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "5")))
@@ -110,9 +110,9 @@ end
     testDatamanager = Data_manager
 
     testDatamanager.set_dof(3)
-    testDatamanager.create_constant_node_field("Coordinates", Float32, 3)
-    testDatamanager.create_constant_node_field("Forces", Float32, 3)
-    testDatamanager.create_node_field("Displacements", Float32, 3)
+    testDatamanager.create_constant_node_field("Coordinates", Float64, 3)
+    testDatamanager.create_constant_node_field("Forces", Float64, 3)
+    testDatamanager.create_node_field("Displacements", Float64, 3)
 
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "5")))
 

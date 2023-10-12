@@ -126,8 +126,8 @@ function get_bond_geometry(datamanager::Module)
     nnodes = datamanager.get_nnodes()
     nlist = datamanager.get_field("Neighborhoodlist")
     coor = datamanager.get_field("Coordinates")
-    bondgeom = datamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
-    bondDamage = datamanager.create_constant_bond_field("Bond Damage", Float32, 1)
+    bondgeom = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
+    bondDamage = datamanager.create_constant_bond_field("Bond Damage", Float64, 1)
     bondgeom = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bondgeom)
     return datamanager
 end
@@ -154,8 +154,8 @@ function distribution_to_cores(comm, datamanager::Module, mesh, distribution, do
         for (localDof, meshID) in enumerate(meshdata[fieldname]["Mesh ID"])
             if rank == 0
                 send_msg = meshdata[fieldname]["Type"].(mesh[!, meshID])
-                # example send_msg = Float32.(mesh[!, names(mesh)[idof]])
-                # redefine from Float64 standard to Float32 for MPI
+                # example send_msg = Float64.(mesh[!, names(mesh)[idof]])
+                # redefine from Float64 standard to Float64 for MPI
             else
                 send_msg = 0
             end
@@ -234,7 +234,7 @@ function check_mesh_elements(mesh, dof)
                                  for mid in meshID))
         end
         if vartype == Float64
-            vartype = Float32
+            vartype = Float64
         end
         meshInfoDict[name] = Dict{String,Any}("Mesh ID" => meshID, "Type" => vartype)
     end
@@ -535,9 +535,7 @@ function apply_bond_filters(nlist, mesh, params, dof)
         for i in 1:dof
             data[i, :] = values(mesh[!, coor[i]])
         end
-        # balltree = BallTree(data)
 
-        # println(bond_filters)
         for (name, filter) in bond_filters[2]
 
             if filter["Type"] == "Disk"

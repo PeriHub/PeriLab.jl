@@ -81,10 +81,10 @@ dof = 3
 nlist = [[2, 3], [1, 3], [1, 2]]
 volume = [0.1, 0.2, 0.3]
 omega = [0.5, 0.4, 0.6]
-bondDamage = zeros(Float32, length(nodes), length(nlist[1]))
-bondGeometry = rand(Float32, length(nodes), length(nlist[1]), dof)
-shapeTensor = zeros(Float32, length(nodes), dof, dof)
-invShapeTensor = zeros(Float32, length(nodes), dof, dof)
+bondDamage = zeros(Float64, length(nodes), length(nlist[1]))
+bondGeometry = rand(Float64, length(nodes), length(nlist[1]), dof)
+shapeTensor = zeros(Float64, length(nodes), dof, dof)
+invShapeTensor = zeros(Float64, length(nodes), dof, dof)
 
 shape_tensor(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, shapeTensor, invShapeTensor)
 """
@@ -92,7 +92,7 @@ shape_tensor(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, shapeTe
 function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bondDamage, bondGeometry, shapeTensor, invShapeTensor)
 
     for iID in nodes
-        shapeTensor[iID, :, :] = zeros(Float32, dof, dof)
+        shapeTensor[iID, :, :] = zeros(Float64, dof, dof)
         for i in 1:dof
             for j in 1:dof
                 shapeTensor[iID, i, j] = sum(bondDamage[iID][:] .* bondGeometry[iID][:, i] .* bondGeometry[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
@@ -141,18 +141,18 @@ dof = 3
 nlist = [[2, 3], [1, 3], [1, 2]]
 volume = [0.1, 0.2, 0.3]
 omega = [0.5, 0.4, 0.6]
-bondDamage = zeros(Float32, length(nodes), length(nlist[1]))
-bondGeometry = rand(Float32, length(nodes), length(nlist[1]), dof)
-deformed_bond = rand(Float32, length(nodes), length(nlist[1]), dof)
-invShapeTensor = rand(Float32, length(nodes), dof, dof)
-defGrad = zeros(Float32, length(nodes), dof, dof)
+bondDamage = zeros(Float64, length(nodes), length(nlist[1]))
+bondGeometry = rand(Float64, length(nodes), length(nlist[1]), dof)
+deformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
+invShapeTensor = rand(Float64, length(nodes), dof, dof)
+defGrad = zeros(Float64, length(nodes), dof, dof)
 
 deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, deformed_bond, invShapeTensor, defGrad)
 """
 
-function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bondDamage, deformed_bond::Union{SubArray,Vector{Matrix{Float32}}}, bondGeometry, invShapeTensor, defGrad)
+function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bondDamage, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, bondGeometry, invShapeTensor, defGrad)
     for iID in nodes
-        defGrad[iID, :, :] = zeros(Float32, dof, dof)
+        defGrad[iID, :, :] = zeros(Float64, dof, dof)
         for i in 1:dof
             for j in 1:dof
                 defGrad[iID, i, j] = sum(bondDamage[iID][:] .* deformed_bond[iID][:, i] .* bondGeometry[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
@@ -191,12 +191,12 @@ function strain(nodes::Union{SubArray,Vector{Int64}}, defGrad, strain)
 end
 
 """
-    function rotation_tensor(angles::Vector{Float32})
+    function rotation_tensor(angles::Vector{Float64})
 
 Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package.
 
 ## Arguments
--  `angles::Vector{Float32}`: Vector of angles definede in degrees of length one or three
+-  `angles::Vector{Float64}`: Vector of angles definede in degrees of length one or three
 
 
 ## Returns
@@ -205,7 +205,7 @@ Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package
 
 """
 
-function rotation_tensor(angles::Vector{Float32})
+function rotation_tensor(angles::Vector{Float64})
     if length(angles) == 3
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end

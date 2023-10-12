@@ -27,7 +27,7 @@ export init_thermal_model_fields
 function init_models(datamanager)
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
-function compute_models(datamanager::Module, nodes, block::Int64, dt::Float32, time::Float32, options, to)
+function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, time::Float64, options, to)
 
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
     if options["Additive Models"]
@@ -86,16 +86,16 @@ end
 
 function init_material_model_fields(datamanager)
     dof = datamanager.get_dof()
-    datamanager.create_node_field("Forces", Float32, dof) #-> only if it is an output
+    datamanager.create_node_field("Forces", Float64, dof) #-> only if it is an output
     # tbd later in the compute class
-    datamanager.create_node_field("Forces", Float32, dof)
-    datamanager.create_node_field("Force Densities", Float32, dof)
-    defCoorN, defCoorNP1 = datamanager.create_node_field("Deformed Coordinates", Float32, dof)
+    datamanager.create_node_field("Forces", Float64, dof)
+    datamanager.create_node_field("Force Densities", Float64, dof)
+    defCoorN, defCoorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
     defCoorN[:] = copy(datamanager.get_field("Coordinates"))
     defCoorNP1[:] = copy(datamanager.get_field("Coordinates"))
-    datamanager.create_node_field("Displacements", Float32, dof)
-    datamanager.create_constant_node_field("Acceleration", Float32, dof)
-    datamanager.create_node_field("Velocity", Float32, dof)
+    datamanager.create_node_field("Displacements", Float64, dof)
+    datamanager.create_constant_node_field("Acceleration", Float64, dof)
+    datamanager.create_node_field("Velocity", Float64, dof)
     datamanager.set_synch("Force Densities", true, false)
     datamanager.set_synch("Velocity", false, true)
     datamanager.set_synch("Displacements", false, true)
@@ -105,14 +105,14 @@ function init_material_model_fields(datamanager)
 end
 
 function init_damage_model_fields(datamanager)
-    datamanager.create_node_field("Damage", Float32, 1)
+    datamanager.create_node_field("Damage", Float64, 1)
     return datamanager
 end
 
 function init_thermal_model_fields(datamanager)
     dof = datamanager.get_dof()
-    datamanager.create_node_field("Temperature", Float32, 1)
-    datamanager.create_node_field("Heat Flow", Float32, dof)
+    datamanager.create_node_field("Temperature", Float64, 1)
+    datamanager.create_node_field("Heat Flow", Float64, dof)
     return datamanager
 end
 
@@ -121,7 +121,7 @@ function init_additive_model_fields(datamanager)
         @error "'Activation Time' is missing. Please define an 'Activation Time' for each point in the mesh file."
     end
 
-    datamanager.create_node_field("Temperature Flux", Float32, 1)
+    datamanager.create_node_field("Temperature Flux", Float64, 1)
     active = datamanager.get_field("Active")
     bond_damageN = datamanager.get_field("Bond Damage", "N")
     bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")

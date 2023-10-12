@@ -12,7 +12,7 @@ Set_modules.include_files(module_list)
 
 export compute_forces
 
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float32, dt::Float32)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
     specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")
     datamanager = Set_modules.create_module_specifics(model_param["Material Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
     if isnothing(datamanager)
@@ -29,7 +29,7 @@ function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,V
     bond_force = datamanager.get_field("Bond Forces")
     force_densities = datamanager.get_field("Force Densities", "NP1")
     volume = datamanager.get_field("Volume")
-    force_densities[:] = distribute_forces(nodes, nlist, bond_force, volume, force_densities)
+    force_densities = distribute_forces(nodes, nlist, bond_force, volume, force_densities)
     return datamanager
 end
 

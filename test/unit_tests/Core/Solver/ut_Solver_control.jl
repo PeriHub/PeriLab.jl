@@ -46,10 +46,10 @@ end
     id[:] = [1, 1, 2, 2, 1]
     testDatamanager.set_block_list(id)
 
-    horizon = testDatamanager.create_constant_node_field("Horizon", Float32, 1)
-    coor = testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
-    density = testDatamanager.create_constant_node_field("Density", Float32, 1)
-    volume = testDatamanager.create_constant_node_field("Volume", Float32, 1)
+    horizon = testDatamanager.create_constant_node_field("Horizon", Float64, 1)
+    coor = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
+    density = testDatamanager.create_constant_node_field("Density", Float64, 1)
+    volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
 
     testDatamanager.set_nset("Nset_1", [2])
     testDatamanager.set_nset("Nset_2", [2, 3, 4])
@@ -57,7 +57,7 @@ end
     testDatamanager.set_glob_to_loc([1, 2, 3, 4, 5])
 
     nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float32, 3)
+    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, 3)
     nlist[1] = [2, 3, 4, 5]
     nlist[2] = [1, 3, 4, 5]
     nlist[3] = [1, 2, 4, 5]

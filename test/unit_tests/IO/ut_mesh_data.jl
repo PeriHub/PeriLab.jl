@@ -27,7 +27,7 @@ using DataFrames
     @test haskey(meshInfoDict, "Volume")
     @test haskey(meshInfoDict, "active")
     @test meshInfoDict["Coordinates"]["Mesh ID"] == ["x", "y"]
-    @test meshInfoDict["Coordinates"]["Type"] == Float32
+    @test meshInfoDict["Coordinates"]["Type"] == Float64
     @test meshInfoDict["Block_Id"]["Mesh ID"] == ["block_id"]
     @test meshInfoDict["Block_Id"]["Type"] == Int64
     @test meshInfoDict["Volume"]["Mesh ID"] == ["volume"]
@@ -53,11 +53,11 @@ using DataFrames
     @test meshInfoDict["Block_Id"]["Mesh ID"] == ["block_id"]
     @test meshInfoDict["Block_Id"]["Type"] == Int64
     @test meshInfoDict["Volume"]["Mesh ID"] == ["volume"]
-    @test meshInfoDict["Volume"]["Type"] == Float32
+    @test meshInfoDict["Volume"]["Type"] == Float64
     @test meshInfoDict["active"]["Mesh ID"] == ["activex", "activey", "activez"]
     @test meshInfoDict["active"]["Type"] == Bool
     @test meshInfoDict["field"]["Mesh ID"] == ["field"]
-    @test meshInfoDict["field"]["Type"] == Float32
+    @test meshInfoDict["field"]["Type"] == Float64
 
 end
 @testset "ut__init_overlap_map_" begin
@@ -219,7 +219,7 @@ end
     nlist[1] = [2, 3]
     nlist[2] = [1, 3]
     nlist[3] = [1, 2]
-    coor = testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
+    coor = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
     coor[1, 1] = 0
     coor[1, 2] = 0
     coor[2, 1] = 1

@@ -46,7 +46,7 @@ end
 function get_cs_denominator(volume, bondgeometry)
     return sum(volume ./ bondgeometry)
 end
-function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulkModulus::Float32)
+function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulkModulus::Float64)
     #https://www.osti.gov/servlets/purl/1140383
     # based on bond-based approximation
     criticalTimeStep = 1.0e50
@@ -153,11 +153,11 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
     a = datamanager.get_field("Acceleration")
     active = datamanager.get_field("Active")
     update_list = datamanager.get_field("Update List")
-    dt::Float32 = solver_options["dt"]
+    dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
-    start_time::Float32 = solver_options["Initial Time"]
-    step_time::Float32 = 0
-    for idt in progress_bar(datamanager.get_rank(), nsteps, silent)
+    start_time::Float64 = solver_options["Initial Time"]
+    step_time::Float64 = 0
+    for idt in 1:nsteps#progress_bar(datamanager.get_rank(), nsteps, silent)
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
 
@@ -165,13 +165,18 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
             uNP1[find_active(active[1:nnodes]), :] = uN[find_active(active[1:nnodes]), :] + dt .* vNP1[find_active(active[1:nnodes]), :]
 
-            @timeit to "apply_bc" Boundary_conditions.apply_bc(bcs, datamanager, step_time)
+            @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
+
             defCoorNP1[find_active(active[1:nnodes]), :] = coor[find_active(active[1:nnodes]), :] + uNP1[find_active(active[1:nnodes]), :]
+
             synchronise(comm, datamanager, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
-                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, step_time, solver_options, to)
+                bn = blockNodes[block]
+                active_nodes = bn[find_active(active[bn])]
+                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, active_nodes, block, dt, step_time, solver_options, to)
             end
+
             synchronise(comm, datamanager, "download_from_cores")
             # synch
 

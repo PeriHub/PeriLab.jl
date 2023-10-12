@@ -42,15 +42,15 @@ end
         - `datamanager::Data_manager`: Datamanager.
         - `nodes::Union{SubArray, Vector{Int64}}`: List of block nodes.
         - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-        - `time::Float32`: The current time.
-        - `dt::Float32`: The current time step.
+        - `time::Float64`: The current time.
+        - `dt::Float64`: The current time step.
    Returns:
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia
      ```
    """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float32, dt::Float32)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
   rotation::Bool = false
   if "Angles" in datamanager.get_all_field_keys()
     rotation = true
@@ -62,14 +62,14 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
   defGrad = datamanager.get_field("Deformation Gradient")
 
-  bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, dof)
+  bond_force = datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
 
   bondGeom = datamanager.get_field("Bond Geometry")
   invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
 
-  strainN, strainNP1 = datamanager.create_node_field("Strain", Float32, "Matrix", dof)
-  stressN, stressNP1 = datamanager.create_node_field("Cauchy Stress", Float32, "Matrix", dof)
+  strainN, strainNP1 = datamanager.create_node_field("Strain", Float64, "Matrix", dof)
+  stressN, stressNP1 = datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
   strainNP1 = Geometry.strain(nodes, defGrad, strainNP1)
   strainInc = strainNP1 - strainN
 
@@ -94,7 +94,7 @@ end
 """
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 """
-function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter, time::Float32, dt::Float32)
+function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter, time::Float64, dt::Float64)
   if !haskey(material_parameter, "Zero Energy Mode Control")
     return datamanager
   end

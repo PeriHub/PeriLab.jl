@@ -87,12 +87,12 @@ end
 @testset "ut_get_outputs" begin
     testDatamanager = Data_manager
     testDatamanager.set_nmasters(5)
-    testDatamanager.create_constant_node_field("A", Float32, 1)
+    testDatamanager.create_constant_node_field("A", Float64, 1)
     testDatamanager.create_node_field("B", Bool, 1)
-    testDatamanager.create_constant_node_field("C", Float32, 4)
+    testDatamanager.create_constant_node_field("C", Float64, 4)
     testDatamanager.create_node_field("D", Int64, 7)
-    testDatamanager.create_node_field("F", Float32, 1)
-    testDatamanager.create_constant_node_field("E", Float32, 4)
+    testDatamanager.create_node_field("F", Float64, 1)
+    testDatamanager.create_constant_node_field("E", Float64, 4)
     testfield_keys = testDatamanager.get_all_field_keys()
 
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))

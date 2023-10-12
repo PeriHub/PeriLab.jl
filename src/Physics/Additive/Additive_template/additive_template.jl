@@ -33,15 +33,15 @@ end
         - `datamanager::Data_manager`: Datamanager.
         - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
         - `additive parameter::Dict(String, Any)`: Dictionary with additive parameter.
-        - `time::Float32`: The current time.
-        - `dt::Float32`: The current time step.
+        - `time::Float64`: The current time.
+        - `dt::Float64`: The current time step.
    Returns:
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia
      ```
    """
-function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float32, dt::Float32)
+function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float64, dt::Float64)
   @info "Please write a additive name in additive_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, additive_parameter, time, dt) function."

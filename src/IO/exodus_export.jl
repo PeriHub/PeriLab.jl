@@ -60,13 +60,13 @@ function get_block_nodes(block_Id, block)
     return reshape(conn, 1, length(conn))
 end
 
-function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,Vector{Any}}, coords::Union{Matrix{Int64},Matrix{Float32}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
+function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,Vector{Any}}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
     info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
 
     write_info(exo, info)
 
-    # check if type of coords is int or float32
-    if typeof(coords) in [Matrix{Int64}, Matrix{Float32}]
+    # check if type of coords is int or Float64
+    if typeof(coords) in [Matrix{Int64}, Matrix{Float64}]
         coords = convert(Matrix{Float64}, coords)
     end
 

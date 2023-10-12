@@ -6,10 +6,10 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
     if parameter == Dict()
         return parameter
     end
-    K::Float32 = 0
-    E::Float32 = 0
-    nu::Float32 = 0
-    G::Float32 = 0
+    K::Float64 = 0
+    E::Float64 = 0
+    nu::Float64 = 0
+    G::Float64 = 0
     bulk = false
     Youngs = false
     shear = false
@@ -71,7 +71,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
     if occursin("isotropic", symmetry)
-        matrix = zeros(Float32, 2 * dof, 2 * dof)
+        matrix = zeros(Float64, 2 * dof, 2 * dof)
         nu = parameter["Poisson's Ratio"]
         E = parameter["Young's Modulus"]
         G = parameter["Shear Modulus"]
@@ -92,7 +92,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[6, 6] = G
             return matrix
         elseif occursin("plane strain", symmetry)
-            matrix = zeros(Float32, dof + 1, dof + 1)
+            matrix = zeros(Float64, dof + 1, dof + 1)
             matrix[1, 1] = (1 - nu) * temp
             matrix[2, 2] = (1 - nu) * temp
             matrix[3, 3] = G
@@ -100,7 +100,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[2, 1] = nu * temp
             return matrix
         elseif occursin("plane stress", symmetry)
-            matrix = zeros(Float32, dof + 1, dof + 1)
+            matrix = zeros(Float64, dof + 1, dof + 1)
             matrix[1, 1] = E / (1 - nu * nu)
             matrix[1, 2] = E * nu / (1 - nu * nu)
             matrix[2, 1] = E * nu / (1 - nu * nu)
@@ -111,7 +111,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             @error "2D model defintion is missing; plain stress or plain strain "
         end
         if occursin("anisotropic", symmetry)
-            anisoMatrix = zeros(Float32, 6, 6)
+            anisoMatrix = zeros(Float64, 6, 6)
             for iID in 1:6
                 for jID in iID:6
                     if "C" * string(iID) * string(jID) in keys(parameter)
@@ -126,14 +126,14 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             if dof == 3
                 return anisoMatrix
             elseif occursin("plane strain", symmetry)
-                matrix = zeros(Float32, dof + 1, dof + 1)
+                matrix = zeros(Float64, dof + 1, dof + 1)
                 matrix[1:2, 1:2] = anisoMatrix[1:2, 1:2]
                 matrix[3, 1:2] = anisoMatrix[6, 1:2]
                 matrix[1:2, 3] = anisoMatrix[1:2, 6]
                 matrix[3, 3] = anisoMatrix[6, 6]
                 return matrix
             elseif occursin("plane stress", symmetry)
-                matrix = zeros(Float32, dof + 1, dof + 1)
+                matrix = zeros(Float64, dof + 1, dof + 1)
                 invAniso = inv(anisoMatrix)
                 matrix[1:2, 1:2] = invAniso[1:2, 1:2]
                 matrix[3, 1:2] = invAniso[6, 1:2]
@@ -146,7 +146,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
         end
     else
 
-        matrix = zeros(Float32, dof + 1, dof + 1)
+        matrix = zeros(Float64, dof + 1, dof + 1)
         if haskey(parameter, "Poisson's Ratio") && haskey(parameter, "Young's Modulus")
             @warn "material model defintion is missing; assuming isotropic plain stress "
             nu = parameter["Poisson's Ratio"]

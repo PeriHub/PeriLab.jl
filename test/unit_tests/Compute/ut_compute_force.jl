@@ -9,10 +9,10 @@ include("../../../src/Compute/compute_forces.jl")
     testDatamanager = Data_manager
     testDatamanager.set_nmasters(5)
 
-    testDatamanager.create_node_field("Forces", Float32, 3)
+    testDatamanager.create_node_field("Forces", Float64, 3)
 
-    fdN, fdNP1 = testDatamanager.create_node_field("Force Densities", Float32, 3)
-    volume = testDatamanager.create_constant_node_field("Volume", Float32, 1)
+    fdN, fdNP1 = testDatamanager.create_node_field("Force Densities", Float64, 3)
+    volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
 
     volume[1:5] = 1:5
     fdNP1 = rand(5, 3)

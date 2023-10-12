@@ -33,15 +33,15 @@ end
         - `datamanager::Data_manager`: Datamanager.
         - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
         - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
-        - `time::Float32`: The current time.
-        - `dt::Float32`: The current time step.
+        - `time::Float64`: The current time.
+        - `dt::Float64`: The current time step.
    Returns:
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia
      ```
    """
-function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float32, dt::Float32)
+function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float64, dt::Float64)
   @info "Please write a damage model name in damage_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, damage_parameter, time, dt) function."

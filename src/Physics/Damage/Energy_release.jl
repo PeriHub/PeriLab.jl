@@ -33,15 +33,15 @@ end
         - `datamanager::Data_manager`: Datamanager.
         - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
         - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
-        - `time::Float32`: The current time.
-        - `dt::Float32`: The current time step.
+        - `time::Float64`: The current time.
+        - `dt::Float64`: The current time step.
    Returns:
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia
      ```
    """
-function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float32, dt::Float32)
+function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float64, dt::Float64)
   # synch of bond force missing
   dof::Int64 = datamanager.get_dof()
   update_list = datamanager.get_field("Update List")
@@ -59,7 +59,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     tension = damage_parameter["Only Tension"]
   end
   nneighbors = datamanager.get_field("Number of Neighbors")
-  bond_energy::Float32 = 0.0
+  bond_energy::Float64 = 0.0
 
   for iID in nodes
     update_list[iID] = false
@@ -98,11 +98,11 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   return datamanager
 end
 
-function get_quad_horizon(horizon::Float32, dof::Int64)
+function get_quad_horizon(horizon::Float64, dof::Int64)
   if dof == 2
-    thickness::Float32 = 1 # is a placeholder
-    return Float32(3 / (pi * horizon^3 * thickness))
+    thickness::Float64 = 1 # is a placeholder
+    return Float64(3 / (pi * horizon^3 * thickness))
   end
-  return Float32(4 / (pi * horizon^4))
+  return Float64(4 / (pi * horizon^4))
 end
 end

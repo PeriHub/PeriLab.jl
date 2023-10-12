@@ -15,8 +15,8 @@ import .Geometry
     testDatamanager.set_dof(dof)
     nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int32, 1)
     nn[:] = [2, 2, 2, 1]
-    coor = testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
-    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float32, 3)
+    coor = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
+    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, 3)
     nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     nlist[1] = [2, 3]
     nlist[2] = [1, 3]
@@ -71,21 +71,21 @@ end
     nn[:] = [3, 3, 3, 3]
     delete!(testDatamanager.fields[Int64], "Neighborhoodlist")
     delete!(testDatamanager.field_names, "Neighborhoodlist")
-    delete!(testDatamanager.fields[Float32], "Bond Geometry")
+    delete!(testDatamanager.fields[Float64], "Bond Geometry")
     delete!(testDatamanager.field_names, "Bond Geometry")
-    coor = testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
-    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
+    coor = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
+    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
     # does not have to be NP1 for testing
-    deformedBond = testDatamanager.create_constant_bond_field("Deformed Bond Geometry", Float32, dof + 1)
+    deformedBond = testDatamanager.create_constant_bond_field("Deformed Bond Geometry", Float64, dof + 1)
 
     nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    volume = testDatamanager.create_constant_node_field("Volume", Float32, 1)
-    omega = testDatamanager.create_constant_bond_field("Influence Function", Float32, 1)
+    volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
+    omega = testDatamanager.create_constant_bond_field("Influence Function", Float64, 1)
 
-    bondDamage = testDatamanager.create_constant_bond_field("Bond Damage", Float32, 1)
-    shapeTensor = testDatamanager.create_constant_node_field("Shape Tensor", Float32, "Matrix", dof)
-    invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float32, "Matrix", dof)
-    defGrad = testDatamanager.create_constant_node_field("Deformation Gradient", Float32, "Matrix", dof)
+    bondDamage = testDatamanager.create_constant_bond_field("Bond Damage", Float64, 1)
+    shapeTensor = testDatamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
+    invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
+    defGrad = testDatamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
     omega[1][:] .= 1
     omega[2][:] .= 1
     omega[3][:] .= 1
@@ -178,15 +178,15 @@ end
     dof = testDatamanager.get_dof()
     nnodes = 4
     nodes = Vector{Int64}(1:nnodes)
-    defGrad = testDatamanager.create_constant_node_field("Deformation Gradient", Float32, "Matrix", dof)
-    strainInc = testDatamanager.create_constant_node_field("Strain", Float32, "Matrix", dof)
+    defGrad = testDatamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+    strainInc = testDatamanager.create_constant_node_field("Strain", Float64, "Matrix", dof)
     nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    volume = testDatamanager.create_constant_node_field("Volume", Float32, 1)
-    omega = testDatamanager.create_constant_bond_field("Influence Function", Float32, 1)
-    bondDamage = testDatamanager.create_constant_bond_field("Bond Damage", Float32, 1)
-    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float32, dof + 1)
-    shapeTensor = testDatamanager.create_constant_node_field("Shape Tensor", Float32, "Matrix", dof)
-    invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float32, "Matrix", dof)
+    volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
+    omega = testDatamanager.create_constant_bond_field("Influence Function", Float64, 1)
+    bondDamage = testDatamanager.create_constant_bond_field("Bond Damage", Float64, 1)
+    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
+    shapeTensor = testDatamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
+    invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
 
 
     defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
@@ -230,7 +230,7 @@ end
     end
 end
 @testset "ut_rotation_tensor" begin
-    rot = Geometry.rotation_tensor(fill(Float32(0), (1)))
+    rot = Geometry.rotation_tensor(fill(Float64(0), (1)))
     @test rot[1, 1] == 1
     @test rot[1, 2] == 0
     @test rot[1, 3] == 0
@@ -240,7 +240,7 @@ end
     @test rot[3, 1] == 0
     @test rot[3, 2] == 0
     @test rot[3, 3] == 1
-    rot = Geometry.rotation_tensor(fill(Float32(0), (3)))
+    rot = Geometry.rotation_tensor(fill(Float64(0), (3)))
     @test rot[1, 1] == 1
     @test rot[1, 2] == 0
     @test rot[1, 3] == 0
@@ -250,7 +250,7 @@ end
     @test rot[3, 1] == 0
     @test rot[3, 2] == 0
     @test rot[3, 3] == 1
-    rot = Geometry.rotation_tensor(fill(Float32(90), (1)))
+    rot = Geometry.rotation_tensor(fill(Float64(90), (1)))
     @test rot[1, 1] < 1e-10
     @test rot[1, 2] == -1
     @test rot[1, 3] < 1e-10

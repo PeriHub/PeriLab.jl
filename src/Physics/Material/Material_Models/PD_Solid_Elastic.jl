@@ -13,7 +13,7 @@ function material_name()
     return "PD Solid Elastic"
 end
 
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float32, dt::Float32)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
 
@@ -23,7 +23,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     omega = datamanager.get_field("Influence Function")
     volume = datamanager.get_field("Volume")
     bond_geometry = datamanager.get_field("Bond Geometry")
-    bond_force = datamanager.create_constant_bond_field("Bond Forces", Float32, dof)
+    bond_force = datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
 
     # optiming, because if no damage it has not to be updated
 
@@ -73,6 +73,7 @@ function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, w
 
         # Calculate bond force
         bond_force[iID] = t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
+
     end
 
     return bond_force

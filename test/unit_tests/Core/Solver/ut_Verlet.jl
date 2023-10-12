@@ -42,15 +42,15 @@ testDatamanager = Data_manager
 testDatamanager.set_nmasters(5)
 testDatamanager.set_dof(2)
 blocks = testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
-horizon = testDatamanager.create_constant_node_field("Horizon", Float32, 1)
-coor = testDatamanager.create_constant_node_field("Coordinates", Float32, 2)
-density = testDatamanager.create_constant_node_field("Density", Float32, 1)
-volume = testDatamanager.create_constant_node_field("Volume", Float32, 1)
+horizon = testDatamanager.create_constant_node_field("Horizon", Float64, 1)
+coor = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
+density = testDatamanager.create_constant_node_field("Density", Float64, 1)
+volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
 lenNlist = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
 lenNlist[:] = [4, 4, 4, 4, 4]
 
 nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float32, 3)
+bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, 3)
 nlist[1] = [2, 3, 4, 5]
 nlist[2] = [1, 3, 4, 5]
 nlist[3] = [1, 2, 4, 5]
@@ -85,21 +85,21 @@ testDatamanager.set_comm(comm)
 # from Peridigm
 @testset "ut_mechanical_critical_time_step" begin
 
-    t = Verlet.compute_mechanical_critical_time_step(Vector{Int64}(1:nnodes), testDatamanager, Float32(140.0))
+    t = Verlet.compute_mechanical_critical_time_step(Vector{Int64}(1:nnodes), testDatamanager, Float64(140.0))
     @test abs(testValmech / t - 1) < 1e-6
 
 end
 # from Peridigm
 @testset "ut_thermodynamic_crititical_time_step" begin
 
-    t = Verlet.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes), testDatamanager, Float32(0.12), Float32(1.8e9))
+    t = Verlet.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes), testDatamanager, Float64(0.12), Float64(1.8e9))
     @test abs(testVal / t - 1) < 1e-6
 
 end
 
 testDatamanager.init_property()
-testDatamanager.set_property(1, "Material Model", "Bulk Modulus", Float32(140.0))
-testDatamanager.set_property(2, "Material Model", "Bulk Modulus", Float32(140.0))
+testDatamanager.set_property(1, "Material Model", "Bulk Modulus", Float64(140.0))
+testDatamanager.set_property(2, "Material Model", "Bulk Modulus", Float64(140.0))
 @testset "ut_init_Verlet" begin
     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)))
     start_time, dt, nsteps = Verlet.init_solver(params, testDatamanager, Dict{Int64,Vector{Int64}}(1 => Vector{Int64}(1:nnodes)), true, false)
@@ -133,13 +133,13 @@ testDatamanager.set_nmasters(5)
 testDatamanager.set_dof(2)
 
 testDatamanager.set_glob_to_loc([1, 2, 3, 4, 5])
-density = testDatamanager.create_constant_node_field("Density", Float32, 1)
-force = testDatamanager.create_node_field("Forces", Float32, dof)
-Y = testDatama#nager.create_node_field("Deformed State", Float32, dof)
-u = testDatamanager.create_node_field("Displacements", Float32, dof)
-bu = testDatamanager.create_bond_field("Deformed Bond Geometry", Float32, dof + 1)
-a = testDatamanager.create_constant_node_field("Acceleration", Float32, dof)
-v = testDatamanager.create_node_field("Velocity", Float32, dof)
+density = testDatamanager.create_constant_node_field("Density", Float64, 1)
+force = testDatamanager.create_node_field("Forces", Float64, dof)
+Y = testDatama#nager.create_node_field("Deformed State", Float64, dof)
+u = testDatamanager.create_node_field("Displacements", Float64, dof)
+bu = testDatamanager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
+a = testDatamanager.create_constant_node_field("Acceleration", Float64, dof)
+v = testDatamanager.create_node_field("Velocity", Float64, dof)
 
 density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
 testDatamanager.set_nset("Nset_1", [1, 2, 3])
