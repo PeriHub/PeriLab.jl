@@ -25,7 +25,7 @@ function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64
     dof = datamanager.get_dof()
     defGrad = datamanager.get_field("Deformation Gradient")
     bond_force = datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
-    bondGeom = datamanager.get_field("Deformed Bond Geometry", "N")
+    bondGeom = datamanager.get_field("Bond Geometry")
     bondGeomNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness", Float64, "Matrix", dof)

@@ -157,7 +157,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
-    for idt in 1:nsteps#progress_bar(datamanager.get_rank(), nsteps, silent)
+    for idt in progress_bar(datamanager.get_rank(), nsteps, silent)
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
 
