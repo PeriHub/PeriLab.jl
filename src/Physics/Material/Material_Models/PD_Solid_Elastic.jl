@@ -58,6 +58,9 @@ Returns:
 function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
     for iID in nodes
         # Calculate alpha and beta
+        if weighted_volume[iID] == 0
+            continue
+        end
         alpha = 15.0 * material["Shear Modulus"] / weighted_volume[iID]
         beta = 3.0 * material["Bulk Modulus"] / weighted_volume[iID]
 

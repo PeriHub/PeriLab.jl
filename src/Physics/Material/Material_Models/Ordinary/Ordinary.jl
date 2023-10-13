@@ -9,9 +9,9 @@ export compute_weighted_volume
 
 function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
     """
-    taken from Peridigm
+    taken from Peridigm -> but adding the bond_damage; this is missing in Peridigm, but should be there
     """
-    # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
+
     weighted_volume = zeros(Float64, maximum(nodes))
 
     for iID in nodes
@@ -26,6 +26,9 @@ function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nl
     # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
     theta = zeros(Float64, maximum(nodes))
     for iID in nodes
+        if weighted_volume[iID] == 0
+            continue
+        end
         theta[iID] = 3.0 * sum(omega[iID][jID] *
                                bond_damage[iID][jID] * bond_geometry[iID][jID, end] *
                                (deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end]) *
