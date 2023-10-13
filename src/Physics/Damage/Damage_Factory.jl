@@ -14,6 +14,8 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     bondDamageN = datamanager.get_field("Bond Damage", "N")
     bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
     bondDamageNP1 = copy(bondDamageN)
+    update_list = datamanager.get_field("Update List")
+    update_list .= true
 
     specifics = Dict{String,String}("Call Function" => "compute_damage", "Name" => "damage_name")
     datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
