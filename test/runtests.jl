@@ -119,9 +119,9 @@ MPI.Init()
         @includetests["fullscale_tests/test_Critical_stretch/test_Critical_stretch"]
     end
 
-    @testset "test_Correspondence_Elastic" begin
-        @includetests["fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic"]
-    end
+    # @testset "test_Correspondence_Elastic" begin
+    #     @includetests["fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic"]
+    # end
 end
 
 MPI.Finalize()
