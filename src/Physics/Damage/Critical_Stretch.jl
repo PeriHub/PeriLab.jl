@@ -5,11 +5,42 @@
 module Critical_stretch
 export compute_damage
 export damage_name
+"""
+   damage_name()
 
+   Gives the damage name. It is needed for comparison with the yaml input deck.
+
+   Parameters:
+
+   Returns:
+   - `name::String`: The name of the damage.
+
+   Example:
+   ```julia
+   println(damage_name())
+   "Critical Stretch"
+   ```
+   """
 function damage_name()
     return "Critical Stretch"
 end
+"""
+   compute_damage(datamanager, nodes, damage_parameter, time, dt)
 
+   Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
+
+   Parameters:
+        - `datamanager::Data_manager`: Datamanager.
+        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+        - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+        - `time::Float64`: The current time.
+        - `dt::Float64`: The current time step.
+   Returns:
+        - - `datamanager::Data_manager`: Datamanager.
+   Example:
+   ```julia
+     ```
+   """
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float64, dt::Float64)
 
     bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
