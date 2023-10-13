@@ -10,7 +10,7 @@ using .Boundary_conditions
 @testset "ut_evaluation" begin
     unit = ones(Float64, 3)
     dof = 2
-    time = 2
+    time::Float64 = 2
     coor = zeros(3, 3)
     bc = Int64(10)
     @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
@@ -33,9 +33,9 @@ using .Boundary_conditions
     for t in 0:4
         bc = "if t>2 0 else 20 end"
         if t > 2
-            @test (0.0 * unit) == Boundary_conditions.eval_bc(bc, coor, t, dof)
+            @test (0.0 * unit) == Boundary_conditions.eval_bc(bc, coor, Float64(t), dof)
         else
-            @test (20.0 * unit) == Boundary_conditions.eval_bc(bc, coor, t, dof)
+            @test (20.0 * unit) == Boundary_conditions.eval_bc(bc, coor, Float64(t), dof)
         end
     end
 end
@@ -121,7 +121,7 @@ end
     @test sum(force) == 0
     @test sum(disp) == 0
     bcs = Boundary_conditions.init_BCs(params, testDatamanager)
-    Boundary_conditions.apply_bc(bcs, testDatamanager, 0)
+    Boundary_conditions.apply_bc(bcs, testDatamanager, 0.0)
     force = testDatamanager.get_field("Forces")
     disp = testDatamanager.get_field("Displacements", "NP1")
     @test sum(force) == 0
