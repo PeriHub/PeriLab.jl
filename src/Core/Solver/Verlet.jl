@@ -122,7 +122,8 @@ function init_solver(params, datamanager, blockNodes, mechanical, thermo)
     @info "Safety Factor: " * string(safety_factor)
     @info "Time increment: " * string(dt) * " [s]"
     @info "Number of steps: " * string(nsteps)
-    return initial_time, dt, nsteps
+    @info "Numerical Damping " * string(get_numerical_damping(params))
+    return initial_time, dt, nsteps, get_numerical_damping(params)
 end
 function get_integration_steps(initial_time, end_time, dt)
     if dt <= 0
@@ -157,12 +158,13 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
+    numericalDamping::Float64 = solver_options["Numerical Damping"]
     for idt in progress_bar(datamanager.get_rank(), nsteps, silent)
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
 
-            vNP1[find_active(active[1:nnodes]), :] = vN[find_active(active[1:nnodes]), :] + 0.5 * dt .* a[find_active(active[1:nnodes]), :]
-            # numerical damping vPtr[i] = vPtr[i] * (1 - numericalDamping);
+            vNP1[find_active(active[1:nnodes]), :] = (1 - numericalDamping) .* vN[find_active(active[1:nnodes]), :] + 0.5 * dt .* a[find_active(active[1:nnodes]), :]
+
             uNP1[find_active(active[1:nnodes]), :] = uN[find_active(active[1:nnodes]), :] + dt .* vNP1[find_active(active[1:nnodes]), :]
 
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
