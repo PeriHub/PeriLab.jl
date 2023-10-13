@@ -44,7 +44,7 @@ function get_numerical_damping(params)
     if check_element(params["Solver"], "Numerical Damping")
         return params["Solver"]["Numerical Damping"]
     end
-    return 0.0
+    return Float64(0.0)
 end
 
 function get_solver_options(params)

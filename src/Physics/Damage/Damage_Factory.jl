@@ -46,7 +46,9 @@ function damage_index(datamananager::Module, nodes::Union{SubArray,Vector{Int64}
     for iID in nodes
         undamaged_volume = sum(volume[nlist[iID][:]])
         totalDamage = sum((1 .- bondDamageNP1[iID][:]) .* volume[nlist[iID][:]])
-        damage[iID] = totalDamage / undamaged_volume
+        if damage[iID] < totalDamage / undamaged_volume
+            damage[iID] = totalDamage / undamaged_volume
+        end
     end
     return datamananager
 
