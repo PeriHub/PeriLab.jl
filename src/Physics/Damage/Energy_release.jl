@@ -28,6 +28,7 @@ end
    compute_damage(datamanager, nodes, damage_parameter, time, dt)
 
    Calculates the elastic energy of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
+   [WillbergC2019](@cite), [FosterJT2011](@cite)
 
    Parameters:
         - `datamanager::Data_manager`: Datamanager.
