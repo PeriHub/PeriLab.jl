@@ -27,7 +27,7 @@ end
 """
    compute_force(datamanager, nodes, flow_parameter, time, dt)
 
-   Calculates the force densities of the flow. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+   Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
    Parameters:
         - `datamanager::Data_manager`: Datamanager.

@@ -27,7 +27,7 @@ end
 """
    compute_additive(datamanager, nodes, additive_parameter, time, dt)
 
-   Calculates the force densities of the additive. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+   Calculates additive model of the material. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
    Parameters:
         - `datamanager::Data_manager`: Datamanager.
