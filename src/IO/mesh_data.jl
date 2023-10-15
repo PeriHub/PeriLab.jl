@@ -281,10 +281,6 @@ function load_and_evaluate_mesh(params::Dict, ranksize::Int64)
     @info "Create Overlap"
     overlap_map = create_overlap_map(distribution, ptc, ranksize)
     @info "Finished Overlap"
-    # das kann auf allen Kernen gemacht werden und sollte es auch
-    #globToLoc = create_global_to_local_map(distribution)
-
-    # information = Dict("Meshdata" => meshdata, "Nodetype" => ntype, "Overlap_map" => overlap_map, "Node_distribution" => distribution, "Global_to_local" => globToLoc)
     return distribution, mesh, ntype, overlap_map, nlist, dof
 end
 
