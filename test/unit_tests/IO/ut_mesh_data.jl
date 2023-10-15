@@ -152,10 +152,10 @@ end
 end
 
 @testset "ut_neighbors" begin
-    nlist = []
 
+    nlist = fill(Vector{Int64}([]), 4)
     for i in 1:4
-        append!(nlist, [collect(1:3*i*i-2)])
+        nlist[i] = Vector{Int64}(collect(1:3*i*i-2))
     end
 
     lenNlist = Read_Mesh.get_number_of_neighbornodes(nlist)
