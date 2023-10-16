@@ -24,7 +24,7 @@ end
 
 function get_bond_filters(params)
     check = check_element(params["Discretization"], "Bond Filters")
-    bfList = Any
+    bfList = Dict{String,Dict{String,Any}}()
     if check
         bfList = params["Discretization"]["Bond Filters"]
     end
