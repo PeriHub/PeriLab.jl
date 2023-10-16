@@ -30,7 +30,7 @@ function thermal_model_name()
     return "Thermal Expansion"
 end
 """
-   compute_thermal_model(datamanager, nodes, flow_parameter, time, dt)
+   compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
 
    Calculates the thermal expansion of the material. 
 
@@ -46,16 +46,43 @@ end
    ```julia
      ```
    """
-function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, flow_parameter::Dict, time::Float64, dt::Float64)
-    @info "Please write a thermal flow model name in thermal_flow_name()."
-    @info "You can call your routine within the yaml file."
-    @info "Fill the compute_force(datamanager, nodes, flow_parameter, time, dt) function."
-    @info "The datamanger and flow_parameter holds all you need to solve your problem on thermal flow level."
-    @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
+
+    temperature = datamanager.get_field("Temperature", "NP1")
+    alpha = thermal_parameter["Heat expansion"]
+    if haskey(thermal_parameter, "Thermal Stretch") && thermal_parameter["Thermal Stretch"]
+        undeformed_bond = datamanager.get_field("Bond Geoemtry")
+        deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+        thermal_bond_stretch = datamanager.create_constant_bond_field(Float64, "Thermal Stretch", 1)
+        if length(alpha) > 1
+            @warn "Matrix is defined and first entry is used in ''Thermal Stretch''."
+            alpha = alpha[1]
+        end
+        thermal_bond_stretch = thermal_stretch(nodes, alpha, temperature, deformed_bond, undeformed_bond, thermal_bond_stretch)
+    elseif haskey(thermal_parameter, "Thermal Strain") && thermal_parameter["Thermal Strain"]
+        thermal_strain_tensor = datamanager.get_field("Thermal Strain")
+        dof = datamanager.get_dof()
+        alpha_mat = zeros(Float64, dof, dof)
+        if length(alpha) == 1
+            for i in 1:dof
+                alpha_mat[i, i] = alpha
+            end
+        elseif length(alpha) == dof || length(alpha) == 3
+            for i in 1:dof
+                alpha_mat[i, i] = alpha[i]
+            end
+        elseif length(alpha) == dof * dof || length(alpha) == 9
+            @error "not yet implemented for full heat expansion matrix"
+        end
+        thermal_strain_tensor = thermal_strain(nodes, alpha, temperature, thermal_strain_tensor)
+    else
+        @error "No valid thermal expansion measure defined ''Thermal Stretch'' or ''Thermal Strain''"
+    end
+
     return datamanager
 end
 
-function thermal_stretch(nodes::Union{Subarray,Vector{Int64}}, alpha::Float64, temperature::SubArray, deformed_bond::SubArray, undeformed_bond::SubArray, thermal_stretch::SubArray)
+function thermal_stretch(nodes::Union{SubArray,Vector{Int64}}, alpha::Float64, temperature::SubArray, deformed_bond::SubArray, undeformed_bond::SubArray, thermal_stretch::SubArray)
 
     for iID in nnodes
         thermal_stretch[iID][:] -= alpha .* temperature[iID] .* (deformed_bond[iID][:, end] - undeformed_bond[iID][:, end])
@@ -64,7 +91,7 @@ end
 return thermal_stretch
 end
 
-function thermal_strain(nodes::Union{Subarray,Vector{Int64}}, alpha::Matrix{Float64}, temperature::SubArray, thermal_strain::SubArray)
+function thermal_strain(nodes::Union{SubArray,Vector{Int64}}, alpha::Matrix{Float64}, temperature::SubArray, thermal_strain::SubArray)
     for iID in nodes
         thermal_strain[iID] = alpha .* temperature[iID]
     end
