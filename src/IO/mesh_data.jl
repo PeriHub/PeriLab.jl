@@ -259,13 +259,12 @@ function read_mesh(filename::String)
     return CSV.read(filename, DataFrame; delim=" ", header=header, skipto=header_line + 1)
 end
 
-function set_dof(mesh)
+function set_dof(mesh::DataFrame)
     if "z" in names(mesh)
-        return 3
-    else
-        @info "2d problem assumed, please define plane stress or plane strain if needed in Physics"
-        return 2
+        return Int64(3)
     end
+    @info "2d problem assumed, please define plane stress or plane strain if needed in Physics"
+    return Int64(2)
 end
 
 function load_and_evaluate_mesh(params::Dict, ranksize::Int64)
@@ -292,14 +291,14 @@ function get_nnodes_per_core(field)
     return nnodes
 end
 
-function create_neighborhoodlist(mesh, params, dof)
+function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
     coor = names(mesh)
-    nlist = neighbors(mesh, params, coor[1:dof])
+    nlist::Vector{Vector{Int64}} = neighbors(mesh, params, coor[1:dof])
     @info "Finished init Neighborhoodlist"
     return nlist
 end
 
-function get_number_of_neighbornodes(nlist)
+function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
     len = length(nlist)
     lenNlist = zeros(Int64, len)
     for id in 1:len
@@ -431,7 +430,7 @@ function neighbors(mesh, params, coor)
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
     data = zeros(dof, nnodes)
-    neighborList = fill([], nnodes)
+    neighborList = fill(Vector{Int64}([]), nnodes)
 
     for i in 1:dof
         data[i, :] = values(mesh[!, coor[i]])
@@ -522,7 +521,7 @@ end
 
 
 
-function apply_bond_filters(nlist, mesh, params, dof)
+function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, params::Dict, dof::Int64)
     bond_filters = get_bond_filters(params)
     if bond_filters[1]
         coor = names(mesh)[1:dof]
@@ -533,33 +532,11 @@ function apply_bond_filters(nlist, mesh, params, dof)
         end
 
         for (name, filter) in bond_filters[2]
-
             if filter["Type"] == "Disk"
-                center = [filter["Center_X"], filter["Center_Y"], filter["Center_Z"]]
-                normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
-                for i in 1:nnodes
-                    filter_flag = fill(true, length(nlist[i]))
-                    for (jId, neighbor) in enumerate(nlist[i])
-                        filter_flag[jId] = !bondIntersectsDisk(data[:, i], data[:, neighbor], center, normal, filter["Radius"])
-                    end
-                    nlist[i] = nlist[i][filter_flag]
-                end
-
+                nlist = disk_filter(nnodes, data, filter, nlist)
             elseif filter["Type"] == "Rectangular_Plane"
-                normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
-                lower_left_corner = [filter["Lower_Left_Corner_X"], filter["Lower_Left_Corner_Y"], filter["Lower_Left_Corner_Z"]]
-                bottom_unit_vector = [filter["Bottom_Unit_Vector_X"], filter["Bottom_Unit_Vector_Y"], filter["Bottom_Unit_Vector_Z"]]
-                bottom_length = filter["Bottom_Length"]
-                side_length = filter["Side_Length"]
-                for i in 1:nnodes
-                    filter_flag = fill(true, length(nlist[i]))
-                    for (jId, neighbor) in enumerate(nlist[i])
-                        intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, i], data[:, neighbor], lower_left_corner, normal)
-                        bond_intersect = bondIntersect(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
-                        filter_flag[jId] = !(intersect_inf_plane && bond_intersect)
-                    end
-                    nlist[i] = nlist[i][filter_flag]
-                end
+                nlist = rectangular_plane_filter(nnodes, data, filter, nlist)
+
             end
         end
         @info "Finished apply Bond Filters"
@@ -567,6 +544,35 @@ function apply_bond_filters(nlist, mesh, params, dof)
     return nlist
 end
 
+function disk_filter(nnodes, data, filter::Dict, nlist)
+    center = [filter["Center_X"], filter["Center_Y"], filter["Center_Z"]]
+    normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
+    for i in 1:nnodes
+        filter_flag = fill(true, length(nlist[i]))
+        for (jId, neighbor) in enumerate(nlist[i])
+            filter_flag[jId] = !bondIntersectsDisk(data[:, i], data[:, neighbor], center, normal, filter["Radius"])
+        end
+        nlist[i] = nlist[i][filter_flag]
+    end
+    return nlist
+end
+function rectangular_plane_filter(nnodes, data, filter::Dict, nlist)
+    normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
+    lower_left_corner = [filter["Lower_Left_Corner_X"], filter["Lower_Left_Corner_Y"], filter["Lower_Left_Corner_Z"]]
+    bottom_unit_vector = [filter["Bottom_Unit_Vector_X"], filter["Bottom_Unit_Vector_Y"], filter["Bottom_Unit_Vector_Z"]]
+    bottom_length = filter["Bottom_Length"]
+    side_length = filter["Side_Length"]
+    for i in 1:nnodes
+        filter_flag = fill(true, length(nlist[i]))
+        for (jId, neighbor) in enumerate(nlist[i])
+            intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, i], data[:, neighbor], lower_left_corner, normal)
+            bond_intersect = bondIntersect(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+            filter_flag[jId] = !(intersect_inf_plane && bond_intersect)
+        end
+        nlist[i] = nlist[i][filter_flag]
+    end
+    return nlist
+end
 function glob_to_loc(distribution)
     glob_to_loc = Dict{Int64,Int64}()
     for id in eachindex(distribution)
