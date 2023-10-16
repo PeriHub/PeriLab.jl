@@ -11,19 +11,19 @@ module Thermal_expansion
 export compute_thermal_model
 export thermal_model_name
 """
-   thermal_flow_name()
+   thermal_model_name()
 
-   Gives the flow name. It is needed for comparison with the yaml input deck.
+   Gives the expansion model name. It is needed for comparison with the yaml input deck.
 
    Parameters:
 
    Returns:
-   - `name::String`: The name of the thermal flow model.
+   - `name::String`: The name of the thermal expansion model.
 
    Example:
    ```julia
    println(flow_name())
-   "Thermal Template"
+   "Thermal Expansion"
    ```
    """
 function thermal_model_name()
@@ -32,7 +32,7 @@ end
 """
    compute_thermal_model(datamanager, nodes, flow_parameter, time, dt)
 
-   Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+   Calculates the thermal expansion of the material. 
 
    Parameters:
         - `datamanager::Data_manager`: Datamanager.

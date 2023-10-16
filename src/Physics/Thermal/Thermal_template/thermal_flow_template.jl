@@ -6,9 +6,9 @@ module Thermal_template
 export compute_thermal_model
 export thermal_model_name
 """
-   thermal_flow_name()
+   thermal_model_name()
 
-   Gives the flow name. It is needed for comparison with the yaml input deck.
+   Gives the thermal model name. It is needed for comparison with the yaml input deck.
 
    Parameters:
 
