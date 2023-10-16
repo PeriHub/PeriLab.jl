@@ -25,7 +25,7 @@ function thermal_model_name()
   return "Heat Transfer"
 end
 """
-   compute_force(datamanager, nodes, flow_parameter, time, dt)
+   compute_force(datamanager, nodes, thermal_parameter, time, dt)
 
    Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -41,13 +41,13 @@ end
    ```julia
      ```
    """
-function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, flow_parameter::Dict, time::Float64, dt::Float64)
+function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
   dof = datamanager.get_dof()
   volume = datamanager.get_field("Volume")
 
   numNeighbors = datamanager.get_field("Number of Neighbors")
-  alpha = flow_parameter["Alpha"]
-  Tenv = flow_parameter["Environment Temperature"]
+  alpha = thermal_parameter["Alpha"]
+  Tenv = thermal_parameter["Environment Temperature"]
   heatFlowState = datamanager.get_field("Heat Flow State")
   temperature = datamanager.get_field("Temperature", "NP1")
   dx::Float32 = 0.0

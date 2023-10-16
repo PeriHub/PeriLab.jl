@@ -25,7 +25,7 @@ function thermal_model_name()
   return "Thermal Template"
 end
 """
-   compute_thermal_model(datamanager, nodes, flow_parameter, time, dt)
+   compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
 
    Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -41,11 +41,11 @@ end
    ```julia
      ```
    """
-function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, flow_parameter::Dict, time::Float64, dt::Float64)
+function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
   @info "Please write a thermal flow model name in thermal_flow_name()."
   @info "You can call your routine within the yaml file."
-  @info "Fill the compute_force(datamanager, nodes, flow_parameter, time, dt) function."
-  @info "The datamanger and flow_parameter holds all you need to solve your problem on thermal flow level."
+  @info "Fill the compute_force(datamanager, nodes, thermal_parameter, time, dt) function."
+  @info "The datamanger and thermal_parameter holds all you need to solve your problem on thermal flow level."
   @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
   return datamanager
 end
