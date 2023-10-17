@@ -6,5 +6,6 @@ include("../../helper.jl")
 
 folder_name = basename(@__FILE__)[1:end-3]
 cd("fullscale_tests/" * folder_name) do
-    run_perilab("displacements", 1, false, folder_name)
+    run_perilab("displacements", 1, true, folder_name)
+    run_perilab("temperature", 1, true, folder_name)
 end
