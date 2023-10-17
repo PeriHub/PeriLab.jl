@@ -85,18 +85,18 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
 
     @timeit to "PeriLab" begin
 
-        if !silent
-            @timeit to "Logging.init_logging" Logging_module.init_logging(filename, debug)
-        end
-
         # init MPI as always ...
         MPI.Init()
         comm = MPI.COMM_WORLD
         rank = MPI.Comm_rank(comm)
         size = MPI.Comm_size(comm)
-        if rank == 0 && !silent
-            print_banner()
-            @info "\n PeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------"
+
+        if !silent
+            @timeit to "Logging.init_logging" Logging_module.init_logging(filename, debug, rank, size)
+            if rank == 0
+                print_banner()
+                @info "\n PeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------"
+            end
         else
             Logging.disable_logging(Logging.Error)
         end
