@@ -74,6 +74,10 @@ MPI.Init()
         @testset "ut_mesh_data" begin
             @includetests["unit_tests/IO/ut_mesh_data"]
         end
+
+        @testset "ut_bond_filter" begin
+            @includetests["unit_tests/IO/ut_bond_filter"]
+        end
     end
     @testset "Compute" begin
         @includetests["unit_tests/Compute/ut_compute_force"]

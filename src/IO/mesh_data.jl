@@ -476,30 +476,24 @@ function bondIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Ve
 end
 
 function bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
-    numerator = sum((lower_left_corner .- p0) .* normal)
-    denominator = sum((p1 .- p0) .* normal)
-    t = 0.0
+    numerator = dot((lower_left_corner - p0), normal)
+    denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane
         # It may or may not lie on the plane
         # If it does lie on the plane, then the numerator will be zero
         # In either case, this function will return "no intersection"
-        t = Inf
-    else
-        # The line intersects the plane
-        t = numerator / denominator
+        return false, undef
     end
+    # The line intersects the plane
+    t = numerator / denominator
 
     # Determine if the line segment intersects the plane
-    intersection = false
     if 0.0 <= t <= 1.0
-        intersection = true
+        return true, p0 + t .* (p1 - p0)
     end
-
     # Intersection point
-    x = p0 .+ t .* (p1 .- p0)
-
-    return intersection, x
+    return false, undef
 end
 
 function bondIntersect(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
@@ -513,13 +507,11 @@ function bondIntersect(x::Vector{Float64}, lower_left_corner::Vector{Float64}, b
     bb = sum(dr .* bottom_unit_vector)
 
     if -zero < aa && aa / side_length < one && -zero < bb && bb / bottom_length < one
-        intersects = true
+        return true
     end
 
-    return intersects
+    return false
 end
-
-
 
 function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, params::Dict, dof::Int64)
     bond_filters = get_bond_filters(params)
@@ -533,10 +525,9 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
 
         for (name, filter) in bond_filters[2]
             if filter["Type"] == "Disk"
-                nlist = disk_filter(nnodes, data, filter, nlist)
+                nlist = disk_filter(nnodes, data, filter, nlist, dof)
             elseif filter["Type"] == "Rectangular_Plane"
-                nlist = rectangular_plane_filter(nnodes, data, filter, nlist)
-
+                nlist = rectangular_plane_filter(nnodes, data, filter, nlist, dof)
             end
         end
         @info "Finished apply Bond Filters"
@@ -544,9 +535,14 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
     return nlist
 end
 
-function disk_filter(nnodes, data, filter::Dict, nlist)
-    center = [filter["Center_X"], filter["Center_Y"], filter["Center_Z"]]
-    normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
+function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+    if dof == 2
+        center = [filter["Center_X"], filter["Center_Y"]]
+        normal = [filter["Normal_X"], filter["Normal_Y"]]
+    else
+        center = [filter["Center_X"], filter["Center_Y"], filter["Center_Z"]]
+        normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
+    end
     for i in 1:nnodes
         filter_flag = fill(true, length(nlist[i]))
         for (jId, neighbor) in enumerate(nlist[i])
@@ -556,20 +552,29 @@ function disk_filter(nnodes, data, filter::Dict, nlist)
     end
     return nlist
 end
-function rectangular_plane_filter(nnodes, data, filter::Dict, nlist)
-    normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
-    lower_left_corner = [filter["Lower_Left_Corner_X"], filter["Lower_Left_Corner_Y"], filter["Lower_Left_Corner_Z"]]
-    bottom_unit_vector = [filter["Bottom_Unit_Vector_X"], filter["Bottom_Unit_Vector_Y"], filter["Bottom_Unit_Vector_Z"]]
+function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+    if dof == 2
+        normal = [filter["Normal_X"], filter["Normal_Y"]]
+        lower_left_corner = [filter["Lower_Left_Corner_X"], filter["Lower_Left_Corner_Y"]]
+        bottom_unit_vector = [filter["Bottom_Unit_Vector_X"], filter["Bottom_Unit_Vector_Y"]]
+    else
+        normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
+        lower_left_corner = [filter["Lower_Left_Corner_X"], filter["Lower_Left_Corner_Y"], filter["Lower_Left_Corner_Z"]]
+        bottom_unit_vector = [filter["Bottom_Unit_Vector_X"], filter["Bottom_Unit_Vector_Y"], filter["Bottom_Unit_Vector_Z"]]
+    end
     bottom_length = filter["Bottom_Length"]
     side_length = filter["Side_Length"]
-    for i in 1:nnodes
-        filter_flag = fill(true, length(nlist[i]))
-        for (jId, neighbor) in enumerate(nlist[i])
-            intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, i], data[:, neighbor], lower_left_corner, normal)
-            bond_intersect = bondIntersect(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
-            filter_flag[jId] = !(intersect_inf_plane && bond_intersect)
+    for iID in 1:nnodes
+        filter_flag = fill(true, length(nlist[iID]))
+        for (jID, neighborID) in enumerate(nlist[iID])
+            intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, iID], data[:, neighborID], lower_left_corner, normal)
+            bond_intersect = false
+            if intersect_inf_plane
+                bond_intersect = bondIntersect(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+            end
+            filter_flag[jID] = !(intersect_inf_plane && bond_intersect)
         end
-        nlist[i] = nlist[i][filter_flag]
+        nlist[iID] = nlist[iID][filter_flag]
     end
     return nlist
 end
