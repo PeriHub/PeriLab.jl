@@ -92,7 +92,7 @@ Working with if-statements
   works for scalars. If you want to evaluate a vector, please use the Julia notation as input
   "ifelse.(x .> y, 10, 20)"
 """
-function eval_bc(bc::Union{Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
+function eval_bc(bc::Union{Float64,Int64,String}, coordinates::Union{Matrix{Float64},Matrix{Int64}}, time::Float64, dof::Int64)
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
     # the yaml input allows multiple types. But for further use this input has to be a string
