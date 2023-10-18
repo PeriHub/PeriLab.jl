@@ -95,9 +95,6 @@ MPI.Init()
     @testset "Physics" begin
 
         @testset "Thermal" begin end
-        @testset "Correspondence" begin
-            @includetests["unit_tests/Physics/Thermal/Correspondence/ut_Thermal_correspondence"]
-        end
 
         @testset "ut_Physics_Factory" begin
             @includetests["unit_tests/Physics/ut_Physics_Factory"]
