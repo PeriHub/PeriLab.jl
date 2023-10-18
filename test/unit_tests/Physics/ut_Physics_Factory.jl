@@ -105,3 +105,51 @@ end
         @test active[iID] == false
     end
 end
+@testset "init_pre_calculation" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_dof(3)
+    testDatamanager.set_nmasters(4)
+    n = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    n .= 2
+    options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => false, "Deformation Gradient" => false, "Bond Associated Shape Tensor" => false, "Bond Associated Deformation Gradient" => false)
+    testDatamanager = Physics.init_pre_calculation(testDatamanager, options)
+
+    @test "Deformed Bond GeometryN" in testDatamanager.get_all_field_keys()
+    @test "Deformed Bond GeometryNP1" in testDatamanager.get_all_field_keys()
+    @test !("Shape Tensor" in testDatamanager.get_all_field_keys())
+    @test !("Deformation Gradient" in testDatamanager.get_all_field_keys())
+    @test !("Bond Associated Shape Tensor" in testDatamanager.get_all_field_keys())
+    @test !("Bond Associated Deformation Gradient" in testDatamanager.get_all_field_keys())
+
+    options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => false, "Deformation Gradient" => true, "Bond Associated Shape Tensor" => false, "Bond Associated Deformation Gradient" => false)
+
+    testDatamanager = Physics.init_pre_calculation(testDatamanager, options)
+    @test "Deformed Bond GeometryN" in testDatamanager.get_all_field_keys()
+    @test "Deformed Bond GeometryNP1" in testDatamanager.get_all_field_keys()
+    @test !("Shape Tensor" in testDatamanager.get_all_field_keys())
+    @test !("Inverse Shape Tensor" in testDatamanager.get_all_field_keys())
+    @test "Deformation Gradient" in testDatamanager.get_all_field_keys()
+    @test !("Bond Associated Shape Tensor" in testDatamanager.get_all_field_keys())
+    @test !("Bond Associated Deformation Gradient" in testDatamanager.get_all_field_keys())
+
+    options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => true, "Deformation Gradient" => true, "Bond Associated Shape Tensor" => true, "Bond Associated Deformation Gradient" => false)
+
+    testDatamanager = Physics.init_pre_calculation(testDatamanager, options)
+    @test "Deformed Bond GeometryN" in testDatamanager.get_all_field_keys()
+    @test "Deformed Bond GeometryNP1" in testDatamanager.get_all_field_keys()
+    @test "Shape Tensor" in testDatamanager.get_all_field_keys()
+    @test "Inverse Shape Tensor" in testDatamanager.get_all_field_keys()
+    @test "Deformation Gradient" in testDatamanager.get_all_field_keys()
+    @test "Bond Associated Shape Tensor" in testDatamanager.get_all_field_keys()
+    @test !("Bond Associated Deformation Gradient" in testDatamanager.get_all_field_keys())
+
+    options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => true, "Deformation Gradient" => true, "Bond Associated Shape Tensor" => true, "Bond Associated Deformation Gradient" => true)
+
+    testDatamanager = Physics.init_pre_calculation(testDatamanager, options)
+    @test "Deformed Bond GeometryN" in testDatamanager.get_all_field_keys()
+    @test "Deformed Bond GeometryNP1" in testDatamanager.get_all_field_keys()
+    @test "Shape Tensor" in testDatamanager.get_all_field_keys()
+    @test "Deformation Gradient" in testDatamanager.get_all_field_keys()
+    @test "Bond Associated Shape Tensor" in testDatamanager.get_all_field_keys()
+    @test "Bond Associated Deformation Gradient" in testDatamanager.get_all_field_keys()
+end
