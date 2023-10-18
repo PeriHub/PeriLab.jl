@@ -10,8 +10,10 @@ function check_valid_bcs(bcs, datamanager)
     # check bc
     working_bcs = Dict()
     for bc in keys(bcs)
-        if bcs[bc]["Coordinate"] == "z" && datamanager.get_dof() < 3
-            break
+        if haskey(bcs[bc], "Coordinate")
+            if bcs[bc]["Coordinate"] == "z" && datamanager.get_dof() < 3
+                break
+            end
         end
         for dataentry in datamanager.get_all_field_keys()
             if (occursin(bcs[bc]["Type"], dataentry) && occursin("NP1", dataentry)) || bcs[bc]["Type"] == dataentry
@@ -37,11 +39,15 @@ function boundary_condition(params, datamanager)
 
     for bc in keys(bcs_in)
         node_set_name = bcs_in[bc]["Node Set"]
-        bcs_out[bc] = Dict{String,Any}("Node Set" => datamanager.get_local_nodes(nsets[node_set_name]))
-        for entry in keys(bcs_in[bc])
-            if entry != "Node Set"
-                bcs_out[bc][entry] = bcs_in[bc][entry]
+        if haskey(nsets, node_set_name)
+            bcs_out[bc] = Dict{String,Any}("Node Set" => datamanager.get_local_nodes(nsets[node_set_name]))
+            for entry in keys(bcs_in[bc])
+                if entry != "Node Set"
+                    bcs_out[bc][entry] = bcs_in[bc][entry]
+                end
             end
+        else
+            @error "Node Set '$node_set_name' is missing"
         end
     end
     return bcs_out
@@ -58,7 +64,15 @@ function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
             field_to_apply_bc = datamanager.get_field(bc["Type"])
         end
 
-        field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates[bc["Node Set"], :], time, dof)
+        if ndims(field_to_apply_bc) > 1
+            if haskey(dof_mapping, bc["Coordinate"])
+                field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates[bc["Node Set"], :], time, dof)
+            else
+                @error "Coordinate must be x,y or z"
+            end
+        else
+            field_to_apply_bc[bc["Node Set"]] = eval_bc(bc["Value"], coordinates[bc["Node Set"], :], time, dof)
+        end
 
     end
     return datamanager
@@ -78,7 +92,7 @@ Working with if-statements
   works for scalars. If you want to evaluate a vector, please use the Julia notation as input
   "ifelse.(x .> y, 10, 20)"
 """
-function eval_bc(bc::Union{Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
+function eval_bc(bc::Union{Float64,Int64,String}, coordinates::Union{Matrix{Float64},Matrix{Int64}}, time::Float64, dof::Int64)
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
     # the yaml input allows multiple types. But for further use this input has to be a string

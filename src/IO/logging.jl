@@ -21,28 +21,42 @@ function progress_filter(log_args)
     return true
 end
 
-function init_logging(filename, debug)
-    file_logger = FormatLogger(split(filename, ".")[1] * ".log"; append=false) do io, args
-        if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
-            if debug
-                println(io, args._module, " | ", "[", args.level, "] ", args.message)
-            else
-                println(io, "[", args.level, "] ", args.message)
+function init_logging(filename, debug, rank, size)
+
+    logfilename = split(filename, ".")[1] * ".log"
+
+    if debug
+        if size > 1
+            logfilename = split(filename, ".")[1] * "$size.$rank.log"
+        end
+        file_logger = FormatLogger(logfilename; append=false) do io, args
+            if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
+                println(io, "[", args.level, "] ", args._module, " | ", args.message)
             end
         end
-    end
-    filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
-    if debug
+        filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
         demux_logger = TeeLogger(
             MinLevelLogger(file_logger, Logging.Debug),
             MinLevelLogger(filtered_logger, Logging.Debug),
         )
+        global_logger(demux_logger)
     else
+        file_logger = FormatLogger(logfilename; append=false) do io, args
+            if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
+                println(io, "[", args.level, "] ", args.message)
+            end
+        end
+        filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
         demux_logger = TeeLogger(
             MinLevelLogger(file_logger, Logging.Info),
             MinLevelLogger(filtered_logger, Logging.Info),
         )
+
+        if rank == 0
+            global_logger(demux_logger)
+        else
+            Logging.disable_logging(Logging.Error)
+        end
     end
-    global_logger(demux_logger)
 end
 end

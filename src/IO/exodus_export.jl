@@ -22,6 +22,9 @@ function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_nod
     float_type = Float64
     num_elems = num_nodes
     num_side_sets = 0
+    @debug "num_nodes: $num_nodes"
+    @debug "num_elem_blks: $num_elem_blks"
+    @debug "num_node_sets: $num_node_sets"
     init = Initialization{bulk_int_type}(
         Int32(num_dim), Int32(num_nodes), Int32(num_elems),
         Int32(num_elem_blks), Int32(num_node_sets), Int32(num_side_sets)
@@ -86,7 +89,8 @@ function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,
     end
 
     for block in uniqueBlocks
-        conn = get_block_nodes(block_Id, block)# virtual elements     
+        conn = get_block_nodes(block_Id, block)# virtual elements    
+        @debug "conn: $conn"
         write_block(exo, block, "SPHERE", conn)
         write_name(exo, Block, block, "Block_" * string(block))
     end
@@ -101,6 +105,7 @@ function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,
 
     for varname in names
         # interface does not work with Int yet 28//08//2023
+        @debug "$varname $nnodes"
         write_values(exo, NodalVariable, 1, output[varname][2], varname, zeros(Float64, nnodes))
     end
     return exo
@@ -120,6 +125,7 @@ function write_nodal_results_in_exodus(exo, step, output, datamanager)
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
         var = convert(Array{Float64}, field[1:nnodes, output[varname][3]])
         # interface does not work with Int yet 28//08//2023
+        @debug "$varname $var"
         write_values(exo, NodalVariable, step, output[varname][2], varname, var)
     end
     return exo
