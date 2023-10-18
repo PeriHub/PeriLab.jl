@@ -126,7 +126,7 @@ PeriLab:
   Outputs:
     Output1:
       Output Filename: "test_1"
-      Output Frequency: 40
+      Output Frequency: 10
       Output Variables:
         Displacements: True
         Volume: True

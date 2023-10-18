@@ -192,7 +192,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             update_list .= true
             step_time += dt
             if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
-                @info "Step: $idt / $nsteps [$step_time s]"
+                @info "Step: $idt / $(nsteps+1) [$step_time s]"
             end
 
         end

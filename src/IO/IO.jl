@@ -132,11 +132,11 @@ function init_write_results(params::Dict, datamanager::Module, nsteps::Int64)
     end
     coords = vcat(transpose(coordinates[1:nnodes, :]))
     outputs = get_results_mapping(params, datamanager)
-    output_steps = get_output_frequency(params, nsteps)
+    output_frequencies = get_output_frequency(params, nsteps)
     for id in eachindex(exos)
 
         exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets)
-        push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => output_steps[id]))
+        push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 
     end
 
@@ -151,7 +151,7 @@ function write_results(exos, time, outputs, datamanager)
     for id in eachindex(exos)
         # step 1 ist the zero step?!
         output_frequency[id]["Counter"] += 1
-        if output_frequency[id]["Output Frequency"] == output_frequency[id]["Counter"]
+        if output_frequency[id]["Counter"] == output_frequency[id]["Output Frequency"]
             output_frequency[id]["Step"] += 1
             exos[id] = Write_Exodus_Results.write_step_and_time(exos[id], output_frequency[id]["Step"], time)
             exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exos[id], output_frequency[id]["Step"], outputs[id], datamanager)
