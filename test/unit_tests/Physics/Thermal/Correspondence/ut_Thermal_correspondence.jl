@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-include("../../../../../src/Physics/Thermal/Correspondence/Thermal_correspondence.jl")
+include("../../../../../src/Physics/Thermal/Thermal_expansion.jl")
 
 @testset "ut_thermal strain" begin
     strain = zeros(3, 3)
