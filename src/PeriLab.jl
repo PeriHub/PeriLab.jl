@@ -112,6 +112,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
         @info "Init write results"
         @timeit to "IO.init_write_results" exos, outputs, computes = IO.init_write_results(params, datamanager, solver_options["nsteps"])
+        Logging_module.set_exos(exos)
 
         if dry_run
             nsteps = solver_options["nsteps"]

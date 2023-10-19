@@ -6,7 +6,15 @@ module Logging_module
 using Logging
 using LoggingExtras
 using TimerOutputs
+include("./IO.jl")
 export init_logging
+export set_exos
+
+exo = []
+
+function set_exos(exos)
+    global exo = exos
+end
 
 function progress_filter(log_args)
     if typeof(log_args.message) == TimerOutputs.TimerOutput
@@ -36,8 +44,8 @@ function init_logging(filename, debug, rank, size)
         end
         filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
         demux_logger = TeeLogger(
-            MinLevelLogger(file_logger, Logging.Debug),
             MinLevelLogger(filtered_logger, Logging.Debug),
+            MinLevelLogger(file_logger, Logging.Debug),
         )
         global_logger(demux_logger)
     else
@@ -46,10 +54,17 @@ function init_logging(filename, debug, rank, size)
                 println(io, "[", args.level, "] ", args.message)
             end
         end
+        error_logger = FormatLogger(logfilename; append=false) do io, args
+            if args.level == Logging.Error
+                IO.close_files(exo)
+                exit()
+            end
+        end
         filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
         demux_logger = TeeLogger(
-            MinLevelLogger(file_logger, Logging.Info),
             MinLevelLogger(filtered_logger, Logging.Info),
+            MinLevelLogger(file_logger, Logging.Info),
+            MinLevelLogger(error_logger, Logging.Info),
         )
 
         if rank == 0
