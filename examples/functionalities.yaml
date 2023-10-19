@@ -10,8 +10,28 @@ PeriLab:
         Type: "Text File"
         Input Mesh File: "test_mesh.txt"
         Bond Filters:
-            b1:
-                
+            bf_1:
+                Type: "Rectangular_Plane"
+                Normal_X: 0.0 
+                Normal_Y: 1.0 
+                Normal_Z: 0.0 
+                Lower_Left_Corner_X: -0.006 
+                Lower_Left_Corner_Y: 0.0 
+                Lower_Left_Corner_Z: -0.01 
+                Bottom_Unit_Vector_X: 1.0 
+                Bottom_Unit_Vector_Y: 0.0 
+                Bottom_Unit_Vector_Z: 0.0 
+                Bottom_Length: 0.01
+                Side_Length: 0.01#
+            bf_1:
+                Type: "Circular_Plane"
+                Normal_X: 0.0 
+                Normal_Y: 1.0 
+                Normal_Z: 0.0 
+                Center_X: -0.006 
+                Center_Y: 0.0 
+                Center_Z: -0.01 
+                Radius: 1.0                
     Physics:
         Pre Calculation:
             Deformed Bond Geometry: true

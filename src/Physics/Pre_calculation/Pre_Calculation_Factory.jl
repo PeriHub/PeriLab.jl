@@ -37,7 +37,7 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, opti
     return datamanager
 end
 
-function init_pre_calculation(datamanager, options)
+function init_pre_calculation(datamanager::Module, options::Dict)
     dof = datamanager.get_dof()
     if options["Deformed Bond Geometry"]
         bond_defN, bond_defNP1 = datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
