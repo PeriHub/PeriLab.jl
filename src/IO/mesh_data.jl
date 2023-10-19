@@ -283,14 +283,6 @@ function load_and_evaluate_mesh(params::Dict, ranksize::Int64)
     return distribution, mesh, ntype, overlap_map, nlist, dof
 end
 
-function get_nnodes_per_core(field)
-    nnodes = Int64[]
-    for i in 1:eachindex(field)
-        append!(nnodes, field[i])
-    end
-    return nnodes
-end
-
 function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
     coor = names(mesh)
     nlist::Vector{Vector{Int64}} = neighbors(mesh, params, coor[1:dof])
