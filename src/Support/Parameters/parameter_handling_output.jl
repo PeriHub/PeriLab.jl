@@ -36,11 +36,11 @@ function get_output_filenames(params)
     return []
 end
 
-function get_output_variables(outputs, variables)
+function get_output_variables(outputs, variables, computes)
     return_outputs = String[]
     for output in keys(outputs)
         if outputs[output]
-            if output in variables
+            if output in variables || output in computes
                 push!(return_outputs, output)
             elseif output * "NP1" in variables
                 push!(return_outputs, output * "NP1")
@@ -52,7 +52,7 @@ function get_output_variables(outputs, variables)
     return return_outputs
 end
 
-function get_outputs(params, variables)
+function get_outputs(params, variables, compute_names)
     return_outputs = Dict{Int64,Vector{String}}()
     num = 0
     if check_element(params, "Outputs")
@@ -60,7 +60,7 @@ function get_outputs(params, variables)
         for output in keys(outputs)
             if check_element(outputs[output], "Output Variables")
                 num += 1
-                return_outputs[num] = get_output_variables(outputs[output]["Output Variables"], variables)
+                return_outputs[num] = get_output_variables(outputs[output]["Output Variables"], variables, compute_names)
             else
                 @warn "No output variables are defined for " * output * "."
             end

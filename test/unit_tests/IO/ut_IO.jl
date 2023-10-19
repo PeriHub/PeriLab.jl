@@ -41,7 +41,7 @@ block_Id .+= 1
 block_Id[end] = 2
 
 @testset "ut_get_results_mapping" begin
-    output = IO.get_results_mapping(params, testDatamanager)
+    output, computes = IO.get_results_mapping(params, testDatamanager)
     @test sort(collect(keys(output[1]))) == ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     @test sort(collect(keys(output[2]))) == ["Displacementsx", "Displacementsy", "Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     for i in 1:2
@@ -66,7 +66,7 @@ block_Id[end] = 2
 end
 
 @testset "ut_init_write_result_and_write_results" begin
-    exos, outputs = IO.init_write_results(params, testDatamanager, 2)
+    exos, outputs, computes = IO.init_write_results(params, testDatamanager, 2)
 
     @test length(exos) == 2
     @test length(exos[1].nodal_var_name_dict) == 6
@@ -105,15 +105,15 @@ end
         end
     end
     IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
-    IO.write_results(exos, 1.5, outputs, testDatamanager)
+    IO.write_results(exos, 1.5, outputs, [], testDatamanager)
 
     @test read_time(exos[1], 2) == 1.5
     @test read_time(exos[2], 2) == 1.5
-    IO.write_results(exos, 1.6, outputs, testDatamanager)
+    IO.write_results(exos, 1.6, outputs, [], testDatamanager)
 
     @test read_time(exos[1], 3) == 1.6
     @test read_time(exos[2], 3) == 1.6
-    IO.write_results([], 1.6, outputs, testDatamanager)
+    IO.write_results([], 1.6, outputs, [], testDatamanager)
     testBool = false
     try
         read_time(exos[1], 4) == 1.6

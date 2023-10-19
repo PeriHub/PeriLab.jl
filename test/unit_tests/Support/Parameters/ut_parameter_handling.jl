@@ -84,8 +84,8 @@ end
     @test freq[2] == 100
 end
 
+testDatamanager = Data_manager
 @testset "ut_get_outputs" begin
-    testDatamanager = Data_manager
     testDatamanager.set_nmasters(5)
     testDatamanager.create_constant_node_field("A", Float64, 1)
     testDatamanager.create_node_field("B", Bool, 1)
@@ -97,7 +97,7 @@ end
 
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))
 
-    outputs = get_outputs(params, testfield_keys)
+    outputs = get_outputs(params, testfield_keys, [])
 
     @test "A" in outputs[1]
     @test ("BNP1" in outputs[1]) == false
@@ -106,6 +106,28 @@ end
     @test "BNP1" in outputs[2]
     @test ("D" in outputs[2]) == false
     @test "E" in outputs[2]
+end
+@testset "ut_get_computes" begin
+    testfield_keys = testDatamanager.get_all_field_keys()
+
+    params = Dict("Compute Class Parameters" => Dict("External_Forces" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Sum", "Block" => "block_2", "Variable" => "A"), "External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "B")))
+
+    computes = get_computes(params, testfield_keys)
+
+    @test haskey(computes, "External_Forces")
+    @test haskey(computes, "External_Displacements")
+    @test computes["External_Forces"]["Variable"] == "A"
+    @test computes["External_Displacements"]["Variable"] == "BNP1"
+end
+@testset "ut_get_computes_names" begin
+    testfield_keys = testDatamanager.get_all_field_keys()
+
+    params = Dict("Compute Class Parameters" => Dict("External_Forces" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Sum", "Block" => "block_2", "Variable" => "A"), "External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "B")))
+
+    computes_names = get_computes_names(params)
+
+    @test "External_Forces" in computes_names
+    @test "External_Displacements" in computes_names
 end
 @testset "ut_node_sets" begin
     numbers = [11, 12, 13, 44, 125]

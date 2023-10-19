@@ -63,7 +63,7 @@ function get_block_nodes(block_Id, block)
     return reshape(conn, 1, length(conn))
 end
 
-function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,Vector{Any}}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
+function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,Vector{Any}}, computes, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
     info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
 
     write_info(exo, info)
@@ -89,8 +89,7 @@ function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,
     end
 
     for block in uniqueBlocks
-        conn = get_block_nodes(block_Id, block)# virtual elements    
-        @debug "conn: $conn"
+        conn = get_block_nodes(block_Id, block)# virtual elements   
         write_block(exo, block, "SPHERE", conn)
         write_name(exo, Block, block, "Block_" * string(block))
     end
@@ -98,15 +97,34 @@ function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,
     """
     output structure var_name -> [fieldname, exodus id, field dof]
     """
-    names = collect(keys(sort(output)))
-    write_number_of_variables(exo, NodalVariable, length(names))
-    write_names(exo, NodalVariable, names)
+    output_names = collect(keys(sort(output)))
+    compute_names = collect(keys(sort(computes)))
+
+    write_number_of_variables(exo, NodalVariable, length(output_names))
+    write_names(exo, NodalVariable, output_names)
     nnodes = exo.init.num_nodes
 
-    for varname in names
+    for varname in output_names
         # interface does not work with Int yet 28//08//2023
         @debug "$varname $nnodes"
         write_values(exo, NodalVariable, 1, output[varname][2], varname, zeros(Float64, nnodes))
+    end
+    if length(compute_names) > 0
+        compute_field_names = []
+        for varname in compute_names
+            if haskey(computes[varname], "Mapping")
+                compute_field_names = [compute_field_names; collect(keys(sort(computes[varname]["Mapping"])))]
+            end
+        end
+        if length(compute_field_names) > 0
+            write_number_of_variables(exo, GlobalVariable, length(compute_field_names))
+            write_names(exo, GlobalVariable, Vector{String}(compute_field_names))
+            id = 1
+            for varname in compute_field_names
+                write_values(exo, GlobalVariable, 1, id, varname, [Float64(0.0)])
+                id += 1
+            end
+        end
     end
     return exo
 end
@@ -125,9 +143,38 @@ function write_nodal_results_in_exodus(exo, step, output, datamanager)
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
         var = convert(Array{Float64}, field[1:nnodes, output[varname][3]])
         # interface does not work with Int yet 28//08//2023
-        @debug "$varname $var"
         write_values(exo, NodalVariable, step, output[varname][2], varname, var)
     end
+    return exo
+end
+
+function write_global_results_in_exodus(exo, step, computes, datamanager)
+    #write_values
+    nnodes = datamanager.get_nnodes()
+    for varname in keys(computes)
+        if haskey(computes[varname], "Mapping")
+            compute_class = computes[varname]["Compute Class"]
+            calculation_type = computes[varname]["Calculation Type"]
+            block = computes[varname]["Block"]
+            field = datamanager.get_field(computes[varname]["Variable"])
+            mapping = computes[varname]["Mapping"]
+            for field_name in keys(mapping)
+                global_value = 0
+                values = field[1:nnodes, mapping[field_name]["dof"]]
+                if compute_class == "Block_Data"
+                    if calculation_type == "Maximum"
+                        global_value = maximum(values)
+                    elseif calculation_type == "Minimum"
+                        global_value = minimum(values)
+                    elseif calculation_type == "Sum"
+                        global_value = sum(values)
+                    end
+                end
+                write_values(exo, GlobalVariable, step, mapping[field_name]["result_id"], field_name, [global_value])
+            end
+        end
+    end
+
     return exo
 end
 

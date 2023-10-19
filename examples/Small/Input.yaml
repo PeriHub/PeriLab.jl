@@ -10,29 +10,29 @@ PeriLab:
     Type: "Text File"
     Input Mesh File: "simpleMesh.txt"
     #Input Mesh File: "biggerMesh.txt"
-    Bond Filters:
-      # bf_1:
-      #   Type: "Disk"
-      #   Normal_X: 0.0
-      #   Normal_Y: 1.0
-      #   Normal_Z: 0.0
-      #   Center_X: 0.0
-      #   Center_Y: 1.5
-      #   Center_Z: 0.0
-      #   Radius: 5.0
-      bf_1:
-        Type: "Rectangular_Plane"
-        Normal_X: 0.0
-        Normal_Y: 1.0
-        Normal_Z: 0.0
-        Lower_Left_Corner_X: -0.5
-        Lower_Left_Corner_Y: 0.5
-        Lower_Left_Corner_Z: -1.0
-        Bottom_Unit_Vector_X: 1.0
-        Bottom_Unit_Vector_Y: 0.0
-        Bottom_Unit_Vector_Z: 0.0
-        Bottom_Length: 56.75
-        Side_Length: 2.0
+    # Bond Filters:
+    #   # bf_1:
+    #   #   Type: "Disk"
+    #   #   Normal_X: 0.0
+    #   #   Normal_Y: 1.0
+    #   #   Normal_Z: 0.0
+    #   #   Center_X: 0.0
+    #   #   Center_Y: 1.5
+    #   #   Center_Z: 0.0
+    #   #   Radius: 5.0
+    #   bf_1:
+    #     Type: "Rectangular_Plane"
+    #     Normal_X: 0.0
+    #     Normal_Y: 1.0
+    #     Normal_Z: 0.0
+    #     Lower_Left_Corner_X: -0.5
+    #     Lower_Left_Corner_Y: 0.5
+    #     Lower_Left_Corner_Z: -1.0
+    #     Bottom_Unit_Vector_X: 1.0
+    #     Bottom_Unit_Vector_Y: 0.0
+    #     Bottom_Unit_Vector_Z: 0.0
+    #     Bottom_Length: 56.75
+    #     Side_Length: 2.0
   Physics:
     Material Models:
       Aluminium:
@@ -72,30 +72,15 @@ PeriLab:
       Horizon: 2.7221534653465347
   Boundary Conditions:
     BC_1:
-      Type: "Forces"
+      Type: "Displacements"
       Node Set: "Node Set 1"
+      Coordinate: "y"
+      Value: "0"
+    BC_2:
+      Type: "Displacements"
+      Node Set: "Node Set 2"
       Coordinate: "y"
       Value: "20*t"
-    BC_2:
-      Type: "Forces"
-      Node Set: "Node Set 2"
-      Coordinate: "y"
-      Value: "-20*t"
-    BC_3:
-      Type: "Displacements"
-      Node Set: "Node Set 1"
-      Coordinate: "x"
-      Value: "0"
-    BC_4:
-      Type: "Displacements"
-      Node Set: "Node Set 2"
-      Coordinate: "x"
-      Value: "0"
-    BC_5:
-      Type: "Displacements"
-      Node Set: "Node Set 2"
-      Coordinate: "z"
-      Value: "0"
   Solver:
     Solve For Displacement: True
     Verbose: False
@@ -111,23 +96,24 @@ PeriLab:
       Maximum Bond Difference: 4
       Stable Bond Difference: 1
   Compute Class Parameters:
-    External_Force:
+    External_Forces:
       Compute Class: "Block_Data"
       Calculation Type: "Sum"
       Block: "block_2"
-      Variable: "Force"
-      Output Label: "External_Force"
-    External_Displacement:
+      Variable: "Forces"
+    External_Displacements:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
-      Block: "block_2"
-      Variable: "Displacement"
-      Output Label: "External_Displacement"
+      Block: "block_1"
+      Variable: "Displacements"
   Outputs:
     Output1:
       Output Filename: "test_1"
-      Output Frequency: 10
+      Number of Outputs: 10
       Output Variables:
+        Forces: True
         Displacements: True
         Volume: True
         Number of Neighbors: True
+        External_Forces: True
+        External_Displacements: True

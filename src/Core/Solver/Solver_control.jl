@@ -92,11 +92,11 @@ function set_horizon(params, blockNodes, horizon)
 end
 
 
-function solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, write_results, to, silent)
+function solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, write_results, to, silent)
     #blockNodes, bcs, datamanager, solver_options = init(params, datamanager)
     # here time steps?
     # run solver -> evaluate; test; and synchro?
-    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, exos, synchronise, write_results, to, silent)
+    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, synchronise, write_results, to, silent)
 
 end
 
