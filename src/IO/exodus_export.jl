@@ -180,8 +180,10 @@ function write_global_results_in_exodus(exo, csv_file, step, computes, datamanag
                     global_value = sum(values)
                 end
                 write_values(exo, GlobalVariable, step, mapping[field_name]["result_id"], field_name, [global_value])
-                if computes[varname]["CSV Export"]
-                    push!(global_values, global_value)
+                if haskey(computes[varname], "CSV Export")
+                    if computes[varname]["CSV Export"]
+                        push!(global_values, global_value)
+                    end
                 end
             end
         end

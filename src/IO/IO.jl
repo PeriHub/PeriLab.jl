@@ -177,6 +177,7 @@ function init_write_results(params::Dict, datamanager::Module, nsteps::Int64)
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 
     end
+    csv_files = []
     if datamanager.get_rank() == 0 && length(computes) > 0
         csv_files = Write_CSV_Results.create_result_file(filenames, computes)
     end

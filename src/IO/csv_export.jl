@@ -25,9 +25,11 @@ function create_result_file(filenames, computes)
 
         header = ""
         for key in keys(computes[id])
-            if computes[id][key]["CSV Export"]
-                for fieldname in keys(computes[id][key]["Mapping"])
-                    header = string(header, fieldname, ",")
+            if haskey(computes[id][key], "CSV Export")
+                if computes[id][key]["CSV Export"]
+                    for fieldname in keys(computes[id][key]["Mapping"])
+                        header = string(header, fieldname, ",")
+                    end
                 end
             end
         end
