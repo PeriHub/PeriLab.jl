@@ -60,15 +60,28 @@ function clearNP1(name)
 end
 
 function get_results_mapping(params, datamanager)
-    outputs = get_outputs(params, datamanager.get_all_field_keys())
-    mapping = Dict{Int64,Dict{String,Vector{Any}}}()
+    compute_names = get_computes_names(params)
+    outputs = get_outputs(params, datamanager.get_all_field_keys(), compute_names)
+    computes = get_computes(params, datamanager.get_all_field_keys())
+    output_mapping = Dict{Int64,Dict{String,Vector{Any}}}()
     return_outputs = Dict{Int64,Vector{String}}()
-
+    # computes = [Dict("External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "Displacements", "Mapping" => Dict("External_Displacementsx" => Dict("result_id" => 1, "dof" => 1), "External_Displacementsy" => Dict("result_id" => 2, "dof" => 2), "External_Displacementsz" => Dict("result_id" => 3, "dof" => 3))))]
     for id in eachindex(sort(outputs))
         result_id = 0
-        mapping[id] = Dict{String,Vector{Any}}()
+        output_mapping[id] = Dict{String,Vector{Any}}()
+        # computes_mapping[id] = Dict{String,Vector{Any}}()
         for fieldname in outputs[id]
             result_id += 1
+            global_var = false
+            compute_name = ""
+            #check if fieldname occursin in array computes label
+            for key in keys(computes)
+                if fieldname == key
+                    fieldname = computes[key]["Variable"]
+                    compute_name = key
+                    global_var = true
+                end
+            end
             if datamanager.field_array_type[fieldname]["Type"] == "Matrix"
                 @warn "Matrix types not supported in Exodus export"
                 continue
@@ -77,22 +90,35 @@ function get_results_mapping(params, datamanager)
             sizedatafield = size(datafield)
             if length(sizedatafield) == 0
                 #if fieldname == "Forces"
-                #mapping[id]["Forces"] = [fieldname, result_id, 1, typeof(datafield[1, 1])]
+                #output_mapping[id]["Forces"] = [fieldname, result_id, 1, typeof(datafield[1, 1])]
                 # compute class must be mapped here
                 @error "No field " * fieldname * " exists."
                 return
             end
-            if length(sizedatafield) == 1
-                mapping[id][clearNP1(fieldname)] = [fieldname, result_id, 1, typeof(datafield[1, 1])]
+            if global_var
+                if length(sizedatafield) == 1
+                    computes[compute_name]["Mapping"] = Dict(compute_name => Dict("result_id" => result_id, "dof" => 1))
+                else
+                    refDof = sizedatafield[2]
+                    computes[compute_name]["Mapping"] = Dict()
+                    for dof in 1:refDof
+                        field_name = compute_name * Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)
+                        computes[compute_name]["Mapping"][field_name] = Dict("result_id" => result_id, "dof" => dof)
+                    end
+                end
             else
-                refDof = sizedatafield[2]
-                for dof in 1:refDof
-                    mapping[id][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = [fieldname, result_id, dof, typeof(datafield[1, 1])]
+                if length(sizedatafield) == 1
+                    output_mapping[id][clearNP1(fieldname)] = [fieldname, result_id, 1, typeof(datafield[1, 1])]
+                else
+                    refDof = sizedatafield[2]
+                    for dof in 1:refDof
+                        output_mapping[id][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = [fieldname, result_id, dof, typeof(datafield[1, 1])]
+                    end
                 end
             end
         end
     end
-    return mapping
+    return output_mapping, computes
 end
 
 function initialize_data(filename::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
@@ -131,30 +157,31 @@ function init_write_results(params::Dict, datamanager::Module, nsteps::Int64)
         push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, max_block_id, nnsets))
     end
     coords = vcat(transpose(coordinates[1:nnodes, :]))
-    outputs = get_results_mapping(params, datamanager)
-    output_steps = get_output_frequency(params, nsteps)
+    outputs, computes = get_results_mapping(params, datamanager)
+    output_frequencies = get_output_frequency(params, nsteps)
     for id in eachindex(exos)
 
-        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets)
-        push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => output_steps[id]))
+        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], computes, coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets)
+        push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 
     end
 
-    return exos, outputs
+    return exos, outputs, computes
 end
 
 function read_input_file(filename::String)
     return Read_Input_Deck.read_input_file(filename)
 end
 
-function write_results(exos, time, outputs, datamanager)
+function write_results(exos, time, outputs, computes, datamanager)
     for id in eachindex(exos)
         # step 1 ist the zero step?!
         output_frequency[id]["Counter"] += 1
-        if output_frequency[id]["Output Frequency"] == output_frequency[id]["Counter"]
+        if output_frequency[id]["Counter"] == output_frequency[id]["Output Frequency"]
             output_frequency[id]["Step"] += 1
             exos[id] = Write_Exodus_Results.write_step_and_time(exos[id], output_frequency[id]["Step"], time)
             exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exos[id], output_frequency[id]["Step"], outputs[id], datamanager)
+            exos[id] = Write_Exodus_Results.write_global_results_in_exodus(exos[id], output_frequency[id]["Step"], computes, datamanager)
             output_frequency[id]["Counter"] = 0
         end
     end

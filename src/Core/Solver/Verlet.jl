@@ -135,7 +135,7 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{String,Vector{Any}}}, exos::Vector{Any}, synchronise, write_results, to, silent::Bool)
+function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{String,Vector{Any}}}, computes, exos::Vector{Any}, synchronise, write_results, to, silent::Bool)
     @info "Run Verlet Solver"
     comm = datamanager.get_comm()
     dof = datamanager.get_dof()
@@ -187,12 +187,12 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             a[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] ./ density[find_active(active[1:nnodes])] # element wise
             forces[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] .* volume[find_active(active[1:nnodes])]
 
-            exos = write_results(exos, start_time + step_time, outputs, datamanager)
+            exos = write_results(exos, start_time + step_time, outputs, computes, datamanager)
             datamanager.switch_NP1_to_N()
             update_list .= true
             step_time += dt
             if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
-                @info "Step: $idt / $nsteps [$step_time s]"
+                @info "Step: $idt / $(nsteps+1) [$step_time s]"
             end
 
         end
