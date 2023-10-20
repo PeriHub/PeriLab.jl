@@ -420,14 +420,67 @@ function get_physics_options()
     end
     return physicsOptions
 end
-function get_properties(blockId, property)
+
+"""
+    get_properties(blockId::Int64, property::Dict)
+
+This function retrieves the value of a specified `property` for a given `blockId` if it exists in the properties dictionary.
+
+# Arguments
+- `blockId`::Int64: The identifier of the block for which to retrieve the property.
+- `property`::Dict: The dictionary containing the properties for the blocks.
+
+# Returns
+- `property_value`::Any: The value associated with the specified `property` for the given `blockId`.
+- `Dict()`: An empty dictionary if the specified `property` does not exist for the given `blockId`.
+
+# Example
+```julia
+block_properties = Dict(
+    1 => Dict("color" => "red", "size" => 10),
+    2 => Dict("color" => "blue", "height" => 20)
+)
+
+# Retrieve the 'color' property for block 1
+color_value = get_properties(1, block_properties, "color")  # Returns "red"
+
+# Try to retrieve a non-existent property for block 2
+non_existent_value = get_properties(2, block_properties, "width")  # Returns an empty dictionary
+"""
+function get_properties(blockId::Int64, property::Dict)
     if check_property(blockId, property)
         return properties[blockId][property]
     end
     return Dict()
 end
+"""
+    get_property(blockId::Int64, property::Dict, value_name::String)
 
-function get_property(blockId, property, value_name)
+This function retrieves a specific `value_name` associated with a specified `property` for a given `blockId` if it exists in the properties dictionary.
+
+# Arguments
+- `blockId`::Int64: The identifier of the block for which to retrieve the property.
+- `property`::Dict: The dictionary containing the properties for the blocks.
+- `value_name`::String: The name of the value within the specified `property`.
+
+# Returns
+- `value`::Any: The value associated with the specified `value_name` within the `property` for the given `blockId`.
+- `Nothing`: If the specified `blockId`, `property`, or `value_name` does not exist in the dictionary.
+
+# Example
+```julia
+block_properties = Dict(
+    1 => Dict("color" => Dict("value" => "red", "category" => "primary")),
+    2 => Dict("color" => Dict("value" => "blue", "category" => "primary"))
+)
+
+# Retrieve the 'value' for the 'color' property of block 1
+color_value = get_property(1, block_properties, "color", "value")  # Returns "red"
+
+# Try to retrieve a non-existent value for block 2
+non_existent_value = get_property(2, block_properties, "color", "width")  # Returns Nothing
+"""
+function get_property(blockId::Int64, property::Dict, value_name::String)
     if check_property(blockId, property)
         if value_name in keys(properties[blockId][property])
             return properties[blockId][property][value_name]
@@ -437,10 +490,33 @@ function get_property(blockId, property, value_name)
     return Nothing
 end
 
+"""
+    get_rank()
+
+This function returns the rank of the core.
+
+# Returns
+- `rank`::Any: The value of the `rank` variable.
+
+# Example
+```julia
+current_rank = get_rank()
+"""
 function get_rank()
     return rank
 end
+"""
+    get_max_rank()
 
+This function returns the maximal rank of MPI the `max_rank`.
+
+# Returns
+- `max_rank`::Number: The value of the `max_rank` variable.
+
+# Example
+```julia
+rank = get_max_rank()
+"""
 function get_max_rank()
     return max_rank
 end
