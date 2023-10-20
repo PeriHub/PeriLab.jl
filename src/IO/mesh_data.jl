@@ -491,13 +491,19 @@ end
 function bondIntersectRectanglePlane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
     zero = TOLERANCE
     one = 1.0 + zero
-    ua = cross(bottom_unit_vector, normal)
-    dr = x - lower_left_corner
-    aa = dot(dr, ua)
-    bb = dot(dr, bottom_unit_vector)
 
-    if -zero < aa && aa / side_length < one && -zero < bb && bb / bottom_length < one
-        return true
+    dr = x - lower_left_corner
+    bb = dot(dr, bottom_unit_vector)
+    if -zero < bb && bb / bottom_length < one
+        if length(normal) == 2
+            return true
+        end
+        ua = cross(bottom_unit_vector, normal)
+        aa = dot(dr, ua)
+
+        if -zero < aa && aa / side_length < one
+            return true
+        end
     end
 
     return false
@@ -506,6 +512,7 @@ end
 function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, params::Dict, dof::Int64)
     bond_filters = get_bond_filters(params)
     if bond_filters[1]
+        @info "Apply bond filters"
         coor = names(mesh)[1:dof]
         nnodes = length(mesh[!, coor[1]])
         data = zeros(dof, nnodes)
@@ -520,7 +527,7 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
                 nlist = rectangular_plane_filter(nnodes, data, filter, nlist, dof)
             end
         end
-        @info "Finished apply Bond Filters"
+        @info "Finished applying bond filters"
     end
     return nlist
 end
