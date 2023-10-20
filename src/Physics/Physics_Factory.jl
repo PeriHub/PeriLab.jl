@@ -113,6 +113,7 @@ function init_thermal_model_fields(datamanager)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Temperature", Float64, 1)
     datamanager.create_node_field("Heat Flow", Float64, dof)
+    datamanager.create_node_field("Specific Volume", Float64, 1)
     return datamanager
 end
 
