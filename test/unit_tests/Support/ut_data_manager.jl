@@ -14,6 +14,16 @@ using Test
     @test comm == b
     # MPI.Finalize()
 end
+@testset "ranks" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_rank(2)
+    testDatamanager.set_max_rank(3)
+    @test testDatamanager.get_rank() == 2
+    @test testDatamanager.get_max_rank() == 3
+    testDatamanager.set_rank(3)
+    @test testDatamanager.get_rank() == 3
+end
+
 @testset "get_local_nodes" begin
     testDatamanager = Data_manager
     testDatamanager.set_glob_to_loc(Dict{Int64,Int64}(1 => 1, 3 => 2, 2 => 3))
@@ -324,7 +334,9 @@ end
     testDatamanager.set_block_list([2, 3, 1, 1])
     testDatamanager.init_property()
     @test length(testDatamanager.properties) == 3
+    @test testDatamanager.get_property(1, "Material Model", "E") == Nothing
     testDatamanager.set_property(1, "Material Model", "E", 3)
+    testDatamanager.get_property(1, "Material Model", "E")
     @test testDatamanager.get_property(1, "Material Model", "E") == 3
     testDatamanager.set_property(1, "Material Model", "C", "Hello Test")
     @test testDatamanager.get_property(1, "Material Model", "C") == "Hello Test"
