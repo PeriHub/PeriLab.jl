@@ -422,13 +422,13 @@ function get_physics_options()
 end
 
 """
-    get_properties(blockId::Int64, property::Dict)
+    get_properties(blockId::Int64, property::String)
 
 This function retrieves the value of a specified `property` for a given `blockId` if it exists in the properties dictionary.
 
 # Arguments
 - `blockId`::Int64: The identifier of the block for which to retrieve the property.
-- `property`::Dict: The dictionary containing the properties for the blocks.
+- `property`::String: The dictionary entrycontaining the properties for the blocks.
 
 # Returns
 - `property_value`::Any: The value associated with the specified `property` for the given `blockId`.
@@ -442,25 +442,25 @@ block_properties = Dict(
 )
 
 # Retrieve the 'color' property for block 1
-color_value = get_properties(1, block_properties, "color")  # Returns "red"
+color_value = get_properties(1, "color")  # Returns "red"
 
 # Try to retrieve a non-existent property for block 2
-non_existent_value = get_properties(2, block_properties, "width")  # Returns an empty dictionary
+non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
 """
-function get_properties(blockId::Int64, property::Dict)
+function get_properties(blockId::Int64, property::String)
     if check_property(blockId, property)
         return properties[blockId][property]
     end
     return Dict()
 end
 """
-    get_property(blockId::Int64, property::Dict, value_name::String)
+    get_property(blockId::Int64, property::String, value_name::String)
 
 This function retrieves a specific `value_name` associated with a specified `property` for a given `blockId` if it exists in the properties dictionary.
 
 # Arguments
 - `blockId`::Int64: The identifier of the block for which to retrieve the property.
-- `property`::Dict: The dictionary containing the properties for the blocks.
+- `property`::String: The String property type (e.g. Material model) for the blocks.
 - `value_name`::String: The name of the value within the specified `property`.
 
 # Returns
@@ -469,18 +469,9 @@ This function retrieves a specific `value_name` associated with a specified `pro
 
 # Example
 ```julia
-block_properties = Dict(
-    1 => Dict("color" => Dict("value" => "red", "category" => "primary")),
-    2 => Dict("color" => Dict("value" => "blue", "category" => "primary"))
-)
 
-# Retrieve the 'value' for the 'color' property of block 1
-color_value = get_property(1, block_properties, "color", "value")  # Returns "red"
-
-# Try to retrieve a non-existent value for block 2
-non_existent_value = get_property(2, block_properties, "color", "width")  # Returns Nothing
 """
-function get_property(blockId::Int64, property::Dict, value_name::String)
+function get_property(blockId::Int64, property::String, value_name::String)
     if check_property(blockId, property)
         if value_name in keys(properties[blockId][property])
             return properties[blockId][property][value_name]
@@ -671,11 +662,11 @@ function set_properties(blockId, property, values)
     properties[blockId][property] = values
 end
 
-function set_rank(value)
+function set_rank(value::Int64)
     global rank = value
 end
 
-function set_max_rank(value)
+function set_max_rank(value::Int64)
     global max_rank = value
 end
 
