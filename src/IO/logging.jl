@@ -56,7 +56,7 @@ function init_logging(filename, debug, rank, size)
         end
         error_logger = FormatLogger(logfilename; append=false) do io, args
             if args.level == Logging.Error
-                IO.close_files(exo)
+                IO.close_exodus_files(exo)
                 exit()
             end
         end

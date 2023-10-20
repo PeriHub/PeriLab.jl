@@ -3,10 +3,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../src/IO/exodus_export.jl")
+include("../../../src/IO/csv_export.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .Write_Exodus_Results
+import .Write_CSV_Results
 using Exodus
 using Pkg
 @testset "ut_get_block_nodes" begin
@@ -99,9 +101,9 @@ testDatamanager.set_nset("Nset_2", [5])
 nsets = testDatamanager.get_nsets()
 coords = vcat(transpose(coordinates))
 outputs = Dict("Forcesxx" => ["ForcesNP1", 1, 1, Float64], "Forcesxy" => ["ForcesNP1", 1, 2, Float64], "Forcesxz" => ["ForcesNP1", 1, 3, Float64], "Forcesyx" => ["ForcesNP1", 1, 4, Float64], "Forcesyy" => ["ForcesNP1", 1, 5, Float64], "Forcesyz" => ["ForcesNP1", 1, 6, Float64], "Displacements" => ["DisplacementsNP1", 2, 1, Float64])
-computes = Dict("External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1", "Mapping" => Dict("External_Displacements" => Dict("result_id" => 1, "dof" => 1))))
+computes = Dict(1 => Dict("External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1", "Mapping" => Dict("External_Displacements" => Dict("result_id" => 1, "dof" => 1)))))
 exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
-exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, computes, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets)
+exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, computes[1], coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets)
 exos = []
 push!(exos, exo)
 exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 2, 2.2)
@@ -196,15 +198,22 @@ test_disp_step_one = read_values(exo, NodalVariable, 2, 1, 1)
 
 end
 
-exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes, testDatamanager)
+csv_files = Write_CSV_Results.create_result_file([filename], computes)
+exo = Write_Exodus_Results.write_global_results_in_exodus(exo, csv_files[1], 2, computes[1], testDatamanager)
 
-@testset "ut_write_results_in_exodus" begin
+@testset "ut_write_global_results_in_exodus" begin
 
     global_vars = read_names(exo, GlobalVariable)
     @test global_vars[1] == "External_Displacements"
 
     ftest = read_values(exo, GlobalVariable, 2, 1, 1)
     @test ftest[1] == 3.00001
+
+end
+
+@testset "ut_write_global_results_in_csv" begin
+
+    @test isfile(csv_files[1])
 
 end
 

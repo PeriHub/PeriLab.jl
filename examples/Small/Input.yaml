@@ -99,7 +99,7 @@ PeriLab:
     External_Forces:
       Compute Class: "Block_Data"
       Calculation Type: "Sum"
-      Block: "block_2"
+      Block: "block_1"
       Variable: "Forces"
     External_Displacements:
       Compute Class: "Block_Data"
