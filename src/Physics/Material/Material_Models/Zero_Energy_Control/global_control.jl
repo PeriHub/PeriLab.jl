@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module global_zero_energy_control
-using TensorOperations
 include("../../../../Support/tools.jl")
+include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
 using TensorOperations
+using .Geometry
 export control_name
 export compute_control
 
@@ -59,10 +60,10 @@ function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}},
     return zStiff
 end
 
-function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt, angles, Kinv, zStiff)
+function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Matrix{Float64}, angles::SubArray, Kinv::SubArray, zStiff::SubArray)
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
-        C = rotate_stiffness_tensor(angles[iID, :, :], dof, C)
+        C = rotate_fourth_order_tensor(angles[iID, :], C, dof, false)
         @tensor begin
             zStiff[iID, i, j] = C[i, j, k, l] * Kinv[iID, k, l]
         end
@@ -70,19 +71,17 @@ function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}},
     return zStiff
 end
 
-
-function rotate_fourth_order_tensor(angles, C, dof::Int64, back::Bool)
+function rotate_fourth_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, C::Array{Float64,4}, dof::Int64, back::Bool)
     rot = Geometry.rotation_tensor(angles)
-    R = rot[1:dof, dof]
+    R = rot[1:dof, 1:dof]
     if back
         @tensor begin
-            C[i, j, k, l] = C[i, j, k, l] * R[m, i] * R[n, j] * R[o, k] * R[p, l]
+            C[m, n, o, p] = C[i, j, k, l] * R[m, i] * R[n, j] * R[o, k] * R[p, l]
         end
-
-    else
-        @tensor begin
-            C[i, j, k, l] = C[i, j, k, l] * R[i, m] * R[j, n] * R[k, o] * R[l, p]
-        end
+        return C
+    end
+    @tensor begin
+        C[m, n, o, p] = C[i, j, k, l] * R[i, m] * R[j, n] * R[k, o] * R[l, p]
     end
     return C
 end
