@@ -205,11 +205,11 @@ Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package
 
 """
 
-function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64},Float64,Int64})
+function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}})
     if length(angles) == 3
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end
-    return RotXYZ(0, 0, angles / 180 * pi)
+    return RotXYZ(0, 0, angles[1] / 180 * pi)
 end
 
 end
