@@ -48,17 +48,87 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   numNeighbors = datamanager.get_field("Number of Neighbors")
   alpha = thermal_parameter["Alpha"]
   Tenv = thermal_parameter["Environment Temperature"]
-  heatFlowState = datamanager.get_field("Heat Flow State")
+  equal_discretized = thermal_parameter["Equal Discretized"]
+  heat_flow = datamanager.get_field("Heat Flow", "NP1")
   temperature = datamanager.get_field("Temperature", "NP1")
-  dx::Float32 = 0.0
-  area::Float32 = 1.0
+  specific_volume = datamanager.get_field("Specific Volume")
+  bond_damage = datamanager.get_field("Bond Damage")
+  coordinates = datamanager.get_field("Coordinates")
+
+  dx = 1.0
+  area = 1.0
+
+  if dof == 2
+    dx = sqrt(volume[iID])
+  elseif dof == 3
+    dx = volume[iID]^(1 / 3)
+  end
+
   for iID in nodes
-    if dof == 2
-      dx = sqrt(volume[iID])
-    else
-      dx = volume[iID]^(1 / 3)
+    compareNeighbor = 0
+    neighbor_volume = 0.0
+    right, left, front, back, above, below = false, false, false, false, false, false, false, false
+    for jID in numNeighbors[iID]
+      if bond_damage[iID, jID] == 0.0
+        continue
+      end
+
+      if equal_discretized
+        if !right && coordinates[iID, 1] > coordinates[jID, 1] && coordinates[iID, 2] == coordinates[jID, 2] && coordinates[iID, 3] == coordinates[jID, 3]
+          right = true
+          compare_neighbor += 1
+        end
+        if !left && coordinates[iID, 1] < coordinates[jID, 1] && coordinates[iID, 2] == coordinates[jID, 2] && coordinates[iID, 3] == coordinates[jID, 3]
+          left = true
+          compare_neighbor += 1
+        end
+        if !front && coordinates[iID, 2] > coordinates[jID, 2] && coordinates[iID, 1] == coordinates[jID, 1] && coordinates[iID, 3] == coordinates[jID, 3]
+          front = true
+          compare_neighbor += 1
+        end
+        if !back && coordinates[iID, 2] < coordinates[jID, 2] && coordinates[iID, 1] == coordinates[jID, 1] && coordinates[iID, 3] == coordinates[jID, 3]
+          back = true
+          compare_neighbor += 1
+        end
+        if !above && coordinates[iID, 3] > coordinates[jID, 3] && coordinates[iID, 1] == coordinates[jID, 1] && coordinates[iID, 2] == coordinates[jID, 2]
+          above = true
+          compare_neighbor += 1
+        end
+        if !below && coordinates[iID, 3] < coordinates[jID, 3] && coordinates[iID, 1] == coordinates[jID, 1] && coordinates[iID, 2] == coordinates[jID, 2]
+          below = true
+          compare_neighbor += 1
+        end
+
+      else
+        neighbor_volume += volume[jID]
+      end
+
     end
-    heatFlowState[iID] += (alpha * (temperature[iID] - Tenv)) / dx * area
+
+    if equal_discretized
+
+      if dof == 2 && compare_neighbor != 4
+        area = 4 - compareNeighbor
+      elseif dof == 3 && compare_neighbor != 6
+        area = 6 - compareNeighbor
+      end
+
+      specific_volume[iID] = compareNeighbor
+
+    else
+
+      specific_volume[iID] = neighbor_volume / dx
+
+      if dof == 2
+        area = specific_volume[iID] / (1 / 4)
+      elseif dof == 3
+        area = specific_volume[iID] / (1 / 6)
+      end
+
+    end
+
+    heat_flow[iID] += (alpha * (temperature[iID] - Tenv)) / dx * area
+
   end
 
   return datamanager

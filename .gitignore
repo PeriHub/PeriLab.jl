@@ -8,6 +8,7 @@
 *build/
 Manifest.toml
 *.e*
+*.csv
 !**/Reference/*.e*
 
 test/tryout/

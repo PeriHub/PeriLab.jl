@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Write_Exodus_Results
+include("csv_export.jl")
 using Exodus
 using Pkg
+using .Write_CSV_Results
 export get_paraviewCoordinates
-export init_result_file
-export init_write_results_in_exodus
-export write_results_in_exodus
+export create_result_file
+export init_results_in_exodus
 export merge_exodus_file
 
 function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_node_sets)
@@ -148,31 +149,47 @@ function write_nodal_results_in_exodus(exo, step, output, datamanager)
     return exo
 end
 
-function write_global_results_in_exodus(exo, step, computes, datamanager)
+function write_global_results_in_exodus(exo, csv_file, step, computes, datamanager)
     #write_values
     nnodes = datamanager.get_nnodes()
+    global_values = []
     for varname in keys(computes)
         if haskey(computes[varname], "Mapping")
             compute_class = computes[varname]["Compute Class"]
             calculation_type = computes[varname]["Calculation Type"]
-            block = computes[varname]["Block"]
             field = datamanager.get_field(computes[varname]["Variable"])
             mapping = computes[varname]["Mapping"]
             for field_name in keys(mapping)
                 global_value = 0
                 values = field[1:nnodes, mapping[field_name]["dof"]]
                 if compute_class == "Block_Data"
-                    if calculation_type == "Maximum"
-                        global_value = maximum(values)
-                    elseif calculation_type == "Minimum"
-                        global_value = minimum(values)
-                    elseif calculation_type == "Sum"
-                        global_value = sum(values)
-                    end
+                    block = computes[varname]["Block"]
+                    block_Id = datamanager.get_field("Block_Id")
+                    block_filter = filter(x -> block_Id[x] == parse(Int, block[7:end]), 1:length(block_Id))
+                    values = values[block_filter]
+                end
+                if length(values) == 0
+                    @warn "No values for $field_name, check compute class parameters or block assignment!"
+                    continue
+                end
+                if calculation_type == "Maximum"
+                    global_value = maximum(values)
+                elseif calculation_type == "Minimum"
+                    global_value = minimum(values)
+                elseif calculation_type == "Sum"
+                    global_value = sum(values)
                 end
                 write_values(exo, GlobalVariable, step, mapping[field_name]["result_id"], field_name, [global_value])
+                if haskey(computes[varname], "CSV Export")
+                    if computes[varname]["CSV Export"]
+                        push!(global_values, global_value)
+                    end
+                end
             end
         end
+    end
+    if length(global_values) > 0
+        Write_CSV_Results.write_global_results_in_csv(csv_file, global_values)
     end
 
     return exo

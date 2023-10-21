@@ -107,7 +107,7 @@ MPI.Init()
                 @includetests["unit_tests/Physics/Material/ut_material_basis"]
             end
             @testset "ut_correspondence" begin
-                @includetests["unit_tests/Physics/Material/Material_Models/ut_Correspondence.jl"]
+                @includetests["unit_tests/Physics/Material/Material_Models/ut_Correspondence"]
             end
             @testset "ut_ordinary" begin
                 @includetests["unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary"]

@@ -7,11 +7,13 @@ module PeriLab
 include("./Support/data_manager.jl")
 include("./IO/logging.jl")
 include("./IO/IO.jl")
+include("./IO/csv_export.jl")
 include("./Core/Solver/Solver_control.jl")
 using MPI
 using Pkg
 using TimerOutputs
 using Logging
+using .Write_CSV_Results
 const to = TimerOutput()
 using .Data_manager
 import .Logging_module
@@ -111,14 +113,14 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         @info "Solver init"
         @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
         @info "Init write results"
-        @timeit to "IO.init_write_results" exos, outputs, computes = IO.init_write_results(params, datamanager, solver_options["nsteps"])
+        @timeit to "IO.init_write_results" exos, csv_files, outputs, computes = IO.init_write_results(params, datamanager, solver_options["nsteps"])
         Logging_module.set_exos(exos)
 
         if dry_run
             nsteps = solver_options["nsteps"]
             solver_options["nsteps"] = 10
             elapsed_time = @elapsed begin
-                @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, IO.write_results, to, silent)
+                @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, csv_files, IO.write_results, to, silent)
             end
 
             @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
@@ -126,10 +128,13 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
             @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
 
         else
-            @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, IO.write_results, to, silent)
+            @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, csv_files, IO.write_results, to, silent)
         end
 
-        IO.close_files(exos)
+        IO.close_exodus_files(exos)
+        if rank == 0
+            IO.close_csv_files(csv_files)
+        end
 
         if dry_run
             IO.delete_files(exos)
