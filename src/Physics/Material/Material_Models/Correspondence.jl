@@ -132,7 +132,7 @@ function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix, angles
   return matrix
 
 end
-function rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64},Float64,Int64}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
+function rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
   rot = Geometry.rotation_tensor(angles)
 
   R = rot[1:dof, 1:dof]
