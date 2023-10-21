@@ -27,7 +27,7 @@ end
 """
    compute_force(datamanager, nodes, thermal_parameter, time, dt)
 
-   Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+   Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
    Parameters:
         - `datamanager::Data_manager`: Datamanager.
@@ -56,7 +56,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     if dof == 2
       dx = sqrt(volume[iID])
     else
-      dx = volume[iID]^1 / 3
+      dx = volume[iID]^(1 / 3)
     end
     heatFlowState[iID] += (alpha * (temperature[iID] - Tenv)) / dx * area
   end
@@ -64,4 +64,9 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   return datamanager
 end
 
+
+
+function get_surface_nodes()
+
+end
 end
