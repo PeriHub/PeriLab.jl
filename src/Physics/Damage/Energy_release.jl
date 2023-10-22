@@ -45,7 +45,6 @@ end
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float64, dt::Float64)
   dof::Int64 = datamanager.get_dof()
   nlist = datamanager.get_nlist()
-  datamanager.synch_field("Force Densities")
   update_list = datamanager.get_field("Update List")
   horizon = datamanager.get_field("Horizon")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
