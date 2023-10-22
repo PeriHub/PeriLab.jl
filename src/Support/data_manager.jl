@@ -35,6 +35,7 @@ export set_property
 export set_rank
 export set_max_rank
 export switch_NP1_to_N
+export synch_manager
 ##########################
 # Variables
 ##########################
@@ -734,10 +735,10 @@ function switch_NP1_to_N()
         end
     end
 end
-function synch_manager()
-    # Liste mit den Daten die synchronisiert werden sollen -> 
-    # upload; für init
-    # download sum; für time int
-    # down - up für bond information
+function synch_manager(synchronise_field, direction::String)
+    synch_fields = get_synch_fields()
+    for synch_field in keys(synch_fields)
+        synchronise_field(get_comm(), synch_fields, overlap_map, get_field, synch_field, direction)
+    end
 end
 end

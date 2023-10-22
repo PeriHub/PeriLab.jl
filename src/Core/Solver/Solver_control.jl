@@ -54,6 +54,8 @@ function init(params, datamanager)
     end
     if solver_options["Thermal Models"]
         datamanager = Physics.init_thermal_model_fields(datamanager)
+        heatCapacity = datamanager.create_constant_node_field("Heat Capacity", Float64, 1)
+        heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
     end
     if solver_options["Additive Models"]
         datamanager = Physics.init_additive_model_fields(datamanager)
@@ -77,43 +79,53 @@ function get_blockNodes(blockIDs, nnodes)
     return blockNodes
 end
 
-function set_density(params, blockNodes, density)
+function set_density(params::Dict, blockNodes::Dict, density::SubArray)
     for block in eachindex(blockNodes)
         density[blockNodes[block]] .= get_density(params, block)
     end
     return density
 end
 
-function set_horizon(params, blockNodes, horizon)
+function set_horizon(params::Dict, blockNodes::Dict, horizon::SubArray)
     for block in eachindex(blockNodes)
         horizon[blockNodes[block]] .= get_horizon(params, block)
     end
     return horizon
 end
 
+
+
+function set_heatcapacity(params::Dict, blockNodes::Dict, heatCapacity::SubArray)
+    for block in eachindex(blockNodes)
+        heatCapacity[blockNodes[block]] .= get_heatcapacity(params, block)
+    end
+    return heatCapacity
+end
 function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{String,Vector{Any}}}, computes, exos::Vector{Any}, csv_files, write_results, to, silent::Bool)
 
-    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, csv_files, synchronise, write_results, to, silent)
+    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, csv_files, synchronise_field, write_results, to, silent)
 
 end
 
-function synchronise(comm, datamanager, direction)
-    synch_fields = datamanager.get_synch_fields()
-    overlap_map = datamanager.get_overlap_map()
-    for synch_field in keys(synch_fields)
-        if direction == "download_from_cores"
-            if synch_fields[synch_field][direction]
-                vector = datamanager.get_field(synch_field)
-                synch_slaves_to_master(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
-            end
-        end
-        if direction == "upload_to_cores"
-            if synch_fields[synch_field][direction]
-                vector = datamanager.get_field(synch_field)
-                synch_master_to_slaves(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
-            end
+function synchronise_field(comm, synch_fields, overlap_map, get_field, synch_field::String, direction::String)
+
+    if !haskey(synch_fields, synch_field)
+        @warn "Field $synch_field does not exists"
+        return
+    end
+    if direction == "download_from_cores"
+        if synch_fields[synch_field][direction]
+            vector = get_field(synch_field)
+            synch_slaves_to_master(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
         end
     end
+    if direction == "upload_to_cores"
+        if synch_fields[synch_field][direction]
+            vector = get_field(synch_field)
+            synch_master_to_slaves(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+        end
+    end
+
 end
 
 function write_results(exos, dt, outputs, csv_files, computes, datamanager)

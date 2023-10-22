@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function get_density(params, blockID)
+function get_density(params::Dict, blockID::Int64)
     if check_element(params["Blocks"]["block_"*string(blockID)], "Density")
 
         return params["Blocks"]["block_"*string(blockID)]["Density"]
@@ -11,7 +11,16 @@ function get_density(params, blockID)
     return
 end
 
-function get_horizon(params, blockID)
+function get_heatcapacity(params::Dict, blockID::Int64)
+    if check_element(params["Blocks"]["block_"*string(blockID)], "Heat Capacity")
+
+        return params["Blocks"]["block_"*string(blockID)]["Heat Capacity"]
+    end
+    @error "No heat capacity defined for block " * string(blockID)
+    return
+end
+
+function get_horizon(params::Dict, blockID::Int64)
     if check_element(params["Blocks"], "block_" * string(blockID))
         if check_element(params["Blocks"]["block_"*string(blockID)], "Horizon")
             return params["Blocks"]["block_"*string(blockID)]["Horizon"]
@@ -33,7 +42,7 @@ function get_number_of_blocks(params)
     return 0
 end
 
-function get_block_models(params, blockID)
+function get_block_models(params::Dict, blockID::Int64)
     modelDict = Dict{String,String}()
     check = check_element(params["Blocks"], "block_" * string(blockID))
     if check

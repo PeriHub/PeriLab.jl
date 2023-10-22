@@ -135,9 +135,8 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{String,Vector{Any}}}, computes, exos::Vector{Any}, csv_files, synchronise, write_results, to, silent::Bool)
+function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{String,Vector{Any}}}, computes, exos::Vector{Any}, csv_files, synchronise_field, write_results, to, silent::Bool)
     @info "Run Verlet Solver"
-    comm = datamanager.get_comm()
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     forces = datamanager.get_field("Forces", "NP1")
@@ -152,8 +151,18 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
     vN = datamanager.get_field("Velocity", "N")
     vNP1 = datamanager.get_field("Velocity", "NP1")
     a = datamanager.get_field("Acceleration")
+
+    if solver_options["Thermal Models"]
+        flowN = datamanager.get_flow("Thermal Flow", "N")
+        flowNP1 = datamanager.get_flow("Thermal Flow", "NP1")
+        temperatureN = datamanager.get_flow("Temperature", "NP1")
+        temperatureNP1 = datamanager.get_flow("Temperature", "NP1")
+        heatCapacity = datamanager.get_field("Heat Capacity")
+        deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
+    end
     active = datamanager.get_field("Active")
     update_list = datamanager.get_field("Update List")
+
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float64 = solver_options["Initial Time"]
@@ -162,31 +171,37 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
     for idt in progress_bar(datamanager.get_rank(), nsteps, silent)
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
+            if solver_options["Material Models"]
+                vNP1[find_active(active[1:nnodes]), :] = (1 - numericalDamping) .* vN[find_active(active[1:nnodes]), :] + 0.5 * dt .* a[find_active(active[1:nnodes]), :]
 
-            vNP1[find_active(active[1:nnodes]), :] = (1 - numericalDamping) .* vN[find_active(active[1:nnodes]), :] + 0.5 * dt .* a[find_active(active[1:nnodes]), :]
-
-            uNP1[find_active(active[1:nnodes]), :] = uN[find_active(active[1:nnodes]), :] + dt .* vNP1[find_active(active[1:nnodes]), :]
-
+                uNP1[find_active(active[1:nnodes]), :] = uN[find_active(active[1:nnodes]), :] + dt .* vNP1[find_active(active[1:nnodes]), :]
+            end
+            if solver_options["Thermal Models"]
+                temperatureNP1[find_active(active[1:nnodes])] = temperatureN[find_active(active[1:nnodes])] + deltaT[find_active(active[1:nnodes])]
+            end
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
 
             defCoorNP1[find_active(active[1:nnodes]), :] = coor[find_active(active[1:nnodes]), :] + uNP1[find_active(active[1:nnodes]), :]
 
-            synchronise(comm, datamanager, "upload_to_cores")
+            datamanager.synch_manager(synchronise_field, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
                 bn = blockNodes[block]
                 active_nodes = bn[find_active(active[bn])]
-                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, active_nodes, block, dt, step_time, solver_options, to)
+                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, active_nodes, block, dt, step_time, solver_options, synchronise_field, to)
             end
 
-            synchronise(comm, datamanager, "download_from_cores")
+            datamanager.synch_manager(synchronise_field, "download_from_cores")
             # synch
 
             check_inf_or_nan(forces_density, "Forces")
-
-            a[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] ./ density[find_active(active[1:nnodes])] # element wise
-            forces[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] .* volume[find_active(active[1:nnodes])]
-
+            if solver_options["Material Models"]
+                a[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] ./ density[find_active(active[1:nnodes])] # element wise
+                forces[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] .* volume[find_active(active[1:nnodes])]
+            end
+            if solver_options["Thermal Models"]
+                deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
+            end
             exos = write_results(exos, csv_files, start_time + step_time, outputs, computes, datamanager)
             datamanager.switch_NP1_to_N()
             update_list .= true
