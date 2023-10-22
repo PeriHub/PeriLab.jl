@@ -15,7 +15,7 @@ using .Correspondence
     back = true
     tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, back)
     @test tensorTest == tensor
-    angles = 90.0
+    angles = [90.0]
     tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, back)
     @test isapprox(tensorTest[1, 1] + 1, 1) # plus one, because of how approx works
     @test isapprox(tensorTest[1, 2] + 1, 1)
