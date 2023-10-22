@@ -46,7 +46,7 @@ function pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64
   @info "Please write a possible precalculation routines in pre_calculation_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, Pre_calculation_parameter, time, dt) function."
-  @info "The datamanger and Pre_calculation_parameter holds all you need to solve your problem on material level."
+  @info "The datamanager and Pre_calculation_parameter holds all you need to solve your problem on material level."
   @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
   return datamanager
 end

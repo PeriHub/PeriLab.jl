@@ -45,7 +45,7 @@ function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   @info "Please write a additive name in additive_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_force(datamanager, nodes, additive_parameter, time, dt) function."
-  @info "The datamanger and additive_parameter holds all you need to solve your problem on additive level."
+  @info "The datamanager and additive_parameter holds all you need to solve your problem on additive level."
   @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
   return datamanager
 end
