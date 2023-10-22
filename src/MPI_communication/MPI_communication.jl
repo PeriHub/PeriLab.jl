@@ -4,7 +4,7 @@
 
 import MPI
 
-function send_single_value_from_vector(comm, master, values, type)
+function send_single_value_from_vector(comm::MPI.Comm, master::Int64, values::Union{Vector{Float64},Vector{Int64},Vector{Bool}}, type::Type)
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
     if type == String
@@ -29,7 +29,7 @@ function send_single_value_from_vector(comm, master, values, type)
     return recv_msg[1]
 end
 """
-function synch_overlapnodes(comm, topo, vector)
+function synch_overlapnodes(comm::MPI.Comm, topo, vector)
     currentRank = MPI.Comm_rank(comm)
     ncores = MPI.Comm_size(comm)
     overlapCurrentRank = topo[currentRank+1]
@@ -52,7 +52,7 @@ function synch_overlapnodes(comm, topo, vector)
 end
 """
 
-function synch_slaves_to_master(comm, overlapnodes, vector, dof)
+function synch_slaves_to_master(comm::MPI.Comm, overlapnodes, vector, dof)
     # does not work for bool fields
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
@@ -97,7 +97,7 @@ function synch_slaves_to_master(comm, overlapnodes, vector, dof)
 end
 
 
-function synch_master_to_slaves(comm, overlapnodes, vector, dof)
+function synch_master_to_slaves(comm::MPI.Comm, overlapnodes, vector, dof)
 
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
@@ -136,7 +136,7 @@ function synch_master_to_slaves(comm, overlapnodes, vector, dof)
     return vector
 end
 
-function send_vectors_to_cores(comm, master, values, type)
+function send_vectors_to_cores(comm::MPI.Comm, master, values, type)
     #tbd
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
@@ -162,7 +162,7 @@ function send_vectors_to_cores(comm, master, values, type)
     return recv_msg
 end
 
-function send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
+function send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, distribution)
     currentRank = MPI.Comm_rank(comm)
     if currentRank == 0
         recv_msg = send_msg[distribution[1]]
@@ -174,7 +174,7 @@ function send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
     end
     return recv_msg
 end
-function send_value(comm, master, send_msg)
+function send_value(comm::MPI.Comm, master, send_msg)
 
     if MPI.Comm_rank(comm) == master
         recv_msg = send_msg
@@ -185,7 +185,7 @@ function send_value(comm, master, send_msg)
     return recv_msg
 end
 
-function get_vector(comm, vector, topo)
+function get_vector(comm::MPI.Comm, vector, topo)
     rank = MPI.Comm_rank(comm)
     ncores = MPI.Comm_size(comm)
     synchTopo = topo[rank]
@@ -200,7 +200,7 @@ function get_vector(comm, vector, topo)
     return vector
 end
 
-function recv_vector_from_root(comm, recv_msg)
+function recv_vector_from_root(comm::MPI.Comm, recv_msg)
 
     #if rank == MPI.Comm_rank(comm)
     MPI.Recv!(recv_msg, 0, 0, comm)
@@ -209,10 +209,10 @@ function recv_vector_from_root(comm, recv_msg)
 end
 
 
-function find_and_set_core_value_min(comm, value)
+function find_and_set_core_value_min(comm::MPI.Comm, value)
     return MPI.Allreduce!([value], MPI.MIN, comm)[1]
 end
 
-function find_and_set_core_value_max(comm, value)
+function find_and_set_core_value_max(comm::MPI.Comm, value)
     return MPI.Allreduce!([value], MPI.MAX, comm)[1]
 end
