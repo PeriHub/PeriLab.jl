@@ -44,12 +44,14 @@ end
    """
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float64, dt::Float64)
   dof::Int64 = datamanager.get_dof()
+  nlist = datamanager.get_nlist()
+  datamanager.synch_field("Force Densities")
   update_list = datamanager.get_field("Update List")
   horizon = datamanager.get_field("Horizon")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
   bondGeometry = datamanager.get_field("Bond Geometry")
+  forceDensities = datamanager.get_field("Force Densities", "NP1")
   deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-  bond_force = datamanager.get_field("Bond Forces")
   critical_Energy = damage_parameter["Critical Energy"]
   tension::Bool = false
   bond_energy::Float64 = 0.0
@@ -68,7 +70,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         end
       end
       # 0.25 ?!
-      bond_energy = 0.5 * sum(deformed_bond[iID][jID, 1:end-1] .* bond_force[iID][jID, 1:end])
+
+      # kraft muss projizizert werden und synchronisiert
+      bond_energy = 0.5 * sum((forceDensities[iID] - forceDensities[nlist[iID][jID]]) .* deformed_bond[iID][jID, 1:end] .* deformed_bond[iID][jID, 1:end] ./ deformed_bond[iID][jID, end])
       if critical_Energy < bond_energy / get_quad_horizon(horizon[iID], dof)
         bond_damage[iID][jID] = 0.0
         update_list[iID] = true

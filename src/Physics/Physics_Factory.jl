@@ -27,7 +27,7 @@ export init_thermal_model_fields
 function init_models(datamanager)
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
-function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, time::Float64, options, to)
+function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, time::Float64, options::Dict, synchronise_field, to)
 
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
     if options["Additive Models"]
@@ -40,11 +40,23 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
 
     if options["Damage Models"]
         if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
+            bondDamageN = datamanager.get_field("Bond Damage", "N")
+            bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
+            bondDamageNP1 = copy(bondDamageN)
+
+            @timeit to "compute_forces for damage" datamanager = Material.distribute_force_densities(datamanager, nodes)
+
+
+
+            synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "download_from_cores")
+            synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "upload_to_cores")
             @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
             @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
             update_list = datamanager.get_field("Update List")
             update_nodes = view(nodes, find_active(update_list[nodes]))
             datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
+            force_densities = datamanager.get_field("Force Densities", "NP1")
+            force_densities .= 0.0
         end
     end
 
