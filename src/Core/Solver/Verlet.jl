@@ -183,6 +183,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
 
             defCoorNP1[find_active(active[1:nnodes]), :] = coor[find_active(active[1:nnodes]), :] + uNP1[find_active(active[1:nnodes]), :]
 
+
             datamanager.synch_manager(synchronise_field, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
@@ -190,10 +191,9 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
                 active_nodes = bn[find_active(active[bn])]
                 @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, active_nodes, block, dt, step_time, solver_options, synchronise_field, to)
             end
-
             datamanager.synch_manager(synchronise_field, "download_from_cores")
             # synch
-
+            @timeit to "second apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
             check_inf_or_nan(forces_density, "Forces")
             if solver_options["Material Models"]
                 a[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] ./ density[find_active(active[1:nnodes])] # element wise
