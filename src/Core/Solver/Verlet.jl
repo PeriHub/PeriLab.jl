@@ -153,9 +153,9 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
     a = datamanager.get_field("Acceleration")
 
     if solver_options["Thermal Models"]
-        flowN = datamanager.get_field("Thermal Flow", "N")
-        flowNP1 = datamanager.get_field("Thermal Flow", "NP1")
-        temperatureN = datamanager.get_field("Temperature", "NP1")
+        flowN = datamanager.get_field("Heat Flow", "N")
+        flowNP1 = datamanager.get_field("Heat Flow", "NP1")
+        temperatureN = datamanager.get_field("Temperature", "N")
         temperatureNP1 = datamanager.get_field("Temperature", "NP1")
         heatCapacity = datamanager.get_field("Heat Capacity")
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
