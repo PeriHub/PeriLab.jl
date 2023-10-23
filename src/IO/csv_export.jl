@@ -6,38 +6,21 @@ module Write_CSV_Results
 export create_result_file
 export write_global_results_in_csv
 
-function create_result_file(filenames, computes)
-    csv_files = []
-    for (id, filename) in enumerate(filenames)
+function create_result_file(filename, outputs)
 
-        if !haskey(computes, id)
-            continue
-        end
-        if ".e" == filename[end-1:end]
-            filename = filename[1:end-2]
-        end
-        filename = filename * "_globals.csv"
-        if isfile(filename)
-            rm(filename)
-        end
-        @info "Create output " * filename
-        csv_file = open(filename, "w")
-
-        header = ""
-        for key in keys(computes[id])
-            if haskey(computes[id][key], "CSV Export")
-                if computes[id][key]["CSV Export"]
-                    for fieldname in keys(computes[id][key]["Mapping"])
-                        header = string(header, fieldname, ",")
-                    end
-                end
-            end
-        end
-        write(csv_file, header * "\n")
-
-        push!(csv_files, csv_file)
+    if isfile(filename)
+        rm(filename)
     end
-    return csv_files
+    @info "Create output " * filename
+    csv_file = open(filename, "w")
+
+    header = ""
+    for key in keys(outputs["Fields"])
+        header = string(header, key, ",")
+    end
+    write(csv_file, header * "\n")
+
+    return csv_file
 end
 
 function write_global_results_in_csv(csv_file, values)

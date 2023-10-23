@@ -64,7 +64,7 @@ function get_block_nodes(block_Id, block)
     return reshape(conn, 1, length(conn))
 end
 
-function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,Vector{Any}}, computes, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
+function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
     info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
 
     write_info(exo, info)
@@ -98,33 +98,26 @@ function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{String,
     """
     output structure var_name -> [fieldname, exodus id, field dof]
     """
-    output_names = collect(keys(sort(output)))
-    compute_names = collect(keys(sort(computes)))
+    nodal_outputs = Dict(key => value for (key, value) in output["Fields"] if (!value["global_var"]))
+    global_outputs = Dict(key => value for (key, value) in output["Fields"] if (value["global_var"]))
+    nodal_output_names = collect(keys(sort(nodal_outputs)))
+    global_output_names = collect(keys(sort(global_outputs)))
+    # compute_names = collect(keys(sort(computes)))
 
-    write_number_of_variables(exo, NodalVariable, length(output_names))
-    write_names(exo, NodalVariable, output_names)
+    write_number_of_variables(exo, NodalVariable, length(nodal_output_names))
+    write_names(exo, NodalVariable, nodal_output_names)
     nnodes = exo.init.num_nodes
 
-    for varname in output_names
+    for varname in nodal_output_names
         # interface does not work with Int yet 28//08//2023
         @debug "$varname $nnodes"
-        write_values(exo, NodalVariable, 1, output[varname][2], varname, zeros(Float64, nnodes))
+        write_values(exo, NodalVariable, 1, output["Fields"][varname]["result_id"], varname, zeros(Float64, nnodes))
     end
-    if length(compute_names) > 0
-        compute_field_names = []
-        for varname in compute_names
-            if haskey(computes[varname], "Mapping")
-                compute_field_names = [compute_field_names; collect(keys(sort(computes[varname]["Mapping"])))]
-            end
-        end
-        if length(compute_field_names) > 0
-            write_number_of_variables(exo, GlobalVariable, length(compute_field_names))
-            write_names(exo, GlobalVariable, Vector{String}(compute_field_names))
-            id = 1
-            for varname in compute_field_names
-                write_values(exo, GlobalVariable, 1, id, varname, [Float64(0.0)])
-                id += 1
-            end
+    if length(global_output_names) > 0
+        write_number_of_variables(exo, GlobalVariable, length(global_output_names))
+        write_names(exo, GlobalVariable, global_output_names)
+        for varname in global_output_names
+            write_values(exo, GlobalVariable, 1, output["Fields"][varname]["result_id"], varname, [Float64(0.0)])
         end
     end
     return exo
@@ -139,57 +132,50 @@ function write_nodal_results_in_exodus(exo, step, output, datamanager)
     #write_values
     nnodes = datamanager.get_nnodes()
     for varname in keys(output)
-        field = datamanager.get_field(output[varname][1])
+        field = datamanager.get_field(output[varname]["fieldname"])
         #exo, timestep::Integer, id::Integer, var_index::Integer,vector
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
-        var = convert(Array{Float64}, field[1:nnodes, output[varname][3]])
+        var = convert(Array{Float64}, field[1:nnodes, output[varname]["dof"]])
         # interface does not work with Int yet 28//08//2023
-        write_values(exo, NodalVariable, step, output[varname][2], varname, var)
+        write_values(exo, NodalVariable, step, output[varname]["result_id"], varname, var)
     end
     return exo
 end
 
-function write_global_results_in_exodus(exo, csv_file, step, computes, datamanager)
+function write_global_results_in_exodus(exo, step, output, output_type, datamanager)
     #write_values
     nnodes = datamanager.get_nnodes()
     global_values = []
-    for varname in keys(computes)
-        if haskey(computes[varname], "Mapping")
-            compute_class = computes[varname]["Compute Class"]
-            calculation_type = computes[varname]["Calculation Type"]
-            field = datamanager.get_field(computes[varname]["Variable"])
-            mapping = computes[varname]["Mapping"]
-            for field_name in keys(mapping)
-                global_value = 0
-                values = field[1:nnodes, mapping[field_name]["dof"]]
-                if compute_class == "Block_Data"
-                    block = computes[varname]["Block"]
-                    block_Id = datamanager.get_field("Block_Id")
-                    block_filter = filter(x -> block_Id[x] == parse(Int, block[7:end]), 1:length(block_Id))
-                    values = values[block_filter]
-                end
-                if length(values) == 0
-                    @warn "No values for $field_name, check compute class parameters or block assignment!"
-                    continue
-                end
-                if calculation_type == "Maximum"
-                    global_value = maximum(values)
-                elseif calculation_type == "Minimum"
-                    global_value = minimum(values)
-                elseif calculation_type == "Sum"
-                    global_value = sum(values)
-                end
-                write_values(exo, GlobalVariable, step, mapping[field_name]["result_id"], field_name, [global_value])
-                if haskey(computes[varname], "CSV Export")
-                    if computes[varname]["CSV Export"]
-                        push!(global_values, global_value)
-                    end
-                end
-            end
+    for varname in keys(output)
+        compute_class = output[varname]["compute_params"]["Compute Class"]
+        calculation_type = output[varname]["compute_params"]["Calculation Type"]
+        field = datamanager.get_field(output[varname]["compute_params"]["Variable"])
+        global_value = 0
+        values = field[1:nnodes, output[varname]["dof"]]
+        if compute_class == "Block_Data"
+            block = output[varname]["compute_params"]["Block"]
+            block_Id = datamanager.get_field("Block_Id")
+            block_filter = filter(x -> block_Id[x] == parse(Int, block[7:end]), 1:length(block_Id))
+            values = values[block_filter]
         end
+        if length(values) == 0
+            @warn "No values for $varname, check compute class parameters or block assignment!"
+            continue
+        end
+        if calculation_type == "Maximum"
+            global_value = maximum(values)
+        elseif calculation_type == "Minimum"
+            global_value = minimum(values)
+        elseif calculation_type == "Sum"
+            global_value = sum(values)
+        end
+        if output_type == "Exodus" && typeof(exo) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
+            write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, [global_value])
+        end
+        push!(global_values, global_value)
     end
-    if length(global_values) > 0
-        Write_CSV_Results.write_global_results_in_csv(csv_file, global_values)
+    if output_type == "CSV"
+        Write_CSV_Results.write_global_results_in_csv(exo, global_values)
     end
 
     return exo

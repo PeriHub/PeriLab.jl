@@ -113,35 +113,32 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         @info "Solver init"
         @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
         @info "Init write results"
-        @timeit to "IO.init_write_results" exos, csv_files, outputs, computes = IO.init_write_results(params, datamanager, solver_options["nsteps"])
-        Logging_module.set_exos(exos)
+        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, datamanager, solver_options["nsteps"])
+        Logging_module.set_result_files(result_files)
 
         if dry_run
             nsteps = solver_options["nsteps"]
             solver_options["nsteps"] = 10
             elapsed_time = @elapsed begin
-                @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, csv_files, IO.write_results, to, silent)
+                @timeit to "Solver.solver" result_files = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
             end
 
             @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
-            file_size = IO.get_file_size(exos)
+            file_size = IO.get_file_size(result_files)
             @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
 
         else
-            @timeit to "Solver.solver" exos = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, csv_files, IO.write_results, to, silent)
+            @timeit to "Solver.solver" result_files = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
         end
 
-        IO.close_exodus_files(exos)
-        if rank == 0
-            IO.close_csv_files(csv_files)
-        end
+        IO.close_result_files(result_files)
 
         if dry_run
-            IO.delete_files(exos)
+            IO.delete_files(result_files)
         end
 
         if size > 1 && rank == 0
-            IO.merge_exodus_files(exos)
+            IO.merge_exodus_files(result_files)
         end
         MPI.Barrier(comm)
         if size > 1

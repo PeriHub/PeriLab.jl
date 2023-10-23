@@ -25,8 +25,15 @@ function get_output_filenames(params)
         filenames = []
         outputs = params["Outputs"]
         for output in keys(outputs)
+            output_type = get_output_type(outputs[output])
             if check_element(outputs[output], "Output Filename")
-                push!(filenames, outputs[output]["Output Filename"])
+                filename = outputs[output]["Output Filename"]
+                if output_type == "CSV"
+                    filename = filename * ".csv"
+                else
+                    filename = filename * ".e"
+                end
+                push!(filenames, filename)
             end
         end
         filenames = search_for_duplicates(filenames)
@@ -36,16 +43,32 @@ function get_output_filenames(params)
     return []
 end
 
-function get_output_variables(outputs, variables, computes)
+function get_output_type(output)
+    output_type = "Exouds"
+    if check_element(output, "Output Type")
+        output_type = output["Output Type"]
+    end
+    return output_type
+end
+
+function get_output_fieldnames(outputs, variables, computes, output_type)
     return_outputs = String[]
     for output in keys(outputs)
         if outputs[output]
-            if output in variables || output in computes
-                push!(return_outputs, output)
-            elseif output * "NP1" in variables
-                push!(return_outputs, output * "NP1")
+            if output_type == "CSV"
+                if output in computes
+                    push!(return_outputs, output)
+                else
+                    @warn '"' * output * '"' * " is not defined as global variable"
+                end
             else
-                @warn '"' * output * '"' * " is not defined as variable"
+                if output in variables || output in computes
+                    push!(return_outputs, output)
+                elseif output * "NP1" in variables
+                    push!(return_outputs, output * "NP1")
+                else
+                    @warn '"' * output * '"' * " is not defined as variable"
+                end
             end
         end
     end
@@ -53,21 +76,21 @@ function get_output_variables(outputs, variables, computes)
 end
 
 function get_outputs(params, variables, compute_names)
-    return_outputs = Dict{Int64,Vector{String}}()
     num = 0
     if check_element(params, "Outputs")
         outputs = params["Outputs"]
         for output in keys(outputs)
+            output_type = "Exouds"
+            output_type = get_output_type(outputs[output])
             if check_element(outputs[output], "Output Variables")
-                num += 1
-                return_outputs[num] = get_output_variables(outputs[output]["Output Variables"], variables, compute_names)
+                outputs[output]["fieldnames"] = get_output_fieldnames(outputs[output]["Output Variables"], variables, compute_names, output_type)
             else
                 @warn "No output variables are defined for " * output * "."
             end
 
         end
     end
-    return return_outputs
+    return outputs
 end
 
 function get_output_frequency(params, nsteps)

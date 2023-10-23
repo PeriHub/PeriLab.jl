@@ -97,13 +97,11 @@ PeriLab:
       Stable Bond Difference: 1
   Compute Class Parameters:
     External_Forces:
-      CSV Export: True
       Compute Class: "Block_Data"
       Calculation Type: "Sum"
       Block: "block_1"
       Variable: "Forces"
     External_Displacements:
-      CSV Export: False
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
       Block: "block_1"
@@ -111,11 +109,20 @@ PeriLab:
   Outputs:
     Output1:
       Output Filename: "test_1"
+      Output Type: "Exodus"
       Number of Outputs: 10
       Output Variables:
         Forces: True
         Displacements: True
         Volume: True
         Number of Neighbors: True
+        External_Forces: True
+        External_Displacements: True
+    Output2:
+      Output Filename: "test_2"
+      Output Type: "CSV"
+      Number of Outputs: 10
+      Output Variables:
+        Forces: True
         External_Forces: True
         External_Displacements: True

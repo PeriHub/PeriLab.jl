@@ -100,24 +100,25 @@ testDatamanager.set_nset("Nset_2", [5])
 
 nsets = testDatamanager.get_nsets()
 coords = vcat(transpose(coordinates))
-outputs = Dict("Forcesxx" => ["ForcesNP1", 1, 1, Float64], "Forcesxy" => ["ForcesNP1", 1, 2, Float64], "Forcesxz" => ["ForcesNP1", 1, 3, Float64], "Forcesyx" => ["ForcesNP1", 1, 4, Float64], "Forcesyy" => ["ForcesNP1", 1, 5, Float64], "Forcesyz" => ["ForcesNP1", 1, 6, Float64], "Displacements" => ["DisplacementsNP1", 2, 1, Float64])
-computes = Dict(1 => Dict("External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1", "Mapping" => Dict("External_Displacements" => Dict("result_id" => 1, "dof" => 1)))))
+outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 1, "dof" => 1, "type" => Float64), "Forcesxy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 2, "dof" => 1, "type" => Float64), "Forcesxz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 3, "dof" => 1, "type" => Float64), "Forcesyx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 4, "dof" => 1, "type" => Float64), "Forcesyy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 5, "dof" => 1, "type" => Float64), "Forcesyz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 6, "dof" => 1, "type" => Float64), "Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => false, "result_id" => 1, "dof" => 1, "type" => Float64), "External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "result_id" => 1, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1"))))
+computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "result_id" => 1, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1"))))
+
 exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
-exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, computes[1], coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets)
-exos = []
-push!(exos, exo)
-exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 2, 2.2)
-exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 3, 3.7)
-exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 4, 4.7)
-exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 5, 5.7)
-exos[1] = Write_Exodus_Results.write_step_and_time(exos[1], 6, 6.7)
+exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets)
+result_files = []
+push!(result_files, exo)
+result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 2, 2.2)
+result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 3, 3.7)
+result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 4, 4.7)
+result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 5, 5.7)
+result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 6, 6.7)
 
 @testset "ut_init_results_in_exodus" begin
     @test exo.init.num_dim == dof
     @test length(exo.nodal_var_name_dict) == 7
     entries = collect(keys(exo.nodal_var_name_dict))
-    ref = collect(keys(outputs))
-    @test sort(entries) == sort(ref)
+    ref = collect(keys(outputs["Fields"]))
+    @test sort(entries) == deleteat!(sort(ref), 2)
     exo_coords = read_coordinates(exo)
     exo_nsets = read_sets(exo, NodeSet)
     @test length(exo_nsets) == length(nsets)
@@ -147,7 +148,8 @@ disp[3] = 2.1
 disp[4] = -1.8
 disp[5] = 0
 
-exo = Write_Exodus_Results.write_nodal_results_in_exodus(exo, 2, outputs, testDatamanager)
+nodal_outputs = Dict(key => value for (key, value) in outputs["Fields"] if (!value["global_var"]))
+exo = Write_Exodus_Results.write_nodal_results_in_exodus(exo, 2, nodal_outputs, testDatamanager)
 
 test_disp_step_zero = read_values(exo, NodalVariable, 1, 1, "Displacements")
 
@@ -198,9 +200,8 @@ test_disp_step_one = read_values(exo, NodalVariable, 2, 1, 1)
 
 end
 
-csv_files = Write_CSV_Results.create_result_file([filename], computes)
-exo = Write_Exodus_Results.write_global_results_in_exodus(exo, csv_files[1], 2, computes[1], testDatamanager)
-
+csv_file = Write_CSV_Results.create_result_file(filename, computes)
+exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes["Fields"], "Exodus", testDatamanager)
 @testset "ut_write_global_results_in_exodus" begin
 
     global_vars = read_names(exo, GlobalVariable)
@@ -210,16 +211,18 @@ exo = Write_Exodus_Results.write_global_results_in_exodus(exo, csv_files[1], 2, 
     @test ftest[1] == 3.00001
 
 end
-
-@testset "ut_write_global_results_in_csv" begin
-
-    @test isfile(csv_files[1])
-
-end
-
 @testset "ut_merge_exodus_file" begin
     Write_Exodus_Results.merge_exodus_file(exo.file_name)
 end
+
+exo = Write_Exodus_Results.write_global_results_in_exodus(csv_file, 2, computes["Fields"], "CSV", testDatamanager)
+
+@testset "ut_write_global_results_in_csv" begin
+
+    @test isfile(csv_file)
+
+end
+
 
 close(exo)
 rm(filename)

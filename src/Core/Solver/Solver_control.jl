@@ -101,9 +101,9 @@ function set_heatcapacity(params::Dict, blockNodes::Dict, heatCapacity::SubArray
     end
     return heatCapacity
 end
-function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{String,Vector{Any}}}, computes, exos::Vector{Any}, csv_files, write_results, to, silent::Bool)
+function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, to, silent::Bool)
 
-    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, computes, exos, csv_files, synchronise_field, write_results, to, silent)
+    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)
 
 end
 
@@ -128,8 +128,8 @@ function synchronise_field(comm, synch_fields, overlap_map, get_field, synch_fie
 
 end
 
-function write_results(exos, dt, outputs, csv_files, computes, datamanager)
-    return IO.write_results(exos, dt, outputs, csv_files, computes, datamanager)
+function write_results(result_files, dt, outputs, datamanager)
+    return IO.write_results(result_files, dt, outputs, datamanager)
 end
 
 end

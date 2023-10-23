@@ -8,12 +8,12 @@ using LoggingExtras
 using TimerOutputs
 include("./IO.jl")
 export init_logging
-export set_exos
+export set_result_files
 
-exo = []
+result_files = []
 
-function set_exos(exos)
-    global exo = exos
+function set_result_files(result_files_temp)
+    global result_files = result_files_temp
 end
 
 function progress_filter(log_args)
@@ -56,7 +56,7 @@ function init_logging(filename, debug, rank, size)
         end
         error_logger = FormatLogger(logfilename; append=false) do io, args
             if args.level == Logging.Error
-                IO.close_exodus_files(exo)
+                IO.close_result_files(result_files)
                 exit()
             end
         end

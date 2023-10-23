@@ -60,7 +60,7 @@ end
     params = Dict()
     filenames = get_output_filenames(params)
     @test filenames == []
-    params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "1.e"), "Output2" => Dict("Output Filename" => "2.e")))
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "1"), "Output2" => Dict("Output Filename" => "2")))
     filenames = get_output_filenames(params)
     @test filenames[1] == "1.e"
     @test filenames[2] == "2.e"
@@ -95,17 +95,17 @@ testDatamanager = Data_manager
     testDatamanager.create_constant_node_field("E", Float64, 4)
     testfield_keys = testDatamanager.get_all_field_keys()
 
-    params = Dict("Outputs" => Dict("Output1" => Dict("Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))
+    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))
 
     outputs = get_outputs(params, testfield_keys, [])
 
-    @test "A" in outputs[1]
-    @test ("BNP1" in outputs[1]) == false
-    @test "C" in outputs[1]
-    @test "A" in outputs[2]
-    @test "BNP1" in outputs[2]
-    @test ("D" in outputs[2]) == false
-    @test "E" in outputs[2]
+    @test "A" in outputs["Output1"]["fieldnames"]
+    @test ("BNP1" in outputs["Output1"]["fieldnames"]) == false
+    @test "C" in outputs["Output1"]["fieldnames"]
+    @test "A" in outputs["Output2"]["fieldnames"]
+    @test "BNP1" in outputs["Output2"]["fieldnames"]
+    @test ("D" in outputs["Output2"]["fieldnames"]) == false
+    @test "E" in outputs["Output2"]["fieldnames"]
 end
 @testset "ut_get_computes" begin
     testfield_keys = testDatamanager.get_all_field_keys()

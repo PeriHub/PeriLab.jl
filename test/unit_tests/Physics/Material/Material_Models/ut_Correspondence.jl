@@ -8,7 +8,7 @@ using .Correspondence
 
 @testset "rotate_second_order_tensor" begin
 
-    angles = 0
+    angles = [0]
     tensor = zeros(2, 2)
     tensor[1, 1] = 1
     dof = 2

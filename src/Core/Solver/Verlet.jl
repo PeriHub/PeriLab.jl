@@ -135,7 +135,7 @@ function get_integration_steps(initial_time, end_time, dt)
 end
 
 
-function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{String,Vector{Any}}}, computes, exos::Vector{Any}, csv_files, synchronise_field, write_results, to, silent::Bool)
+function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, synchronise_field, write_results, to, silent::Bool)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
@@ -153,10 +153,10 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
     a = datamanager.get_field("Acceleration")
 
     if solver_options["Thermal Models"]
-        flowN = datamanager.get_flow("Thermal Flow", "N")
-        flowNP1 = datamanager.get_flow("Thermal Flow", "NP1")
-        temperatureN = datamanager.get_flow("Temperature", "NP1")
-        temperatureNP1 = datamanager.get_flow("Temperature", "NP1")
+        flowN = datamanager.get_field("Thermal Flow", "N")
+        flowNP1 = datamanager.get_field("Thermal Flow", "NP1")
+        temperatureN = datamanager.get_field("Temperature", "NP1")
+        temperatureNP1 = datamanager.get_field("Temperature", "NP1")
         heatCapacity = datamanager.get_field("Heat Capacity")
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
@@ -202,7 +202,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             if solver_options["Thermal Models"]
                 deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
             end
-            exos = write_results(exos, csv_files, start_time + step_time, outputs, computes, datamanager)
+            result_files = write_results(result_files, start_time + step_time, outputs, datamanager)
             datamanager.switch_NP1_to_N()
             update_list .= true
             step_time += dt
@@ -212,7 +212,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
 
         end
     end
-    return exos
+    return result_files
 end
 
 end

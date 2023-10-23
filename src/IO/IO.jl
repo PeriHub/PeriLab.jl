@@ -14,9 +14,9 @@ using .Read_Mesh
 using .Write_Exodus_Results
 using .Write_CSV_Results
 using MPI
+using Exodus
 using TimerOutputs
-export close_exodus_files
-export close_csv_files
+export close_result_files
 export initialize_data
 export init_write_results
 export write_results
@@ -32,16 +32,10 @@ function merge_exodus_files(exos)
     end
 end
 
-function close_exodus_files(exos)
-    for exo in exos
-        @info "Closing output file " * exo.file_name
-        close(exo)
-    end
-end
-
-function close_csv_files(csv_files)
-    for csv in csv_files
-        close(csv)
+function close_result_files(result_files)
+    for result_file in result_files
+        # @info "Closing output file " * exo.file_name
+        close(result_file)
     end
 end
 
@@ -72,27 +66,32 @@ function get_results_mapping(params, datamanager)
     compute_names = get_computes_names(params)
     outputs = get_outputs(params, datamanager.get_all_field_keys(), compute_names)
     computes = get_computes(params, datamanager.get_all_field_keys())
-    output_mapping = Dict{Int64,Dict{String,Vector{Any}}}()
-    compute_mapping = Dict{Int64,Dict{}}()
-    return_outputs = Dict{Int64,Vector{String}}()
+    output_mapping = Dict{Int64,Dict{}}()
     # computes = Dict("External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "Displacements", "Mapping" => Dict("External_Displacementsx" => Dict("result_id" => 1, "dof" => 1), "External_Displacementsy" => Dict("result_id" => 2, "dof" => 2), "External_Displacementsz" => Dict("result_id" => 3, "dof" => 3))))
-    for id in eachindex(sort(outputs))
+    for (id, output) in enumerate(keys(outputs))
         result_id = 0
-        output_mapping[id] = Dict{String,Vector{Any}}()
-        compute_mapping[id] = Dict{}()
+        output_mapping[id] = Dict{}()
+        output_mapping[id]["Fields"] = Dict{}()
         # computes_mapping[id] = Dict{String,Vector{Any}}()
-        for fieldname in outputs[id]
+        fieldnames = outputs[output]["fieldnames"]
+        output_type = get_output_type(outputs[output])
+        for fieldname in fieldnames
             result_id += 1
-            global_var = false
             compute_name = ""
+            compute_params = Dict{}
+            global_var = false
             #check if fieldname occursin in array computes label
+            # if output_type == "CSV"
             for key in keys(computes)
                 if fieldname == key
                     fieldname = computes[key]["Variable"]
                     compute_name = key
+                    compute_params = computes[key]
                     global_var = true
                 end
             end
+            # end
+
             if datamanager.field_array_type[fieldname]["Type"] == "Matrix"
                 @warn "Matrix types not supported in Exodus export"
                 continue
@@ -106,31 +105,26 @@ function get_results_mapping(params, datamanager)
                 @error "No field " * fieldname * " exists."
                 return
             end
-            if global_var
-                if length(sizedatafield) == 1
-                    computes[compute_name]["Mapping"] = Dict(compute_name => Dict("result_id" => result_id, "dof" => 1))
+
+            if length(sizedatafield) == 1
+                if global_var
+                    output_mapping[id]["Fields"][compute_name] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => 1, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params)
                 else
-                    refDof = sizedatafield[2]
-                    computes[compute_name]["Mapping"] = Dict()
-                    for dof in 1:refDof
-                        field_name = compute_name * Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)
-                        computes[compute_name]["Mapping"][field_name] = Dict("result_id" => result_id, "dof" => dof)
-                    end
+                    output_mapping[id]["Fields"][clearNP1(fieldname)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => 1, "type" => typeof(datafield[1, 1]))
                 end
-                compute_mapping[id][compute_name] = computes[compute_name]
             else
-                if length(sizedatafield) == 1
-                    output_mapping[id][clearNP1(fieldname)] = [fieldname, result_id, 1, typeof(datafield[1, 1])]
-                else
-                    refDof = sizedatafield[2]
-                    for dof in 1:refDof
-                        output_mapping[id][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = [fieldname, result_id, dof, typeof(datafield[1, 1])]
+                refDof = sizedatafield[2]
+                for dof in 1:refDof
+                    if global_var
+                        output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params)
+                    else
+                        output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]))
                     end
                 end
             end
         end
     end
-    return output_mapping, compute_mapping
+    return output_mapping
 end
 
 function initialize_data(filename::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
@@ -149,7 +143,7 @@ function init_write_results(params::Dict, datamanager::Module, nsteps::Int64)
     if length(filenames) == 0
         @warn "No futput file or output defined"
     end
-    exos = []
+    result_files = []
 
     nnodes = datamanager.get_nnodes()
     dof = datamanager.get_dof()
@@ -159,51 +153,63 @@ function init_write_results(params::Dict, datamanager::Module, nsteps::Int64)
     max_block_id = maximum(block_Id)
     max_block_id = find_and_set_core_value_max(datamanager.get_comm(), max_block_id)
     nsets = datamanager.get_nsets()
-    for filename in filenames
-        if ".e" != filename[end-1:end]
-            filename = filename * ".e"
-        end
-        if datamanager.get_max_rank() > 1
-            filename = filename * "." * string(datamanager.get_max_rank()) * "." * string(datamanager.get_rank())
-        end
-        push!(exos, Write_Exodus_Results.create_result_file(filename, nnodes, dof, max_block_id, nnsets))
-    end
-    coords = vcat(transpose(coordinates[1:nnodes, :]))
-    outputs, computes = get_results_mapping(params, datamanager)
-    output_frequencies = get_output_frequency(params, nsteps)
-    for id in eachindex(exos)
+    outputs = get_results_mapping(params, datamanager)
 
-        exos[id] = Write_Exodus_Results.init_results_in_exodus(exos[id], outputs[id], computes[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets)
+    for (id, filename) in enumerate(filenames)
+
+        if ".e" == filename[end-1:end]
+            if datamanager.get_max_rank() > 1
+                filename = filename * "." * string(datamanager.get_max_rank()) * "." * string(datamanager.get_rank())
+            end
+            outputs[id]["Output Type"] = "Exodus"
+            push!(result_files, Write_Exodus_Results.create_result_file(filename, nnodes, dof, max_block_id, nnsets))
+        elseif ".csv" == filename[end-3:end]
+            if datamanager.get_rank() == 0
+                push!(result_files, Write_CSV_Results.create_result_file(filename, outputs[id]))
+            end
+            outputs[id]["Output Type"] = "CSV"
+        end
+    end
+
+    coords = vcat(transpose(coordinates[1:nnodes, :]))
+    output_frequencies = get_output_frequency(params, nsteps)
+    for id in eachindex(result_files)
+
+        if typeof(result_files[id]) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
+            result_files[id] = Write_Exodus_Results.init_results_in_exodus(result_files[id], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets)
+        end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 
     end
-    csv_files = []
-    if datamanager.get_rank() == 0 && length(computes) > 0
-        csv_files = Write_CSV_Results.create_result_file(filenames, computes)
-    end
 
-    return exos, csv_files, outputs, computes
+    return result_files, outputs
 end
 
 function read_input_file(filename::String)
     return Read_Input_Deck.read_input_file(filename)
 end
 
-function write_results(exos, csv_files, time, outputs, computes, datamanager)
-    for id in eachindex(exos)
+function write_results(result_files, time, outputs, datamanager)
+    for id in eachindex(result_files)
         # step 1 ist the zero step?!
         output_frequency[id]["Counter"] += 1
         if output_frequency[id]["Counter"] == output_frequency[id]["Output Frequency"]
             output_frequency[id]["Step"] += 1
-            exos[id] = Write_Exodus_Results.write_step_and_time(exos[id], output_frequency[id]["Step"], time)
-            exos[id] = Write_Exodus_Results.write_nodal_results_in_exodus(exos[id], output_frequency[id]["Step"], outputs[id], datamanager)
-            if length(computes) > 0
-                exos[id] = Write_Exodus_Results.write_global_results_in_exodus(exos[id], csv_files[id], output_frequency[id]["Step"], computes[id], datamanager)
+            nodal_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (!value["global_var"]))
+            global_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (value["global_var"]))
+            output_type = outputs[id]["Output Type"]
+            if output_type == "Exodus" && length(nodal_outputs) > 0 && typeof(result_files[id]) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
+                result_files[id] = Write_Exodus_Results.write_step_and_time(result_files[id], output_frequency[id]["Step"], time)
+                result_files[id] = Write_Exodus_Results.write_nodal_results_in_exodus(result_files[id], output_frequency[id]["Step"], nodal_outputs, datamanager)
             end
+            if length(global_outputs) > 0
+                result_files[id] = Write_Exodus_Results.write_global_results_in_exodus(result_files[id], output_frequency[id]["Step"], global_outputs, output_type, datamanager)
+            end
+
             output_frequency[id]["Counter"] = 0
         end
     end
-    return exos
+    return result_files
 end
 
 end
