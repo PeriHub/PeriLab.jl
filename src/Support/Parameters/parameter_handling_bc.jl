@@ -5,9 +5,9 @@
 using CSV
 using DataFrames
 
-function get_bc_definitions(params)
+function get_bc_definitions(params::Dict)
     bcs = Dict{String,Any}()
-    if check_element(params, "Boundary Conditions") == false
+    if check_element(params::Dict, "Boundary Conditions") == false
         return bcs
     end
     for entry in keys(params["Boundary Conditions"])

@@ -32,8 +32,8 @@ function get_horizon(params::Dict, blockID::Int64)
     return
 end
 
-function get_number_of_blocks(params)
-    check = check_element(params, "Blocks")
+function get_number_of_blocks(params::Dict)
+    check = check_element(params::Dict, "Blocks")
     if check
         return length(params["Blocks"])
     else
