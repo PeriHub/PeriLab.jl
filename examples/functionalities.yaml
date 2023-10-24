@@ -96,7 +96,7 @@ PeriLab:
         Output1:
             Output Filename: "Name"
             Output Frequency: 1
-            Number of Outputs: 1
+            Number of Output Steps: 1
             Output Variables: 
                 Displacements: True
                 Forces: True

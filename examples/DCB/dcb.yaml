@@ -12,39 +12,39 @@ PeriLab:
       Node Set 4: ns_DCBmodel_4.txt
     Type: Text File
     Bond Filters:
-        bf_1:
-            Type: "Rectangular_Plane"
-            Normal_X: 0.0 
-            Normal_Y: 1.0 
-            Normal_Z: 0.0 
-            Lower_Left_Corner_X: -0.006 
-            Lower_Left_Corner_Y: 0.0 
-            Lower_Left_Corner_Z: -0.01 
-            Bottom_Unit_Vector_X: 1.0 
-            Bottom_Unit_Vector_Y: 0.0 
-            Bottom_Unit_Vector_Z: 0.0 
-            Bottom_Length: 0.01
-            Side_Length: 0.01
+      bf_1:
+        Type: "Rectangular_Plane"
+        Normal_X: 0.0
+        Normal_Y: 1.0
+        Normal_Z: 0.0
+        Lower_Left_Corner_X: -0.006
+        Lower_Left_Corner_Y: 0.0
+        Lower_Left_Corner_Z: -0.01
+        Bottom_Unit_Vector_X: 1.0
+        Bottom_Unit_Vector_Y: 0.0
+        Bottom_Unit_Vector_Z: 0.0
+        Bottom_Length: 0.01
+        Side_Length: 0.01
   Physics:
-        Pre Calculation:
-            Deformed Bond Geometry: true
-            Deformation Gradient: true
-            Shape Tensor: true
-            Bond Associated Shape Tensor: false
-            Bond Associated Deformation Gradient: false
-        Material Models: 
-            PMMA: 
-                #Material Model: "PD Solid Elastic"
-                Material Model: "Correspondence Elastic"
-                Symmetry: "isotropic plane stress"
-                Young's Modulus: 7.0e+9
-                Poisson's Ratio: 0.33
-                Zero Energy Mode Control: "Global"
-        Damage Models: 
-            PMMADamage:
-                Damage Model: "Critical Energy"
-                Critical Energy: 10.1
-                Only Tension: true
+    Pre Calculation:
+      Deformed Bond Geometry: true
+      Deformation Gradient: true
+      Shape Tensor: true
+      Bond Associated Shape Tensor: false
+      Bond Associated Deformation Gradient: false
+    Material Models:
+      PMMA:
+        Material Model: "PD Solid Elastic"
+        # Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 7.0e+9
+        Poisson's Ratio: 0.33
+        Zero Energy Mode Control: "Global"
+    Damage Models:
+      PMMADamage:
+        Damage Model: "Critical Energy"
+        Critical Energy: 10.1
+        Only Tension: true
   Boundary Conditions:
     BC_1:
       Coordinate: y
@@ -65,42 +65,39 @@ PeriLab:
       Coordinate: x
       Node Set: Node Set 4
       Type: Displacements
-      Value: 0     
+      Value: 0
   Blocks:
     block_1:
       Block Names: block_1
-      Density:  2.0e5
-      Horizon: 0.00501
+      Density: 2.0e5
+      Horizon: 0.00301
       Material Model: PMMA
       Damage Model: PMMADamage
     block_2:
       Block Names: block_2
-      Density:  2.0e5
-      Horizon: 0.00501
+      Density: 2.0e5
+      Horizon: 0.00301
       Material Model: PMMA
       Damage Model: PMMADamage
     block_3:
       Block Names: block_3
       Density: 2.0e5
-      Horizon: 0.00501
+      Horizon: 0.00301
       Material Model: PMMA
     block_4:
       Block Names: block_4
-      Density:  2.0e5
-      Horizon: 0.00501
+      Density: 2.0e5
+      Horizon: 0.00301
       Material Model: PMMA
   Outputs:
     Output1:
-      Number of Output Steps: 1
-      Output File Type: ExodusII
+      Number of Output Steps: 10
       Output Filename: DCB
-      Output Format: BINARY
       Output Variables:
         Damage: true
         Displacements: true
         Forces: true
         Number of Neighbors: true
-      
 
   Solver:
     Final Time: 1e-6

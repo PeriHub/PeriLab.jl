@@ -110,7 +110,7 @@ PeriLab:
     Output1:
       Output Filename: "test_1"
       Output Type: "Exodus"
-      Number of Outputs: 10
+      Number of Output Steps: 10
       Output Variables:
         Forces: True
         Displacements: True
@@ -121,7 +121,7 @@ PeriLab:
     Output2:
       Output Filename: "test_2"
       Output Type: "CSV"
-      Number of Outputs: 10
+      Number of Output Steps: 10
       Output Variables:
         Forces: True
         External_Forces: True

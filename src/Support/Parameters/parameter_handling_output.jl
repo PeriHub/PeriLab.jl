@@ -99,7 +99,7 @@ function get_output_frequency(params, nsteps)
         outputs = params["Outputs"]
         freq = zeros(Int64, length(keys(outputs)))
         for (id, output) in enumerate(keys(outputs))
-            output_options = Dict("Output Frequency" => false, "Number of Outputs" => false)
+            output_options = Dict("Output Frequency" => false, "Number of Output Steps" => false)
             freq[id] = 1
             for output_option in keys(output_options)
                 if check_element(outputs[output], output_option)
@@ -109,7 +109,7 @@ function get_output_frequency(params, nsteps)
                     end
                     output_options[output_option] = true
                     freq[id] = outputs[output][output_option]
-                    if output_options["Number of Outputs"]
+                    if output_options["Number of Output Steps"]
                         freq[id] = Int64(ceil(nsteps / freq[id]))
                         if freq[id] < 1
                             freq[id] = 1
