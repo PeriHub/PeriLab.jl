@@ -70,11 +70,11 @@ end
     nsteps = 40
 
     params = Dict()
-    params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 2), "Output2" => Dict("Number of Outputs" => 1, "Output Frequency" => 1)))
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 2), "Output2" => Dict("Number of Output Steps" => 1, "Output Frequency" => 1)))
     freq = get_output_frequency(params, nsteps)
     @test freq[1] == 2
     @test freq[2] == 40
-    params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20), "Output2" => Dict("Number of Outputs" => 10)))
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20), "Output2" => Dict("Number of Output Steps" => 10)))
     freq = get_output_frequency(params, nsteps)
     @test freq[1] == 20
     @test freq[2] == 4
