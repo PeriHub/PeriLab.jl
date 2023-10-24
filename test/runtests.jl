@@ -64,7 +64,6 @@ MPI.Init()
 
         @testset "ut_exodus_export" begin
             @includetests["unit_tests/IO/ut_exodus_export"]
-            include("unit_tests/IO/ut_exodus_export.jl")
         end
 
         @testset "ut_IO" begin

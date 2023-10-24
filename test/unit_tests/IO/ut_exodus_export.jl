@@ -200,7 +200,8 @@ test_disp_step_one = read_values(exo, NodalVariable, 2, 1, 1)
 
 end
 
-csv_file = Write_CSV_Results.create_result_file(filename, computes)
+csvfilename = "./tmp/" * "test_2.csv"
+csv_file = Write_CSV_Results.create_result_file(csvfilename, computes)
 exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes["Fields"], "Exodus", testDatamanager)
 @testset "ut_write_global_results_in_exodus" begin
 
@@ -226,3 +227,4 @@ end
 
 close(exo)
 rm(filename)
+rm(csvfilename)
