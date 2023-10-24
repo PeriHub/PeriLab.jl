@@ -12,7 +12,14 @@ Logging.disable_logging(Logging.Error)
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
-
+    @testset "Compute" begin
+        @testset "ut_compute_global_values" begin
+            @includetests["unit_tests/Compute/ut_compute_global_values"]
+        end
+        @testset "ut_compute_force" begin
+            @includetests["unit_tests/Compute/ut_compute_force"]
+        end
+    end
     @testset "Support" begin
 
         @testset "Parameters" begin
@@ -79,10 +86,7 @@ MPI.Init()
             @includetests["unit_tests/IO/ut_bond_filter"]
         end
     end
-    @testset "Compute" begin
-        @includetests["unit_tests/Compute/ut_compute_global_values.jl"]
-        @includetests["unit_tests/Compute/ut_compute_force"]
-    end
+
 
     @testset "MPI" begin
 
