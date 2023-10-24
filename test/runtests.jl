@@ -80,6 +80,7 @@ MPI.Init()
         end
     end
     @testset "Compute" begin
+        @includetests["unit_tests/Compute/ut_compute_global_values.jl"]
         @includetests["unit_tests/Compute/ut_compute_force"]
     end
 
