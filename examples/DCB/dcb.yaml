@@ -24,7 +24,7 @@ PeriLab:
         Bottom_Unit_Vector_Y: 0.0
         Bottom_Unit_Vector_Z: 0.0
         Bottom_Length: 0.01
-        Side_Length: 0.01
+        Side_Length: 0.005
   Physics:
     Pre Calculation:
       Deformed Bond Geometry: true
@@ -100,7 +100,7 @@ PeriLab:
         Number of Neighbors: true
 
   Solver:
-    Final Time: 1e-6
+    Final Time: 1e-5
     Initial Time: 0.0
     Damage Models: True
     Verbose: false
