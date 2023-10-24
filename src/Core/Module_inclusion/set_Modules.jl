@@ -4,7 +4,6 @@
 
 module Set_modules
 export include_files
-export include_modules
 export find_module_files
 
 """
@@ -125,32 +124,6 @@ include_files([Dict("File" => "module1.jl"), Dict("File" => "module2.jl")])
 function include_files(module_list::Vector{Any})
     for mod in module_list
         include(mod["File"])
-    end
-end
-
-"""
-include_modules(module_list::Vector{Any})
-
-Include Julia modules specified in a list.
-
-This function takes a list of module names and uses the `using` statement to include
-each specified module. The module names should be relative to the current module.
-The function evaluates each `using` statement using `eval`.
-
-# Arguments
-- `module_list::Vector{Any}`: A list of dictionaries, where each dictionary should
-  have a key `"Module Name"` specifying the name of the module to include.
-
-# Example
-```julia
-module_list = [{"Module Name" => "Module1"}, {"Module Name" => "Module2"}]
-include_modules(module_list)
-"""
-
-function include_modules(module_list::Vector{Any})
-    for m in module_list
-        parse_statement = "using ." * m["Module Name"]
-        eval(Meta.parse(parse_statement))
     end
 end
 
