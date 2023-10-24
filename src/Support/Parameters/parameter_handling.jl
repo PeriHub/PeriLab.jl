@@ -10,11 +10,11 @@ include("./parameter_handling_output.jl")
 include("./parameter_handling_computes.jl")
 include("./parameter_handling_solver.jl")
 
-function check_element(params, key)
-    return haskey(params, key)
+function check_element(params::Dict, key)
+    return haskey(params::Dict, key)
 end
-function check_key_elements(params)
-    check = check_element(params, "Physics")
+function check_key_elements(params::Dict)
+    check = check_element(params::Dict, "Physics")
     if !check
         @error "No physics defined"
         return check
@@ -25,17 +25,17 @@ function check_key_elements(params)
             return false
         end
     end
-    check = check_element(params, "Blocks")
+    check = check_element(params::Dict, "Blocks")
     if !check
         @error "No blocks defined"
         return check
     end
-    check = check_element(params, "Discretization")
+    check = check_element(params::Dict, "Discretization")
     if !check
         @error "No discretization defined"
         return check
     end
-    check = check_element(params, "Solver")
+    check = check_element(params::Dict, "Solver")
     if !check
         @error "No solver defined"
         return check

@@ -26,13 +26,13 @@ function check_valid_bcs(bcs, datamanager)
     return working_bcs
 end
 
-function init_BCs(params, datamanager)
+function init_BCs(params::Dict, datamanager)
     bcs = boundary_condition(params, datamanager)
     bcs = check_valid_bcs(bcs, datamanager)
     return bcs
 end
 
-function boundary_condition(params, datamanager)
+function boundary_condition(params::Dict, datamanager)
     bcs_in = get_bc_definitions(params)
     bcs_out = Dict{String,Any}()
     nsets = datamanager.get_nsets()

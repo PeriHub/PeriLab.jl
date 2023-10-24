@@ -96,7 +96,7 @@ function compute_crititical_time_step(datamanager, blockNodes::Dict{Int64,Vector
     return criticalTimeStep
 end
 
-function init_solver(params, datamanager, blockNodes, mechanical, thermo)
+function init_solver(params::Dict, datamanager, blockNodes, mechanical, thermo)
     @info "======================="
     @info "==== Verlet Solver ===="
     @info "======================="

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function get_model_parameter(params, model, id)
+function get_model_parameter(params::Dict, model::String, id::Int64)
     if check_element(params["Physics"], model * "s") == false
         @error model * " is defined in blocks, but no " * model * "s definition block exists"
         return Dict()
@@ -15,7 +15,7 @@ function get_model_parameter(params, model, id)
     end
 end
 
-function get_physics_option(params, options)
+function get_physics_option(params::Dict, options::Dict)
     if check_element(params["Physics"], "Pre Calculation")
         for option in keys(options)
             if check_element(params["Physics"]["Pre Calculation"], option)

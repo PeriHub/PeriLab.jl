@@ -22,11 +22,11 @@ export init_data
 
 TOLERANCE = 1.0e-14
 
-function init_data(params, datamanager, comm, to)
+function init_data(params::Dict, datamanager, comm, to)
     @timeit to "init_data - mesh_data,jl" begin
         ranks = MPI.Comm_size(comm)
         if (MPI.Comm_rank(comm)) == 0
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params, ranks)
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params::Dict, ranks)
         else
             nmasters = 0
             nslaves = 0
@@ -132,7 +132,7 @@ function get_bond_geometry(datamanager::Module)
     return datamanager
 end
 
-function define_nsets(params, datamanager::Module)
+function define_nsets(params::Dict, datamanager::Module)
     nsets = get_node_sets(params)
     for nset in keys(nsets)
         datamanager.set_nset(nset, nsets[nset])
@@ -272,8 +272,8 @@ function load_and_evaluate_mesh(params::Dict, ranksize::Int64)
     mesh = read_mesh(get_mesh_name(params))
 
     dof::Int64 = set_dof(mesh)
-    nlist = create_neighborhoodlist(mesh, params, dof)
-    nlist = apply_bond_filters(nlist, mesh, params, dof)
+    nlist = create_neighborhoodlist(mesh, params::Dict, dof)
+    nlist = apply_bond_filters(nlist, mesh, params::Dict, dof)
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
     @info "Finished distribution"
@@ -404,9 +404,9 @@ function create_base_chunk(nnodes, size)
     return distribution, point_to_core
 end
 
-function neighbors(mesh, params, coor)
+function neighbors(mesh::DataFrame, params::Dict, coor)
     """
-    neighbors(mesh, params, coor)
+    neighbors(mesh, params::Dict, coor)
 
     Compute the neighbor list for each node in a mesh based on their proximity using a BallTree data structure.
 

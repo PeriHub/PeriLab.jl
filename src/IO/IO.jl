@@ -62,7 +62,7 @@ function clearNP1(name)
     return name
 end
 
-function get_results_mapping(params, datamanager)
+function get_results_mapping(params::Dict, datamanager)
     compute_names = get_computes_names(params)
     outputs = get_outputs(params, datamanager.get_all_field_keys(), compute_names)
     computes = get_computes(params, datamanager.get_all_field_keys())

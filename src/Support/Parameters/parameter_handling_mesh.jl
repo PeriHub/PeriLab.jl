@@ -4,7 +4,7 @@
 
 # include("../helpers.jl")
 
-function get_mesh_name(params)
+function get_mesh_name(params::Dict)
     check = check_element(params["Discretization"], "Input Mesh File")
     if !check
         @error "No mesh file is defined."
@@ -13,7 +13,7 @@ function get_mesh_name(params)
     return params["Discretization"]["Input Mesh File"]
 end
 
-function get_topology_name(params)
+function get_topology_name(params::Dict)
     check = check_element(params["Discretization"], "Input FEM Topology File")
     topoFile::String = ""
     if check
@@ -22,7 +22,7 @@ function get_topology_name(params)
     return check, topoFile
 end
 
-function get_bond_filters(params)
+function get_bond_filters(params::Dict)
     check = check_element(params["Discretization"], "Bond Filters")
     bfList = Dict{String,Dict{String,Any}}()
     if check
@@ -31,7 +31,7 @@ function get_bond_filters(params)
     return check, bfList
 end
 
-function get_node_sets(params)
+function get_node_sets(params::Dict)
     nsets = Dict{String,Any}()
     if check_element(params["Discretization"], "Node Sets") == false
         return []

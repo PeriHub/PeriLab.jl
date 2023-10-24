@@ -20,8 +20,8 @@ function search_for_duplicates(filenames)
     end
     return returnfilenames
 end
-function get_output_filenames(params)
-    if check_element(params, "Outputs")
+function get_output_filenames(params::Dict)
+    if check_element(params::Dict, "Outputs")
         filenames = []
         outputs = params["Outputs"]
         for output in keys(outputs)
@@ -75,9 +75,9 @@ function get_output_fieldnames(outputs, variables, computes, output_type)
     return return_outputs
 end
 
-function get_outputs(params, variables, compute_names)
+function get_outputs(params::Dict, variables, compute_names)
     num = 0
-    if check_element(params, "Outputs")
+    if check_element(params::Dict, "Outputs")
         outputs = params["Outputs"]
         for output in keys(outputs)
             output_type = "Exouds"
@@ -93,9 +93,9 @@ function get_outputs(params, variables, compute_names)
     return outputs
 end
 
-function get_output_frequency(params, nsteps)
+function get_output_frequency(params::Dict, nsteps)
 
-    if check_element(params, "Outputs")
+    if check_element(params::Dict, "Outputs")
         outputs = params["Outputs"]
         freq = zeros(Int64, length(keys(outputs)))
         for (id, output) in enumerate(keys(outputs))

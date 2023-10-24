@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function get_computes_names(params)
-    if check_element(params, "Compute Class Parameters")
+function get_computes_names(params::Dict)
+    if check_element(params::Dict, "Compute Class Parameters")
         computes = params["Compute Class Parameters"]
         return collect(keys(sort(computes)))
     end
@@ -20,8 +20,8 @@ function get_output_variables(output, variables)
     end
 end
 
-function get_computes(params, variables)
-    if check_element(params, "Compute Class Parameters")
+function get_computes(params::Dict, variables)
+    if check_element(params::Dict, "Compute Class Parameters")
         computes = params["Compute Class Parameters"]
         for compute in keys(computes)
             if check_element(computes[compute], "Variable")
