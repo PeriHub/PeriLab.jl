@@ -39,16 +39,13 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
 
 
     if options["Damage Models"]
+        #tbd damage specific pre_calculation-> in damage template
         if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
             bondDamageN = datamanager.get_field("Bond Damage", "N")
             bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
             bondDamageNP1 = copy(bondDamageN)
-
             @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
             @timeit to "compute_forces for damage" datamanager = Material.distribute_force_densities(datamanager, nodes)
-
-
-
             synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "download_from_cores")
             synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "upload_to_cores")
 
@@ -84,13 +81,13 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
 
 end
 
-function get_block_model_definition(params, blockID, prop_keys, properties)
+function get_block_model_definition(params::Dict, blockID, prop_keys, properties)
     # properties function from datamanager
     if check_element(params["Blocks"], "block_" * string(blockID))
         block = params["Blocks"]["block_"*string(blockID)]
         for model in prop_keys
             if check_element(block, model)
-                properties(blockID, model, get_model_parameter(params, model, block[model]))
+                properties(blockID, model, get_model_parameter(params::Dict, model, block[model]))
             end
         end
     end
@@ -154,15 +151,15 @@ function init_pre_calculation(datamanager, options)
     return Pre_calculation.init_pre_calculation(datamanager, options)
 end
 
-function read_properties(params, datamanager)
+function read_properties(params::Dict, datamanager)
     datamanager.init_property()
     blocks = datamanager.get_block_list()
     prop_keys = datamanager.init_property()
     physics_options = datamanager.get_physics_options()
-    datamanager.set_physics_options(get_physics_option(params, physics_options))
+    datamanager.set_physics_options(get_physics_option(params::Dict, physics_options))
 
     for block in blocks
-        get_block_model_definition(params, block, prop_keys, datamanager.set_properties)
+        get_block_model_definition(params::Dict, block, prop_keys, datamanager.set_properties)
     end
     for block in blocks
         props = Material.determine_isotropic_parameter(datamanager.get_properties(block, "Material Model"))
