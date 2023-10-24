@@ -41,14 +41,8 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
     if options["Damage Models"]
         #tbd damage specific pre_calculation-> in damage template
         if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
-            bondDamageN = datamanager.get_field("Bond Damage", "N")
-            bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
-            bondDamageNP1 = copy(bondDamageN)
-            @timeit to "compute_bond_forces_for_damages" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
-            @timeit to "compute_forces for damage" datamanager = Material.distribute_force_densities(datamanager, nodes)
-            synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "download_from_cores")
-            synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "upload_to_cores")
-
+            datamanager = Damage.set_bond_damage(datamanager)
+            @timeit to "compute_damage_pre_calculation" datamanager = Damage.compute_damage_pre_calculation(datamanager, nodes, block, datamanager.get_properties(block, "Damage Model"), synchronise_field, time, dt)
             @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
             update_list = datamanager.get_field("Update List")
             update_nodes = view(nodes, find_active(update_list[nodes]))

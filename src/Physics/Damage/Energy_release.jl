@@ -3,8 +3,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_Energy_Model
+include("../Material/Material_Factory.jl")
+using .Material
 export compute_damage
+export compute_damage_pre_calculation
 export damage_name
+
 """
    damage_name()
 
@@ -78,6 +82,16 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
       end
     end
   end
+  return datamanager
+end
+
+function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+
+  datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+  datamanager = Material.distribute_force_densities(datamanager, nodes)
+
+  synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "download_from_cores")
+  synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "upload_to_cores")
   return datamanager
 end
 

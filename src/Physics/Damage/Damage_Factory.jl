@@ -9,7 +9,7 @@ global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
 Set_modules.include_files(module_list)
 
 export compute_damage
-
+export compute_damage_pre_calculation
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
 
     update_list = datamanager.get_field("Update List")
@@ -24,6 +24,15 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     datamanager = damage_index(datamanager, nodes)
     return datamanager
 end
+
+function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, model_param::Dict, synchronise_field, time::Float64, dt::Float64)
+
+    specifics = Dict{String,String}("Call Function" => "compute_damage_pre_calculation", "Name" => "damage_name")
+    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, block, synchronise_field, time, dt))
+
+    return datamanager
+end
+
 """
   damage_index(datamananager,::Union{SubArray, Vector{Int64})
 
@@ -50,5 +59,12 @@ function damage_index(datamananager::Module, nodes::Union{SubArray,Vector{Int64}
     end
     return datamananager
 
+end
+
+function set_bond_damage(datamanager::Module)
+    bondDamageN = datamanager.get_field("Bond Damage", "N")
+    bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
+    bondDamageNP1 = copy(bondDamageN)
+    return datamanager
 end
 end
