@@ -17,7 +17,8 @@ function compute_thermal_model(datamanager, nodes, model_param, time, dt)
     if typeof(model_param["Thermal Model"]) == String
         datamanager = Set_modules.create_module_specifics(model_param["Thermal Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
     else
-        for model in model_param["Thermal Model"]
+        thermal_model_params = split(model_param["Thermal Model"], "+")
+        for model in thermal_model_params
             datamanager = Set_modules.create_module_specifics(model, module_list, specifics, (datamanager, nodes, model_param, time, dt))
         end
     end
