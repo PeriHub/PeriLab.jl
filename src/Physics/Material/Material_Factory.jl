@@ -16,10 +16,10 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")
     material_model_params = split(model_param["Material Model"], "+")
     for material_params in material_model_params
-        datamanager = Set_modules.create_module_specifics(material_params, module_list, specifics, (datamanager, nodes, model_param, time, dt))
+        model_name = Set_modules.create_module_specifics(model_name, module_list, specifics, (datamanager, nodes, model_param, time, dt))
 
         if isnothing(datamanager)
-            @error "No material of name " * material["Material Model"] * " exists."
+            @error "No material of name " * model_name * " exists."
         end
     end
     return datamanager

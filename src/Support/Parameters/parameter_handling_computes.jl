@@ -7,10 +7,10 @@ function get_computes_names(params::Dict)
         computes = params["Compute Class Parameters"]
         return collect(keys(sort(computes)))
     end
-    return []
+    return String[]
 end
 
-function get_output_variables(output, variables)
+function get_output_variables(output, variables::Vector)
     if output in variables
         return output
     elseif output * "NP1" in variables
