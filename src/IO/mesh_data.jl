@@ -294,12 +294,15 @@ function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
     len = length(nlist)
     lenNlist = zeros(Int64, len)
     for id in 1:len
+        if length(nlist[id]) == 0
+            @error "Node $id has no neighbors please check the horizon"
+        end
         lenNlist[id] = length(nlist[id])
     end
     return lenNlist
 end
 
-function node_distribution(nlist, size)
+function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
 
     nnodes = length(nlist)
     ntype = Dict("masters" => Int64[], "slaves" => Int64[])
@@ -383,15 +386,18 @@ function create_overlap_map(distribution, ptc, size)
     end
     return overlap_map
 end
-
-function create_base_chunk(nnodes, size)
+"""
+    create_base_chunk(nnodes::Int64, size::Int64)
     # Calculate the initial size of each chunk
     # for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, 
     # that the last core is not equally loaded
+"""
+function create_base_chunk(nnodes::Int64, size::Int64)
+
     chunk_size = div(nnodes, size)
     # Split the data into chunks
-    distribution = fill([], size)
-    point_to_core = zeros(Int32, nnodes)
+    distribution = fill(Int64[], size)
+    point_to_core = zeros(Int64, nnodes)
     for i in 1:size
         start_idx = (i - 1) * chunk_size + 1
         end_idx = min(i * chunk_size, nnodes)
