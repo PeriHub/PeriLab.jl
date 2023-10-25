@@ -41,14 +41,14 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
     if options["Damage Models"]
         #tbd damage specific pre_calculation-> in damage template
         if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
-            datamanager = Damage.set_bond_damage(datamanager)
+            datamanager = Damage.set_bond_damage(datamanager, nodes)
             @timeit to "compute_damage_pre_calculation" datamanager = Damage.compute_damage_pre_calculation(datamanager, nodes, block, datamanager.get_properties(block, "Damage Model"), synchronise_field, time, dt)
             @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), time, dt)
             update_list = datamanager.get_field("Update List")
             update_nodes = view(nodes, find_active(update_list[nodes]))
             datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
-            # force_densities = datamanager.get_field("Force Densities", "NP1")
-            # force_densities .= 0.0
+            force_densities = datamanager.get_field("Force Densities", "NP1")
+            force_densities[nodes, :] .= 0.0
         end
     end
 
