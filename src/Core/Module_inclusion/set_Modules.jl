@@ -148,7 +148,7 @@ specifics = Dict("Module1Name" => "module1_function", "Module2Name" => "module2_
 values = (arg1, arg2)
 create_module_specifics("Module1Name", module_list, specifics, values)
 """
-function create_module_specifics(name::String, module_list::Vector{Any}, specifics::Dict{String,String}, values::Tuple)
+function create_module_specifics(name::Union{String,SubString}, module_list::Vector{Any}, specifics::Dict{String,String}, values::Tuple)
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * specifics["Name"] * "()"
         if eval(Meta.parse(parse_statement)) == name
