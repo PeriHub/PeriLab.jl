@@ -80,6 +80,7 @@ function compute_crititical_time_step(datamanager, blockNodes::Dict{Int64,Vector
         if thermo
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
             Cv = datamanager.get_property(iblock, "Thermal Model", "Specific Heat Capacity")
+            # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
             if (lambda != Nothing) && (Cv != Nothing)
                 t = compute_thermodynamic_critical_time_step(blockNodes[iblock], datamanager, lambda, Cv)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
@@ -90,7 +91,10 @@ function compute_crititical_time_step(datamanager, blockNodes::Dict{Int64,Vector
             if (bulkModulus != Nothing)
                 t = compute_mechanical_critical_time_step(blockNodes[iblock], datamanager, bulkModulus)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
+            else
+                @error "No time step for material is determined because of missing properties."
             end
+
         end
     end
     return criticalTimeStep
