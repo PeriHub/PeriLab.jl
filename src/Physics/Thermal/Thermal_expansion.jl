@@ -50,7 +50,22 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
 
     temperature = datamanager.get_field("Temperature", "NP1")
     alpha = thermal_parameter["Heat expansion"]
-    if haskey(thermal_parameter, "Thermal Stretch") && thermal_parameter["Thermal Stretch"]
+    thermal_stretch = true
+    thermal_strain = false
+    if haskey(thermal_parameter, "Thermal Stretch")
+        thermal_stretch = thermal_parameter["Thermal Stretch"]
+    end
+    if haskey(thermal_parameter, "Thermal Strain")
+        thermal_strain = thermal_parameter["Thermal Strain"]
+    end
+    if !thermal_stretch && !thermal_strain
+        @error "No valid thermal expansion measure defined ''Thermal Stretch'' or ''Thermal Strain''"
+        return datamanager
+    end
+    if thermal_strain && thermal_stretch
+        @warn "Thermal Stretch and Thermal Strain has been choosen as an option"
+    end
+    if thermal_stretch
         undeformed_bond = datamanager.get_field("Bond Geoemtry")
         deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
         thermal_bond_stretch = datamanager.create_constant_bond_field(Float64, "Thermal Stretch", 1)
@@ -59,7 +74,8 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
             alpha = alpha[1]
         end
         thermal_bond_stretch = thermal_stretch(nodes, alpha, temperature, deformed_bond, undeformed_bond, thermal_bond_stretch)
-    elseif haskey(thermal_parameter, "Thermal Strain") && thermal_parameter["Thermal Strain"]
+    end
+    if thermal_strain
         thermal_strain_tensor = datamanager.get_field("Thermal Strain")
         dof = datamanager.get_dof()
         alpha_mat = zeros(Float64, dof, dof)
@@ -75,9 +91,8 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
             @error "not yet implemented for full heat expansion matrix"
         end
         thermal_strain_tensor = thermal_strain(nodes, alpha, temperature, thermal_strain_tensor)
-    else
-        @error "No valid thermal expansion measure defined ''Thermal Stretch'' or ''Thermal Strain''"
     end
+
 
     return datamanager
 end
