@@ -50,6 +50,8 @@ end
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float64, dt::Float64)
   dof::Int64 = datamanager.get_dof()
   nlist = datamanager.get_nlist()
+  blockList = datamanager.get_block_list()
+  blockIds = datamanager.get_field("Block_Id")
   update_list = datamanager.get_field("Update List")
   horizon = datamanager.get_field("Horizon")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
@@ -58,12 +60,32 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
   critical_Energy = damage_parameter["Critical Energy"]
   tension::Bool = false
+  interBlockDamage::Bool = false
   bond_energy::Float64 = 0.0
   dist::Float64 = 0.0
   projected_force = zeros(Float64, dof)
   if haskey(damage_parameter, "Only Tension")
     tension = damage_parameter["Only Tension"]
   end
+  if haskey(damage_parameter, "Interblock Damage")
+    interBlockDamage = damage_parameter["Interblock Damage"]
+  end
+
+  #This should be initialized only
+  if interBlockDamage
+    inter_critical_Energy = zeros(Float64, (length(blockList), length(blockList)))
+    for block_iId in blockList
+      for block_jId in blockList
+        critEnergyName = "Interblock Critical Energy $(block_iId)_$block_jId"
+        if haskey(damage_parameter, critEnergyName)
+          inter_critical_Energy[block_iId, block_jId] = damage_parameter[critEnergyName]
+        else
+          inter_critical_Energy[block_iId, block_jId] = critical_Energy
+        end
+      end
+    end
+  end
+
   nneighbors = datamanager.get_field("Number of Neighbors")
 
   for iID in nodes
@@ -78,8 +100,11 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
       projected_force = dot((forceDensities[iID, :] - forceDensities[nlist[iID][jID], :]), deformed_bond[iID][jID, 1:dof]) / (deformed_bond[iID][jID, end] * deformed_bond[iID][jID, end]) .* deformed_bond[iID][jID, 1:dof]
 
       bond_energy = 0.5 * sum(projected_force[1:dof] .* deformed_bond[iID][jID, 1:dof])
-
-      if critical_Energy < bond_energy / get_quad_horizon(horizon[iID], dof)
+      crit_energy = critical_Energy
+      if interBlockDamage
+        crit_energy = inter_critical_Energy[blockIds[iID], blockIds[jID]]
+      end
+      if crit_energy < bond_energy / get_quad_horizon(horizon[iID], dof)
         bond_damage[iID][jID] = 0.0
         update_list[iID] = true
       end

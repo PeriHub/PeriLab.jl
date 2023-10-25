@@ -42,7 +42,10 @@ PeriLab:
         Shear Modulus: 1.0e5
     Damage Models:
       Damage:
-        Damage Model: "Test"
+        Critical Energy: 1.3947001394700143
+        Damage Model: Critical Energy
+        Interblock Critical Energy 1_2: 0.1
+        Interblock Damage: true
   Blocks:
     block_1:
       Block Names: "block_1"
@@ -83,6 +86,7 @@ PeriLab:
       Value: "20*t"
   Solver:
     Solve For Displacement: True
+    Damage Models: True
     Verbose: False
     Initial Time: 0.0
     Final Time: 0.00002
