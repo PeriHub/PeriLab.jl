@@ -53,15 +53,17 @@ MPI.Init()
         @testset "Solver" begin
 
             # @testset "ut_Solver_control" begin
-            #     include("unit_tests/Core/Solver//ut_Solver_control.jl")
+            #     include("unit_tests/Core/Solver/ut_Solver_control.jl")
             # end
 
-            # @testset "ut_Verlet" begin
-            # include("unit_tests/Core/Solver//ut_Verlet.jl")
-            # end
+            @testset "ut_Verlet" begin
+                include("unit_tests/Core/Solver/ut_Verlet.jl")
+            end
 
         end
-
+        @testset "Module_inclusion" begin
+            include("unit_tests/Core/Module_inclusion/ut_set_Modules.jl")
+        end
         @testset "ut_BC_manager" begin
             @includetests["unit_tests/Core/ut_BC_manager"]
         end
