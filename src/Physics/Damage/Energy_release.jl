@@ -5,6 +5,7 @@
 module Critical_Energy_Model
 include("../Material/Material_Factory.jl")
 using .Material
+using LinearAlgebra
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
@@ -59,6 +60,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   tension::Bool = false
   bond_energy::Float64 = 0.0
   dist::Float64 = 0.0
+  projected_force = zeros(Float64, dof)
   if haskey(damage_parameter, "Only Tension")
     tension = damage_parameter["Only Tension"]
   end
@@ -72,10 +74,11 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
           continue
         end
       end
-      # 0.25 ?!
 
-      # kraft muss projizizert werden und synchronisiert
-      bond_energy = 0.5 * sum((forceDensities[iID] - forceDensities[nlist[iID][jID]]) .* deformed_bond[iID][jID, 1:end] .* deformed_bond[iID][jID, 1:end] ./ deformed_bond[iID][jID, end])
+      projected_force = dot((forceDensities[iID, :] - forceDensities[nlist[iID][jID], :]), deformed_bond[iID][jID, 1:dof]) / (deformed_bond[iID][jID, end] * deformed_bond[iID][jID, end]) .* deformed_bond[iID][jID, 1:dof]
+
+      bond_energy = 0.5 * sum(projected_force[1:dof] .* deformed_bond[iID][jID, 1:dof])
+
       if critical_Energy < bond_energy / get_quad_horizon(horizon[iID], dof)
         bond_damage[iID][jID] = 0.0
         update_list[iID] = true
