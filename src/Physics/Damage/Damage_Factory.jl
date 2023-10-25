@@ -29,6 +29,9 @@ function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArr
 
     specifics = Dict{String,String}("Call Function" => "compute_damage_pre_calculation", "Name" => "damage_name")
     datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, block, synchronise_field, time, dt))
+    if isnothing(datamanager)
+        @error "No damage model of name " * model_param["Damage Model"] * " exists."
+    end
 
     return datamanager
 end
