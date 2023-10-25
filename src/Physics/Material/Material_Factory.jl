@@ -14,9 +14,13 @@ export compute_forces
 
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
     specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")
-    datamanager = Set_modules.create_module_specifics(model_param["Material Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
-    if isnothing(datamanager)
-        @error "No material of name " * material["Material Model"] * " exists."
+    material_model_params = split(model_param["Material Model"], "+")
+    for material_params in material_model_params
+        model_name = Set_modules.create_module_specifics(model_name, module_list, specifics, (datamanager, nodes, model_param, time, dt))
+
+        if isnothing(datamanager)
+            @error "No material of name " * model_name * " exists."
+        end
     end
     return datamanager
 end

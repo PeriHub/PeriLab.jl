@@ -62,17 +62,17 @@ function clearNP1(name)
     return name
 end
 
-function get_results_mapping(params::Dict, datamanager)
+function get_results_mapping(params::Dict, datamanager::Module)
     compute_names = get_computes_names(params)
     outputs = get_outputs(params, datamanager.get_all_field_keys(), compute_names)
     computes = get_computes(params, datamanager.get_all_field_keys())
     output_mapping = Dict{Int64,Dict{}}()
-    # computes = Dict("External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "Displacements", "Mapping" => Dict("External_Displacementsx" => Dict("result_id" => 1, "dof" => 1), "External_Displacementsy" => Dict("result_id" => 2, "dof" => 2), "External_Displacementsz" => Dict("result_id" => 3, "dof" => 3))))
+
     for (id, output) in enumerate(keys(outputs))
         result_id = 0
         output_mapping[id] = Dict{}()
         output_mapping[id]["Fields"] = Dict{}()
-        # computes_mapping[id] = Dict{String,Vector{Any}}()
+
         fieldnames = outputs[output]["fieldnames"]
         output_type = get_output_type(outputs[output])
         for fieldname in fieldnames
@@ -80,8 +80,7 @@ function get_results_mapping(params::Dict, datamanager)
             compute_name = ""
             compute_params = Dict{}
             global_var = false
-            #check if fieldname occursin in array computes label
-            # if output_type == "CSV"
+
             for key in keys(computes)
                 if fieldname == key
                     fieldname = computes[key]["Variable"]

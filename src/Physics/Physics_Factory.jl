@@ -24,7 +24,7 @@ export init_damage_model_fields
 export init_material_model_fields
 export init_thermal_model_fields
 
-function init_models(datamanager)
+function init_models(datamanager::Module)
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
 function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, time::Float64, options::Dict, synchronise_field, to)
@@ -88,7 +88,7 @@ function get_block_model_definition(params::Dict, blockID, prop_keys, properties
     return properties
 end
 
-function init_material_model_fields(datamanager)
+function init_material_model_fields(datamanager::Module)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Forces", Float64, dof) #-> only if it is an output
     # tbd later in the compute class
@@ -108,12 +108,12 @@ function init_material_model_fields(datamanager)
     return datamanager
 end
 
-function init_damage_model_fields(datamanager)
+function init_damage_model_fields(datamanager::Module)
     datamanager.create_node_field("Damage", Float64, 1)
     return datamanager
 end
 
-function init_thermal_model_fields(datamanager)
+function init_thermal_model_fields(datamanager::Module)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Temperature", Float64, 1)
     datamanager.create_node_field("Heat Flow", Float64, dof)
@@ -121,7 +121,7 @@ function init_thermal_model_fields(datamanager)
     return datamanager
 end
 
-function init_additive_model_fields(datamanager)
+function init_additive_model_fields(datamanager::Module)
     if !("Activation Time" in datamanager.get_all_field_keys())
         @error "'Activation Time' is missing. Please define an 'Activation Time' for each point in the mesh file."
     end
@@ -141,11 +141,11 @@ function init_additive_model_fields(datamanager)
     return datamanager
 end
 
-function init_pre_calculation(datamanager, options)
+function init_pre_calculation(datamanager::Module, options)
     return Pre_calculation.init_pre_calculation(datamanager, options)
 end
 
-function read_properties(params::Dict, datamanager)
+function read_properties(params::Dict, datamanager::Module)
     datamanager.init_property()
     blocks = datamanager.get_block_list()
     prop_keys = datamanager.init_property()

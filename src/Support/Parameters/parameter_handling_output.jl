@@ -43,17 +43,20 @@ function get_output_filenames(params::Dict)
     return []
 end
 
-function get_output_type(output)
-    output_type = "Exouds"
+function get_output_type(output::Dict)
+    output_type = "Exodus"
     if check_element(output, "Output Type")
-        output_type = output["Output Type"]
+        return output["Output Type"]
     end
     return output_type
 end
 
-function get_output_fieldnames(outputs, variables, computes, output_type)
+function get_output_fieldnames(outputs::Dict, variables::Vector{String}, computes::Vector{String}, output_type::String)
     return_outputs = String[]
     for output in keys(outputs)
+        if typeof(outputs[output]) != Bool
+            @error "Output variable $output must be set to True or False"
+        end
         if outputs[output]
             if output_type == "CSV"
                 if output in computes
@@ -75,12 +78,11 @@ function get_output_fieldnames(outputs, variables, computes, output_type)
     return return_outputs
 end
 
-function get_outputs(params::Dict, variables, compute_names)
+function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vector{String})
     num = 0
-    if check_element(params::Dict, "Outputs")
+    if check_element(params, "Outputs")
         outputs = params["Outputs"]
         for output in keys(outputs)
-            output_type = "Exouds"
             output_type = get_output_type(outputs[output])
             if check_element(outputs[output], "Output Variables")
                 outputs[output]["fieldnames"] = get_output_fieldnames(outputs[output]["Output Variables"], variables, compute_names, output_type)
