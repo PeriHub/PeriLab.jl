@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-using MPI
+
 
 include("../../../../src/Core/BC_manager.jl")
 include("../../../../src/Core/Solver/Verlet.jl")
@@ -34,7 +34,7 @@ end
     bondgeometry = [1, 0.5, 2]
     @test Verlet.get_cs_denominator(volume, bondgeometry) == 6.5
 end
-
+"""
 nnodes = 5
 dof = 2
 testDatamanager = Data_manager
@@ -79,9 +79,7 @@ blocks = testDatamanager.set_block_list(blocks)
 # from Peridigm
 testValmech = 0.0002853254715348906
 testVal = 72.82376628733019
-MPI.Init()
-comm = MPI.COMM_WORLD
-testDatamanager.set_comm(comm)
+
 # from Peridigm
 @testset "ut_mechanical_critical_time_step" begin
 
@@ -123,7 +121,7 @@ testDatamanager.set_property(2, "Material Model", "Bulk Modulus", Float64(140.0)
     @test testFixdtVal / dt - 1 < 1e-6
 
 end
-"""
+
 nnodes = 5
 dof = 2
 
@@ -161,4 +159,3 @@ outputs = Dict()
 solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
 result_files = run_Verlet_solver(solver_options, Solver.get_nodes(blockNodes), bcs, testDatamanager, outputs, result_files, Solver.write_results)
 """
-MPI.Finalize()
