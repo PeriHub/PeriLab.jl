@@ -18,7 +18,7 @@ PeriLab:
         Normal_Y: 1.0
         Normal_Z: 0.0
         Lower_Left_Corner_X: -0.006
-        Lower_Left_Corner_Y: 0.0
+        Lower_Left_Corner_Y: 0.0005
         Lower_Left_Corner_Z: -0.01
         Bottom_Unit_Vector_X: 1.0
         Bottom_Unit_Vector_Y: 0.0
@@ -100,7 +100,7 @@ PeriLab:
         Number of Neighbors: true
 
   Solver:
-    Final Time: 1e-5
+    Final Time: 1e-6
     Initial Time: 0.0
     Damage Models: True
     Verbose: false

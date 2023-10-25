@@ -1,0 +1,151 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1:
+      Block Names: block_1
+      Damage Model: Damage
+      Density: 2.81e-09
+      Horizon: 0.30846153846153845
+      Material Model: Aluminium
+    block_2:
+      Block Names: block_2
+      Damage Model: Damage
+      Density: 2.81e-09
+      Horizon: 0.30846153846153845
+      Material Model: Aluminium
+    block_3:
+      Block Names: block_3
+      Density: 2.81e-09
+      Horizon: 0.30846153846153845
+      Material Model: Aluminium
+    block_4:
+      Block Names: block_4
+      Density: 2.81e-09
+      Horizon: 0.30846153846153845
+      Material Model: Aluminium
+    block_5:
+      Block Names: block_5
+      Density: 2.81e-09
+      Horizon: 0.30846153846153845
+      Material Model: Aluminium
+    block_6:
+      Block Names: block_6
+      Density: 2.81e-09
+      Horizon: 0.30846153846153845
+      Material Model: Aluminium
+    block_7:
+      Block Names: block_7
+      Density: 2.81e-09
+      Horizon: 0.30846153846153845
+      Material Model: Aluminium
+    block_8:
+      Block Names: block_8
+      Density: 2.81e-09
+      Horizon: 0.30846153846153845
+      Material Model: Aluminium
+  Bond Filters:
+    bf_1:
+      Bottom_Length: 6.5
+      Bottom_Unit_Vector_X: 1.0
+      Bottom_Unit_Vector_Y: 0.0
+      Bottom_Unit_Vector_Z: 0.0
+      Lower_Left_Corner_X: -0.5
+      Lower_Left_Corner_Y: 0.5
+      Lower_Left_Corner_Z: -0.5
+      Normal_X: 0.0
+      Normal_Y: 1.0
+      Normal_Z: 0.0
+      Side_Length: 1.0
+      Type: Rectangular_Plane
+  Boundary Conditions:
+    BC_1:
+      Coordinate: y
+      Node Set: Node Set 1
+      Type: Force Densities
+      Value: -5000000*t
+    BC_2:
+      Coordinate: y
+      Node Set: Node Set 2
+      Type: Displacements
+      Value: "0"
+    BC_3:
+      Coordinate: x
+      Node Set: Node Set 3
+      Type: Displacements
+      Value: "0"
+    BC_4:
+      Coordinate: y
+      Node Set: Node Set 3
+      Type: Displacements
+      Value: "0"
+    BC_5:
+      Coordinate: y
+      Node Set: Node Set 4
+      Type: Displacements
+      Value: "0"
+  Compute Class Parameters:
+    External_Displacements:
+      Block: block_5
+      Calculation Type: Maximum
+      Compute Class: Block_Data
+      Variable: Displacements
+    External_Forces:
+      Block: block_5
+      Calculation Type: Sum
+      Compute Class: Block_Data
+      Variable: Forces
+  Discretization:
+    Input Mesh File: ENFmodel.txt
+    Node Sets:
+      Node Set 1: ns_ENFmodel_1.txt
+      Node Set 2: ns_ENFmodel_2.txt
+      Node Set 3: ns_ENFmodel_3.txt
+      Node Set 4: ns_ENFmodel_4.txt
+    Type: Text File
+  Outputs:
+    Output1:
+      Number of Output Steps: 100
+      Output File Type: Exodus
+      Output Filename: ENFmodel_Output1
+      Output Variables:
+        Displacements: true
+        Forces: true
+        Damages: true
+  Physics:
+    Damage Models:
+      Damage:
+        Critical Energy: 1.3947001394700143
+        Damage Model: Critical Energy
+        Detached Nodes Check: true
+        Hourglass Coefficient: 1.0
+        Interblock Critical Energy 1_2: "0.1"
+        Interblock Damage: true
+        Number of Blocks: 3
+        Only Tension: false
+        Plane Stress: true
+        Stabilization Type: Global Stiffness
+        Thickness: 10.0
+    Material Models:
+      Aluminium:
+        Symmetry: "isotropic plane stress"
+        Density: 2.81e-09
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Plane Stress: true
+        Poisson's Ratio: 0.33
+        Stabilization Type: Global Stiffness
+        Tension Separation: true
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Yield Stress: 99.3
+        Young's Modulus: 71700.0
+  Solver:
+    Final Time: 1e-08
+    Initial Time: 0.0
+    Verbose: false
+    Verlet:
+      Numerical Damping: 5.0e-06
+      Safety Factor: 0.95

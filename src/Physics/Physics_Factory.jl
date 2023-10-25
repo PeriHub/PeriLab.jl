@@ -48,7 +48,7 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
             update_nodes = view(nodes, find_active(update_list[nodes]))
             datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
             force_densities = datamanager.get_field("Force Densities", "NP1")
-            force_densities[nodes, :] .= 0.0
+            force_densities[nodes] .= 0.0
         end
     end
 

@@ -59,7 +59,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
     return datamanager
 end
-function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, synchronise_field, block::Int64, time::Float64, dt::Float64)
+function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
     return datamanager
 end
 end
