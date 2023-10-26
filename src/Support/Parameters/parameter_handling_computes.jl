@@ -5,12 +5,12 @@
 function get_computes_names(params::Dict)
     if check_element(params::Dict, "Compute Class Parameters")
         computes = params["Compute Class Parameters"]
-        return collect(keys(sort(computes)))
+        return string.(collect(keys(sort(computes))))
     end
     return String[]
 end
 
-function get_output_variables(output, variables::Vector)
+function get_output_variables(output::String, variables::Vector)
     if output in variables
         return output
     elseif output * "NP1" in variables
