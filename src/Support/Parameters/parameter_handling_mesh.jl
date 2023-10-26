@@ -31,7 +31,7 @@ function get_bond_filters(params::Dict)
     return check, bfList
 end
 
-function get_node_sets(params::Dict)
+function get_node_sets(params::Dict, path::String)
     nsets = Dict{String,Any}()
     if check_element(params["Discretization"], "Node Sets") == false
         return []
@@ -43,10 +43,10 @@ function get_node_sets(params::Dict)
             nsets[entry] = [nodesets[entry]]
         elseif occursin(".txt", nodesets[entry])
 
-            header_line, header = get_header(nodesets[entry])
-            nodes = CSV.read(nodesets[entry], DataFrame; delim=" ", header=false, skipto=header_line + 1)
+            header_line, header = get_header(joinpath(path, nodesets[entry]))
+            nodes = CSV.read(joinpath(path, nodesets[entry]), DataFrame; delim=" ", header=false, skipto=header_line + 1)
             if size(nodes) == (0, 0)
-                @error "Node set file is empty " * nodesets[entry]
+                @error "Node set file is empty " * joinpath(path, nodesets[entry])
             end
             nsets[entry] = nodes.Column1
         else
