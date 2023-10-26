@@ -22,11 +22,11 @@ export init_data
 
 TOLERANCE = 1.0e-14
 
-function init_data(params::Dict, datamanager, comm, to)
+function init_data(params::Dict, path::String, datamanager, comm, to)
     @timeit to "init_data - mesh_data,jl" begin
         ranks = MPI.Comm_size(comm)
         if (MPI.Comm_rank(comm)) == 0
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params::Dict, ranks)
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params::Dict, path, ranks)
         else
             nmasters = 0
             nslaves = 0
@@ -49,7 +49,7 @@ function init_data(params::Dict, datamanager, comm, to)
         datamanager.set_nmasters(nmasters)
         datamanager.set_nslaves(nslaves)
         @info "Get node sets"
-        define_nsets(params, datamanager)
+        define_nsets(params, path, datamanager)
         # defines the order of the global nodes to the local core nodes
         datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
         @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
@@ -132,8 +132,8 @@ function get_bond_geometry(datamanager::Module)
     return datamanager
 end
 
-function define_nsets(params::Dict, datamanager::Module)
-    nsets = get_node_sets(params)
+function define_nsets(params::Dict, path::String, datamanager::Module)
+    nsets = get_node_sets(params, path)
     for nset in keys(nsets)
         datamanager.set_nset(nset, nsets[nset])
     end
@@ -267,9 +267,9 @@ function set_dof(mesh::DataFrame)
     return Int64(2)
 end
 
-function load_and_evaluate_mesh(params::Dict, ranksize::Int64)
+function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
 
-    mesh = read_mesh(get_mesh_name(params))
+    mesh = read_mesh(joinpath(path, get_mesh_name(params)))
 
     dof::Int64 = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params::Dict, dof)

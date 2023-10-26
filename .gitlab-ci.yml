@@ -76,19 +76,19 @@ deploy:
     - docker build -t perihub/perilab .
     - docker push perihub/perilab
 
-# pages:
-#   stage: deploy
-#   only:
-#     refs:
-#       - main
-#   script:
-#     # - julia -e 'import Pkg; Pkg.add(path=".")' # i think this is to much, tbd
-#     - julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
-#     - julia --project=docs --color=yes docs/make.jl
-#     - mv docs/build public # move to the directory picked up by Gitlab pages
-#   artifacts:
-#     paths:
-#       - public
+pages:
+  stage: deploy
+  only:
+    refs:
+      - main
+  script:
+    # - julia -e 'import Pkg; Pkg.add(path=".")' # i think this is to much, tbd
+    - julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+    - julia --project=docs --color=yes docs/make.jl
+    - mv docs/build public # move to the directory picked up by Gitlab pages
+  artifacts:
+    paths:
+      - public
 
 .deploy_before_script_template:
   image: docker:latest

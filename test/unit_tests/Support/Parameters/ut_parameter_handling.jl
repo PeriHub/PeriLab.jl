@@ -145,7 +145,7 @@ end
     close(file)
 
     params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename)))
-    nsets = get_node_sets(params)
+    nsets = get_node_sets(params, "")
     @test "Nset_1" in keys(nsets)
     @test "Nset_2" in keys(nsets)
     @test length(nsets["Nset_1"]) == 7

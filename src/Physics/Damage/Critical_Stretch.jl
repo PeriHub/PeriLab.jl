@@ -50,6 +50,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
     cricital_stretch = damage_parameter["Critical Value"]
+    interBlockDamage::Bool = false
     if haskey(damage_parameter, "Interblock Damage")
         interBlockDamage = damage_parameter["Interblock Damage"]
     end

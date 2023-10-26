@@ -6,6 +6,7 @@ module Logging_module
 using Logging
 using LoggingExtras
 using TimerOutputs
+using DataFrames
 include("./IO.jl")
 export init_logging
 export set_result_files
@@ -17,7 +18,7 @@ function set_result_files(result_files_temp)
 end
 
 function progress_filter(log_args)
-    if typeof(log_args.message) == TimerOutputs.TimerOutput
+    if typeof(log_args.message) == TimerOutputs.TimerOutput || typeof(log_args.message) == DataFrames.DataFrame
         return true
     end
     if startswith(log_args.message, "Step:")
