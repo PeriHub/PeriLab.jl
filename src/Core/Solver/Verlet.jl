@@ -67,7 +67,7 @@ function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{I
     end
     return sqrt(criticalTimeStep)
 end
-function get_cs_denominator(volume::SubArray, bondgeometry::SubArray)
+function get_cs_denominator(volume::Union{SubArray,Vector{Float64},Vector{Int64}}, bondgeometry::Union{SubArray,Vector{Float64},Vector{Int64}})
     return sum(volume ./ bondgeometry)
 end
 

@@ -20,13 +20,13 @@ using .Boundary_conditions
 using .Solver
 using .Verlet
 @testset "ut_test_timestep" begin
-    @test Verlet.test_timestep(1, 2) == 1
-    @test Verlet.test_timestep(2, 1.1) == 1.1
-    @test Verlet.test_timestep(2, 2) == 2
+    @test Verlet.test_timestep(1.0, 2.0) == 1
+    @test Verlet.test_timestep(2.0, 1.1) == 1.1
+    @test Verlet.test_timestep(2.0, 2.0) == 2
 end
 
 @testset "ut_get_cs_denominator" begin
-    volume = [1, 2, 3]
+    volume = Float64[1, 2, 3]
     bondgeometry = [1, 2, 3]
     @test Verlet.get_cs_denominator(volume, bondgeometry) == 3
     bondgeometry = [2, 4, 6]
