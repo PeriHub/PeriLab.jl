@@ -49,35 +49,38 @@ end
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
 
     temperature = datamanager.get_field("Temperature", "NP1")
+    dof = datamanager.get_dof()
     alpha = thermal_parameter["Heat expansion"]
-    thermal_stretch = true
-    thermal_strain = false
+    thermal_deformation_option = true
+    thermal_strain_option = false
+
     if haskey(thermal_parameter, "Thermal Stretch")
-        thermal_stretch = thermal_parameter["Thermal Stretch"]
+        thermal_deformation_option = thermal_parameter["Thermal Stretch"]
     end
     if haskey(thermal_parameter, "Thermal Strain")
         thermal_strain = thermal_parameter["Thermal Strain"]
     end
-    if !thermal_stretch && !thermal_strain
+    if thermal_deformation_option && thermal_strain_option
         @error "No valid thermal expansion measure defined ''Thermal Stretch'' or ''Thermal Strain''"
         return datamanager
     end
-    if thermal_strain && thermal_stretch
+    if thermal_deformation_option && thermal_strain_option
         @warn "Thermal Stretch and Thermal Strain has been choosen as an option"
     end
-    if thermal_stretch
-        undeformed_bond = datamanager.get_field("Bond Geoemtry")
+    if thermal_deformation_option
+        undeformed_bond = datamanager.get_field("Bond Geometry")
         deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-        thermal_bond_stretch = datamanager.create_constant_bond_field(Float64, "Thermal Stretch", 1)
+        thermal_bond_deformation = datamanager.create_constant_bond_field("Thermal Deformation", Float64, dof + 1)
         if length(alpha) > 1
-            @warn "Matrix is defined and first entry is used in ''Thermal Stretch''."
+            @warn "Matrix is defined and first entry is used in ''Thermal Deformation''."
             alpha = alpha[1]
         end
-        thermal_bond_stretch = thermal_stretch(nodes, alpha, temperature, deformed_bond, undeformed_bond, thermal_bond_stretch)
+        thermal_bond_deformation = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
+        deformed_bond += thermal_bond_deformation
     end
-    if thermal_strain
+    if thermal_strain_option
         thermal_strain_tensor = datamanager.get_field("Thermal Strain")
-        dof = datamanager.get_dof()
+
         alpha_mat = zeros(Float64, dof, dof)
         if length(alpha) == 1
             for i in 1:dof
@@ -92,23 +95,22 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
         end
         thermal_strain_tensor = thermal_strain(nodes, alpha, temperature, thermal_strain_tensor)
     end
-
-
     return datamanager
+
 end
 
-function thermal_stretch(nodes::Union{SubArray,Vector{Int64}}, alpha::Float64, temperature::SubArray, deformed_bond::SubArray, undeformed_bond::SubArray, thermal_stretch::SubArray)
-
-    for iID in nnodes
-        thermal_stretch[iID][:] -= alpha .* temperature[iID] .* (deformed_bond[iID][:, end] - undeformed_bond[iID][:, end])
-    end
-end
-return thermal_stretch
-end
-
-function thermal_strain(nodes::Union{SubArray,Vector{Int64}}, alpha::Matrix{Float64}, temperature::SubArray, thermal_strain::SubArray)
+function thermal_deformation(nodes::Union{SubArray,Vector{Int64}}, alpha::Float64, temperature::SubArray, undeformed_bond::SubArray, thermal_deformation::SubArray)
     for iID in nodes
-        thermal_strain[iID] = alpha .* temperature[iID]
+        thermal_deformation[iID][:, :] = (alpha * temperature[iID]) .* undeformed_bond[iID][:, :]
+    end
+    return thermal_deformation
+end
+
+function thermal_strain(nodes::Union{SubArray,Vector{Int64}}, alpha::Union{Matrix{Float64},Matrix{Int64}}, temperature::SubArray, thermal_strain::SubArray)
+    for iID in nodes
+        thermal_strain[iID, :, :] = alpha .* temperature[iID]
     end
     return thermal_strain
 end
+
+end # Module end
