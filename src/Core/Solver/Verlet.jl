@@ -47,7 +47,7 @@ This function depends on the following data fields from the `datamanager` module
 
 """
 
-function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Float64, Cv::Float64)
+function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Union{Float64,Int64}, Cv::Union{Float64,Int64})
 
     criticalTimeStep::Float64 = 1.0e50
     dof = datamanager.get_dof()
@@ -96,7 +96,7 @@ This function depends on the following data fields from the `datamanager` module
 
 """
 
-function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulkModulus::Float64)
+function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulkModulus::Union{Float64,Int64})
     criticalTimeStep::Float64 = 1.0e50
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
