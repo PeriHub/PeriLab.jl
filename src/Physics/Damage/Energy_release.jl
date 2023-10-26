@@ -30,7 +30,7 @@ function damage_name()
   return "Critical Energy"
 end
 """
-   compute_damage(datamanager, nodes, damage_parameter, time, dt)
+   compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
 
    Calculates the elastic energy of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
    [WillbergC2019](@cite), [FosterJT2011](@cite)
@@ -39,6 +39,7 @@ end
         - `datamanager::Data_manager`: Datamanager.
         - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
         - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+        - `block::Int64`: Block number.
         - `time::Float64`: The current time.
         - `dt::Float64`: The current time step.
    Returns:
@@ -47,7 +48,7 @@ end
    ```julia
      ```
    """
-function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float64, dt::Float64)
+function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
   dof::Int64 = datamanager.get_dof()
   nlist = datamanager.get_nlist()
   blockList = datamanager.get_block_list()
@@ -58,7 +59,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   bondGeometry = datamanager.get_field("Bond Geometry")
   forceDensities = datamanager.get_field("Force Densities", "NP1")
   deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-  critical_Energy = damage_parameter["Critical Energy"]
+  critical_Energy = damage_parameter["Critical Value"]
   tension::Bool = false
   interBlockDamage::Bool = false
   bond_energy::Float64 = 0.0
@@ -70,20 +71,8 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   if haskey(damage_parameter, "Interblock Damage")
     interBlockDamage = damage_parameter["Interblock Damage"]
   end
-
-  #This should be initialized only
   if interBlockDamage
-    inter_critical_Energy = zeros(Float64, (length(blockList), length(blockList)))
-    for block_iId in blockList
-      for block_jId in blockList
-        critEnergyName = "Interblock Critical Energy $(block_iId)_$block_jId"
-        if haskey(damage_parameter, critEnergyName)
-          inter_critical_Energy[block_iId, block_jId] = damage_parameter[critEnergyName]
-        else
-          inter_critical_Energy[block_iId, block_jId] = critical_Energy
-        end
-      end
-    end
+    inter_critical_Energy = datamanager.get_crit_values_matrix()
   end
 
   nneighbors = datamanager.get_field("Number of Neighbors")
@@ -102,7 +91,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
       bond_energy = 0.5 * sum(projected_force[1:dof] .* deformed_bond[iID][jID, 1:dof])
       crit_energy = critical_Energy
       if interBlockDamage
-        crit_energy = inter_critical_Energy[blockIds[iID], blockIds[jID]]
+        crit_energy = inter_critical_Energy[blockIds[iID], blockIds[nlist[iID][jID]], block]
       end
       if crit_energy < bond_energy / get_quad_horizon(horizon[iID], dof)
         bond_damage[iID][jID] = 0.0

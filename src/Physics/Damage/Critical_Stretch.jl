@@ -26,7 +26,7 @@ function damage_name()
     return "Critical Stretch"
 end
 """
-   compute_damage(datamanager, nodes, damage_parameter, time, dt)
+   compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
 
    Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 
@@ -34,6 +34,7 @@ end
         - `datamanager::Data_manager`: Datamanager.
         - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
         - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+        - `block::Int64`: Block number.
         - `time::Float64`: The current time.
         - `dt::Float64`: The current time step.
    Returns:
@@ -42,17 +43,27 @@ end
    ```julia
      ```
    """
-function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, time::Float64, dt::Float64)
+function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
 
     bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
     bondGeom = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
-    cricital_stretch = damage_parameter["Critical Stretch"]
+    cricital_stretch = damage_parameter["Critical Value"]
+    if haskey(damage_parameter, "Interblock Damage")
+        interBlockDamage = damage_parameter["Interblock Damage"]
+    end
+    if interBlockDamage
+        inter_critical_stretch = datamanager.get_crit_values_matrix()
+    end
     for iID in nodes
         for jID in nneighbors[iID]
             stretch = (deformed_bond[iID][jID, end] - bondGeom[iID][jID, end]) / bondGeom[iID][jID, end]
-            if stretch > cricital_stretch
+            crit_stretch = cricital_stretch
+            if interBlockDamage
+                crit_stretch = inter_critical_stretch[blockIds[iID], blockIds[nlist[iID][jID]], block]
+            end
+            if stretch > crit_stretch
                 bondDamageNP1[iID][jID] = 0
             end
         end

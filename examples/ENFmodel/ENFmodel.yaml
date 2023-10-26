@@ -117,11 +117,11 @@ PeriLab:
   Physics:
     Damage Models:
       Damage:
-        Critical Energy: 1.3947001394700143
+        Critical Value: 1.3947001394700143
         Damage Model: Critical Energy
         Detached Nodes Check: true
         Hourglass Coefficient: 1.0
-        Interblock Critical Energy 1_2: "0.1"
+        Interblock Critical Value 1_2: "0.1"
         Interblock Damage: true
         Number of Blocks: 3
         Only Tension: false
