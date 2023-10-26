@@ -16,11 +16,13 @@ using .Write_CSV_Results
 using MPI
 using Exodus
 using TimerOutputs
+using DataFrames
 export close_result_files
 export initialize_data
 export init_write_results
 export write_results
 export merge_exodus_files
+export show_block_summary
 output_frequency = []
 function merge_exodus_files(exos)
     for exo in exos
@@ -133,7 +135,7 @@ function initialize_data(filename::String, datamanager::Module, comm::MPI.Comm, 
         datamanager.set_max_rank(MPI.Comm_size(comm))
         datamanager.set_comm(comm)
     end
-    return Read_Mesh.init_data(read_input_file(filename), datamanager, comm, to)
+    return Read_Mesh.init_data(read_input_file(filename), dirname(filename), datamanager, comm, to)
 
 end
 
@@ -209,6 +211,32 @@ function write_results(result_files, time, outputs, datamanager)
         end
     end
     return result_files
+end
+
+function show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)
+    headers = [""]
+    block_list = datamanager.get_block_list()
+    block_list = ["block_" * string(block) for block in block_list]
+    append!(headers, block_list)
+    df = DataFrame([header => [] for header in headers])
+
+    for name in ["Material", "Damage", "Thermal", "Additive"]
+        if !solver_options[name*" Models"]
+            continue
+        end
+        row = [name * " =>"]
+        for id in eachindex(block_list)
+            if haskey(params["Blocks"][block_list[id]], name * " Model")
+                push!(row, params["Blocks"][block_list[id]][name*" Model"])
+            else
+                push!(row, "")
+            end
+        end
+        push!(df, row)
+    end
+
+    @info df
+
 end
 
 end

@@ -121,7 +121,7 @@ PeriLab:
         Damage Model: Critical Energy
         Detached Nodes Check: true
         Hourglass Coefficient: 1.0
-        Interblock Critical Value 1_2: "0.1"
+        Interblock Critical Value 1_2: 0.1
         Interblock Damage: true
         Number of Blocks: 3
         Only Tension: false
@@ -145,6 +145,7 @@ PeriLab:
   Solver:
     Final Time: 1e-08
     Initial Time: 0.0
+    Damage Models: true
     Verbose: false
     Verlet:
       Numerical Damping: 5.0e-06
