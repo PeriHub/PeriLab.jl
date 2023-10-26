@@ -25,7 +25,7 @@ function init_bondDamage_and_influence_function(A, B, C)
     return A, B, C
 end
 
-function init(params::Dict, datamanager)
+function init(params::Dict, datamanager::Module)
     @info "Init Solver"
     # tbd in csv for global vars
     nnodes = datamanager.get_nnodes()
