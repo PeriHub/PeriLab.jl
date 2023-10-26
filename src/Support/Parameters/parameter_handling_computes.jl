@@ -5,7 +5,7 @@
 function get_computes_names(params::Dict)
     if check_element(params::Dict, "Compute Class Parameters")
         computes = params["Compute Class Parameters"]
-        return collect(keys(sort(computes)))
+        return string.(collect(keys(sort(computes))))
     end
     return String[]
 end
