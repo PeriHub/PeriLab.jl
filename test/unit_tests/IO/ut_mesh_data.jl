@@ -199,7 +199,7 @@ end
     params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename)))
     testDatamanager = Data_manager
     @test testDatamanager.get_nnsets() == 0
-    Read_Mesh.define_nsets(params, testDatamanager)
+    Read_Mesh.define_nsets(params, "", testDatamanager)
     @test testDatamanager.get_nnsets() == 2
     nsets = testDatamanager.get_nsets()
     @test nsets["Nset_1"] == [1, 2, 3, 4, 5, 6, 7]
