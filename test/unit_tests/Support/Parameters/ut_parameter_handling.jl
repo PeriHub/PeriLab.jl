@@ -101,7 +101,7 @@ testDatamanager = Data_manager
 
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))
 
-    outputs = get_outputs(params, testfield_keys, [])
+    outputs = get_outputs(params, testfield_keys, String[])
 
     @test "A" in outputs["Output1"]["fieldnames"]
     @test ("BNP1" in outputs["Output1"]["fieldnames"]) == false
