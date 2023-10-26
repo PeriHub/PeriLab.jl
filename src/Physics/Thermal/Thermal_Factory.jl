@@ -15,9 +15,9 @@ function compute_thermal_model(datamanager, nodes, model_param, time, dt)
 
     specifics = Dict{String,String}("Call Function" => "compute_thermal_model", "Name" => "thermal_model_name")
 
-    thermal_model_params = split(model_param["Thermal Model"], "+")
-    for model_name in thermal_model_params
-        datamanager = Set_modules.create_module_specifics(model_name, module_list, specifics, (datamanager, nodes, model_param, time, dt))
+    thermal_models = split(model_param["Thermal Model"], "+")
+    for thermal_model in thermal_models
+        datamanager = Set_modules.create_module_specifics(thermal_model, module_list, specifics, (datamanager, nodes, model_param, time, dt))
         if isnothing(datamanager)
             @error "No thermal model of name " * model_name * " exists."
         end
