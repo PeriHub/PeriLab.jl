@@ -35,3 +35,25 @@ function get_computes(params::Dict, variables)
     end
     return []
 end
+
+function get_node_set(params::Dict)
+    if !check_element(params::Dict, "Node Set")
+        return []
+    end
+    nodeset = params["Node Set"]
+
+    if (typeof(nodeset) == Int64) | (typeof(nodeset) == Int32)
+        return [nodeset]
+    elseif occursin(".txt", nodeset)
+
+        header_line, header = get_header(nodeset)
+        nodes = CSV.read(nodeset, DataFrame; delim=" ", header=false, skipto=header_line + 1)
+        if size(nodes) == (0, 0)
+            @error "Node set file is empty " * nodeset
+        end
+        return nodes.Column1
+    else
+        nodes = split(nodeset)
+        return parse.(Int, nodes)
+    end
+end

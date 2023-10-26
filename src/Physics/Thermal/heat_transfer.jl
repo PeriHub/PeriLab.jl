@@ -45,7 +45,8 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   dof = datamanager.get_dof()
   volume = datamanager.get_field("Volume")
 
-  numNeighbors = datamanager.get_field("Number of Neighbors")
+  nlist = datamanager.get_nlist()
+  nneighbors = datamanager.get_field("Number of Neighbors")
   alpha = thermal_parameter["Alpha"]
   Tenv = thermal_parameter["Environment Temperature"]
   equal_discretized = thermal_parameter["Equal Discretized"]
@@ -68,39 +69,39 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     compareNeighbor = 0
     neighbor_volume = 0.0
     right, left, front, back, above, below = false, false, false, false, false, false, false, false
-    for jID in numNeighbors[iID]
-      if bond_damage[iID, jID] == 0.0
+    for jID in 1:nneighbors[iID]
+      if bond_damage[iID][jID] == 0.0
         continue
       end
 
       if equal_discretized
-        if !right && coordinates[iID, 1] > coordinates[jID, 1] && coordinates[iID, 2] == coordinates[jID, 2] && coordinates[iID, 3] == coordinates[jID, 3]
+        if !right && coordinates[iID, 1] > coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
           right = true
           compare_neighbor += 1
         end
-        if !left && coordinates[iID, 1] < coordinates[jID, 1] && coordinates[iID, 2] == coordinates[jID, 2] && coordinates[iID, 3] == coordinates[jID, 3]
+        if !left && coordinates[iID, 1] < coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
           left = true
           compare_neighbor += 1
         end
-        if !front && coordinates[iID, 2] > coordinates[jID, 2] && coordinates[iID, 1] == coordinates[jID, 1] && coordinates[iID, 3] == coordinates[jID, 3]
+        if !front && coordinates[iID, 2] > coordinates[nlist[iID][jID], 2] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
           front = true
           compare_neighbor += 1
         end
-        if !back && coordinates[iID, 2] < coordinates[jID, 2] && coordinates[iID, 1] == coordinates[jID, 1] && coordinates[iID, 3] == coordinates[jID, 3]
+        if !back && coordinates[iID, 2] < coordinates[nlist[iID][jID], 2] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
           back = true
           compare_neighbor += 1
         end
-        if !above && coordinates[iID, 3] > coordinates[jID, 3] && coordinates[iID, 1] == coordinates[jID, 1] && coordinates[iID, 2] == coordinates[jID, 2]
+        if !above && coordinates[iID, 3] > coordinates[nlist[iID][jID], 3] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2]
           above = true
           compare_neighbor += 1
         end
-        if !below && coordinates[iID, 3] < coordinates[jID, 3] && coordinates[iID, 1] == coordinates[jID, 1] && coordinates[iID, 2] == coordinates[jID, 2]
+        if !below && coordinates[iID, 3] < coordinates[nlist[iID][jID], 3] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2]
           below = true
           compare_neighbor += 1
         end
 
       else
-        neighbor_volume += volume[jID]
+        neighbor_volume += volume[nlist[iID][jID]]
       end
 
     end

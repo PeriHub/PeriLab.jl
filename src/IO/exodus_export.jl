@@ -4,6 +4,8 @@
 
 module Write_Exodus_Results
 include("csv_export.jl")
+include("../Compute/compute_global_values.jl")
+include("../Support/Parameters/parameter_handling.jl")
 using Exodus
 using Pkg
 using .Write_CSV_Results
@@ -144,33 +146,23 @@ end
 
 function write_global_results_in_exodus(exo, step, output, output_type, datamanager)
     #write_values
-    nnodes = datamanager.get_nnodes()
     global_values = []
     for varname in keys(output)
         compute_class = output[varname]["compute_params"]["Compute Class"]
         calculation_type = output[varname]["compute_params"]["Calculation Type"]
-        field = datamanager.get_field(output[varname]["compute_params"]["Variable"])
+        fieldname = output[varname]["compute_params"]["Variable"]
         global_value = 0
-        values = field[1:nnodes, output[varname]["dof"]]
         if compute_class == "Block_Data"
             block = output[varname]["compute_params"]["Block"]
-            block_Id = datamanager.get_field("Block_Id")
-            block_filter = filter(x -> block_Id[x] == parse(Int, block[7:end]), 1:length(block_Id))
-            values = values[block_filter]
+            block_id = parse(Int, block[7:end])
+            global_value = calculate_block(datamanager, fieldname, calculation_type, block_id)
+        elseif compute_class == "Nodeset_Data"
+            node_set = get_node_set(output[varname]["compute_params"])
+            global_value = calculate_nodelist(datamanager, fieldname, calculation_type, node_set)
         end
-        if length(values) == 0
-            @warn "No values for $varname, check compute class parameters or block assignment!"
-            continue
-        end
-        if calculation_type == "Maximum"
-            global_value = maximum(values)
-        elseif calculation_type == "Minimum"
-            global_value = minimum(values)
-        elseif calculation_type == "Sum"
-            global_value = sum(values)
-        end
+
         if output_type == "Exodus" && typeof(exo) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
-            write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, [global_value])
+            write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, global_value)
         end
         push!(global_values, global_value)
     end
