@@ -28,7 +28,6 @@ end
 
 function init(params::Dict, datamanager::Module)
     @info "Init Solver"
-    # tbd in csv for global vars
     nnodes = datamanager.get_nnodes()
     nslaves = datamanager.get_nslaves()
     allBlockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes + nslaves)
@@ -47,25 +46,10 @@ function init(params::Dict, datamanager::Module)
     bondDamageN, bondDamageNP1 = datamanager.create_bond_field("Bond Damage", Float64, 1)
     omega[:], bondDamageN, bondDamageNP1 = init_bondDamage_and_influence_function(omega, bondDamageN, bondDamageNP1)
 
-    if solver_options["Material Models"]
-        datamanager = Physics.init_material_model_fields(datamanager)
-    end
-    if solver_options["Damage Models"]
-        datamanager = Physics.init_damage_model_fields(datamanager)
-        datamanager = Damage.init_interface_crit_values(datamanager, params)
-    end
-    if solver_options["Thermal Models"]
-        datamanager = Physics.init_thermal_model_fields(datamanager)
-        heatCapacity = datamanager.create_constant_node_field("Heat Capacity", Float64, 1)
-        heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
-    end
-    if solver_options["Additive Models"]
-        datamanager = Physics.init_additive_model_fields(datamanager)
-    end
-
     Physics.read_properties(params, datamanager)
-    Physics.init_models(datamanager)
+    datamanager = Physics.init_models(params, datamanager, allBlockNodes, solver_options)
     bcs = Boundary_conditions.init_BCs(params, datamanager)
+
     if get_solver_name(params) == "Verlet"
         solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"] = Verlet.init_solver(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
     end
@@ -95,14 +79,6 @@ function set_horizon(params::Dict, blockNodes::Dict, horizon::SubArray)
     return horizon
 end
 
-
-
-function set_heatcapacity(params::Dict, blockNodes::Dict, heatCapacity::SubArray)
-    for block in eachindex(blockNodes)
-        heatCapacity[blockNodes[block]] .= get_heatcapacity(params, block)
-    end
-    return heatCapacity
-end
 function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, to, silent::Bool)
 
     return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)

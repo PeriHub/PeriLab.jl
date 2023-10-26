@@ -24,9 +24,27 @@ export init_damage_model_fields
 export init_material_model_fields
 export init_thermal_model_fields
 
-function init_models(datamanager::Module)
+
+function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+    if solver_options["Material Models"]
+        datamanager = Physics.init_material_model_fields(datamanager)
+    end
+    if solver_options["Damage Models"]
+        datamanager = Physics.init_damage_model_fields(datamanager)
+        datamanager = Damage.init_interface_crit_values(datamanager, params)
+    end
+    if solver_options["Thermal Models"]
+        datamanager = Physics.init_thermal_model_fields(datamanager)
+        heatCapacity = datamanager.create_constant_node_field("Heat Capacity", Float64, 1)
+        heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
+    end
+    if solver_options["Additive Models"]
+        datamanager = Physics.init_additive_model_fields(datamanager)
+    end
+
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
+
 function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, time::Float64, options::Dict, synchronise_field, to)
 
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
@@ -57,8 +75,6 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
             update_list = datamanager.get_field("Update List")
             update_nodes = view(nodes, find_active(update_list[nodes]))
             @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
-            # all nodes, because update list is only needed to informations which are used in damage already
-
             @timeit to "compute_forces" datamanager = Material.distribute_force_densities(datamanager, nodes)
         end
     end
@@ -66,7 +82,7 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
     if options["Thermal Models"]
 
         if datamanager.check_property(block, "Thermal Model")
-            @warn "Thermal Models not included yet"
+            @timeit to "compute_bond_forces" datamanager = Thermal.compute_thermal_model(datamanager, update_nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
         end
     end
 
@@ -158,6 +174,13 @@ function read_properties(params::Dict, datamanager::Module)
     for block in blocks
         props = Material.determine_isotropic_parameter(datamanager.get_properties(block, "Material Model"))
     end
+end
+
+function set_heatcapacity(params::Dict, blockNodes::Dict, heatCapacity::SubArray)
+    for block in eachindex(blockNodes)
+        heatCapacity[blockNodes[block]] .= get_heatcapacity(params, block)
+    end
+    return heatCapacity
 end
 
 end
