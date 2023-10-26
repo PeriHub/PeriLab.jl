@@ -64,6 +64,10 @@ end
     filenames = get_output_filenames(params)
     @test filenames[1] == "1.e"
     @test filenames[2] == "2.e"
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "3", "Output Type" => "CSV"), "Output2" => Dict("Output Filename" => "4", "Output Type" => "Exodus")))
+    filenames = get_output_filenames(params)
+    @test filenames[1] == "3.csv"
+    @test filenames[2] == "4.e"
 end
 
 @testset "get_output_frequency" begin
