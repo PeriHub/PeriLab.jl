@@ -42,9 +42,9 @@ PeriLab:
         Shear Modulus: 1.0e5
     Damage Models:
       Damage:
-        Critical Energy: 1.3947001394700143
+        Critical Value: 1.3947001394700143
         Damage Model: Critical Energy
-        Interblock Critical Energy 1_2: 0.1
+        Interblock Critical Value 1_2: 0.1
         Interblock Damage: true
   Blocks:
     block_1:

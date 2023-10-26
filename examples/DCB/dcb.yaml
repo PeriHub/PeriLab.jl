@@ -43,7 +43,7 @@ PeriLab:
     Damage Models:
       PMMADamage:
         Damage Model: "Critical Energy"
-        Critical Energy: 10.1
+        Critical Value: 10.1
         Only Tension: true
   Boundary Conditions:
     BC_1:

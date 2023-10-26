@@ -11,6 +11,7 @@ export create_constant_node_field
 export create_node_field
 export get_all_field_keys
 export get_block_list
+export get_crit_values_matrix
 export get_comm
 export get_field
 export get_local_nodes
@@ -26,6 +27,7 @@ export get_nslaves
 export get_max_rank
 export init_property
 export set_block_list
+export set_crit_values_matrix
 export set_glob_to_loc
 export set_nmasters
 export set_nset
@@ -45,6 +47,7 @@ nslaves = 0
 nnsets = 0
 dof = 1
 block_list = Int64[]
+crit_values_matrix = Float64[]
 properties = Dict{Int64,Dict{String,Any}}()
 glob_to_loc = Dict{Int64,Int64}()
 fields = Dict(Int64 => Dict{String,Any}(), Float64 => Dict{String,Any}(), Bool => Dict{String,Any}())
@@ -256,6 +259,10 @@ end
 
 function get_block_list()
     return block_list
+end
+
+function get_crit_values_matrix()
+    return crit_values_matrix
 end
 
 function get_dof()
@@ -522,6 +529,10 @@ end
 
 function set_block_list(blocks)
     global block_list = sort(unique(blocks))
+end
+
+function set_crit_values_matrix(crit_values)
+    global crit_values_matrix = crit_values
 end
 """
 set_dof(n)

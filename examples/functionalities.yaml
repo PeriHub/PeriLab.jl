@@ -51,7 +51,7 @@ PeriLab:
         Damage Models:
             D_1:
                 Damage Model: "Critical Stretch"
-                Critical Stretch: 0.1
+                Critical Value: 0.1
         Thermal Models:
             T_1:
                 Thermal Model: "tbd"

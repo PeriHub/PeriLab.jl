@@ -5,6 +5,7 @@
 module Solver
 include("../../Support/helpers.jl")
 include("../../Physics/Physics_Factory.jl")
+include("../../Physics/Damage/Damage_Factory.jl")
 include("../../IO/IO.jl")
 include("Verlet.jl")
 include("../../Support/Parameters/parameter_handling.jl")
@@ -51,6 +52,7 @@ function init(params::Dict, datamanager::Module)
     end
     if solver_options["Damage Models"]
         datamanager = Physics.init_damage_model_fields(datamanager)
+        datamanager = Damage.init_interface_crit_values(datamanager, params)
     end
     if solver_options["Thermal Models"]
         datamanager = Physics.init_thermal_model_fields(datamanager)

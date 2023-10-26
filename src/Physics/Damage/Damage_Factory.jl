@@ -10,13 +10,15 @@ Set_modules.include_files(module_list)
 
 export compute_damage
 export compute_damage_pre_calculation
-function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+export init_interface_crit_values
+
+function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
     update_list = datamanager.get_field("Update List")
     update_list .= true
 
     specifics = Dict{String,String}("Call Function" => "compute_damage", "Name" => "damage_name")
-    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
+    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, block, time, dt))
     if isnothing(datamanager)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
     end
@@ -68,6 +70,39 @@ function set_bond_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64
     bondDamageN = datamanager.get_field("Bond Damage", "N")
     bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
     bondDamageNP1[nodes] = copy(bondDamageN[nodes])
+    return datamanager
+end
+
+function init_interface_crit_values(datamanager::Module, params::Dict)
+    blockList = datamanager.get_block_list()
+
+    inter_critical_Value = zeros(Float64, (length(blockList), length(blockList), length(blockList)))
+    for blockId in blockList
+        if !haskey(params["Blocks"]["block_$blockId"], "Damage Model")
+            continue
+        end
+        damageName = params["Blocks"]["block_$blockId"]["Damage Model"]
+        damage_parameter = params["Physics"]["Damage Models"][damageName]
+        if !haskey(damage_parameter, "Interblock Damage")
+            continue
+        end
+        if !damage_parameter["Interblock Damage"]
+            continue
+        end
+        critical_value = damage_parameter["Critical Value"]
+        for block_iId in blockList
+            for block_jId in blockList
+                critValueName = "Interblock Critical Value $(block_iId)_$block_jId"
+                if haskey(damage_parameter, critValueName)
+                    inter_critical_Value[block_iId, block_jId, blockId] = damage_parameter[critValueName]
+                else
+                    inter_critical_Value[block_iId, block_jId, blockId] = critical_value
+                end
+            end
+        end
+    end
+    datamanager.set_crit_values_matrix(inter_critical_Value)
+
     return datamanager
 end
 end
