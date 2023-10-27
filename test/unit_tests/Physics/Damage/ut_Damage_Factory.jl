@@ -57,3 +57,31 @@ using .Damage
     @test damageNP1_test[2] == 1
     @test damageNP1_test[3] == 1
 end
+@testset "set_bond_damage" begin
+    testDatamanager = Data_manager
+    testDatamanager.set_nmasters(3)
+    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 1
+    nn[2] = 2
+    nn[3] = 1
+    bdN, bdNP1 = testDatamanager.create_bond_field("Bond Damage", Float64, 1)
+
+    for iID in 1:3
+        for jID in 1:nn[iID]
+            bdN[iID][jID] = jID * iID * iID + jID - iID
+            @test bdNP1[iID][jID] == 0
+        end
+    end
+    nodes = Vector{Int64}(1:3)
+    Damage.set_bond_damage(testDatamanager, nodes)
+    bdN = testDatamanager.get_field("Bond Damage", "N")
+    bdNP1 = testDatamanager.get_field("Bond Damage", "NP1")
+    for iID in 1:3
+        for jID in 1:nn[iID]
+            @test bdNP1[iID][jID] == bdN[iID][jID]
+            bdN[iID][jID] = 0
+            @test bdNP1[iID][jID] == jID * iID * iID + jID - iID
+            @test bdN[iID][jID] == 0
+        end
+    end
+end
