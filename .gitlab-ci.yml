@@ -81,6 +81,9 @@ pages:
   only:
     refs:
       - main
+    changes:
+      - src/**/*
+      - docs/**/*
   script:
     # - julia -e 'import Pkg; Pkg.add(path=".")' # i think this is to much, tbd
     - julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
