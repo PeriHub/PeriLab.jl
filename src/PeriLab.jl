@@ -2,28 +2,78 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"Simple dummy project module to demonstrate how a project can be organized."
+"""
+    PeriLab
+
+A module for managing and executing peridynamic simulations in PeriLab.
+
+This module provides functionality for running simulations in the PeriLab environment. It includes functions for initializing simulations, processing data, running solvers, and managing results.
+
+## Modules
+
+- `Support/data_manager.jl`: Data manager module for data management and access.
+- `IO/logging.jl`: Module for setting up and managing logging.
+- `IO/IO.jl`: Input/output functions for handling data files.
+- `Core/Solver/Solver_control.jl`: Solver control module for managing simulation solvers.
+
+## Dependencies
+
+This module depends on the following external packages and modules:
+- `MPI`: Message Passing Interface for distributed computing.
+- `Pkg`: Julia's package manager for managing project dependencies.
+- `TimerOutputs`: Module for measuring and displaying code execution times.
+- `Logging`: Julia's built-in logging framework.
+- `ArgParse`: Module for parsing command-line arguments.
+
+## Usage
+
+To run a simulation using PeriLab, you can use the `main()` function, which takes several optional parameters to control the simulation process. You can specify whether the simulation should be a dry run, enable verbose output, enable debugging, and run in silent mode.
+
+For example:
+```julia
+main("examples/Dogbone/Dogbone.yaml", dry_run=true, verbose=true, debug=true, silent=true)
+"""
+
 module PeriLab
 include("./Support/data_manager.jl")
 include("./IO/logging.jl")
 include("./IO/IO.jl")
-include("./IO/csv_export.jl")
 include("./Core/Solver/Solver_control.jl")
+# external packages
 using MPI
 using Pkg
 using TimerOutputs
 using Logging
-using .Write_CSV_Results
+using ArgParse
 const to = TimerOutput()
+# internal packages
 using .Data_manager
 import .Logging_module
 import .IO
 import .Solver
 # end
-using ArgParse
-
 
 export main
+
+"""
+    print_banner()
+
+Prints a banner displaying information about the PeriLab application.
+
+This function prints a banner containing details about the PeriLab application, including its name, version, copyright, contact information, and license. It provides a visual introduction to the application.
+
+## Arguments
+
+None.
+
+## Returns
+
+None.
+
+## Usage
+
+```julia
+"""
 
 function print_banner()
     println("""\e[]
@@ -37,6 +87,35 @@ function print_banner()
     \e[1;36m888\e[0m        \e[1;36m"Y8888\e[0m  \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m88888888\e[0m \e[1;36m"Y888888\e[0m \e[1;36m88888P"\e[0m   |  Gitlab: https://gitlab.com/dlr-perihub/perilab                                                
     """)
 end
+
+"""
+    parse_commandline()
+
+Parse command-line arguments using the ArgParse package.
+
+This function sets up argument parsing options for various command-line arguments and returns the parsed arguments as a dictionary.
+
+## Arguments
+
+None.
+
+## Returns
+
+- `Dict{String, Any}`: A dictionary containing the parsed command-line arguments.
+
+## Command-Line Arguments
+
+- `--dry_run`: If provided, it stores `true` in the dictionary.
+- `--verbose` or `-v`: If provided, it stores `true` in the dictionary.
+- `--debug` or `-d`: If provided, it stores `true` in the dictionary.
+- `--silent` or `-s`: If provided, it stores `true` in the dictionary.
+- `filename`: A required argument that stores the provided filename in the dictionary.
+
+## Usage
+
+```julia
+parsed_args = parse_commandline()
+"""
 
 function parse_commandline()
     s = ArgParseSettings()
@@ -61,7 +140,26 @@ function parse_commandline()
 
     return parse_args(s)
 end
+"""
+    main()
 
+Entry point for the PeriLab application.
+
+This function serves as the entry point for the PeriLab application. It parses command-line arguments using `parse_commandline`, processes the arguments, and calls the core `main` function with the parsed arguments.
+
+## Arguments
+
+None.
+
+## Returns
+
+None.
+
+## Usage
+
+```julia
+main()
+"""
 function main()
     parsed_args = parse_commandline()
     if parsed_args["verbose"]
