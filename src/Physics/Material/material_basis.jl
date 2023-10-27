@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
-    if parameter == Dict()
-        return parameter
+    if haskey(parameter, "Computed")
+        if parameter["Computed"]
+            return
+        end
     end
     K::Float64 = 0
     E::Float64 = 0
@@ -64,7 +66,7 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
     parameter["Young's Modulus"] = E
     parameter["Shear Modulus"] = G
     parameter["Poisson's Ratio"] = nu
-    return parameter
+    parameter["Computed"] = true
 end
 
 function get_Hooke_matrix(parameter, symmetry, dof)
