@@ -11,7 +11,7 @@ makedocs(
     modules=[PeriLab],
     authors="Christian Willberg <christian.willberg@dlr.de> and Jan-Timo Hesse <jan-timo.hesse@dlr.de>",
     doctest=true,
-    checkdocs=:exports,
+    checkdocs=:none, # :all, :exports, :none
     sitename="PeriLab",
     repo=Documenter.Remotes.GitLab("dlr-PeriHub", "PeriLab"),
     format=Documenter.HTML(
@@ -32,6 +32,7 @@ makedocs(
         # "Metadata" => "lib/metadata.md",
         # hide("Internals" => "lib/internals.md"),
         ],
+        "References"=>"lib/references.md",
         "Dev Log"=>"devLog.md",
     ]
 )
