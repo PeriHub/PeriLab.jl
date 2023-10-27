@@ -1,7 +1,3 @@
-```@meta
-CurrentModule = PeriLab
-```
-
 # Functions
 
 ## Multithreading support
@@ -13,110 +9,67 @@ CurrentModule = PeriLab
 Pages = ["functions.md"]
 ```
 
+```@meta
+CurrentModule = PeriLab.Data_manager
+```
 ## Data_manager
 ```@docs
-Solver.Verlet.Physics.Thermal.Set_modules.Thermal_Flow.thermal_model_name
-Solver.Damage.Set_modules.Damage_template.compute_damage_pre_calculation
-Solver.Verlet.Physics.Thermal.Set_modules.Thermal_Flow.compute_thermal_model
-Solver.Physics.Damage.Set_modules.Critical_stretch.damage_name
-Solver.Verlet.Physics.Additive.Set_modules.simple_additive.additive_name
-Solver.Verlet.Physics.Thermal.Set_modules.Heat_transfer.compute_thermal_model
-Solver.Verlet.Physics.Thermal.Set_modules.Thermal_expansion.thermal_model_name
-Solver.Physics.Material.Set_modules.Correspondence.global_zero_energy_control.Geometry.bond_geometry
-Solver.Verlet.Physics.Material.Set_modules.Correspondence.material_name
-Solver.Verlet.Physics.Material.Set_modules.Correspondence.Correspondence_Elastic.compute_stresses
-Logging_module.IO.Read_Mesh.Geometry.bond_geometry
-Solver.Verlet.Physics.Additive.Set_modules.Additive_template.compute_additive
-Solver.Verlet.Physics.Damage.Set_modules.Damage_template.compute_damage
-Solver.Physics.Damage.Set_modules.Critical_stretch.compute_damage
-Solver.Physics.Thermal.Set_modules.Heat_transfer.compute_thermal_model
-Solver.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Material_template.compute_force
-Solver.Verlet.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Material_template.compute_force
-Solver.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.Correspondence_Elastic.compute_stresses
-Solver.Damage.Set_modules.Critical_stretch.compute_damage
-Solver.Verlet.Physics.Thermal.Set_modules.Thermal_template.compute_thermal_model
-Solver.Verlet.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.Correspondence_Elastic.compute_stresses
-Solver.Verlet.Physics.Material.Set_modules.Correspondence.Correspondence_Elastic.correspondence_name
-Solver.Verlet.Physics.Material.Set_modules.Correspondence.global_zero_energy_control.Geometry.bond_geometry
-Solver.Physics.Pre_calculation.Shape_Tensor.Geometry.bond_geometry
-Solver.Damage.Set_modules.Damage_template.compute_damage
-Solver.Physics.Thermal.Set_modules.Thermal_expansion.thermal_model_name
-Solver.Verlet.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.material_name
-Solver.IO.Read_Mesh.Geometry.bond_geometry
-Solver.Physics.Thermal.Set_modules.Thermal_Flow.compute_thermal_model
-Solver.Physics.Pre_calculation.Deformation_Gradient.Geometry.bond_geometry
-Solver.Verlet.Physics.Damage.Set_modules.Damage_template.compute_damage_pre_calculation
-Solver.Verlet.Physics.Material.Set_modules.Material_template.material_name
-Solver.Verlet.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.global_zero_energy_control.Geometry.bond_geometry
-Solver.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Material_template.compute_force
-Solver.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Material_template.material_name
-Solver.Verlet.Physics.Thermal.Set_modules.Thermal_expansion.compute_thermal_model
-Solver.Physics.Material.Set_modules.Correspondence.Geometry.bond_geometry
-Solver.Verlet.Physics.Material.Set_modules.Material_template.compute_force
-Solver.Damage.Set_modules.Critical_Energy_Model.compute_damage
-Solver.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Material_template.material_name
-Solver.Verlet.Physics.Thermal.Set_modules.Thermal_template.thermal_model_name
-Solver.Verlet.Physics.Damage.Set_modules.Critical_Energy_Model.compute_damage
-Solver.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.material_name
-Solver.Verlet.Physics.Additive.Set_modules.simple_additive.compute_additive
-Solver.Verlet.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.Geometry.bond_geometry
-Solver.Verlet.Physics.Damage.Set_modules.Critical_Energy_Model.damage_name
-Solver.Physics.Pre_calculation.Bond_Deformation.Geometry.bond_geometry
-Solver.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.global_zero_energy_control.Geometry.bond_geometry
-Solver.Verlet.Physics.Pre_calculation.Deformation_Gradient.Geometry.bond_geometry
-Solver.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.Correspondence_Elastic.compute_stresses
-Solver.Damage.Set_modules.Critical_Energy_Model.damage_name
-Solver.Physics.Thermal.Set_modules.Heat_transfer.thermal_model_name
-Solver.Verlet.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Material_template.material_name
-Solver.Verlet.Physics.Damage.Set_modules.Critical_stretch.damage_name
-Solver.Verlet.Physics.Pre_calculation.Shape_Tensor.Geometry.bond_geometry
-Solver.Verlet.Physics.Additive.Set_modules.Additive_template.additive_name
-Solver.Physics.Thermal.Set_modules.Thermal_expansion.compute_thermal_model
-Solver.Verlet.Physics.Damage.Set_modules.Critical_stretch.compute_damage
-Solver.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.Correspondence_Elastic.correspondence_name
-Solver.Verlet.Physics.Material.Set_modules.Correspondence.Geometry.bond_geometry
-Solver.Verlet.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.Correspondence_Elastic.correspondence_name
-Solver.Physics.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.Geometry.bond_geometry
-Solver.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.global_zero_energy_control.Geometry.bond_geometry
-Solver.Physics.Thermal.Set_modules.Thermal_Flow.thermal_model_name
-Solver.Verlet.Physics.Pre_calculation.Bond_Deformation.Geometry.bond_geometry
-Solver.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.Geometry.bond_geometry
-Solver.Damage.Set_modules.Critical_stretch.damage_name
-Solver.Damage.Set_modules.Damage_template.damage_name
-Solver.Verlet.Physics.Damage.Set_modules.Damage_template.damage_name
-Solver.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.material_name
-Solver.Verlet.Physics.Thermal.Set_modules.Heat_transfer.thermal_model_name
-Solver.Damage.Set_modules.Critical_Energy_Model.Material.Set_modules.Correspondence.Correspondence_Elastic.correspondence_name
-Solver.Physics.Damage.Set_modules.Critical_Energy_Model.compute_damage
-Data_manager.set_glob_to_loc
-Solver.Physics.Material.Set_modules.Material_template.compute_force
-Solver.Physics.Damage.Set_modules.Critical_Energy_Model.damage_name
-Data_manager.get_rank
-Data_manager.set_nset
-Solver.Physics.Material.Set_modules.Correspondence.Correspondence_Elastic.compute_stresses
-Solver.Physics.Additive.Set_modules.simple_additive.compute_additive
-Data_manager.get_property
-Solver.Physics.Additive.Set_modules.Additive_template.additive_name
-Data_manager.create_constant_bond_field
-Data_manager.get_local_nodes
-Data_manager.create_node_field
-Solver.Physics.Additive.Set_modules.simple_additive.additive_name
-Solver.Physics.Thermal.Set_modules.Thermal_template.thermal_model_name
-Data_manager.get_properties
-Solver.Physics.Material.Set_modules.Correspondence.Correspondence_Elastic.correspondence_name
-Solver.Physics.Thermal.Set_modules.Thermal_template.compute_thermal_model
-Data_manager.get_max_rank
-Solver.Physics.Material.Set_modules.Material_template.material_name
-IO.Read_Mesh.Geometry.bond_geometry
-Solver.Physics.Damage.Set_modules.Damage_template.compute_damage_pre_calculation
-Data_manager.set_nmasters
-Data_manager.set_nslaves
-Solver.Physics.Additive.Set_modules.Additive_template.compute_additive
-Data_manager.create_constant_node_field
-Solver.Physics.Damage.Set_modules.Damage_template.damage_name
-Solver.Physics.Damage.Set_modules.Damage_template.compute_damage
-Solver.Physics.Material.Set_modules.Correspondence.material_name
+set_glob_to_loc
+get_property
+get_rank
+set_nset
+create_constant_bond_field
+get_local_nodes
+create_node_field
+get_properties
+get_max_rank
+set_nmasters
+set_nslaves
+create_constant_node_field
 ```
 
-```@bibliography
+```@meta
+CurrentModule = PeriLab.IO
+```
+## IO
+```@docs
+Read_Mesh.Geometry.bond_geometry
+```
+
+```@meta
+CurrentModule = PeriLab.Solver.Physics
+```
+## Physics
+```@docs
+Material.Set_modules.Material_template.material_name
+Material.Set_modules.Correspondence.material_name
+Material.Set_modules.Material_template.compute_force
+Material.Set_modules.Correspondence.Correspondence_Elastic.compute_stresses
+Material.Set_modules.Correspondence.Correspondence_Elastic.correspondence_name
+Additive.Set_modules.Additive_template.additive_name
+Additive.Set_modules.simple_additive.additive_name
+Additive.Set_modules.simple_additive.compute_additive
+Additive.Set_modules.Additive_template.compute_additive
+Thermal.Set_modules.Heat_transfer.compute_thermal_model
+Thermal.Set_modules.Thermal_Flow.compute_thermal_model
+Thermal.Set_modules.Thermal_expansion.compute_thermal_model
+Thermal.Set_modules.Thermal_template.compute_thermal_model
+Thermal.Set_modules.Thermal_expansion.thermal_model_name
+Thermal.Set_modules.Heat_transfer.thermal_model_name
+Thermal.Set_modules.Thermal_Flow.thermal_model_name
+Thermal.Set_modules.Thermal_template.thermal_model_name
+```
+
+```@meta
+CurrentModule = PeriLab.Solver.Damage
+```
+## Damage
+```@docs
+Set_modules.Damage_template.compute_damage_pre_calculation
+Set_modules.Critical_stretch.compute_damage
+Set_modules.Damage_template.compute_damage
+Set_modules.Critical_Energy_Model.compute_damage
+Set_modules.Critical_Energy_Model.damage_name
+Set_modules.Critical_stretch.damage_name
+Set_modules.Damage_template.damage_name
 ```

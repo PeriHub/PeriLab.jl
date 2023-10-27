@@ -33,6 +33,5 @@ CurrentModule = PeriLab
 ```
 
 ```@docs
-main(filename, dry_run, verbose, debug, silent)
-PeriLab
+main
 ```

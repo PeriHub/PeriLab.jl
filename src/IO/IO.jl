@@ -214,19 +214,19 @@ function write_results(result_files, time, outputs, datamanager)
 end
 
 function show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)
-    headers = [""]
-    block_list = datamanager.get_block_list()
-    block_list = ["block_" * string(block) for block in block_list]
-    append!(headers, block_list)
+
+    headers = ["Block", "Material", "Damage", "Thermal", "Additive"]
     df = DataFrame([header => [] for header in headers])
 
-    for name in ["Material", "Damage", "Thermal", "Additive"]
-        if !solver_options[name*" Models"]
-            continue
-        end
-        row = [name * " =>"]
-        for id in eachindex(block_list)
-            if haskey(params["Blocks"][block_list[id]], name * " Model")
+    block_list = datamanager.get_block_list()
+    block_list = ["block_" * string(block) for block in block_list]
+
+    for id in eachindex(block_list)
+        row = [block_list[id]]
+        for name in headers[2:end]
+            if !solver_options[name*" Models"]
+                push!(row, "")
+            elseif haskey(params["Blocks"][block_list[id]], name * " Model")
                 push!(row, params["Blocks"][block_list[id]][name*" Model"])
             else
                 push!(row, "")
