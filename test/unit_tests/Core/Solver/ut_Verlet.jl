@@ -19,6 +19,7 @@ using .Geometry
 using .Boundary_conditions
 using .Solver
 using .Verlet
+using MPI
 @testset "ut_test_timestep" begin
     @test Verlet.test_timestep(1.0, 2.0) == 1
     @test Verlet.test_timestep(2.0, 1.1) == 1.1
@@ -34,11 +35,12 @@ end
     bondgeometry = [1, 0.5, 2]
     @test Verlet.get_cs_denominator(volume, bondgeometry) == 6.5
 end
-"""
+
 nnodes = 5
 dof = 2
 testDatamanager = Data_manager
-
+comm = MPI.COMM_WORLD
+testDatamanager.set_comm(comm)
 testDatamanager.set_nmasters(5)
 testDatamanager.set_dof(2)
 blocks = testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
@@ -47,7 +49,7 @@ coor = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
 density = testDatamanager.create_constant_node_field("Density", Float64, 1)
 volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
 lenNlist = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
-lenNlist[:] = [4, 4, 4, 4, 4]
+lenNlist .= 4
 
 nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, 3)
@@ -112,7 +114,7 @@ testDatamanager.set_property(2, "Material Model", "Bulk Modulus", Float64(140.0)
 
     @test testDt / dt - 1 < 1e-6
     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0, "Fixed dt" => 1e-5)))
-    start_time, dt, nsteps = Verlet.init_solver(params, testDatamanager, 1:nnodes, true, false)
+    start_time, dt, nsteps = Verlet.init_solver(params, testDatamanager, Dict{Int64,Vector{Int64}}(1 => Vector{Int64}(1:nnodes)), true, false)
 
     testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / 1e-5))
     @test testStep == nsteps
@@ -122,40 +124,40 @@ testDatamanager.set_property(2, "Material Model", "Bulk Modulus", Float64(140.0)
 
 end
 
-nnodes = 5
-dof = 2
+# nnodes = 5
+# dof = 2
 
-testDatamanager = Data_manager
-testDatamanager.set_comm(comm)
-testDatamanager.set_nmasters(5)
-testDatamanager.set_dof(2)
+# testDatamanager = Data_manager
+# testDatamanager.set_comm(comm)
+# testDatamanager.set_nmasters(5)
+# testDatamanager.set_dof(2)
 
-testDatamanager.set_glob_to_loc([1, 2, 3, 4, 5])
-density = testDatamanager.create_constant_node_field("Density", Float64, 1)
-force = testDatamanager.create_node_field("Forces", Float64, dof)
-Y = testDatama#nager.create_node_field("Deformed State", Float64, dof)
-u = testDatamanager.create_node_field("Displacements", Float64, dof)
-bu = testDatamanager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
-a = testDatamanager.create_constant_node_field("Acceleration", Float64, dof)
-v = testDatamanager.create_node_field("Velocity", Float64, dof)
+# testDatamanager.set_glob_to_loc([1, 2, 3, 4, 5])
+# density = testDatamanager.create_constant_node_field("Density", Float64, 1)
+# force = testDatamanager.create_node_field("Forces", Float64, dof)
+# Y = testDatama#nager.create_node_field("Deformed State", Float64, dof)
+# u = testDatamanager.create_node_field("Displacements", Float64, dof)
+# bu = testDatamanager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
+# a = testDatamanager.create_constant_node_field("Acceleration", Float64, dof)
+# v = testDatamanager.create_node_field("Velocity", Float64, dof)
 
-density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
-testDatamanager.set_nset("Nset_1", [1, 2, 3])
-testDatamanager.set_nset("Nset_2", [3, 4, 7, 10])
-blockNodes = [1, 1, 2, 2, 1]
-params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "5")))
+# density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
+# testDatamanager.set_nset("Nset_1", [1, 2, 3])
+# testDatamanager.set_nset("Nset_2", [3, 4, 7, 10])
+# blockNodes = [1, 1, 2, 2, 1]
+# params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "5")))
 
-bcs = Boundary_conditions.init_BCs(params, testDatamanager)
-result_files = []
-outputs = Dict()
-solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
-testDatamanager.set_rank(0)
-result_files = run_Verlet_solver(solver_options, Solver.get_nodes(blockNodes), bcs, testDatamanager, outputs, result_files, Solver.write_results)
-testDatamanager.set_rank(1)
-# only if routine runs, if progress bar is not active
-bcs = Boundary_conditions.init_BCs(params, testDatamanager)
-result_files = []
-outputs = Dict()
-solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
-result_files = run_Verlet_solver(solver_options, Solver.get_nodes(blockNodes), bcs, testDatamanager, outputs, result_files, Solver.write_results)
-"""
+# bcs = Boundary_conditions.init_BCs(params, testDatamanager)
+# result_files = []
+# outputs = Dict()
+# solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
+# testDatamanager.set_rank(0)
+# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(blockNodes), bcs, testDatamanager, outputs, result_files, Solver.write_results)
+# testDatamanager.set_rank(1)
+# # only if routine runs, if progress bar is not active
+# bcs = Boundary_conditions.init_BCs(params, testDatamanager)
+# result_files = []
+# outputs = Dict()
+# solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
+# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(blockNodes), bcs, testDatamanager, outputs, result_files, Solver.write_results)
+
