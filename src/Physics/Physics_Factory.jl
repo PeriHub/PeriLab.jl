@@ -47,6 +47,12 @@ end
 
 function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, time::Float64, options::Dict, synchronise_field, to)
 
+    if options["Thermal Models"]
+        if datamanager.check_property(block, "Thermal Model")
+            @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
+        end
+    end
+
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
     if options["Additive Models"]
         if datamanager.check_property(block, "Additive Model")
@@ -79,12 +85,7 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
         end
     end
 
-    if options["Thermal Models"]
 
-        if datamanager.check_property(block, "Thermal Model")
-            @timeit to "compute_bond_forces" datamanager = Thermal.compute_thermal_model(datamanager, update_nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
-        end
-    end
 
 
     return datamanager
