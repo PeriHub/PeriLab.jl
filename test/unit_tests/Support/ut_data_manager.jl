@@ -177,6 +177,7 @@ end
     nn[5] = 5
     test = testDatamanager.create_constant_node_field("test", Float64, 1)
     @test test == testDatamanager.get_field("test")
+    @test testDatamanager.create_constant_node_field("test", Float64, 1) == testDatamanager.get_field("test")
     test = testDatamanager.create_constant_node_field("test2", Float64, 3)
     @test test == testDatamanager.get_field("test2")
     test1, test2 = testDatamanager.create_node_field("test3", Float64, 1)
@@ -195,7 +196,15 @@ end
     test1, test2 = testDatamanager.create_bond_field("test8", Float64, 3)
     @test test1 == testDatamanager.get_field("test8", "N")
     @test test2 == testDatamanager.get_field("test8", "NP1")
+    testnewFloat = testDatamanager.create_constant_node_field("testnewFloat", Float16, 1)
+    @test typeof(testnewFloat[1]) == Float16
+    testnewInt = testDatamanager.create_constant_node_field("testnewInt", Int8, 1)
+    @test typeof(testnewInt[1]) == Int8
 
+    testDoesnotExists = testDatamanager.get_field("does not exist", "NP1")
+    @test testDoesnotExists == []
+    testDoesnotExists = testDatamanager.get_field("does not exist")
+    @test testDoesnotExists == []
 end
 
 @testset "Matrix" begin
@@ -357,4 +366,7 @@ end
     @test testDatamanager.get_properties(1, "Thermal Model") == Dict()
     @test testDatamanager.get_properties(2, "Material Model") == Dict("E" => 1.1)
     @test testDatamanager.get_properties(2, "Thermal Model") == Dict("E" => [3 1 2; 1 2 3; 1 3 4])
+    @test testDatamanager.get_properties(1, "") == Dict()
+    @test !testDatamanager.check_property(1, "This is not a property")
+    @test testDatamanager.get_property(1, "Thermal Model", "This is not a property") == Nothing
 end
