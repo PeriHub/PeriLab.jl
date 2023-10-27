@@ -50,6 +50,7 @@ end
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
 
     temperature = datamanager.get_field("Temperature", "NP1")
+    nneighbors = datamanager.get_field("Number of Neighbors")
     dof = datamanager.get_dof()
     alpha = thermal_parameter["Heat expansion"]
 
@@ -65,18 +66,16 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     elseif length(alpha) == dof * dof || length(alpha) == 9
         @error "not yet implemented for full heat expansion matrix"
     end
-
-    if thermal_deformation_option
-        undeformed_bond = datamanager.get_field("Bond Geometry")
-        deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-        thermal_bond_deformation = datamanager.create_constant_bond_field("Thermal Deformation", Float64, dof + 1)
-        if length(alpha) > 1
-            @warn "Matrix is defined and first entry is used in ''Thermal Deformation''."
-            alpha = alpha[1]
+    undeformed_bond = datamanager.get_field("Bond Geometry")
+    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    thermal_bond_deformation = datamanager.create_constant_bond_field("Thermal Deformation", Float64, dof + 1)
+    thermal_bond_deformation = thermal_deformation(nodes, alpha_mat, temperature, undeformed_bond, thermal_bond_deformation)
+    for iID in nodes
+        for jID in 1:nneighbors[iID]
+            deformed_bond[iID][jID, :] += thermal_bond_deformation[iID][jID, :]
         end
-        thermal_bond_deformation = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
-        deformed_bond += thermal_bond_deformation
     end
+
     return datamanager
 
 end

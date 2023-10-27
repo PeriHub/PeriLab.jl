@@ -244,7 +244,7 @@ end
    ```julia
    create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
    ```
-   """
+"""
 function create_node_field(name::String, type::Type, dof::Int64)
 
     return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
@@ -265,21 +265,20 @@ end
 function get_crit_values_matrix()
     return crit_values_matrix
 end
+"""
+get_dof()
 
+Retrieves the degree of freedom (dof) value.
+
+Returns:
+- `dof` (integer): The current degree of freedom value.
+
+Example:
+```julia
+get_dof()  # returns the current degree of freedom
+```
+"""
 function get_dof()
-    """
-    get_dof()
-
-    Retrieves the degree of freedom (dof) value.
-
-    Returns:
-    - `dof` (integer): The current degree of freedom value.
-
-    Example:
-    ```julia
-    get_dof()  # returns the current degree of freedom
-    ```
-    """
     return dof
 end
 
@@ -339,24 +338,24 @@ end
 function get_nlist()
     return get_field("Neighborhoodlist")
 end
+"""
+get_nnodes()
 
+Retrieves the number of nodes.
+
+Returns:
+- `nmasters` (integer): The current number of nodes.
+
+Example:
+```julia
+get_nmasters()  # returns the current number of nodes 
+```
+"""
 function get_nnodes()
-    """
-    get_nnodes()
-
-    Retrieves the number of nodes.
-
-    Returns:
-    - `nmasters` (integer): The current number of nodes.
-
-    Example:
-    ```julia
-    get_nmasters()  # returns the current number of nodes 
-    ```
-    """
-
     return nmasters
 end
+
+
 
 function get_NP1_to_N_Dict()
     NP1_to_N = Dict{String,String}()
@@ -368,17 +367,17 @@ function get_NP1_to_N_Dict()
     return NP1_to_N
 end
 
+"""
+   get_nnsets()
 
+   Get the number of node sets.
+
+   Returns:
+   - `nnsets::Int`: The number of node sets.
+
+"""
 function get_nnsets()
-    """
-    get_nnsets()
 
-    Get the number of node sets.
-
-    Returns:
-    - `nnsets::Int`: The number of node sets.
-
-    """
     return nnsets
 end
 
@@ -718,6 +717,7 @@ function set_fields_equal(NP1::String)
 end
 
 function switch_NP1_to_N()
+    global field_array_type
     NP1_to_N = get_NP1_to_N_Dict()
     for NP1 in keys(NP1_to_N)
         if field_array_type[NP1]["Type"] == "Matrix"
