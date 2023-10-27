@@ -4,7 +4,7 @@
 
 import MPI
 
-function send_single_value_from_vector(comm::MPI.Comm, master::Int64, values::Union{Vector{Float64},Vector{Int64},Vector{Bool}}, type::Type)
+function send_single_value_from_vector(comm::MPI.Comm, master::Int64, values::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}, type::Type)
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
     if type == String
