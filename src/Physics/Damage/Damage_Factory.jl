@@ -69,7 +69,9 @@ end
 function set_bond_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     bondDamageN = datamanager.get_field("Bond Damage", "N")
     bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
-    bondDamageNP1[nodes] = copy(bondDamageN[nodes])
+    for iID in nodes
+        bondDamageNP1[iID][:] = bondDamageN[iID][:]
+    end
     return datamanager
 end
 
