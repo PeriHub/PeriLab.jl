@@ -17,27 +17,17 @@ PeriLab.jl provides a Peridynamics [BobaruF2016](@cite) simulation core
 Its design and functionality are similar to those of Peridigm  [LittlewoodDJ2023](@cite) and several extenions [WillbergC2019](@cite), [WillbergC2023](@cite), [HesseJA2023](@cite). 
 
 
-## PeriLab.jl and the Julia Data Ecosystem
+## PeriLab.jl and the Peridynamics Ecosystem
+Mesh-free particle-based methods are mostly used for the numerical approximation of peridynamics equations. [WillbergC2024](@cite) provides an overview of current Peridynamics software developments. In addition to this, many local research groups are also developing their software. Most of the listed tools are problem-specific or developed by a single person. The most sophisticated software tools are EMU and Peridigm. EMU is not open source, but researchers can request the code. However, due to the code developments at the Sandia National labs and the rules of development, the code is officially not usable because the rules violate the "Treaty on the Non-Proliferation of Nuclear Weapons".
 
-The Julia data ecosystem can be a difficult space for new users to navigate, in
-part because the Julia ecosystem tends to distribute functionality across
-different libraries more than some other languages. Because many people coming
-to PeriLab.jl are just starting to explore the Julia data ecosystem, below is
-a list of well-supported libraries that provide different data science tools,
-along with a few notes about what makes each library special, and how well
-integrated they are with PeriLab.jl.
+Peridigm is an open-source tool that can be used for large-scale problems. It includes multiple material laws, simple damage models. Peridigm is usable under a BSD license. Currently, there is some irregular development ongoing. It provides multiple ways of model input and provides Paraview readable output. The whole code allows the analysis of large-scale problems. A lot of research has been performed utilizing the software.
 
+One challenge, however, remains. How can Peridynamics be widely adopted? Classical continuum mechanics is extensively utilized in the engineering field through the finite element method. There is a multitude of commercial and non-commercial software tools available for this purpose. In the case of Peridynamics, this is not the case. Peridigm as the most advanced one provides an open-source code with many functionalities. However, the implementation effort is substantial, and the installation process is difficult and time-consuming.
+To implement the simplest material law you have to edit at least five files. If you add new files and folders in the project you have to deal with cmake scripts and all challenges related to it.
 
-- **Statistics**
-    - [StatsKit.jl](https://github.com/JuliaStats/StatsKit.jl): A convenience
-      meta-package which loads a set of essential packages for statistics,
-      including those mentioned below in this section and PeriLab.jl itself.
+Moreover, the program is only partially maintained. This results in valuable research findings being underutilized, and Peridynamics, as a result, finds limited application outside of specific niche problems. There is a significant need for software that combines functionality, easy installation, and seamless integration. 
 
-While not all of these libraries are tightly integrated with PeriLab.jl,
-because `DataFrame`s are essentially collections of aligned Julia vectors, so it
-is easy to (a) pull out a vector for use with a non-PeriLab-integrated
-library, or (b) convert your table into a homogeneously-typed matrix using the
-`Matrix` constructor or StatsModels.jl.
+This paper introduces PeriLab software, which is based on Julia. It incorporates MPI to handle a large number of degrees of freedom.
 
 ## Questions?
 
