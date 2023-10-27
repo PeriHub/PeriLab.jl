@@ -8,6 +8,29 @@ include("../../../../src/Physics/Thermal/Thermal_expansion.jl")
 using .Thermal_expansion
 include("../../../../src/Support/data_manager.jl")
 
+@testset "ut_thermal strain" begin
+    dof = 2
+    alpha = zeros(Int64, dof, dof)
+
+    test_value = Thermal_expansion.thermal_strain(alpha, 0.0)
+    @test test_value == zeros(dof, dof)
+    alpha = zeros(Float64, dof, dof)
+
+    test_value = Thermal_expansion.thermal_strain(alpha, 1)
+    @test test_value == zeros(Float64, dof, dof)
+
+    test_value = Thermal_expansion.thermal_strain(alpha, 0.0)
+    @test test_value == zeros(Float64, dof, dof)
+    alpha[1, 1] = -1
+    alpha[2, 1] = 0
+    alpha[1, 2] = 3
+    alpha[2, 2] = 2
+    temperature::Float64 = 1.5
+    test_value = Thermal_expansion.thermal_strain(alpha, temperature)
+    @test test_value[1:2, 1:2] == alpha .* temperature
+
+end
+
 @testset "ut_thermal_deformation" begin
     nnodes = 2
     dof = 2
@@ -23,9 +46,9 @@ include("../../../../src/Support/data_manager.jl")
     undeformed_bond[1][1, 1] = 0
     undeformed_bond[1][1, 2] = 1
     undeformed_bond[1][1, 3] = 1
-    undeformed_bond[1][1, 1] = 1
-    undeformed_bond[1][1, 2] = 1
-    undeformed_bond[1][1, 3] = sqrt(2)
+    undeformed_bond[1][2, 1] = 1
+    undeformed_bond[1][2, 2] = 1
+    undeformed_bond[1][2, 3] = sqrt(2)
 
     undeformed_bond[2][1, 1] = -1
     undeformed_bond[2][1, 2] = -1
@@ -38,7 +61,9 @@ include("../../../../src/Support/data_manager.jl")
     undeformed_bond[2][3, 3] = 0.1
 
     nodes = Vector{Int64}(1:nnodes)
-    alpha = 1.0
+    alpha = zeros(dof, dof)
+    alpha[1, 1] = 1.0
+    alpha[2, 2] = 1.0
     temperature .= 0
     thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
@@ -48,64 +73,38 @@ include("../../../../src/Support/data_manager.jl")
             end
         end
     end
-
     temperature .= 1
-    thermal_bond_deformation_test = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
+    thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation_test[iID][jID, :] .+ 1, undeformed_bond[iID][jID, :] .+ 1)
+            @test isapprox(thermal_bond_deformation[iID][jID, :] .+ 1, undeformed_bond[iID][jID, :] .+ 1)
         end
     end
+
+
+
     temperature .= 2
     thermal_bond_deformation_test = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation_test[iID][jID, :] .+ 1, undeformed_bond[iID][jID, :] .* 2 .+ 1)
+            @test isapprox(thermal_bond_deformation[iID][jID, :] .+ 1, undeformed_bond[iID][jID, :] .* 2 .+ 1)
         end
     end
+
     temperature[1] = 2
-    temperature[1] = -23
-    alpha = -1.1
-    thermal_bond_deformation_test = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
+    temperature[2] = -23
+
+    alpha[1, 1] = -1.1
+    alpha[2, 2] = 2.1
+    thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation_test[iID][jID, :] .+ 1, undeformed_bond[iID][jID, :] .* (-1.1) * temperature[iID] .+ 1)
+            @test isapprox(thermal_bond_deformation[iID][jID, 1] + 1, undeformed_bond[iID][jID, 1] * alpha[1, 1] * temperature[iID] + 1)
+            @test isapprox(thermal_bond_deformation[iID][jID, 2] + 1, undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID] + 1)
+            testval = sqrt((undeformed_bond[iID][jID, 1] * alpha[1, 1] * temperature[iID]) * (undeformed_bond[iID][jID, 1] * alpha[1, 1] * temperature[iID]) + (undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID]) * (undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID]))
+            @test isapprox(thermal_bond_deformation[iID][jID, end] + 1, testval + 1)
         end
     end
 end
-@testset "ut_thermal strain" begin
-    nnodes = 2
-    dof = 2
-    testDatamanager = Data_manager
-    testDatamanager.set_nmasters(2)
-    temperature = testDatamanager.create_constant_node_field("Temperature", Float64, 1)
-    thermal_strain_tensor = testDatamanager.create_constant_node_field("Thermal Strain", Float64, "Matrix", dof)
-    nodes = Vector{Int64}(1:nnodes)
 
-    alpha = zeros(dof, dof)
-    temperature .= 0.0
-
-    test_value = Thermal_expansion.thermal_strain(nodes, alpha, temperature, thermal_strain_tensor)
-    @test test_value == thermal_strain_tensor
-    temperature .= 1.0
-    test_value = Thermal_expansion.thermal_strain(nodes, alpha, temperature, thermal_strain_tensor)
-    @test test_value == thermal_strain_tensor
-    alpha = ones(dof, dof)
-    temperature .= 0.0
-    test_value = Thermal_expansion.thermal_strain(nodes, alpha, temperature, thermal_strain_tensor)
-    @test test_value == thermal_strain_tensor
-    alpha[1, 1] = -1
-    alpha[2, 1] = 0
-    alpha[1, 2] = 3
-    alpha[2, 2] = 2
-    temperature[1] = 1.5
-    temperature[2] = 1.0
-    test_value = Thermal_expansion.thermal_strain(nodes, alpha, temperature, thermal_strain_tensor)
-    for iID in nodes
-        @test test_value[iID, 1:2, 1:2] == alpha .* temperature[iID]
-    end
-    @test test_value == thermal_strain_tensor
-
-
-end
 

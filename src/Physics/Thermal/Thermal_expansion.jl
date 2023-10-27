@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal_expansion
+using LinearAlgebra
 export compute_thermal_model
 export thermal_model_name
 """
@@ -51,22 +52,20 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     temperature = datamanager.get_field("Temperature", "NP1")
     dof = datamanager.get_dof()
     alpha = thermal_parameter["Heat expansion"]
-    thermal_deformation_option = true
-    thermal_strain_option = false
 
-    if haskey(thermal_parameter, "Thermal Stretch")
-        thermal_deformation_option = thermal_parameter["Thermal Stretch"]
+    alpha_mat = zeros(Float64, dof, dof)
+    if length(alpha) == 1
+        for i in 1:dof
+            alpha_mat[i, i] = alpha
+        end
+    elseif length(alpha) == dof || length(alpha) == 3
+        for i in 1:dof
+            alpha_mat[i, i] = alpha[i]
+        end
+    elseif length(alpha) == dof * dof || length(alpha) == 9
+        @error "not yet implemented for full heat expansion matrix"
     end
-    if haskey(thermal_parameter, "Thermal Strain")
-        thermal_strain = thermal_parameter["Thermal Strain"]
-    end
-    if thermal_deformation_option && thermal_strain_option
-        @error "No valid thermal expansion measure defined ''Thermal Stretch'' or ''Thermal Strain''"
-        return datamanager
-    end
-    if thermal_deformation_option && thermal_strain_option
-        @warn "Thermal Stretch and Thermal Strain has been choosen as an option"
-    end
+
     if thermal_deformation_option
         undeformed_bond = datamanager.get_field("Bond Geometry")
         deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
@@ -78,39 +77,91 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
         thermal_bond_deformation = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
         deformed_bond += thermal_bond_deformation
     end
-    if thermal_strain_option
-        thermal_strain_tensor = datamanager.get_field("Thermal Strain")
-
-        alpha_mat = zeros(Float64, dof, dof)
-        if length(alpha) == 1
-            for i in 1:dof
-                alpha_mat[i, i] = alpha
-            end
-        elseif length(alpha) == dof || length(alpha) == 3
-            for i in 1:dof
-                alpha_mat[i, i] = alpha[i]
-            end
-        elseif length(alpha) == dof * dof || length(alpha) == 9
-            @error "not yet implemented for full heat expansion matrix"
-        end
-        thermal_strain_tensor = thermal_strain(nodes, alpha, temperature, thermal_strain_tensor)
-    end
     return datamanager
 
 end
 
-function thermal_deformation(nodes::Union{SubArray,Vector{Int64}}, alpha::Float64, temperature::SubArray, undeformed_bond::SubArray, thermal_deformation::SubArray)
+"""
+    thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_deformation)
+
+Calculate thermal deformation for a set of nodes.
+
+This function calculates thermal deformation for a specified set of nodes based on the given inputs, including the nodes, thermal expansion coefficient (alpha), nodal temperatures, undeformed bond information, and the resulting thermal deformation.
+
+## Arguments
+
+- `nodes::Union{SubArray, Vector{Int64}}`: A collection of node indices where thermal deformation is to be calculated.
+
+- `alpha::Union{Matrix{Float64},Matrix{Int64}}`: The thermal expansion matrix, representing the material's response to temperature changes.
+
+- `temperature::SubArray`: A SubArray containing nodal temperatures for the specified nodes.
+
+- `undeformed_bond::SubArray`: A SubArray containing information about the undeformed bond geometry.
+
+- `thermal_deformation::SubArray`: A SubArray to store the calculated thermal deformation for each node.
+
+## Returns
+
+- `thermal_deformation::SubArray`: A SubArray containing the calculated thermal deformation for the specified nodes.
+
+## Notes
+
+- The thermal deformation is calculated based on the formula: `thermal_deformation[iID] = alpha * temperature[iID] * undeformed_bond[iID]`.
+
+## Example
+
+```julia
+nodes = [1, 2, 3]
+alpha = [1.3 0.0; 0.0 1.3] # Example thermal expansion coefficient
+temperature = SubArray(...) # Provide temperature data
+undeformed_bond = SubArray(...) # Provide undeformed bond geometry data
+thermal_deformation = SubArray(zeros(3, 3)) # Initialize thermal_deformation with zeros
+
+result = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_deformation)
+"""
+
+function thermal_deformation(nodes::Union{SubArray,Vector{Int64}}, alpha::Union{Matrix{Float64},Matrix{Int64}}, temperature::SubArray, undeformed_bond::SubArray, thermal_deformation::SubArray)
     for iID in nodes
-        thermal_deformation[iID][:, :] = (alpha * temperature[iID]) .* undeformed_bond[iID][:, :]
+        for jID in eachindex(undeformed_bond[iID][:, 1])
+            thermal_deformation[iID][jID, 1:end-1] = thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID, 1:end-1]
+            thermal_deformation[iID][jID, end] = norm(thermal_deformation[iID][jID, 1:end-1])
+        end
     end
     return thermal_deformation
 end
 
-function thermal_strain(nodes::Union{SubArray,Vector{Int64}}, alpha::Union{Matrix{Float64},Matrix{Int64}}, temperature::SubArray, thermal_strain::SubArray)
-    for iID in nodes
-        thermal_strain[iID, :, :] = alpha .* temperature[iID]
-    end
-    return thermal_strain
+"""
+    thermal_strain(alpha, temperature)
+
+Calculate thermal strain using thermal expansion coefficients and temperature.
+
+This function calculates thermal strain based on the given thermal expansion coefficients (alpha) and temperature values. The thermal strain is computed as the element-wise product of alpha and temperature.
+
+## Arguments
+
+- `alpha::Union{Matrix{Float64}, Matrix{Int64}}`: A matrix of thermal expansion coefficients, representing the material's response to temperature changes.
+
+- `temperature::Union{Float64, Int64}`: The temperature value or a scalar representing the temperature change.
+
+## Returns
+
+- `thermal_strain::Union{Matrix{Float64}, Matrix{Int64}}`: A matrix representing the calculated thermal strain based on alpha and temperature.
+
+## Notes
+
+- The thermal strain is calculated as the element-wise product of alpha and temperature.
+
+## Example
+
+```julia
+alpha = [0.001 0.002 0.003; 0.004 0.005 0.006; 0.007 0.008 0.009] # Example thermal expansion coefficients
+temperature = 100.0 # Example temperature value
+
+result = thermal_strain(alpha, temperature)
+"""
+
+function thermal_strain(alpha::Union{Matrix{Float64},Matrix{Int64}}, temperature::Union{Float64,Int64})
+    return alpha .* temperature
 end
 
 end # Module end
