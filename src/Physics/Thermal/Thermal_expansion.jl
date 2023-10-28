@@ -68,11 +68,11 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     end
     undeformed_bond = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    thermal_bond_deformation = datamanager.create_constant_bond_field("Thermal Deformation", Float64, dof + 1)
+    thermal_bond_deformation = datamanager.create_constant_bond_field("Thermal Deformation", Float64, dof)
     thermal_bond_deformation = thermal_deformation(nodes, alpha_mat, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in 1:nneighbors[iID]
-            deformed_bond[iID][jID, :] += thermal_bond_deformation[iID][jID, :]
+            deformed_bond[iID][jID, 1:dof] -= thermal_bond_deformation[iID][jID, 1:dof]
         end
     end
 
@@ -122,8 +122,7 @@ result = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal
 function thermal_deformation(nodes::Union{SubArray,Vector{Int64}}, alpha::Union{Matrix{Float64},Matrix{Int64}}, temperature::SubArray, undeformed_bond::SubArray, thermal_deformation::SubArray)
     for iID in nodes
         for jID in eachindex(undeformed_bond[iID][:, 1])
-            thermal_deformation[iID][jID, 1:end-1] = thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID, 1:end-1]
-            thermal_deformation[iID][jID, end] = norm(thermal_deformation[iID][jID, 1:end-1])
+            thermal_deformation[iID][jID, 1:end] = thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID, 1:end-1]
         end
     end
     return thermal_deformation

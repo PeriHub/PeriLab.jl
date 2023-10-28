@@ -41,7 +41,7 @@ end
     nn[2] = 3
     temperature = testDatamanager.create_constant_node_field("Temperature", Float64, 1)
     undeformed_bond = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
-    thermal_bond_deformation = testDatamanager.create_constant_bond_field("Thermal Deformation", Float64, dof + 1)
+    thermal_bond_deformation = testDatamanager.create_constant_bond_field("Thermal Deformation", Float64, dof)
 
     undeformed_bond[1][1, 1] = 0
     undeformed_bond[1][1, 2] = 1
@@ -68,7 +68,7 @@ end
     thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in nn[iID]
-            for i in 1:dof+1
+            for i in 1:dof
                 @test thermal_bond_deformation[iID][jID, i] == 0
             end
         end
@@ -77,7 +77,7 @@ end
     thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation[iID][jID, :] .+ 1, undeformed_bond[iID][jID, :] .+ 1)
+            @test isapprox(thermal_bond_deformation[iID][jID, :] .+ 1, undeformed_bond[iID][jID, 1:dof] .+ 1)
         end
     end
 
@@ -87,7 +87,7 @@ end
     thermal_bond_deformation_test = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation[iID][jID, :] .+ 1, undeformed_bond[iID][jID, :] .* 2 .+ 1)
+            @test isapprox(thermal_bond_deformation[iID][jID, :] .+ 1, undeformed_bond[iID][jID, 1:dof] .* 2 .+ 1)
         end
     end
 
@@ -101,8 +101,6 @@ end
         for jID in nn[iID]
             @test isapprox(thermal_bond_deformation[iID][jID, 1] + 1, undeformed_bond[iID][jID, 1] * alpha[1, 1] * temperature[iID] + 1)
             @test isapprox(thermal_bond_deformation[iID][jID, 2] + 1, undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID] + 1)
-            testval = sqrt((undeformed_bond[iID][jID, 1] * alpha[1, 1] * temperature[iID]) * (undeformed_bond[iID][jID, 1] * alpha[1, 1] * temperature[iID]) + (undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID]) * (undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID]))
-            @test isapprox(thermal_bond_deformation[iID][jID, end] + 1, testval + 1)
         end
     end
 end
