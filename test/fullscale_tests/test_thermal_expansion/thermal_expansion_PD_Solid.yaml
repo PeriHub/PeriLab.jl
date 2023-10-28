@@ -12,7 +12,6 @@ PeriLab:
     Material Models:
       Test:
         Material Model: "PD Solid Elastic"
-        #Material Model: "Correspondence Elastic"
         Symmetry: "isotropic plane stress"
         Young's Modulus: 7.0e+5
         Poisson's Ratio: 0.33
@@ -56,12 +55,10 @@ PeriLab:
       Numerical Damping: 0e-00
   Outputs:
     Output1:
-      Output Filename: "test_1"
+      Output Filename: "thermal_PD_Solid"
       Output Type: Exodus
       Number of Output Steps: 10
       Output Variables:
         Temperature: True
         Displacements: True
         Volume: True
-
-
