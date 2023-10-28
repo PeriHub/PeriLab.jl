@@ -173,7 +173,7 @@ function read_properties(params::Dict, datamanager::Module)
         get_block_model_definition(params::Dict, block, prop_keys, datamanager.set_properties)
     end
     for block in blocks
-        props = Material.determine_isotropic_parameter(datamanager.get_properties(block, "Material Model"))
+        Material.determine_isotropic_parameter(datamanager.get_properties(block, "Material Model"))
     end
 end
 

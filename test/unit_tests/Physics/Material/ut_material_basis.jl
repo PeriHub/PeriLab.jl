@@ -6,42 +6,54 @@ using Test
 include("../../../../src/Physics/Material/material_basis.jl")
 
 @testset "get_all_elastic_moduli" begin
-    parameter = Dict("Bulk Modulus" => 0, "Young's Modulus" => 0, "Shear Modulus" => 0, "Poisson's Ratio" => 0)
+    ref_parameter = Dict("Bulk Modulus" => 0, "Computed" => true, "Young's Modulus" => 0, "Shear Modulus" => 0, "Poisson's Ratio" => 0)
     test = get_all_elastic_moduli(Dict{String,Any}())
+    @test test
 
-    @test test == Dict{String,Any}()
-    test = get_all_elastic_moduli(Dict{String,Any}("Bulk Modulus" => 100, "Young's Modulus" => 10))
-    @test sort(collect(keys(test))) == sort(collect(keys(parameter)))
-    test = get_all_elastic_moduli(Dict{String,Any}("Bulk Modulus" => 1, "Shear Modulus" => 10))
-    @test sort(collect(keys(test))) == sort(collect(keys(parameter)))
-    test = get_all_elastic_moduli(Dict{String,Any}("Bulk Modulus" => 1, "Shear Modulus" => 10, "Poisson's Ratio" => 0.2))
-    @test sort(collect(keys(test))) == sort(collect(keys(parameter)))
+    parameter = Dict{String,Any}("Bulk Modulus" => 1000, "Young's Modulus" => 10)
+    get_all_elastic_moduli(parameter)
+    @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
-    test = get_all_elastic_moduli(Dict{String,Any}("Bulk Modulus" => 10, "Shear Modulus" => 10))
-    @test test["Young's Modulus"] == Float64(22.5)
-    @test test["Poisson's Ratio"] == Float64(0.125)
-    @test test["Bulk Modulus"] == 10
-    @test test["Shear Modulus"] == 10
+    parameter = Dict{String,Any}("Bulk Modulus" => 1, "Shear Modulus" => 10)
+    get_all_elastic_moduli(parameter)
+    @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
-    test = get_all_elastic_moduli(Dict{String,Any}("Bulk Modulus" => 5, "Shear Modulus" => 1.25))
-    @test test["Young's Modulus"] / 3.4615384615384617 - 1 < 1e-7
-    @test test["Poisson's Ratio"] / 0.45454545454545453 - 1 < 1e-7
-    @test test["Bulk Modulus"] == 5
-    @test test["Shear Modulus"] == Float64(1.25)
-    test = get_all_elastic_moduli(Dict{String,Any}("Bulk Modulus" => 5, "Young's Modulus" => 1.25))
-    @test test["Shear Modulus"] / 4.2857142857142855e-1 - 1 < 1e-7
-    @test test["Poisson's Ratio"] / 0.4583333333333333 - 1 < 1e-7
+    parameter = Dict{String,Any}("Bulk Modulus" => 1, "Shear Modulus" => 10, "Poisson's Ratio" => 0.2)
+    get_all_elastic_moduli(parameter)
+    @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
-    test = get_all_elastic_moduli(Dict{String,Any}("Poisson's Ratio" => 0.45, "Shear Modulus" => 1.25))
-    @test test["Young's Modulus"] / 3.625e+0 - 1 < 1e-8
-    @test test["Bulk Modulus"] / 1.2083333333333336e+1 - 1 < 1e-7
-    @test test["Poisson's Ratio"] == Float64(0.45)
-    @test test["Shear Modulus"] == Float64(1.25)
-    test = get_all_elastic_moduli(Dict{String,Any}("Young's Modulus" => 5, "Poisson's Ratio" => 0.125))
-    @test test["Bulk Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
-    @test test["Shear Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
-    @test test["Poisson's Ratio"] == Float64(0.125)
-    @test test["Young's Modulus"] == 5
+    parameter = Dict{String,Any}("Bulk Modulus" => 10, "Shear Modulus" => 10)
+    get_all_elastic_moduli(parameter)
+    @test parameter["Young's Modulus"] == Float64(22.5)
+    @test parameter["Poisson's Ratio"] == Float64(0.125)
+    @test parameter["Bulk Modulus"] == 10
+    @test parameter["Shear Modulus"] == 10
+
+    parameter = Dict{String,Any}("Bulk Modulus" => 5, "Shear Modulus" => 1.25)
+    get_all_elastic_moduli(parameter)
+    @test parameter["Young's Modulus"] / 3.4615384615384617 - 1 < 1e-7
+    @test parameter["Poisson's Ratio"] / 0.45454545454545453 - 1 < 1e-7
+    @test parameter["Bulk Modulus"] == 5
+    @test parameter["Shear Modulus"] == Float64(1.25)
+
+    parameter = Dict{String,Any}("Bulk Modulus" => 5, "Young's Modulus" => 1.25)
+    get_all_elastic_moduli(parameter)
+    @test parameter["Shear Modulus"] / 4.2857142857142855e-1 - 1 < 1e-7
+    @test parameter["Poisson's Ratio"] / 0.4583333333333333 - 1 < 1e-7
+
+    parameter = Dict{String,Any}("Poisson's Ratio" => 0.45, "Shear Modulus" => 1.25)
+    get_all_elastic_moduli(parameter)
+    @test parameter["Young's Modulus"] / 3.625e+0 - 1 < 1e-8
+    @test parameter["Bulk Modulus"] / 1.2083333333333336e+1 - 1 < 1e-7
+    @test parameter["Poisson's Ratio"] == Float64(0.45)
+    @test parameter["Shear Modulus"] == Float64(1.25)
+
+    parameter = Dict{String,Any}("Young's Modulus" => 5, "Poisson's Ratio" => 0.125)
+    get_all_elastic_moduli(parameter)
+    @test parameter["Bulk Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
+    @test parameter["Shear Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
+    @test parameter["Poisson's Ratio"] == Float64(0.125)
+    @test parameter["Young's Modulus"] == 5
 end
 """
 @testset "get_Hooke_matrix" begin

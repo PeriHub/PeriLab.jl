@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Data_manager
+using MPI
 
 export check_properties
 export create_bond_field
@@ -66,8 +67,8 @@ commMPi = Any
 function get_comm()
     return commMPi
 end
-function set_comm(value)
-    global commMPi = value
+function set_comm(comm::MPI.Comm)
+    global commMPi = comm
 end
 ##########################
 # Material information
