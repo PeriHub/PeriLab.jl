@@ -56,7 +56,7 @@ PeriLab:
       Numerical Damping: 0e-00
   Outputs:
     Output1:
-      Output Filename: "thermal_correspondence"
+      Output Filename: "thermal_expansion_correspondence"
       Output Type: Exodus
       Number of Output Steps: 10
       Output Variables:

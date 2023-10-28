@@ -138,7 +138,7 @@ MPI.Init()
             @includetests["fullscale_tests/test_Critical_stretch/test_Critical_stretch"]
         end
 
-        @testset "test_Critical_stretch" begin
+        @testset "test_thermal_expansion" begin
             @includetests["fullscale_tests/test_thermal_expansion/test_thermal_expansion"]
         end
 
