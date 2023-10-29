@@ -393,7 +393,10 @@ end
     # that the last core is not equally loaded
 """
 function create_base_chunk(nnodes::Int64, size::Int64)
-
+    if size > nnodes
+        @error "Number of cores $size exceeds number of nodes $nnodes."
+        return Nothing, Nothing
+    end
     chunk_size = div(nnodes, size)
     # Split the data into chunks
     distribution = fill(Int64[], size)

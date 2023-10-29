@@ -9,6 +9,33 @@ using Test
 using .Read_Mesh
 using .Data_manager
 using DataFrames
+@testset "ut_create_base_chunk" begin
+    distribution, point_to_core = Read_Mesh.create_base_chunk(4, 1)
+    @test length(distribution) == 1
+    @test distribution[1] == Int64[1, 2, 3, 4]
+    @test point_to_core == Int64[1, 1, 1, 1]
+    distribution, point_to_core = Read_Mesh.create_base_chunk(4, 2)
+    @test length(distribution) == 2
+    @test distribution[1] == Int64[1, 2]
+    @test distribution[2] == Int64[3, 4]
+    @test point_to_core == Int64[1, 1, 2, 2]
+    distribution, point_to_core = Read_Mesh.create_base_chunk(4, 3)
+    @test length(distribution) == 3
+    @test distribution[1] == Int64[1]
+    @test distribution[2] == Int64[2]
+    @test distribution[3] == Int64[3, 4]
+    @test point_to_core == Int64[1, 2, 3, 3]
+    distribution, point_to_core = Read_Mesh.create_base_chunk(4, 4)
+    @test length(distribution) == 4
+    @test distribution[1] == Int64[1]
+    @test distribution[2] == Int64[2]
+    @test distribution[3] == Int64[3]
+    @test distribution[4] == Int64[4]
+    @test point_to_core == Int64[1, 2, 3, 4]
+    distribution, point_to_core = Read_Mesh.create_base_chunk(4, 5)
+    point_to_core == Nothing
+    point_to_core == Nothing
+end
 
 
 @testset "ut_check_mesh_elements" begin
