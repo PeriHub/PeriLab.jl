@@ -27,7 +27,7 @@ function calculate_nodelist(datamanager::Module, fieldKey::String, calculationTy
         return global_value_avg(field, nodes)
     else
         @warn "Unknown calculation type $calculationType"
-        return 0
+        return Nothing
     end
 end
 
