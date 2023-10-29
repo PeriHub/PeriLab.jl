@@ -76,12 +76,20 @@ end
     testDatamanager = Data_manager
     testDatamanager.set_dof(3)
     testDatamanager.set_nmasters(4)
+    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 2
+    nn[2] = 3
+    nn[3] = 1
+    nn[4] = 2
+
     Physics.init_thermal_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
     @test "TemperatureN" in fieldkeys
     @test "TemperatureNP1" in fieldkeys
     @test "Heat FlowN" in fieldkeys
     @test "Heat FlowNP1" in fieldkeys
+    @test "Bond Heat Flow" in fieldkeys
+
 end
 
 @testset "init_additive_model_fields" begin

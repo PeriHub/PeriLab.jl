@@ -53,13 +53,13 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   bond_geometry = datamanager.get_field("Bond Geometry")
   horizon = datamanager.get_field("Horizon")
   volume = datamanager.get_field("Volume")
-  heat_flow = datamanager.get_field("Heat Flow", "NP1")
+
   lamda = thermal_parameter["Lambda"]
   if thermal_parameter["Type"] == "Bond based"
     if length(lamda) > 1
       lambda = lambda[1]
     end
-    return compute_heat_flow_state_bondbased(nodes, dof, nlist, lambda, bond_damage, bond_geometry, horizon, temperature, volume, heat_flow)
+    return compute_heat_flow_state_bondbased(nodes, dof, nlist, lambda, bond_damage, bond_geometry, horizon, temperature, volume, bond_heat_flow)
 
   elseif thermal_parameter["Type"] == "Correspondence"
     lambda_matrix = zeros(dof, dof)
@@ -155,7 +155,7 @@ function compute_heat_flow_state_correspondence()
 end
 end
 
-function compute_heat_flow_state_bondbased(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Float64, bond_damage::SubArray, bond_geometry::SubArray, horizon::SubArray, temperature::SubArray, volume::SubArray, heat_flow::SubArray)
+function compute_heat_flow_state_bondbased(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Float64, bond_damage::SubArray, bond_geometry::SubArray, horizon::SubArray, temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
   kernel::Float64 = 0.0
   for iID in nodes
     #nlist
@@ -170,7 +170,7 @@ function compute_heat_flow_state_bondbased(nodes::Union{SubArray,Vector{Int64}},
         continue
       end
       tempState = bond_damage[iID][jID] * (temperature[neighborID] - temperature[iID])
-      heat_flow[iID] -= lambda * kernel * tempState * volume[neighborID] / bond_geometry[iID][jID, end]
+      bond_heat_flow[iID][jID] = lambda * kernel * tempState * volume[neighborID] / bond_geometry[iID][jID, end]
     end
   end
 end

@@ -131,10 +131,10 @@ function init_damage_model_fields(datamanager::Module)
 end
 
 function init_thermal_model_fields(datamanager::Module)
-    dof = datamanager.get_dof()
     datamanager.create_node_field("Temperature", Float64, 1)
-    datamanager.create_node_field("Heat Flow", Float64, dof)
+    datamanager.create_node_field("Heat Flow", Float64, 1)
     datamanager.create_node_field("Specific Volume", Float64, 1)
+    datamanager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
     return datamanager
 end
 
