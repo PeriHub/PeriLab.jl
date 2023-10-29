@@ -9,7 +9,7 @@ PeriLab is a Software to solve Peridynamic problems. It is written in Julia to o
 
 ## Documentation
 
-[![][docs-stable-img]][docs-stable-url]
+https://fa_sw.pages.gitlab.dlr.de/peridynamik/perilab/
 
 ## Installation
 ```
