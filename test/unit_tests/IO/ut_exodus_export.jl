@@ -61,6 +61,8 @@ end
 
     close(exo)
     rm(filename)
+    fid = open(filename, "w")
+    close(fid)
     nnodes = 300
     dof = 2
     exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 3, 2)
