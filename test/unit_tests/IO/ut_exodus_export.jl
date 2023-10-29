@@ -35,6 +35,8 @@ end
         @test Write_Exodus_Results.get_paraviewCoordinates(2, i) == "y"
         @test Write_Exodus_Results.get_paraviewCoordinates(3, i) == "z"
     end
+    @test isnothing(Write_Exodus_Results.get_paraviewCoordinates(3, 10))
+
     for ref = 4:9
         for i in 1:3
             for j in 1:3
