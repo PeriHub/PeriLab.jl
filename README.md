@@ -6,51 +6,36 @@ SPDX-License-Identifier: BSD-3-Clause
 
 # PeriLab
 PeriLab is a Software to solve Peridynamic problems. It is written in Julia to overcome many issues related to the Software Peridigm.
-## Modules
+
+## Documentation
+
+[![][docs-stable-img]][docs-stable-url]
+
+## Installation
 ```
+download repository
+go in existing_repo
 start julia in batch
 in julia promp write ]
 now you can define your enviroment via "activate ."
 write instantiate
-
-to add the modules you can use 
-
-add MPI
-add NearestNeighbors
-add Logging
-add YAML
-add CSV
-add DataFrames
-add Exodus
-add LinearAlgebra
-
-
 ```
 
-```
-If you want to define it in an initialise file use
-
-import Pkg
-Pkg.add("MPI")
-Pkg.add("NearestNeighbors")
-Pkg.add("Logging")
-Pkg.add("YAML")
-Pkg.add("CSV")
-Pkg.add("DataFrames")
-Pkg.add("Exodus")
-Pkg.add("LinearAlgebra")
-```
 ## Run PeriLab
+
+julia --project=../../ ../../src/main.jl dcb.yaml -v
+
+or for MPI
+
  "/home/$user/.julia/bin/mpiexecjl  -n $ncores /home/$user/julia/julia-1.9.1/bin/julia ./src/main.jl""sr
 
-## Add your files
+## Contributing
 
-```
-cd existing_repo
-git remote add origin https://gitlab.dlr.de/fa_sw/peridynamik/perilab.git
-git branch -M main
-git push -uf origin main
-```
+Contributions in all forms (bug reports, documentation, features, suggestions, ...) are very
+welcome. 
+
+## Questions
+If you have questions about Ferrite.jl you're welcome to reach out to us on the authors e mail adresses.
 ## Authors and acknowledgment
 '''
 Dr.-Ing. Christian Willberg; christian.willberg@dlr.de
