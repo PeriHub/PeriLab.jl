@@ -18,17 +18,6 @@ julia> ] # ']' should be pressed
 
 (@v1.9) pkg> add PeriLab
 ```
-
-If you want to make sure everything works as expected you can run the tests
-bundled with PeriLab, but be warned that it will take more than 30
-minutes:
-
-```julia
-julia> using Pkg
-
-julia> Pkg.test("PeriLab") # Warning! This will take more than 30 minutes.
-```
-
 Additionally, it is recommended to check the version of PeriLab that
 you have installed with the `status` command.
 
@@ -46,4 +35,13 @@ package:
 
 ```jldoctest PeriLab
 julia> using PeriLab
+```
+If you want to make sure everything works as expected you can run the tests
+bundled with PeriLab, but be warned that it will take more than 30
+minutes:
+
+```julia
+julia> using Pkg
+
+julia> Pkg.test("PeriLab") # Warning! This will take more than 30 minutes.
 ```
