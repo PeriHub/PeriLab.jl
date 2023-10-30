@@ -49,6 +49,8 @@ function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   heatCapacity = additive_parameter["Heat Capacity"]
   density = additive_parameter["Density"]
   printTemperature = additive_parameter["Print Temperature"]
+  # must be specified, because it might be that no temperature model has been defined
+  temperature = datamanager.create_node_field("Temperature", Float64, 1)
 
   for iID in nodes
     if time - dt <= activation_time[iID] < time
