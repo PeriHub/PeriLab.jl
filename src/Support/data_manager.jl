@@ -344,11 +344,11 @@ get_nnodes()
 Retrieves the number of nodes.
 
 Returns:
-- `nmasters` (integer): The current number of nodes.
+- `nmasters::Int64` : The current number of nodes.
 
 Example:
 ```julia
-get_nmasters()  # returns the current number of nodes 
+get_nnodes()  # returns the current number of nodes 
 ```
 """
 function get_nnodes()

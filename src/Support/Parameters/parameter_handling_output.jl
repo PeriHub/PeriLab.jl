@@ -64,14 +64,14 @@ function get_output_fieldnames(outputs::Dict, variables::Vector{String}, compute
                 else
                     @warn '"' * output * '"' * " is not defined as global variable"
                 end
+                continue
+            end
+            if output in variables
+                push!(return_outputs, output)
+            elseif output * "NP1" in variables
+                push!(return_outputs, output * "NP1")
             else
-                if output in variables || output in computes
-                    push!(return_outputs, output)
-                elseif output * "NP1" in variables
-                    push!(return_outputs, output * "NP1")
-                else
-                    @warn '"' * output * '"' * " is not defined as variable"
-                end
+                @warn '"' * output * '"' * " is not defined as variable. Please check if global variables are mixed with nodal variables."
             end
         end
     end
@@ -84,7 +84,7 @@ function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vec
         outputs = params["Outputs"]
         for output in keys(outputs)
             output_type = get_output_type(outputs[output])
-            if check_element(outputs[output], "Output Variables")
+            if (check_element(outputs[output], "Output Variables")) && (length(outputs[output]["Output Variables"]) > 0)
                 outputs[output]["fieldnames"] = get_output_fieldnames(outputs[output]["Output Variables"], variables, compute_names, output_type)
             else
                 @warn "No output variables are defined for " * output * "."

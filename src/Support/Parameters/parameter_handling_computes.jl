@@ -20,20 +20,20 @@ function get_output_variables(output::String, variables::Vector)
     end
 end
 
-function get_computes(params::Dict, variables)
-    if check_element(params::Dict, "Compute Class Parameters")
-        computes = params["Compute Class Parameters"]
-        for compute in keys(computes)
-            if check_element(computes[compute], "Variable")
-                computes[compute]["Variable"] = get_output_variables(computes[compute]["Variable"], variables)
-            else
-                @warn "No output variables are defined for " * output * "."
-            end
-
-        end
+function get_computes(params::Dict, variables::Vector{String})
+    computes = Dict{String,Dict{Any,Any}}()
+    if !check_element(params, "Compute Class Parameters")
         return computes
     end
-    return []
+    for compute in keys(params["Compute Class Parameters"])
+        if check_element(params["Compute Class Parameters"][compute], "Variable")
+            computes[compute] = params["Compute Class Parameters"][compute]
+            computes[compute]["Variable"] = get_output_variables(computes[compute]["Variable"], variables)
+        else
+            @warn "No output variables are defined for " * output * ". Global variable is not defined"
+        end
+    end
+    return computes
 end
 
 function get_node_set(params::Dict)

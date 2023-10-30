@@ -33,8 +33,8 @@ end
 
 function get_node_sets(params::Dict, path::String)
     nsets = Dict{String,Any}()
-    if check_element(params["Discretization"], "Node Sets") == false
-        return []
+    if !check_element(params["Discretization"], "Node Sets")
+        return nsets
     end
     nodesets = params["Discretization"]["Node Sets"]
 
@@ -43,10 +43,15 @@ function get_node_sets(params::Dict, path::String)
             nsets[entry] = [nodesets[entry]]
         elseif occursin(".txt", nodesets[entry])
 
+            if isnothing(get_header(joinpath(path, nodesets[entry])))
+                @warn "Node set file " * nodesets[entry] * " is not correctly specified. Please check the examples. The node set is excluded."
+                continue
+            end
             header_line, header = get_header(joinpath(path, nodesets[entry]))
             nodes = CSV.read(joinpath(path, nodesets[entry]), DataFrame; delim=" ", header=false, skipto=header_line + 1)
             if size(nodes) == (0, 0)
-                @error "Node set file is empty " * joinpath(path, nodesets[entry])
+                @error "Node set file is empty " * joinpath(path, nodesets[entry]) * ". The node set is excluded."
+                continue
             end
             nsets[entry] = nodes.Column1
         else

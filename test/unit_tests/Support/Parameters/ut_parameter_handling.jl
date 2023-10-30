@@ -10,7 +10,52 @@ include("../../../../src/Support/helpers.jl")
 
 using Test
 using Random
+@testset "ut_node_sets" begin
 
+    filename = "test.txt"
+    numbers = [11, 12, 13, 44, 125]
+    lenNumbers = length(numbers)
+    params = Dict("Discretization" => Dict())
+
+    @test get_node_sets(params, "") == Dict{String,Any}()
+    params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename)))
+
+    file = open(filename, "w")
+    println(file, "header: global_id")
+    for number in numbers
+        println(file, number)
+    end
+    close(file)
+
+    nsets = get_node_sets(params, "")
+    @test "Nset_1" in keys(nsets)
+    @test "Nset_2" in keys(nsets)
+    @test length(nsets["Nset_1"]) == 7
+    for i in 1:7
+        @test nsets["Nset_1"][i] == i
+    end
+    @test length(nsets["Nset_2"]) == lenNumbers
+    for i in 1:lenNumbers
+        @test nsets["Nset_2"][i] == numbers[i]
+    end
+    rm(filename)
+
+    filename = "test.txt"
+    file = open(filename, "w")
+    println(file, "header: global_id")
+    close(file)
+    nsets = get_node_sets(params, "")
+    @test haskey(nsets, "Nset_1")
+    @test !haskey(nsets, "Nset_2")
+    rm(filename)
+    filename = "test.txt"
+    file = open(filename, "w")
+    close(file)
+    nsets = get_node_sets(params, "")
+    @test haskey(nsets, "Nset_1")
+    @test !haskey(nsets, "Nset_2")
+    rm(filename)
+end
 @testset "ut_check_key_elements" begin
     params = Dict()
     @info "Error messages are tested and therefore okay."
@@ -107,7 +152,7 @@ testDatamanager = Data_manager
     testDatamanager.create_constant_node_field("E", Float64, 4)
     testfield_keys = testDatamanager.get_all_field_keys()
 
-    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true))))
+    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true, "M" => true))))
 
     outputs = get_outputs(params, testfield_keys, String[])
 
@@ -118,16 +163,40 @@ testDatamanager = Data_manager
     @test "BNP1" in outputs["Output2"]["fieldnames"]
     @test ("D" in outputs["Output2"]["fieldnames"]) == false
     @test "E" in outputs["Output2"]["fieldnames"]
+    @test !("M" in outputs["Output2"]["fieldnames"])
+    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Type" => "CSV", "Output Variables" => Dict("E" => true, "B" => false, "C" => true)), "Output2" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true, "M" => true))))
+    outputs = get_outputs(params, testfield_keys, String["M"])
+    @test !("A" in outputs["Output1"]["fieldnames"])
+    @test !("BNP1" in outputs["Output1"]["fieldnames"])
+    @test !("C" in outputs["Output1"]["fieldnames"])
+    @test ("BNP1" in outputs["Output2"]["fieldnames"])
+    @test !("D" in outputs["Output2"]["fieldnames"])
+    @test ("E" in outputs["Output2"]["fieldnames"])
+    @test !("M" in outputs["Output2"]["fieldnames"])
+    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Type" => "CSV", "Output Variables" => Dict("M" => true, "A" => true))))
+    outputs = get_outputs(params, testfield_keys, String["M"])
+    @test !("A" in outputs["Output1"]["fieldnames"])
+    @test "M" in outputs["Output1"]["fieldnames"]
+
+    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Variables" => Dict())))
+    outputs = get_outputs(params, testfield_keys, String[])
+    @test outputs["Output1"]["fieldnames"] == []
+    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [])))
+    outputs = get_outputs(params, testfield_keys, String[])
+    @test outputs["Output1"]["fieldnames"] == []
 end
 @testset "ut_get_computes" begin
+    params = Dict()
     testfield_keys = testDatamanager.get_all_field_keys()
+    @test get_computes(params, testfield_keys) == Dict()
 
-    params = Dict("Compute Class Parameters" => Dict("External_Forces" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Sum", "Block" => "block_2", "Variable" => "A"), "External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "B")))
+    params = Dict("Compute Class Parameters" => Dict("External_Forces" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Sum", "Block" => "block_2", "Variable" => "A"), "External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "B"), "warn_test" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1")))
 
     computes = get_computes(params, testfield_keys)
 
     @test haskey(computes, "External_Forces")
     @test haskey(computes, "External_Displacements")
+    @test !haskey(computes, "warn_test")
     @test computes["External_Forces"]["Variable"] == "A"
     @test computes["External_Displacements"]["Variable"] == "BNP1"
 end
@@ -141,31 +210,7 @@ end
     @test "External_Forces" in computes_names
     @test "External_Displacements" in computes_names
 end
-@testset "ut_node_sets" begin
-    numbers = [11, 12, 13, 44, 125]
-    lenNumbers = length(numbers)
-    filename = "test.txt"
-    file = open(filename, "w")
-    println(file, "header: global_id")
-    for number in numbers
-        println(file, number)
-    end
-    close(file)
 
-    params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename)))
-    nsets = get_node_sets(params, "")
-    @test "Nset_1" in keys(nsets)
-    @test "Nset_2" in keys(nsets)
-    @test length(nsets["Nset_1"]) == 7
-    for i in 1:7
-        @test nsets["Nset_1"][i] == i
-    end
-    @test length(nsets["Nset_2"]) == lenNumbers
-    for i in 1:lenNumbers
-        @test nsets["Nset_2"][i] == numbers[i]
-    end
-    rm(filename)
-end
 @testset "ut_get_bc_definitions" begin
     params = Dict()
     bcs = get_bc_definitions(params)
