@@ -8,6 +8,8 @@ include("../../../../src/Physics/Thermal/Thermal_expansion.jl")
 using .Thermal_expansion
 include("../../../../src/Support/data_manager.jl")
 
+@test Thermal_expansion.thermal_model_name() == "Thermal Expansion"
+
 @testset "ut_thermal strain" begin
     dof = 2
     alpha = zeros(Int64, dof, dof)

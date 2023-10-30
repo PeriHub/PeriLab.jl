@@ -6,21 +6,16 @@ module Thermal_Flow
 export compute_thermal_model
 export thermal_model_name
 """
-   thermal_flow_name()
+   thermal_model_name()
 
-   Gives the flow name. It is needed for comparison with the yaml input deck.
+   Gives the model name. It is needed for comparison with the yaml input deck.
 
    Parameters:
 
    Returns:
-   - `name::String`: The name of the thermal flow model.
+   - `name::String`: "Thermal Flow"
 
-   Example:
-   ```julia
-   println(flow_name())
-   "Thermal Template"
-   ```
-   """
+    """
 function thermal_model_name()
   return "Thermal Flow"
 end
@@ -43,7 +38,7 @@ end
    """
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
 
-  if !haskey(thermal_paramete, "Type")
+  if !haskey(thermal_parameter, "Type")
     @error "No model type has beed defined; Type: ''Bond based'' or Type: ''Correspondence''"
     return datamanager
   end
