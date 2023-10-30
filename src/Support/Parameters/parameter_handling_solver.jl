@@ -6,7 +6,8 @@ function get_solver_name(params::Dict)
     if check_element(params["Solver"], "Verlet")
         return "Verlet"
     end
-    return ""
+    @error "Wrong or missing solvername. Verlet is the only option yet."
+    return
 end
 
 function get_initial_time(params::Dict)

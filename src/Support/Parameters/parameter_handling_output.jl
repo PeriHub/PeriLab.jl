@@ -95,7 +95,7 @@ function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vec
     return outputs
 end
 
-function get_output_frequency(params::Dict, nsteps)
+function get_output_frequency(params::Dict, nsteps::Int64)
 
     if check_element(params::Dict, "Outputs")
         outputs = params["Outputs"]
@@ -103,27 +103,35 @@ function get_output_frequency(params::Dict, nsteps)
         for (id, output) in enumerate(keys(outputs))
             output_options = Dict("Output Frequency" => false, "Number of Output Steps" => false)
             freq[id] = 1
-            for output_option in keys(output_options)
-                if check_element(outputs[output], output_option)
-                    if output_options[output_option]
-                        @warn "Double output step / frequency definition. First option is used. $output_option is ignored."
-                        continue
-                    end
-                    output_options[output_option] = true
-                    freq[id] = outputs[output][output_option]
-                    if output_options["Number of Output Steps"]
-                        freq[id] = Int64(ceil(nsteps / freq[id]))
-                        if freq[id] < 1
-                            freq[id] = 1
-                        end
-                    end
-                    if freq[id] > nsteps
-                        freq[id] = nsteps
+
+            if (check_element(outputs[output], "Output Frequency") && check_element(outputs[output], "Number of Output Steps"))
+                output_options["Number of Output Steps"] = true
+                @warn "Double output step / frequency definition. First option is used. ''Output Frequency'' is ignored."
+            else
+                for output_option in keys(output_options)
+                    if check_element(outputs[output], output_option)
+                        output_options[output_option] = true
                     end
                 end
             end
-
+            for output_option in keys(output_options)
+                if !output_options[output_option]
+                    continue
+                end
+                freq[id] = outputs[output][output_option]
+                if output_options["Number of Output Steps"]
+                    freq[id] = Int64(ceil(nsteps / freq[id]))
+                    if freq[id] < 1
+                        freq[id] = 1
+                    end
+                end
+                if freq[id] > nsteps
+                    freq[id] = nsteps
+                end
+            end
         end
+
     end
+
     return freq
 end

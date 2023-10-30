@@ -27,7 +27,7 @@ using Random
     @test check_key_elements(params) == false
     params = Dict("Physics" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
     @test check_key_elements(params) == false
-    @info "No error messages are okay for this test until now."
+
     params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
     @test check_key_elements(params) == true
 end
@@ -72,7 +72,6 @@ end
 
 @testset "get_output_frequency" begin
     nsteps = 40
-
     params = Dict()
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 2), "Output2" => Dict("Number of Output Steps" => 1, "Output Frequency" => 1)))
     freq = get_output_frequency(params, nsteps)
@@ -86,6 +85,15 @@ end
     freq = get_output_frequency(params, nsteps)
     @test freq[1] == 20
     @test freq[2] == 100
+    nsteps = 2
+    freq = get_output_frequency(params, nsteps)
+    @test freq[1] == 2
+    @test freq[2] == 1
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20, "Number of Output Steps" => 10), "Output2" => Dict("Number of Output Steps" => 10, "Output Frequency" => 20)))
+    nsteps = 1000
+    freq = get_output_frequency(params, nsteps)
+    @test (freq[1] == 100) || (freq[1] == 20)
+    @test (freq[2] == 100) || (freq[2] == 20)
 end
 
 testDatamanager = Data_manager
@@ -194,14 +202,80 @@ end
 end
 
 @testset "ut_get_number_of_blocks" begin
+    @test isnothing(get_number_of_blocks(Dict()))
     params = Dict("Blocks" => Dict())
-    @test get_number_of_blocks(params) == 0
+    @test isnothing(get_number_of_blocks(params))
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
     @test get_number_of_blocks(params) == 2
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict()))
     @test get_number_of_blocks(params) == 3
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict(), "block_4" => Dict()))
     @test get_number_of_blocks(params) == 4
+end
+
+
+
+function get_density(params::Dict, blockID::Int64)
+    return get_values(params, blockID, "Density")
+end
+
+function get_heatcapacity(params::Dict, blockID::Int64)
+    return get_values(params, blockID, "Heat Capacity")
+end
+
+function get_horizon(params::Dict, blockID::Int64)
+    return get_values(params, blockID, "Horizon")
+end
+
+function get_values(params::Dict, blockID::Int64, valueName::String)
+    if check_element(params["Blocks"], "block_" * string(blockID))
+        if check_element(params["Blocks"]["block_"*string(blockID)], valueName)
+            return params["Blocks"]["block_"*string(blockID)][valueName]
+        end
+        @error "$valueName of Block $blockID is not defined"
+        return
+    end
+    @error "Block $blockID is not defined"
+    return
+end
+
+@testset "ut_block_values" begin
+    params = Dict("Blocks" => Dict())
+    @test isnothing(get_horizon(params, 1))
+    @test isnothing(get_density(params, 1))
+    @test isnothing(get_heatcapacity(params, 1))
+    @test isnothing(get_values(params, 1, "Density"))
+    @test isnothing(get_values(params, 1, "not there"))
+    params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
+    @test isnothing(get_horizon(params, 1))
+    @test isnothing(get_density(params, 1))
+    @test isnothing(get_heatcapacity(params, 1))
+    @test isnothing(get_values(params, 1, "Density"))
+    @test isnothing(get_horizon(params, 2))
+    @test isnothing(get_density(params, 2))
+    @test isnothing(get_heatcapacity(params, 2))
+    @test isnothing(get_values(params, 2, "Density"))
+    params = Dict("Blocks" => Dict("block_1" => Dict("Density" => 1, "Heat Capacity" => 3), "block_2" => Dict("Density" => 12.3, "Horizon" => 2)))
+    @test get_values(params, 1, "Density") == 1
+    @test get_values(params, 2, "Density") == 12.3
+    @test isnothing(get_values(params, 3, "Density"))
+    @test get_values(params, 1, "Heat Capacity") == 3
+    @test isnothing(get_values(params, 2, "Heat Capacity"))
+    @test isnothing(get_values(params, 3, "Heat Capacity"))
+    @test isnothing(get_values(params, 1, "Horizon"))
+    @test get_values(params, 2, "Horizon") == 2
+    @test isnothing(get_values(params, 3, "Horizon"))
+    @test get_values(params, 1, "Density") == get_density(params, 1)
+    @test get_values(params, 2, "Density") == get_density(params, 2)
+    @test get_values(params, 3, "Density") == get_density(params, 3)
+
+    @test get_values(params, 1, "Horizon") == get_horizon(params, 1)
+    @test get_values(params, 2, "Horizon") == get_horizon(params, 2)
+    @test get_values(params, 3, "Horizon") == get_horizon(params, 3)
+
+    @test get_values(params, 1, "Heat Capacity") == get_heatcapacity(params, 1)
+    @test get_values(params, 2, "Heat Capacity") == get_heatcapacity(params, 2)
+    @test get_values(params, 3, "Heat Capacity") == get_heatcapacity(params, 3)
 end
 
 @testset "ut_solver" begin
@@ -216,8 +290,11 @@ end
     @test get_safety_factor(params) == 1
     @test get_fixed_dt(params) == true
     @test get_numerical_damping(params) == 0.0
+    @test isnothing(get_initial_time(Dict("Solver" => Dict())))
+    @test isnothing(get_final_time(Dict("Solver" => Dict())))
+    @test isnothing(get_final_time(Dict("Solver" => Dict())))
+    @test isnothing(get_solver_name(Dict("Solver" => Dict("Solvername" => Dict()))))
 end
-
 
 params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, "d" => true), "B" => Dict("sa" => [3.2, 2, 3], "d" => "true")), "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1))), "Blocks" => Dict("block_1" => Dict("Material Model" => "A", "Damage Model" => "E"), "block_2" => Dict("Material Model" => "B")))
 
@@ -230,7 +307,9 @@ params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, 
     @test blockModels[1]["Damage Model"] == "E"
     @test blockModels[2]["Material Model"] == "B"
     testData = Dict("Material Model" => Dict(), "Damage Model" => Dict())
-
+    @test isnothing(get_model_parameter(params, "Does not exist Model", blockModels[1]["Material Model"]))
+    @test isnothing(get_model_parameter(params, "Does not exist Model", "s"))
+    @test isnothing(get_model_parameter(params, "Material Model", "s"))
     testData["Material Model"] = get_model_parameter(params, "Material Model", blockModels[1]["Material Model"])
     @test testData["Material Model"]["s"] == 0
     @test testData["Material Model"]["d"] == true
@@ -243,20 +322,17 @@ params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, 
 end
 @testset "get_physics_option" begin
     params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => false,
-            "Deformation Gradient" => false,
-            "Shape Tensor" => true,
-            "Bond Associated Shape Tensor" => false,
-            "Bond Associated Deformation Gradient" => false),
-        "Material Models" => Dict("a" => Dict("value" => 1, "name" => "t4"), "c" => Dict("value" => [1 2], "value2" => 1, "name" => "t4"))))
-
+        "Deformation Gradient" => false,
+        "Shape Tensor" => true,
+        "Bond Associated Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)))
     options = Dict{String,Bool}("Deformed Bond Geometry" => true,
         "Deformation Gradient" => false,
         "Shape Tensor" => false,
         "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
-
     optionTest = get_physics_option(params, options)
-
+    # no material models included
     @test optionTest == params["Physics"]["Pre Calculation"]
 
     params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => true,
@@ -264,8 +340,53 @@ end
             "Shape Tensor" => false,
             "Bond Associated Shape Tensor" => false,
             "Bond Associated Deformation Gradient" => true),
-        "Material Models" => Dict("a" => Dict("value" => 1, "name" => "t4"), "c" => Dict("value" => [1 2], "value2" => 1, "name" => "t4"))))
+        "Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1))))
     optionTest = get_physics_option(params, options)
 
-    @test optionTest == params["Physics"]["Pre Calculation"]
+    @test isnothing(optionTest)
+
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("a" => Dict("Material Model" => "adaCoB", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1))))
+    optionTest = get_physics_option(params, options)
+    @test isnothing(optionTest)
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
+    optionTest = get_physics_option(params, options)
+    @test isnothing(optionTest)
+
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("a" => Dict("value" => 1, "Material Model" => "adaCoB"), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
+    optionTest = get_physics_option(params, options)
+    @test optionTest == options
+
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("a" => Dict("Material Model" => "adaCorrespondence", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCorresponde"))))
+    options = Dict{String,Bool}("Deformed Bond Geometry" => false,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => false,
+        "Bond Associated Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)
+    optionTest = get_physics_option(params, options)
+    @test optionTest["Shape Tensor"]
+    @test !optionTest["Bond Associated Shape Tensor"]
+    @test !optionTest["Bond Associated Deformation Gradient"]
+    @test optionTest["Deformation Gradient"]
+    @test optionTest["Deformed Bond Geometry"]
+
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("aBond Associated" => Dict("Material Model" => "adaCoBond Associated", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
+    optionTest = get_physics_option(params, options)
+
+    @test optionTest["Shape Tensor"]
+    @test optionTest["Bond Associated Shape Tensor"]
+    @test optionTest["Bond Associated Deformation Gradient"]
+    @test optionTest["Deformation Gradient"]
+    @test optionTest["Deformed Bond Geometry"]
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("aCorrespondence" => Dict("Material Model" => "adaCorrespondence", "value" => 1), "c Bond Associated" => Dict("Material Model" => "adaCoBond Associated", "value" => [1 2], "value2" => 1))))
+    options = Dict{String,Bool}("Deformed Bond Geometry" => false,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => false,
+        "Bond Associated Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)
 end

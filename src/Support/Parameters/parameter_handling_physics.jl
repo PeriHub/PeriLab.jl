@@ -2,18 +2,117 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""
+    get_model_parameter(params, model, id)
+
+Retrieve a model parameter from a dictionary of parameters.
+
+This function retrieves a specific model parameter from a dictionary of parameters based on the provided model and identifier (id).
+
+## Arguments
+
+- `params::Dict`: A dictionary containing various parameters.
+
+- `model::String`: The model type for which the parameter is sought.
+
+- `id::String`: The identifier (name) of the specific model parameter.
+
+## Returns
+
+- `parameter::Any`: The retrieved model parameter, or `nothing` if the parameter is not found.
+
+## Errors
+
+- If the specified model is defined in blocks but no model definition block exists, an error message is logged, and the function returns `nothing`.
+
+- If the model with the given identifier is defined in blocks but missing in the model's definition, an error message is logged, and the function returns `nothing`.
+
+## Example
+
+```julia
+params = Dict(
+    "Physics" => Dict(
+        "Models" => Dict(
+            "ModelA" => 42,
+            "ModelB" => 24
+        )
+    )
+)
+
+model = "Models"
+id = "ModelA"
+
+result = get_model_parameter(params, model, id)
+if result !== nothing
+    println("Parameter id: result")
+else
+    println("Parameter not found.")
+end
+"""
 function get_model_parameter(params::Dict, model::String, id::String)
-    if check_element(params["Physics"], model * "s") == false
+    if !check_element(params["Physics"], model * "s")
         @error model * " is defined in blocks, but no " * model * "s definition block exists"
-        return Dict()
+        return
     end
     if check_element(params["Physics"][model*"s"], id)
         return params["Physics"][model*"s"][id]
     else
         @error model * " model with name " * id * " is defined in blocks, but missing in the " * model * "s definition."
-        return Dict()
+        return
     end
 end
+
+"""
+    get_physics_option(params, options)
+
+Process physics-related options based on the provided parameters.
+
+This function processes physics-related options based on the parameters dictionary and updates the options dictionary accordingly.
+
+## Arguments
+
+- `params::Dict`: A dictionary containing various parameters, including physics-related information.
+
+- `options::Dict`: A dictionary containing options to be updated based on the physics parameters.
+
+## Returns
+
+- `updated_options::Dict`: A dictionary containing updated options based on the physics parameters.
+
+## Errors
+
+- If the 'Pre Calculation' section exists in the 'Physics' block but does not contain required options, an error message is logged.
+
+- If a material model is missing the 'Material Model' specification, an error message is logged.
+
+## Example
+
+```julia
+params = Dict(
+    "Physics" => Dict(
+        "Pre Calculation" => Dict(
+            "Option1" => true,
+            "Option2" => false
+        ),
+        "Material Models" => Dict(
+            1 => Dict(
+                "Material Model" => "Correspondence"
+            ),
+            2 => Dict(
+                "Material Model" => "Bond Associated"
+            )
+        )
+    )
+)
+
+options = Dict(
+    "Option1" => false,
+    "Option2" => true
+)
+
+updated_options = get_physics_option(params, options)
+println("Updated Options: ", updated_options)
+"""
 
 function get_physics_option(params::Dict, options::Dict)
     if check_element(params["Physics"], "Pre Calculation")
@@ -24,11 +123,12 @@ function get_physics_option(params::Dict, options::Dict)
         end
     end
     if !haskey(params["Physics"], "Material Models")
-        @error "Material Models missing!"
+        @warn "Material Models missing!"
+        return options
     end
     materials = params["Physics"]["Material Models"]
     for material in eachindex(materials)
-        if haskey(materials[material], "Material Model")
+        if check_element(materials[material], "Material Model")
             if occursin("Correspondence", materials[material]["Material Model"])
                 options["Shape Tensor"] = true
                 options["Deformation Gradient"] = true
@@ -37,10 +137,14 @@ function get_physics_option(params::Dict, options::Dict)
                 options["Shape Tensor"] = true
                 options["Bond Associated Shape Tensor"] = true
                 options["Bond Associated Deformation Gradient"] = true
+                options["Deformation Gradient"] = true
+                options["Deformed Bond Geometry"] = true
             end
         else
-            @error "Material $material is missing 'Material Model'!"
+            @error "No Material Model has been defined"
+            return
         end
+
     end
     return options
 end

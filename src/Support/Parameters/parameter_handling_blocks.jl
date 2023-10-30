@@ -3,29 +3,23 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 function get_density(params::Dict, blockID::Int64)
-    if check_element(params["Blocks"]["block_"*string(blockID)], "Density")
-
-        return params["Blocks"]["block_"*string(blockID)]["Density"]
-    end
-    @error "No density defined for block " * string(blockID)
-    return
+    return get_values(params, blockID, "Density")
 end
 
 function get_heatcapacity(params::Dict, blockID::Int64)
-    if check_element(params["Blocks"]["block_"*string(blockID)], "Heat Capacity")
-
-        return params["Blocks"]["block_"*string(blockID)]["Heat Capacity"]
-    end
-    @error "No heat capacity defined for block " * string(blockID)
-    return
+    return get_values(params, blockID, "Heat Capacity")
 end
 
 function get_horizon(params::Dict, blockID::Int64)
+    return get_values(params, blockID, "Horizon")
+end
+
+function get_values(params::Dict, blockID::Int64, valueName::String)
     if check_element(params["Blocks"], "block_" * string(blockID))
-        if check_element(params["Blocks"]["block_"*string(blockID)], "Horizon")
-            return params["Blocks"]["block_"*string(blockID)]["Horizon"]
+        if check_element(params["Blocks"]["block_"*string(blockID)], valueName)
+            return params["Blocks"]["block_"*string(blockID)][valueName]
         end
-        @error "Horizon of Block $blockID is not defined"
+        @error "$valueName of Block $blockID is not defined"
         return
     end
     @error "Block $blockID is not defined"
@@ -34,12 +28,11 @@ end
 
 function get_number_of_blocks(params::Dict)
     check = check_element(params::Dict, "Blocks")
-    if check
+    if check_element(params::Dict, "Blocks") && length(params["Blocks"]) > 0
         return length(params["Blocks"])
-    else
-        @error "No blocks defined"
     end
-    return 0
+    @error "No blocks defined"
+    return
 end
 
 function get_block_models(params::Dict, blockID::Int64)
