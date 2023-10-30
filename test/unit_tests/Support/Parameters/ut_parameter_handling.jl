@@ -10,6 +10,27 @@ include("../../../../src/Support/helpers.jl")
 
 using Test
 using Random
+
+
+
+@testset "ut_get_bond_filters" begin
+    params = Dict("Discretization" => Dict())
+    check, bfList = get_bond_filters(params)
+    @test !check
+    @test bfList == Dict{String,Dict{String,Any}}()
+    params = Dict("Discretization" => Dict("Bond Filters" => Dict()))
+    check, bfList = get_bond_filters(params)
+    @test check
+    @test bfList == Dict()
+    params = Dict("Discretization" => Dict("Bond Filters" => Dict("a" => Dict("a" => 1))))
+    check, bfList = get_bond_filters(params)
+    @test check
+    @test bfList == Dict("a" => Dict("a" => 1))
+    params = Dict("Discretization" => Dict("Bond Filters" => Dict("a" => Dict("a" => 1), "g" => Dict("a" => 1), "adas" => Dict("a" => 1))))
+    check, bfList = get_bond_filters(params)
+    @test check
+    @test bfList == Dict("a" => Dict("a" => 1), "g" => Dict("a" => 1), "adas" => Dict("a" => 1))
+end
 @testset "ut_node_sets" begin
 
     filename = "test.txt"
