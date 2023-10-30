@@ -14,6 +14,7 @@ using Test
     @test comm == b
     # MPI.Finalize()
 end
+
 @testset "ranks" begin
     testDatamanager = Data_manager
     testDatamanager.set_rank(2)
@@ -49,6 +50,8 @@ end
     end
     testDatamanager.set_nmasters(97)
     testDatamanager.set_nslaves(5)
+
+    @test testDatamanager.get_nslaves() == 5
     @test testDatamanager.get_nnodes() == 97
     @test testDatamanager.nslaves == 5
     @test testDatamanager.nmasters == 97
@@ -72,7 +75,8 @@ nn[5] = 5
 
 testDatamanager.create_constant_node_field("A", Float64, 1)
 B = testDatamanager.create_node_field("B", Bool, 1)
-testDatamanager.create_constant_node_field("C", Float64, 4)
+C = testDatamanager.create_constant_node_field("C", Float64, 4)
+C[1, 2] = 4
 testDatamanager.create_node_field("D", Int64, 7)
 testDatamanager.create_constant_bond_field("F", Float64, 1)
 testDatamanager.create_bond_field("G", Bool, 1)
@@ -83,6 +87,9 @@ testfield_keys = testDatamanager.get_all_field_keys()
     @test testDatamanager.get_nnodes() == nmaster
     @test B[1] == testDatamanager.get_field("BN")
     @test B[2] == testDatamanager.get_field("B", "NP1")
+    @test C == testDatamanager.get_field("C")
+    @test C == testDatamanager.get_field("C", "CONSTANT")
+    @test C == testDatamanager.get_field("C", "Constant")
     @test "A" in testfield_keys
     @test ("AN" in testfield_keys) == false
     @test ("ANP1" in testfield_keys) == false
@@ -324,6 +331,8 @@ end
     @test nsets["N1"] == [1, 2]
     @test nsets["N2"] == [4, 5]
     @test nsets["N3"] == [1, 12, 22]
+    testDatamanager.set_nset("N3", [1, 12])
+    @test nsets["N3"] == [1, 12]
 end
 
 @testset "ut_blocklist" begin
@@ -369,4 +378,51 @@ end
     @test testDatamanager.get_properties(1, "") == Dict()
     @test !testDatamanager.check_property(1, "This is not a property")
     @test testDatamanager.get_property(1, "Thermal Model", "This is not a property") == Nothing
+end
+
+@testset "get_physics_options" begin
+    testDatamanager = Data_manager
+    physics_options = testDatamanager.get_physics_options()
+    @test physics_options["Deformed Bond Geometry"]
+    @test !physics_options["Bond Associated Shape Tensor"]
+    @test !physics_options["Bond Associated Deformation Gradient"]
+    @test !physics_options["Deformation Gradient"]
+    @test !physics_options["Shape Tensor"]
+    testDatamanager.physicsOptions["Deformed Bond Geometry"] = false
+    physics_options = testDatamanager.get_physics_options()
+    @test !physics_options["Deformed Bond Geometry"]
+    @test !physics_options["Bond Associated Shape Tensor"]
+    @test !physics_options["Bond Associated Deformation Gradient"]
+    @test !physics_options["Deformation Gradient"]
+    @test !physics_options["Shape Tensor"]
+    testDatamanager.physicsOptions["Bond Associated Deformation Gradient"] = true
+    physics_options = testDatamanager.get_physics_options()
+    @test physics_options["Deformed Bond Geometry"]
+    @test physics_options["Bond Associated Shape Tensor"]
+    @test physics_options["Bond Associated Deformation Gradient"]
+    @test physics_options["Deformation Gradient"]
+    @test physics_options["Shape Tensor"]
+    testDatamanager.physicsOptions["Deformed Bond Geometry"] = false
+    testDatamanager.physicsOptions["Shape Tensor"] = false
+    testDatamanager.physicsOptions["Bond Associated Shape Tensor"] = false
+    testDatamanager.physicsOptions["Deformation Gradient"] = false
+    testDatamanager.physicsOptions["Bond Associated Deformation Gradient"] = false
+    testDatamanager.physicsOptions["Deformation Gradient"] = true
+    physics_options = testDatamanager.get_physics_options()
+    @test physics_options["Deformed Bond Geometry"]
+    @test !physics_options["Bond Associated Shape Tensor"]
+    @test !physics_options["Bond Associated Deformation Gradient"]
+    @test physics_options["Deformation Gradient"]
+    @test physics_options["Shape Tensor"]
+    testDatamanager.physicsOptions["Deformed Bond Geometry"] = false
+    testDatamanager.physicsOptions["Shape Tensor"] = false
+    testDatamanager.physicsOptions["Bond Associated Shape Tensor"] = false
+    testDatamanager.physicsOptions["Deformation Gradient"] = true
+    testDatamanager.physicsOptions["Bond Associated Deformation Gradient"] = true
+    physics_options = testDatamanager.get_physics_options()
+    @test physics_options["Deformed Bond Geometry"]
+    @test physics_options["Bond Associated Shape Tensor"]
+    @test physics_options["Bond Associated Deformation Gradient"]
+    @test physics_options["Deformation Gradient"]
+    @test physics_options["Shape Tensor"]
 end
