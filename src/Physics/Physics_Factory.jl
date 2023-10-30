@@ -26,6 +26,11 @@ export init_thermal_model_fields
 
 
 function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+    dof = datamanager.get_dof()
+    defCoorN, defCoorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
+    defCoorN[:] = copy(datamanager.get_field("Coordinates"))
+    defCoorNP1[:] = copy(datamanager.get_field("Coordinates"))
+    datamanager.create_node_field("Displacements", Float64, dof)
     if solver_options["Material Models"]
         datamanager = Physics.init_material_model_fields(datamanager)
     end
@@ -84,10 +89,6 @@ function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, t
             @timeit to "compute_forces" datamanager = Material.distribute_force_densities(datamanager, nodes)
         end
     end
-
-
-
-
     return datamanager
 
 end
@@ -111,10 +112,6 @@ function init_material_model_fields(datamanager::Module)
     # tbd later in the compute class
     datamanager.create_node_field("Forces", Float64, dof)
     datamanager.create_node_field("Force Densities", Float64, dof)
-    defCoorN, defCoorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
-    defCoorN[:] = copy(datamanager.get_field("Coordinates"))
-    defCoorNP1[:] = copy(datamanager.get_field("Coordinates"))
-    datamanager.create_node_field("Displacements", Float64, dof)
     datamanager.create_constant_node_field("Acceleration", Float64, dof)
     datamanager.create_node_field("Velocity", Float64, dof)
     datamanager.set_synch("Force Densities", true, false)

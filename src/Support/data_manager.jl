@@ -309,7 +309,7 @@ function get_field(name::String)
         end
         return view(fields[field_names[name]][name], :,)
     end
-    @error "Field " * name * " does not exist. Check if it is initialized as constant."
+    @error "Field ''" * name * "'' does not exist. Check if it is initialized as constant."
     return []
 end
 """

@@ -327,19 +327,22 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
-    forces = datamanager.get_field("Forces", "NP1")
     volume = datamanager.get_field("Volume")
-    forces_density = datamanager.get_field("Force Densities", "NP1")
     density = datamanager.get_field("Density")
-    uN = datamanager.get_field("Displacements", "N")
-    uNP1 = datamanager.get_field("Displacements", "NP1")
     coor = datamanager.get_field("Coordinates")
-    defCoorN = datamanager.get_field("Deformed Coordinates", "N")
-    defCoorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
-    vN = datamanager.get_field("Velocity", "N")
-    vNP1 = datamanager.get_field("Velocity", "NP1")
-    a = datamanager.get_field("Acceleration")
+    uNP1 = datamanager.get_field("Displacements", "NP1")
 
+    defCoorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
+    if solver_options["Material Models"]
+        forces = datamanager.get_field("Forces", "NP1")
+        forces_density = datamanager.get_field("Force Densities", "NP1")
+        uN = datamanager.get_field("Displacements", "N")
+        vN = datamanager.get_field("Velocity", "N")
+        vNP1 = datamanager.get_field("Velocity", "NP1")
+        a = datamanager.get_field("Acceleration")
+        coor = datamanager.get_field("Coordinates")
+        defCoorN = datamanager.get_field("Deformed Coordinates", "N")
+    end
     if solver_options["Thermal Models"]
         flowN = datamanager.get_field("Heat Flow", "N")
         flowNP1 = datamanager.get_field("Heat Flow", "NP1")
@@ -368,10 +371,10 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
                 temperatureNP1[find_active(active[1:nnodes])] = temperatureN[find_active(active[1:nnodes])] + deltaT[find_active(active[1:nnodes])]
             end
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
-
+            #if solver_options["Material Models"]
+            #needed because of optional defGrad, Deformed bonds, etc.
             defCoorNP1[find_active(active[1:nnodes]), :] = coor[find_active(active[1:nnodes]), :] + uNP1[find_active(active[1:nnodes]), :]
-
-
+            #end
             datamanager.synch_manager(synchronise_field, "upload_to_cores")
             # synch
             for block in eachindex(blockNodes)
@@ -382,12 +385,14 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             datamanager.synch_manager(synchronise_field, "download_from_cores")
             # synch
             @timeit to "second apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
-            check_inf_or_nan(forces_density, "Forces")
+
             if solver_options["Material Models"]
+                check_inf_or_nan(forces_density, "Forces")
                 a[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] ./ density[find_active(active[1:nnodes])] # element wise
                 forces[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] .* volume[find_active(active[1:nnodes])]
             end
             if solver_options["Thermal Models"]
+                check_inf_or_nan(flowNP1, "Heat Flow")
                 deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
             end
             result_files = write_results(result_files, start_time + step_time, outputs, datamanager)
