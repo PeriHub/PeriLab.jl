@@ -80,22 +80,22 @@ end
 @testset "ut_check_key_elements" begin
     params = Dict()
     @info "Error messages are tested and therefore okay."
-    @test check_key_elements(params) == false
+    @test isnothing(check_key_elements(params))
     params = Dict("Physics" => Dict())
-    @test check_key_elements(params) == false
+    @test isnothing(check_key_elements(params))
     params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict())
-    @test check_key_elements(params) == false
+    @test isnothing(check_key_elements(params))
     params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict(), "Blocks" => Dict())
-    @test check_key_elements(params) == false
+    @test isnothing(check_key_elements(params))
     params = Dict("Physics" => Dict("Material Models" => Dict()), "Blocks" => Dict())
-    @test check_key_elements(params) == false
+    @test isnothing(check_key_elements(params))
     params = Dict("Blocks" => Dict())
-    @test check_key_elements(params) == false
+    @test isnothing(check_key_elements(params))
     params = Dict("Physics" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
-    @test check_key_elements(params) == false
+    @test isnothing(check_key_elements(params))
 
     params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
-    @test check_key_elements(params) == true
+    @test check_key_elements(params) == params
 end
 
 @testset "ut_get_mesh_name" begin

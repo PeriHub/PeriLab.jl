@@ -9,23 +9,29 @@ include("../Support/Parameters/parameter_handling.jl")
 export read_input_file
 
 function read_input(filename::String)
-    return YAML.load_file(filename)["PeriLab"]
+    try
+        return YAML.load_file(filename)["PeriLab"]
+    catch
+        @error "No compatible Yaml file."
+        return
+    end
 end
 
 function read_input_file(filename::String)
     params = Dict{String,Any}()
+    if !isfile(filename)
+        @error "$filename does not exist."
+        return
+    end
     if occursin("yaml", filename)
         @info "Read input file $filename"
         params = read_input(filename)
-    elseif occursin("xml", filename)
-        @info "Read input file $filename"
-        #read_xml(filename = filename)
     else
-        parameter = ""
         @error "Not a supported filetype  $filename"
+        return
     end
-    check_key_elements(params)
-    return params
+    return check_key_elements(params)
+
 end
 
 end

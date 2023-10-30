@@ -14,31 +14,28 @@ function check_element(params::Dict, key)
     return haskey(params::Dict, key)
 end
 function check_key_elements(params::Dict)
-    check = check_element(params::Dict, "Physics")
-    if !check
+    if !check_element(params, "Physics")
         @error "No physics defined"
-        return check
+        return
     end
-    if check
-        if length(params["Physics"]) == 0
-            @error "No physics defined"
-            return false
-        end
+    if length(params["Physics"]) == 0
+        @error "No physics defined"
+        return
     end
-    check = check_element(params::Dict, "Blocks")
-    if !check
+
+    if !check_element(params, "Blocks")
         @error "No blocks defined"
-        return check
+        return
     end
-    check = check_element(params::Dict, "Discretization")
-    if !check
+
+    if !check_element(params, "Discretization")
         @error "No discretization defined"
-        return check
+        return
     end
-    check = check_element(params::Dict, "Solver")
-    if !check
+
+    if !check_element(params, "Solver")
         @error "No solver defined"
-        return check
+        return
     end
-    return check
+    return params
 end
