@@ -36,13 +36,10 @@ function distribute_heat_flows(datamanager::Module, nodes::Union{SubArray,Vector
 
     bond_heat_flow = datamanager.get_field("Bond Heat Flow")
     heat_flow = datamanager.get_field("Heat Flow", "NP1")
-    nlist = datamanager.get_nlist()
     for iID in nodes
-        #for value in bond_heat_flow[iID][:]
-        for (jID, neighborID) in enumerate(nlist[iID])
+        for value in bond_heat_flow[iID][:]
             # not added to neigbhors; tb checked
-            heat_flow[iID] -= bond_heat_flow[iID][jID]
-            #heat_flow[neighborID] -= bond_heat_flow[iID][jID]
+            heat_flow[iID] -= value
         end
     end
     return datamanager

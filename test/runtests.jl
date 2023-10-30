@@ -12,6 +12,7 @@ Logging.disable_logging(Logging.Error)
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
+
     @testset "Compute" begin
         @testset "ut_compute_global_values" begin
             @includetests["unit_tests/Compute/ut_compute_global_values"]

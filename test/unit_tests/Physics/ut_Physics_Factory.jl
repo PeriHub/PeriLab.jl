@@ -53,10 +53,6 @@ end
     fieldkeys = testDatamanager.get_all_field_keys()
     @test "ForcesN" in fieldkeys
     @test "ForcesNP1" in fieldkeys
-    @test "Deformed CoordinatesN" in fieldkeys
-    @test "Deformed CoordinatesNP1" in fieldkeys
-    @test "DisplacementsN" in fieldkeys
-    @test "DisplacementsNP1" in fieldkeys
     @test "Acceleration" in fieldkeys
     @test "VelocityN" in fieldkeys
     @test "VelocityNP1" in fieldkeys

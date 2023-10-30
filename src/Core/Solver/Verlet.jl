@@ -393,6 +393,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             end
             if solver_options["Thermal Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
+                # heat capacity check. if it is zero deltaT = 0
                 deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
             end
             result_files = write_results(result_files, start_time + step_time, outputs, datamanager)
