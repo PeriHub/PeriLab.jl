@@ -50,11 +50,11 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
 
-function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{Int64}}, block::Int64, dt::Float64, time::Float64, options::Dict, synchronise_field, to)
+function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{Int64}}, block::Int64, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
 
     if options["Additive Models"]
         if datamanager.check_property(block, "Additive Model")
-            @timeit to "compute_additive_model" datamanager = Additive.compute_additive_model(datamanager, block_nodes, datamanager.get_properties(block, "Additive Model"), time, dt)
+            @timeit to "compute_additive_model" datamanager = Additive.compute_additive(datamanager, block_nodes, datamanager.get_properties(block, "Additive Model"), time, dt)
         end
     end
     active = datamanager.get_field("Active")
@@ -100,7 +100,7 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
 
 end
 
-function get_block_model_definition(params::Dict, blockID, prop_keys, properties)
+function get_block_model_definition(params::Dict, blockID::Int64, prop_keys::Vector{String}, properties)
     # properties function from datamanager
     if check_element(params["Blocks"], "block_" * string(blockID))
         block = params["Blocks"]["block_"*string(blockID)]

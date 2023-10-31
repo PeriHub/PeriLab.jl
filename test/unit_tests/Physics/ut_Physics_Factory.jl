@@ -12,7 +12,7 @@ import .Physics
     block_list = [1, 2, 3]
     testDatamanager.set_block_list(block_list)
     prop_keys = testDatamanager.init_property()
-    params = Dict("Blocks" => Dict("block_1" => Dict("Material Model" => "a"), "block_2" => Dict("Material Model" => "c"), "block_3" => Dict("Material Model" => "a", "Damage Model" => "a", "Thermal Model" => "therm")), "Physics" => Dict("Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1)), "Damage Models" => Dict("a" => Dict("value" => 3), "c" => Dict("value" => [1 2], "value2" => 1)), "Thermal Models" => Dict("therm" => Dict("value" => "hot", "bool" => true))))
+    params = Dict("Blocks" => Dict("block_1" => Dict("Material Model" => "a"), "block_2" => Dict("Material Model" => "c"), "block_3" => Dict("Material Model" => "a", "Damage Model" => "a", "Thermal Model" => "therm", "Additive Model" => "add")), "Physics" => Dict("Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1)), "Damage Models" => Dict("a" => Dict("value" => 3), "c" => Dict("value" => [1 2], "value2" => 1)), "Thermal Models" => Dict("therm" => Dict("value" => "hot", "bool" => true)), "Additive Models" => Dict("add" => Dict("value" => "ad", "bool" => false))))
 
     for block in block_list
         Physics.get_block_model_definition(params, block, prop_keys, testDatamanager.set_properties)
@@ -24,6 +24,8 @@ import .Physics
     @test testDatamanager.get_property(3, "Damage Model", "value") == params["Physics"]["Damage Models"]["a"]["value"]
     @test testDatamanager.get_property(3, "Thermal Model", "value") == params["Physics"]["Thermal Models"]["therm"]["value"]
     @test testDatamanager.get_property(3, "Thermal Model", "bool") == params["Physics"]["Thermal Models"]["therm"]["bool"]
+    @test testDatamanager.get_property(3, "Additive Model", "value") == params["Physics"]["Additive Models"]["add"]["value"]
+    @test testDatamanager.get_property(3, "Additive Model", "bool") == params["Physics"]["Additive Models"]["add"]["bool"]
 end
 
 @testset "ut_read_properties" begin
@@ -101,14 +103,12 @@ end
     testDatamanager = Data_manager
     testDatamanager.set_dof(3)
     testDatamanager.set_nmasters(4)
-    active = testDatamanager.create_constant_node_field("Active", Bool, 1)
     nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 1
     nn[2] = 2
     nn[3] = 1
     nn[4] = 2
 
-    active[:] .= true
     testDatamanager.create_bond_field("Bond Damage", Float64, 1)
     testDatamanager = Physics.init_additive_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
