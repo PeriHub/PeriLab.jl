@@ -45,6 +45,8 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     end
     if solver_options["Additive Models"]
         datamanager = Physics.init_additive_model_fields(datamanager)
+        heatCapacity = datamanager.create_constant_node_field("Heat Capacity", Float64, 1)
+        heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
     end
 
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
@@ -58,21 +60,15 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
         end
     end
     active = datamanager.get_field("Active")
-    nodes = block_nodes[find_active(active[bn])]
+    nodes = block_nodes[find_active(active[block_nodes])]
+
+    @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
+
     if options["Thermal Models"]
         if datamanager.check_property(block, "Thermal Model")
             @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
         end
     end
-
-    @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
-    if options["Additive Models"]
-        if datamanager.check_property(block, "Additive Model")
-            @warn "Additive Models not included yet"
-        end
-        #activeNodes = view(nodes, find_active(active_list[nodes]))# -> tbd implemented for the other routines
-    end
-
 
     if options["Damage Models"]
         #tbd damage specific pre_calculation-> in damage template
