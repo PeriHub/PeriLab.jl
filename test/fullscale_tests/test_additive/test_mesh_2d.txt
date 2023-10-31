@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+header: x y block_id volume Activation_Time
+-1.5e-3 0 1 1.0e-6 0.1
+-0.5e-3 0 1 1.0e-6 0.11
+0.5e-3 0 1 1.0e-6 0.13
+1.5e-3 0 1 1.0e-6 0.05
+-1.5e-3 1e-3 1 1.0e-6 0.2
+-0.5e-3 1e-3 1 1.0e-6 0.25
+0.5e-3 1e-3 2 1.0e-6 0.25
+1.5e-3 1e-3 2 1.0e-6 0.25
+-1.5e-3 2e-3 1 1.0e-6 0.1
+-0.5e-3 2e-3 1 1.0e-6 0.26
+0.5e-3 2e-3 2 1.0e-6 0.28
+1.5e-3 2e-3 2 1.0e-6 0.5

@@ -27,15 +27,13 @@ function init_bondDamage_and_influence_function(A, B, C)
 end
 
 function init(params::Dict, datamanager::Module)
-    @info "Init Solver"
     nnodes = datamanager.get_nnodes()
     nslaves = datamanager.get_nslaves()
     allBlockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes + nslaves)
     blockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
-    active = datamanager.create_constant_node_field("Active", Bool, 1)
-    active .= true
+
     update_list = datamanager.create_constant_node_field("Update List", Bool, 1)
     update_list .= true
     density = set_density(params, allBlockNodes, density) # includes the neighbors
@@ -46,12 +44,20 @@ function init(params::Dict, datamanager::Module)
     bondDamageN, bondDamageNP1 = datamanager.create_bond_field("Bond Damage", Float64, 1)
     omega[:], bondDamageN, bondDamageNP1 = init_bondDamage_and_influence_function(omega, bondDamageN, bondDamageNP1)
 
-    Physics.read_properties(params, datamanager)
+    Physics.read_properties(params, datamanager, solver_options["Material Models"])
     datamanager = Physics.init_models(params, datamanager, allBlockNodes, solver_options)
     bcs = Boundary_conditions.init_BCs(params, datamanager)
 
     if get_solver_name(params) == "Verlet"
         solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"] = Verlet.init_solver(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
+    end
+
+    if "Active" in datamanager.get_all_field_keys()
+        # can be predefined in mesh. Therefore it should be checked if it is there.
+        active = datamanager.get_field("Active")
+    else
+        active = datamanager.create_constant_node_field("Active", Bool, 1)
+        active .= true
     end
     @info "Finished Init Solver"
     return blockNodes, bcs, datamanager, solver_options

@@ -50,8 +50,15 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
 
-function compute_models(datamanager::Module, nodes, block::Int64, dt::Float64, time::Float64, options::Dict, synchronise_field, to)
+function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{Int64}}, block::Int64, dt::Float64, time::Float64, options::Dict, synchronise_field, to)
 
+    if options["Additive Models"]
+        if datamanager.check_property(block, "Additive Model")
+            @timeit to "compute_additive_model" datamanager = Additive.compute_additive_model(datamanager, block_nodes, datamanager.get_properties(block, "Additive Model"), time, dt)
+        end
+    end
+    active = datamanager.get_field("Active")
+    nodes = block_nodes[find_active(active[bn])]
     if options["Thermal Models"]
         if datamanager.check_property(block, "Thermal Model")
             @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
@@ -136,22 +143,23 @@ function init_thermal_model_fields(datamanager::Module)
 end
 
 function init_additive_model_fields(datamanager::Module)
-    if !("Activation Time" in datamanager.get_all_field_keys())
-        @error "'Activation Time' is missing. Please define an 'Activation Time' for each point in the mesh file."
+    if !("Activation_Time" in datamanager.get_all_field_keys())
+        @error "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file."
     end
-
+    # must be specified, because it might be that no temperature model has been defined
+    datamanager.create_node_field("Temperature", Float64, 1)
     datamanager.create_node_field("Heat Flow", Float64, 1)
-    active = datamanager.get_field("Active")
     bond_damageN = datamanager.get_field("Bond Damage", "N")
     bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")
     nnodes = datamanager.get_nnodes()
-
-    for iID in 1:nnodes
-        active[iID] = false
-        bond_damageN[iID][:, :] .= 0
-        bond_damageNP1[iID][:, :] .= 0
+    if !("Active" in datamanager.get_all_field_keys())
+        active = datamanager.create_constant_node_field("Active", Bool, 1)
+        active .= false
+        for iID in 1:nnodes
+            bond_damageN[iID][:] .= 0
+            bond_damageNP1[iID][:] .= 0
+        end
     end
-
     return datamanager
 end
 
@@ -159,7 +167,7 @@ function init_pre_calculation(datamanager::Module, options)
     return Pre_calculation.init_pre_calculation(datamanager, options)
 end
 
-function read_properties(params::Dict, datamanager::Module)
+function read_properties(params::Dict, datamanager::Module, material_model::Bool)
     datamanager.init_property()
     blocks = datamanager.get_block_list()
     prop_keys = datamanager.init_property()
@@ -169,9 +177,12 @@ function read_properties(params::Dict, datamanager::Module)
     for block in blocks
         get_block_model_definition(params::Dict, block, prop_keys, datamanager.set_properties)
     end
-    for block in blocks
-        Material.determine_isotropic_parameter(datamanager.get_properties(block, "Material Model"))
+    if material_model
+        for block in blocks
+            Material.determine_isotropic_parameter(datamanager.get_properties(block, "Material Model"))
+        end
     end
+    return datamanager
 end
 
 function set_heatcapacity(params::Dict, blockNodes::Dict, heatCapacity::SubArray)

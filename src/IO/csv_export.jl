@@ -6,7 +6,7 @@ module Write_CSV_Results
 export create_result_file
 export write_global_results_in_csv
 
-function create_result_file(filename, outputs)
+function create_result_file(filename::String, outputs::Dict)
 
     if isfile(filename)
         rm(filename)

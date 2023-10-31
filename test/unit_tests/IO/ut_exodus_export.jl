@@ -67,6 +67,7 @@ end
     close(fid)
     nnodes = 300
     dof = 2
+    @test isfile(filename)
     exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 3, 2)
     @test isfile(filename)
     @test exo.file_name == filename
