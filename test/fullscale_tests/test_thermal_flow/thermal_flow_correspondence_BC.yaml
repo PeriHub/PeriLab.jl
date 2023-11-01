@@ -20,7 +20,7 @@ PeriLab:
     Thermal Models:
       Thermal test:
         Thermal Model: "Thermal Flow"
-        Type: "Bond based"
+        Type: "Correspondence"
         Heat expansion: 0.22
         Specific Heat Capacity: 1
         Lambda: 2000.0
@@ -60,7 +60,7 @@ PeriLab:
       Numerical Damping: 0e-00
   Outputs:
     Output1:
-      Output Filename: "thermal_flow_BC"
+      Output Filename: "thermal_flow_correspondence_BC"
       Output Type: Exodus
       Number of Output Steps: 10
       Output Variables:

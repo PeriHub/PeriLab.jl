@@ -150,6 +150,10 @@ MPI.Init()
             @includetests["fullscale_tests/test_thermal_expansion/test_thermal_expansion"]
         end
 
+        @testset "test_thermal_flow" begin
+            @includetests["fullscale_tests/test_thermal_flow/test_thermal_flow"]
+        end
+
         @testset "test_Correspondence_Elastic" begin
             @includetests["fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic"]
         end

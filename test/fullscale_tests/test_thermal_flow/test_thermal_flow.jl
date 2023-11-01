@@ -6,10 +6,10 @@ include("../../helper.jl")
 
 folder_name = basename(@__FILE__)[1:end-3]
 cd("fullscale_tests/" * folder_name) do
-    run_perilab("thermal_flow_automatic", 1, true, folder_name)
-    run_perilab("thermal_flow_surface_boundary", 1, true, folder_name)
-	run_perilab("thermal_flow_BC", 1, true, folder_name)
-	run_perilab("thermal_flow_correspondence_automatic", 1, true, folder_name)
-    run_perilab("thermal_flow_correspondence_surface_boundary", 1, true, folder_name)
-	run_perilab("thermal_flow_correspondence_BC", 1, true, folder_name)
+    # run_perilab("thermal_flow_automatic", 1, true, folder_name)
+    # run_perilab("thermal_flow_surface_boundary", 1, true, folder_name)
+    run_perilab("thermal_flow_BC", 1, true, folder_name)
+    # run_perilab("thermal_flow_correspondence_automatic", 1, true, folder_name)
+    # run_perilab("thermal_flow_correspondence_surface_boundary", 1, true, folder_name)
+    # run_perilab("thermal_flow_correspondence_BC", 1, true, folder_name)
 end

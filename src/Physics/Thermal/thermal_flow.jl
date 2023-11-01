@@ -56,12 +56,12 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     if length(lambda) > 1
       lambda = lambda[1]
     end
-    bond_heat_flow = compute_heat_flow_state_bondbased(nodes, dof, nlist, lambda, bond_damage, bond_geometry, horizon, temperature, volume, bond_heat_flow)
+    compute_heat_flow_state_bondbased(nodes, dof, nlist, lambda, bond_damage, bond_geometry, horizon, temperature, volume, bond_heat_flow)
     return datamanager
 
   elseif thermal_parameter["Type"] == "Correspondence"
     lambda_matrix = zeros(dof, dof)
-    if length(lamda) == 1
+    if length(lambda) == 1
       for i in 1:dof
         lambda_matrix[i, i] = lambda
       end
@@ -195,6 +195,5 @@ function compute_heat_flow_state_bondbased(nodes::Union{SubArray,Vector{Int64}},
       bond_heat_flow[iID][jID] = lambda * kernel * tempState * volume[neighborID] / bond_geometry[iID][jID, end]
     end
   end
-  return bond_heat_flow
 end
 end
