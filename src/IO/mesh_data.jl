@@ -549,6 +549,8 @@ function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::
         center = [filter["Center_X"], filter["Center_Y"], filter["Center_Z"]]
         normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
     end
+    #normalize vector
+    normal = normal ./ norm(normal)
     for i in 1:nnodes
         filter_flag = fill(true, length(nlist[i]))
         for (jId, neighbor) in enumerate(nlist[i])
@@ -568,6 +570,9 @@ function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::
         lower_left_corner = [filter["Lower_Left_Corner_X"], filter["Lower_Left_Corner_Y"], filter["Lower_Left_Corner_Z"]]
         bottom_unit_vector = [filter["Bottom_Unit_Vector_X"], filter["Bottom_Unit_Vector_Y"], filter["Bottom_Unit_Vector_Z"]]
     end
+    #normalize vector
+    normal = normal ./ norm(normal)
+    bottom_unit_vector = bottom_unit_vector ./ norm(bottom_unit_vector)
     bottom_length = filter["Bottom_Length"]
     side_length = filter["Side_Length"]
     for iID in 1:nnodes
