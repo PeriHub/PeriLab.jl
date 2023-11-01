@@ -66,7 +66,7 @@ block_Id[end] = 2
 end
 
 @testset "ut_init_write_result_and_write_results" begin
-    result_files, outputs = IO.init_write_results(params, testDatamanager, 2)
+    result_files, outputs = IO.init_write_results(params, "", testDatamanager, 2)
     @test length(result_files) == 2
     @test length(result_files[1].nodal_var_name_dict) == 6
     entries = collect(keys(result_files[1].nodal_var_name_dict))

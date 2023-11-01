@@ -124,16 +124,16 @@ end
 
 @testset "ut_get_output_filenames" begin
     params = Dict()
-    filenames = get_output_filenames(params)
+    filenames = get_output_filenames(params, "")
     @test filenames == []
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "1"), "Output2" => Dict("Output Filename" => "2")))
-    filenames = get_output_filenames(params)
+    filenames = get_output_filenames(params, "")
     @test filenames[1] == "1.e"
     @test filenames[2] == "2.e"
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "3", "Output Type" => "CSV"), "Output2" => Dict("Output Filename" => "4", "Output Type" => "Exodus")))
-    filenames = get_output_filenames(params)
-    @test filenames[1] == "3.csv"
-    @test filenames[2] == "4.e"
+    filenames = get_output_filenames(params, "test")
+    @test filenames[1] == "test/3.csv"
+    @test filenames[2] == "test/4.e"
 end
 
 @testset "get_output_frequency" begin
