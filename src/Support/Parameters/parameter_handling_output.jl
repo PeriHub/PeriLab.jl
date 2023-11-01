@@ -20,7 +20,7 @@ function search_for_duplicates(filenames)
     end
     return returnfilenames
 end
-function get_output_filenames(params::Dict)
+function get_output_filenames(params::Dict, filedirectory::String)
     if check_element(params::Dict, "Outputs")
         filenames = []
         outputs = params["Outputs"]
@@ -33,7 +33,7 @@ function get_output_filenames(params::Dict)
                 else
                     filename = filename * ".e"
                 end
-                push!(filenames, filename)
+                push!(filenames, joinpath(filedirectory, filename))
             end
         end
         filenames = search_for_duplicates(filenames)

@@ -205,16 +205,17 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
 
         ################################
         filename = juliaPath * filename
+        filedirectory = dirname(filename)
         # @info filename
 
-        @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, Data_manager, comm, to)
+        @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
         @info "Solver init"
         @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
         if verbose
             IO.show_block_summary(solver_options, params, datamanager)
         end
         @info "Init write results"
-        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, datamanager, solver_options["nsteps"])
+        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"])
         Logging_module.set_result_files(result_files)
 
         if dry_run

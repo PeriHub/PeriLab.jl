@@ -128,19 +128,19 @@ function get_results_mapping(params::Dict, datamanager::Module)
     return output_mapping
 end
 
-function initialize_data(filename::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
+function initialize_data(filename::String, filedirectory::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
 
     @timeit to "MPI init data" begin
         datamanager.set_rank(MPI.Comm_rank(comm))
         datamanager.set_max_rank(MPI.Comm_size(comm))
         datamanager.set_comm(comm)
     end
-    return Read_Mesh.init_data(read_input_file(filename), dirname(filename), datamanager, comm, to)
+    return Read_Mesh.init_data(read_input_file(filename), filedirectory, datamanager, comm, to)
 
 end
 
-function init_write_results(params::Dict, datamanager::Module, nsteps::Int64)
-    filenames = get_output_filenames(params)
+function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64)
+    filenames = get_output_filenames(params, filedirectory)
     if length(filenames) == 0
         @warn "No futput file or output defined"
     end
