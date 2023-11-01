@@ -16,9 +16,12 @@ function check_valid_bcs(bcs, datamanager)
             end
         end
         for dataentry in datamanager.get_all_field_keys()
-            if (occursin(bcs[bc]["Type"], dataentry) && occursin("NP1", dataentry)) || bcs[bc]["Type"] == dataentry
+            initial = occursin("Initial", bcs[bc]["Type"])
+            bc_type = replace(bcs[bc]["Type"], "Initial " => "")
+            if (occursin(bc_type, dataentry) && occursin("NP1", dataentry)) || bc_type == dataentry
                 working_bcs[bc] = bcs[bc]
                 bcs[bc]["Type"] = dataentry
+                bcs[bc]["Initial"] = initial
                 break
             end
         end
@@ -66,12 +69,12 @@ function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
 
         if ndims(field_to_apply_bc) > 1
             if haskey(dof_mapping, bc["Coordinate"])
-                field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(bc["Value"], coordinates[bc["Node Set"], :], time, dof)
+                field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]], bc["Value"], coordinates[bc["Node Set"], :], time, dof, bc["Initial"])
             else
                 @error "Coordinate must be x,y or z"
             end
         else
-            field_to_apply_bc[bc["Node Set"]] = eval_bc(bc["Value"], coordinates[bc["Node Set"], :], time, dof)
+            field_to_apply_bc[bc["Node Set"]] = eval_bc(field_to_apply_bc[bc["Node Set"]], bc["Value"], coordinates[bc["Node Set"], :], time, dof, bc["Initial"])
         end
 
     end
@@ -92,7 +95,7 @@ Working with if-statements
   works for scalars. If you want to evaluate a vector, please use the Julia notation as input
   "ifelse.(x .> y, 10, 20)"
 """
-function eval_bc(bc::Union{Float64,Int64,String}, coordinates::Union{Matrix{Float64},Matrix{Int64}}, time::Float64, dof::Int64)
+function eval_bc(field_values::Union{SubArray,Vector{Float64},Vector{Int64}}, bc::Union{Float64,Int64,String}, coordinates::Union{Matrix{Float64},Matrix{Int64}}, time::Float64, dof::Int64, initial::Bool)
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
     # the yaml input allows multiple types. But for further use this input has to be a string
@@ -108,6 +111,12 @@ function eval_bc(bc::Union{Float64,Int64,String}, coordinates::Union{Matrix{Floa
         global z = coordinates[:, 3]
     else
         global z = zeros(typeof(x[1]), length(x))
+    end
+
+    value = eval(bc_value)
+
+    if isnothing(value) || (initial && t != 0.0)
+        return field_values
     end
 
     return zeros(Float64, length(x)) .+ eval(bc_value)

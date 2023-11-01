@@ -13,29 +13,39 @@ using .Boundary_conditions
     time::Float64 = 2
     coor = zeros(3, 3)
     bc = Int64(10)
-    @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+    values = ones(Float64, 3)
+    @test (10 * unit) == Boundary_conditions.eval_bc(values, bc, coor, time, dof, false)
     bc = Float64(10)
-    @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+    @test (10 * unit) == Boundary_conditions.eval_bc(values, bc, coor, time, dof, false)
     bc = Float64(10)
-    @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+    @test (10 * unit) == Boundary_conditions.eval_bc(values, bc, coor, time, dof, false)
     bc = string(10)
-    @test (10 * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+    @test (10 * unit) == Boundary_conditions.eval_bc(values, bc, coor, time, dof, false)
     bc = "x"
     for i in 1:4
         coor[3, 1] = i * i - 2
-        @test (coor[:, 1]) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+        @test (coor[:, 1]) == Boundary_conditions.eval_bc(values, bc, coor, time, dof, false)
     end
     dof = 3
     bc = "t"
-    @test (time * unit) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+    @test (time * unit) == Boundary_conditions.eval_bc(values, bc, coor, time, dof, false)
     bc = "t*x"
-    @test (time .* coor[:, 1]) == Boundary_conditions.eval_bc(bc, coor, time, dof)
+    @test (time .* coor[:, 1]) == Boundary_conditions.eval_bc(values, bc, coor, time, dof, false)
     for t in 0:4
         bc = "if t>2 0 else 20 end"
         if t > 2
-            @test (0.0 * unit) == Boundary_conditions.eval_bc(bc, coor, Float64(t), dof)
+            @test (0.0 * unit) == Boundary_conditions.eval_bc(values, bc, coor, Float64(t), dof, false)
         else
-            @test (20.0 * unit) == Boundary_conditions.eval_bc(bc, coor, Float64(t), dof)
+            @test (20.0 * unit) == Boundary_conditions.eval_bc(values, bc, coor, Float64(t), dof, false)
+        end
+    end
+    for t in 0:2
+        bc = "100.0"
+        if t == 0
+            @test (100.0 * unit) == Boundary_conditions.eval_bc(values, bc, coor, Float64(t), dof, false)
+            @test (100.0 * unit) == Boundary_conditions.eval_bc(values, bc, coor, Float64(t), dof, true)
+        else
+            @test unit == Boundary_conditions.eval_bc(values, bc, coor, Float64(t), dof, true)
         end
     end
 end
