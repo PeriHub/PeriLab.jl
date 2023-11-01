@@ -49,26 +49,28 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   nneighbors = datamanager.get_field("Number of Neighbors")
   alpha = thermal_parameter["Alpha"]
   Tenv = thermal_parameter["Environment Temperature"]
-  equal_discretized = thermal_parameter["Equal Discretized"]
+  equal_discretized = thermal_parameter["Equal Discretization"]
   heat_flow = datamanager.get_field("Heat Flow", "NP1")
   temperature = datamanager.get_field("Temperature", "NP1")
-  specific_volume = datamanager.get_field("Specific Volume")
+  specific_volume = datamanager.get_field("Specific Volume", "NP1")
   bond_damage = datamanager.get_field("Bond Damage")
   coordinates = datamanager.get_field("Coordinates")
 
   dx = 1.0
   area = 1.0
 
-  if dof == 2
-    dx = sqrt(volume[iID])
-  elseif dof == 3
-    dx = volume[iID]^(1 / 3)
-  end
 
   for iID in nodes
-    compareNeighbor = 0
+    compare_neighbor = 0
     neighbor_volume = 0.0
     right, left, front, back, above, below = false, false, false, false, false, false, false, false
+
+    if dof == 2
+      dx = sqrt(volume[iID])
+    elseif dof == 3
+      dx = volume[iID]^(1 / 3)
+    end
+
     for jID in 1:nneighbors[iID]
       if bond_damage[iID][jID] == 0.0
         continue
@@ -109,12 +111,12 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     if equal_discretized
 
       if dof == 2 && compare_neighbor != 4
-        area = 4 - compareNeighbor
+        area = 4 - compare_neighbor
       elseif dof == 3 && compare_neighbor != 6
-        area = 6 - compareNeighbor
+        area = 6 - compare_neighbor
       end
 
-      specific_volume[iID] = compareNeighbor
+      specific_volume[iID] = compare_neighbor
 
     else
 
