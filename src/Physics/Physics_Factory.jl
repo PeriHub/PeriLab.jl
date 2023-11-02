@@ -31,23 +31,24 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     defCoorN[:] = copy(datamanager.get_field("Coordinates"))
     defCoorNP1[:] = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
-    if solver_options["Material Models"]
-        datamanager = Physics.init_material_model_fields(datamanager)
+    if solver_options["Additive Models"]
+        datamanager = Physics.init_additive_model_fields(datamanager)
+        heatCapacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
+        heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
     end
     if solver_options["Damage Models"]
         datamanager = Physics.init_damage_model_fields(datamanager)
         datamanager = Damage.init_interface_crit_values(datamanager, params)
+    end
+    if solver_options["Material Models"]
+        datamanager = Physics.init_material_model_fields(datamanager)
     end
     if solver_options["Thermal Models"]
         datamanager = Physics.init_thermal_model_fields(datamanager)
         heatCapacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
     end
-    if solver_options["Additive Models"]
-        datamanager = Physics.init_additive_model_fields(datamanager)
-        heatCapacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
-        heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
-    end
+
 
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
