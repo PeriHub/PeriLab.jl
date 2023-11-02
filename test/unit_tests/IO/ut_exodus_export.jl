@@ -208,6 +208,7 @@ end
 csvfilename = "./tmp/" * "test_2.csv"
 csv_file = Write_CSV_Results.create_result_file(csvfilename, computes)
 exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes["Fields"], "Exodus", testDatamanager)
+
 @testset "ut_write_global_results_in_exodus" begin
 
     global_vars = read_names(exo, GlobalVariable)
@@ -219,8 +220,15 @@ exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes["Fiel
     @test ftest[2] == 0
 
 end
+
 @testset "ut_merge_exodus_file" begin
-    Write_Exodus_Results.merge_exodus_file(exo.file_name)
+    merged = true
+    try
+        Write_Exodus_Results.merge_exodus_file(exo.file_name)
+    catch
+        merged = false
+    end
+    @test merged
 end
 
 exo = Write_Exodus_Results.write_global_results_in_exodus(csv_file, 2, computes["Fields"], "CSV", testDatamanager)
