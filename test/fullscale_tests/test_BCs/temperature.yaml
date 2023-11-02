@@ -21,17 +21,17 @@ PeriLab:
       Block Names: "block_1"
       Density: 2.7e-9
       Horizon: 2.1
-      Heat Capacity: 0.1
+      Specific Heat Capacity: 0.1
     block_2:
       Block Names: "block_2"
       Density: 2.7e-9
       Horizon: 2.1
-      Heat Capacity: 0.1
+      Specific Heat Capacity: 0.1
     block_3:
       Block Names: "block_3"
       Density: 2.7e-9
       Horizon: 2.1
-      Heat Capacity: 0.1
+      Specific Heat Capacity: 0.1
   Boundary Conditions:
     BC_1:
       Type: "Temperature"
