@@ -5,7 +5,7 @@
 PeriLab:
   Discretization:
     Type: "Text File"
-    Input Mesh File: "test_mesh_2d.txt"
+    Input Mesh File: "test_mesh_3d.txt"
   Physics:
     Additive Models:
       Test:
@@ -16,13 +16,13 @@ PeriLab:
       Block Names: "block_1"
       Additive Model: "Test"
       Density: 2000
-      Horizon:  1.1005
+      Horizon:  2.1005
       Specific Heat Capacity: 1e6
     block_2:
       Block Names: "block_2"
       Additive Model: "Test"
       Density: 2000
-      Horizon: 1.1005
+      Horizon: 2.1005
       Specific Heat Capacity: 1e6
   Solver:
     Additive Models: True
@@ -37,7 +37,7 @@ PeriLab:
       Fixed dt: 0.045
   Outputs:
     Output1:
-      Output Filename: "additive_2d"
+      Output Filename: "additive_3d"
       Output Type: Exodus
       Output Frequency: 1
       Output Variables:
