@@ -56,13 +56,13 @@ function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{I
     bondgeometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     nneighbors = datamanager.get_field("Number of Neighbors")
-
+    Cv = datamanager.get_field("Specific Heat Capacity")
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
 
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, dof+1])
-        t = density[iID] * Cv / (eigLam * denominator)
+        t = density[iID] * Cv[iID] / (eigLam * denominator)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
     end
     return sqrt(criticalTimeStep)
@@ -168,9 +168,8 @@ function compute_crititical_time_step(datamanager::Module, blockNodes::Dict{Int6
     for iblock in eachindex(blockNodes)
         if thermo
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
-            Cv = datamanager.get_property(iblock, "Thermal Model", "Specific Heat Capacity")
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
-            if (lambda != Nothing) && (Cv != Nothing)
+            if (lambda != Nothing)
                 t = compute_thermodynamic_critical_time_step(blockNodes[iblock], datamanager, lambda, Cv)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
@@ -348,7 +347,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
         flowNP1 = datamanager.get_field("Heat Flow", "NP1")
         temperatureN = datamanager.get_field("Temperature", "N")
         temperatureNP1 = datamanager.get_field("Temperature", "NP1")
-        heatCapacity = datamanager.get_field("Heat Capacity")
+        heatCapacity = datamanager.get_field("Specific Heat Capacity")
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
     active = datamanager.get_field("Active")
@@ -373,7 +372,8 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
             #if solver_options["Material Models"]
             #needed because of optional defGrad, Deformed bonds, etc.
-            defCoorNP1[find_active(active[1:nnodes]), :] = coor[find_active(active[1:nnodes]), :] + uNP1[find_active(active[1:nnodes]), :]
+            # all points to guarantee that the neighbors have coor as coordinates if they are not active
+            defCoorNP1[:, :] = coor[:, :] + uNP1[:, :]
             #end
             datamanager.synch_manager(synchronise_field, "upload_to_cores")
             # synch
