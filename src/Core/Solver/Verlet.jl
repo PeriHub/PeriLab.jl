@@ -47,7 +47,7 @@ This function depends on the following data fields from the `datamanager` module
 
 """
 
-function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Union{Float64,Int64}, Cv::Union{Float64,Int64})
+function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Union{Float64,Int64})
 
     criticalTimeStep::Float64 = 1.0e50
     dof = datamanager.get_dof()
@@ -163,14 +163,14 @@ This function may depend on the following functions:
 
 """
 
-function compute_crititical_time_step(datamanager::Module, blockNodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+function compute_crititical_time_step(datamanager::Module, blockNodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermal::Bool)
     criticalTimeStep::Float64 = 1.0e50
     for iblock in eachindex(blockNodes)
-        if thermo
+        if thermal
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
             if (lambda != Nothing)
-                t = compute_thermodynamic_critical_time_step(blockNodes[iblock], datamanager, lambda, Cv)
+                t = compute_thermodynamic_critical_time_step(blockNodes[iblock], datamanager, lambda)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
