@@ -7,7 +7,7 @@ function get_density(params::Dict, blockID::Int64)
 end
 
 function get_heatcapacity(params::Dict, blockID::Int64)
-    return get_values(params, blockID, "Heat Capacity")
+    return get_values(params, blockID, "Specific Heat Capacity")
 end
 
 function get_horizon(params::Dict, blockID::Int64)

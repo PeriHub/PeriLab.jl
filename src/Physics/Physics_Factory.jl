@@ -40,12 +40,12 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     end
     if solver_options["Thermal Models"]
         datamanager = Physics.init_thermal_model_fields(datamanager)
-        heatCapacity = datamanager.create_constant_node_field("Heat Capacity", Float64, 1)
+        heatCapacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
     end
     if solver_options["Additive Models"]
         datamanager = Physics.init_additive_model_fields(datamanager)
-        heatCapacity = datamanager.create_constant_node_field("Heat Capacity", Float64, 1)
+        heatCapacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
     end
 

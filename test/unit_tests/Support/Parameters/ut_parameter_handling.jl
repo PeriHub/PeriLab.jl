@@ -286,7 +286,7 @@ function get_density(params::Dict, blockID::Int64)
 end
 
 function get_heatcapacity(params::Dict, blockID::Int64)
-    return get_values(params, blockID, "Heat Capacity")
+    return get_values(params, blockID, "Specific Heat Capacity")
 end
 
 function get_horizon(params::Dict, blockID::Int64)
@@ -321,13 +321,13 @@ end
     @test isnothing(get_density(params, 2))
     @test isnothing(get_heatcapacity(params, 2))
     @test isnothing(get_values(params, 2, "Density"))
-    params = Dict("Blocks" => Dict("block_1" => Dict("Density" => 1, "Heat Capacity" => 3), "block_2" => Dict("Density" => 12.3, "Horizon" => 2)))
+    params = Dict("Blocks" => Dict("block_1" => Dict("Density" => 1, "Specific Heat Capacity" => 3), "block_2" => Dict("Density" => 12.3, "Horizon" => 2)))
     @test get_values(params, 1, "Density") == 1
     @test get_values(params, 2, "Density") == 12.3
     @test isnothing(get_values(params, 3, "Density"))
-    @test get_values(params, 1, "Heat Capacity") == 3
-    @test isnothing(get_values(params, 2, "Heat Capacity"))
-    @test isnothing(get_values(params, 3, "Heat Capacity"))
+    @test get_values(params, 1, "Specific Heat Capacity") == 3
+    @test isnothing(get_values(params, 2, "Specific Heat Capacity"))
+    @test isnothing(get_values(params, 3, "Specific Heat Capacity"))
     @test isnothing(get_values(params, 1, "Horizon"))
     @test get_values(params, 2, "Horizon") == 2
     @test isnothing(get_values(params, 3, "Horizon"))
@@ -339,9 +339,9 @@ end
     @test get_values(params, 2, "Horizon") == get_horizon(params, 2)
     @test get_values(params, 3, "Horizon") == get_horizon(params, 3)
 
-    @test get_values(params, 1, "Heat Capacity") == get_heatcapacity(params, 1)
-    @test get_values(params, 2, "Heat Capacity") == get_heatcapacity(params, 2)
-    @test get_values(params, 3, "Heat Capacity") == get_heatcapacity(params, 3)
+    @test get_values(params, 1, "Specific Heat Capacity") == get_heatcapacity(params, 1)
+    @test get_values(params, 2, "Specific Heat Capacity") == get_heatcapacity(params, 2)
+    @test get_values(params, 3, "Specific Heat Capacity") == get_heatcapacity(params, 3)
 end
 
 @testset "ut_solver" begin
