@@ -22,8 +22,6 @@ PeriLab:
         Heat expansion: 2.5e-2
         Specific Heat Capacity: 1
         Lambda: 2
-
-
   Blocks:
     block_1:
       Block Names: "block_1"
@@ -31,14 +29,14 @@ PeriLab:
       Thermal Model: "Thermal test"
       Density: 2.0e-9
       Horizon:  1.1005
-      Heat Capacity: 1
+      Specific Heat Capacity: 1
     block_2:
       Block Names: "block_2"
       Material Model: "Test"
       Thermal Model: "Thermal test"
       Density: 2.0e-9
       Horizon: 1.1005
-      Heat Capacity: 1
+      Specific Heat Capacity: 1
   Boundary Conditions:
     BC_1:
       Type: "Temperature"
