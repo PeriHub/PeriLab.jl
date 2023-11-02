@@ -14,7 +14,7 @@ export create_result_file
 export init_results_in_exodus
 export merge_exodus_file
 
-function create_result_file(filename::Union{String,AbstractString}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64)
+function create_result_file(filename::Union{AbstractString,String}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64)
 
     if isfile(filename)
         rm(filename)
@@ -39,12 +39,12 @@ function create_result_file(filename::Union{String,AbstractString}, num_nodes::I
     )
 end
 
-function paraview_specifics(dof)
+function paraview_specifics(dof::Int64)
     convention = Dict(1 => "x", 2 => "y", 3 => "z")
     return convention[dof]
 end
 
-function get_paraviewCoordinates(dof, refDof)
+function get_paraviewCoordinates(dof::Int64, refDof::Int64)
     if dof > refDof
         @warn "Reference dof are to small and set to used dof"
         refDof = dof
@@ -66,7 +66,7 @@ function get_block_nodes(block_Id::Union{SubArray,Vector{Int64}}, block::Int64)
     return reshape(conn, 1, length(conn))
 end
 
-function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
+function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
     info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
 
     write_info(exo, info)
@@ -125,12 +125,12 @@ function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict, coords
     return exo
 end
 
-function write_step_and_time(exo::Exodus.ExodusDatabase, step::Int64, time::Float64)
+function write_step_and_time(exo::ExodusDatabase, step::Int64, time::Float64)
     write_time(exo, step, Float64(time))
     return exo
 end
 
-function write_nodal_results_in_exodus(exo::Exodus.ExodusDatabase, step::Int64, output::Dict, datamanager::Module)
+function write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict, datamanager::Module)
     #write_values
     nnodes = datamanager.get_nnodes()
     for varname in keys(output)
@@ -139,26 +139,12 @@ function write_nodal_results_in_exodus(exo::Exodus.ExodusDatabase, step::Int64, 
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
         var = convert(Array{Float64}, field[1:nnodes, output[varname]["dof"]])
         # interface does not work with Int yet 28//08//2023
-        # works for Bool as well
         write_values(exo, NodalVariable, step, output[varname]["result_id"], varname, var)
     end
     return exo
 end
 
-function write_global_results_in_exodus(exo::Exodus.ExodusDatabase, step::Int64, output::Dict, output_type::String, datamanager::Module)
-
-    if output_type == "Exodus" && typeof(exo) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
-        exo, global_values = write_global_results_in_exodus(exo, step, output, datamanager)
-    end
-
-    if output_type == "CSV"
-        Write_CSV_Results.write_global_results_in_csv(exo, global_values)
-    end
-
-    return exo
-end
-
-function write_global_results_in_exodus(exo::Exodus.ExodusDatabase, step::Int64, output::Dict, datamanager::Module)
+function write_global_results_in_exodus(exo::Union{ExodusDatabase,IOStream}, step::Int64, output::Dict, output_type::String, datamanager::Module)
     #write_values
     global_values = []
     for varname in keys(output)
@@ -175,17 +161,19 @@ function write_global_results_in_exodus(exo::Exodus.ExodusDatabase, step::Int64,
             global_value = calculate_nodelist(datamanager, fieldname, calculation_type, node_set)
         end
 
-
-        write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, global_value)
-
+        if output_type == "Exodus" && typeof(exo) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
+            write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, global_value)
+        end
         push!(global_values, global_value)
     end
+    if output_type == "CSV"
+        Write_CSV_Results.write_global_results_in_csv(exo, global_values)
+    end
 
-
-    return exo, global_values
+    return exo
 end
 
-function merge_exodus_file(file_name)
+function merge_exodus_file(file_name::Union{AbstractString,String})
     epu(file_name)
 end
 end

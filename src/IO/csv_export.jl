@@ -23,7 +23,7 @@ function create_result_file(filename::String, outputs::Dict)
     return csv_file
 end
 
-function write_global_results_in_csv(csv_file, values)
+function write_global_results_in_csv(csv_file::IOStream, values::Union{Vector{Int64},Vector{Float64},Vector{Any}})
 
     # files = csv_files
     value_string = ""
