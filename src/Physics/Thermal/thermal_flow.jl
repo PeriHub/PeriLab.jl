@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal_Flow
+using LinearAlgebra
 export compute_thermal_model
 export thermal_model_name
 """
@@ -47,20 +48,22 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
   bond_heat_flow = datamanager.get_field("Bond Heat Flow")
   bond_geometry = datamanager.get_field("Bond Geometry")
-  horizon = datamanager.get_field("Horizon")
   volume = datamanager.get_field("Volume")
   temperature = datamanager.get_field("Temperature", "NP1")
   lambda = thermal_parameter["Lambda"]
 
   if thermal_parameter["Type"] == "Bond based"
+    horizon = datamanager.get_field("Horizon")
     if length(lambda) > 1
       lambda = lambda[1]
     end
-    compute_heat_flow_state_bondbased(nodes, dof, nlist, lambda, bond_damage, bond_geometry, horizon, temperature, volume, bond_heat_flow)
+    bond_heat_flow = compute_heat_flow_state_bondbased(nodes, dof, nlist, lambda, bond_damage, bond_geometry, horizon, temperature, bond_heat_flow)
     return datamanager
 
   elseif thermal_parameter["Type"] == "Correspondence"
-    lambda_matrix = zeros(dof, dof)
+
+    lambda_matrix = zeros(Float64, dof, dof)
+    Kinv = datamanager.get_field("Inverse Shape Tensor")
     if length(lambda) == 1
       for i in 1:dof
         lambda_matrix[i, i] = lambda
@@ -71,7 +74,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
       end
     end
 
-    return compute_heat_flow_state_correspondence()
+    bond_heat_flow = compute_heat_flow_state_correspondence(nodes, dof, nlist, lambda_matrix, bond_damage, bond_geometry, Kinv, temperature, volume, bond_heat_flow)
   else
     @error "No model valid type has beed defined; ''Bond based'' or ''Correspondence''"
   end
@@ -85,71 +88,35 @@ end
 [BrighentiR2021](@cite)
 """
 
-function compute_heat_flow_state_correspondence()
+function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Matrix{Float64}, bond_damage::SubArray, bond_geometry::SubArray, Kinv::SubArray, temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
 
-
+  nablaT = zeros(Float64, dof)
+  H = zeros(Float64, dof)
   for iID in nodes
-    H = zeros(Float64, dof)
-
-    tempState = (temperature[nlist[iID]] .- temperature[iID]) * volume[nlist[iID]] * bond_damage[iID]
-
-
-    H = sum(tempState .* undeformed_bond[iID][:, 1:dof])
+    H .= 0
+    for (jID, neighborID) in enumerate(nlist[iID])
+      tempState = (temperature[neighborID] - temperature[iID]) * volume[neighborID] * bond_damage[iID][jID]
+      H += tempState .* bond_geometry[iID][jID, 1:dof]
+    end
     nablaT = Kinv[iID, :, :] * H
-    """    for(iNID=0 ; iNID<numNeighbors ; ++iNID, bondDamage++){
-      for (int i=0 ; i<3 ; ++i) 
-        X[i] = modelCoord[3*neighborID+i] - Xp[i];
-      tempState = (temperature[neighborID] - temperature[iID]) * volume[neighborID] * (1 - *bondDamage);
-      // sum_j (Tj-Ti)*rij*Vj -> EQ. (8)
-      for (int i=0 ; i<3 ; ++i) H[i] += tempState * X[i] ;
-      // std::cout<<*bondDamage<<std::endl;
+    """
+if (MATRICES::vectorNorm(angles, 3)!=0){  
+  MATRICES::tensorRotation(angles,lambda,true,rotatedLambda);
+  for (int i=0 ; i<3 ; ++i) {
+    q[i] = 0.0;
+    for (int j=0 ; j<3 ; ++j) {
+      q[i] += rotatedLambda[3*i + j] * nablaT[j];
     }
-    // Ki * H -> EQ. (8)
-    for (int i=0 ; i<3 ; ++i) {
-      nablaT[i] = 0.0;
-      for (int j=0 ; j<3 ; ++j) {
-        nablaT[i] += KInv[3*i + j] * H[j];
-        //std::cout<< nablaT[i]<<std::endl;
-      }
-    }
-    if (MATRICES::vectorNorm(angles, 3)!=0){  
-      MATRICES::tensorRotation(angles,lambda,true,rotatedLambda);
-      for (int i=0 ; i<3 ; ++i) {
-        q[i] = 0.0;
-        for (int j=0 ; j<3 ; ++j) {
-          q[i] += rotatedLambda[3*i + j] * nablaT[j];
-        }
-      }
-    }
-    else{
-      for (int i=0 ; i<3 ; ++i) {
-        q[i] = 0.0;
-        for (int j=0 ; j<3 ; ++j) {
-          q[i] += lambda[3*i + j] * nablaT[j];
-        }
-      }
-    }
-    for(iNID=0 ; iNID<numNeighbors ; ++iNID){
-      neighborID = neighborhoodList[secondNeighborhoodListIndex++];
-      for (int i=0 ; i<3 ; ++i)X[i] = modelCoord[3*neighborID+i] - Xp[i];
-      for (int i=0 ; i<3 ; ++i){
-        temp[i] = 0.0;
-        for (int j=0 ; j<3 ; ++j) {
-          temp[i] += KInv[3*i + j] * X[j]; // K * rij -> Eq. (7)
-        }
-      }
-      // bond damage muss hier noch rein
-       // qj * temp -> Eq (6) both must be negative, because rij is equal
-      //for (int i=0 ; i<3 ; ++i)  heatFlowState[iID] += temp[i] * q[i] * volume[neighborID];
-      //for (int i=0 ; i<3 ; ++i)  heatFlowState[neighborID] += temp[i] * q[i] * volume[iID];
-      for (int i=0 ; i<3 ; ++i)  heatFlowState[iID] -= temp[i] * q[i] * volume[neighborID];
-      for (int i=0 ; i<3 ; ++i)  heatFlowState[neighborID] += temp[i] * q[i] * volume[iID];
-    }
-    
   }
-  
 }"""
+    q = lambda * nablaT
+    for (jID, neighborID) in enumerate(nlist[iID])
+      temp = Kinv[iID, :, :] * bond_geometry[iID][jID, 1:dof]
+      bond_heat_flow[iID][jID] = dot(temp, q)
+    end
   end
+  return bond_heat_flow
+
 end
 """
     compute_heat_flow_state_bondbased(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray,
@@ -177,7 +144,7 @@ Calculate heat flow based on a bond-based model for thermal analysis.
 This function calculates the heat flow between neighboring nodes based on a bond-based model for thermal analysis [OterkusS2014b](@cite). It considers various parameters, including thermal conductivity, damage state of bonds, geometry of bonds, horizons, temperature, and volume. The calculated bond heat flow values are stored in the `bond_heat_flow` array.
 
 """
-function compute_heat_flow_state_bondbased(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Float64,Int64}, bond_damage::SubArray, bond_geometry::SubArray, horizon::SubArray, temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
+function compute_heat_flow_state_bondbased(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Float64,Int64}, bond_damage::SubArray, bond_geometry::SubArray, horizon::SubArray, temperature::SubArray, bond_heat_flow::SubArray)
   kernel::Float64 = 0.0
   for iID in nodes
     #nlist
@@ -192,8 +159,9 @@ function compute_heat_flow_state_bondbased(nodes::Union{SubArray,Vector{Int64}},
         continue
       end
       tempState = bond_damage[iID][jID] * (temperature[neighborID] - temperature[iID])
-      bond_heat_flow[iID][jID] = lambda * kernel * tempState * volume[neighborID] / bond_geometry[iID][jID, end]
+      bond_heat_flow[iID][jID] = lambda * kernel * tempState / bond_geometry[iID][jID, end]
     end
   end
+  return bond_heat_flow
 end
 end

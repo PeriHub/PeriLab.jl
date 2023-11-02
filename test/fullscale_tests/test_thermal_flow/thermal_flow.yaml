@@ -60,7 +60,7 @@ PeriLab:
       Numerical Damping: 0e-00
   Outputs:
     Output1:
-      Output Filename: "thermal_flow_BC"
+      Output Filename: "thermal_flow"
       Output Type: Exodus
       Number of Output Steps: 10
       Output Variables:

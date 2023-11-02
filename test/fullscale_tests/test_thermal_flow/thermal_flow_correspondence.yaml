@@ -5,63 +5,57 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12
+      Node Set 1: 1 2 3 4
+      Node Set 2: 9 10 11 12
     Type: "Text File"
     Input Mesh File: "test_mesh.txt"
   Physics:
-    Material Models:
-      Test:
-        #Material Model: "PD Solid Elastic"
-        Material Model: "Correspondence Elastic"
-        Symmetry: "isotropic plane stress"
-        Young's Modulus: 7.0e+5
-        Poisson's Ratio: 0.33
-        Zero Energy Mode Control: "Global"
+    Pre Calculation:
+        Deformed Bond Geometry: true
+        Shape Tensor: true
     Thermal Models:
       Thermal test:
-        Thermal Model: "Thermal Expansion"
-        Heat expansion: 2.5e-2
-        Specific Heat Capacity: 1
-        Lambda: 2
-
-
+        Thermal Model: "Thermal Flow"
+        Type: "Correspondence"
+        Heat expansion: 0.22
+        Lambda: 2000.0
   Blocks:
     block_1:
       Block Names: "block_1"
-      Material Model: "Test"
       Thermal Model: "Thermal test"
-      Density: 2.0e-9
-      Horizon:  1.1005
-      Heat Capacity: 1
+      Density: 1.24e-03
+      Horizon: 1.1005e-3
+      Specific Heat Capacity: 1800000000.0
     block_2:
       Block Names: "block_2"
-      Material Model: "Test"
       Thermal Model: "Thermal test"
-      Density: 2.0e-9
-      Horizon: 1.1005
-      Heat Capacity: 1
+      Density: 1.24e-03
+      Horizon: 1.1005e-3
+      Specific Heat Capacity: 1800000000.0
   Boundary Conditions:
     BC_1:
       Type: "Temperature"
       Node Set: "Node Set 1"
-      Value: "1.0*t"  
+      Value: "100"
+    BC_2:
+      Type: "Temperature"
+      Node Set: "Node Set 2"
+      Value: "0.0"
   Solver:
-    Material Models: True
+    Material Models: False
     Thermal Models: True
     Verbose: False
     Initial Time: 0.0
-    Final Time: 1e-7
+    Final Time: 5e-4
     Verlet:
       Safety Factor: 1.00
+      Fixed dt: 1e-5
       Numerical Damping: 0e-00
   Outputs:
     Output1:
-      Output Filename: "thermal_expansion_correspondence"
+      Output Filename: "thermal_flow_correspondence"
       Output Type: Exodus
       Number of Output Steps: 10
       Output Variables:
         Temperature: True
-        Displacements: True
-        Volume: True
-
-
+        Heat Flow: True
