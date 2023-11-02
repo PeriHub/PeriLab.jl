@@ -14,7 +14,7 @@ export create_result_file
 export init_results_in_exodus
 export merge_exodus_file
 
-function create_result_file(filename, num_nodes, num_dim, num_elem_blks, num_node_sets)
+function create_result_file(filename::Union{String,AbstractString}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64)
 
     if isfile(filename)
         rm(filename)
@@ -61,12 +61,12 @@ function get_paraviewCoordinates(dof, refDof)
 
 end
 
-function get_block_nodes(block_Id, block)
+function get_block_nodes(block_Id::Union{SubArray,Vector{Int64}}, block::Int64)
     conn = findall(x -> x == block, block_Id)
     return reshape(conn, 1, length(conn))
 end
 
-function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
+function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
     info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
 
     write_info(exo, info)
@@ -125,12 +125,12 @@ function init_results_in_exodus(exo::Exodus.ExodusDatabase, output::Dict{}, coor
     return exo
 end
 
-function write_step_and_time(exo, step, time)
+function write_step_and_time(exo::Exodus.ExodusDatabase, step::Int64, time::Float64)
     write_time(exo, step, Float64(time))
     return exo
 end
 
-function write_nodal_results_in_exodus(exo, step, output, datamanager)
+function write_nodal_results_in_exodus(exo::Exodus.ExodusDatabase, step::Int64, output::Dict, datamanager::Module)
     #write_values
     nnodes = datamanager.get_nnodes()
     for varname in keys(output)
@@ -139,12 +139,26 @@ function write_nodal_results_in_exodus(exo, step, output, datamanager)
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
         var = convert(Array{Float64}, field[1:nnodes, output[varname]["dof"]])
         # interface does not work with Int yet 28//08//2023
+        # works for Bool as well
         write_values(exo, NodalVariable, step, output[varname]["result_id"], varname, var)
     end
     return exo
 end
 
-function write_global_results_in_exodus(exo, step, output, output_type, datamanager)
+function write_global_results_in_exodus(exo::Exodus.ExodusDatabase, step::Int64, output::Dict, output_type::String, datamanager::Module)
+
+    if output_type == "Exodus" && typeof(exo) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
+        exo, global_values = write_global_results_in_exodus(exo, step, output, datamanager)
+    end
+
+    if output_type == "CSV"
+        Write_CSV_Results.write_global_results_in_csv(exo, global_values)
+    end
+
+    return exo
+end
+
+function write_global_results_in_exodus(exo::Exodus.ExodusDatabase, step::Int64, output::Dict, datamanager::Module)
     #write_values
     global_values = []
     for varname in keys(output)
@@ -161,16 +175,14 @@ function write_global_results_in_exodus(exo, step, output, output_type, datamana
             global_value = calculate_nodelist(datamanager, fieldname, calculation_type, node_set)
         end
 
-        if output_type == "Exodus" && typeof(exo) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
-            write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, global_value)
-        end
+
+        write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, global_value)
+
         push!(global_values, global_value)
     end
-    if output_type == "CSV"
-        Write_CSV_Results.write_global_results_in_csv(exo, global_values)
-    end
 
-    return exo
+
+    return exo, global_values
 end
 
 function merge_exodus_file(file_name)
