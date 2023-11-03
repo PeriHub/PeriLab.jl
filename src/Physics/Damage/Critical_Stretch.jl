@@ -45,10 +45,12 @@ end
    """
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
 
+    nlist = datamanager.get_nlist()
     bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
     bondGeom = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
+    blockIds = datamanager.get_field("Block_Id")
     cricital_stretch = damage_parameter["Critical Value"]
     interBlockDamage::Bool = false
     if haskey(damage_parameter, "Interblock Damage")
