@@ -2,23 +2,17 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function search_for_duplicates(filenames)
+function check_for_duplicates(filenames)
     returnfilenames = []
     checked_filenames = []
     for filename in filenames
         if (filename in checked_filenames) == false
             num_same_filenames = length(findall(x -> x == filename, filenames))
             if num_same_filenames > 1
-                for i = 1:num_same_filenames
-                    push!(returnfilenames, filename * "_" * string(i))
-                end
-                push!(checked_filenames, filename)
-            else
-                push!(returnfilenames, filename)
+                @error "Filename $filename is used $num_same_filenames times"
             end
         end
     end
-    return returnfilenames
 end
 function get_output_filenames(params::Dict, filedirectory::String)
     if check_element(params::Dict, "Outputs")
@@ -36,7 +30,7 @@ function get_output_filenames(params::Dict, filedirectory::String)
                 push!(filenames, joinpath(filedirectory, filename))
             end
         end
-        filenames = search_for_duplicates(filenames)
+        check_for_duplicates(filenames)
 
         return filenames
     end
@@ -44,11 +38,12 @@ function get_output_filenames(params::Dict, filedirectory::String)
 end
 
 function get_output_type(output::Dict)
-    output_type = "Exodus"
     if check_element(output, "Output Type")
         return output["Output Type"]
+    else
+        @warn "No output type defined for " * output * ", defaulting to Exodus"
+        return "Exodus"
     end
-    return output_type
 end
 
 function get_output_fieldnames(outputs::Dict, variables::Vector{String}, computes::Vector{String}, output_type::String)
@@ -64,14 +59,14 @@ function get_output_fieldnames(outputs::Dict, variables::Vector{String}, compute
                 else
                     @warn '"' * output * '"' * " is not defined as global variable"
                 end
-                continue
-            end
-            if output in variables
-                push!(return_outputs, output)
-            elseif output * "NP1" in variables
-                push!(return_outputs, output * "NP1")
             else
-                @warn '"' * output * '"' * " is not defined as variable. Please check if global variables are mixed with nodal variables."
+                if output in variables || output in computes
+                    push!(return_outputs, output)
+                elseif output * "NP1" in variables
+                    push!(return_outputs, output * "NP1")
+                else
+                    @warn '"' * output * '"' * " is not defined as variable"
+                end
             end
         end
     end
