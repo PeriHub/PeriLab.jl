@@ -256,7 +256,7 @@ function read_mesh(filename::String)
     end
     @info "Read Mesh File $filename"
     header_line, header = get_header(filename)
-    return CSV.read(filename, DataFrame; delim=" ", header=header, skipto=header_line + 1)
+    return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
 end
 
 function set_dof(mesh::DataFrame)
@@ -270,6 +270,10 @@ end
 function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
 
     mesh = read_mesh(joinpath(path, get_mesh_name(params)))
+    duplicates = findall(nonunique(mesh))
+    if length(duplicates) > 0
+        @error "Mesh contains duplicate nodes! Nodes: $duplicates"
+    end
 
     dof::Int64 = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params::Dict, dof)
