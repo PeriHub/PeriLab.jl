@@ -35,7 +35,7 @@ PeriLab:
     BC_1:
       Type: "Temperature"
       Node Set: "Node Set 1"
-      Value: "100"
+      Value: "0"
   Solver:
     Material Models: False
     Thermal Models: True

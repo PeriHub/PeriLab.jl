@@ -38,7 +38,12 @@ using DataFrames
 
 end
 
-
+@testset "ut_local_nodes_from_dict" begin
+    glob_to_loc = Dict{Int64,Int64}(1 => 2, 2 => 4, 3 => 3, 4 => 1)
+    global_nodes = Vector{Int64}(1:4)
+    test = Read_Mesh.local_nodes_from_dict(glob_to_loc, global_nodes)
+    @test test == [2, 4, 3, 1]
+end
 @testset "ut_check_mesh_elements" begin
     data = Dict(
         "x" => [1.0, 1.1, 3],

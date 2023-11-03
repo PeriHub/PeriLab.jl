@@ -6,11 +6,11 @@ module Ordinary
 
 export compute_dilatation
 export compute_weighted_volume
-
+"""
+taken from Peridigm -> but adding the bond_damage; this is missing in Peridigm, but should be there
+"""
 function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
-    """
-    taken from Peridigm -> but adding the bond_damage; this is missing in Peridigm, but should be there
-    """
+
 
     weighted_volume = zeros(Float64, maximum(nodes))
 
@@ -27,6 +27,7 @@ function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nl
     theta = zeros(Float64, maximum(nodes))
     for iID in nodes
         if weighted_volume[iID] == 0
+            @warn "Weighted volume is zero for local point ID: $iID"
             continue
         end
         theta[iID] = 3.0 * sum(omega[iID][jID] *

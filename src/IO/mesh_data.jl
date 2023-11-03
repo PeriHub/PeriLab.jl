@@ -93,8 +93,8 @@ function get_local_overlap_map(overlap_map, distribution, ranks)
     return sort(overlap_map)
 end
 
-function local_nodes_from_dict(glob_to_loc, global_nodes)
-    return [glob_to_loc[global_node] for global_node in global_nodes if haskey(glob_to_loc, global_node)]
+function local_nodes_from_dict(glob_to_loc::Dict{Int,Int}, global_nodes::Vector{Int64})
+    return Int64[glob_to_loc[global_node] for global_node in global_nodes if haskey(glob_to_loc, global_node)]
 end
 
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)

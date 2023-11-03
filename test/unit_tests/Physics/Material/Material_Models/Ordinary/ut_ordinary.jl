@@ -75,4 +75,8 @@ nlist[2][1] = 2
     theta = Ordinary.compute_dilatation(view(vec, 1:nnodes), nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     @test theta[1] == 3.0
     @test theta[2] == 3.0
+    weighted_volume[1] = 0
+    theta = Ordinary.compute_dilatation(view(vec, 1:nnodes), nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    @test theta[1] == 0.0
+    @test theta[2] == 3.0
 end
