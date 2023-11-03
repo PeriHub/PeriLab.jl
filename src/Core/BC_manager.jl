@@ -11,10 +11,13 @@ function check_valid_bcs(bcs, datamanager)
     working_bcs = Dict()
     for bc in keys(bcs)
         if haskey(bcs[bc], "Coordinate")
-            if bcs[bc]["Coordinate"] == "z" && datamanager.get_dof() < 3
+            dof = datamanager.get_dof()
+            if bcs[bc]["Coordinate"] == "z" && dof < 3
+                @warn "Boundary condition $bc is not possible with $dof DOF"
                 break
             end
         end
+        valid = false
         for dataentry in datamanager.get_all_field_keys()
             initial = occursin("Initial", bcs[bc]["Type"])
             bc_type = replace(bcs[bc]["Type"], "Initial " => "")
@@ -22,8 +25,12 @@ function check_valid_bcs(bcs, datamanager)
                 working_bcs[bc] = bcs[bc]
                 bcs[bc]["Type"] = dataentry
                 bcs[bc]["Initial"] = initial
+                valid = true
                 break
             end
+        end
+        if !valid
+            @warn "Boundary condition $bc is not valid"
         end
     end
     return working_bcs
@@ -119,7 +126,7 @@ function eval_bc(field_values::Union{SubArray,Vector{Float64},Vector{Int64}}, bc
         return field_values
     end
 
-    return zeros(Float64, length(x)) .+ eval(bc_value)
+    return zeros(Float64, length(x)) .+ value
 end
 
 end
