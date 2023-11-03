@@ -16,26 +16,26 @@ end
 function check_key_elements(params::Dict)
     if !check_element(params, "Physics")
         @error "No physics defined"
-        return
+        return nothing
     end
     if length(params["Physics"]) == 0
         @error "No physics defined"
-        return
+        return nothing
     end
 
     if !check_element(params, "Blocks")
         @error "No blocks defined"
-        return
+        return nothing
     end
 
     if !check_element(params, "Discretization")
         @error "No discretization defined"
-        return
+        return nothing
     end
 
     if !check_element(params, "Solver")
         @error "No solver defined"
-        return
+        return nothing
     end
     return params
 end

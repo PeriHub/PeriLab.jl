@@ -45,6 +45,7 @@ function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, 
             bondgeom[iID][jID, dof+1] = norm(bondgeom[iID][jID, 1:dof])
             if bondgeom[iID][jID, dof+1] == 0
                 @error "Identical point coordinates with no distance $iID, $jID"
+                return nothing
             end
         end
     end
@@ -104,6 +105,7 @@ function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, v
             invShapeTensor[iID, :, :] = inv(shapeTensor[iID, :, :])
         catch ex
             @error "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
+            return nothing, nothing
         end
     end
 

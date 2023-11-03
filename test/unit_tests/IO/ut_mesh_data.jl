@@ -33,11 +33,17 @@ using DataFrames
     @test distribution[4] == Int64[4]
     @test point_to_core == Int64[1, 2, 3, 4]
     distribution, point_to_core = Read_Mesh.create_base_chunk(4, 5)
-    point_to_core == Nothing
-    point_to_core == Nothing
+    @test isnothing(distribution)
+    @test isnothing(point_to_core)
+
 end
 
-
+@testset "ut_local_nodes_from_dict" begin
+    glob_to_loc = Dict{Int64,Int64}(1 => 2, 2 => 4, 3 => 3, 4 => 1)
+    global_nodes = Vector{Int64}(1:4)
+    test = Read_Mesh.local_nodes_from_dict(glob_to_loc, global_nodes)
+    @test test == [2, 4, 3, 1]
+end
 @testset "ut_check_mesh_elements" begin
     data = Dict(
         "x" => [1.0, 1.1, 3],

@@ -138,7 +138,9 @@ MPI.Init()
         @testset "test_additive_simple" begin
             @includetests["fullscale_tests/test_additive/test_additive"]
         end
-
+        @testset "test_heat_transfer" begin
+            @includetests["fullscale_tests/test_heat_transfer/test_heat_transfer"]
+        end
         @testset "test_BCs" begin
             @includetests["fullscale_tests/test_BCs/test_BCs"]
         end

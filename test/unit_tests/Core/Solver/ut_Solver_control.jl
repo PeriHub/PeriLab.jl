@@ -80,8 +80,9 @@ end
     node_list = zeros(Int64, nnodes)
     node_list[:] = 1:nnodes
     bondGeom = Geometry.bond_geometry(node_list, dof, nlist, coor, bondGeom)
-
+    @test !("Active" in testDatamanager.get_all_field_keys())
     blockNodes, bcs, datamanager, solver_options = Solver.init(params, testDatamanager)
+
 
     @test solver_options["Material Models"]
     @test solver_options["Damage Models"]
@@ -100,5 +101,12 @@ end
     @test "DamageNP1" in testDatamanager.get_all_field_keys()
     @test ("ActivatedNP1" in testDatamanager.get_all_field_keys()) == false
     @test ("Activated" in testDatamanager.get_all_field_keys()) == false
+    @test "Active" in testDatamanager.get_all_field_keys()
+    active = testDatamanager.get_field("Active")
+    @test active[1:5] == [true, true, true, true, true]
+    active[1:2] .= false
+    active[5] = false
+    blockNodes, bcs, datamanager, solver_options = Solver.init(params, testDatamanager)
+    @test active[1:5] == [false, false, true, true, false]
 
 end
