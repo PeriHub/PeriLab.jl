@@ -44,26 +44,16 @@ end
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
   dof = datamanager.get_dof()
   volume = datamanager.get_field("Volume")
-
-  nlist = datamanager.get_nlist()
-  nneighbors = datamanager.get_field("Number of Neighbors")
   alpha = thermal_parameter["Alpha"]
-  Tenv = thermal_parameter["Environment Temperature"]
-  equal_discretized = thermal_parameter["Equal Discretization"]
+  Tenv = thermal_parameter["Environmental Temperature"]
   heat_flow = datamanager.get_field("Heat Flow", "NP1")
   temperature = datamanager.get_field("Temperature", "NP1")
-  specific_volume = datamanager.get_field("Specific Volume", "NP1")
-  bond_damage = datamanager.get_field("Bond Damage")
-  coordinates = datamanager.get_field("Coordinates")
-
+  surface_nodes = datamanager.get_field("Surface_Nodes")
   dx = 1.0
   area = 1.0
 
 
   for iID in nodes
-    compare_neighbor = 0
-    neighbor_volume = 0.0
-    right, left, front, back, above, below = false, false, false, false, false, false, false, false
 
     if dof == 2
       dx = sqrt(volume[iID])
@@ -71,67 +61,9 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
       dx = volume[iID]^(1 / 3)
     end
 
-    for jID in 1:nneighbors[iID]
-      if bond_damage[iID][jID] == 0.0
-        continue
-      end
-
-      if equal_discretized
-        if !right && coordinates[iID, 1] > coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
-          right = true
-          compare_neighbor += 1
-        end
-        if !left && coordinates[iID, 1] < coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
-          left = true
-          compare_neighbor += 1
-        end
-        if !front && coordinates[iID, 2] > coordinates[nlist[iID][jID], 2] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
-          front = true
-          compare_neighbor += 1
-        end
-        if !back && coordinates[iID, 2] < coordinates[nlist[iID][jID], 2] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
-          back = true
-          compare_neighbor += 1
-        end
-        if !above && coordinates[iID, 3] > coordinates[nlist[iID][jID], 3] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2]
-          above = true
-          compare_neighbor += 1
-        end
-        if !below && coordinates[iID, 3] < coordinates[nlist[iID][jID], 3] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2]
-          below = true
-          compare_neighbor += 1
-        end
-
-      else
-        neighbor_volume += volume[nlist[iID][jID]]
-      end
-
+    if surface_nodes[iID]
+      heat_flow[iID] += (alpha * (temperature[iID] - Tenv)) / dx * area
     end
-
-    if equal_discretized
-
-      if dof == 2 && compare_neighbor != 4
-        area = 4 - compare_neighbor
-      elseif dof == 3 && compare_neighbor != 6
-        area = 6 - compare_neighbor
-      end
-
-      specific_volume[iID] = compare_neighbor
-
-    else
-
-      specific_volume[iID] = neighbor_volume / dx
-
-      if dof == 2
-        area = specific_volume[iID] / (1 / 4)
-      elseif dof == 3
-        area = specific_volume[iID] / (1 / 6)
-      end
-
-    end
-
-    heat_flow[iID] += (alpha * (temperature[iID] - Tenv)) / dx * area
-
   end
 
   return datamanager
@@ -139,7 +71,69 @@ end
 
 
 
-function get_surface_nodes()
+function get_surface_nodes(iID::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
+  compare_neighbor = 0
+  neighbor_volume = 0.0
+  right, left, front, back, above, below = false, false, false, false, false, false, false, false
 
+  for jID in 1:nneighbors[iID]
+    if bond_damage[iID][jID] == 0.0
+      continue
+    end
+
+    if equal_discretized
+      if !right && coordinates[iID, 1] > coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
+        right = true
+        compare_neighbor += 1
+      end
+      if !left && coordinates[iID, 1] < coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
+        left = true
+        compare_neighbor += 1
+      end
+      if !front && coordinates[iID, 2] > coordinates[nlist[iID][jID], 2] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
+        front = true
+        compare_neighbor += 1
+      end
+      if !back && coordinates[iID, 2] < coordinates[nlist[iID][jID], 2] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
+        back = true
+        compare_neighbor += 1
+      end
+      if !above && coordinates[iID, 3] > coordinates[nlist[iID][jID], 3] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2]
+        above = true
+        compare_neighbor += 1
+      end
+      if !below && coordinates[iID, 3] < coordinates[nlist[iID][jID], 3] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2]
+        below = true
+        compare_neighbor += 1
+      end
+
+    else
+      neighbor_volume += volume[nlist[iID][jID]]
+    end
+
+  end
+
+  if equal_discretized
+
+    if dof == 2 && compare_neighbor != 4
+      area = 4 - compare_neighbor
+    elseif dof == 3 && compare_neighbor != 6
+      area = 6 - compare_neighbor
+    end
+
+    specific_volume = compare_neighbor
+
+  else
+
+    specific_volume = neighbor_volume / dx
+
+    if dof == 2
+      area = specific_volume / (1 / 4)
+    elseif dof == 3
+      area = specific_volume / (1 / 6)
+    end
+
+  end
+  return area
 end
 end

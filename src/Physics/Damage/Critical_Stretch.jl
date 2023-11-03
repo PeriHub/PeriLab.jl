@@ -72,6 +72,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     return datamanager
 end
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+    #tbd thermal pre calculation
     return datamanager
 end
 end

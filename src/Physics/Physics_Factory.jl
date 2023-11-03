@@ -65,12 +65,6 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
 
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
 
-    if options["Thermal Models"]
-        if datamanager.check_property(block, "Thermal Model")
-            @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
-        end
-    end
-
     if options["Damage Models"]
         #tbd damage specific pre_calculation-> in damage template
         if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
@@ -85,12 +79,17 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
         end
     end
 
+    if options["Thermal Models"]
+        if datamanager.check_property(block, "Thermal Model")
+            @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
+        end
+    end
+
     if options["Material Models"]
         if datamanager.check_property(block, "Material Model")
             update_list = datamanager.get_field("Update List")
             update_nodes = view(nodes, find_active(update_list[nodes]))
             @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
-            @timeit to "compute_forces" datamanager = Material.distribute_force_densities(datamanager, nodes)
         end
     end
     return datamanager
@@ -123,6 +122,7 @@ function init_material_model_fields(datamanager::Module)
     datamanager.set_synch("Displacements", false, true)
     datamanager.set_synch("Acceleration", false, true)
     datamanager.set_synch("Deformed Coordinates", false, true)
+
     return datamanager
 end
 
@@ -136,6 +136,8 @@ function init_thermal_model_fields(datamanager::Module)
     datamanager.create_node_field("Heat Flow", Float64, 1)
     datamanager.create_node_field("Specific Volume", Float64, 1)
     datamanager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
+    # if it is already initialized via mesh file no new field is created here
+    datamanager.create_constant_node_field("Surface_nodes", Bool, 1)
     return datamanager
 end
 

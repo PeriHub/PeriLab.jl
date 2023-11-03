@@ -21,10 +21,8 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
         if isnothing(datamanager)
             @error "No thermal model of name " * model_name * " exists."
         end
+        datamanager = distribute_heat_flows(datamanager, nodes)
     end
-    datamanager = distribute_heat_flows(datamanager, nodes)
-
-
     return datamanager
 end
 """

@@ -104,6 +104,7 @@ end
 
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
+  #tbd thermal pre calculation
   datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
   datamanager = Material.distribute_force_densities(datamanager, nodes)
 

@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 9 10 11 12
+    Type: "Text File"
+    Input Mesh File: "test_mesh.txt"
+  Physics:
+    Thermal Models:
+      Thermal test:
+        Thermal Model: "Thermal Flow+Heat Transfer"
+        Type: "Bond based"
+        Heat expansion: 0.22
+        Specific Heat Capacity: 1
+        Lambda: 2000.0
+        Alpha: 2
+        Environmental Temperature: 100
+  Blocks:
+    block_1:
+      Block Names: "block_1"
+      Thermal Model: "Thermal test"
+      Density: 1.24e03
+      Horizon: 1.1005e-3
+      Specific Heat Capacity: 18000.0
+    block_2:
+      Block Names: "block_2"
+      Thermal Model: "Thermal test"
+      Density: 1.24e03
+      Horizon: 1.1005e-3
+      Specific Heat Capacity: 18000.0
+  Boundary Conditions:
+    BC_1:
+      Type: "Temperature"
+      Node Set: "Node Set 1"
+      Value: "100"
+  Solver:
+    Material Models: False
+    Thermal Models: True
+    Verbose: False
+    Initial Time: 0.0
+    Final Time: 5e-4
+    Verlet:
+      Safety Factor: 1.00
+      Fixed dt: 1e-5
+      Numerical Damping: 0e-00
+  Outputs:
+    Output1:
+      Output Filename: "heat_transfer"
+      Output Type: Exodus
+      Number of Output Steps: 10
+      Output Variables:
+        Temperature: True
+        Heat Flow: True
