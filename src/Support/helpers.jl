@@ -17,7 +17,7 @@ function get_header(filename::Union{String,AbstractString})
         header_line += 1
         if contains(line, "header:")
             close(file)
-            return header_line, convert(Vector{String}, split(line[9:end], ' '))
+            return header_line, convert(Vector{String}, split(line)[2:end])
         end
     end
     @error "No header exists in $filename. Please insert 'header: global_id' above the first node"
