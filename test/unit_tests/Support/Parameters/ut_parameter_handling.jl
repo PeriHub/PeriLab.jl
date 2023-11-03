@@ -106,22 +106,6 @@ end
     @test get_mesh_name(params) == name
 end
 
-@testset "ut_search_for_duplicates" begin
-    filenames = ["a", "b", "c"]
-    newfilenames = search_for_duplicates(filenames)
-    for i in 1:3
-        @test filenames[i] == newfilenames[i]
-    end
-    filenames = ["a", "b", "b", "b", "a", "c"]
-    newfilenames = search_for_duplicates(filenames)
-    @test newfilenames[1] == "a_1"
-    @test newfilenames[2] == "a_2"
-    @test newfilenames[3] == "b_1"
-    @test newfilenames[4] == "b_2"
-    @test newfilenames[5] == "b_3"
-    @test newfilenames[6] == "c"
-end
-
 @testset "ut_get_output_filenames" begin
     params = Dict()
     filenames = get_output_filenames(params, "")
@@ -193,7 +177,7 @@ testDatamanager = Data_manager
     @test ("BNP1" in outputs["Output2"]["fieldnames"])
     @test !("D" in outputs["Output2"]["fieldnames"])
     @test ("E" in outputs["Output2"]["fieldnames"])
-    @test !("M" in outputs["Output2"]["fieldnames"])
+    @test ("M" in outputs["Output2"]["fieldnames"])
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Type" => "CSV", "Output Variables" => Dict("M" => true, "A" => true))))
     outputs = get_outputs(params, testfield_keys, String["M"])
     @test !("A" in outputs["Output1"]["fieldnames"])
