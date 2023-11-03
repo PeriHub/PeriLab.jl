@@ -113,7 +113,7 @@ PeriLab:
       Output Variables:
         Displacements: true
         Forces: true
-        Damages: true
+        Damage: true
   Physics:
     Damage Models:
       Damage:
