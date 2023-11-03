@@ -33,8 +33,9 @@ using DataFrames
     @test distribution[4] == Int64[4]
     @test point_to_core == Int64[1, 2, 3, 4]
     distribution, point_to_core = Read_Mesh.create_base_chunk(4, 5)
-    point_to_core == Nothing
-    point_to_core == Nothing
+    @test isnothing(distribution)
+    @test isnothing(point_to_core)
+
 end
 
 

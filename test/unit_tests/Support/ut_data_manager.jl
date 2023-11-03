@@ -352,7 +352,7 @@ end
     testDatamanager.set_block_list([2, 3, 1, 1])
     testDatamanager.init_property()
     @test length(testDatamanager.properties) == 3
-    @test testDatamanager.get_property(1, "Material Model", "E") == Nothing
+    @test isnothing(testDatamanager.get_property(1, "Material Model", "E"))
     testDatamanager.set_property(1, "Material Model", "E", 3)
     testDatamanager.get_property(1, "Material Model", "E")
     @test testDatamanager.get_property(1, "Material Model", "E") == 3
@@ -370,14 +370,14 @@ end
     @test testDatamanager.get_property(1, "Additive Model", "E") == [1, 2, 3]
     testDatamanager.set_property(2, "Additive Model", "Qd", true)
     @test testDatamanager.get_property(2, "Additive Model", "Qd") == true
-    @test testDatamanager.get_property(2, "Additive Model", "not there") == Nothing
+    @test isnothing(testDatamanager.get_property(2, "Additive Model", "not there"))
     @test testDatamanager.get_properties(1, "Material Model") == Dict("C" => "Hello Test", "E" => 3)
     @test testDatamanager.get_properties(1, "Thermal Model") == Dict()
     @test testDatamanager.get_properties(2, "Material Model") == Dict("E" => 1.1)
     @test testDatamanager.get_properties(2, "Thermal Model") == Dict("E" => [3 1 2; 1 2 3; 1 3 4])
     @test testDatamanager.get_properties(1, "") == Dict()
     @test !testDatamanager.check_property(1, "This is not a property")
-    @test testDatamanager.get_property(1, "Thermal Model", "This is not a property") == Nothing
+    @test isnothing(testDatamanager.get_property(1, "Thermal Model", "This is not a property"))
 end
 
 @testset "get_physics_options" begin

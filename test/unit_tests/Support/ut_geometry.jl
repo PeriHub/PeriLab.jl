@@ -58,9 +58,17 @@ import .Geometry
     @test bondGeom[4][1, 1] == 0.5
     @test bondGeom[4][1, 2] == -0.5
     @test bondGeom[4][1, 3] / sqrt(1.25) - 1 < 1e-8
+    coor[:, :] .= 0
+    bondGeom[1][:, :] .= 0
+    bondGeom[2][:, :] .= 0
+    bondGeom[3][:, :] .= 0
+    bondGeom[4][:, :] .= 0
 
+    bondGeom = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bondGeom)
+    println()
+    @test isnothing(bondGeom)
 end
-@testset "ut_shapeTenorAndDefGrad" begin
+@testset "ut_shapeTensorAndDefGrad" begin
     nnodes = 4
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
@@ -171,6 +179,14 @@ end
             end
         end
     end
+    bondDamage[1][:] .= 0
+    bondDamage[2][:] .= 0
+    bondDamage[3][:] .= 0
+    bondDamage[4][:] .= 0
+
+    shapeTensor, invShapeTensor = Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, shapeTensor, invShapeTensor)
+    @test isnothing(shapeTensor)
+    @test isnothing(invShapeTensor)
 end
 
 @testset "ut_strain" begin

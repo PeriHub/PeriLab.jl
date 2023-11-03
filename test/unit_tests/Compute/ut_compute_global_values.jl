@@ -54,9 +54,9 @@ include("../../../src/Compute/compute_global_values.jl")
     @test length(testValues) == 1
     @test testValues[1] == 5
     testValues = calculate_nodelist(testDatamanager, "Disp", "", nodes)
-    @test testValues == Nothing
+    @test isnothing(testValues)
     testValues = calculate_nodelist(testDatamanager, "not there", "Sum", nodes)
-    @test testValues == Nothing
+    @test isnothing(testValues)
 end
 
 @testset "ut_global_value_max" begin
@@ -109,9 +109,9 @@ end
     @test length(testValues) == 1
     @test testValues[1] == 3
     testValues = calculate_nodelist(testDatamanager, "Disp", "", nodes)
-    @test testValues == Nothing
+    @test isnothing(testValues)
     testValues = calculate_nodelist(testDatamanager, "not there", "Maximum", nodes)
-    @test testValues == Nothing
+    @test isnothing(testValues)
 end
 
 @testset "ut_global_value_min" begin
@@ -160,9 +160,9 @@ end
     @test length(testValues) == 1
     @test testValues[1] == 2
     testValues = calculate_nodelist(testDatamanager, "Disp", "", nodes)
-    @test testValues == Nothing
+    @test isnothing(testValues)
     testValues = calculate_nodelist(testDatamanager, "not there", "Minimum", nodes)
-    @test testValues == Nothing
+    @test isnothing(testValues)
 end
 @testset "ut_global_value_avg" begin
     testDatamanager = Data_manager
@@ -210,9 +210,9 @@ end
     @test length(testValues) == 1
     @test testValues[1] == 5 / 2
     testValues = calculate_nodelist(testDatamanager, "Disp", "", nodes)
-    @test testValues == Nothing
+    @test isnothing(testValues)
     testValues = calculate_nodelist(testDatamanager, "not there", "Average", nodes)
-    @test testValues == Nothing
+    @test isnothing(testValues)
 end
 
 
