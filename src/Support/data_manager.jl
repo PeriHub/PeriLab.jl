@@ -473,7 +473,7 @@ This function retrieves a specific `value_name` associated with a specified `pro
 
 # Returns
 - `value`::Any: The value associated with the specified `value_name` within the `property` for the given `blockId`.
-- `Nothing`: If the specified `blockId`, `property`, or `value_name` does not exist in the dictionary.
+- `nothing`: If the specified `blockId`, `property`, or `value_name` does not exist in the dictionary.
 
 # Example
 ```julia
@@ -486,7 +486,7 @@ function get_property(blockId::Int64, property::String, value_name::String)
         end
     end
 
-    return Nothing
+    return nothing
 end
 
 """

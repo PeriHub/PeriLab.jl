@@ -169,14 +169,14 @@ function compute_crititical_time_step(datamanager::Module, blockNodes::Dict{Int6
         if thermal
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
-            if (lambda != Nothing)
+            if !isnothing(lambda)
                 t = compute_thermodynamic_critical_time_step(blockNodes[iblock], datamanager, lambda)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
         if mechanical
             bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
-            if (bulkModulus != Nothing)
+            if !isnothing(bulkModulus)
                 t = compute_mechanical_critical_time_step(blockNodes[iblock], datamanager, bulkModulus)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             else

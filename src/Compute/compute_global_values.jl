@@ -10,7 +10,7 @@ function calculate_nodelist(datamanager::Module, fieldKey::String, calculationTy
     end
     if !(fieldKey in datamanager.get_all_field_keys())
         @error "Field $fieldKey does not exists for compute sum."
-        return Nothing
+        return nothing
     end
     field = datamanager.get_field(fieldKey)
     nnodes = datamanager.get_nnodes()
@@ -27,7 +27,7 @@ function calculate_nodelist(datamanager::Module, fieldKey::String, calculationTy
         return global_value_avg(field, nodes)
     else
         @warn "Unknown calculation type $calculationType"
-        return Nothing
+        return nothing
     end
 end
 
@@ -39,7 +39,7 @@ function calculate_block(datamanager::Module, fieldKey::String, calculationType:
     end
     if !(fieldKey in datamanager.get_all_field_keys())
         @error "Field $fieldKey does not exists for compute sum."
-        return Nothing
+        return nothing
     end
     field = datamanager.get_field(fieldKey)
     blockIDs = datamanager.get_field("Block_Id")
