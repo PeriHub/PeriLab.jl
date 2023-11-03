@@ -1,0 +1,536 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1:
+      Block Names: block_1
+      Damage Model: dam_1
+      Density: 2.78e-06
+      Horizon: 0.10808756666769913
+      Material Model: mat_1
+    block_10:
+      Block Names: block_10
+      Density: 2.78e-06
+      Horizon: 0.10520909721162183
+      Material Model: mat_10
+    block_11:
+      Block Names: block_11
+      Density: 2.78e-06
+      Horizon: 0.10534124295901504
+      Material Model: mat_11
+    block_12:
+      Block Names: block_12
+      Density: 2.78e-06
+      Horizon: 0.10520909721162187
+      Material Model: mat_12
+    block_2:
+      Block Names: block_2
+      Damage Model: dam_1
+      Density: 2.78e-06
+      Horizon: 0.10790221275321964
+      Material Model: mat_2
+    block_3:
+      Block Names: block_3
+      Damage Model: dam_1
+      Density: 2.78e-06
+      Horizon: 0.10793038889869432
+      Material Model: mat_3
+    block_4:
+      Block Names: block_4
+      Damage Model: dam_1
+      Density: 2.78e-06
+      Horizon: 0.10769470134067027
+      Material Model: mat_4
+    block_5:
+      Block Names: block_5
+      Damage Model: dam_1
+      Density: 2.78e-06
+      Horizon: 0.1053327028239361
+      Material Model: mat_5
+    block_6:
+      Block Names: block_6
+      Damage Model: dam_1
+      Density: 2.78e-06
+      Horizon: 0.10520435698741722
+      Material Model: mat_6
+    block_7:
+      Block Names: block_7
+      Damage Model: dam_1
+      Density: 2.78e-06
+      Horizon: 0.10520435698842057
+      Material Model: mat_7
+    block_8:
+      Block Names: block_8
+      Damage Model: dam_1
+      Density: 2.78e-06
+      Horizon: 0.10559265062785532
+      Material Model: mat_8
+    block_9:
+      Block Names: block_9
+      Density: 2.78e-06
+      Horizon: 0.10534124295901519
+      Material Model: mat_9
+  Boundary Conditions:
+    BC_1:
+      Coordinate: x
+      Node Set: Node Set 1
+      Type: Displacements
+      Value: 3*t
+    BC_2:
+      Coordinate: x
+      Node Set: Node Set 2
+      Type: Displacements
+      Value: "0.0"
+  Compute Class Parameters:
+    External_Displacements:
+      Block: block_9
+      Calculation Type: Maximum
+      Compute Class: Block_Data
+      Variable: Displacements
+    External_Forces:
+      Block: block_9
+      Calculation Type: Sum
+      Compute Class: Block_Data
+      Variable: Forces
+  Discretization:
+    Input Mesh File: Smetana.txt
+    Node Sets:
+      Node Set 1: nodesMinXBCs_set.txt
+      Node Set 2: nodesMaxXBCs_set.txt
+    Type: Text File
+  Outputs:
+    Output1:
+      Output Frequency: 1
+      # Number of Output Steps: 81
+      Output Type: Exodus
+      Output Filename: "Smetana_Output1"
+      Output Variables:
+        Forces: True
+        Displacements: True
+        Number of Neighbors: True
+        External_Forces: True
+        External_Displacements: True
+    Output2:
+      Output Frequency: 1
+      # Number of Output Steps: 81
+      Output Type: CSV
+      Output Filename: "Smetana_Output2_globals"
+      Output Variables:
+        External_Forces: True
+        External_Displacements: True
+      Write After Damage: true
+  Physics:
+    Damage Models:
+      dam_1:
+        Critical Value: 0.25
+        Damage Model: Critical Energy
+        Interblock Critical Value 1_2: 0.025
+        Interblock Critical Value 2_3: 0.025
+        Interblock Critical Value 3_4: 0.025
+        Interblock Critical Value 4_5: 0.025
+        Interblock Critical Value 5_6: 0.025
+        Interblock Critical Value 6_7: 0.025
+        Interblock Critical Value 7_8: 0.025
+        Interblock Damage: true
+    Material Models:
+      mat_1:
+        C11: 168977.7988309544
+        C12: 5849.704163166061
+        C13: 5849.704163166061
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303113
+        C23: 5802.506122303033
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303113
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_10:
+        C11: 168977.7988309544
+        C12: 5849.704163166061
+        C13: 5849.704163166061
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303113
+        C23: 5802.506122303033
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303113
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_11:
+        C11: 168977.7988309544
+        C12: 5849.704163166061
+        C13: 5849.704163166061
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303113
+        C23: 5802.506122303033
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303113
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_12:
+        C11: 168977.7988309544
+        C12: 5849.704163166061
+        C13: 5849.704163166061
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303113
+        C23: 5802.506122303033
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303113
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_2:
+        C11: 168977.79883095485
+        C12: 5849.704163166103
+        C13: 5849.704163166103
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303133
+        C23: 5802.506122303073
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303133
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_3:
+        C11: 168977.79883095485
+        C12: 5849.704163166103
+        C13: 5849.704163166103
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303133
+        C23: 5802.506122303073
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303133
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_4:
+        C11: 168977.79883095485
+        C12: 5849.704163166103
+        C13: 5849.704163166103
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303133
+        C23: 5802.506122303073
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303133
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_5:
+        C11: 168977.79883095485
+        C12: 5849.704163166103
+        C13: 5849.704163166103
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303133
+        C23: 5802.506122303073
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303133
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_6:
+        C11: 168977.79883095485
+        C12: 5849.704163166103
+        C13: 5849.704163166103
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303133
+        C23: 5802.506122303073
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303133
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_7:
+        C11: 168977.79883095485
+        C12: 5849.704163166103
+        C13: 5849.704163166103
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303133
+        C23: 5802.506122303073
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303133
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_8:
+        C11: 168977.7988309544
+        C12: 5849.704163166061
+        C13: 5849.704163166061
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303113
+        C23: 5802.506122303033
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303113
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+      mat_9:
+        C11: 168977.7988309544
+        C12: 5849.704163166061
+        C13: 5849.704163166061
+        C14: 0.0
+        C15: 0.0
+        C16: 0.0
+        C22: 11402.506122303113
+        C23: 5802.506122303033
+        C24: 0.0
+        C25: 0.0
+        C26: 0.0
+        C33: 11402.506122303113
+        C34: 0.0
+        C35: 0.0
+        C36: 0.0
+        C44: 2800.0
+        C45: 0.0
+        C46: 0.0
+        C55: 5600.0
+        C56: 0.0
+        C66: 5600.0
+        Hourglass Coefficient: 1.0
+        Material Model: Correspondence Elastic
+        Material Symmetry: Anisotropic
+        Plane Stress: true
+        Poisson's Ratio: 0.33999999999999997
+        Stabilization Type: Global Stiffness
+        Symmetry: isotropic plane stress
+        Thermal Bond Based: true
+        Thickness: 1.0
+        Young's Modulus: 165000.0
+    Pre Calculation:
+      Bond Associated Deformation Gradient: false
+      Bond Associated Shape Tensorr: false
+      Deformation Gradient: true
+      Deformed Bond Geometry: true
+      Shape Tensor: true
+  Solver:
+    Material Models: True
+    Damage Models: False
+    Final Time: 2.0e-05
+    Initial Time: 0.0
+    Verbose: false
+    Verlet:
+      Numerical Damping: 5.0e-05
+      Safety Factor: 0.95
