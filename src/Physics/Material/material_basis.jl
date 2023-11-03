@@ -5,7 +5,7 @@
 function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
     if haskey(parameter, "Computed")
         if parameter["Computed"]
-            return
+            return nothing
         end
     end
     K::Float64 = 0
