@@ -215,7 +215,7 @@ function check_mesh_elements(mesh, dof)
                 if id + 1 <= length(mnames)
                     if mnames[id+1][end-1:end] == "_y"
                         name = mesh_entry[1:end-2]
-                        meshID = [name * "x", name * "y"]
+                        meshID = [name * "_x", name * "_y"]
                         if dof == 3
                             meshID = [name * "_x", name * "_y", name * "_z"]
                         end
