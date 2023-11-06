@@ -210,14 +210,14 @@ function check_mesh_elements(mesh, dof)
         elseif "block_id" == mesh_entry
             name = "Block_Id"
             meshID = ["block_id"]
-        else
-            if 'x' == mesh_entry[end] # -> char instead of string
+        else # angles testen 2D, 3D
+            if "_x" == mesh_entry[end]
                 if id + 1 <= length(mnames)
-                    if mnames[id+1][end] == 'y' # -> char instead of string
-                        name = mesh_entry[1:end-1]
+                    if mnames[id+1][end-1:end] == "_y"
+                        name = mesh_entry[1:end-2]
                         meshID = [name * "x", name * "y"]
                         if dof == 3
-                            meshID = [name * "x", name * "y", name * "z"]
+                            meshID = [name * "_x", name * "_y", name * "_z"]
                         end
                     end
                 end
@@ -232,9 +232,6 @@ function check_mesh_elements(mesh, dof)
         else
             vartype = typeof(sum(sum(mesh[:, mid])
                                  for mid in meshID))
-        end
-        if vartype == Float64
-            vartype = Float64
         end
         meshInfoDict[name] = Dict{String,Any}("Mesh ID" => meshID, "Type" => vartype)
     end
@@ -274,16 +271,26 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     if length(duplicates) > 0
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
     end
-
     dof::Int64 = set_dof(mesh)
-    nlist = create_neighborhoodlist(mesh, params::Dict, dof)
-    nlist = apply_bond_filters(nlist, mesh, params::Dict, dof)
+
+    nlist = create_neighborhoodlist(mesh, params, dof)
+    nlist = apply_bond_filters(nlist, mesh, params, dof)
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
     @info "Finished distribution"
     @info "Create Overlap"
     overlap_map = create_overlap_map(distribution, ptc, ranksize)
     @info "Finished Overlap"
+    @info "Mesh input overview"
+    @info "-------------------"
+    @info "Number of nodes: $(length(mesh[!, "x"]))"
+    @info "Geometrical degrees of freedoms: $dof"
+    if length(nlist) == 0
+        @warn "No node sets defined."
+    else
+        @info "Number of node sets: $(length(nlist))"
+    end
+    @info "-------------------"
     return distribution, mesh, ntype, overlap_map, nlist, dof
 end
 
