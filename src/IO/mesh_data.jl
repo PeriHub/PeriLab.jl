@@ -210,8 +210,8 @@ function check_mesh_elements(mesh, dof)
         elseif "block_id" == mesh_entry
             name = "Block_Id"
             meshID = ["block_id"]
-        else # angles testen 2D, 3D
-            if "_x" == mesh_entry[end]
+        else
+            if "_x" == mesh_entry[end-1:end]
                 if id + 1 <= length(mnames)
                     if mnames[id+1][end-1:end] == "_y"
                         name = mesh_entry[1:end-2]
