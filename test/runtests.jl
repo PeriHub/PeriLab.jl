@@ -123,6 +123,9 @@ MPI.Init()
             @includetests["unit_tests/Physics/Damage/ut_Energy_release"]
         end
         @testset "ut_Material" begin
+            @testset "ut_control" begin
+                @includetests["unit_tests/Physics/Material/Zero_Energy_Control/ut_global_control.jl"]
+            end
             @testset "ut_material_basis" begin
                 @includetests["unit_tests/Physics/Material/ut_material_basis"]
             end
