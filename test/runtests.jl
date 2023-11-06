@@ -124,7 +124,7 @@ MPI.Init()
         end
         @testset "ut_Material" begin
             @testset "ut_control" begin
-                @includetests["unit_tests/Physics/Material/Zero_Energy_Control/ut_global_control.jl"]
+                @includetests["unit_tests/Physics/Material/Zero_Energy_Control/ut_global_control"]
             end
             @testset "ut_material_basis" begin
                 @includetests["unit_tests/Physics/Material/ut_material_basis"]
@@ -166,6 +166,10 @@ MPI.Init()
 
         @testset "test_Correspondence_Elastic" begin
             @includetests["fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic"]
+
+        end
+        @testset "test_Correspondence_Elastic_with_zero_E_control" begin
+            @includetests["fullscale_tests/test_Correspondence_Elastic_with_zero_E_control/test_Correspondence_Elastic_with_zero_E_control"]
         end
     end
 
