@@ -1,7 +1,0 @@
-# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-blot tensile_test.e -input tensile_test.blot cps
-gnuplot tensile_test.plotgen
-tensile_test_compute_modulus.py
