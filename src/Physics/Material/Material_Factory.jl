@@ -21,7 +21,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         if isnothing(datamanager)
             @error "No material of name " * model_name * " exists."
         end
-        datamanager = distribute_force_densities(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+
     end
     return datamanager
 end

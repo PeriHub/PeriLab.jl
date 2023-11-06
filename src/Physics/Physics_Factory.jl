@@ -90,6 +90,7 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
             update_list = datamanager.get_field("Update List")
             update_nodes = view(nodes, find_active(update_list[nodes]))
             @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+            datamanager = distribute_force_densities(datamanager, nodes)
         end
     end
     return datamanager
