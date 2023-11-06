@@ -11,6 +11,8 @@ global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
 Set_modules.include_files(module_list)
 
 export compute_forces
+export determine_isotropic_parameter
+export distribute_force_densities
 
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
     specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")
