@@ -102,8 +102,7 @@ PeriLab:
     Type: Text File
   Outputs:
     Output1:
-      Output Frequency: 1
-      # Number of Output Steps: 81
+      Number of Output Steps: 100
       Output Type: Exodus
       Output Filename: "Smetana_Output1"
       Output Variables:
@@ -113,8 +112,7 @@ PeriLab:
         External_Forces: True
         External_Displacements: True
     Output2:
-      Output Frequency: 1
-      # Number of Output Steps: 81
+      Number of Output Steps: 100
       Output Type: CSV
       Output Filename: "Smetana_Output2_globals"
       Output Variables:
@@ -124,15 +122,15 @@ PeriLab:
   Physics:
     Damage Models:
       dam_1:
-        Critical Value: 0.25
+        Critical Value: 25000
         Damage Model: Critical Energy
-        Interblock Critical Value 1_2: 0.025
-        Interblock Critical Value 2_3: 0.025
-        Interblock Critical Value 3_4: 0.025
-        Interblock Critical Value 4_5: 0.025
-        Interblock Critical Value 5_6: 0.025
-        Interblock Critical Value 6_7: 0.025
-        Interblock Critical Value 7_8: 0.025
+        Interblock Critical Value 1_2: 2500
+        Interblock Critical Value 2_3: 2500
+        Interblock Critical Value 3_4: 2500
+        Interblock Critical Value 4_5: 2500
+        Interblock Critical Value 5_6: 2500
+        Interblock Critical Value 6_7: 2500
+        Interblock Critical Value 7_8: 2500
         Interblock Damage: true
     Material Models:
       mat_1:
@@ -527,7 +525,7 @@ PeriLab:
       Shape Tensor: true
   Solver:
     Material Models: True
-    Damage Models: False
+    Damage Models: True
     Final Time: 2.0e-05
     Initial Time: 0.0
     Verbose: false
