@@ -284,11 +284,6 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     @info "-------------------"
     @info "Number of nodes: $(length(mesh[!, "x"]))"
     @info "Geometrical degrees of freedoms: $dof"
-    if length(nlist) == 0
-        @warn "No node sets defined."
-    else
-        @info "Number of node sets: $(length(nlist))"
-    end
     @info "-------------------"
     return distribution, mesh, ntype, overlap_map, nlist, dof
 end
