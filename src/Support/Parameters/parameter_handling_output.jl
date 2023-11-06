@@ -41,7 +41,7 @@ function get_output_type(output::Dict)
     if check_element(output, "Output Type")
         return output["Output Type"]
     else
-        @warn "No output type defined for " * output * ", defaulting to Exodus"
+        @warn "No output type defined for, defaulting to Exodus"
         return "Exodus"
     end
 end

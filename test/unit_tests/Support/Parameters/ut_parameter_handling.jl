@@ -12,7 +12,11 @@ using Test
 using Random
 
 
-
+@testset "ut_get_output_type" begin
+    @test get_output_type(Dict()) == "Exodus"
+    @test get_output_type(Dict("Output Type" => "CSV")) == "CSV"
+    @test get_output_type(Dict("Output Type" => "Exodus")) == "Exodus"
+end
 @testset "ut_get_bond_filters" begin
     params = Dict("Discretization" => Dict())
     check, bfList = get_bond_filters(params)
