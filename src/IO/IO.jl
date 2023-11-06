@@ -215,15 +215,16 @@ end
 
 function show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)
 
-    headers = ["Block", "Material", "Damage", "Thermal", "Additive"]
+    headers = ["Block", "Material", "Damage", "Thermal", "Additive", "Density", "Horizon", "Number of Nodes"]
     df = DataFrame([header => [] for header in headers])
 
+    block_Id = datamanager.get_field("Block_Id")
     block_list = datamanager.get_block_list()
     block_list = ["block_" * string(block) for block in block_list]
 
     for id in eachindex(block_list)
         row = [block_list[id]]
-        for name in headers[2:end]
+        for name in headers[2:end-3]
             if !solver_options[name*" Models"]
                 push!(row, "")
             elseif haskey(params["Blocks"][block_list[id]], name * " Model")
@@ -232,6 +233,15 @@ function show_block_summary(solver_options::Dict, params::Dict, datamanager::Mod
                 push!(row, "")
             end
         end
+        for name in headers[end-2:end-1]
+            if haskey(params["Blocks"][block_list[id]], name)
+                push!(row, string(params["Blocks"][block_list[id]][name]))
+            else
+                push!(row, "")
+            end
+        end
+        # get number of nodes
+        push!(row, string(length(findall(x -> x == id, block_Id))))
         push!(df, row)
     end
 
