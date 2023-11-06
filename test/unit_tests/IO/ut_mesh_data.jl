@@ -73,21 +73,21 @@ end
         "z" => [25, 30, 22],
         "volume" => [1.2, 0.8, 1],
         "block_id" => [1, 2, 1],
-        "activex" => [true, true, false],
-        "activey" => [true, true, false],
-        "activez" => [true, true, false],
+        "active_x" => [true, true, false],
+        "active_y" => [true, true, false],
+        "active_z" => [true, true, false],
         "field" => [1.0, 3.3, 2.3]
     )
     df = DataFrame(data)
     meshInfoDict = Read_Mesh.check_mesh_elements(df, 3)
-
+    println()
     @test meshInfoDict["Coordinates"]["Mesh ID"] == ["x", "y", "z"]
     @test meshInfoDict["Coordinates"]["Type"] == Int64
     @test meshInfoDict["Block_Id"]["Mesh ID"] == ["block_id"]
     @test meshInfoDict["Block_Id"]["Type"] == Int64
     @test meshInfoDict["Volume"]["Mesh ID"] == ["volume"]
     @test meshInfoDict["Volume"]["Type"] == Float64
-    @test meshInfoDict["active"]["Mesh ID"] == ["activex", "activey", "activez"]
+    @test meshInfoDict["active"]["Mesh ID"] == ["active_x", "active_y", "active_z"]
     @test meshInfoDict["active"]["Type"] == Bool
     @test meshInfoDict["field"]["Mesh ID"] == ["field"]
     @test meshInfoDict["field"]["Type"] == Float64
