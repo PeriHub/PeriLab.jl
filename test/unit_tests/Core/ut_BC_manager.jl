@@ -48,6 +48,7 @@ using .Boundary_conditions
             @test unit == Boundary_conditions.eval_bc(values, bc, coor, Float64(t), dof, true)
         end
     end
+    @test values == Boundary_conditions.eval_bc(values, bc, Matrix{Float64}(undef, 0, 0), time, dof, false)
 end
 
 @testset "ut_boundary_condition" begin
