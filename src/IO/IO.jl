@@ -76,7 +76,7 @@ function get_results_mapping(params::Dict, datamanager::Module)
         output_mapping[id]["Fields"] = Dict{}()
 
         fieldnames = outputs[output]["fieldnames"]
-        output_type = get_output_type(outputs[output])
+        output_type = get_output_type(outputs, output)
         for fieldname in fieldnames
             result_id += 1
             compute_name = ""
