@@ -25,8 +25,12 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
     return datamanager
 end
-function determine_isotropic_parameter(prop)
+function determine_isotropic_parameter(prop::Dict)
     get_all_elastic_moduli(prop)
+end
+
+function check_material_symmetry(dof::Int64, prop::Dict)
+    return check_symmetry(prop, dof)
 end
 
 function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})

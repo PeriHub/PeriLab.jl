@@ -201,3 +201,18 @@ function voigt_to_matrix(voigt)
         @error "Unsupported matrix size for voigt_to_matrix"
     end
 end
+
+function check_symmetry(prop::Dict, dof::Int64)
+    if haskey(prop, "Symmetry")
+        symmetry = prop["Symmetry"]
+        if dof == 2
+            if occursin("plane strain", symmetry) || occursin("plane stress", symmetry)
+                return true
+            else
+                @error "Model definition is missing; plain stress or plain strain has to be defined for 2D"
+                return
+            end
+        end
+        return true
+    end
+end

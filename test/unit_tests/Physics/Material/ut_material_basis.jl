@@ -5,6 +5,20 @@
 using Test
 include("../../../../src/Physics/Material/material_basis.jl")
 
+println()
+@testset "check_symmetry" begin
+    @test isnothing(check_symmetry(Dict(), 2))
+    @test isnothing(check_symmetry(Dict(), 3))
+    @test isnothing(check_symmetry(Dict("Symmetry" => "a"), 2))
+    @test isnothing(check_symmetry(Dict("Symmetry" => "plane"), 2))
+    @test isnothing(check_symmetry(Dict("Symmetry" => "stress"), 2))
+    @test isnothing(check_symmetry(Dict("Symmetry" => "strain"), 2))
+    check_symmetry(Dict("Symmetry" => "plane stress"), 2)
+    check_symmetry(Dict("Symmetry" => "plane strain"), 2)
+    check_symmetry(Dict("Symmetry" => "3D"), 3)
+end
+
+
 @testset "get_all_elastic_moduli" begin
     ref_parameter = Dict("Bulk Modulus" => 0, "Computed" => true, "Young's Modulus" => 0, "Shear Modulus" => 0, "Poisson's Ratio" => 0)
     test = get_all_elastic_moduli(Dict{String,Any}())
