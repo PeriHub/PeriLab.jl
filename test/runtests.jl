@@ -151,22 +151,17 @@ MPI.Init()
         @testset "test_PD_Solid_Elastic" begin
             @includetests["fullscale_tests/test_PD_Solid_Elastic/test_PD_Solid_Elastic"]
         end
-
         @testset "test_Critical_stretch" begin
             @includetests["fullscale_tests/test_Critical_stretch/test_Critical_stretch"]
         end
-
         @testset "test_thermal_expansion" begin
             @includetests["fullscale_tests/test_thermal_expansion/test_thermal_expansion"]
         end
-
         @testset "test_thermal_flow" begin
             @includetests["fullscale_tests/test_thermal_flow/test_thermal_flow"]
         end
-
         @testset "test_Correspondence_Elastic" begin
             @includetests["fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic"]
-
         end
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
             @includetests["fullscale_tests/test_Correspondence_Elastic_with_zero_E_control/test_Correspondence_Elastic_with_zero_E_control"]
