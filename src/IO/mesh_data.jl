@@ -251,7 +251,7 @@ function read_mesh(filename::String)
     if !isfile(filename)
         @error "File $filename does not exist"
     end
-    @info "Read Mesh File $filename"
+    @info "Read mesh file $filename"
     header_line, header = get_header(filename)
     return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
 end
@@ -272,7 +272,6 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
     end
     dof::Int64 = set_dof(mesh)
-
     nlist = create_neighborhoodlist(mesh, params, dof)
     nlist = apply_bond_filters(nlist, mesh, params, dof)
     @info "Start distribution"
