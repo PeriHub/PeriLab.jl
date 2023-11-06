@@ -19,7 +19,7 @@ function get_output_filenames(params::Dict, filedirectory::String)
         filenames = []
         outputs = params["Outputs"]
         for output in keys(outputs)
-            output_type = get_output_type(outputs[output])
+            output_type = get_output_type(outputs, output)
             if check_element(outputs[output], "Output Filename")
                 filename = outputs[output]["Output Filename"]
                 if output_type == "CSV"
@@ -37,8 +37,8 @@ function get_output_filenames(params::Dict, filedirectory::String)
     return []
 end
 
-function get_output_type(output::Dict)
-    if check_element(output, "Output Type")
+function get_output_type(outputs::Dict, output::String)
+    if check_element(outputs[output], "Output Type")
         return output["Output Type"]
     else
         @warn "No output type defined for " * output * ", defaulting to Exodus"
@@ -78,7 +78,7 @@ function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vec
     if check_element(params, "Outputs")
         outputs = params["Outputs"]
         for output in keys(outputs)
-            output_type = get_output_type(outputs[output])
+            output_type = get_output_type(outputs, output)
             if (check_element(outputs[output], "Output Variables")) && (length(outputs[output]["Output Variables"]) > 0)
                 outputs[output]["fieldnames"] = get_output_fieldnames(outputs[output]["Output Variables"], variables, compute_names, output_type)
             else
