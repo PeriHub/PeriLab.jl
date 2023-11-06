@@ -19,7 +19,7 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     defGrad = datamanager.get_field("Deformation Gradient")
     invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
 
-    defGrad = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, bondGeometry, deformed_bondNP1, invShapeTensor, defGrad)
+    defGrad = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, deformed_bondNP1, bondGeometry, invShapeTensor, defGrad)
 
     return datamanager
 end
