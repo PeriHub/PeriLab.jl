@@ -57,9 +57,6 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     angles = datamanager.get_field("Angles")
   end
   dof = datamanager.get_dof()
-  nlist = datamanager.get_nlist()
-  volume = datamanager.get_field("Volume")
-
   defGrad = datamanager.get_field("Deformation Gradient")
 
   bond_force = datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
