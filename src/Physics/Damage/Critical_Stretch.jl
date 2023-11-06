@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_stretch
+include("../Pre_calculation/Pre_Calculation_Factory.jl")
+using .Pre_calculation
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
@@ -74,7 +76,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     return datamanager
 end
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
-    #tbd thermal pre calculation
+    @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
+    update_list = datamanager.get_field("Update List")
+    update_list .= false
     return datamanager
 end
 end

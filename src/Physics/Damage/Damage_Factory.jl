@@ -34,7 +34,8 @@ function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArr
     if isnothing(datamanager)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
     end
-
+    update_list = datamanager.get_field("Update List")
+    update_list .= false
     return datamanager
 end
 

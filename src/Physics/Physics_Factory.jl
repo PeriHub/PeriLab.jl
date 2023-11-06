@@ -26,7 +26,6 @@ export init_material_model_fields
 export init_thermal_model_fields
 
 
-
 function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{Int64}}, block::Int64, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
 
     if options["Additive Models"]
@@ -36,8 +35,7 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
     end
     active = datamanager.get_field("Active")
     nodes = block_nodes[find_active(active[block_nodes])]
-
-    @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
+    update_list = datamanager.get_field("Update List")
 
     if options["Damage Models"]
         #tbd damage specific pre_calculation-> in damage template
@@ -52,6 +50,8 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
             force_densities[nodes] .= 0.0
         end
     end
+    update_nodes = view(nodes, find_active(update_list[nodes]))
+    @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
 
     if options["Thermal Models"]
         if datamanager.check_property(block, "Thermal Model")
@@ -61,8 +61,6 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
 
     if options["Material Models"]
         if datamanager.check_property(block, "Material Model")
-            update_list = datamanager.get_field("Update List")
-            update_nodes = view(nodes, find_active(update_list[nodes]))
             @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
             datamanager = Material.distribute_force_densities(datamanager, nodes)
         end
