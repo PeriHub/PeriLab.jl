@@ -41,7 +41,7 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
         #tbd damage specific pre_calculation-> in damage template
         if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
             datamanager = Damage.set_bond_damage(datamanager, nodes)
-            @timeit to "compute_damage_pre_calculation" datamanager = Damage.compute_damage_pre_calculation(datamanager, nodes, block, datamanager.get_properties(block, "Damage Model"), synchronise_field, time, dt, to)
+            @timeit to "compute_damage_pre_calculation" datamanager = Damage.compute_damage_pre_calculation(datamanager, nodes, block, datamanager.get_properties(block, "Damage Model"), synchronise_field, time, dt)
             @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), block, time, dt)
             update_list = datamanager.get_field("Update List")
             update_nodes = view(nodes, find_active(update_list[nodes]))
