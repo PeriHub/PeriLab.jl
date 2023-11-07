@@ -11,7 +11,9 @@ taken from Peridigm -> but adding the bond_damage; this is missing in Peridigm, 
 """
 function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
 
-
+    if length(nodes) == 0
+        return Float64[]
+    end
     weighted_volume = zeros(Float64, maximum(nodes))
 
     for iID in nodes
@@ -24,6 +26,9 @@ end
 
 function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
+    if length(nodes) == 0
+        return Float64[]
+    end
     theta = zeros(Float64, maximum(nodes))
     for iID in nodes
         if weighted_volume[iID] == 0

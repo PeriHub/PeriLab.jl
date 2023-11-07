@@ -38,7 +38,7 @@ end
 
 function get_zero_energy_mode_force(nodes, zStiff, defGrad, bondGeom, bondGeomNP1, bond_force)
     for iID in nodes
-        bond_force[iID][:, :] += (bondGeom[iID][:, 1:end-1] * defGrad[iID, :, :] - bondGeomNP1[iID][:, 1:end-1]) * zStiff[iID, :, :]
+        bond_force[iID][:, :] -= (bondGeom[iID][:, 1:end-1] * defGrad[iID, :, :] - bondGeomNP1[iID][:, 1:end-1]) * zStiff[iID, :, :]
     end
     return bond_force
 end

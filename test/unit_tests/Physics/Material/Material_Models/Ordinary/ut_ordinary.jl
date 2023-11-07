@@ -38,7 +38,8 @@ using .Ordinary
     for iID in 1:nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
     end
-
+    weighted_volume = Ordinary.compute_weighted_volume(Int64[], nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
+    @test weighted_volume == []
 end
 
 nnodes = 2
@@ -79,4 +80,6 @@ nlist[2][1] = 2
     theta = Ordinary.compute_dilatation(view(vec, 1:nnodes), nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
     @test theta[1] == 0.0
     @test theta[2] == 3.0
+    theta = Ordinary.compute_dilatation(Int64[], nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    @test theta == []
 end
