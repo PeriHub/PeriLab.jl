@@ -15,28 +15,21 @@ export init_interface_crit_values
 
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
-    update_list = datamanager.get_field("Update List")
-    update_list .= true
-
     specifics = Dict{String,String}("Call Function" => "compute_damage", "Name" => "damage_name")
     datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, block, time, dt))
     if isnothing(datamanager)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
     end
-
     datamanager = damage_index(datamanager, nodes)
     return datamanager
 end
 
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, model_param::Dict, synchronise_field, time::Float64, dt::Float64)
-
     specifics = Dict{String,String}("Call Function" => "compute_damage_pre_calculation", "Name" => "damage_name")
     datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, block, synchronise_field, time, dt))
     if isnothing(datamanager)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
     end
-    update_list = datamanager.get_field("Update List")
-    update_list .= false
     return datamanager
 end
 

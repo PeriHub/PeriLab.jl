@@ -107,14 +107,6 @@ end
 
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
-  #tbd thermal pre calculation
-  datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
-  datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
-  datamanager = Material.distribute_force_densities(datamanager, nodes)
-  synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "download_from_cores")
-  synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Force DensitiesNP1", "upload_to_cores")
-  update_list = datamanager.get_field("Update List")
-  update_list .= false
   return datamanager
 end
 
