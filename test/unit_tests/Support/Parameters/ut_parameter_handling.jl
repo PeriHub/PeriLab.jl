@@ -13,9 +13,11 @@ using Random
 
 
 @testset "ut_get_output_type" begin
-    @test get_output_type(Dict()) == "Exodus"
-    @test get_output_type(Dict("Output Type" => "CSV")) == "CSV"
-    @test get_output_type(Dict("Output Type" => "Exodus")) == "Exodus"
+    @test get_output_type(Dict("Output1" => Dict()), "Output1") == "Exodus"
+    @test get_output_type(Dict("Output1" => Dict("Output Type" => "CSV")), "Output1") == "CSV"
+    @test get_output_type(Dict("Output1" => Dict("Output Type" => "Exodus"), "Output2" => Dict("Output Type" => "CSV")), "Output1") == "Exodus"
+    @test get_output_type(Dict("Output1" => Dict("Output Type" => "Exodus")), "Output2" => Dict("Output Type" => "CSV"), "Output2") == "CSV"
+    @test get_output_type(Dict("Output1" => Dict("Output Type" => "CSV"), "Output2" => Dict()), "Output2") == "Exodus"
 end
 @testset "ut_get_bond_filters" begin
     params = Dict("Discretization" => Dict())
