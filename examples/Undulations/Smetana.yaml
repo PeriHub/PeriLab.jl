@@ -7,70 +7,70 @@ PeriLab:
     block_1:
       Block Names: block_1
       Damage Model: dam_1
-      Density: 2.78e-06
-      Horizon: 0.10808756666769913
+      Density: 2.78e-07
+      Horizon: 0.15808756666769913
       Material Model: mat_1
     block_10:
       Block Names: block_10
-      Density: 2.78e-06
-      Horizon: 0.10520909721162183
+      Density: 2.78e-07
+      Horizon: 0.15520909721162183
       Material Model: mat_10
     block_11:
       Block Names: block_11
-      Density: 2.78e-06
-      Horizon: 0.10534124295901504
+      Density: 2.78e-07
+      Horizon: 0.15534124295901504
       Material Model: mat_11
     block_12:
       Block Names: block_12
-      Density: 2.78e-06
-      Horizon: 0.10520909721162187
+      Density: 2.78e-07
+      Horizon: 0.15520909721162187
       Material Model: mat_12
     block_2:
       Block Names: block_2
       Damage Model: dam_1
-      Density: 2.78e-06
-      Horizon: 0.10790221275321964
+      Density: 2.78e-07
+      Horizon: 0.15790221275321964
       Material Model: mat_2
     block_3:
       Block Names: block_3
       Damage Model: dam_1
-      Density: 2.78e-06
-      Horizon: 0.10793038889869432
+      Density: 2.78e-07
+      Horizon: 0.15793038889869432
       Material Model: mat_3
     block_4:
       Block Names: block_4
       Damage Model: dam_1
-      Density: 2.78e-06
-      Horizon: 0.10769470134067027
+      Density: 2.78e-07
+      Horizon: 0.15769470134067027
       Material Model: mat_4
     block_5:
       Block Names: block_5
       Damage Model: dam_1
-      Density: 2.78e-06
-      Horizon: 0.1053327028239361
+      Density: 2.78e-07
+      Horizon: 0.1553327028239361
       Material Model: mat_5
     block_6:
       Block Names: block_6
       Damage Model: dam_1
-      Density: 2.78e-06
-      Horizon: 0.10520435698741722
+      Density: 2.78e-07
+      Horizon: 0.15520435698741722
       Material Model: mat_6
     block_7:
       Block Names: block_7
       Damage Model: dam_1
-      Density: 2.78e-06
-      Horizon: 0.10520435698842057
+      Density: 2.78e-07
+      Horizon: 0.15520435698842057
       Material Model: mat_7
     block_8:
       Block Names: block_8
       Damage Model: dam_1
-      Density: 2.78e-06
-      Horizon: 0.10559265062785532
+      Density: 2.78e-07
+      Horizon: 0.15559265062785532
       Material Model: mat_8
     block_9:
       Block Names: block_9
-      Density: 2.78e-06
-      Horizon: 0.10534124295901519
+      Density: 2.78e-07
+      Horizon: 0.15534124295901519
       Material Model: mat_9
   Boundary Conditions:
     BC_1:
@@ -111,6 +111,7 @@ PeriLab:
         Number of Neighbors: True
         External_Forces: True
         External_Displacements: True
+        Damage: True
     Output2:
       Number of Output Steps: 100
       Output Type: CSV
@@ -160,7 +161,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -192,7 +193,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -224,7 +225,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -256,7 +257,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -288,7 +289,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -320,7 +321,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -352,7 +353,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -384,7 +385,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -416,7 +417,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -448,7 +449,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -480,7 +481,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
@@ -512,7 +513,7 @@ PeriLab:
         Material Symmetry: Anisotropic
         Plane Stress: true
         Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
+        Zero Energy Mode Control: Global
         Symmetry: isotropic plane stress
         Thermal Bond Based: true
         Thickness: 1.0
