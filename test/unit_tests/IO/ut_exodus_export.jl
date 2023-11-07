@@ -207,7 +207,7 @@ end
 
 csvfilename = "./tmp/" * "test_2.csv"
 csv_file = Write_CSV_Results.create_result_file(csvfilename, computes)
-exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes["Fields"], "Exodus", testDatamanager)
+exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes["Fields"], [0.1, 0.2])
 
 @testset "ut_write_global_results_in_exodus" begin
 
@@ -215,9 +215,9 @@ exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes["Fiel
     @test global_vars[1] == "External_Displacements"
     @test global_vars[2] == "External_Forces"
 
-    ftest = read_values(exo, GlobalVariable, 2, 1, 1)
-    @test ftest[1] == 3.00001
-    @test ftest[2] == 0
+    ftest = read_values(exo, GlobalVariable, 2)
+    @test ftest[1] == 0.1
+    @test ftest[2] == 0.2
 
 end
 
@@ -231,15 +231,17 @@ end
     @test merged
 end
 
-exo = Write_Exodus_Results.write_global_results_in_exodus(csv_file, 2, computes["Fields"], "CSV", testDatamanager)
+exo = Write_Exodus_Results.write_global_results_in_csv(csv_file, [0.1, 0.2])
 
 @testset "ut_write_global_results_in_csv" begin
 
-    @test isfile(csv_file)
+    @test isfile(csv_file["filename"])
+    @test csv_file["file"] isa IOStream
 
 end
 
 
 close(exo)
+close(csv_file["file"])
 rm(filename)
 rm(csvfilename)

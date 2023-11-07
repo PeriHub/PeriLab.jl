@@ -85,9 +85,9 @@ function set_horizon(params::Dict, blockNodes::Dict, horizon::SubArray)
     return horizon
 end
 
-function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, to, silent::Bool)
+function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, to, silent::Bool, verbose::Bool)
 
-    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)
+    return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent, verbose)
 
 end
 

@@ -7,6 +7,7 @@ include("read_inputdeck.jl")
 include("mesh_data.jl")
 include("exodus_export.jl")
 include("csv_export.jl")
+include("../Compute/compute_global_values.jl")
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_communication.jl")
 using .Read_Input_Deck
@@ -14,6 +15,7 @@ using .Read_Mesh
 using .Write_Exodus_Results
 using .Write_CSV_Results
 using MPI
+using CSV
 using Exodus
 using TimerOutputs
 using DataFrames
@@ -34,10 +36,27 @@ function merge_exodus_files(exos)
     end
 end
 
+function open_result_files(result_files)
+    for result_file in result_files
+        if result_file isa Exodus.ExodusDatabase
+            result_file = ExodusDatabase(result_file.file_name, "rw")
+        elseif result_file["file"] isa IOStream
+            result_file["file"] = open(result_file["filename"], "a")
+        else
+            @warn "Unknown result file type"
+        end
+    end
+end
+
 function close_result_files(result_files)
     for result_file in result_files
-        # @info "Closing output file " * exo.file_name
-        close(result_file)
+        if result_file isa Exodus.ExodusDatabase
+            close(result_file)
+        elseif result_file["file"] isa IOStream
+            close(result_file["file"])
+        else
+            @warn "Unknown result file type"
+        end
     end
 end
 
@@ -139,7 +158,7 @@ function initialize_data(filename::String, filedirectory::String, datamanager::M
 
 end
 
-function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64)
+function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64, verbose::Bool)
     filenames = get_output_filenames(params, filedirectory)
     if length(filenames) == 0
         @warn "No futput file or output defined"
@@ -183,6 +202,10 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
 
     end
 
+    if verbose
+        close_result_files(result_files)
+    end
+
     return result_files, outputs
 end
 
@@ -190,27 +213,62 @@ function read_input_file(filename::String)
     return Read_Input_Deck.read_input_file(filename)
 end
 
-function write_results(result_files, time, outputs, datamanager)
+function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, datamanager::Module, verbose::Bool)
+
+    if verbose
+        open_result_files(result_files)
+    end
+
     for id in eachindex(result_files)
+        output_type = outputs[id]["Output Type"]
         # step 1 ist the zero step?!
         output_frequency[id]["Counter"] += 1
         if output_frequency[id]["Counter"] == output_frequency[id]["Output Frequency"]
             output_frequency[id]["Step"] += 1
             nodal_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (!value["global_var"]))
             global_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (value["global_var"]))
-            output_type = outputs[id]["Output Type"]
             if output_type == "Exodus" && length(nodal_outputs) > 0 && typeof(result_files[id]) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
                 result_files[id] = Write_Exodus_Results.write_step_and_time(result_files[id], output_frequency[id]["Step"], time)
                 result_files[id] = Write_Exodus_Results.write_nodal_results_in_exodus(result_files[id], output_frequency[id]["Step"], nodal_outputs, datamanager)
             end
             if length(global_outputs) > 0
-                result_files[id] = Write_Exodus_Results.write_global_results_in_exodus(result_files[id], output_frequency[id]["Step"], global_outputs, output_type, datamanager)
+                global_values = get_global_values(global_outputs, datamanager)
+                if output_type == "Exodus"
+                    result_files[id] = Write_Exodus_Results.write_global_results_in_exodus(result_files[id], output_frequency[id]["Step"], global_outputs, global_values)
+                end
+                if output_type == "CSV"
+                    Write_Exodus_Results.write_global_results_in_csv(result_files[id], global_values)
+                end
             end
 
             output_frequency[id]["Counter"] = 0
         end
     end
+    if verbose
+        close_result_files(result_files)
+    end
     return result_files
+end
+
+function get_global_values(output::Dict, datamanager::Module)
+    global_values = []
+    for varname in keys(output)
+        compute_class = output[varname]["compute_params"]["Compute Class"]
+        calculation_type = output[varname]["compute_params"]["Calculation Type"]
+        fieldname = output[varname]["compute_params"]["Variable"]
+        global_value = 0
+        if compute_class == "Block_Data"
+            block = output[varname]["compute_params"]["Block"]
+            block_id = parse(Int, block[7:end])
+            global_value = calculate_block(datamanager, fieldname, calculation_type, block_id)
+        elseif compute_class == "Nodeset_Data"
+            node_set = get_node_set(output[varname]["compute_params"])
+            global_value = calculate_nodelist(datamanager, fieldname, calculation_type, node_set)
+        end
+
+        append!(global_values, global_value)
+    end
+    return global_values
 end
 
 function show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)

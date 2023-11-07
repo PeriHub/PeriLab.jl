@@ -20,17 +20,16 @@ function create_result_file(filename::String, outputs::Dict)
     end
     write(csv_file, header * "\n")
 
-    return csv_file
+    return Dict("filename" => filename, "file" => csv_file)
 end
 
-function write_global_results_in_csv(csv_file::IOStream, values::Union{Vector{Int64},Vector{Float64},Vector{Any}})
-
-    # files = csv_files
+function write_global_results_in_csv(csv_file::Dict, global_values)
     value_string = ""
-    for value in values
+    for value in global_values
         value_string = string(value_string, value, ",")
     end
     value_string = value_string * "\n"
-    write(csv_file, value_string)
+    write(csv_file["file"], value_string)
+
 end
 end

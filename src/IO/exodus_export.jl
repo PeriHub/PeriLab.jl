@@ -4,7 +4,6 @@
 
 module Write_Exodus_Results
 include("csv_export.jl")
-include("../Compute/compute_global_values.jl")
 include("../Support/Parameters/parameter_handling.jl")
 using Exodus
 using Pkg
@@ -144,30 +143,10 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output:
     return exo
 end
 
-function write_global_results_in_exodus(exo::Union{ExodusDatabase,IOStream}, step::Int64, output::Dict, output_type::String, datamanager::Module)
-    #write_values
-    global_values = []
-    for varname in keys(output)
-        compute_class = output[varname]["compute_params"]["Compute Class"]
-        calculation_type = output[varname]["compute_params"]["Calculation Type"]
-        fieldname = output[varname]["compute_params"]["Variable"]
-        global_value = 0
-        if compute_class == "Block_Data"
-            block = output[varname]["compute_params"]["Block"]
-            block_id = parse(Int, block[7:end])
-            global_value = calculate_block(datamanager, fieldname, calculation_type, block_id)
-        elseif compute_class == "Nodeset_Data"
-            node_set = get_node_set(output[varname]["compute_params"])
-            global_value = calculate_nodelist(datamanager, fieldname, calculation_type, node_set)
-        end
+function write_global_results_in_exodus(exo::Union{ExodusDatabase}, step::Int64, output::Dict, global_values)
 
-        if output_type == "Exodus" && typeof(exo) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
-            write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, global_value)
-        end
-        push!(global_values, global_value)
-    end
-    if output_type == "CSV"
-        Write_CSV_Results.write_global_results_in_csv(exo, global_values)
+    for (id, varname) in enumerate(keys(output))
+        write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, [global_values[id]])
     end
 
     return exo
