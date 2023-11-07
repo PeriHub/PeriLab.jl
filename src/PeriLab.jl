@@ -211,7 +211,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
         @info "Solver init"
         @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
-        if verbose
+        if verbose && rank == 0
             IO.show_block_summary(solver_options, params, datamanager)
         end
         @info "Init write results"

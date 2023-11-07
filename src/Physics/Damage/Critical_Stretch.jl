@@ -5,6 +5,7 @@
 module Critical_stretch
 include("../Pre_calculation/Pre_Calculation_Factory.jl")
 using .Pre_calculation
+using TimerOutputs
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name

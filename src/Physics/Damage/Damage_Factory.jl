@@ -5,6 +5,7 @@
 module Damage
 include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
+using TimerOutputs
 global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
 Set_modules.include_files(module_list)
 
@@ -27,10 +28,10 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     return datamanager
 end
 
-function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, model_param::Dict, synchronise_field, time::Float64, dt::Float64)
+function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, model_param::Dict, synchronise_field, time::Float64, dt::Float64, to::TimerOutput)
 
     specifics = Dict{String,String}("Call Function" => "compute_damage_pre_calculation", "Name" => "damage_name")
-    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, block, synchronise_field, time, dt))
+    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, block, synchronise_field, time, dt, to))
     if isnothing(datamanager)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
     end
