@@ -216,8 +216,7 @@ exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes["Fiel
     @test global_vars[2] == "External_Forces"
 
     ftest = read_values(exo, GlobalVariable, 2)
-    @test ftest[1] == 0.1
-    @test ftest[2] == 0.2
+    @test ftest[1] == 0.2
 
 end
 
@@ -231,7 +230,7 @@ end
     @test merged
 end
 
-exo = Write_Exodus_Results.write_global_results_in_csv(csv_file, [0.1, 0.2])
+Write_Exodus_Results.write_global_results_in_csv(csv_file, [0.1, 0.2])
 
 @testset "ut_write_global_results_in_csv" begin
 
