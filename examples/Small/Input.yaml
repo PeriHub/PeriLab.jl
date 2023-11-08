@@ -89,7 +89,7 @@ PeriLab:
     Damage Models: True
     Verbose: False
     Initial Time: 0.0
-    Final Time: 0.00002
+    Final Time: 0.00001
     Stop after damage initiation: False
     End step after damage: 3
     Verlet:
@@ -112,8 +112,9 @@ PeriLab:
       Variable: "Displacements"
   Outputs:
     Output1:
+      Flush File: False
       Output Filename: "test_1"
-      Output Type: "Exodus"
+      Output File Type: "Exodus"
       Number of Output Steps: 10
       Output Variables:
         Forces: True
@@ -123,8 +124,9 @@ PeriLab:
         External_Forces: True
         External_Displacements: True
     Output2:
+      Flush File: False
       Output Filename: "test_2"
-      Output Type: "CSV"
+      Output File Type: "CSV"
       Number of Output Steps: 10
       Output Variables:
         Forces: True

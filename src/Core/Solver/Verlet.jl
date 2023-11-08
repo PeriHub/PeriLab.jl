@@ -322,7 +322,7 @@ This function depends on various data fields and properties from the `datamanage
 
 """
 
-function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, synchronise_field, write_results, to::TimerOutputs.TimerOutput, silent::Bool, verbose::Bool)
+function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, synchronise_field, write_results, to::TimerOutputs.TimerOutput, silent::Bool)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
@@ -394,7 +394,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
                 # heat capacity check. if it is zero deltaT = 0
                 deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
             end
-            result_files = write_results(result_files, start_time + step_time, outputs, datamanager, verbose)
+            result_files = write_results(result_files, start_time + step_time, outputs, datamanager)
             # for file in result_files
             #     flush(file)
             # end

@@ -49,7 +49,7 @@ PeriLab:
   Outputs:
     Output1:
       Output Filename: "heat_transfer"
-      Output Type: Exodus
+      Output File Type: Exodus
       Number of Output Steps: 10
       Output Variables:
         Temperature: True

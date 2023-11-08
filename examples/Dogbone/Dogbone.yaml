@@ -10,20 +10,20 @@ PeriLab:
       Node Set 2: ns_Dogbone_2.txt
     Type: Text File
   Physics:
-        Pre Calculation:
-            Deformed Bond Geometry: true
-            Deformation Gradient: false
-            Shape Tensor: false
-            Bond Associated Shape Tensor: false
-            Bond Associated Deformation Gradient: false
-        Material Models: 
-            PMMA: 
-                Material Model: "PD Solid Elastic"
-                #Material Model: "Correspondence Elastic"
-                Symmetry: "isotropic plane stress"
-                Young's Modulus: 7.0e+5
-                Poisson's Ratio: 0.33
-                Zero Energy Mode Control: "Global"
+    Pre Calculation:
+      Deformed Bond Geometry: true
+      Deformation Gradient: false
+      Shape Tensor: false
+      Bond Associated Shape Tensor: false
+      Bond Associated Deformation Gradient: false
+    Material Models:
+      PMMA:
+        Material Model: "PD Solid Elastic"
+        #Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 7.0e+5
+        Poisson's Ratio: 0.33
+        Zero Energy Mode Control: "Global"
   Boundary Conditions:
     BC_1:
       Coordinate: x
@@ -51,7 +51,7 @@ PeriLab:
       Density: 1.4e-8
       Horizon: 0.301
       Material Model: PMMA
-      Damage Model: DamageTest
+      # Damage Model: DamageTest
     block_4:
       Block Names: block_4
       Density: 1.4e-8
@@ -71,7 +71,7 @@ PeriLab:
       Output Variables:
         Displacements: true
         Forces: true
-        Number of Neighbors: true   
+        Number of Neighbors: true
   Solver:
     Final Time: 1e-8
     Initial Time: 0.0

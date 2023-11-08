@@ -28,7 +28,7 @@ PeriLab:
       Material Model: "Test"
       Thermal Model: "Thermal test"
       Density: 2.0e-9
-      Horizon:  1.1005
+      Horizon: 1.1005
       Specific Heat Capacity: 1
     block_2:
       Block Names: "block_2"
@@ -41,7 +41,7 @@ PeriLab:
     BC_1:
       Type: "Temperature"
       Node Set: "Node Set 1"
-      Value: "1.0*t"  
+      Value: "1.0*t"
   Solver:
     Material Models: True
     Thermal Models: True
@@ -54,11 +54,9 @@ PeriLab:
   Outputs:
     Output1:
       Output Filename: "thermal_expansion_correspondence"
-      Output Type: Exodus
+      Output File Type: Exodus
       Number of Output Steps: 10
       Output Variables:
         Temperature: True
         Displacements: True
         Volume: True
-
-
