@@ -73,7 +73,9 @@ function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, w
 
         # Calculate t
         t = bond_damage[iID][:] .* omega[iID] .* (c1 .* zeta .+ alpha .* stretch)
-
+        if deformed_bond[iID][:, end] == 0
+            @error "Length of bond is zero due to its deformation."
+        end
         # Calculate bond force
         bond_force[iID] = t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
 
