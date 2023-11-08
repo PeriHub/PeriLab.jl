@@ -50,7 +50,7 @@ function get_flush_file(outputs::Dict, output::String)
     if check_element(outputs[output], "Flush File")
         return outputs[output]["Flush File"]
     else
-        return "False"
+        return false
     end
 end
 
