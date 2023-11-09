@@ -53,7 +53,7 @@ function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{I
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
-    bond_geometryetry = datamanager.get_field("Bond Geometry")
+    bond_geometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     nneighbors = datamanager.get_field("Number of Neighbors")
     Cv = datamanager.get_field("Specific Heat Capacity")
@@ -61,14 +61,14 @@ function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{I
     eigLam = maximum(eigvals(lambda))
 
     for iID in nodes
-        denominator = get_cs_denominator(volume[nlist[iID]], bond_geometryetry[iID][:, dof+1])
+        denominator = get_cs_denominator(volume[nlist[iID]], bond_geometry[iID][:, dof+1])
         t = density[iID] * Cv[iID] / (eigLam * denominator)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
     end
     return sqrt(criticalTimeStep)
 end
-function get_cs_denominator(volume::Union{SubArray,Vector{Float64},Vector{Int64}}, bond_geometryetry::Union{SubArray,Vector{Float64},Vector{Int64}})
-    return sum(volume ./ bond_geometryetry)
+function get_cs_denominator(volume::Union{SubArray,Vector{Float64},Vector{Int64}}, bond_geometry::Union{SubArray,Vector{Float64},Vector{Int64}})
+    return sum(volume ./ bond_geometry)
 end
 
 """
@@ -100,12 +100,12 @@ function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int6
     criticalTimeStep::Float64 = 1.0e50
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
-    bond_geometryetry = datamanager.get_field("Bond Geometry")
+    bond_geometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     horizon = datamanager.get_field("Horizon")
 
     for iID in nodes
-        denominator = get_cs_denominator(volume[nlist[iID]], bond_geometryetry[iID][:, end])
+        denominator = get_cs_denominator(volume[nlist[iID]], bond_geometry[iID][:, end])
 
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 
