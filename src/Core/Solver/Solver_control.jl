@@ -17,7 +17,7 @@ using .Boundary_conditions
 using .Verlet
 using TimerOutputs
 
-function init_bondDamage_and_influence_function(A, B, C)
+function init_bond_damage_and_influence_function(A, B, C)
     for id in eachindex(A)
         A[id] = fill(1.0, size(A[id]))
         B[id] = fill(1.0, size(B[id]))
@@ -41,8 +41,8 @@ function init(params::Dict, datamanager::Module)
     solver_options = get_solver_options(params)
 
     omega = datamanager.create_constant_bond_field("Influence Function", Float64, 1)
-    bondDamageN, bondDamageNP1 = datamanager.create_bond_field("Bond Damage", Float64, 1)
-    omega[:], bondDamageN, bondDamageNP1 = init_bondDamage_and_influence_function(omega, bondDamageN, bondDamageNP1)
+    bond_damageN, bond_damageNP1 = datamanager.create_bond_field("Bond Damage", Float64, 1)
+    omega[:], bond_damageN, bond_damageNP1 = init_bond_damage_and_influence_function(omega, bond_damageN, bond_damageNP1)
 
     Physics.read_properties(params, datamanager, solver_options["Material Models"])
     datamanager = Physics.init_models(params, datamanager, allBlockNodes, solver_options)

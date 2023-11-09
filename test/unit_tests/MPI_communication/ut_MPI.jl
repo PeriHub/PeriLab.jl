@@ -76,26 +76,26 @@ if ncores == 3
 
     overlap_map = Read_Mesh.get_local_overlap_map(overlap_map, distribution, ncores)
 
-    testDatamanager = Data_manager
+    test_Data_manager = Data_manager
 
     if rank == 0
-        testDatamanager.set_nmasters(1)
-        testDatamanager.set_nslaves(2)
+        test_Data_manager.set_nmasters(1)
+        test_Data_manager.set_nslaves(2)
     end
     if rank == 1
-        testDatamanager.set_nmasters(2)
-        testDatamanager.set_nslaves(1)
+        test_Data_manager.set_nmasters(2)
+        test_Data_manager.set_nslaves(1)
     end
     if rank == 2
-        testDatamanager.set_nmasters(1)
-        testDatamanager.set_nslaves(2)
+        test_Data_manager.set_nmasters(1)
+        test_Data_manager.set_nslaves(2)
     end
-    testDatamanager.set_dof(2)
-    A = testDatamanager.create_constant_node_field("A", Float64, 1)
-    B = testDatamanager.create_constant_node_field("B", Float64, 4)
-    C = testDatamanager.create_constant_node_field("C", Int64, 1)
-    D = testDatamanager.create_constant_node_field("D", Int64, 5)
-    E = testDatamanager.create_constant_node_field("E", Bool, 1)
+    test_Data_manager.set_dof(2)
+    A = test_Data_manager.create_constant_node_field("A", Float64, 1)
+    B = test_Data_manager.create_constant_node_field("B", Float64, 4)
+    C = test_Data_manager.create_constant_node_field("C", Int64, 1)
+    D = test_Data_manager.create_constant_node_field("D", Int64, 5)
+    E = test_Data_manager.create_constant_node_field("E", Bool, 1)
     if rank == 0
         A[1] = 1.4
         A[2] = 3

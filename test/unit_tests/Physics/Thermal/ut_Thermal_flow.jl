@@ -11,6 +11,6 @@ include("../../../../src/Support/data_manager.jl")
 @test Thermal_Flow.thermal_model_name() == "Thermal Flow"
 
 @testset "ut_compute_thermal_model" begin
-    testDatamanager = Data_manager
-    @test Thermal_Flow.compute_thermal_model(testDatamanager, Vector{Int64}(1:3), Dict("a" => 1), 1.0, 1.0) == testDatamanager
+    test_Data_manager = Data_manager
+    @test Thermal_Flow.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict("a" => 1), 1.0, 1.0) == test_Data_manager
 end

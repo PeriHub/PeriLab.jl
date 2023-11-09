@@ -10,14 +10,14 @@ import .Geometry
 @testset "ut_bond_geometry" begin
     nnodes = 4
     dof = 2
-    testDatamanager = Data_manager
-    testDatamanager.set_nmasters(nnodes)
-    testDatamanager.set_dof(dof)
-    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int32, 1)
+    test_Data_manager = Data_manager
+    test_Data_manager.set_nmasters(nnodes)
+    test_Data_manager.set_dof(dof)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int32, 1)
     nn[:] = [2, 2, 2, 1]
-    coor = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
-    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, 3)
-    nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    coor = test_Data_manager.create_constant_node_field("Coordinates", Float64, 2)
+    bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
+    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     nlist[1] = [2, 3]
     nlist[2] = [1, 3]
     nlist[3] = [1, 2]
@@ -32,76 +32,76 @@ import .Geometry
     coor[4, 1] = 0
     coor[4, 2] = 1
 
-    bondGeom = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bondGeom)
+    bond_geometry = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bond_geometry)
 
-    @test bondGeom[1][1, 1] == 0.5
-    @test bondGeom[1][1, 2] == 0.5
-    @test bondGeom[1][1, 3] / sqrt(0.5) - 1 < 1e-8
-    @test bondGeom[1][2, 1] == 1
-    @test bondGeom[1][2, 2] == 0
-    @test bondGeom[1][2, 3] == 1
+    @test bond_geometry[1][1, 1] == 0.5
+    @test bond_geometry[1][1, 2] == 0.5
+    @test bond_geometry[1][1, 3] / sqrt(0.5) - 1 < 1e-8
+    @test bond_geometry[1][2, 1] == 1
+    @test bond_geometry[1][2, 2] == 0
+    @test bond_geometry[1][2, 3] == 1
 
-    @test bondGeom[2][1, 1] == -0.5
-    @test bondGeom[2][1, 2] == -0.5
-    @test bondGeom[2][1, 3] / sqrt(0.5) - 1 < 1e-8
-    @test bondGeom[2][2, 1] == 0.5
-    @test bondGeom[2][2, 2] == -0.5
-    @test bondGeom[2][2, 3] / sqrt(1.25) - 1 < 1e-8
+    @test bond_geometry[2][1, 1] == -0.5
+    @test bond_geometry[2][1, 2] == -0.5
+    @test bond_geometry[2][1, 3] / sqrt(0.5) - 1 < 1e-8
+    @test bond_geometry[2][2, 1] == 0.5
+    @test bond_geometry[2][2, 2] == -0.5
+    @test bond_geometry[2][2, 3] / sqrt(1.25) - 1 < 1e-8
 
-    @test bondGeom[3][1, 1] == -1
-    @test bondGeom[3][1, 2] == 0
-    @test bondGeom[3][1, 3] == 1
-    @test bondGeom[3][2, 1] == -0.5
-    @test bondGeom[3][2, 2] == 0.5
-    @test bondGeom[3][2, 3] / sqrt(1.25) - 1 < 1e-8
+    @test bond_geometry[3][1, 1] == -1
+    @test bond_geometry[3][1, 2] == 0
+    @test bond_geometry[3][1, 3] == 1
+    @test bond_geometry[3][2, 1] == -0.5
+    @test bond_geometry[3][2, 2] == 0.5
+    @test bond_geometry[3][2, 3] / sqrt(1.25) - 1 < 1e-8
 
-    @test bondGeom[4][1, 1] == 0.5
-    @test bondGeom[4][1, 2] == -0.5
-    @test bondGeom[4][1, 3] / sqrt(1.25) - 1 < 1e-8
+    @test bond_geometry[4][1, 1] == 0.5
+    @test bond_geometry[4][1, 2] == -0.5
+    @test bond_geometry[4][1, 3] / sqrt(1.25) - 1 < 1e-8
     coor[:, :] .= 0
-    bondGeom[1][:, :] .= 0
-    bondGeom[2][:, :] .= 0
-    bondGeom[3][:, :] .= 0
-    bondGeom[4][:, :] .= 0
+    bond_geometry[1][:, :] .= 0
+    bond_geometry[2][:, :] .= 0
+    bond_geometry[3][:, :] .= 0
+    bond_geometry[4][:, :] .= 0
 
-    bondGeom = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bondGeom)
+    bond_geometry = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bond_geometry)
     println()
-    @test isnothing(bondGeom)
+    @test isnothing(bond_geometry)
 end
-@testset "ut_shapeTensorAndDefGrad" begin
+@testset "ut_shapeTensorAnddeformation_gradient" begin
     nnodes = 4
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
-    testDatamanager = Data_manager
-    testDatamanager.set_nmasters(nnodes)
-    testDatamanager.set_dof(dof)
-    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int32, 1)
+    test_Data_manager = Data_manager
+    test_Data_manager.set_nmasters(nnodes)
+    test_Data_manager.set_dof(dof)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int32, 1)
     nn[:] = [3, 3, 3, 3]
-    delete!(testDatamanager.fields[Int64], "Neighborhoodlist")
-    delete!(testDatamanager.field_names, "Neighborhoodlist")
-    delete!(testDatamanager.fields[Float64], "Bond Geometry")
-    delete!(testDatamanager.field_names, "Bond Geometry")
-    coor = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
-    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
+    delete!(test_Data_manager.fields[Int64], "Neighborhoodlist")
+    delete!(test_Data_manager.field_names, "Neighborhoodlist")
+    delete!(test_Data_manager.fields[Float64], "Bond Geometry")
+    delete!(test_Data_manager.field_names, "Bond Geometry")
+    coor = test_Data_manager.create_constant_node_field("Coordinates", Float64, 2)
+    bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
     # does not have to be NP1 for testing
-    deformedBond = testDatamanager.create_constant_bond_field("Deformed Bond Geometry", Float64, dof + 1)
+    deformed_bond = test_Data_manager.create_constant_bond_field("Deformed Bond Geometry", Float64, dof + 1)
 
-    nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
-    omega = testDatamanager.create_constant_bond_field("Influence Function", Float64, 1)
+    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
+    omega = test_Data_manager.create_constant_bond_field("Influence Function", Float64, 1)
 
-    bondDamage = testDatamanager.create_constant_bond_field("Bond Damage", Float64, 1)
-    shapeTensor = testDatamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
-    invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
-    defGrad = testDatamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+    bond_damage = test_Data_manager.create_constant_bond_field("Bond Damage", Float64, 1)
+    shapeTensor = test_Data_manager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
+    inverse_shape_tensor = test_Data_manager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
+    deformation_gradient = test_Data_manager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
     omega[1][:] .= 1
     omega[2][:] .= 1
     omega[3][:] .= 1
     omega[4][:] .= 1
-    bondDamage[1][:] .= 1
-    bondDamage[2][:] .= 1
-    bondDamage[3][:] .= 1
-    bondDamage[4][:] .= 1
+    bond_damage[1][:] .= 1
+    bond_damage[2][:] .= 1
+    bond_damage[3][:] .= 1
+    bond_damage[4][:] .= 1
     volume[:] .= 1
     nlist[1] = [2, 3, 4]
     nlist[2] = [1, 3, 4]
@@ -116,100 +116,100 @@ end
     coor[4, 1] = 1
     coor[4, 2] = 0.5
 
-    bondGeom = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bondGeom)
-    shapeTensor, invShapeTensor = Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, shapeTensor, invShapeTensor)
+    bond_geometry = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bond_geometry)
+    shapeTensor, inverse_shape_tensor = Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, bond_geometry, shapeTensor, inverse_shape_tensor)
 
-    defcoor = copy(coor)
+    deformed_coor = copy(coor)
 
-    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
+    deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, bond_geometry, bond_geometry, inverse_shape_tensor, deformation_gradient)
     for i in 1:nnodes
-        @test defGrad[i, 1, 1] - 1 < 1e-7
-        @test defGrad[i, 1, 2] < 1e-7
-        @test defGrad[i, 2, 1] < 1e-7
-        @test defGrad[i, 2, 2] - 1 < 1e-7
+        @test deformation_gradient[i, 1, 1] - 1 < 1e-7
+        @test deformation_gradient[i, 1, 2] < 1e-7
+        @test deformation_gradient[i, 2, 1] < 1e-7
+        @test deformation_gradient[i, 2, 2] - 1 < 1e-7
     end
-    defcoor[1, 1] = -0.25
-    defcoor[3, 1] = -0.25
-    defcoor[2, 1] = 0.25
-    defcoor[4, 1] = 0.25
+    deformed_coor[1, 1] = -0.25
+    deformed_coor[3, 1] = -0.25
+    deformed_coor[2, 1] = 0.25
+    deformed_coor[4, 1] = 0.25
 
-    deformedBond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, defcoor, deformedBond)
-    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, deformedBond, bondGeom, invShapeTensor, defGrad)
+    deformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, deformed_coor, deformed_bond)
+    deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, deformed_bond, bond_geometry, inverse_shape_tensor, deformation_gradient)
 
     for i in 1:nnodes
         for j in 1:nn[i]
-            testVec = defGrad[i, :, :] * bondGeom[i][j, 1:dof] - deformedBond[i][j, 1:dof]
+            test_vector = deformation_gradient[i, :, :] * bond_geometry[i][j, 1:dof] - deformed_bond[i][j, 1:dof]
             for k in 1:dof
-                @test abs(testVec[k]) < 1e-7
+                @test abs(test_vector[k]) < 1e-7
             end
         end
     end
 
-    defcoor = copy(coor)
-    defcoor[3, 2] = 1.5
-    defcoor[4, 2] = 1.5
+    deformed_coor = copy(coor)
+    deformed_coor[3, 2] = 1.5
+    deformed_coor[4, 2] = 1.5
 
-    deformedBond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, defcoor, deformedBond)
-    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, deformedBond, bondGeom, invShapeTensor, defGrad)
+    deformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, deformed_coor, deformed_bond)
+    deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, deformed_bond, bond_geometry, inverse_shape_tensor, deformation_gradient)
     for i in 1:nnodes
         for j in nn[i]
-            testVec = defGrad[i, :, :] * bondGeom[i][j, 1:dof] - deformedBond[i][j, 1:dof]
+            test_vector = deformation_gradient[i, :, :] * bond_geometry[i][j, 1:dof] - deformed_bond[i][j, 1:dof]
             for k in 1:dof
-                @test abs(testVec[k]) < 1e-7
+                @test abs(test_vector[k]) < 1e-7
             end
         end
     end
 
-    defcoor[1, 1] = 0.0
-    defcoor[1, 2] = 0
-    defcoor[2, 1] = 1
-    defcoor[2, 2] = 0
-    defcoor[3, 1] = 0.5
-    defcoor[3, 2] = 0.5
-    defcoor[4, 1] = 1.5
-    defcoor[4, 2] = 0.5
+    deformed_coor[1, 1] = 0.0
+    deformed_coor[1, 2] = 0
+    deformed_coor[2, 1] = 1
+    deformed_coor[2, 2] = 0
+    deformed_coor[3, 1] = 0.5
+    deformed_coor[3, 2] = 0.5
+    deformed_coor[4, 1] = 1.5
+    deformed_coor[4, 2] = 0.5
 
-    deformedBond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, defcoor, deformedBond)
-    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, deformedBond, bondGeom, invShapeTensor, defGrad)
+    deformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, deformed_coor, deformed_bond)
+    deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, deformed_bond, bond_geometry, inverse_shape_tensor, deformation_gradient)
     for i in 1:nnodes
         for j in nn[i]
-            testVec = defGrad[i, :, :] * bondGeom[i][j, 1:dof] - deformedBond[i][j, 1:dof]
+            test_vector = deformation_gradient[i, :, :] * bond_geometry[i][j, 1:dof] - deformed_bond[i][j, 1:dof]
             for k in 1:dof
-                @test abs(testVec[k]) < 1e-7
+                @test abs(test_vector[k]) < 1e-7
             end
         end
     end
-    bondDamage[1][:] .= 0
-    bondDamage[2][:] .= 0
-    bondDamage[3][:] .= 0
-    bondDamage[4][:] .= 0
+    bond_damage[1][:] .= 0
+    bond_damage[2][:] .= 0
+    bond_damage[3][:] .= 0
+    bond_damage[4][:] .= 0
 
-    shapeTensor, invShapeTensor = Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, shapeTensor, invShapeTensor)
+    shapeTensor, inverse_shape_tensor = Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, bond_geometry, shapeTensor, inverse_shape_tensor)
     @test isnothing(shapeTensor)
-    @test isnothing(invShapeTensor)
+    @test isnothing(inverse_shape_tensor)
 end
 
 @testset "ut_strain" begin
-    testDatamanager = Data_manager
-    dof = testDatamanager.get_dof()
+    test_Data_manager = Data_manager
+    dof = test_Data_manager.get_dof()
     nnodes = 4
     nodes = Vector{Int64}(1:nnodes)
-    defGrad = testDatamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
-    strainInc = testDatamanager.create_constant_node_field("Strain", Float64, "Matrix", dof)
-    nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
-    omega = testDatamanager.create_constant_bond_field("Influence Function", Float64, 1)
-    bondDamage = testDatamanager.create_constant_bond_field("Bond Damage", Float64, 1)
-    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
-    shapeTensor = testDatamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
-    invShapeTensor = testDatamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
+    deformation_gradient = test_Data_manager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+    strainInc = test_Data_manager.create_constant_node_field("Strain", Float64, "Matrix", dof)
+    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
+    omega = test_Data_manager.create_constant_bond_field("Influence Function", Float64, 1)
+    bond_damage = test_Data_manager.create_constant_bond_field("Bond Damage", Float64, 1)
+    bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
+    shapeTensor = test_Data_manager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
+    inverse_shape_tensor = test_Data_manager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
 
 
-    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
-    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), defGrad, strainInc)
-    defGrad = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bondDamage, bondGeom, bondGeom, invShapeTensor, defGrad)
-    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), defGrad, strainInc) - strainInc
-    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), defGrad, strainInc) - strainInc
+    deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, bond_geometry, bond_geometry, inverse_shape_tensor, deformation_gradient)
+    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc)
+    deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, bond_geometry, bond_geometry, inverse_shape_tensor, deformation_gradient)
+    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc) - strainInc
+    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc) - strainInc
 
 
     for i in 1:nnodes
@@ -219,26 +219,26 @@ end
         @test strainInc[i, 2, 2] == 0
     end
 
-    defGrad = zeros(4, 3, 3)
+    deformation_gradient = zeros(4, 3, 3)
     strainInc = zeros(4, 3, 3)
 
 
-    defGrad[1, 1, 1] = 2.0
-    defGrad[1, 1, 2] = 1.0
-    defGrad[1, 1, 3] = 2.0
-    defGrad[1, 2, 1] = 2.0
-    defGrad[1, 2, 2] = 1.0
-    defGrad[1, 2, 3] = 2.3
-    defGrad[1, 3, 1] = 2.0
-    defGrad[1, 3, 2] = -1.0
-    defGrad[1, 3, 3] = 3.0
+    deformation_gradient[1, 1, 1] = 2.0
+    deformation_gradient[1, 1, 2] = 1.0
+    deformation_gradient[1, 1, 3] = 2.0
+    deformation_gradient[1, 2, 1] = 2.0
+    deformation_gradient[1, 2, 2] = 1.0
+    deformation_gradient[1, 2, 3] = 2.3
+    deformation_gradient[1, 3, 1] = 2.0
+    deformation_gradient[1, 3, 2] = -1.0
+    deformation_gradient[1, 3, 3] = 3.0
 
-    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), defGrad, strainInc)
+    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc)
     identity = zeros(3, 3)
     identity[1, 1] = 1
     identity[2, 2] = 1
     identity[3, 3] = 1
-    test = 0.5 * (transpose(defGrad[1, :, :]) * defGrad[1, :, :] - identity)
+    test = 0.5 * (transpose(deformation_gradient[1, :, :]) * deformation_gradient[1, :, :] - identity)
     for i in 1:dof
         for j in 1:dof
             @test strainInc[1, i, j] == test[i, j]

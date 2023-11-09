@@ -49,8 +49,8 @@ end
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
 
     nlist = datamanager.get_nlist()
-    bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
-    bondGeom = datamanager.get_field("Bond Geometry")
+    bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")
+    bond_geometry = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
     blockIds = datamanager.get_field("Block_Id")
@@ -64,13 +64,13 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
     for iID in nodes
         for jID in nneighbors[iID]
-            stretch = (deformed_bond[iID][jID, end] - bondGeom[iID][jID, end]) / bondGeom[iID][jID, end]
+            stretch = (deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end]) / bond_geometry[iID][jID, end]
             crit_stretch = cricital_stretch
             if interBlockDamage
                 crit_stretch = inter_critical_stretch[blockIds[iID], blockIds[nlist[iID][jID]], block]
             end
             if stretch > crit_stretch
-                bondDamageNP1[iID][jID] = 0
+                bond_damageNP1[iID][jID] = 0
             end
         end
     end

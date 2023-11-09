@@ -154,16 +154,16 @@ end
     @test (freq[2] == 100) || (freq[2] == 20)
 end
 
-testDatamanager = Data_manager
+test_Data_manager = Data_manager
 @testset "ut_get_outputs" begin
-    testDatamanager.set_nmasters(5)
-    testDatamanager.create_constant_node_field("A", Float64, 1)
-    testDatamanager.create_node_field("B", Bool, 1)
-    testDatamanager.create_constant_node_field("C", Float64, 4)
-    testDatamanager.create_node_field("D", Int64, 7)
-    testDatamanager.create_node_field("F", Float64, 1)
-    testDatamanager.create_constant_node_field("E", Float64, 4)
-    testfield_keys = testDatamanager.get_all_field_keys()
+    test_Data_manager.set_nmasters(5)
+    test_Data_manager.create_constant_node_field("A", Float64, 1)
+    test_Data_manager.create_node_field("B", Bool, 1)
+    test_Data_manager.create_constant_node_field("C", Float64, 4)
+    test_Data_manager.create_node_field("D", Int64, 7)
+    test_Data_manager.create_node_field("F", Float64, 1)
+    test_Data_manager.create_constant_node_field("E", Float64, 4)
+    testfield_keys = test_Data_manager.get_all_field_keys()
 
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => false, "C" => true)), "Output2" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true, "M" => true))))
 
@@ -200,7 +200,7 @@ testDatamanager = Data_manager
 end
 @testset "ut_get_computes" begin
     params = Dict()
-    testfield_keys = testDatamanager.get_all_field_keys()
+    testfield_keys = test_Data_manager.get_all_field_keys()
     @test get_computes(params, testfield_keys) == Dict()
 
     params = Dict("Compute Class Parameters" => Dict("External_Forces" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Sum", "Block" => "block_2", "Variable" => "A"), "External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "B"), "warn_test" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1")))
@@ -214,7 +214,7 @@ end
     @test computes["External_Displacements"]["Variable"] == "BNP1"
 end
 @testset "ut_get_computes_names" begin
-    testfield_keys = testDatamanager.get_all_field_keys()
+    testfield_keys = test_Data_manager.get_all_field_keys()
 
     params = Dict("Compute Class Parameters" => Dict("External_Forces" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Sum", "Block" => "block_2", "Variable" => "A"), "External_Displacements" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "B")))
 

@@ -57,17 +57,17 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     angles = datamanager.get_field("Angles")
   end
   dof = datamanager.get_dof()
-  defGrad = datamanager.get_field("Deformation Gradient")
+  deformation_gradient = datamanager.get_field("Deformation Gradient")
   bond_force = datamanager.get_field("Bond Forces")
 
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
 
-  bondGeom = datamanager.get_field("Bond Geometry")
-  invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
+  bond_geometry = datamanager.get_field("Bond Geometry")
+  inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
 
   strainN, strainNP1 = datamanager.create_node_field("Strain", Float64, "Matrix", dof)
   stressN, stressNP1 = datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
-  strainNP1 = Geometry.strain(nodes, defGrad, strainNP1)
+  strainNP1 = Geometry.strain(nodes, deformation_gradient, strainNP1)
   strainInc = strainNP1 - strainN
 
   if rotation
@@ -81,7 +81,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   if rotation
     stressNP1 = rotate(nodes, dof, stressNP1, angles, true)
   end
-  bond_force[:] = calculate_bond_force(nodes, defGrad, bondGeom, bond_damage, invShapeTensor, stressNP1, bond_force)
+  bond_force[:] = calculate_bond_force(nodes, deformation_gradient, bond_geometry, bond_damage, inverse_shape_tensor, stressNP1, bond_force)
   # general interface, because it might be a flexbile Set_modules interface in future
   datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
 
@@ -103,18 +103,18 @@ end
 
 
 
-function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, defGrad, bondGeom, bond_damage, invShapeTensor, stressNP1, bond_force)
+function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient, bond_geometry, bond_damage, inverse_shape_tensor, stressNP1, bond_force)
   for iID in nodes
-    jacobian = det(defGrad[iID, :, :])
+    jacobian = det(deformation_gradient[iID, :, :])
     if jacobian <= 1e-8
       @error "Deformation Gradient is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
     end
     # taken from corresponcence.cxx -> computeForcesAndStresses
-    invDefGrad = inv(defGrad[iID, :, :])
-    piolaStress = jacobian .* invDefGrad * stressNP1[iID, :, :]
-    temp = piolaStress * invShapeTensor[iID, :, :]
+    invdeformation_gradient = inv(deformation_gradient[iID, :, :])
+    piolaStress = jacobian .* invdeformation_gradient * stressNP1[iID, :, :]
+    temp = piolaStress * inverse_shape_tensor[iID, :, :]
     for jID in eachindex(bond_force[iID][:, 1])
-      bond_force[iID][jID, :] = temp * (bond_damage[iID][jID] .* bondGeom[iID][jID, 1:end-1])
+      bond_force[iID][jID, :] = temp * (bond_damage[iID][jID] .* bond_geometry[iID][jID, 1:end-1])
     end
   end
 

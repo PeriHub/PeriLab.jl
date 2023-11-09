@@ -53,7 +53,7 @@ function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{I
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
-    bondgeometry = datamanager.get_field("Bond Geometry")
+    bond_geometryetry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     nneighbors = datamanager.get_field("Number of Neighbors")
     Cv = datamanager.get_field("Specific Heat Capacity")
@@ -61,14 +61,14 @@ function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{I
     eigLam = maximum(eigvals(lambda))
 
     for iID in nodes
-        denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, dof+1])
+        denominator = get_cs_denominator(volume[nlist[iID]], bond_geometryetry[iID][:, dof+1])
         t = density[iID] * Cv[iID] / (eigLam * denominator)
         criticalTimeStep = test_timestep(t, criticalTimeStep)
     end
     return sqrt(criticalTimeStep)
 end
-function get_cs_denominator(volume::Union{SubArray,Vector{Float64},Vector{Int64}}, bondgeometry::Union{SubArray,Vector{Float64},Vector{Int64}})
-    return sum(volume ./ bondgeometry)
+function get_cs_denominator(volume::Union{SubArray,Vector{Float64},Vector{Int64}}, bond_geometryetry::Union{SubArray,Vector{Float64},Vector{Int64}})
+    return sum(volume ./ bond_geometryetry)
 end
 
 """
@@ -100,12 +100,12 @@ function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int6
     criticalTimeStep::Float64 = 1.0e50
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
-    bondgeometry = datamanager.get_field("Bond Geometry")
+    bond_geometryetry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     horizon = datamanager.get_field("Horizon")
 
     for iID in nodes
-        denominator = get_cs_denominator(volume[nlist[iID]], bondgeometry[iID][:, end])
+        denominator = get_cs_denominator(volume[nlist[iID]], bond_geometryetry[iID][:, end])
 
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 
@@ -331,7 +331,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
     coor = datamanager.get_field("Coordinates")
     uNP1 = datamanager.get_field("Displacements", "NP1")
 
-    defCoorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
+    deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     if solver_options["Material Models"]
         forces = datamanager.get_field("Forces", "NP1")
         forces_density = datamanager.get_field("Force Densities", "NP1")
@@ -340,7 +340,7 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
         vNP1 = datamanager.get_field("Velocity", "NP1")
         a = datamanager.get_field("Acceleration")
         coor = datamanager.get_field("Coordinates")
-        defCoorN = datamanager.get_field("Deformed Coordinates", "N")
+        deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
     end
     if solver_options["Thermal Models"]
         flowN = datamanager.get_field("Heat Flow", "N")
@@ -371,9 +371,9 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             end
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
             #if solver_options["Material Models"]
-            #needed because of optional defGrad, Deformed bonds, etc.
+            #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
-            defCoorNP1[:, :] = coor[:, :] + uNP1[:, :]
+            deformed_coorNP1[:, :] = coor[:, :] + uNP1[:, :]
             #end
             datamanager.synch_manager(synchronise_field, "upload_to_cores")
             # synch

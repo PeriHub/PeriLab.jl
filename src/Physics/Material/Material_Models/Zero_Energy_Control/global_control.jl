@@ -24,21 +24,21 @@ function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64
         angles = nothing
     end
     dof = datamanager.get_dof()
-    defGrad = datamanager.get_field("Deformation Gradient")
+    deformation_gradient = datamanager.get_field("Deformation Gradient")
     bond_force = datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
-    bondGeom = datamanager.get_field("Bond Geometry")
-    bondGeomNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    bond_geometry = datamanager.get_field("Bond Geometry")
+    bond_geometryNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness", Float64, "Matrix", dof)
     CVoigt = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
     zStiff = create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff, rotation)
-    bond_force = get_zero_energy_mode_force(nodes, zStiff, defGrad, bondGeom, bondGeomNP1, bond_force)
+    bond_force = get_zero_energy_mode_force(nodes, zStiff, deformation_gradient, bond_geometry, bond_geometryNP1, bond_force)
     return datamanager
 end
 
-function get_zero_energy_mode_force(nodes, zStiff, defGrad, bondGeom, bondGeomNP1, bond_force)
+function get_zero_energy_mode_force(nodes, zStiff, deformation_gradient, bond_geometry, bond_geometryNP1, bond_force)
     for iID in nodes
-        bond_force[iID][:, :] -= (bondGeom[iID][:, 1:end-1] * defGrad[iID, :, :] - bondGeomNP1[iID][:, 1:end-1]) * zStiff[iID, :, :]
+        bond_force[iID][:, :] -= (bond_geometry[iID][:, 1:end-1] * deformation_gradient[iID, :, :] - bond_geometryNP1[iID][:, 1:end-1]) * zStiff[iID, :, :]
     end
     return bond_force
 end

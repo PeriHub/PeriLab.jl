@@ -29,35 +29,35 @@ end
     params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => [1 2 3])), "Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")), "Blocks" => Dict("block_1" => Dict("Material Model" => "a", "Density" => 1e-6, "Horizon" => 2), "block_2" => Dict("Material Model" => "c", "Density" => 3e-6, "Horizon" => 2)), "Physics" => Dict("Material Models" => Dict("a" => Dict("Bulk Modulus" => 140.0), "c" => Dict("Bulk Modulus" => 140.0, "value2" => 1)), "Damage Models" => Dict("a" => Dict("value" => 3), "c" => Dict("value" => [1 2], "value2" => 1)), "Thermal Models" => Dict("therm" => Dict("Specific Heat Capacity" => 1e-9, "Lambda" => 1.1))), "Solver" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => false, "Thermal Models" => true, "Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)), "Outputs" => Dict("Output1" => Dict("Output Filename" => "test1.e", "Output Variables" => Dict("Velocity" => true, "Force" => false, "Displacements" => true)), "Output2" => Dict("Output Filename" => "test2.e", "Output Variables" => Dict("Displacements" => true))), "Boundary Conditions" => Dict("BC1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC2" => Dict("Type" => "Force", "Node Set" => "Nset_2", "Coordinate" => "x", "Value" => "20*t")))
     nnodes = 5
     dof = 2
-    testDatamanager = Data_manager
-    testDatamanager.set_comm(comm)
-    testDatamanager.set_dof(2)
-    testDatamanager.set_nmasters(nnodes)
-    testDatamanager.set_nnsets(2)
-    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    test_Data_manager = Data_manager
+    test_Data_manager.set_comm(comm)
+    test_Data_manager.set_dof(2)
+    test_Data_manager.set_nmasters(nnodes)
+    test_Data_manager.set_nnsets(2)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
 
     nn[1] = 4
     nn[2] = 4
     nn[3] = 4
     nn[4] = 4
     nn[5] = 4
-    id = testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
+    id = test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
 
     id[:] = [1, 1, 2, 2, 1]
-    testDatamanager.set_block_list(id)
+    test_Data_manager.set_block_list(id)
 
-    horizon = testDatamanager.create_constant_node_field("Horizon", Float64, 1)
-    coor = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
-    density = testDatamanager.create_constant_node_field("Density", Float64, 1)
-    volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
+    horizon = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
+    coor = test_Data_manager.create_constant_node_field("Coordinates", Float64, 2)
+    density = test_Data_manager.create_constant_node_field("Density", Float64, 1)
+    volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
 
-    testDatamanager.set_nset("Nset_1", [2])
-    testDatamanager.set_nset("Nset_2", [2, 3, 4])
+    test_Data_manager.set_nset("Nset_1", [2])
+    test_Data_manager.set_nset("Nset_2", [2, 3, 4])
 
-    testDatamanager.set_glob_to_loc([1, 2, 3, 4, 5])
+    test_Data_manager.set_glob_to_loc([1, 2, 3, 4, 5])
 
-    nlist = testDatamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    bondGeom = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, 3)
+    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
     nlist[1] = [2, 3, 4, 5]
     nlist[2] = [1, 3, 4, 5]
     nlist[3] = [1, 2, 4, 5]
@@ -79,9 +79,9 @@ end
     horizon[:] = [1.1, 1.1, 1.1, 1.1, 1.1]
     node_list = zeros(Int64, nnodes)
     node_list[:] = 1:nnodes
-    bondGeom = Geometry.bond_geometry(node_list, dof, nlist, coor, bondGeom)
-    @test !("Active" in testDatamanager.get_all_field_keys())
-    blockNodes, bcs, datamanager, solver_options = Solver.init(params, testDatamanager)
+    bond_geometry = Geometry.bond_geometry(node_list, dof, nlist, coor, bond_geometry)
+    @test !("Active" in test_Data_manager.get_all_field_keys())
+    blockNodes, bcs, datamanager, solver_options = Solver.init(params, test_Data_manager)
 
 
     @test solver_options["Material Models"]
@@ -96,17 +96,17 @@ end
     @test bcs["BC2"]["Node Set"] == [2, 3, 4]
     @test blockNodes[1] == [1, 2, 5]
     @test blockNodes[2] == [3, 4]
-    @test "TemperatureNP1" in testDatamanager.get_all_field_keys()
-    @test "DisplacementsNP1" in testDatamanager.get_all_field_keys()
-    @test "DamageNP1" in testDatamanager.get_all_field_keys()
-    @test ("ActivatedNP1" in testDatamanager.get_all_field_keys()) == false
-    @test ("Activated" in testDatamanager.get_all_field_keys()) == false
-    @test "Active" in testDatamanager.get_all_field_keys()
-    active = testDatamanager.get_field("Active")
+    @test "TemperatureNP1" in test_Data_manager.get_all_field_keys()
+    @test "DisplacementsNP1" in test_Data_manager.get_all_field_keys()
+    @test "DamageNP1" in test_Data_manager.get_all_field_keys()
+    @test ("ActivatedNP1" in test_Data_manager.get_all_field_keys()) == false
+    @test ("Activated" in test_Data_manager.get_all_field_keys()) == false
+    @test "Active" in test_Data_manager.get_all_field_keys()
+    active = test_Data_manager.get_field("Active")
     @test active[1:5] == [true, true, true, true, true]
     active[1:2] .= false
     active[5] = false
-    blockNodes, bcs, datamanager, solver_options = Solver.init(params, testDatamanager)
+    blockNodes, bcs, datamanager, solver_options = Solver.init(params, test_Data_manager)
     @test active[1:5] == [false, false, true, true, false]
 
 end

@@ -12,22 +12,22 @@ using Test
 end
 @testset "compute_forces" begin
     nodes = 2
-    testDatamanager = Data_manager
-    testDatamanager.set_nmasters(nodes)
+    test_Data_manager = Data_manager
+    test_Data_manager.set_nmasters(nodes)
     dof = 3
-    testDatamanager.set_dof(dof)
-    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    h = testDatamanager.create_constant_node_field("Horizon", Float64, 1)
+    test_Data_manager.set_dof(dof)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    h = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
 
     h[1:nodes] = 1:nodes
-    bf = testDatamanager.create_constant_bond_field("Bond Forces", Float64, dof)
+    bf = test_Data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
 
     nn[1] = 2
     nn[2] = 3
 
-    bdN, bdNP1 = testDatamanager.create_bond_field("Bond Damage", Float64, 1)
-    dbN, dbNP1 = testDatamanager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
-    bg = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
+    bdN, bdNP1 = test_Data_manager.create_bond_field("Bond Damage", Float64, 1)
+    dbN, dbNP1 = test_Data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
+    bg = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
     for iID in 1:nodes
         bdNP1[iID][:] .= 1
         bg[iID][:, end] .= 1
@@ -35,9 +35,9 @@ end
         dbNP1[iID][:, 1:dof] .= 1
     end
 
-    testDatamanager = Bondbased_Elastic.compute_forces(testDatamanager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0), 0.0, 0.0)
+    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0), 0.0, 0.0)
 
-    bf = testDatamanager.get_field("Bond Forces")
+    bf = test_Data_manager.get_field("Bond Forces")
     @test isapprox(bf[1][1, 1], -0.31830988618379064)
     @test isapprox(bf[1][1, 2], -0.31830988618379064)
     @test isapprox(bf[1][1, 3], -0.31830988618379064)

@@ -123,9 +123,9 @@ end
 
 function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
     dof = datamanager.get_dof()
-    defCoorN, defCoorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
-    defCoorN[:] = copy(datamanager.get_field("Coordinates"))
-    defCoorNP1[:] = copy(datamanager.get_field("Coordinates"))
+    deformed_coorN, deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
+    deformed_coorN[:] = copy(datamanager.get_field("Coordinates"))
+    deformed_coorNP1[:] = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
     if solver_options["Additive Models"]
         datamanager = Physics.init_additive_model_fields(datamanager)
