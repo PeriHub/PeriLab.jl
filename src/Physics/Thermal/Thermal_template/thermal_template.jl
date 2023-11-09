@@ -42,11 +42,11 @@ end
      ```
    """
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
-  @info "Please write a thermal flow model name in thermal_flow_name()."
+  @info "Please write a thermal model name in thermal_name()."
   @info "You can call your routine within the yaml file."
-  @info "Fill the compute_force(datamanager, nodes, thermal_parameter, time, dt) function."
+  @info "Fill the compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt) function."
   @info "The datamanager and thermal_parameter holds all you need to solve your problem on thermal flow level."
-  @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+  @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
   return datamanager
 end
 
