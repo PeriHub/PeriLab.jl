@@ -43,18 +43,17 @@ function compute_models(datamanager::Module, block_nodes::Union{SubArray,Vector{
             datamanager = Damage.set_bond_damage(datamanager, nodes)
             @timeit to "compute_damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, nodes, block, synchronise_field, time, dt)
             @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, nodes, datamanager.get_properties(block, "Damage Model"), block, time, dt)
-            update_list = datamanager.get_field("Update List")
-            update_nodes = view(nodes, find_active(update_list[nodes]))
             force_densities = datamanager.get_field("Force Densities", "NP1")
-            force_densities[nodes] .= 0.0
+            force_densities[nodes, :] .= 0.0
         end
     end
     update_nodes = view(nodes, find_active(update_list[nodes]))
+
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
 
     if options["Thermal Models"]
         if datamanager.check_property(block, "Thermal Model")
-            @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
+            @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, update_nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
         end
     end
 
