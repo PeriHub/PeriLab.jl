@@ -17,15 +17,6 @@ using .Boundary_conditions
 using .Verlet
 using TimerOutputs
 
-function init_bond_damage_and_influence_function(A, B, C)
-    for id in eachindex(A)
-        A[id] = fill(1.0, size(A[id]))
-        B[id] = fill(1.0, size(B[id]))
-        C[id] = fill(1.0, size(C[id]))
-    end
-    return A, B, C
-end
-
 function init(params::Dict, datamanager::Module)
     nnodes = datamanager.get_nnodes()
     nslaves = datamanager.get_nslaves()
@@ -40,9 +31,8 @@ function init(params::Dict, datamanager::Module)
     horizon = set_horizon(params, allBlockNodes, horizon) # includes the neighbors
     solver_options = get_solver_options(params)
 
-    omega = datamanager.create_constant_bond_field("Influence Function", Float64, 1)
-    bond_damageN, bond_damageNP1 = datamanager.create_bond_field("Bond Damage", Float64, 1)
-    omega[:], bond_damageN, bond_damageNP1 = init_bond_damage_and_influence_function(omega, bond_damageN, bond_damageNP1)
+    datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
+    datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
 
     Physics.read_properties(params, datamanager, solver_options["Material Models"])
     datamanager = Physics.init_models(params, datamanager, allBlockNodes, solver_options)
@@ -56,8 +46,7 @@ function init(params::Dict, datamanager::Module)
         # can be predefined in mesh. Therefore it should be checked if it is there.
         active = datamanager.get_field("Active")
     else
-        active = datamanager.create_constant_node_field("Active", Bool, 1)
-        active .= true
+        active = datamanager.create_constant_node_field("Active", Bool, 1, true)
     end
     @info "Finished Init Solver"
     return blockNodes, bcs, datamanager, solver_options

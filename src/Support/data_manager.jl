@@ -104,14 +104,14 @@ end
    ```
    """
 
-function create_bond_field(name::String, type::Type, dof::Int64)
+function create_bond_field(name::String, type::Type, dof::Int64, defaultValue::Any=0)
 
-    return create_field(name * "N", type, "Bond_Field", dof), create_field(name * "NP1", type, "Bond_Field", dof)
+    return create_field(name * "N", type, "Bond_Field", dof, defaultValue), create_field(name * "NP1", type, "Bond_Field", dof, defaultValue)
 end
 
-function create_bond_field(name::String, type::Type, VectorOrArray::String, dof::Int64)
+function create_bond_field(name::String, type::Type, VectorOrArray::String, dof::Int64, defaultValue::Any=0)
 
-    return create_field(name * "N", type, "Bond_Field", VectorOrArray, dof), create_field(name * "NP1", type, "Bond_Field", VectorOrArray, dof)
+    return create_field(name * "N", type, "Bond_Field", VectorOrArray, dof, defaultValue), create_field(name * "NP1", type, "Bond_Field", VectorOrArray, dof, defaultValue)
 end
 
 """
@@ -133,12 +133,12 @@ end
    create_constant_bond_field("density", Float64, 1)  # creates a density constant bond field
    ```
    """
-function create_constant_bond_field(name::String, type::Type, dof::Int64)
-    return create_field(name, type, "Bond_Field", dof)
+function create_constant_bond_field(name::String, type::Type, dof::Int64, defaultValue::Any=0)
+    return create_field(name, type, "Bond_Field", dof, defaultValue)
 end
 
-function create_constant_bond_field(name::String, type::Type, VectorOrArray::String, dof::Int64)
-    return create_field(name, type, "Bond_Field", VectorOrArray, dof)
+function create_constant_bond_field(name::String, type::Type, VectorOrArray::String, dof::Int64, defaultValue::Any=0)
+    return create_field(name, type, "Bond_Field", VectorOrArray, dof, defaultValue)
 end
 
 """
@@ -160,16 +160,16 @@ Example:
 create_constant_node_field("temperature", Float64, 1)  # creates a temperature constant node field
 ```
 """
-function create_constant_node_field(name::String, type::Type, dof::Int64)
+function create_constant_node_field(name::String, type::Type, dof::Int64, defaultValue::Any=0)
 
-    return create_field(name, type, "Node_Field", dof)
+    return create_field(name, type, "Node_Field", dof, defaultValue)
 end
-function create_constant_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64)
+function create_constant_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64, defaultValue::Any=0)
 
-    return create_field(name, type, "Node_Field", VectorOrArray, dof)
+    return create_field(name, type, "Node_Field", VectorOrArray, dof, defaultValue)
 end
 """
-create_field(name::String, vartype::Type, bondNode::String, dof::Int64)
+create_field(name::String, vartype::Type, bondNode::String, dof::Int64, defaultValue::Any=0)
 
 Create a field with the given `name` for the specified `vartype`. If the field already exists, return the existing field. If the field does not exist, create a new field with the specified characteristics.
 
@@ -177,17 +177,18 @@ Create a field with the given `name` for the specified `vartype`. If the field a
 - `name::String`: The name of the field.
 - `vartype::Type`: The data type of the field.
 - `dof::Int64`: The degrees of freedom per node.
+- `defaultValue::Any`: The default value of the field.
 
 # Returns
 The field with the given `name` and specified characteristics.
 
 """
 
-function create_field(name::String, vartype::Type, bondOrNode::String, dof::Int64)
-    create_field(name, vartype, bondOrNode, "Vector", dof)
+function create_field(name::String, vartype::Type, bondOrNode::String, dof::Int64, defaultValue)
+    create_field(name, vartype, bondOrNode, "Vector", dof, defaultValue)
 end
 
-function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrArray::String, dof::Int64)
+function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrArray::String, dof::Int64, defaultValue)
     field_dof = dof
     if haskey(fields, vartype) == false
         fields[vartype] = Dict{String,Any}()
@@ -200,9 +201,9 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
     end
     if bondOrNode == "Node_Field"
         if dof == 1
-            fields[vartype][name] = zeros(vartype, nnodes)
+            fields[vartype][name] = fill(vartype(defaultValue), nnodes)
         else
-            fields[vartype][name] = zeros(vartype, nnodes, field_dof)
+            fields[vartype][name] = fill(vartype(defaultValue), nnodes, field_dof)
         end
     elseif bondOrNode == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
@@ -214,10 +215,10 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
         for i in 1:nmasters
             if dof == 1
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
-                fill!(fields[vartype][name][end], vartype(0))
+                fill!(fields[vartype][name][end], vartype(defaultValue))
             else
                 append!(fields[vartype][name], [Matrix{vartype}(undef, nBonds[i], field_dof)])
-                fill!(fields[vartype][name][end], vartype(0))
+                fill!(fields[vartype][name][end], vartype(defaultValue))
             end
         end
     end
@@ -245,13 +246,13 @@ end
    create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
    ```
 """
-function create_node_field(name::String, type::Type, dof::Int64)
+function create_node_field(name::String, type::Type, dof::Int64, defaultValue::Any=0)
 
-    return create_field(name * "N", type, "Node_Field", dof), create_field(name * "NP1", type, "Node_Field", dof)
+    return create_field(name * "N", type, "Node_Field", dof, defaultValue), create_field(name * "NP1", type, "Node_Field", dof, defaultValue)
 end
 
-function create_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64)
-    return create_field(name * "N", type, "Node_Field", VectorOrArray, dof), create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof)
+function create_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64, defaultValue::Any=0)
+    return create_field(name * "N", type, "Node_Field", VectorOrArray, dof, defaultValue), create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof, defaultValue)
 end
 
 function get_all_field_keys()

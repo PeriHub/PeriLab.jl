@@ -16,14 +16,17 @@ using .Damage
     damageN, damageNP1_test = test_Data_manager.create_node_field("Damage", Float64, 1)
     volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
     nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    bdN, bdNP1 = test_Data_manager.create_bond_field("Bond Damage", Float64, 1)
+    bdN, bdNP1 = test_Data_manager.create_bond_field("Bond Damage", Float64, 1, 1)
     nlist[1] = [2]
     nlist[2] = [1, 3]
     nlist[3] = [1]
     volume[:] = [1.0, 2.0, 3.0]
-    bdNP1[1][:] .= 1
-    bdNP1[2][:] .= 1
-    bdNP1[3][:] .= 1
+    @test bdN[1][:] == [1.0]
+    @test bdN[2][:] == [1.0, 1.0]
+    @test bdN[3][:] == [1.0]
+    @test bdNP1[1][:] == [1.0]
+    @test bdNP1[2][:] == [1.0, 1.0]
+    @test bdNP1[3][:] == [1.0]
     nodes = view(Vector(1:3), eachindex(Vector(1:3)))
     Damage.damage_index(test_Data_manager, nodes)
     @test damageNP1_test[1] == 0

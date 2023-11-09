@@ -28,12 +28,12 @@ end
 
 @testset "ut_get_cs_denominator" begin
     volume = Float64[1, 2, 3]
-    bond_geometryetry = [1, 2, 3]
-    @test Verlet.get_cs_denominator(volume, bond_geometryetry) == 3
-    bond_geometryetry = [2, 4, 6]
-    @test Verlet.get_cs_denominator(volume, bond_geometryetry) == 1.5
-    bond_geometryetry = [1, 0.5, 2]
-    @test Verlet.get_cs_denominator(volume, bond_geometryetry) == 6.5
+    bond_geometry = [1, 2, 3]
+    @test Verlet.get_cs_denominator(volume, bond_geometry) == 3
+    bond_geometry = [2, 4, 6]
+    @test Verlet.get_cs_denominator(volume, bond_geometry) == 1.5
+    bond_geometry = [1, 0.5, 2]
+    @test Verlet.get_cs_denominator(volume, bond_geometry) == 6.5
 end
 
 # nnodes = 5
