@@ -18,12 +18,16 @@ PeriLab:
             Bond Associated Deformation Gradient: false
         Material Models: 
             PMMA: 
-                Material Model: "PD Solid Elastic"
-                #Material Model: "Correspondence Elastic"
+                #Material Model: "PD Solid Elastic"
+                Material Model: "Correspondence Elastic"
                 Symmetry: "isotropic plane stress"
                 Young's Modulus: 7.0e+5
                 Poisson's Ratio: 0.33
                 Zero Energy Mode Control: "Global"
+        Damage Models:
+            DamageTest:
+                Critical Value: 0.003947001394700143
+                Damage Model: Critical Energy
   Boundary Conditions:
     BC_1:
       Coordinate: x
@@ -64,16 +68,16 @@ PeriLab:
       Material Model: PMMA
   Outputs:
     Output:
-      Number of Output Steps: 1
+      Output Frequency: 1
       Output File Type: ExodusII
       Output Filename: Dogbone_Output
       Output Format: BINARY
       Output Variables:
         Displacements: true
         Forces: true
-        Number of Neighbors: true   
+        Damage: true   
   Solver:
-    Final Time: 1e-8
+    Final Time: 1e-6
     Initial Time: 0.0
     Verbose: false
     Verlet:
