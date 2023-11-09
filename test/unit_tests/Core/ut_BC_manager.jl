@@ -52,18 +52,18 @@ using .Boundary_conditions
 end
 
 @testset "ut_boundary_condition" begin
-    testDatamanager = Data_manager
-    testDatamanager.set_dof() = 2
+    test_Data_manager = Data_manager
+    test_Data_manager.set_dof() = 2
     params = Dict()
-    bcs = Boundary_conditions.boundary_condition(params, testDatamanager)
+    bcs = Boundary_conditions.boundary_condition(params, test_Data_manager)
     @test length(bcs) == 0
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "0"), "BC_3" => Dict("Type" => "Displacements", "Node Set" => "Nset_3", "Coordinate" => "z", "Value" => "0")))
 
-    testDatamanager.set_nset("Nset_1", [1, 2, 3])
-    testDatamanager.set_nset("Nset_2", [3, 4, 7, 10])
-    testDatamanager.set_glob_to_loc([1, 3, 4, 2, 5, 6, 7, 8, 9, 10])
+    test_Data_manager.set_nset("Nset_1", [1, 2, 3])
+    test_Data_manager.set_nset("Nset_2", [3, 4, 7, 10])
+    test_Data_manager.set_glob_to_loc([1, 3, 4, 2, 5, 6, 7, 8, 9, 10])
 
-    bcs = Boundary_conditions.boundary_condition(params, testDatamanager)
+    bcs = Boundary_conditions.boundary_condition(params, test_Data_manager)
     @test length(bcs) == 2
     @test "BC_1" in keys(bcs)
     @test "BC_2" in keys(bcs)
@@ -81,17 +81,17 @@ end
 
 @testset "ut_init_BCs" begin
 
-    testDatamanager = Data_manager
-    testDatamanager.set_nmasters(10)
+    test_Data_manager = Data_manager
+    test_Data_manager.set_nmasters(10)
 
-    testDatamanager.create_constant_node_field("Coordinates", Float64, 3)
-    testDatamanager.create_constant_node_field("Forces", Float64, 3)
-    testDatamanager.create_node_field("Displacements", Float64, 3)
-    testDatamanager.set_dof(2)
+    test_Data_manager.create_constant_node_field("Coordinates", Float64, 3)
+    test_Data_manager.create_constant_node_field("Forces", Float64, 3)
+    test_Data_manager.create_node_field("Displacements", Float64, 3)
+    test_Data_manager.set_dof(2)
 
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "5")))
 
-    bcs = Boundary_conditions.init_BCs(params, testDatamanager)
+    bcs = Boundary_conditions.init_BCs(params, test_Data_manager)
     @test length(bcs) == 1
     # clean up params representation
     @test "BC_1" in keys(bcs)
@@ -101,8 +101,8 @@ end
     @test bcs["BC_1"]["Value"] == "20*t"
     @test bcs["BC_1"]["Node Set"] == [1, 3, 4]
 
-    testDatamanager.set_dof(3)
-    bcs = Boundary_conditions.init_BCs(params, testDatamanager)
+    test_Data_manager.set_dof(3)
+    bcs = Boundary_conditions.init_BCs(params, test_Data_manager)
     @test length(bcs) == 2
     @test "BC_1" in keys(bcs)
     @test "BC_2" in keys(bcs)
@@ -119,30 +119,30 @@ end
 
 @testset "ut_apply_bc" begin
 
-    testDatamanager = Data_manager
+    test_Data_manager = Data_manager
 
-    testDatamanager.set_dof(3)
-    testDatamanager.create_constant_node_field("Coordinates", Float64, 3)
-    testDatamanager.create_constant_node_field("Forces", Float64, 3)
-    testDatamanager.create_node_field("Displacements", Float64, 3)
+    test_Data_manager.set_dof(3)
+    test_Data_manager.create_constant_node_field("Coordinates", Float64, 3)
+    test_Data_manager.create_constant_node_field("Forces", Float64, 3)
+    test_Data_manager.create_node_field("Displacements", Float64, 3)
 
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "5")))
 
-    force = testDatamanager.get_field("Forces")
-    disp = testDatamanager.get_field("Displacements", "NP1")
+    force = test_Data_manager.get_field("Forces")
+    disp = test_Data_manager.get_field("Displacements", "NP1")
     @test sum(force) == 0
     @test sum(disp) == 0
-    bcs = Boundary_conditions.init_BCs(params, testDatamanager)
-    Boundary_conditions.apply_bc(bcs, testDatamanager, 0.0)
-    force = testDatamanager.get_field("Forces")
-    disp = testDatamanager.get_field("Displacements", "NP1")
+    bcs = Boundary_conditions.init_BCs(params, test_Data_manager)
+    Boundary_conditions.apply_bc(bcs, test_Data_manager, 0.0)
+    force = test_Data_manager.get_field("Forces")
+    disp = test_Data_manager.get_field("Displacements", "NP1")
     @test sum(force) == 0
     @test sum(disp) == 20
     @test disp == [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5]
 
-    Boundary_conditions.apply_bc(bcs, testDatamanager, 0.2)
-    force = testDatamanager.get_field("Forces")
-    disp = testDatamanager.get_field("Displacements", "NP1")
+    Boundary_conditions.apply_bc(bcs, test_Data_manager, 0.2)
+    force = test_Data_manager.get_field("Forces")
+    disp = test_Data_manager.get_field("Displacements", "NP1")
     @test sum(force) == 12
     @test force == [4 0 0; 0 0 0; 4 0 0; 4 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0]
     @test sum(disp) == 20
@@ -152,7 +152,7 @@ end
     bcs["BC_2"]["Node Set"] = []
     force .= 0
     disp .= 0
-    Boundary_conditions.apply_bc(bcs, testDatamanager, 0.2)
+    Boundary_conditions.apply_bc(bcs, test_Data_manager, 0.2)
     @test sum(force) == 0
     @test sum(disp) == 0
 end

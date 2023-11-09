@@ -6,19 +6,19 @@ using Test
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Compute/compute_forces.jl")
 @testset "ut_get_forces_from_force_density" begin
-    testDatamanager = Data_manager
-    testDatamanager.set_nmasters(5)
+    test_Data_manager = Data_manager
+    test_Data_manager.set_nmasters(5)
 
-    testDatamanager.create_node_field("Forces", Float64, 3)
+    test_Data_manager.create_node_field("Forces", Float64, 3)
 
-    fdN, fdNP1 = testDatamanager.create_node_field("Force Densities", Float64, 3)
-    volume = testDatamanager.create_constant_node_field("Volume", Float64, 1)
+    fdN, fdNP1 = test_Data_manager.create_node_field("Force Densities", Float64, 3)
+    volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
 
     volume[1:5] = 1:5
     fdNP1 = rand(5, 3)
 
-    testDatamanager = get_forces_from_force_density(testDatamanager)
-    forces = testDatamanager.get_field("Forces", "NP1")
+    test_Data_manager = get_forces_from_force_density(test_Data_manager)
+    forces = test_Data_manager.get_field("Forces", "NP1")
     for i in 1:5
         for j in 1:3
             @test forces[i, j] / (fdNP1[i, j] * volume[i]) - 1 < 1e-8

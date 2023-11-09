@@ -81,10 +81,10 @@ end
 filename = "./tmp/" * "test_2.e"
 nnodes = 5
 dof = 2
-testDatamanager = Data_manager
-testDatamanager.set_nmasters(nnodes)
-testDatamanager.set_dof(dof)
-coordinates = testDatamanager.create_constant_node_field("Coordinates", Float64, 2)
+test_Data_manager = Data_manager
+test_Data_manager.set_nmasters(nnodes)
+test_Data_manager.set_dof(dof)
+coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, 2)
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
@@ -95,15 +95,15 @@ coordinates[4, 1] = 1
 coordinates[4, 2] = 1
 coordinates[5, 1] = 2
 coordinates[5, 2] = 2
-testDatamanager.create_constant_node_field("Block_Id", Int64, 1)
-block_Id = testDatamanager.get_field("Block_Id")
+test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
+block_Id = test_Data_manager.get_field("Block_Id")
 block_Id .+= 1
 block_Id[end] = 2
 #outputs = ["Displacements", "Forces"]
-testDatamanager.set_nset("Nset_1", [1, 2])
-testDatamanager.set_nset("Nset_2", [5])
+test_Data_manager.set_nset("Nset_1", [1, 2])
+test_Data_manager.set_nset("Nset_2", [5])
 
-nsets = testDatamanager.get_nsets()
+nsets = test_Data_manager.get_nsets()
 coords = vcat(transpose(coordinates))
 outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 1, "dof" => 1, "type" => Float64), "Forcesxy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 2, "dof" => 1, "type" => Float64), "Forcesxz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 3, "dof" => 1, "type" => Float64), "Forcesyx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 4, "dof" => 1, "type" => Float64), "Forcesyy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 5, "dof" => 1, "type" => Float64), "Forcesyz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 6, "dof" => 1, "type" => Float64), "Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => false, "result_id" => 1, "dof" => 1, "type" => Float64), "External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "result_id" => 1, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "result_id" => 2, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Nodeset_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
 computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "result_id" => 1, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "result_id" => 2, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Nodeset_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
@@ -141,10 +141,10 @@ result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 6, 6
 end
 
 
-testDatamanager.create_node_field("Forces", Float64, 6)
-testDatamanager.create_node_field("Displacements", Float64, 1)
-force = testDatamanager.get_field("Forces", "NP1")
-disp = testDatamanager.get_field("Displacements", "NP1")
+test_Data_manager.create_node_field("Forces", Float64, 6)
+test_Data_manager.create_node_field("Displacements", Float64, 1)
+force = test_Data_manager.get_field("Forces", "NP1")
+disp = test_Data_manager.get_field("Displacements", "NP1")
 force[5, 1:6] .= 3.3
 force[1:3, 6] .= 2.3
 disp[1] = 3
@@ -154,7 +154,7 @@ disp[4] = -1.8
 disp[5] = 0
 
 nodal_outputs = Dict(key => value for (key, value) in outputs["Fields"] if (!value["global_var"]))
-exo = Write_Exodus_Results.write_nodal_results_in_exodus(exo, 2, nodal_outputs, testDatamanager)
+exo = Write_Exodus_Results.write_nodal_results_in_exodus(exo, 2, nodal_outputs, test_Data_manager)
 
 test_disp_step_zero = read_values(exo, NodalVariable, 1, 1, "Displacements")
 

@@ -48,11 +48,11 @@ end
 function damage_index(datamananager::Module, nodes::Union{SubArray,Vector{Int64}})
     nlist = datamananager.get_nlist()
     volume = datamananager.get_field("Volume")
-    bondDamageNP1 = datamananager.get_field("Bond Damage", "NP1")
+    bond_damageNP1 = datamananager.get_field("Bond Damage", "NP1")
     damage = datamananager.get_field("Damage", "NP1")
     for iID in nodes
         undamaged_volume = sum(volume[nlist[iID][:]])
-        totalDamage = sum((1 .- bondDamageNP1[iID][:]) .* volume[nlist[iID][:]])
+        totalDamage = sum((1 .- bond_damageNP1[iID][:]) .* volume[nlist[iID][:]])
         if damage[iID] < totalDamage / undamaged_volume
             damage[iID] = totalDamage / undamaged_volume
         end
@@ -62,10 +62,10 @@ function damage_index(datamananager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 function set_bond_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
-    bondDamageN = datamanager.get_field("Bond Damage", "N")
-    bondDamageNP1 = datamanager.get_field("Bond Damage", "NP1")
+    bond_damageN = datamanager.get_field("Bond Damage", "N")
+    bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")
     for iID in nodes
-        bondDamageNP1[iID][:] = bondDamageN[iID][:]
+        bond_damageNP1[iID][:] = bond_damageN[iID][:]
     end
     return datamanager
 end

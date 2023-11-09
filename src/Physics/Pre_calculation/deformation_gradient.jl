@@ -12,14 +12,14 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
-    bondDamage = datamanager.get_field("Bond Damage", "NP1")
-    bondGeometry = datamanager.get_field("Bond Geometry")
+    bond_damage = datamanager.get_field("Bond Damage", "NP1")
+    bond_geometryetry = datamanager.get_field("Bond Geometry")
     deformed_bondN = datamanager.get_field("Deformed Bond Geometry", "N")
     deformed_bondNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    defGrad = datamanager.get_field("Deformation Gradient")
-    invShapeTensor = datamanager.get_field("Inverse Shape Tensor")
+    deformation_gradient = datamanager.get_field("Deformation Gradient")
+    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
 
-    defGrad = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bondDamage, deformed_bondNP1, bondGeometry, invShapeTensor, defGrad)
+    deformation_gradient = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, deformed_bondNP1, bond_geometryetry, inverse_shape_tensor, deformation_gradient)
 
     return datamanager
 end

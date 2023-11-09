@@ -10,9 +10,9 @@ export compute
 function compute(datamanager, nodes, time)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
-    defCoor = datamanager.get_field("Deformed Coordinates", "NP1")
+    deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
     bond_defNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    bond_defNP1 = Geometry.bond_geometry(nodes, dof, nlist, defCoor, bond_defNP1)
+    bond_defNP1 = Geometry.bond_geometry(nodes, dof, nlist, deformed_coor, bond_defNP1)
     return datamanager
 end
 

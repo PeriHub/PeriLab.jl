@@ -144,6 +144,10 @@ MPI.Init()
         @testset "test_additive_simple" begin
             @includetests["fullscale_tests/test_additive/test_additive"]
         end
+
+        @testset "test_test_bond_based_elastic" begin
+            @includetests["fullscale_tests/test_bond_based_elastic/test_bond_based_elastic"]
+        end
         @testset "test_heat_transfer" begin
             @includetests["fullscale_tests/test_heat_transfer/test_heat_transfer"]
         end
@@ -151,10 +155,10 @@ MPI.Init()
             @includetests["fullscale_tests/test_BCs/test_BCs"]
         end
         @testset "test_PD_Solid_Elastic" begin
-            @includetests["fullscale_tests/test_PD_Solid_Elastic/test_PD_Solid_Elastic"]
+            @includetests["fullscale_tests/test_PD_solid_elastic/test_PD_solid_elastic"]
         end
         @testset "test_Critical_stretch" begin
-            @includetests["fullscale_tests/test_Critical_stretch/test_Critical_stretch"]
+            @includetests["fullscale_tests/test_critical_stretch/test_critical_stretch"]
         end
         @testset "test_thermal_expansion" begin
             @includetests["fullscale_tests/test_thermal_expansion/test_thermal_expansion"]
@@ -163,10 +167,10 @@ MPI.Init()
             @includetests["fullscale_tests/test_thermal_flow/test_thermal_flow"]
         end
         @testset "test_Correspondence_Elastic" begin
-            @includetests["fullscale_tests/test_Correspondence_Elastic/test_Correspondence_Elastic"]
+            @includetests["fullscale_tests/test_correspondence_elastic/test_correspondence_elastic"]
         end
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
-            @includetests["fullscale_tests/test_Correspondence_Elastic_with_zero_E_control/test_Correspondence_Elastic_with_zero_E_control"]
+            @includetests["fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control"]
         end
     end
 

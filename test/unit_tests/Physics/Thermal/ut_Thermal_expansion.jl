@@ -36,14 +36,14 @@ end
 @testset "ut_thermal_deformation" begin
     nnodes = 2
     dof = 2
-    testDatamanager = Data_manager
-    testDatamanager.set_nmasters(2)
-    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    test_Data_manager = Data_manager
+    test_Data_manager.set_nmasters(2)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 2
     nn[2] = 3
-    temperature = testDatamanager.create_constant_node_field("Temperature", Float64, 1)
-    undeformed_bond = testDatamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
-    thermal_bond_deformation = testDatamanager.create_constant_bond_field("Thermal Deformation", Float64, dof)
+    temperature = test_Data_manager.create_constant_node_field("Temperature", Float64, 1)
+    undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
+    thermal_bond_deformation = test_Data_manager.create_constant_bond_field("Thermal Deformation", Float64, dof)
 
     undeformed_bond[1][1, 1] = 0
     undeformed_bond[1][1, 2] = 1
