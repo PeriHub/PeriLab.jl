@@ -61,7 +61,7 @@ PeriLab:
   Outputs:
     Output1:
       Output Filename: "thermal_flow"
-      Output Type: Exodus
+      Output File Type: Exodus
       Number of Output Steps: 10
       Output Variables:
         Temperature: True

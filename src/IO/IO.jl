@@ -36,26 +36,32 @@ function merge_exodus_files(exos)
     end
 end
 
-function open_result_files(result_files)
-    for result_file in result_files
-        if result_file isa Exodus.ExodusDatabase
-            result_file = ExodusDatabase(result_file.file_name, "rw")
-        elseif result_file["file"] isa IOStream
-            result_file["file"] = open(result_file["filename"], "a")
-        else
-            @warn "Unknown result file type"
-        end
+function open_result_file(result_file)
+    if result_file isa Exodus.ExodusDatabase
+        result_file = ExodusDatabase(result_file.file_name, "rw")
+    elseif result_file["file"] isa IOStream
+        result_file["file"] = open(result_file["filename"], "a")
+    else
+        @warn "Unknown result file type"
+    end
+end
+
+function close_result_file(result_file)
+    if result_file isa Exodus.ExodusDatabase
+        close(result_file)
+    elseif result_file["file"] isa IOStream
+        close(result_file["file"])
+    else
+        @warn "Unknown result file type"
     end
 end
 
 function close_result_files(result_files)
     for result_file in result_files
-        if result_file isa Exodus.ExodusDatabase
-            close(result_file)
-        elseif result_file["file"] isa IOStream
-            close(result_file["file"])
-        else
-            @warn "Unknown result file type"
+        try
+            close_result_file(result_file)
+        catch
+            @warn "File already closed"
         end
     end
 end
@@ -96,6 +102,8 @@ function get_results_mapping(params::Dict, datamanager::Module)
 
         fieldnames = outputs[output]["fieldnames"]
         output_type = get_output_type(outputs, output)
+        flush_file = get_flush_file(outputs, output)
+        output_mapping[id]["flush_file"] = flush_file
         for fieldname in fieldnames
             result_id += 1
             compute_name = ""
@@ -158,7 +166,7 @@ function initialize_data(filename::String, filedirectory::String, datamanager::M
 
 end
 
-function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64, verbose::Bool)
+function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64)
     filenames = get_output_filenames(params, filedirectory)
     if length(filenames) == 0
         @warn "No futput file or output defined"
@@ -181,13 +189,13 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
             if datamanager.get_max_rank() > 1
                 filename = filename * "." * string(datamanager.get_max_rank()) * "." * string(datamanager.get_rank())
             end
-            outputs[id]["Output Type"] = "Exodus"
+            outputs[id]["Output File Type"] = "Exodus"
             push!(result_files, Write_Exodus_Results.create_result_file(filename, nnodes, dof, max_block_id, nnsets))
         elseif ".csv" == filename[end-3:end]
             if datamanager.get_rank() == 0
                 push!(result_files, Write_CSV_Results.create_result_file(filename, outputs[id]))
             end
-            outputs[id]["Output Type"] = "CSV"
+            outputs[id]["Output File Type"] = "CSV"
         end
     end
 
@@ -200,10 +208,9 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
         end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 
-    end
-
-    if verbose
-        close_result_files(result_files)
+        if outputs[id]["flush_file"]
+            close_result_file(result_files[id])
+        end
     end
 
     return result_files, outputs
@@ -213,21 +220,20 @@ function read_input_file(filename::String)
     return Read_Input_Deck.read_input_file(filename)
 end
 
-function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, datamanager::Module, verbose::Bool)
-
-    if verbose
-        open_result_files(result_files)
-    end
+function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, datamanager::Module)
 
     for id in eachindex(result_files)
-        output_type = outputs[id]["Output Type"]
+        output_type = outputs[id]["Output File Type"]
         # step 1 ist the zero step?!
         output_frequency[id]["Counter"] += 1
         if output_frequency[id]["Counter"] == output_frequency[id]["Output Frequency"]
             output_frequency[id]["Step"] += 1
             nodal_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (!value["global_var"]))
             global_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (value["global_var"]))
-            if output_type == "Exodus" && length(nodal_outputs) > 0 && typeof(result_files[id]) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
+            if outputs[id]["flush_file"]
+                open_result_file(result_files[id])
+            end
+            if output_type == "Exodus" && length(nodal_outputs) > 0 && result_files[id] isa Exodus.ExodusDatabase
                 result_files[id] = Write_Exodus_Results.write_step_and_time(result_files[id], output_frequency[id]["Step"], time)
                 result_files[id] = Write_Exodus_Results.write_nodal_results_in_exodus(result_files[id], output_frequency[id]["Step"], nodal_outputs, datamanager)
             end
@@ -241,11 +247,11 @@ function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, 
                 end
             end
 
+            if outputs[id]["flush_file"]
+                close_result_file(result_files[id])
+            end
             output_frequency[id]["Counter"] = 0
         end
-    end
-    if verbose
-        close_result_files(result_files)
     end
     return result_files
 end

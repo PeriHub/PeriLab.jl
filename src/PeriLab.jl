@@ -215,14 +215,14 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
             IO.show_block_summary(solver_options, params, datamanager)
         end
         @info "Init write results"
-        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"], verbose)
+        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"])
         Logging_module.set_result_files(result_files)
 
         if dry_run
             nsteps = solver_options["nsteps"]
             solver_options["nsteps"] = 10
             elapsed_time = @elapsed begin
-                @timeit to "Solver.solver" result_files = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent, verbose)
+                @timeit to "Solver.solver" result_files = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
             end
 
             @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
@@ -230,7 +230,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
             @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
 
         else
-            @timeit to "Solver.solver" result_files = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent, verbose)
+            @timeit to "Solver.solver" result_files = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
         end
 
         IO.close_result_files(result_files)

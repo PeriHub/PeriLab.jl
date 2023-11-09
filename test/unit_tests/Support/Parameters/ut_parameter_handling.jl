@@ -15,11 +15,11 @@ using Random
 
 @testset "ut_get_output_type" begin
     @test get_output_type(Dict("Output1" => Dict()), "Output1") == "Exodus"
-    @test get_output_type(Dict("Output1" => Dict("Output Type" => "CSV")), "Output1") == "CSV"
-    @test get_output_type(Dict("Output1" => Dict("Output Type" => "Exodus"), "Output2" => Dict("Output Type" => "CSV")), "Output1") == "Exodus"
-    @test get_output_type(Dict("Output1" => Dict("Output Type" => "Exodus"), "Output2" => Dict("Output Type" => "CSV")), "Output2") == "CSV"
-    @test get_output_type(Dict("Output1" => Dict("Output Type" => "CSV"), "Output2" => Dict()), "Output2") == "Exodus"
-    @test get_output_type(Dict("Output1" => Dict("Output Type" => "Exodus")), "Output1") == "Exodus"
+    @test get_output_type(Dict("Output1" => Dict("Output File Type" => "CSV")), "Output1") == "CSV"
+    @test get_output_type(Dict("Output1" => Dict("Output File Type" => "Exodus"), "Output2" => Dict("Output File Type" => "CSV")), "Output1") == "Exodus"
+    @test get_output_type(Dict("Output1" => Dict("Output File Type" => "Exodus"), "Output2" => Dict("Output File Type" => "CSV")), "Output2") == "CSV"
+    @test get_output_type(Dict("Output1" => Dict("Output File Type" => "CSV"), "Output2" => Dict()), "Output2") == "Exodus"
+    @test get_output_type(Dict("Output1" => Dict("Output File Type" => "Exodus")), "Output1") == "Exodus"
 end
 @testset "ut_get_bond_filters" begin
     params = Dict("Discretization" => Dict())
@@ -122,7 +122,7 @@ end
     filenames = get_output_filenames(params, "")
     @test filenames[1] == "1.e"
     @test filenames[2] == "2.e"
-    params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "3", "Output Type" => "CSV"), "Output2" => Dict("Output Filename" => "4", "Output Type" => "Exodus")))
+    params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => "3", "Output File Type" => "CSV"), "Output2" => Dict("Output Filename" => "4", "Output File Type" => "Exodus")))
     filenames = get_output_filenames(params, "test")
     @test filenames[1] == "test/3.csv"
     @test filenames[2] == "test/4.e"
@@ -177,7 +177,7 @@ testDatamanager = Data_manager
     @test ("D" in outputs["Output2"]["fieldnames"]) == false
     @test "E" in outputs["Output2"]["fieldnames"]
     @test !("M" in outputs["Output2"]["fieldnames"])
-    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Type" => "CSV", "Output Variables" => Dict("E" => true, "B" => false, "C" => true)), "Output2" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true, "M" => true))))
+    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output File Type" => "CSV", "Output Variables" => Dict("E" => true, "B" => false, "C" => true)), "Output2" => Dict("fieldnames" => [], "Output Variables" => Dict("A" => true, "B" => true, "D" => false, "E" => true, "M" => true))))
     outputs = get_outputs(params, testfield_keys, String["M"])
     @test !("A" in outputs["Output1"]["fieldnames"])
     @test !("BNP1" in outputs["Output1"]["fieldnames"])
@@ -186,7 +186,7 @@ testDatamanager = Data_manager
     @test !("D" in outputs["Output2"]["fieldnames"])
     @test ("E" in outputs["Output2"]["fieldnames"])
     @test ("M" in outputs["Output2"]["fieldnames"])
-    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output Type" => "CSV", "Output Variables" => Dict("M" => true, "A" => true))))
+    params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [], "Output File Type" => "CSV", "Output Variables" => Dict("M" => true, "A" => true))))
     outputs = get_outputs(params, testfield_keys, String["M"])
     @test !("A" in outputs["Output1"]["fieldnames"])
     @test "M" in outputs["Output1"]["fieldnames"]

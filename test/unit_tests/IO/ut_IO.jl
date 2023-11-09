@@ -66,7 +66,7 @@ block_Id[end] = 2
 end
 
 @testset "ut_init_write_result_and_write_results" begin
-    result_files, outputs = IO.init_write_results(params, "", testDatamanager, 2, false)
+    result_files, outputs = IO.init_write_results(params, "", testDatamanager, 2)
     @test length(result_files) == 2
     @test length(result_files[1].nodal_var_name_dict) == 6
     entries = collect(keys(result_files[1].nodal_var_name_dict))
@@ -103,15 +103,15 @@ end
         end
     end
     IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
-    IO.write_results(result_files, 1.5, outputs, testDatamanager, false)
+    IO.write_results(result_files, 1.5, outputs, testDatamanager)
 
     @test read_time(result_files[1], 2) == 1.5
     @test read_time(result_files[2], 2) == 1.5
-    IO.write_results(result_files, 1.6, outputs, testDatamanager, false)
+    IO.write_results(result_files, 1.6, outputs, testDatamanager)
 
     @test read_time(result_files[1], 3) == 1.6
     @test read_time(result_files[2], 3) == 1.6
-    IO.write_results([], 1.6, outputs, testDatamanager, false)
+    IO.write_results([], 1.6, outputs, testDatamanager)
     testBool = false
     try
         read_time(result_files[1], 4) == 1.6

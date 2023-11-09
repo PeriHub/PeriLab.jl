@@ -38,11 +38,19 @@ function get_output_filenames(params::Dict, filedirectory::String)
 end
 
 function get_output_type(outputs::Dict, output::String)
-    if check_element(outputs[output], "Output Type")
-        return outputs[output]["Output Type"]
+    if check_element(outputs[output], "Output File Type")
+        return outputs[output]["Output File Type"]
     else
-        @warn "No output type defined for $output, defaulting to Exodus"
+        @warn "No Output File Type defined for $output, defaulting to Exodus"
         return "Exodus"
+    end
+end
+
+function get_flush_file(outputs::Dict, output::String)
+    if check_element(outputs[output], "Flush File")
+        return outputs[output]["Flush File"]
+    else
+        return false
     end
 end
 

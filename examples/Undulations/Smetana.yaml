@@ -102,8 +102,9 @@ PeriLab:
     Type: Text File
   Outputs:
     Output1:
+      Flush File: True
       Number of Output Steps: 100
-      Output Type: Exodus
+      Output File Type: Exodus
       Output Filename: "Smetana_Output1"
       Output Variables:
         Forces: True
@@ -113,8 +114,9 @@ PeriLab:
         External_Displacements: True
         Damage: True
     Output2:
+      Flush File: True
       Number of Output Steps: 100
-      Output Type: CSV
+      Output File Type: CSV
       Output Filename: "Smetana_Output2_globals"
       Output Variables:
         External_Forces: True

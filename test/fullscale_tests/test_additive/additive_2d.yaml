@@ -16,7 +16,7 @@ PeriLab:
       Block Names: "block_1"
       Additive Model: "Test"
       Density: 2000
-      Horizon:  1.1005
+      Horizon: 1.1005
       Specific Heat Capacity: 1e6
     block_2:
       Block Names: "block_2"
@@ -38,11 +38,9 @@ PeriLab:
   Outputs:
     Output1:
       Output Filename: "additive_2d"
-      Output Type: Exodus
+      Output File Type: Exodus
       Output Frequency: 1
       Output Variables:
         Temperature: True
         Heat Flow: True
         Active: True
-
-
