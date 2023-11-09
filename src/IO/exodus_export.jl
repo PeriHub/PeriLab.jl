@@ -56,7 +56,7 @@ function get_paraviewCoordinates(dof::Int64, refDof::Int64)
     end
 
     @error "not exportable yet as one variable"
-    return
+    return nothing
 
 end
 
@@ -148,7 +148,6 @@ function write_global_results_in_exodus(exo::Union{ExodusDatabase}, step::Int64,
     for (id, varname) in enumerate(keys(output))
         write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, [global_values[id]])
     end
-
     return exo
 end
 
