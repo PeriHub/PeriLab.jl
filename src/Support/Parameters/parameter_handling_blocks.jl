@@ -2,27 +2,27 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function get_density(params::Dict, blockID::Int64)
-    return get_values(params, blockID, "Density")
+function get_density(params::Dict, block_id::Int64)
+    return get_values(params, block_id, "Density")
 end
 
-function get_heatcapacity(params::Dict, blockID::Int64)
-    return get_values(params, blockID, "Specific Heat Capacity")
+function get_heatcapacity(params::Dict, block_id::Int64)
+    return get_values(params, block_id, "Specific Heat Capacity")
 end
 
-function get_horizon(params::Dict, blockID::Int64)
-    return get_values(params, blockID, "Horizon")
+function get_horizon(params::Dict, block_id::Int64)
+    return get_values(params, block_id, "Horizon")
 end
 
-function get_values(params::Dict, blockID::Int64, valueName::String)
-    if check_element(params["Blocks"], "block_" * string(blockID))
-        if check_element(params["Blocks"]["block_"*string(blockID)], valueName)
-            return params["Blocks"]["block_"*string(blockID)][valueName]
+function get_values(params::Dict, block_id::Int64, valueName::String)
+    if check_element(params["Blocks"], "block_" * string(block_id))
+        if check_element(params["Blocks"]["block_"*string(block_id)], valueName)
+            return params["Blocks"]["block_"*string(block_id)][valueName]
         end
-        @error "$valueName of Block $blockID is not defined"
+        @error "$valueName of Block $block_id is not defined"
         return
     end
-    @error "Block $blockID is not defined"
+    @error "Block $block_id is not defined"
     return
 end
 
@@ -35,13 +35,13 @@ function get_number_of_blocks(params::Dict)
     return
 end
 
-function get_block_models(params::Dict, blockID::Int64)
+function get_block_models(params::Dict, block_id::Int64)
     modelDict = Dict{String,String}()
-    check = check_element(params["Blocks"], "block_" * string(blockID))
+    check = check_element(params["Blocks"], "block_" * string(block_id))
     if check
-        for key in keys(params["Blocks"]["block_"*string(blockID)])
+        for key in keys(params["Blocks"]["block_"*string(block_id)])
             if occursin("Model", key)
-                modelDict[key] = params["Blocks"]["block_"*string(blockID)][key]
+                modelDict[key] = params["Blocks"]["block_"*string(block_id)][key]
             end
         end
     end

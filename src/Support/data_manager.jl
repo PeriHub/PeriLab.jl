@@ -76,9 +76,9 @@ end
 material_type = Dict{String,Bool}("Bond-Based" => false, "Ordinary" => false, "Correspondence" => true, "Bond-Associated" => false)
 ##########################
 
-function check_property(blockId::Int64, property::String)
-    if haskey(properties[blockId], property)
-        return length(properties[blockId][property]) > 0
+function check_property(block_id::Int64, property::String)
+    if haskey(properties[block_id], property)
+        return length(properties[block_id][property]) > 0
     end
     return false
 end
@@ -431,17 +431,17 @@ function get_physics_options()
 end
 
 """
-    get_properties(blockId::Int64, property::String)
+    get_properties(block_id::Int64, property::String)
 
-This function retrieves the value of a specified `property` for a given `blockId` if it exists in the properties dictionary.
+This function retrieves the value of a specified `property` for a given `block_id` if it exists in the properties dictionary.
 
 # Arguments
-- `blockId`::Int64: The identifier of the block for which to retrieve the property.
+- `block_id`::Int64: The identifier of the block for which to retrieve the property.
 - `property`::String: The dictionary entrycontaining the properties for the blocks.
 
 # Returns
-- `property_value`::Any: The value associated with the specified `property` for the given `blockId`.
-- `Dict()`: An empty dictionary if the specified `property` does not exist for the given `blockId`.
+- `property_value`::Any: The value associated with the specified `property` for the given `block_id`.
+- `Dict()`: An empty dictionary if the specified `property` does not exist for the given `block_id`.
 
 # Example
 ```julia
@@ -456,34 +456,34 @@ color_value = get_properties(1, "color")  # Returns "red"
 # Try to retrieve a non-existent property for block 2
 non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
 """
-function get_properties(blockId::Int64, property::String)
-    if check_property(blockId, property)
-        return properties[blockId][property]
+function get_properties(block_id::Int64, property::String)
+    if check_property(block_id, property)
+        return properties[block_id][property]
     end
     return Dict()
 end
 """
-    get_property(blockId::Int64, property::String, value_name::String)
+    get_property(block_id::Int64, property::String, value_name::String)
 
-This function retrieves a specific `value_name` associated with a specified `property` for a given `blockId` if it exists in the properties dictionary.
+This function retrieves a specific `value_name` associated with a specified `property` for a given `block_id` if it exists in the properties dictionary.
 
 # Arguments
-- `blockId`::Int64: The identifier of the block for which to retrieve the property.
+- `block_id`::Int64: The identifier of the block for which to retrieve the property.
 - `property`::String: The String property type (e.g. Material model) for the blocks.
 - `value_name`::String: The name of the value within the specified `property`.
 
 # Returns
-- `value`::Any: The value associated with the specified `value_name` within the `property` for the given `blockId`.
-- `nothing`: If the specified `blockId`, `property`, or `value_name` does not exist in the dictionary.
+- `value`::Any: The value associated with the specified `value_name` within the `property` for the given `block_id`.
+- `nothing`: If the specified `block_id`, `property`, or `value_name` does not exist in the dictionary.
 
 # Example
 ```julia
 
 """
-function get_property(blockId::Int64, property::String, value_name::String)
-    if check_property(blockId, property)
-        if value_name in keys(properties[blockId][property])
-            return properties[blockId][property][value_name]
+function get_property(block_id::Int64, property::String, value_name::String)
+    if check_property(block_id, property)
+        if value_name in keys(properties[block_id][property])
+            return properties[block_id][property][value_name]
         end
     end
 
@@ -667,12 +667,12 @@ function set_physics_options(values)
     physicsOptions = values
 end
 
-function set_property(blockId, property, value_name, value)
-    properties[blockId][property][value_name] = value
+function set_property(block_id, property, value_name, value)
+    properties[block_id][property][value_name] = value
 end
 
-function set_properties(blockId, property, values)
-    properties[blockId][property] = values
+function set_properties(block_id, property, values)
+    properties[block_id][property] = values
 end
 
 function set_rank(value::Int64)

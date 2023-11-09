@@ -83,13 +83,13 @@ function compute_damage_pre_calculation(datamanager::Module, options::Dict, node
     update_list[nodes] .= false
     return datamanager
 end
-function get_block_model_definition(params::Dict, blockID::Int64, prop_keys::Vector{String}, properties)
+function get_block_model_definition(params::Dict, block_id::Int64, prop_keys::Vector{String}, properties)
     # properties function from datamanager
-    if check_element(params["Blocks"], "block_" * string(blockID))
-        block = params["Blocks"]["block_"*string(blockID)]
+    if check_element(params["Blocks"], "block_" * string(block_id))
+        block = params["Blocks"]["block_"*string(block_id)]
         for model in prop_keys
             if check_element(block, model)
-                properties(blockID, model, get_model_parameter(params::Dict, model, block[model]))
+                properties(block_id, model, get_model_parameter(params::Dict, model, block[model]))
             end
         end
     end

@@ -52,10 +52,10 @@ function init(params::Dict, datamanager::Module)
     return blockNodes, bcs, datamanager, solver_options
 end
 
-function get_blockNodes(blockIDs, nnodes)
+function get_blockNodes(block_ids, nnodes)
     blockNodes = Dict{Int64,Vector{Int64}}()
-    for i in unique(blockIDs[1:nnodes])
-        blockNodes[i] = find_indices(blockIDs[1:nnodes], i)
+    for i in unique(block_ids[1:nnodes])
+        blockNodes[i] = find_indices(block_ids[1:nnodes], i)
     end
     return blockNodes
 end

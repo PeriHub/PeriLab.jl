@@ -42,9 +42,9 @@ function calculate_block(datamanager::Module, fieldKey::String, calculationType:
         return nothing
     end
     field = datamanager.get_field(fieldKey)
-    blockIDs = datamanager.get_field("Block_Id")
+    block_ids = datamanager.get_field("Block_Id")
     nnodes = datamanager.get_nnodes()
-    blockNodes = findall(item -> item == block, blockIDs[1:nnodes])
+    blockNodes = findall(item -> item == block, block_ids[1:nnodes])
 
     if calculationType == "Sum"
         return global_value_sum(field, blockNodes)
