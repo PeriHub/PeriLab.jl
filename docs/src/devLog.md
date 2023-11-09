@@ -43,6 +43,10 @@ Each vector entry for a value exists for all nodes, also if the node does not ha
     IO
     nodesets are not defined yet in Exodus.jl
 
+    snake_case for variables and functions
+    PascalCase for modules and type names
+    FULL_UPPERCASE for constants
+
 ## Issues
     for n=4 -> errors    
     MPI_Neighbor_alltoall -> might be easier
