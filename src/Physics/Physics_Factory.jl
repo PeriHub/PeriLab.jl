@@ -169,8 +169,7 @@ function init_additive_model_fields(datamanager::Module)
     bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")
     nnodes = datamanager.get_nnodes()
     if !("Active" in datamanager.get_all_field_keys())
-        active = datamanager.create_constant_node_field("Active", Bool, 1)
-        active .= false
+        active = datamanager.create_constant_node_field("Active", Bool, 1, false)
         for iID in 1:nnodes
             bond_damageN[iID][:] .= 0
             bond_damageNP1[iID][:] .= 0

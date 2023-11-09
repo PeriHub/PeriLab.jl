@@ -40,21 +40,21 @@ end
 function init_pre_calculation(datamanager::Module, options::Dict)
     dof = datamanager.get_dof()
     if options["Deformed Bond Geometry"]
-        bond_defN, bond_defNP1 = datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
+        datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
     end
     if options["Shape Tensor"]
-        shapeTensor = datamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
-        invShapeTensor = datamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
+        datamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
+        datamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
     end
     if options["Deformation Gradient"]
-        defGrad = datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+        datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
     end
     if options["Bond Associated Shape Tensor"]
-        bondShapeTensor = datamanager.create_constant_bond_field("Bond Associated Shape Tensor", Float64, "Matrix", dof)
-        invBondShapeTensor = datamanager.create_constant_bond_field("Inverse Bond Associated Shape Tensor", Float64, "Matrix", dof)
+        datamanager.create_constant_bond_field("Bond Associated Shape Tensor", Float64, "Matrix", dof)
+        datamanager.create_constant_bond_field("Inverse Bond Associated Shape Tensor", Float64, "Matrix", dof)
     end
     if options["Bond Associated Deformation Gradient"]
-        bondDefGrad = datamanager.create_constant_bond_field("Bond Associated Deformation Gradient", Float64, "Matrix", dof)
+        datamanager.create_constant_bond_field("Bond Associated Deformation Gradient", Float64, "Matrix", dof)
     end
     return datamanager
 end
