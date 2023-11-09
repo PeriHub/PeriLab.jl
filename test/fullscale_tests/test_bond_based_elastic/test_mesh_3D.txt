@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+header: x y z block_id volume
+-1.5 0 0 1 1.e-01
+-0.5 0 0 1 1.e-01
+0.5 0 0 1 1.e-01
+1.5 0 0 1 1.e-01
+-1.5 1 0 1 1.e-01
+-0.5 1 0 1 1.e-01
+0.5 1 0 2 1.e-01
+1.5 1 0 2 1.e-01
+-1.5 2 0 1 1.e-01
+-0.5 2 0 1 1.e-01
+0.5 2 0 2 1.e-01
+1.5 2 0 2 1.e-01
+-1.5 0 1 1 1.e-01
+-0.5 0 1 1 1.e-01
+0.5 0 1 1 1.e-01
+1.5 0 1 1 1.e-01
+-1.5 1 1 1 1.e-01
+-0.5 1 1 1 1.e-01
+0.5 1 1 2 1.e-01
+1.5 1 1 2 1.e-01
+-1.5 2 1 1 1.e-01
+-0.5 2 1 1 1.e-01
+0.5 2 1 2 1.e-01
+1.5 2 1 2 1.e-01

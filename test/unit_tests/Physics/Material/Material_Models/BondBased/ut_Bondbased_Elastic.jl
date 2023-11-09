@@ -10,7 +10,7 @@ using Test
 @testset "material_name" begin
     @test Bondbased_Elastic.material_name() == "Bond-based Elastic"
 end
-@testset "compute_force" begin
+@testset "compute_forces" begin
     nodes = 2
     testDatamanager = Data_manager
     testDatamanager.set_nmasters(nodes)
@@ -35,7 +35,7 @@ end
         dbNP1[iID][:, 1:dof] .= 1
     end
 
-    testDatamanager = Bondbased_Elastic.compute_force(testDatamanager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0), 0.0, 0.0)
+    testDatamanager = Bondbased_Elastic.compute_forces(testDatamanager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0), 0.0, 0.0)
 
     bf = testDatamanager.get_field("Bond Forces")
     @test isapprox(bf[1][1, 1], -0.31830988618379064)

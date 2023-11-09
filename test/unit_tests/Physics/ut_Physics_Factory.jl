@@ -60,6 +60,8 @@ end
     testDatamanager.set_dof(3)
     testDatamanager.set_nmasters(4)
     testDatamanager.create_constant_node_field("Coordinates", Float64, 3)
+    nn = testDatamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1:4] = 1:4
     Physics.init_material_model_fields(testDatamanager)
     fieldkeys = testDatamanager.get_all_field_keys()
     @test "ForcesN" in fieldkeys
@@ -67,6 +69,7 @@ end
     @test "Acceleration" in fieldkeys
     @test "VelocityN" in fieldkeys
     @test "VelocityNP1" in fieldkeys
+    @test "Bond Forces" in fieldkeys
 end
 
 @testset "init_damage_model_fields" begin

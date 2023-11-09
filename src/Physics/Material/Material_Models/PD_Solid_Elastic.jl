@@ -23,7 +23,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     omega = datamanager.get_field("Influence Function")
     volume = datamanager.get_field("Volume")
     bond_geometry = datamanager.get_field("Bond Geometry")
-    bond_force = datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
+    bond_force = datamanager.get_field("Bond Forces")
 
     # optiming, because if no damage it has not to be updated
 
