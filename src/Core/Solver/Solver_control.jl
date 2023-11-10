@@ -80,25 +80,28 @@ function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{
 
 end
 
-function synchronise_field(comm, synch_fields, overlap_map, get_field, synch_field::String, direction::String)
+function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
 
     if !haskey(synch_fields, synch_field)
         @warn "Field $synch_field does not exists"
-        return
+        return nothing
     end
     if direction == "download_from_cores"
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field)
-            synch_slaves_to_master(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+            return synch_slaves_to_master(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
         end
+        return nothing
     end
     if direction == "upload_to_cores"
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field)
-            synch_master_to_slaves(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+            return synch_master_to_slaves(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
         end
+        return nothing
     end
-
+    @error "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
+    return nothing
 end
 
 function write_results(result_files, dt, outputs, datamanager)
