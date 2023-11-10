@@ -51,6 +51,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         force_densities[:, :] .= 0.0
     end
     update_list = datamanager.get_field("Update List")
+    update_list .= true
     for block in eachindex(block_nodes)
         nodes = block_nodes[block]
         active_nodes = nodes[find_active(active[nodes])]
