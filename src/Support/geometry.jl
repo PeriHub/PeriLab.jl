@@ -39,9 +39,9 @@ export shape_tensor
 """
 function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, bond_geometry)
     for iID in nodes
-        for jID in eachindex(nlist[iID])
+        for (jID, neighborID) in enumerate(nlist[iID])
             # add distance to include thermal extension
-            bond_geometry[iID][jID, 1:dof] += coor[nlist[iID][jID], :] - coor[iID, :]
+            bond_geometry[iID][jID, 1:dof] = coor[neighborID, :] - coor[iID, :]
             bond_geometry[iID][jID, dof+1] = norm(bond_geometry[iID][jID, 1:dof])
             if bond_geometry[iID][jID, dof+1] == 0
                 @error "Identical point coordinates with no distance $iID, $jID"

@@ -40,7 +40,8 @@ function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,V
     bond_force = datamanager.get_field("Bond Forces")
     force_densities = datamanager.get_field("Force Densities", "NP1")
     volume = datamanager.get_field("Volume")
-    force_densities = distribute_forces(nodes, nlist, bond_force, volume, force_densities)
+    bond_damage = datamanager.get_field("Bond Damage", "NP1")
+    force_densities = distribute_forces(nodes, nlist, bond_force, volume, bond_damage, force_densities)
     return datamanager
 end
 

@@ -168,11 +168,11 @@ function get_Hooke_matrix(parameter, symmetry, dof)
     return matrix
 end
 
-function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, force_densities::SubArray)
+function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
     for iID in nodes
         for (jID, neighborID) in enumerate(nlist[iID])
-            force_densities[iID, :] += bond_force[iID][jID, :] .* volume[neighborID]
-            force_densities[neighborID, :] -= bond_force[iID][jID, :] .* volume[iID]
+            force_densities[iID, :] += bond_damage[iID][jID] .* bond_force[iID][jID, :] .* volume[neighborID]
+            force_densities[neighborID, :] -= bond_damage[iID][jID] .* bond_force[iID][jID, :] .* volume[iID]
         end
     end
     return force_densities
