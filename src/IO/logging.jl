@@ -21,11 +21,13 @@ function progress_filter(log_args)
     if typeof(log_args.message) == TimerOutputs.TimerOutput || typeof(log_args.message) == DataFrames.DataFrame
         return true
     end
-    if startswith(log_args.message, "Step:")
-        return false
-    end
-    if startswith(log_args.message, "\n PeriLab version:")
-        return false
+    if log_args.message isa String
+        if startswith(log_args.message, "Step:")
+            return false
+        end
+        if startswith(log_args.message, "\n PeriLab version:")
+            return false
+        end
     end
     return true
 end
@@ -40,7 +42,7 @@ function init_logging(filename, debug, rank, size)
         end
         file_logger = FormatLogger(logfilename; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
-                println(io, "[", args.level, "] ", args._module, " | ", args.message)
+                println(io, "[", args.level, "] ", args._module, ", ", args.line, " | ", args.message)
             end
         end
         filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
