@@ -1,0 +1,67 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1
+      Node Set 2: 2
+    Type: "Text File"
+    Input Mesh File: "test_mesh.txt"
+  Physics:
+    Material Models:
+      Mat_1:
+        Material Model: "PD Solid Elastic"
+        Bulk Modulus: 2.5e+3
+        Shear Modulus: 1.15e3
+      Mat_2:
+        Material Model: "PD Solid Elastic"
+        Bulk Modulus: 3.5e+3
+        Shear Modulus: 2.15e3
+    Damage Models:
+      Dam_1:
+        Damage Model: "Critical Energy"
+        Critical Value: 0.1
+        Only Tension: true
+      Dam_2:
+        Damage Model: "Critical Energy"
+        Critical Value: 0.1
+  Blocks:
+    block_1:
+      Block Names: "block_1"
+      Material Model: "Mat_1"
+      Damage Model: Dam_1
+      Density: 2.7e-9
+      Horizon: 2.1
+    block_2:
+      Block Names: "block_2"
+      Material Model: "Mat_2"
+      Damage Model: Dam_2
+      Density: 2.7e-9
+      Horizon: 2.1
+  Boundary Conditions:
+    BC_1:
+      Type: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "1."
+    BC_2:
+      Type: "Displacements"
+      Node Set: "Node Set 2"
+      Coordinate: "x"
+      Value: "0.0"
+  Solver:
+    Damage Models: True
+    Initial Time: 0.0
+    Final Time: 5.0e-6
+    Verlet:
+      Fixed dt: 5.0e-6
+      Safety Factor: 1.0
+  Outputs:
+    Output1:
+      Output Filename: "critical_energy_pressure"
+      Output Frequency: 1
+      Output Variables:
+        Displacements: True
+        Damage: True
