@@ -209,10 +209,19 @@ function recv_vector_from_root(comm::MPI.Comm, recv_msg)
 end
 
 
-function find_and_set_core_value_min(comm::MPI.Comm, value)
+function find_and_set_core_value_min(comm::MPI.Comm, value::Union{Float64,Int64})
     return MPI.Allreduce!([value], MPI.MIN, comm)[1]
 end
 
-function find_and_set_core_value_max(comm::MPI.Comm, value)
+function find_and_set_core_value_max(comm::MPI.Comm, value::Union{Float64,Int64})
     return MPI.Allreduce!([value], MPI.MAX, comm)[1]
+end
+
+function find_and_set_core_value_sum(comm::MPI.Comm, value::Union{Float64,Int64,Bool})
+    return MPI.Allreduce!([value], MPI.SUM, comm)[1]
+end
+
+function find_and_set_core_value_avg(comm::MPI.Comm, value::Union{Float64,Int64}, nnodes::Int64)
+    nnodes = MPI.Allreduce!([nnodes], MPI.SUM, comm)[1]
+    return MPI.Allreduce!([value], MPI.SUM, comm)[1] / nnodes
 end

@@ -141,7 +141,7 @@ function get_physics_option(params::Dict, options::Dict)
                 options["Deformed Bond Geometry"] = true
             end
         else
-            @error "No Material Model has been defined"
+            @error "No Material Model: '$material' has been defined"
             return
         end
 

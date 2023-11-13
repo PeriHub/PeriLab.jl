@@ -54,7 +54,7 @@ end
     test_Data_manager.set_nset("Nset_1", [2])
     test_Data_manager.set_nset("Nset_2", [2, 3, 4])
 
-    test_Data_manager.set_glob_to_loc([1, 2, 3, 4, 5])
+    test_Data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5))
 
     nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)

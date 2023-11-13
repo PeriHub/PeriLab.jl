@@ -107,9 +107,9 @@ end
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int32, 1)
     nn[:] = [3, 3, 3, 3]
     delete!(test_Data_manager.fields[Int64], "Neighborhoodlist")
-    delete!(test_Data_manager.field_names, "Neighborhoodlist")
+    delete!(test_Data_manager.field_types, "Neighborhoodlist")
     delete!(test_Data_manager.fields[Float64], "Bond Geometry")
-    delete!(test_Data_manager.field_names, "Bond Geometry")
+    delete!(test_Data_manager.field_types, "Bond Geometry")
     coor = test_Data_manager.create_constant_node_field("Coordinates", Float64, 2)
     bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
     # does not have to be NP1 for testing
