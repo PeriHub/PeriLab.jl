@@ -51,6 +51,7 @@ function init_data(params::Dict, path::String, datamanager, comm, to)
         @info "Get node sets"
         define_nsets(params, path, datamanager)
         # defines the order of the global nodes to the local core nodes
+        datamanager.set_distribution(distribution[MPI.Comm_rank(comm)+1])
         datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
         @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
         @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)

@@ -15,6 +15,7 @@ export get_block_list
 export get_crit_values_matrix
 export get_comm
 export get_field
+export get_field_type
 export get_local_nodes
 export get_nlist
 export get_nnsets
@@ -48,12 +49,13 @@ nslaves = 0
 nnsets = 0
 dof = 1
 block_list = Int64[]
+distribution = Int64[]
 crit_values_matrix = Float64[]
 properties = Dict{Int64,Dict{String,Any}}()
 glob_to_loc = Dict{Int64,Int64}()
 fields = Dict(Int64 => Dict{String,Any}(), Float64 => Dict{String,Any}(), Bool => Dict{String,Any}())
 field_array_type = Dict{String,Dict{String,Any}}()
-field_names = Dict{String,DataType}()
+field_types = Dict{String,DataType}()
 fields_to_synch = Dict{String,Any}()
 nsets = Dict{String,Vector{Int}}()
 overlap_map = Dict{Int64,Any}()
@@ -222,7 +224,7 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
             end
         end
     end
-    field_names[name] = vartype
+    field_types[name] = vartype
     field_array_type[name] = Dict("Type" => VectorOrArray, "Dof" => dof)
 
     return get_field(name)
@@ -256,7 +258,7 @@ function create_node_field(name::String, type::Type, VectorOrArray::String, dof:
 end
 
 function get_all_field_keys()
-    return collect(keys(field_names))
+    return collect(keys(field_types))
 end
 
 function get_block_list()
@@ -297,22 +299,39 @@ function get_field(name::String)
     # view() to get SubArray references
     # https://docs.julialang.org/en/v1/base/arrays/#Views-(SubArrays-and-other-view-types)
     if name in get_all_field_keys()
-        if length(size(fields[field_names[name]][name])) > 1
+        if length(size(fields[field_types[name]][name])) > 1
             if field_array_type[name]["Type"] == "Matrix"
                 field_dof = field_array_type[name]["Dof"]
-                return view(reshape(fields[field_names[name]][name], (:, field_dof, field_dof)), :, :, :)
+                return view(reshape(fields[field_types[name]][name], (:, field_dof, field_dof)), :, :, :)
             end
-            return view(fields[field_names[name]][name], :, :)
+            return view(fields[field_types[name]][name], :, :)
         end
         if field_array_type[name]["Type"] == "Matrix"
             field_dof = field_array_type[name]["Dof"]
-            return view([reshape(field, (:, field_dof, field_dof)) for field in fields[field_names[name]][name]], :,)
+            return view([reshape(field, (:, field_dof, field_dof)) for field in fields[field_types[name]][name]], :,)
         end
-        return view(fields[field_names[name]][name], :,)
+        return view(fields[field_types[name]][name], :,)
     end
     @error "Field ''" * name * "'' does not exist. Check if it is initialized as constant."
-    return []
+    return nothing
 end
+
+"""
+    get_field_type()
+    Get the type of a field
+
+    Returns:
+    - `get_field_type` (string): returns the type of a field
+
+"""
+function get_field_type(name::String)
+    if !haskey(field_types, name)
+        @error "Field ''" * name * "'' does not exist."
+        return nothing
+    end
+    return field_types[name]
+end
+
 """
     get_local_nodes()
 
@@ -565,9 +584,32 @@ Example:
 set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping dict
 ```
 """
-function set_glob_to_loc(dict)
+function set_glob_to_loc(dict::Dict)
 
     global glob_to_loc = dict
+end
+
+function set_distribution(values::Vector{Int64})
+
+    global distribution = values
+end
+
+"""
+loc_to_glob(range::UnitRange{Int64})
+
+Converts the local index to the global index.
+
+Parameters:
+- `range::UnitRange{Int64}`: The range of the local index.
+
+Example:
+```julia
+loc_to_glob(1:10)  # converts the local index to the global index
+```
+"""
+function loc_to_glob(range::UnitRange{Int64})
+    global distribution
+    return distribution[range]
 end
 
 function set_material_type(key, value)
@@ -736,14 +778,14 @@ function switch_NP1_to_N()
         end
         field_N[:] = field_NP1[:]
         if size(field_NP1[1]) == ()
-            field_NP1[:] = fill(field_names[NP1](0), size(field_NP1))
+            field_NP1[:] = fill(field_types[NP1](0), size(field_NP1))
         else
             value = 0
             if "Bond DamageNP1" == NP1
                 value = 1
             end
             for fieldID in eachindex(field_NP1)
-                field_NP1[fieldID] = fill(field_names[NP1](value), size(field_NP1[fieldID]))
+                field_NP1[fieldID] = fill(field_types[NP1](value), size(field_NP1[fieldID]))
             end
         end
     end
