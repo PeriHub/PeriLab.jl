@@ -58,6 +58,35 @@ import .Geometry
     @test bond_geometry[4][1, 1] == 0.5
     @test bond_geometry[4][1, 2] == -0.5
     @test bond_geometry[4][1, 3] / sqrt(1.25) - 1 < 1e-8
+    bond_geometry = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bond_geometry)
+    # test if a sum exists or not
+    @test bond_geometry[1][1, 1] == 0.5
+    @test bond_geometry[1][1, 2] == 0.5
+    @test bond_geometry[1][1, 3] / sqrt(0.5) - 1 < 1e-8
+    @test bond_geometry[1][2, 1] == 1
+    @test bond_geometry[1][2, 2] == 0
+    @test bond_geometry[1][2, 3] == 1
+
+    @test bond_geometry[2][1, 1] == -0.5
+    @test bond_geometry[2][1, 2] == -0.5
+    @test bond_geometry[2][1, 3] / sqrt(0.5) - 1 < 1e-8
+    @test bond_geometry[2][2, 1] == 0.5
+    @test bond_geometry[2][2, 2] == -0.5
+    @test bond_geometry[2][2, 3] / sqrt(1.25) - 1 < 1e-8
+
+    @test bond_geometry[3][1, 1] == -1
+    @test bond_geometry[3][1, 2] == 0
+    @test bond_geometry[3][1, 3] == 1
+    @test bond_geometry[3][2, 1] == -0.5
+    @test bond_geometry[3][2, 2] == 0.5
+    @test bond_geometry[3][2, 3] / sqrt(1.25) - 1 < 1e-8
+
+    @test bond_geometry[4][1, 1] == 0.5
+    @test bond_geometry[4][1, 2] == -0.5
+    @test bond_geometry[4][1, 3] / sqrt(1.25) - 1 < 1e-8
+
+
+
     coor[:, :] .= 0
     bond_geometry[1][:, :] .= 0
     bond_geometry[2][:, :] .= 0
