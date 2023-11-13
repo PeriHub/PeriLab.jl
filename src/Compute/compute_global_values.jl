@@ -55,9 +55,9 @@ function calculate_block(datamanager::Module, fieldKey::String, calculation_type
     end
     field = datamanager.get_field(fieldKey)
     field_type = datamanager.get_field_type(fieldKey)
-    blockIDs = datamanager.get_field("Block_Id")
+    block_ids = datamanager.get_field("Block_Id")
     nnodes = datamanager.get_nnodes()
-    blockNodes = findall(item -> item == block, blockIDs[1:nnodes])
+    blockNodes = findall(item -> item == block, block_ids[1:nnodes])
 
     if calculation_type == "Sum"
         if length(blockNodes) == 0

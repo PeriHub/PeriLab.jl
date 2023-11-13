@@ -74,11 +74,11 @@ function init_interface_crit_values(datamanager::Module, params::Dict)
     blockList = datamanager.get_block_list()
 
     inter_critical_Value = zeros(Float64, (length(blockList), length(blockList), length(blockList)))
-    for blockId in blockList
-        if !haskey(params["Blocks"]["block_$blockId"], "Damage Model")
+    for block_id in blockList
+        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
             continue
         end
-        damageName = params["Blocks"]["block_$blockId"]["Damage Model"]
+        damageName = params["Blocks"]["block_$block_id"]["Damage Model"]
         damage_parameter = params["Physics"]["Damage Models"][damageName]
         if !haskey(damage_parameter, "Interblock Damage")
             continue
@@ -91,9 +91,9 @@ function init_interface_crit_values(datamanager::Module, params::Dict)
             for block_jId in blockList
                 critValueName = "Interblock Critical Value $(block_iId)_$block_jId"
                 if haskey(damage_parameter, critValueName)
-                    inter_critical_Value[block_iId, block_jId, blockId] = damage_parameter[critValueName]
+                    inter_critical_Value[block_iId, block_jId, block_id] = damage_parameter[critValueName]
                 else
-                    inter_critical_Value[block_iId, block_jId, blockId] = critical_value
+                    inter_critical_Value[block_iId, block_jId, block_id] = critical_value
                 end
             end
         end

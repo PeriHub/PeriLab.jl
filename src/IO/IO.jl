@@ -331,10 +331,12 @@ function find_global_core_value!(global_value::Union{Int64,Float64}, calculation
 end
 
 function show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)
-
     headers = ["Block", "Material", "Damage", "Thermal", "Additive", "Density", "Horizon", "Number of Nodes"]
     df = DataFrame([header => [] for header in headers])
-
+    # tbd
+    #types = [Int64, String, String, String, String, Float64, Float64, Int64]
+    #df = DataFrame([header => Vector{t}() for (header, t) in zip(headers, types)])
+    #---
     block_Id = datamanager.get_field("Block_Id")
     block_list = datamanager.get_block_list()
     block_list = ["block_" * string(block) for block in block_list]

@@ -141,7 +141,7 @@ function define_nsets(params::Dict, path::String, datamanager::Module)
 end
 
 function distribution_to_cores(comm, datamanager::Module, mesh, distribution, dof)
-    # init blockID field
+    # init block_id field
     rank = MPI.Comm_rank(comm)
     if rank == 0
         meshdata = check_mesh_elements(mesh, dof)

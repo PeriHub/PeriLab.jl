@@ -273,27 +273,27 @@ end
 
 
 
-function get_density(params::Dict, blockID::Int64)
-    return get_values(params, blockID, "Density")
+function get_density(params::Dict, block_id::Int64)
+    return get_values(params, block_id, "Density")
 end
 
-function get_heatcapacity(params::Dict, blockID::Int64)
-    return get_values(params, blockID, "Specific Heat Capacity")
+function get_heatcapacity(params::Dict, block_id::Int64)
+    return get_values(params, block_id, "Specific Heat Capacity")
 end
 
-function get_horizon(params::Dict, blockID::Int64)
-    return get_values(params, blockID, "Horizon")
+function get_horizon(params::Dict, block_id::Int64)
+    return get_values(params, block_id, "Horizon")
 end
 
-function get_values(params::Dict, blockID::Int64, valueName::String)
-    if check_element(params["Blocks"], "block_" * string(blockID))
-        if check_element(params["Blocks"]["block_"*string(blockID)], valueName)
-            return params["Blocks"]["block_"*string(blockID)][valueName]
+function get_values(params::Dict, block_id::Int64, valueName::String)
+    if check_element(params["Blocks"], "block_" * string(block_id))
+        if check_element(params["Blocks"]["block_"*string(block_id)], valueName)
+            return params["Blocks"]["block_"*string(block_id)][valueName]
         end
-        @error "$valueName of Block $blockID is not defined"
+        @error "$valueName of Block $block_id is not defined"
         return
     end
-    @error "Block $blockID is not defined"
+    @error "Block $block_id is not defined"
     return
 end
 

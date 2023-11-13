@@ -19,7 +19,7 @@ SPDX-License-Identifier: BSD-3-Clause
     7. glob to loc ableiten für RB Knoten -> done
     8. overlapmap verteilen an Knoten -> send to all! -> done
     ! ---------
-    9. block filter -> auf den Kernen blockID -> alle Knoten -> done
+    9. block filter -> auf den Kernen block_id -> alle Knoten -> done
     10. BC Filter -> an alle -> done
     ! -------------
     11. Nachbarschaftslisten versenden ! wie in sinnvoller Weise?

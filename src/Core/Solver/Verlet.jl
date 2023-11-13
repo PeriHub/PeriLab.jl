@@ -137,7 +137,7 @@ function test_timestep(t::Float64, criticalTimeStep::Float64)
 end
 
 """
-    compute_crititical_time_step(datamanager::Module, blockNodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Calculate the critical time step for a simulation considering both mechanical and thermodynamic aspects.
 
@@ -145,7 +145,7 @@ This function computes the critical time step by considering mechanical and ther
 
 ## Arguments
 - `datamanager::Module`: The data manager module that provides access to required data fields and properties.
-- `blockNodes::Dict{Int64, Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
+- `block_nodes::Dict{Int64, Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
 - `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
 
@@ -163,21 +163,21 @@ This function may depend on the following functions:
 
 """
 
-function compute_crititical_time_step(datamanager::Module, blockNodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermal::Bool)
+function compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermal::Bool)
     criticalTimeStep::Float64 = 1.0e50
-    for iblock in eachindex(blockNodes)
+    for iblock in eachindex(block_nodes)
         if thermal
             lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
             if !isnothing(lambda)
-                t = compute_thermodynamic_critical_time_step(blockNodes[iblock], datamanager, lambda)
+                t = compute_thermodynamic_critical_time_step(block_nodes[iblock], datamanager, lambda)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             end
         end
         if mechanical
             bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
             if !isnothing(bulkModulus)
-                t = compute_mechanical_critical_time_step(blockNodes[iblock], datamanager, bulkModulus)
+                t = compute_mechanical_critical_time_step(block_nodes[iblock], datamanager, bulkModulus)
                 criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
             else
                 @error "No time step for material is determined because of missing properties."
@@ -189,7 +189,7 @@ function compute_crititical_time_step(datamanager::Module, blockNodes::Dict{Int6
 end
 
 """
-    init_solver(params::Dict, datamanager::Module, blockNodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
@@ -198,7 +198,7 @@ This function sets up the Verlet solver for a simulation by initializing various
 ## Arguments
 - `params::Dict`: A dictionary containing simulation parameters.
 - `datamanager::Module`: The data manager module that provides access to required data fields and properties.
-- `blockNodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
+- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
 - `thermo::Bool`: If `true`, thermodynamic properties are considered in the calculation.
 
@@ -218,7 +218,7 @@ This function may depend on the following functions:
 
 """
 
-function init_solver(params::Dict, datamanager::Module, blockNodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
     @info "======================="
     @info "==== Verlet Solver ===="
     @info "======================="
@@ -230,7 +230,7 @@ function init_solver(params::Dict, datamanager::Module, blockNodes::Dict{Int64,V
     @info "Initial time: " * string(initial_time) * " [s]"
     @info "Final time: " * string(final_time) * " [s]"
     if dt == true
-        dt = compute_crititical_time_step(datamanager, blockNodes, mechanical, thermo)
+        dt = compute_crititical_time_step(datamanager, block_nodes, mechanical, thermo)
         @info "Minimal time increment: " * string(dt) * " [s]"
     else
         @info "Fixed time increment: " * string(dt) * " [s]"
@@ -280,7 +280,7 @@ end
 """
     run_solver(
         solver_options::Dict{String,Any},
-        blockNodes::Dict{Int64,Vector{Int64}},
+        block_nodes::Dict{Int64,Vector{Int64}},
         bcs::Dict{Any,Any},
         datamanager::Module,
         outputs::Dict{Int64,Dict{}},
@@ -297,7 +297,7 @@ This function performs the Verlet solver simulation, updating various data field
 
 ## Arguments
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options and parameters.
-- `blockNodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
+- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
 - `datamanager::Module`: The data manager module that provides access to data fields and properties.
 - `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings.
@@ -322,7 +322,7 @@ This function depends on various data fields and properties from the `datamanage
 
 """
 
-function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, synchronise_field, write_results, to::TimerOutputs.TimerOutput, silent::Bool)
+function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, synchronise_field, write_results, to::TimerOutputs.TimerOutput, silent::Bool)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
@@ -379,9 +379,9 @@ function run_solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vec
             #end
             datamanager.synch_manager(synchronise_field, "upload_to_cores")
             # synch
-            for block in eachindex(blockNodes)
-                @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, blockNodes[block], block, dt, step_time, solver_options, synchronise_field, to)
-            end
+
+            @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, block_nodes, dt, step_time, solver_options, synchronise_field, to)
+
             datamanager.synch_manager(synchronise_field, "download_from_cores")
             # synch
             @timeit to "second apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
