@@ -65,7 +65,7 @@ function get_block_nodes(block_Id::Union{SubArray,Vector{Int64}}, block::Int64)
     return reshape(conn, 1, length(conn))
 end
 
-function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}})
+function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64})
     info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
 
     write_info(exo, info)
@@ -80,21 +80,34 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
     id::Int32 = 0
     # bloecke checken
     for name in eachindex(nsets)
+        @debug name
         id += Int32(1)
-        if length(block_Id) < length(nsets[name])
-            nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name][1:length(block_Id)]))
-        else
-            nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name]))
-        end
+        @debug id
+        # if length(block_Id) < length(nsets[name])
+        #     nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name][1:length(block_Id)]))
+        #     @debug convert(Array{Int32}, nsets[name][1:length(block_Id)])
+        # else
+        # existing_nodes = intersect(global_ids, nsets[name])
+        nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name]))
+        @debug nsets[name]
+        # end
         write_set(exo, nsetExo)
         write_name(exo, nsetExo, name)
     end
 
     for block in uniqueBlocks
+        @debug block
         conn = get_block_nodes(block_Id, block)# virtual elements   
+        @debug conn
         write_block(exo, block, "SPHERE", conn)
         write_name(exo, Block, block, "Block_" * string(block))
     end
+
+    # write element id map
+
+    @debug global_ids
+    write_id_map(exo, NodeMap, Int32.(global_ids))
+    write_id_map(exo, ElementMap, Int32.(global_ids))
 
     """
     output structure var_name -> [fieldname, exodus id, field dof]

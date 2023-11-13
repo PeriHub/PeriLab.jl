@@ -211,7 +211,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
         @info "Solver init"
         @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
-        if verbose && rank == 0
+        if verbose
             IO.show_block_summary(solver_options, params, datamanager)
         end
         @info "Init write results"
@@ -233,14 +233,14 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
             @timeit to "Solver.solver" result_files = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
         end
 
-        IO.close_result_files(result_files)
+        IO.close_result_files(result_files, outputs)
 
         if dry_run
             IO.delete_files(result_files)
         end
 
         if size > 1 && rank == 0
-            IO.merge_exodus_files(result_files)
+            IO.merge_exodus_files(result_files, filedirectory)
         end
         MPI.Barrier(comm)
         if size > 1

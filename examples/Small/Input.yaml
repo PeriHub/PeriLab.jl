@@ -86,7 +86,7 @@ PeriLab:
       Value: "20*t"
   Solver:
     Solve For Displacement: True
-    Damage Models: True
+    # Damage Models: True
     Verbose: False
     Initial Time: 0.0
     Final Time: 0.00001
@@ -129,6 +129,5 @@ PeriLab:
       Output File Type: "CSV"
       Number of Output Steps: 10
       Output Variables:
-        Forces: True
         External_Forces: True
         External_Displacements: True

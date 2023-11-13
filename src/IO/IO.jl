@@ -26,12 +26,19 @@ export write_results
 export merge_exodus_files
 export show_block_summary
 output_frequency = []
-function merge_exodus_files(exos)
+global_values = []
+function merge_exodus_files(exos::Vector{Any}, filedirectory::String)
     for exo in exos
-        filename = exo.file_name
-        if ".0" == filename[end-1:end]
-            @info "Merge output file " * filename
-            Write_Exodus_Results.merge_exodus_file(filename)
+        if exo isa Exodus.ExodusDatabase
+            filename = exo.file_name
+            if ".0" == filename[end-1:end]
+                @info "Merge output file " * filename
+                Write_Exodus_Results.merge_exodus_file(filename)
+                base = basename(filename)
+                filename = split(base, ".")[1] * ".e"
+                mv(filename, joinpath(filedirectory, filename), force=true)
+                mv("epu.log", joinpath(filedirectory, "epu.log"), force=true)
+            end
         end
     end
 end
@@ -49,19 +56,25 @@ end
 function close_result_file(result_file)
     if result_file isa Exodus.ExodusDatabase
         close(result_file)
-    elseif result_file["file"] isa IOStream
+    elseif haskey(result_file, "file") && result_file["file"] isa IOStream
         close(result_file["file"])
-    else
-        @warn "Unknown result file type"
     end
 end
 
-function close_result_files(result_files)
+function close_result_files(result_files::Vector{Any})
     for result_file in result_files
         try
             close_result_file(result_file)
         catch
             @warn "File already closed"
+        end
+    end
+end
+
+function close_result_files(result_files::Vector{Any}, outputs::Dict{Int64,Dict{}})
+    for (id, result_file) in enumerate(result_files)
+        if !outputs[id]["flush_file"]
+            close_result_file(result_file)
         end
     end
 end
@@ -174,6 +187,7 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
     result_files = []
 
     nnodes = datamanager.get_nnodes()
+    global_ids = datamanager.loc_to_glob(1:nnodes)
     dof = datamanager.get_dof()
     nnsets = datamanager.get_nnsets()
     coordinates = datamanager.get_field("Coordinates")
@@ -182,18 +196,25 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
     max_block_id = find_and_set_core_value_max(datamanager.get_comm(), max_block_id)
     nsets = datamanager.get_nsets()
     outputs = get_results_mapping(params, datamanager)
+    for name in eachindex(nsets)
+        existing_nodes = intersect(global_ids, nsets[name])
+        nsets[name] = datamanager.get_local_nodes(existing_nodes)
+    end
 
     for (id, filename) in enumerate(filenames)
-
+        @debug filename
+        rank = datamanager.get_rank()
         if ".e" == filename[end-1:end]
             if datamanager.get_max_rank() > 1
-                filename = filename * "." * string(datamanager.get_max_rank()) * "." * string(datamanager.get_rank())
+                filename = filename * "." * string(datamanager.get_max_rank()) * "." * string(rank)
             end
             outputs[id]["Output File Type"] = "Exodus"
             push!(result_files, Write_Exodus_Results.create_result_file(filename, nnodes, dof, max_block_id, nnsets))
         elseif ".csv" == filename[end-3:end]
-            if datamanager.get_rank() == 0
+            if rank == 0
                 push!(result_files, Write_CSV_Results.create_result_file(filename, outputs[id]))
+            else
+                push!(result_files, Dict("filename" => filename))
             end
             outputs[id]["Output File Type"] = "CSV"
         end
@@ -204,7 +225,7 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
     for id in eachindex(result_files)
 
         if typeof(result_files[id]) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
-            result_files[id] = Write_Exodus_Results.init_results_in_exodus(result_files[id], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets)
+            result_files[id] = Write_Exodus_Results.init_results_in_exodus(result_files[id], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids)
         end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 
@@ -223,6 +244,7 @@ end
 function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, datamanager::Module)
 
     for id in eachindex(result_files)
+        @debug id
         output_type = outputs[id]["Output File Type"]
         # step 1 ist the zero step?!
         output_frequency[id]["Counter"] += 1
@@ -230,20 +252,25 @@ function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, 
             output_frequency[id]["Step"] += 1
             nodal_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (!value["global_var"]))
             global_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (value["global_var"]))
-            if outputs[id]["flush_file"]
-                open_result_file(result_files[id])
+            if datamanager.get_rank() == 0 && output_type == "CSV" || output_type == "Exodus"
+                if outputs[id]["flush_file"]
+                    open_result_file(result_files[id])
+                end
             end
             if output_type == "Exodus" && length(nodal_outputs) > 0 && result_files[id] isa Exodus.ExodusDatabase
                 result_files[id] = Write_Exodus_Results.write_step_and_time(result_files[id], output_frequency[id]["Step"], time)
                 result_files[id] = Write_Exodus_Results.write_nodal_results_in_exodus(result_files[id], output_frequency[id]["Step"], nodal_outputs, datamanager)
             end
+            @debug length(global_outputs)
             if length(global_outputs) > 0
                 global_values = get_global_values(global_outputs, datamanager)
                 if output_type == "Exodus"
                     result_files[id] = Write_Exodus_Results.write_global_results_in_exodus(result_files[id], output_frequency[id]["Step"], global_outputs, global_values)
                 end
-                if output_type == "CSV"
-                    Write_Exodus_Results.write_global_results_in_csv(result_files[id], global_values)
+                if datamanager.get_rank() == 0
+                    if output_type == "CSV"
+                        Write_Exodus_Results.write_global_results_in_csv(result_files[id], global_values)
+                    end
                 end
             end
 
@@ -253,6 +280,8 @@ function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, 
             output_frequency[id]["Counter"] = 0
         end
     end
+
+    @debug "finished result_files"
     return result_files
 end
 
@@ -266,15 +295,39 @@ function get_global_values(output::Dict, datamanager::Module)
         if compute_class == "Block_Data"
             block = output[varname]["compute_params"]["Block"]
             block_id = parse(Int, block[7:end])
-            global_value = calculate_block(datamanager, fieldname, calculation_type, block_id)
+            global_value, nnodes = calculate_block(datamanager, fieldname, calculation_type, block_id)
         elseif compute_class == "Nodeset_Data"
             node_set = get_node_set(output[varname]["compute_params"])
-            global_value = calculate_nodelist(datamanager, fieldname, calculation_type, node_set)
+            global_value, nnodes = calculate_nodelist(datamanager, fieldname, calculation_type, node_set)
         end
 
+        if datamanager.get_max_rank() > 1
+            @debug global_value
+            for iID in eachindex(global_value)
+                global_value[iID] = find_global_core_value!(global_value[iID], calculation_type, nnodes, datamanager)
+            end
+        end
         append!(global_values, global_value)
     end
+    @debug global_values
     return global_values
+end
+
+function find_global_core_value!(global_value::Union{Int64,Float64}, calculation_type::String, nnodes::Int64, datamanager::Module)
+    comm = datamanager.get_comm()
+    @debug global_value
+    if calculation_type == "Sum"
+        return find_and_set_core_value_sum(comm, global_value)
+    elseif calculation_type == "Maximum"
+        return find_and_set_core_value_max(comm, global_value)
+    elseif calculation_type == "Minimum"
+        return find_and_set_core_value_min(comm, global_value)
+    elseif calculation_type == "Average"
+        return find_and_set_core_value_avg(comm, global_value, nnodes)
+    else
+        @warn "Unknown calculation type $calculation_type"
+        return 0
+    end
 end
 
 function show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)
