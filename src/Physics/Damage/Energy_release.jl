@@ -88,10 +88,11 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
           continue
         end
       end
+      force_dif = abs.(forceDensities[iID, :]) +
+                  abs.(forceDensities[nlist[iID][jID], :])
+      projected_force = dot(force_dif, deformed_bond[iID][jID, 1:dof]) / (deformed_bond[iID][jID, end] * deformed_bond[iID][jID, end]) .* deformed_bond[iID][jID, 1:dof]
 
-      projected_force = dot((forceDensities[iID, :] - forceDensities[nlist[iID][jID], :]), deformed_bond[iID][jID, 1:dof]) / (deformed_bond[iID][jID, end] * deformed_bond[iID][jID, end]) .* deformed_bond[iID][jID, 1:dof]
-
-      bond_energy = 0.5 * sum(projected_force[1:dof] .* deformed_bond[iID][jID, 1:dof])
+      bond_energy = 0.5 * sum(abs.(projected_force[1:dof] .* deformed_bond[iID][jID, 1:dof]))
       crit_energy = critical_Energy
       if interBlockDamage
         crit_energy = inter_critical_Energy[block_ids[iID], block_ids[nlist[iID][jID]], block]

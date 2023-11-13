@@ -78,7 +78,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 stretch = abs(stretch)
             end
             if stretch > crit_stretch
-                bond_damageNP1[iID][jID] = 0
+                bond_damageNP1[iID][jID] = 0.0
                 update_list[iID] = true
             end
         end
