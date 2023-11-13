@@ -175,6 +175,12 @@ end
 
 end
 
+@testset "get_field_type" begin
+
+    @test test_Data_manager.get_field_type("A") == Float64
+
+end
+
 @testset "set_get_field" begin
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 2
@@ -209,9 +215,9 @@ end
     @test typeof(testnewInt[1]) == Int8
 
     testDoesnotExists = test_Data_manager.get_field("does not exist", "NP1")
-    @test testDoesnotExists == []
+    @test isnothing(testDoesnotExists)
     testDoesnotExists = test_Data_manager.get_field("does not exist")
-    @test testDoesnotExists == []
+    @test isnothing(testDoesnotExists)
 end
 
 @testset "Matrix" begin

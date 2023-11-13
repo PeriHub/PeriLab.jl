@@ -21,10 +21,11 @@ include("../../../src/Compute/compute_global_values.jl")
     @test testValues[2] == 7.2
     @test testValues[3] == 8.2
     testValues = calculate_nodelist(test_Data_manager, "Forces", "Sum", nodes)
-    @test length(testValues) == 3
-    @test testValues[1] == -13.8
-    @test testValues[2] == 7.2
-    @test testValues[3] == 8.2
+    @test length(testValues[1]) == 3
+    @test testValues[2] == 4
+    @test testValues[1][1] == -13.8
+    @test testValues[1][2] == 7.2
+    @test testValues[1][3] == 8.2
 
     nodes = Vector{Int64}(1:2)
     testValues = global_value_sum(forcesNP1, nodes)
@@ -32,9 +33,9 @@ include("../../../src/Compute/compute_global_values.jl")
     @test testValues[2] == 2
     @test testValues[3] == 3
     testValues = calculate_nodelist(test_Data_manager, "Forces", "Sum", nodes)
-    @test testValues[1] == 1
-    @test testValues[2] == 2
-    @test testValues[3] == 3
+    @test testValues[1][1] == 1
+    @test testValues[1][2] == 2
+    @test testValues[1][3] == 3
     disp = test_Data_manager.create_constant_node_field("Disp", Float64, 1)
     disp[1:4] = 1:4
     nodes = Vector{Int64}(1:4)
@@ -42,17 +43,17 @@ include("../../../src/Compute/compute_global_values.jl")
     @test length(testValues) == 1
     @test testValues[1] == 10
     testValues = calculate_nodelist(test_Data_manager, "Disp", "Sum", nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 10
+    @test length(testValues[1]) == 1
+    @test testValues[1][1] == 10
 
     nodes = Vector{Int64}(2:3)
     testValues = global_value_sum(disp, nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 5
+    @test length(testValues[1]) == 1
+    @test testValues[1][1] == 5
 
     testValues = calculate_nodelist(test_Data_manager, "Disp", "Sum", nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 5
+    @test length(testValues[1]) == 1
+    @test testValues[1][1] == 5
     testValues = calculate_nodelist(test_Data_manager, "Disp", "", nodes)
     @test isnothing(testValues)
     testValues = calculate_nodelist(test_Data_manager, "not there", "Sum", nodes)
@@ -75,10 +76,10 @@ end
     @test testValues[3] == 5.2
     testValues = calculate_nodelist(test_Data_manager, "Forces", "Maximum", nodes)
     println()
-    @test length(testValues) == 3
-    @test testValues[1] == 5.2
-    @test testValues[2] == 5.2
-    @test testValues[3] == 5.2
+    @test length(testValues[1]) == 3
+    @test testValues[1][1] == 5.2
+    @test testValues[1][2] == 5.2
+    @test testValues[1][3] == 5.2
 
     nodes = Vector{Int64}(1:2)
     testValues = global_value_max(forcesNP1, nodes)
@@ -87,10 +88,10 @@ end
     @test testValues[2] == 2
     @test testValues[3] == 3
     testValues = calculate_nodelist(test_Data_manager, "Forces", "Maximum", nodes)
-    @test length(testValues) == 3
-    @test testValues[1] == 1
-    @test testValues[2] == 2
-    @test testValues[3] == 3
+    @test length(testValues[1]) == 3
+    @test testValues[1][1] == 1
+    @test testValues[1][2] == 2
+    @test testValues[1][3] == 3
     disp = test_Data_manager.create_constant_node_field("Disp", Float64, 1)
     disp[1:4] = 1:4
     nodes = Vector{Int64}(1:4)
@@ -106,8 +107,8 @@ end
     @test length(testValues) == 1
     @test testValues[1] == 3
     testValues = calculate_nodelist(test_Data_manager, "Disp", "Maximum", nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 3
+    @test length(testValues[1]) == 1
+    @test testValues[1] == [3.0]
     testValues = calculate_nodelist(test_Data_manager, "Disp", "", nodes)
     @test isnothing(testValues)
     testValues = calculate_nodelist(test_Data_manager, "not there", "Maximum", nodes)
@@ -128,10 +129,10 @@ end
     @test testValues[2] == 0
     @test testValues[3] == 0
     testValues = calculate_nodelist(test_Data_manager, "Forces", "Minimum", nodes)
-    @test length(testValues) == 3
-    @test testValues[1] == -20
-    @test testValues[2] == 0
-    @test testValues[3] == 0
+    @test length(testValues[1]) == 3
+    @test testValues[1][1] == -20
+    @test testValues[1][2] == 0
+    @test testValues[1][3] == 0
     nodes = Vector{Int64}(1:2)
     testValues = global_value_min(forcesNP1, nodes)
     @test length(testValues) == 3
@@ -139,26 +140,26 @@ end
     @test testValues[2] == 0
     @test testValues[3] == 0
     testValues = calculate_nodelist(test_Data_manager, "Forces", "Minimum", nodes)
-    @test length(testValues) == 3
-    @test testValues[1] == 0
-    @test testValues[2] == 0
-    @test testValues[3] == 0
+    @test length(testValues[1]) == 3
+    @test testValues[1][1] == 0
+    @test testValues[1][2] == 0
+    @test testValues[1][3] == 0
     disp = test_Data_manager.create_constant_node_field("Disp", Float64, 1)
     disp[1:4] = 1:4
     nodes = Vector{Int64}(1:4)
     testValues = global_value_min(disp, nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 1
+    @test length(testValues[1]) == 1
+    @test testValues[1][1] == 1
     testValues = calculate_nodelist(test_Data_manager, "Disp", "Minimum", nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 1
+    @test length(testValues[1]) == 1
+    @test testValues[1][1] == 1
     nodes = Vector{Int64}(2:3)
     testValues = global_value_min(disp, nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 2
+    @test length(testValues[1]) == 1
+    @test testValues[1][1] == 2
     testValues = calculate_nodelist(test_Data_manager, "Disp", "Minimum", nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 2
+    @test length(testValues[1]) == 1
+    @test testValues[1][1] == 2
     testValues = calculate_nodelist(test_Data_manager, "Disp", "", nodes)
     @test isnothing(testValues)
     testValues = calculate_nodelist(test_Data_manager, "not there", "Minimum", nodes)
@@ -178,10 +179,10 @@ end
     @test testValues[2] == 7.2 / 4
     @test testValues[3] == 8.2 / 4
     testValues = calculate_nodelist(test_Data_manager, "Forces", "Average", nodes)
-    @test length(testValues) == 3
-    @test testValues[1] == -13.8 / 4
-    @test testValues[2] == 7.2 / 4
-    @test testValues[3] == 8.2 / 4
+    @test length(testValues[1]) == 3
+    @test testValues[1][1] == -13.8 / 4
+    @test testValues[1][2] == 7.2 / 4
+    @test testValues[1][3] == 8.2 / 4
     nodes = Vector{Int64}(1:2)
     testValues = global_value_avg(forcesNP1, nodes)
     @test length(testValues) == 3
@@ -189,10 +190,10 @@ end
     @test testValues[2] == 2 / 2
     @test testValues[3] == 3 / 2
     testValues = calculate_nodelist(test_Data_manager, "Forces", "Average", nodes)
-    @test length(testValues) == 3
-    @test testValues[1] == 1 / 2
-    @test testValues[2] == 2 / 2
-    @test testValues[3] == 3 / 2
+    @test length(testValues[1]) == 3
+    @test testValues[1][1] == 1 / 2
+    @test testValues[1][2] == 2 / 2
+    @test testValues[1][3] == 3 / 2
     disp = test_Data_manager.create_constant_node_field("Disp", Float64, 1)
     disp[1:4] = 1:4
     nodes = Vector{Int64}(1:4)
@@ -200,15 +201,15 @@ end
     @test length(testValues) == 1
     @test testValues[1] == 10 / 4
     testValues = calculate_nodelist(test_Data_manager, "Disp", "Average", nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 10 / 4
+    @test length(testValues[1]) == 1
+    @test testValues[1][1] == 10 / 4
     nodes = Vector{Int64}(2:3)
     testValues = global_value_avg(disp, nodes)
     @test length(testValues) == 1
     @test testValues[1] == 5 / 2
     testValues = calculate_nodelist(test_Data_manager, "Disp", "Average", nodes)
-    @test length(testValues) == 1
-    @test testValues[1] == 5 / 2
+    @test length(testValues[1]) == 1
+    @test testValues[1][1] == 5 / 2
     testValues = calculate_nodelist(test_Data_manager, "Disp", "", nodes)
     @test isnothing(testValues)
     testValues = calculate_nodelist(test_Data_manager, "not there", "Average", nodes)

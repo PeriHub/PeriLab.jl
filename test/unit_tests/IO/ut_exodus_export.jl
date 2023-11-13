@@ -109,7 +109,7 @@ outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "ForcesNP1", "
 computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "result_id" => 1, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "result_id" => 2, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Nodeset_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
 
 exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
-exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets)
+exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets, [1, 2, 3, 4, 5])
 result_files = []
 push!(result_files, exo)
 result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 2, 2.2)

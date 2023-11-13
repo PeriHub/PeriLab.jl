@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-function calculate_nodelist(datamanager::Module, fieldKey::String, calculationType::String, node_set::Vector{Int64})
+function calculate_nodelist(datamanager::Module, fieldKey::String, calculation_type::String, node_set::Vector{Int64})
     # get blockNodes
     # check NP1
     if fieldKey * "NP1" in datamanager.get_all_field_keys()
