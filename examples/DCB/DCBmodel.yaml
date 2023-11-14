@@ -101,7 +101,7 @@ PeriLab:
     Material Models:
       Aluminium:
         Hourglass Coefficient: 1.0
-        Material Model: Correspondence Elastic
+        Material Model: PD Solid Elastic
         Plane Stress: true
         Poisson's Ratio: 0.3
         Stabilization Type: Global Stiffness
