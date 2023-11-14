@@ -29,6 +29,7 @@ function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArr
     datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, block, synchronise_field, time, dt))
     if isnothing(datamanager)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
+        return nothing
     end
     return datamanager
 end

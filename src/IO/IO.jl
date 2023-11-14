@@ -144,7 +144,7 @@ function get_results_mapping(params::Dict, datamanager::Module)
                 #output_mapping[id]["Forces"] = [fieldname, result_id, 1, typeof(datafield[1, 1])]
                 # compute class must be mapped here
                 @error "No field " * fieldname * " exists."
-                return
+                return nothing
             end
 
             if length(sizedatafield) == 1
