@@ -13,7 +13,7 @@ function read_input(filename::String)
         return YAML.load_file(filename)["PeriLab"]
     catch
         @error "No compatible Yaml file."
-        return
+        return nothing
     end
 end
 
@@ -21,14 +21,14 @@ function read_input_file(filename::String)
     params = Dict{String,Any}()
     if !isfile(filename)
         @error "$filename does not exist."
-        return
+        return nothing
     end
     if occursin("yaml", filename)
         @info "Read input file $filename"
         params = read_input(filename)
     else
         @error "Not a supported filetype  $filename"
-        return
+        return nothing
     end
     return check_key_elements(params)
 

@@ -78,7 +78,8 @@ function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
             if haskey(dof_mapping, bc["Coordinate"])
                 field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]], bc["Value"], coordinates[bc["Node Set"], :], time, dof, bc["Initial"], name)
             else
-                @error "Coordinate must be x,y or z"
+                @error "Coordinate in boundary condition must be x,y or z."
+                return nothing
             end
         else
             field_to_apply_bc[bc["Node Set"]] = eval_bc(field_to_apply_bc[bc["Node Set"]], bc["Value"], coordinates[bc["Node Set"], :], time, dof, bc["Initial"], name)
