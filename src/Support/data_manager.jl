@@ -25,15 +25,15 @@ export get_physics_options
 export get_properties
 export get_property
 export get_rank
-export get_nslaves
+export get_num_responder
 export get_max_rank
 export init_property
 export set_block_list
 export set_crit_values_matrix
 export set_glob_to_loc
-export set_nmasters
+export set_num_controller
 export set_nset
-export set_nslaves
+export set_num_responder
 export set_physics_options
 export set_property
 export set_rank
@@ -43,30 +43,32 @@ export synch_manager
 ##########################
 # Variables
 ##########################
-nnodes = 0
-nmasters = 0
-nslaves = 0
-nnsets = 0
-dof = 1
-block_list = Int64[]
-distribution = Int64[]
-crit_values_matrix = Float64[]
-properties = Dict{Int64,Dict{String,Any}}()
-glob_to_loc = Dict{Int64,Int64}()
-fields = Dict(Int64 => Dict{String,Any}(), Float64 => Dict{String,Any}(), Bool => Dict{String,Any}())
-field_array_type = Dict{String,Dict{String,Any}}()
-field_types = Dict{String,DataType}()
-fields_to_synch = Dict{String,Any}()
-nsets = Dict{String,Vector{Int}}()
-overlap_map = Dict{Int64,Any}()
-physicsOptions = Dict{String,Bool}("Deformed Bond Geometry" => true,
+global nnodes::Int64 = 0
+global num_controller::Int64 = 0
+global num_responder::Int64 = 0
+global nnsets::Int64 = 0
+global dof::Int64 = 1
+global block_list::Vector{Int64} = []
+global distribution::Vector{Int64}
+global crit_values_matrix::Vector{Float64}
+global properties::Dict{Int64,Dict{String,Any}} = Dict()
+global glob_to_loc::Dict{Int64,Int64}
+global fields::Dict{DataType,Dict{String,Any}} = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
+global field_array_type::Dict{String,Dict{String,Any}} = Dict()
+global field_types::Dict{String,DataType} = Dict()
+global fields_to_synch::Dict{String,Any} = Dict()
+global nsets::Dict{String,Vector{Int}} = Dict()
+global overlap_map::Dict{Int64,Any}
+global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => true,
     "Deformation Gradient" => false,
     "Shape Tensor" => false,
     "Bond Associated Shape Tensor" => false,
     "Bond Associated Deformation Gradient" => false)
-rank::Int64 = 0
-commMPi = Any
+global rank::Int64 = 0
+global commMPi::Any
+
 function get_comm()
+    global commMPi
     return commMPi
 end
 function set_comm(comm::MPI.Comm)
@@ -75,10 +77,12 @@ end
 ##########################
 # Material information
 ##########################
-material_type = Dict{String,Bool}("Bond-Based" => false, "Ordinary" => false, "Correspondence" => true, "Bond-Associated" => false)
+global material_type::Dict{String,Bool} = Dict("Bond-Based" => false, "Ordinary" => false, "Correspondence" => true, "Bond-Associated" => false)
 ##########################
 
 function check_property(block_id::Int64, property::String)
+    global properties
+
     if haskey(properties[block_id], property)
         return length(properties[block_id][property]) > 0
     end
@@ -191,6 +195,12 @@ function create_field(name::String, vartype::Type, bondOrNode::String, dof::Int6
 end
 
 function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrArray::String, dof::Int64, default_value::Union{Int64,Float64,Bool})
+    global nnodes
+    global num_controller
+    global fields
+    global field_array_type
+    global field_types
+
     field_dof = dof
     if haskey(fields, vartype) == false
         fields[vartype] = Dict{String,Any}()
@@ -214,7 +224,7 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
         else
             fields[vartype][name] = Matrix{vartype}[]
         end
-        for i in 1:nmasters
+        for i in 1:num_controller
             if dof == 1
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
                 fill!(fields[vartype][name][end], vartype(default_value))
@@ -258,14 +268,17 @@ function create_node_field(name::String, type::Type, VectorOrArray::String, dof:
 end
 
 function get_all_field_keys()
+    global field_types
     return collect(keys(field_types))
 end
 
 function get_block_list()
+    global block_list
     return block_list
 end
 
 function get_crit_values_matrix()
+    global crit_values_matrix
     return crit_values_matrix
 end
 """
@@ -282,6 +295,7 @@ get_dof()  # returns the current degree of freedom
 ```
 """
 function get_dof()
+    global dof
     return dof
 end
 
@@ -295,6 +309,9 @@ function get_field(name::String, time::String)
 end
 
 function get_field(name::String)
+    global fields
+    global field_array_type
+    global field_types
 
     # view() to get SubArray references
     # https://docs.julialang.org/en/v1/base/arrays/#Views-(SubArrays-and-other-view-types)
@@ -325,6 +342,8 @@ end
 
 """
 function get_field_type(name::String)
+    global field_types
+
     if !haskey(field_types, name)
         @error "Field ''" * name * "'' does not exist."
         return nothing
@@ -346,6 +365,7 @@ end
     ```
     """
 function get_local_nodes(global_nodes)
+    global glob_to_loc
 
     return [glob_to_loc[global_node] for global_node in global_nodes if global_node in keys(glob_to_loc)]
 
@@ -364,7 +384,7 @@ get_nnodes()
 Retrieves the number of nodes.
 
 Returns:
-- `nmasters::Int64` : The current number of nodes.
+- `num_controller::Int64` : The current number of nodes.
 
 Example:
 ```julia
@@ -372,7 +392,8 @@ get_nnodes()  # returns the current number of nodes
 ```
 """
 function get_nnodes()
-    return nmasters
+    global num_controller
+    return num_controller
 end
 
 
@@ -397,7 +418,7 @@ end
 
 """
 function get_nnsets()
-
+    global nnsets
     return nnsets
 end
 
@@ -411,42 +432,48 @@ Returns:
 """
 
 function get_nsets()
+    global nsets
     return nsets
 end
 
 """
-get_nslaves()
+get_num_responder()
 
-Get the the number of slave nodes
+Get the the number of responder nodes
 
 Returns:
-- `nslaves::Int64`: The number of slave nodes
+- `num_responder::Int64`: The number of responder nodes
 """
 
-function get_nslaves()
-    return nslaves
+function get_num_responder()
+    global num_responder
+    return num_responder
 end
 
 function get_overlap_map()
+    global overlap_map
     return overlap_map
 end
 
 function get_synch_fields()
+    global fields_to_synch
     return fields_to_synch
 end
 
 function get_physics_options()
-    if physicsOptions["Deformation Gradient"]
-        physicsOptions["Shape Tensor"] = true
-        physicsOptions["Deformed Bond Geometry"] = true
+    global physics_options
+
+    if physics_options["Deformation Gradient"]
+        physics_options["Shape Tensor"] = true
+        physics_options["Deformed Bond Geometry"] = true
     end
-    if physicsOptions["Bond Associated Deformation Gradient"]
-        physicsOptions["Deformation Gradient"] = true
-        physicsOptions["Bond Associated Shape Tensor"] = true
-        physicsOptions["Shape Tensor"] = true
-        physicsOptions["Deformed Bond Geometry"] = true
+    if physics_options["Bond Associated Deformation Gradient"]
+        physics_options["Deformation Gradient"] = true
+        physics_options["Bond Associated Shape Tensor"] = true
+        physics_options["Shape Tensor"] = true
+        physics_options["Deformed Bond Geometry"] = true
     end
-    return physicsOptions
+    return physics_options
 end
 
 """
@@ -476,6 +503,8 @@ color_value = get_properties(1, "color")  # Returns "red"
 non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
 """
 function get_properties(block_id::Int64, property::String)
+    global properties
+
     if check_property(block_id, property)
         return properties[block_id][property]
     end
@@ -500,6 +529,8 @@ This function retrieves a specific `value_name` associated with a specified `pro
 
 """
 function get_property(block_id::Int64, property::String, value_name::String)
+    global properties
+
     if check_property(block_id, property)
         if value_name in keys(properties[block_id][property])
             return properties[block_id][property][value_name]
@@ -522,6 +553,7 @@ This function returns the rank of the core.
 current_rank = get_rank()
 """
 function get_rank()
+    global rank
     return rank
 end
 """
@@ -541,6 +573,8 @@ function get_max_rank()
 end
 
 function init_property()
+    global properties
+
     for iblock in get_block_list()
         properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
     end
@@ -631,24 +665,26 @@ end
  ```
  """
 function set_nnodes()
-    global nnodes = nmasters + nslaves
+    global num_controller
+    global num_responder
+    global nnodes = num_controller + num_responder
 end
 
 """
- set_nmasters(n::Int64)
+ set_num_controller(n::Int64)
 
- Sets the number of master nodes globally. For one core the number of nodes is equal to the number of master nodes.
+ Sets the number of controller nodes globally. For one core the number of nodes is equal to the number of controller nodes.
 
  Parameters:
  - `n::Int64`: The value to set as the number of nodes.
 
  Example:
  ```julia
- set_nmasters(10)  # sets the number of nodes to 10
+ set_num_controller(10)  # sets the number of nodes to 10
  ```
  """
-function set_nmasters(n::Int64)
-    global nmasters = n
+function set_num_controller(n::Int64)
+    global num_controller = n
     set_nnodes()
 end
 """
@@ -674,6 +710,7 @@ Parameters:
 
 """
 function set_nset(name::String, nodes::Vector{Int})
+    global nsets
 
     if name in keys(nsets)
         @warn "Node set " * name * " already defined and it is overwritten"
@@ -684,20 +721,20 @@ function set_nset(name::String, nodes::Vector{Int})
 end
 
 """
-set_nslaves(n::Int64)
+set_num_responder(n::Int64)
 
-Sets the number of slave nodes globally. For one core the number of slave is zero. Slaves hold the information of the neighbors, of one node, but are not evaluated.
+Sets the number of responder nodes globally. For one core the number of responder is zero. responder hold the information of the neighbors, of one node, but are not evaluated.
 
 Parameters:
 - `n::Int64`: The value to set as the number of nodes.
 
 Example:
 ```julia
-set_nslaves(10)  # sets the number of slave nodes to 10
+set_num_responder(10)  # sets the number of responder nodes to 10
 ```
 """
-function set_nslaves(n)
-    global nslaves = n
+function set_num_responder(n)
+    global num_responder = n
     set_nnodes()
 end
 
@@ -706,14 +743,19 @@ function set_overlap_map(topo)
 end
 
 function set_physics_options(values)
-    physicsOptions = values
+    global physics_options
+    physics_options = values
 end
 
 function set_property(block_id, property, value_name, value)
+    global properties
+
     properties[block_id][property][value_name] = value
 end
 
 function set_properties(block_id, property, values)
+    global properties
+
     properties[block_id][property] = values
 end
 
@@ -726,6 +768,7 @@ function set_max_rank(value::Int64)
 end
 
 function set_synch(name, download_from_cores, upload_to_cores)
+    global fields_to_synch
 
     if name in get_all_field_keys()
         field = get_field(name)
@@ -742,6 +785,8 @@ function set_fields_equal(name::String, NP1::String)
 end
 
 function set_fields_equal(NP1::String)
+    global field_array_type
+
     NP1_to_N = get_NP1_to_N_Dict()
     if field_array_type[NP1]["Type"] == "Matrix"
         field_array_type[NP1]["Type"] = "Vector"
@@ -760,7 +805,9 @@ function set_fields_equal(NP1::String)
 end
 
 function switch_NP1_to_N()
+    global field_types
     global field_array_type
+
     NP1_to_N = get_NP1_to_N_Dict()
     for NP1 in keys(NP1_to_N)
         if field_array_type[NP1]["Type"] == "Matrix"
@@ -791,6 +838,8 @@ function switch_NP1_to_N()
     end
 end
 function synch_manager(synchronise_field, direction::String)
+    global overlap_map
+
     synch_fields = get_synch_fields()
     for synch_field in keys(synch_fields)
         synchronise_field(get_comm(), synch_fields, overlap_map, get_field, synch_field, direction)
