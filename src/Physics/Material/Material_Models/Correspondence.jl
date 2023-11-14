@@ -92,10 +92,11 @@ end
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 """
 function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter, time::Float64, dt::Float64)
-  if !haskey(material_parameter, "Zero Energy Mode Control")
+  if !haskey(material_parameter, "Zero Energy Control")
+    @warn "No zero energy control activated for corresponcence."
     return datamanager
   end
-  if material_parameter["Zero Energy Mode Control"] == global_zero_energy_control.control_name()
+  if material_parameter["Zero Energy Control"] == global_zero_energy_control.control_name()
     datamanager = global_zero_energy_control.compute_control(datamanager, nodes, material_parameter, time, dt)
   end
   return datamanager
