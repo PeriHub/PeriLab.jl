@@ -95,10 +95,12 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
       force_difference = abs.(forceDensities[iID, :]) +
                          abs.(forceDensities[nlist[iID][jID], :])
-      projected_force = dot(force_difference, relative_displacement_vector[1:dof]) / (norm_displacement * norm_displacement) .* relative_displacement_vector[1:dof]
+      projected_force = dot(force_difference, relative_displacement_vector) / (norm_displacement * norm_displacement) .* relative_displacement_vector
 
-      bond_energy = 0.5 * dot(abs.(projected_force[1:dof]), abs.(relative_displacement_vector[1:dof]))
-
+      bond_energy = 0.5 * dot(abs.(projected_force), abs.(relative_displacement_vector))
+      if bond_energy < 0
+        @error "Bond energy smaller zero"
+      end
       crit_energy = critical_Energy
       if interBlockDamage
         crit_energy = inter_critical_Energy[block_ids[iID], block_ids[nlist[iID][jID]], block]

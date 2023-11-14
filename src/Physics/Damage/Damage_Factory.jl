@@ -19,6 +19,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, block, time, dt))
     if isnothing(datamanager)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
+        return nothing
     end
     datamanager = damage_index(datamanager, nodes)
     return datamanager
@@ -100,7 +101,6 @@ function init_interface_crit_values(datamanager::Module, params::Dict)
         end
     end
     datamanager.set_crit_values_matrix(inter_critical_Value)
-
     return datamanager
 end
 end
