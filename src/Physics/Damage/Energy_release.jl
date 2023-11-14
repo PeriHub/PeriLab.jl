@@ -82,22 +82,29 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
   for iID in nodes
     for jID in 1:nneighbors[iID]
+      relative_displacement_vector = deformed_bond[iID][jID, 1:dof] - bond_geometry[iID][jID, 1:dof]
+      norm_displacement = norm(relative_displacement_vector[1:dof])
+      if norm_displacement == 0
+        continue
+      end
       if tension
-        dist = deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end]
-        if dist < 0
+        if deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end] < 0
           continue
         end
       end
-      force_dif = abs.(forceDensities[iID, :]) +
-                  abs.(forceDensities[nlist[iID][jID], :])
-      projected_force = dot(force_dif, deformed_bond[iID][jID, 1:dof]) / (deformed_bond[iID][jID, end] * deformed_bond[iID][jID, end]) .* deformed_bond[iID][jID, 1:dof]
 
-      bond_energy = 0.5 * sum(abs.(projected_force[1:dof] .* deformed_bond[iID][jID, 1:dof]))
+      force_difference = abs.(forceDensities[iID, :]) +
+                         abs.(forceDensities[nlist[iID][jID], :])
+      projected_force = dot(force_difference, relative_displacement_vector[1:dof]) / (norm_displacement * norm_displacement) .* relative_displacement_vector[1:dof]
+
+      bond_energy = 0.5 * dot(abs.(projected_force[1:dof]), abs.(relative_displacement_vector[1:dof]))
+
       crit_energy = critical_Energy
       if interBlockDamage
         crit_energy = inter_critical_Energy[block_ids[iID], block_ids[nlist[iID][jID]], block]
       end
-      if crit_energy < bond_energy / get_quad_horizon(horizon[iID], dof)
+
+      if (bond_energy / get_quad_horizon(horizon[iID], dof)) > crit_energy
         bond_damage[iID][jID] = 0.0
         update_list[iID] = true
       end

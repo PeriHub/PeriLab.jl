@@ -8,7 +8,7 @@ function get_mesh_name(params::Dict)
     check = check_element(params["Discretization"], "Input Mesh File")
     if !check
         @error "No mesh file is defined."
-        return
+        return nothing
     end
     return params["Discretization"]["Input Mesh File"]
 end
