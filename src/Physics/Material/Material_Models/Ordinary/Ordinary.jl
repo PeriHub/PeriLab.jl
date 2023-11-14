@@ -9,7 +9,7 @@ export compute_weighted_volume
 """
 taken from Peridigm -> but adding the bond_damage; this is missing in Peridigm, but should be there
 """
-function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
+function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, bond_geometry::SubArray, bond_damage::SubArray, omega::SubArray, volume::SubArray)
 
     if length(nodes) == 0
         return Float64[]
@@ -24,7 +24,7 @@ function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbor
     return weighted_volume
 end
 
-function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, bond_geometry::SubArray, deformed_bond::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::Vector{Float64}, omega::SubArray)
     # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
     if length(nodes) == 0
         return Float64[]

@@ -75,10 +75,13 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     interBlockDamage = damage_parameter["Interblock Damage"]
   end
   if interBlockDamage
-    inter_critical_Energy = datamanager.get_crit_values_matrix()
+    inter_critical_Energy::Int64 = datamanager.get_crit_values_matrix()
   end
 
   nneighbors = datamanager.get_field("Number of Neighbors")
+  norm_displacement::Float64 = 0
+  relative_displacement_vector = zeros(Float64, dof)
+  force_difference = zeros(Float64, dof)
 
   for iID in nodes
     for jID in 1:nneighbors[iID]
@@ -97,7 +100,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                          abs.(forceDensities[nlist[iID][jID], :])
       projected_force = dot(force_difference, relative_displacement_vector) / (norm_displacement * norm_displacement) .* relative_displacement_vector
 
-      bond_energy = 0.5 * dot(abs.(projected_force), abs.(relative_displacement_vector))
+      bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement_vector))
       if bond_energy < 0
         @error "Bond energy smaller zero"
       end
