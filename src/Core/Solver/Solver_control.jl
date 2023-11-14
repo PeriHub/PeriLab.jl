@@ -19,8 +19,8 @@ using TimerOutputs
 
 function init(params::Dict, datamanager::Module)
     nnodes = datamanager.get_nnodes()
-    nslaves = datamanager.get_nslaves()
-    allBlockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes + nslaves)
+    num_responder = datamanager.get_num_responder()
+    allBlockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes + num_responder)
     blockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
@@ -88,14 +88,14 @@ function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, syn
     if direction == "download_from_cores"
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field)
-            return synch_slaves_to_master(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+            return synch_responder_to_controller(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
         end
         return nothing
     end
     if direction == "upload_to_cores"
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field)
-            return synch_master_to_slaves(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+            return synch_controller_to_responder(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
         end
         return nothing
     end

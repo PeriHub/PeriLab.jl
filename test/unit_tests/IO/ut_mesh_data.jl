@@ -120,18 +120,18 @@ end
     ptc = [1, 2, 2, 3]
     overlap_map = Read_Mesh.create_overlap_map(distribution, ptc, size)
 
-    @test overlap_map[1][2]["Slave"] == overlap_map[2][1]["Master"]
-    @test overlap_map[1][3]["Slave"] == overlap_map[3][1]["Master"]
-    @test overlap_map[2][3]["Slave"] == overlap_map[3][2]["Master"]
-    @test overlap_map[1][2]["Master"] == overlap_map[2][1]["Slave"]
-    @test overlap_map[1][3]["Master"] == overlap_map[3][1]["Slave"]
-    @test overlap_map[2][3]["Master"] == overlap_map[3][2]["Slave"]
+    @test overlap_map[1][2]["Responder"] == overlap_map[2][1]["Controller"]
+    @test overlap_map[1][3]["Responder"] == overlap_map[3][1]["Controller"]
+    @test overlap_map[2][3]["Responder"] == overlap_map[3][2]["Controller"]
+    @test overlap_map[1][2]["Controller"] == overlap_map[2][1]["Responder"]
+    @test overlap_map[1][3]["Controller"] == overlap_map[3][1]["Responder"]
+    @test overlap_map[2][3]["Controller"] == overlap_map[3][2]["Responder"]
 
     for i in 1:3
         for j in 1:3
             if i != j
-                if overlap_map[i][j]["Slave"] != [] && overlap_map[i][j]["Master"] != []
-                    @test overlap_map[i][j]["Slave"] != overlap_map[i][j]["Master"]
+                if overlap_map[i][j]["Responder"] != [] && overlap_map[i][j]["Controller"] != []
+                    @test overlap_map[i][j]["Responder"] != overlap_map[i][j]["Controller"]
                 end
             end
         end
@@ -139,49 +139,49 @@ end
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
     size = 3
     ptc = [1, 2, 2, 3]
-    @test overlap_map[1][2]["Master"] == []
-    @test overlap_map[1][2]["Slave"] == [2, 3]
-    @test overlap_map[1][3]["Master"] == [1]
-    @test overlap_map[1][3]["Slave"] == []
-    @test overlap_map[2][3]["Master"] == [3]
-    @test overlap_map[2][3]["Slave"] == [4]
+    @test overlap_map[1][2]["Controller"] == []
+    @test overlap_map[1][2]["Responder"] == [2, 3]
+    @test overlap_map[1][3]["Controller"] == [1]
+    @test overlap_map[1][3]["Responder"] == []
+    @test overlap_map[2][3]["Controller"] == [3]
+    @test overlap_map[2][3]["Responder"] == [4]
 
 end
 @testset "ut_get_local_overlap_map" begin
     overlap_map = Read_Mesh._init_overlap_map_(3)
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
 
-    overlap_map[1][2]["Slave"] = []
-    overlap_map[1][2]["Master"] = [2, 3]
-    overlap_map[2][1]["Slave"] = [2, 3]
-    overlap_map[2][1]["Master"] = []
+    overlap_map[1][2]["Responder"] = []
+    overlap_map[1][2]["Controller"] = [2, 3]
+    overlap_map[2][1]["Responder"] = [2, 3]
+    overlap_map[2][1]["Controller"] = []
 
-    overlap_map[1][3]["Slave"] = [1]
-    overlap_map[1][3]["Master"] = []
-    overlap_map[3][1]["Slave"] = []
-    overlap_map[3][1]["Master"] = [1]
+    overlap_map[1][3]["Responder"] = [1]
+    overlap_map[1][3]["Controller"] = []
+    overlap_map[3][1]["Responder"] = []
+    overlap_map[3][1]["Controller"] = [1]
 
-    overlap_map[2][3]["Slave"] = [3]
-    overlap_map[2][3]["Master"] = [4]
-    overlap_map[3][2]["Slave"] = [4]
-    overlap_map[3][2]["Master"] = [3]
+    overlap_map[2][3]["Responder"] = [3]
+    overlap_map[2][3]["Controller"] = [4]
+    overlap_map[3][2]["Responder"] = [4]
+    overlap_map[3][2]["Controller"] = [3]
 
     test_overlap_map = Read_Mesh.get_local_overlap_map(overlap_map, distribution, 1)
     @test test_overlap_map == overlap_map
     test_overlap_map = Read_Mesh.get_local_overlap_map(overlap_map, distribution, 3)
 
-    @test sort(test_overlap_map[1][2]["Slave"]) == []
-    @test sort(test_overlap_map[1][2]["Master"]) == [2, 3]
-    @test sort(test_overlap_map[2][1]["Slave"]) == [1, 2]
-    @test sort(test_overlap_map[2][1]["Master"]) == []
-    @test sort(test_overlap_map[1][3]["Slave"]) == [1]
-    @test sort(test_overlap_map[1][3]["Master"]) == []
-    @test sort(test_overlap_map[3][1]["Slave"]) == []
-    @test sort(test_overlap_map[3][1]["Master"]) == [2]
-    @test sort(test_overlap_map[2][3]["Slave"]) == [2]
-    @test sort(test_overlap_map[2][3]["Master"]) == [3]
-    @test sort(test_overlap_map[3][2]["Slave"]) == [1]
-    @test sort(test_overlap_map[3][2]["Master"]) == [3]
+    @test sort(test_overlap_map[1][2]["Responder"]) == []
+    @test sort(test_overlap_map[1][2]["Controller"]) == [2, 3]
+    @test sort(test_overlap_map[2][1]["Responder"]) == [1, 2]
+    @test sort(test_overlap_map[2][1]["Controller"]) == []
+    @test sort(test_overlap_map[1][3]["Responder"]) == [1]
+    @test sort(test_overlap_map[1][3]["Controller"]) == []
+    @test sort(test_overlap_map[3][1]["Responder"]) == []
+    @test sort(test_overlap_map[3][1]["Controller"]) == [2]
+    @test sort(test_overlap_map[2][3]["Responder"]) == [2]
+    @test sort(test_overlap_map[2][3]["Controller"]) == [3]
+    @test sort(test_overlap_map[3][2]["Responder"]) == [1]
+    @test sort(test_overlap_map[3][2]["Controller"]) == [3]
 end
 
 @testset "ut_neighbors" begin
@@ -243,7 +243,7 @@ end
 
 @testset "get_bond_geometry" begin
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(3)
+    test_Data_manager.set_num_controller(3)
     test_Data_manager.set_dof(2)
     lenNlist = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     lenNlist[:] = [2, 2, 2]

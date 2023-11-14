@@ -8,7 +8,7 @@ include("../../../src/Compute/compute_global_values.jl")
 
 @testset "ut_global_value_sum" begin
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(4)
+    test_Data_manager.set_num_controller(4)
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
     forcesNP1[1, 1:3] .= 1:3
@@ -62,7 +62,7 @@ end
 
 @testset "ut_global_value_max" begin
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(4)
+    test_Data_manager.set_num_controller(4)
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
 
@@ -117,7 +117,7 @@ end
 
 @testset "ut_global_value_min" begin
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(4)
+    test_Data_manager.set_num_controller(4)
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
     forcesNP1[1, 1:3] .= 1:3
@@ -167,7 +167,7 @@ end
 end
 @testset "ut_global_value_avg" begin
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(4)
+    test_Data_manager.set_num_controller(4)
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
     forcesNP1[1, 1:3] .= 1:3

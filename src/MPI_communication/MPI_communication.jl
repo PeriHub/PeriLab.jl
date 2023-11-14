@@ -4,19 +4,19 @@
 
 import MPI
 
-function send_single_value_from_vector(comm::MPI.Comm, master::Int64, values::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}, type::Type)
+function send_single_value_from_vector(comm::MPI.Comm, controller::Int64, values::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}, type::Type)
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
     if type == String
         @error "Wrong type - String in function send_single_value_from_vector"
     end
     recv_msg = zeros(type, 1, 1)
-    if rank == master
+    if rank == controller
         send_msg = zeros(type, 1, 1)
         for i = 0:ncores-1
             # +1 because the index of cores is zero based and julia matrices are one based
             send_msg[1] = values[i+1]
-            if i != master
+            if i != controller
                 MPI.Send(send_msg, i, 0, comm)
             else
                 recv_msg[1] = send_msg[1]
@@ -24,7 +24,7 @@ function send_single_value_from_vector(comm::MPI.Comm, master::Int64, values::Un
         end
 
     else
-        MPI.Recv!(recv_msg, master, 0, comm)
+        MPI.Recv!(recv_msg, controller, 0, comm)
     end
     return recv_msg[1]
 end
@@ -37,14 +37,14 @@ function synch_overlapnodes(comm::MPI.Comm, topo, vector)
         if icore == currentRank
             continue
         end
-        if overlapCurrentRank[icore+1]["Slave"] > 0
-            send_msg = vector[overlapCurrentRank[icore+1]["Slave"]]
+        if overlapCurrentRank[icore+1]["Responder"] > 0
+            send_msg = vector[overlapCurrentRank[icore+1]["Responder"]]
             MPI.Send(send_msg, icore+1, 0, comm)
         end
-        if overlapCurrentRank[icore+1]["Master"] > 0
-            recv_msg = vector[overlapCurrentRank[icore+1]["Master"]]
+        if overlapCurrentRank[icore+1]["Controller"] > 0
+            recv_msg = vector[overlapCurrentRank[icore+1]["Controller"]]
             MPI.Recv!(recv_msg, 0, 0, comm)
-            vector[overlapCurrentRank[icore+1]["Master"]]
+            vector[overlapCurrentRank[icore+1]["Controller"]]
         end
     end
     return vector
@@ -52,7 +52,7 @@ function synch_overlapnodes(comm::MPI.Comm, topo, vector)
 end
 """
 
-function synch_slaves_to_master(comm::MPI.Comm, overlapnodes, vector, dof)
+function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof)
     # does not work for bool fields
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
@@ -65,31 +65,31 @@ function synch_slaves_to_master(comm::MPI.Comm, overlapnodes, vector, dof)
             continue
         end
         # Send
-        if overlapnodes[rank+1][jcore]["Slave"] != []
+        if overlapnodes[rank+1][jcore]["Responder"] != []
             # check ut_create_overlap_map test
             # the function is clear there
             if dof == 1
-                send_msg = vector[overlapnodes[rank+1][jcore]["Slave"]]
+                send_msg = vector[overlapnodes[rank+1][jcore]["Responder"]]
             else
-                send_msg = vector[overlapnodes[rank+1][jcore]["Slave"], :]
+                send_msg = vector[overlapnodes[rank+1][jcore]["Responder"], :]
             end
             MPI.Send(send_msg, jcore - 1, 0, comm)
         end
         # Receive
-        if overlapnodes[rank+1][jcore]["Master"] != []
+        if overlapnodes[rank+1][jcore]["Controller"] != []
             if dof == 1
-                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Master"]])
+                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Controller"]])
             else
-                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Master"], :])
+                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Controller"], :])
             end
             MPI.Recv!(recv_msg, jcore - 1, 0, comm)
             if typeof(recv_msg[1, 1]) == Bool
                 continue
             end
             if dof == 1
-                vector[overlapnodes[rank+1][jcore]["Master"]] += recv_msg
+                vector[overlapnodes[rank+1][jcore]["Controller"]] += recv_msg
             else
-                vector[overlapnodes[rank+1][jcore]["Master"], :] += recv_msg
+                vector[overlapnodes[rank+1][jcore]["Controller"], :] += recv_msg
             end
         end
     end
@@ -97,7 +97,7 @@ function synch_slaves_to_master(comm::MPI.Comm, overlapnodes, vector, dof)
 end
 
 
-function synch_master_to_slaves(comm::MPI.Comm, overlapnodes, vector, dof)
+function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof)
 
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
@@ -109,34 +109,34 @@ function synch_master_to_slaves(comm::MPI.Comm, overlapnodes, vector, dof)
         if (rank + 1 == jcore)
             continue
         end
-        if overlapnodes[rank+1][jcore]["Master"] != []
+        if overlapnodes[rank+1][jcore]["Controller"] != []
             # check ut_create_overlap_map test
             # the function is clear there
             if dof == 1
-                send_msg = vector[overlapnodes[rank+1][jcore]["Master"]]
+                send_msg = vector[overlapnodes[rank+1][jcore]["Controller"]]
             else
-                send_msg = vector[overlapnodes[rank+1][jcore]["Master"], :]
+                send_msg = vector[overlapnodes[rank+1][jcore]["Controller"], :]
             end
             MPI.Send(send_msg, jcore - 1, 0, comm)
         end
-        if overlapnodes[rank+1][jcore]["Slave"] != []
+        if overlapnodes[rank+1][jcore]["Responder"] != []
             if dof == 1
-                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Slave"]])
+                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Responder"]])
             else
-                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Slave"], :])
+                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Responder"], :])
             end
             MPI.Recv!(recv_msg, jcore - 1, 0, comm)
             if dof == 1
-                vector[overlapnodes[rank+1][jcore]["Slave"]] = recv_msg
+                vector[overlapnodes[rank+1][jcore]["Responder"]] = recv_msg
             else
-                vector[overlapnodes[rank+1][jcore]["Slave"], :] = recv_msg
+                vector[overlapnodes[rank+1][jcore]["Responder"], :] = recv_msg
             end
         end
     end
     return vector
 end
 
-function send_vectors_to_cores(comm::MPI.Comm, master, values, type)
+function send_vectors_to_cores(comm::MPI.Comm, controller, values, type)
     #tbd
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
@@ -144,12 +144,12 @@ function send_vectors_to_cores(comm::MPI.Comm, master, values, type)
         @error "Wrong type - String in function send_vectors_to_cores"
     end
     recv_msg = zeros(type, length(values), 1)
-    if rank == master
+    if rank == controller
         send_msg = zeros(type, length(values), 1)
         for i = 0:ncores-1
             # +1 because the index of cores is zero based and julia matrices are one based
             send_msg = values
-            if i != master
+            if i != controller
                 MPI.Send(send_msg, i, 0, comm)
             else
                 recv_msg = send_msg
@@ -157,7 +157,7 @@ function send_vectors_to_cores(comm::MPI.Comm, master, values, type)
         end
 
     else
-        MPI.Recv!(recv_msg, master, 0, comm)
+        MPI.Recv!(recv_msg, controller, 0, comm)
     end
     return recv_msg
 end
@@ -174,14 +174,14 @@ function send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, dis
     end
     return recv_msg
 end
-function send_value(comm::MPI.Comm, master, send_msg)
+function send_value(comm::MPI.Comm, controller, send_msg)
 
-    if MPI.Comm_rank(comm) == master
+    if MPI.Comm_rank(comm) == controller
         recv_msg = send_msg
     else
         recv_msg = nothing
     end
-    recv_msg = MPI.bcast(send_msg, master, comm)
+    recv_msg = MPI.bcast(send_msg, controller, comm)
     return recv_msg
 end
 

@@ -41,7 +41,7 @@ end
 # test_Data_manager = Data_manager
 # comm = MPI.COMM_WORLD
 # test_Data_manager.set_comm(comm)
-# test_Data_manager.set_nmasters(5)
+# test_Data_manager.set_num_controller(5)
 # test_Data_manager.set_dof(2)
 # blocks = test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
 # horizon = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
@@ -129,7 +129,7 @@ end
 
 # test_Data_manager = Data_manager
 # test_Data_manager.set_comm(comm)
-# test_Data_manager.set_nmasters(5)
+# test_Data_manager.set_num_controller(5)
 # test_Data_manager.set_dof(2)
 
 # test_Data_manager.set_glob_to_loc([1, 2, 3, 4, 5])

@@ -7,7 +7,7 @@ include("../../../src/Support/data_manager.jl")
 include("../../../src/Compute/compute_forces.jl")
 @testset "ut_get_forces_from_force_density" begin
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(5)
+    test_Data_manager.set_num_controller(5)
 
     test_Data_manager.create_node_field("Forces", Float64, 3)
 

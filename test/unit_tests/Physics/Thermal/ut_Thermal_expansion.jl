@@ -37,7 +37,7 @@ end
     nnodes = 2
     dof = 2
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(2)
+    test_Data_manager.set_num_controller(2)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 2
     nn[2] = 3

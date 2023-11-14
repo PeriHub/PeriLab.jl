@@ -23,8 +23,8 @@ get_local_nodes
 create_node_field
 get_properties
 get_max_rank
-set_nmasters
-set_nslaves
+set_num_controller
+set_num_responder
 create_constant_node_field
 ```
 

@@ -45,16 +45,16 @@ end
     for i in 1:20
         test_Data_manager.set_dof(i)
         @test test_Data_manager.get_dof() == i
-        test_Data_manager.set_nmasters(i)
+        test_Data_manager.set_num_controller(i)
         @test test_Data_manager.get_nnodes() == i
     end
-    test_Data_manager.set_nmasters(97)
-    test_Data_manager.set_nslaves(5)
+    test_Data_manager.set_num_controller(97)
+    test_Data_manager.set_num_responder(5)
 
-    @test test_Data_manager.get_nslaves() == 5
+    @test test_Data_manager.get_num_responder() == 5
     @test test_Data_manager.get_nnodes() == 97
-    @test test_Data_manager.nslaves == 5
-    @test test_Data_manager.nmasters == 97
+    @test test_Data_manager.num_responder == 5
+    @test test_Data_manager.num_controller == 97
     @test test_Data_manager.nnodes == 102
     nnodes = test_Data_manager.get_nnodes()
     nnodes = 3
@@ -62,10 +62,10 @@ end
     @test nnodes == 3
 end
 test_Data_manager = Data_manager
-nmaster = 3
-nslave = 2
-test_Data_manager.set_nmasters(nmaster)
-test_Data_manager.set_nslaves(nslave)
+num_controller = 3
+num_responder = 2
+test_Data_manager.set_num_controller(num_controller)
+test_Data_manager.set_num_responder(num_responder)
 nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
 nn[1] = 2
 nn[2] = 3
@@ -84,7 +84,7 @@ test_Data_manager.create_constant_bond_field("H", Float64, 4)
 test_Data_manager.create_bond_field("I", Int64, 7)
 testfield_keys = test_Data_manager.get_all_field_keys()
 @testset "create data fields -> get all fields" begin
-    @test test_Data_manager.get_nnodes() == nmaster
+    @test test_Data_manager.get_nnodes() == num_controller
     @test B[1] == test_Data_manager.get_field("BN")
     @test B[2] == test_Data_manager.get_field("B", "NP1")
     @test C == test_Data_manager.get_field("C")
@@ -125,53 +125,53 @@ end
     @test "DN" in testfield_keys
     @test "DNP1" in testfield_keys
     # because field is not overwritten, the dof value stay
-    @test size(field1) == (nmaster + nslave, 7)
-    @test size(field2) == (nmaster + nslave, 7)
+    @test size(field1) == (num_controller + num_responder, 7)
+    @test size(field2) == (num_controller + num_responder, 7)
 end
 
 @testset "get_field" begin
 
     A = test_Data_manager.get_field("A")
     @test typeof(A[1]) == Float64
-    @test length(A) == test_Data_manager.nnodes == nmaster + nslave
+    @test length(A) == test_Data_manager.nnodes == num_controller + num_responder
 
     B = test_Data_manager.get_field("BN")
     @test typeof(B[1]) == Bool
-    @test length(B) == test_Data_manager.nnodes == nmaster + nslave
+    @test length(B) == test_Data_manager.nnodes == num_controller + num_responder
 
     C = test_Data_manager.get_field("C")
     @test typeof(C[1, 1]) == Float64
-    @test length(C[:, 1]) == test_Data_manager.nnodes == nmaster + nslave
+    @test length(C[:, 1]) == test_Data_manager.nnodes == num_controller + num_responder
     @test length(C[1, :]) == 4
 
     D = test_Data_manager.get_field("DNP1")
     @test typeof(D[1, 1]) == Int64
-    @test length(D[:, 1]) == test_Data_manager.nnodes == nmaster + nslave
+    @test length(D[:, 1]) == test_Data_manager.nnodes == num_controller + num_responder
     @test length(D[1, :]) == 7
 
     F = test_Data_manager.get_field("F")
     @test typeof(F[1, 1][1]) == Float64
-    @test length(F[:, 1]) == nmaster # bonds are only of length nmaster
+    @test length(F[:, 1]) == num_controller # bonds are only of length num_controller
     @test length(F[1]) == nn[1]
     @test length(F[2]) == nn[2]
     @test length(F[3]) == nn[3]
     G = test_Data_manager.get_field("GN")
     @test typeof(G[1, 1][1]) == Bool
-    @test length(G[:, 1]) == nmaster
+    @test length(G[:, 1]) == num_controller
 
     H = test_Data_manager.get_field("H")
     @test typeof(H[1][1, 1][1]) == Float64
     @test length(H[1][:, 1]) == nn[1]
     @test length(H[1][1, :]) == 4
-    @test length(H[:][:, :]) == nmaster
+    @test length(H[:][:, :]) == num_controller
 
     I = test_Data_manager.get_field("INP1")
     @test typeof(I[1][1, 1]) == Int64
-    for i in 1:nmaster
+    for i in 1:num_controller
         @test length(I[i][:, 1]) == nn[i]
     end
     @test length(I[1][1, :]) == 7
-    @test length(I[:][:, :]) == nmaster
+    @test length(I[:][:, :]) == num_controller
 
 end
 
