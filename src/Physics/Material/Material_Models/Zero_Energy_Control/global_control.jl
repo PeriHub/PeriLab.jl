@@ -36,7 +36,7 @@ function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64
     return datamanager
 end
 
-function get_zero_energy_mode_force(nodes, zStiff, deformation_gradient, bond_geometry, bond_geometryNP1, bond_force)
+function get_zero_energy_mode_force(nodes::Union{SubArray,Vector{Int64}}, zStiff::SubArray, deformation_gradient::SubArray, bond_geometry::SubArray, bond_geometryNP1::SubArray, bond_force::SubArray)
     for iID in nodes
         bond_force[iID][:, :] -= (bond_geometry[iID][:, 1:end-1] * deformation_gradient[iID, :, :] - bond_geometryNP1[iID][:, 1:end-1]) * zStiff[iID, :, :]
     end

@@ -90,29 +90,18 @@ PeriLab:
   Physics:
     Damage Models:
       Damage:
-        Critical Value: 3.5714285714285716
         Damage Model: Critical Energy
-        Detached Nodes Check: true
-        Hourglass Coefficient: 1.0
-        Only Tension: true
-        Plane Stress: true
-        Stabilization Type: Global Stiffness
-        Thickness: 10.0
+        Critical Value: 3.5714285714285716
     Material Models:
       Aluminium:
-        Hourglass Coefficient: 1.0
-        Material Model: PD Solid Elastic
-        Plane Stress: true
-        Poisson's Ratio: 0.3
-        Stabilization Type: Global Stiffness
+        Material Model: "Correspondence Elastic"
+        Zero Energy Control: "Global"
         Symmetry: isotropic plane stress
-        Tension Separation: true
-        Thermal Bond Based: true
-        Thickness: 10.0
         Young's Modulus: 70000.0
+        Poisson's Ratio: 0.3
     Pre Calculation:
       Bond Associated Deformation Gradient: false
-      Bond Associated Shape Tensorr: false
+      Bond Associated Shape Tensor: false
       Deformation Gradient: true
       Deformed Bond Geometry: true
       Shape Tensor: true
