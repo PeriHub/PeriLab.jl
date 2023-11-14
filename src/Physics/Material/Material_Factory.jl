@@ -21,7 +21,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     for material_model in material_models
         datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param, time, dt))
         if isnothing(datamanager)
-            @error "No material of name " * model_name * " exists."
+            @error "No material of name " * material_model * " exists."
         end
 
     end
