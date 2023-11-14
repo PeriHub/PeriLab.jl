@@ -13,7 +13,7 @@ include("../../../../src/Support/data_manager.jl")
     nodes = Vector{Int64}(1:nnodes)
     dof = 2
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(2)
+    test_Data_manager.set_num_controller(2)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
 

@@ -11,7 +11,7 @@ import .Geometry
     nnodes = 4
     dof = 2
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(nnodes)
+    test_Data_manager.set_num_controller(nnodes)
     test_Data_manager.set_dof(dof)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int32, 1)
     nn[:] = [2, 2, 2, 1]
@@ -102,7 +102,7 @@ end
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(nnodes)
+    test_Data_manager.set_num_controller(nnodes)
     test_Data_manager.set_dof(dof)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int32, 1)
     nn[:] = [3, 3, 3, 3]

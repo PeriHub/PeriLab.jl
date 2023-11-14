@@ -82,7 +82,7 @@ end
 @testset "ut_init_BCs" begin
 
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(10)
+    test_Data_manager.set_num_controller(10)
 
     test_Data_manager.create_constant_node_field("Coordinates", Float64, 3)
     test_Data_manager.create_constant_node_field("Forces", Float64, 3)

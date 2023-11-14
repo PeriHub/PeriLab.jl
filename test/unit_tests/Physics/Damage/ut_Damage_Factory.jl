@@ -8,7 +8,7 @@ using Test
 using .Damage
 @testset "damage_index" begin
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(3)
+    test_Data_manager.set_num_controller(3)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 1
     nn[2] = 2
@@ -62,7 +62,7 @@ using .Damage
 end
 @testset "set_bond_damage" begin
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(3)
+    test_Data_manager.set_num_controller(3)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 1
     nn[2] = 2

@@ -13,7 +13,7 @@ end
 @testset "compute_forces" begin
     nodes = 2
     test_Data_manager = Data_manager
-    test_Data_manager.set_nmasters(nodes)
+    test_Data_manager.set_num_controller(nodes)
     dof = 3
     test_Data_manager.set_dof(dof)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)

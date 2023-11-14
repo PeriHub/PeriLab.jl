@@ -156,7 +156,7 @@ end
 
 test_Data_manager = Data_manager
 @testset "ut_get_outputs" begin
-    test_Data_manager.set_nmasters(5)
+    test_Data_manager.set_num_controller(5)
     test_Data_manager.create_constant_node_field("A", Float64, 1)
     test_Data_manager.create_node_field("B", Bool, 1)
     test_Data_manager.create_constant_node_field("C", Float64, 4)

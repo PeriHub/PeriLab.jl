@@ -12,7 +12,7 @@ include("../../../src/Physics/Thermal/Thermal_template/thermal_template.jl")
 using Test
 
 test_Data_manager = Data_manager
-test_Data_manager.set_nmasters(3)
+test_Data_manager.set_num_controller(3)
 
 @testset "ut_additive_template" begin
     @test Additive_template.additive_name() == "Additive Template"

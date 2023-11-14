@@ -21,7 +21,7 @@ else
     nnodes = 4
     nneighbors = [2, 3, 2, 5]
 end
-test_Data_manager.set_nmasters(nnodes)
+test_Data_manager.set_num_controller(nnodes)
 nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
 nn[:] = nneighbors
 nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)

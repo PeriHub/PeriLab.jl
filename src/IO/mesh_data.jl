@@ -28,9 +28,9 @@ function init_data(params::Dict, path::String, datamanager, comm, to)
         if (MPI.Comm_rank(comm)) == 0
             @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params::Dict, path, ranks)
         else
-            nmasters = 0
-            nslaves = 0
-            ntype = Dict("masters" => 0, "slaves" => 0)
+            num_controller = 0
+            num_responder = 0
+            ntype = Dict("controllers" => 0, "responder" => 0)
             nlist = 0
             dof = 0
             mesh = []
@@ -44,10 +44,10 @@ function init_data(params::Dict, path::String, datamanager, comm, to)
         distribution = send_value(comm, 0, distribution)
         nlist = send_value(comm, 0, nlist)
         datamanager.set_overlap_map(overlap_map)
-        nmasters::Int64 = send_single_value_from_vector(comm, 0, ntype["masters"], Int64)
-        nslaves::Int64 = send_single_value_from_vector(comm, 0, ntype["slaves"], Int64)
-        datamanager.set_nmasters(nmasters)
-        datamanager.set_nslaves(nslaves)
+        num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
+        num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"], Int64)
+        datamanager.set_num_controller(num_controller)
+        datamanager.set_num_responder(num_responder)
         @info "Get node sets"
         define_nsets(params, path, datamanager)
         # defines the order of the global nodes to the local core nodes
@@ -86,8 +86,8 @@ function get_local_overlap_map(overlap_map, distribution, ranks)
         ilocal = glob_to_loc(distribution[irank])
         for jrank in 1:ranks
             if irank != jrank
-                overlap_map[irank][jrank]["Slave"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Slave"])
-                overlap_map[irank][jrank]["Master"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Master"])
+                overlap_map[irank][jrank]["Responder"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Responder"])
+                overlap_map[irank][jrank]["Controller"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Controller"])
             end
         end
     end
@@ -101,14 +101,14 @@ end
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     send_msg = 0
     lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nnodes = datamanager.get_nnodes() # master nodes
+    nnodes = datamanager.get_nnodes() # controller nodes
     rank = MPI.Comm_rank(comm)
     if rank == 0
         send_msg = get_number_of_neighbornodes(nlist)
     end
     lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
     nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    # provide neighborhood only for master nodes
+    # provide neighborhood only for controller nodes
     nlistCore[:] = nlist[distribution[rank+1][1:nnodes]]
     nlistCore[:] = get_local_neighbors(datamanager.get_local_nodes, nlistCore)
     nlist = 0
@@ -311,13 +311,13 @@ end
 function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
 
     nnodes = length(nlist)
-    ntype = Dict("masters" => Int64[], "slaves" => Int64[])
+    ntype = Dict("controllers" => Int64[], "responder" => Int64[])
     if size == 1
         distribution = [collect(1:nnodes)]
         overlap_map = [[[]]]
         ptc = []
-        append!(ntype["masters"], nnodes)
-        append!(ntype["slaves"], 0)
+        append!(ntype["controllers"], nnodes)
+        append!(ntype["responder"], 0)
     else
 
         distribution, ptc = create_base_chunk(nnodes, size)
@@ -325,13 +325,13 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
         # check neighborhood & overlap -> all nodes after chunk are overlap
         for i in 1:size
             nchunks = length(distribution[i])
-            append!(ntype["masters"], nchunks)
+            append!(ntype["controllers"], nchunks)
 
             tempid = Int64[]
             for j in 1:nchunks
                 id = distribution[i][j]
                 # find all nodes which are not in chunk
-                # add them to list as slave nodes for data exchange
+                # add them to list as responder nodes for data exchange
                 # findall give the index of the valid statement
                 # that means that this indices have to be used to obtain the values
                 indices = findall(item -> item != i, ptc[nlist[id]])
@@ -341,7 +341,7 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
             end
             # only single new elements where added
             append!(distribution[i], sort(unique(tempid)))
-            append!(ntype["slaves"], length(unique(tempid)))
+            append!(ntype["responder"], length(unique(tempid)))
         end
 
     end
@@ -359,7 +359,7 @@ function _init_overlap_map_(size)
         overlap_map[i] = Dict{Int64,Dict{String,Vector{Int64}}}()
         for j in 1:size
             if i != j
-                overlap_map[i][j] = Dict{String,Vector{Int64}}("Slave" => Int64[], "Master" => Int64[])
+                overlap_map[i][j] = Dict{String,Vector{Int64}}("Responder" => Int64[], "Controller" => Int64[])
             end
         end
     end
@@ -367,7 +367,7 @@ function _init_overlap_map_(size)
     return overlap_map
 end
 """
-    ptc - point to core map; it gives the cores where the master nodes are -> basis chunk gives this directly
+    ptc - point to core map; it gives the cores where the controller nodes are -> basis chunk gives this directly
 
 
 """
@@ -380,14 +380,14 @@ function create_overlap_map(distribution, ptc, size)
     for icoreID in 1:size
         # distribution of nodes at core i
         vector = distribution[icoreID]
-        # gives core ids of all nodes not master at core icoreID
+        # gives core ids of all nodes not controller at core icoreID
         for jcoreID in 1:size
             if icoreID == jcoreID
                 continue
             end
             indices = findall(item -> item == jcoreID, ptc[vector])
-            overlap_map[icoreID][jcoreID]["Slave"] = vector[indices]
-            overlap_map[jcoreID][icoreID]["Master"] = vector[indices]
+            overlap_map[icoreID][jcoreID]["Responder"] = vector[indices]
+            overlap_map[jcoreID][icoreID]["Controller"] = vector[indices]
         end
     end
     return overlap_map

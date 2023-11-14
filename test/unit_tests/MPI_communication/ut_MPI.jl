@@ -79,16 +79,16 @@ if ncores == 3
     test_Data_manager = Data_manager
 
     if rank == 0
-        test_Data_manager.set_nmasters(1)
-        test_Data_manager.set_nslaves(2)
+        test_Data_manager.set_num_controller(1)
+        test_Data_manager.set_num_responder(2)
     end
     if rank == 1
-        test_Data_manager.set_nmasters(2)
-        test_Data_manager.set_nslaves(1)
+        test_Data_manager.set_num_controller(2)
+        test_Data_manager.set_num_responder(1)
     end
     if rank == 2
-        test_Data_manager.set_nmasters(1)
-        test_Data_manager.set_nslaves(2)
+        test_Data_manager.set_num_controller(1)
+        test_Data_manager.set_num_responder(2)
     end
     test_Data_manager.set_dof(2)
     A = test_Data_manager.create_constant_node_field("A", Float64, 1)
@@ -138,15 +138,15 @@ if ncores == 3
     end
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
 
-    # sammel ein und summiere -> zweite routine mit sende vom MAster an alle slave
-    A[:] = synch_slaves_to_master(comm, overlap_map, A, 1)
-    B[:] = synch_slaves_to_master(comm, overlap_map, B, 4)
-    C[:] = synch_slaves_to_master(comm, overlap_map, C, 1)
-    D[:] = synch_slaves_to_master(comm, overlap_map, D, 5)
-    E[:] = synch_slaves_to_master(comm, overlap_map, E, 1)
+    # sammel ein und summiere -> zweite routine mit sende vom Controller an alle responder
+    A[:] = synch_responder_to_controller(comm, overlap_map, A, 1)
+    B[:] = synch_responder_to_controller(comm, overlap_map, B, 4)
+    C[:] = synch_responder_to_controller(comm, overlap_map, C, 1)
+    D[:] = synch_responder_to_controller(comm, overlap_map, D, 5)
+    E[:] = synch_responder_to_controller(comm, overlap_map, E, 1)
 
     if rank == 0
-        @testset "synch_slaves_to_master_rank_0" begin
+        @testset "synch_responder_to_controller_rank_0" begin
             @test A[1] == Float64(-2.3 + 1.4)
             @test A[2] == 3
             @test A[3] == 5
@@ -163,7 +163,7 @@ if ncores == 3
         end
     end
     if rank == 1
-        @testset "synch_slaves_to_master_rank_1" begin
+        @testset "synch_responder_to_controller_rank_1" begin
             @test A[1] == 3 + 1
             @test A[2] == Float64(88 + 5 + 1.1)
             @test A[3] == Float64(1.6)
@@ -180,7 +180,7 @@ if ncores == 3
         end
     end
     if rank == 2
-        @testset "synch_slaves_to_master_rank_3" begin
+        @testset "synch_responder_to_controller_rank_3" begin
             @test A[1] == Float64(1.6)
             @test A[2] == Float64(-2.3)
             @test A[3] == Float64(1.1)
@@ -205,13 +205,13 @@ if ncores == 3
     end
     MPI.Barrier(comm)
 
-    A[:] = synch_master_to_slaves(comm, overlap_map, A, 1)
-    B[:] = synch_master_to_slaves(comm, overlap_map, B, 4)
-    C[:] = synch_master_to_slaves(comm, overlap_map, C, 1)
-    D[:] = synch_master_to_slaves(comm, overlap_map, D, 5)
-    E[:] = synch_master_to_slaves(comm, overlap_map, E, 1)
+    A[:] = synch_controller_to_responder(comm, overlap_map, A, 1)
+    B[:] = synch_controller_to_responder(comm, overlap_map, B, 4)
+    C[:] = synch_controller_to_responder(comm, overlap_map, C, 1)
+    D[:] = synch_controller_to_responder(comm, overlap_map, D, 5)
+    E[:] = synch_controller_to_responder(comm, overlap_map, E, 1)
     if rank == 0
-        @testset "synch_master_to_slaves_rank_0" begin
+        @testset "synch_controller_to_responder_rank_0" begin
             @test A[1] == Float64(-0.9)
             @test A[2] == Float64(4)
             @test A[3] == Float64(94.1)
@@ -231,7 +231,7 @@ if ncores == 3
         end
     end
     if rank == 1
-        @testset "synch_master_to_slaves_rank_1" begin
+        @testset "synch_controller_to_responder_rank_1" begin
             @test A[1] == Float64(4.0)
             @test A[2] == Float64(94.1)
             @test A[3] == Float64(1.6)
@@ -251,7 +251,7 @@ if ncores == 3
         end
     end
     if rank == 2
-        @testset "synch_master_to_slaves_rank_3" begin
+        @testset "synch_controller_to_responder_rank_3" begin
             @test A[1] == Float64(1.6)
             @test A[2] == Float64(-0.9)
             @test A[3] == Float64(94.1)

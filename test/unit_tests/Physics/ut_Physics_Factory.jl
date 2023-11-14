@@ -58,7 +58,7 @@ end
 @testset "ut_init_material_model_fields" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(3)
-    test_Data_manager.set_nmasters(4)
+    test_Data_manager.set_num_controller(4)
     test_Data_manager.create_constant_node_field("Coordinates", Float64, 3)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1:4] = 1:4
@@ -75,7 +75,7 @@ end
 @testset "init_damage_model_fields" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(3)
-    test_Data_manager.set_nmasters(4)
+    test_Data_manager.set_num_controller(4)
     Physics.init_damage_model_fields(test_Data_manager)
     fieldkeys = test_Data_manager.get_all_field_keys()
     @test "DamageN" in fieldkeys
@@ -85,7 +85,7 @@ end
 @testset "init_thermal_model_fields" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(3)
-    test_Data_manager.set_nmasters(4)
+    test_Data_manager.set_num_controller(4)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 2
     nn[2] = 3
@@ -105,7 +105,7 @@ end
 @testset "init_additive_model_fields" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(3)
-    test_Data_manager.set_nmasters(4)
+    test_Data_manager.set_num_controller(4)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 1
     nn[2] = 2
@@ -124,7 +124,7 @@ end
 @testset "init_pre_calculation" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(3)
-    test_Data_manager.set_nmasters(4)
+    test_Data_manager.set_num_controller(4)
     n = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     n .= 2
     options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => false, "Deformation Gradient" => false, "Bond Associated Shape Tensor" => false, "Bond Associated Deformation Gradient" => false)

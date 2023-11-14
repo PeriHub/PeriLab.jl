@@ -16,7 +16,7 @@ filename2 = "test2"
 dof = 2
 nnodes = 5
 comm = MPI.COMM_WORLD
-test_Data_manager.set_nmasters(nnodes)
+test_Data_manager.set_num_controller(nnodes)
 test_Data_manager.set_comm(comm)
 test_Data_manager.set_dof(dof)
 test_Data_manager.set_max_rank(1)
