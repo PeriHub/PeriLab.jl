@@ -216,4 +216,9 @@ end
     @test isnothing(testValues)
 end
 
-
+@testset "ut_calculate_block" begin
+    test_Data_manager = Data_manager
+    test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
+    @test isnothing(calculate_block(test_Data_manager, "no field", "sum", 1))
+    @test isnothing(calculate_block(test_Data_manager, "Disp", "no option", 1))
+end

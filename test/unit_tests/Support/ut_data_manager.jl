@@ -176,9 +176,12 @@ end
 end
 
 @testset "get_field_type" begin
-
     @test test_Data_manager.get_field_type("A") == Float64
-
+    @test test_Data_manager.get_field_type("DN") == Int64
+    @test test_Data_manager.get_field_type("DNP1") == Int64
+    @test test_Data_manager.get_field_type("GN") == Bool
+    @test isnothing(test_Data_manager.get_field_type("not there"))
+    @test isnothing(test_Data_manager.get_field_type("D"))
 end
 
 @testset "set_get_field" begin
