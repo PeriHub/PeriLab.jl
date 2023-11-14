@@ -195,10 +195,11 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
     blocks = datamanager.get_block_list()
     prop_keys = datamanager.init_property()
     physics_options = datamanager.get_physics_options()
-    datamanager.set_physics_options(get_physics_option(params::Dict, physics_options))
+
+    datamanager.set_physics_options(get_physics_option(params, physics_options))
 
     for block in blocks
-        get_block_model_definition(params::Dict, block, prop_keys, datamanager.set_properties)
+        get_block_model_definition(params, block, prop_keys, datamanager.set_properties)
     end
     if material_model
         dof = datamanager.get_dof()

@@ -142,7 +142,7 @@ function get_physics_option(params::Dict, options::Dict)
             end
         else
             @error "No Material Model: '$material' has been defined"
-            return
+            return nothing
         end
 
     end

@@ -50,7 +50,7 @@ global nnsets::Int64 = 0
 global dof::Int64 = 1
 global block_list::Vector{Int64} = []
 global distribution::Vector{Int64}
-global crit_values_matrix::Vector{Float64}
+global crit_values_matrix::Array{Float64,3}
 global properties::Dict{Int64,Dict{String,Any}} = Dict()
 global glob_to_loc::Dict{Int64,Int64}
 global fields::Dict{DataType,Dict{String,Any}} = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
@@ -742,9 +742,8 @@ function set_overlap_map(topo)
     global overlap_map = topo
 end
 
-function set_physics_options(values)
-    global physics_options
-    physics_options = values
+function set_physics_options(values::Dict{String,Bool})
+    global physics_options = values
 end
 
 function set_property(block_id, property, value_name, value)

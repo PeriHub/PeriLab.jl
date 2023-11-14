@@ -33,12 +33,12 @@ using .Ordinary
 
     volume = Float64[0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883]
     vec = Vector{Int64}(1:nnodes)
-    weighted_volume = Ordinary.compute_weighted_volume(view(vec, 1:nnodes), nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
+    weighted_volume = Ordinary.compute_weighted_volume(view(vec, 1:nnodes), view(nneighbors, :), view(nlist, :), view(bond_geometry, :), view(bond_damage, :), view(omega, :), view(volume, :))
 
     for iID in 1:nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
     end
-    weighted_volume = Ordinary.compute_weighted_volume(Int64[], nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
+    weighted_volume = Ordinary.compute_weighted_volume(Int64[], view(nneighbors, :), view(nlist, :), view(bond_geometry, :), view(bond_damage, :), view(omega, :), view(volume, :))
     @test weighted_volume == []
 end
 
@@ -73,13 +73,13 @@ nlist[1][1] = 2
 nlist[2][1] = 2
 @testset "compute_dilatation" begin
     vec = Vector{Int64}(1:nnodes)
-    theta = Ordinary.compute_dilatation(view(vec, 1:nnodes), nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    theta = Ordinary.compute_dilatation(view(vec, :), view(nneighbors, :), view(nlist, :), view(bond_geometry, :), view(deformed_bond, :), view(bond_damage, :), view(volume, :), weighted_volume, view(omega, :))
     @test theta[1] == 3.0
     @test theta[2] == 3.0
     weighted_volume[1] = 0
-    theta = Ordinary.compute_dilatation(view(vec, 1:nnodes), nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    theta = Ordinary.compute_dilatation(view(vec, :), view(nneighbors, :), view(nlist, :), view(bond_geometry, :), view(deformed_bond, :), view(bond_damage, :), view(volume, :), weighted_volume, view(omega, :))
     @test theta[1] == 0.0
     @test theta[2] == 3.0
-    theta = Ordinary.compute_dilatation(Int64[], nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    theta = Ordinary.compute_dilatation(Int64[], view(nneighbors, :), view(nlist, :), view(bond_geometry, :), view(deformed_bond, :), view(bond_damage, :), view(volume, :), weighted_volume, view(omega, :))
     @test theta == []
 end
