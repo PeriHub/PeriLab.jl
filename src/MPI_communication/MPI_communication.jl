@@ -83,7 +83,7 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
                 recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Controller"], :])
             end
             MPI.Recv!(recv_msg, jcore - 1, 0, comm)
-            if typeof(recv_msg[1, 1]) == Bool
+            if recv_msg[1, 1] isa Bool
                 continue
             end
             if dof == 1

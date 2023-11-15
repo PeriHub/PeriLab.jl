@@ -18,7 +18,7 @@ function set_result_files(result_files_temp)
 end
 
 function progress_filter(log_args)
-    if typeof(log_args.message) == TimerOutputs.TimerOutput || typeof(log_args.message) == DataFrames.DataFrame
+    if log_args.message isa TimerOutputs.TimerOutput || log_args.message isa DataFrames.DataFrame
         return true
     end
     if log_args.message isa String

@@ -43,20 +43,19 @@ function merge_exodus_files(exos::Vector{Any}, filedirectory::String)
     end
 end
 
-function open_result_file(result_file)
-    if result_file isa Exodus.ExodusDatabase
-        result_file = ExodusDatabase(result_file.file_name, "rw")
-    elseif result_file["file"] isa IOStream
-        result_file["file"] = open(result_file["filename"], "a")
-    else
-        @warn "Unknown result file type"
-    end
+function open_result_file(result_file::Exodus.ExodusDatabase)
+    result_file = ExodusDatabase(result_file.file_name, "rw")
 end
 
-function close_result_file(result_file)
-    if result_file isa Exodus.ExodusDatabase
-        close(result_file)
-    elseif haskey(result_file, "file") && result_file["file"] isa IOStream
+function open_result_file(result_file::IOStream)
+    result_file["file"] = open(result_file["filename"], "a")
+end
+
+function close_result_file(result_file::Exodus.ExodusDatabase)
+    close(result_file)
+end
+function close_result_file(result_file::IOStream)
+    if haskey(result_file, "file")
         close(result_file["file"])
     end
 end
@@ -232,7 +231,7 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
     output_frequencies = get_output_frequency(params, nsteps)
     for id in eachindex(result_files)
 
-        if typeof(result_files[id]) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
+        if result_files[id] isa Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
             result_files[id] = Write_Exodus_Results.init_results_in_exodus(result_files[id], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids)
         end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))

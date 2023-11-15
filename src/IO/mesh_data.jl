@@ -195,7 +195,7 @@ function check_mesh_elements(mesh, dof)
 
     for (id, mesh_entry) in enumerate(mnames)
         fieldDof = 1
-        if ("y" == mesh_entry) | ("z" == mesh_entry) | (mesh_entry[1:end-1] in keys(meshInfoDict))
+        if ("y" == mesh_entry) || ("z" == mesh_entry) || (mesh_entry[1:end-1] in keys(meshInfoDict))
             continue
         end
 
@@ -228,7 +228,7 @@ function check_mesh_elements(mesh, dof)
             end
         end
 
-        if typeof(mesh[1, meshID[1]]) == Bool
+        if mesh[1, meshID[1]] isa Bool
             vartype = Bool
         else
             vartype = typeof(sum(sum(mesh[:, mid])

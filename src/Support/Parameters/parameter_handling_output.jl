@@ -57,7 +57,7 @@ end
 function get_output_fieldnames(outputs::Dict, variables::Vector{String}, computes::Vector{String}, output_type::String)
     return_outputs = String[]
     for output in keys(outputs)
-        if typeof(outputs[output]) != Bool
+        if !isa(outputs[output], Bool)
             @error "Output variable $output must be set to True or False"
         end
         if outputs[output]

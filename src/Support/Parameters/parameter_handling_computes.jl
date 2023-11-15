@@ -42,7 +42,7 @@ function get_node_set(params::Dict)
     end
     nodeset = params["Node Set"]
 
-    if (typeof(nodeset) == Int64) | (typeof(nodeset) == Int32)
+    if nodeset isa Int64 || nodeset isa Int32
         return [nodeset]
     elseif occursin(".txt", nodeset)
 
