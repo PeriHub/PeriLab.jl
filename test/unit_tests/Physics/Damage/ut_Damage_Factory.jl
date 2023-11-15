@@ -91,6 +91,6 @@ end
 
 @testset "Damage_factory_exceptions" begin
     test_Data_manager = Data_manager
-    @test isnothing(Damage.compute_damage_pre_calculation(test_Data_manager, Vector{Int64}(1:3), 1, Dict("Damage Model" => "not there"), 1, 0.0, 0.0))
+    @test isnothing(Damage.compute_damage_pre_calculation(test_Data_manager, Vector{Int64}(1:3), 1, Dict("Damage Model" => "not there"), "dummy for function", 0.0, 0.0))
     @test isnothing(Damage.compute_damage(test_Data_manager, Vector{Int64}(1:3), Dict("Damage Model" => "not there"), 1, 0.0, 0.0))
 end
