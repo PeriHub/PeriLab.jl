@@ -80,6 +80,8 @@ PeriLab:
         Number of Neighbors: true
         External_Forces: True
         External_Displacements: True
+        Strain: True
+        Cauchy Stress: True
     Output2:
       Number of Output Steps: 200
       Output Filename: DCBmodel_Output2
@@ -91,7 +93,7 @@ PeriLab:
     Damage Models:
       Damage:
         Damage Model: Critical Energy
-        Critical Value: 3.5714285714285716
+        Critical Value: 0.0035714285714285716
     Material Models:
       Aluminium:
         Material Model: "Correspondence Elastic"
@@ -106,7 +108,7 @@ PeriLab:
       Deformed Bond Geometry: true
       Shape Tensor: true
   Solver:
-    Final Time: 0.006
+    Final Time: 0.0002
     Initial Time: 0.0
     Material Models: true
     Damage Models: true
