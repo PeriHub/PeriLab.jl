@@ -70,6 +70,7 @@ end
 Calculate the elastic bond force for each node.
 
 ``F = \\omega \\cdot \\theta \\cdot (\\frac{3K}{V} - \\frac{\\frac{15B}{V}}{3} \\cdot \\zeta + \\alpha \\cdot stretch)`` [WillbergC2023](@cite)
+for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page 152; Eq. (6.12); after (6.21) and after (6.23)
 
 Parameters:
 - nodes: array of node IDs
@@ -87,29 +88,42 @@ Returns:
 - bond_force: dictionary of calculated bond forces for each node
 """
 function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
+    #tbd
+    #shear_factor=Vector{Float64}([0,8,15])
+
+    symmetry::String = get_symmmetry(material)
+    kappa::Float64 = 0
+    gamma::Float64 = 0
+    alpha::Float64 = 0
+    deviatoric_deformation = Vector{Float64}
     for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
             continue
         end
-        alpha = 15.0 * material["Shear Modulus"] / weighted_volume[iID]
-        beta = 3.0 * material["Bulk Modulus"] / weighted_volume[iID]
+        # from Peridigm damage model. to be checked with literature
+        if symmetry == "plane stress"
+            alpha = 8 * material["Shear Modulus"]
+            gamma = 4.0 * material["Shear Modulus"] / (3.0 * material["Bulk Modulus"] + 4.0 * material["Shear Modulus"])
+            kappa = 4.0 * material["Bulk Modulus"] * material["Shear Modulus"] / (3 * material["Bulk Modulus"] + 4.0 * material["Shear Modulus"])
+        elseif symmetry == "plane strain"
+            alpha = 8 * material["Shear Modulus"]
+            gamma = 2 / 3
+            kappa = (12.0 * material["Bulk Modulus"] - 4.0 * material["Shear Modulus"]) / 9
+        else
+            alpha = 15 * material["Shear Modulus"]
+            gamma = 1
+            kappa = 3 * material["Bulk Modulus"] # -> Eq. (6.12.) 
+        end
 
-        # Calculate c1
-        c1 = theta[iID] * (beta - alpha / 3.0)
-
-        # Calculate zeta and stretch
-        zeta = bond_geometry[iID][:, end]
-        stretch = deformed_bond[iID][:, end] .- bond_geometry[iID][:, end]
-
-        # Calculate t
-        t = bond_damage[iID][:] .* omega[iID] .* (c1 .* zeta .+ alpha .* stretch)
+        #bond_deformation = deformed_bond[iID][:, end] .- bond_geometry[iID][:, end]
+        deviatoric_deformation = deformed_bond[iID][:, end] .- bond_geometry[iID][:, end] - (gamma * theta[iID] / 3) .* bond_geometry[iID][:, end]
+        t = bond_damage[iID][:] .* omega[iID] .* (kappa .* theta[iID] .* bond_geometry[iID][:, end] .+ alpha .* deviatoric_deformation) ./ weighted_volume[iID]
         if deformed_bond[iID][:, end] == 0
             @error "Length of bond is zero due to its deformation."
         end
         # Calculate bond force
-        bond_force[iID] = t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
-
+        bond_force[iID][:, 1:dof] = t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
     end
 
     return bond_force
