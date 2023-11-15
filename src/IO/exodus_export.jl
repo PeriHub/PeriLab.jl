@@ -148,8 +148,12 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output:
     for varname in keys(output)
         field = datamanager.get_field(output[varname]["fieldname"])
         #exo, timestep::Integer, id::Integer, var_index::Integer,vector
-        # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl  
-        var = convert(Array{Float64}, field[1:nnodes, output[varname]["dof"]])
+        # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl 
+        if haskey(output[varname], "dof")
+            var = convert(Array{Float64}, field[1:nnodes, output[varname]["dof"]])
+        else
+            var = convert(Array{Float64}, field[1:nnodes, output[varname]["i_dof"], output[varname]["j_dof"]])
+        end
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, output[varname]["result_id"], varname, var)
     end

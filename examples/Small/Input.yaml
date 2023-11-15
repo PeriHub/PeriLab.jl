@@ -36,10 +36,12 @@ PeriLab:
   Physics:
     Material Models:
       Aluminium:
-        Material Model: "PD Solid Elastic"
+        Material Model: "Correspondence Elastic"
         #Material Model: "Test"
         Bulk Modulus: 2.0e5
         Shear Modulus: 1.0e5
+        Symmetry: "isotropic plane stress"
+        Zero Energy Control: "Global"
     Damage Models:
       Damage:
         Critical Value: 1.3947001394700143
@@ -99,17 +101,17 @@ PeriLab:
       Stable Step Difference: 4
       Maximum Bond Difference: 4
       Stable Bond Difference: 1
-  Compute Class Parameters:
-    External_Forces:
-      Compute Class: "Block_Data"
-      Calculation Type: "Sum"
-      Block: "block_1"
-      Variable: "Forces"
-    External_Displacements:
-      Compute Class: "Block_Data"
-      Calculation Type: "Maximum"
-      Block: "block_1"
-      Variable: "Displacements"
+  # Compute Class Parameters:
+  #   External_Forces:
+  #     Compute Class: "Block_Data"
+  #     Calculation Type: "Sum"
+  #     Block: "block_1"
+  #     Variable: "Forces"
+  #   External_Displacements:
+  #     Compute Class: "Block_Data"
+  #     Calculation Type: "Maximum"
+  #     Block: "block_1"
+  #     Variable: "Displacements"
   Outputs:
     Output1:
       Flush File: False
@@ -121,13 +123,14 @@ PeriLab:
         Displacements: True
         Volume: True
         Number of Neighbors: True
-        External_Forces: True
-        External_Displacements: True
-    Output2:
-      Flush File: False
-      Output Filename: "test_2"
-      Output File Type: "CSV"
-      Number of Output Steps: 10
-      Output Variables:
-        External_Forces: True
-        External_Displacements: True
+        Strain: True
+        # External_Forces: True
+        # External_Displacements: True
+    # Output2:
+    #   Flush File: False
+    #   Output Filename: "test_2"
+    #   Output File Type: "CSV"
+    #   Number of Output Steps: 10
+    #   Output Variables:
+    #     External_Forces: True
+    #     External_Displacements: True

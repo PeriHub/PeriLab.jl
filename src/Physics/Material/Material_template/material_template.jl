@@ -3,8 +3,25 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Material_template
-export compute_force
+export init_material_model
 export material_name
+export compute_force
+
+"""
+  init_material_model(datamanager::Module)
+
+  Initializes the material model.
+
+  Parameters:
+    - `datamanager::Data_manager`: Datamanager.
+
+  Returns:
+    - `datamanager::Data_manager`: Datamanager.
+"""
+function init_material_model(datamanager::Module)
+
+  return datamanager
+end
 """
    material_name()
 
@@ -44,7 +61,7 @@ end
 function compute_force(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
   @info "Please write a material name in material_name()."
   @info "You can call your routine within the yaml file."
-  @info "Fill the compute_force(datamanager, nodes, material_parameter, time, dt) function."
+  @info "Fill the compute_force() and init_material_model() function."
   @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
   @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
   return datamanager

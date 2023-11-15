@@ -3,21 +3,47 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bondbased_Elastic
-export compute_force
+export init_material_model
 export material_name
+export compute_force
+
+# global dof::Int64
+# global horizon::Vector{Float64}
+"""
+    init_material_model(datamanager::Module)
+
+    Initializes the material model.
+
+    Parameters:
+    - `datamanager::Data_manager`: Datamanager.
+
+    Returns:
+    - `datamanager::Data_manager`: Datamanager.
+"""
+function init_material_model(datamanager::Module)
+    # global dof
+    # global horizon
+
+    # dof = datamanager.get_dof()
+    # horizon = datamanager.get_field("Horizon")
+
+    return datamanager
+end
 
 
 function material_name()
     return "Bond-based Elastic"
 end
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    # global dof
+    # global horizon
+    dof = datamanager.get_dof()
+    horizon = datamanager.get_field("Horizon")
 
     bond_geometry = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
     bond_force = datamanager.get_field("Bond Forces")
-    horizon = datamanager.get_field("Horizon")
-    dof = datamanager.get_dof()
 
     K = material_parameter["Bulk Modulus"]
 

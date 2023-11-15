@@ -133,10 +133,6 @@ function get_results_mapping(params::Dict, datamanager::Module)
             end
             # end
 
-            if datamanager.field_array_type[fieldname]["Type"] == "Matrix"
-                @warn "Matrix types not supported in Exodus export"
-                continue
-            end
             datafield = datamanager.get_field(fieldname)
             sizedatafield = size(datafield)
             if length(sizedatafield) == 0
@@ -153,13 +149,25 @@ function get_results_mapping(params::Dict, datamanager::Module)
                 else
                     output_mapping[id]["Fields"][clearNP1(fieldname)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => 1, "type" => typeof(datafield[1, 1]))
                 end
-            else
-                refDof = sizedatafield[2]
-                for dof in 1:refDof
+            elseif length(sizedatafield) == 2
+                i_ref_dof = sizedatafield[2]
+                for dof in 1:i_ref_dof
                     if global_var
-                        output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params)
+                        output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraviewCoordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params)
                     else
-                        output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]))
+                        output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]))
+                    end
+                end
+            elseif length(sizedatafield) == 3
+                i_ref_dof = sizedatafield[2]
+                j_ref_dof = sizedatafield[3]
+                for i_dof in 1:i_ref_dof
+                    for j_dof in 1:j_ref_dof
+                        if global_var
+                            output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraviewCoordinates(i_dof, i_ref_dof)*Write_Exodus_Results.get_paraviewCoordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]), "compute_params" => compute_params)
+                        else
+                            output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(i_dof, i_ref_dof)*Write_Exodus_Results.get_paraviewCoordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]))
+                        end
                     end
                 end
             end

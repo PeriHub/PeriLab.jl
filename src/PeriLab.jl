@@ -39,6 +39,7 @@ include("./Support/data_manager.jl")
 include("./IO/logging.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
+include("./Physics/Material/Material_Factory.jl")
 # external packages
 using MPI
 using Pkg
@@ -48,6 +49,7 @@ using ArgParse
 const to = TimerOutput()
 # internal packages
 using .Data_manager
+using .Material
 import .Logging_module
 import .IO
 import .Solver
@@ -210,9 +212,15 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
 
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
         @info "Solver init"
-        @timeit to "Solver.init" blockNodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
+        @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
         if verbose
             IO.show_block_summary(solver_options, params, datamanager)
+        end
+        if solver_options["Material Models"]
+            @info "Material Model init"
+            for block in eachindex(block_nodes)
+                @timeit to "Material.init_material_model" datamanager = Material.init_material_model(datamanager, datamanager.get_properties(block, "Material Model"))
+            end
         end
         @info "Init write results"
         @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"])
@@ -222,7 +230,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
             nsteps = solver_options["nsteps"]
             solver_options["nsteps"] = 10
             elapsed_time = @elapsed begin
-                @timeit to "Solver.solver" result_files = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+                @timeit to "Solver.solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
             end
 
             @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
@@ -230,7 +238,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
             @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
 
         else
-            @timeit to "Solver.solver" result_files = Solver.solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+            @timeit to "Solver.solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
         end
 
         IO.close_result_files(result_files, outputs)

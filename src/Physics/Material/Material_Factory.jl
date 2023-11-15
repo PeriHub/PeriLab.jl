@@ -10,9 +10,24 @@ using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
 Set_modules.include_files(module_list)
 
+export init_material_model
 export compute_forces
 export determine_isotropic_parameter
 export distribute_force_densities
+
+function init_material_model(datamanager::Module, model_param::Dict)
+    specifics = Dict{String,String}("Call Function" => "init_material_model", "Name" => "material_name")
+    material_models = split(model_param["Material Model"], "+")
+
+    for material_model in material_models
+        datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager,))
+        if isnothing(datamanager)
+            @error "No material of name " * material_model * " exists."
+        end
+
+    end
+    return datamanager
+end
 
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
     specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")

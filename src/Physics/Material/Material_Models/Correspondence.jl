@@ -12,8 +12,41 @@ include("../../../Support/geometry.jl")
 using .global_zero_energy_control
 using .Correspondence_Elastic
 using .Geometry
-export compute_force
+export init_material_model
 export material_name
+export compute_force
+
+# global dof::Int64
+# global rotation::Bool = false
+# global angles::Vector{Float64}
+
+"""
+  init_material_model(datamanager::Module)
+
+  Initializes the material model.
+
+  Parameters:
+    - `datamanager::Data_manager`: Datamanager.
+
+  Returns:
+    - `datamanager::Data_manager`: Datamanager.
+"""
+function init_material_model(datamanager::Module)
+  # global dof
+  # global rotation
+  # global angles
+
+  dof = datamanager.get_dof()
+  datamanager.create_node_field("Strain", Float64, "Matrix", dof)
+  datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
+
+  # if "Angles" in datamanager.get_all_field_keys()
+  #   rotation = true
+  #   angles = datamanager.get_field("Angles")
+  # end
+
+  return datamanager
+end
 """
    material_name()
 
@@ -51,11 +84,15 @@ end
      ```
    """
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+  # global dof
+  # global rotation
+  # global angles
   rotation::Bool = false
   if "Angles" in datamanager.get_all_field_keys()
     rotation = true
     angles = datamanager.get_field("Angles")
   end
+
   dof = datamanager.get_dof()
   deformation_gradient = datamanager.get_field("Deformation Gradient")
   bond_force = datamanager.get_field("Bond Forces")
@@ -65,10 +102,14 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   bond_geometry = datamanager.get_field("Bond Geometry")
   inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
 
-  strainN, strainNP1 = datamanager.create_node_field("Strain", Float64, "Matrix", dof)
-  stressN, stressNP1 = datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
+  strainN = datamanager.get_field("Strain", "N")
+  strainNP1 = datamanager.get_field("Strain", "NP1")
+  stressN = datamanager.get_field("Cauchy Stress", "N")
+  stressNP1 = datamanager.get_field("Cauchy Stress", "NP1")
+
   strainNP1 = Geometry.strain(nodes, deformation_gradient, strainNP1)
   strainInc = strainNP1 - strainN
+
 
   if rotation
     stressN = rotate(nodes, dof, stressN, angles, false)
