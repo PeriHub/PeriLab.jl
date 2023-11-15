@@ -100,7 +100,7 @@ function init_interface_crit_values(datamanager::Module, params::Dict)
             end
         end
     end
-    datamanager.set_crit_values_matrix(inter_critical_Value)
+    datamanager.set_crit_values_matrix(inter_critical_value)
     return datamanager
 end
 end
