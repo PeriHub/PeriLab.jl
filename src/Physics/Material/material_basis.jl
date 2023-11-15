@@ -86,7 +86,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[1, 2] = nu * temp
             matrix[1, 3] = nu * temp
             matrix[2, 1] = nu * temp
-            matrix[1, 1] = nu * temp
+            matrix[1, 2] = nu * temp
             matrix[3, 2] = nu * temp
             matrix[2, 3] = nu * temp
             matrix[4, 4] = G
@@ -147,7 +147,6 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             end
         end
     else
-
         matrix = zeros(Float64, dof + 1, dof + 1)
         if haskey(parameter, "Poisson's Ratio") && haskey(parameter, "Young's Modulus")
             @warn "material model defintion is missing; assuming isotropic plain stress "
@@ -162,7 +161,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             return matrix
         end
         @error "no valid definition"
-        return matrix
+        return nothing
 
     end
     return matrix
