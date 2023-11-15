@@ -5,7 +5,6 @@
 using Test
 include("../../../../src/Physics/Material/material_basis.jl")
 
-println()
 @testset "check_symmetry" begin
     @test isnothing(check_symmetry(Dict(), 2))
     @test isnothing(check_symmetry(Dict(), 3))
@@ -18,6 +17,24 @@ println()
     check_symmetry(Dict("Symmetry" => "3D"), 3)
 end
 
+@testset "get_symmmetry" begin
+    @test get_symmmetry(Dict()) == "3D"
+    @test get_symmmetry(Dict("Symmetry" => "iso plane stress")) == "plane stress"
+    @test get_symmmetry(Dict("Symmetry" => "iso plane stress")) == "plane stress"
+    @test get_symmmetry(Dict("Symmetry" => "iso Plane Stress")) == "plane stress"
+
+    @test get_symmmetry(Dict("Symmetry" => "plane strain")) == "plane strain"
+    @test get_symmmetry(Dict("Symmetry" => "plane Strain")) == "plane strain"
+    @test get_symmmetry(Dict("Symmetry" => "PLANE strain")) == "plane strain"
+    @test get_symmmetry(Dict("Symmetry" => "plan strain")) == "3D"
+end
+
+function get_symmmetry(material::Dict)
+    if !haskey(material, "Symmetry")
+        return "3D"
+    end
+    return material["Symmetry"]
+end
 
 @testset "get_all_elastic_moduli" begin
     ref_parameter = Dict("Bulk Modulus" => 0, "Computed" => true, "Young's Modulus" => 0, "Shear Modulus" => 0, "Poisson's Ratio" => 0)
