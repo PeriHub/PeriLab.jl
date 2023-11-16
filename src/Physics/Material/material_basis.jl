@@ -174,6 +174,7 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
             force_densities[neighborID, :] -= bond_damage[iID][jID] .* bond_force[iID][jID, :] .* volume[iID]
         end
     end
+
     return force_densities
 end
 
@@ -214,4 +215,34 @@ function check_symmetry(prop::Dict, dof::Int64)
         end
         return true
     end
+end
+
+"""
+    get_sym(material::Dict)
+
+Return the symmetry information from the given material dictionary.
+
+# Arguments
+- `material::Dict`: A dictionary containing material information.
+
+# Returns
+- If the key "Symmetry" is present in the dictionary, the corresponding value is returned.
+- If the key is not present, the default value "3D" is returned.
+
+# Example
+```julia
+material_dict = Dict("Symmetry" => "Cubic", "Color" => "Red")
+symmetry = get_sym(material_dict)
+"""
+function get_symmmetry(material::Dict)
+    if !haskey(material, "Symmetry")
+        return "3D"
+    end
+    if occursin("plane strain", lowercase(material["Symmetry"]))
+        return "plane strain"
+    end
+    if occursin("plane stress", lowercase(material["Symmetry"]))
+        return "plane stress"
+    end
+    return "3D"
 end
