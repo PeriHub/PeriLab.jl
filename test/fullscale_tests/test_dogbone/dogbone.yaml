@@ -1,0 +1,109 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Input Mesh File: dogbone.txt
+    Node Sets:
+      Node Set 1: ns_dogbone_1.txt
+      Node Set 2: ns_dogbone_2.txt
+    Type: Text File
+  Physics:
+    Pre Calculation:
+      Deformed Bond Geometry: true
+      Deformation Gradient: false
+      Shape Tensor: false
+      Bond Associated Shape Tensor: false
+      Bond Associated Deformation Gradient: false
+    Material Models:
+      PMMA:
+        Material Model: "PD Solid Elastic"
+        #Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 7.0e+5
+        Poisson's Ratio: 0.33
+        Zero Energy Mode Control: "Global"
+    Damage Models:
+      Damage:
+        Critical Value: 10.1
+        Damage Model: Critical Energy
+  Boundary Conditions:
+    BC_1:
+      Coordinate: x
+      Node Set: Node Set 1
+      Type: Displacements
+      Value: 0
+    BC_2:
+      Coordinate: x
+      Node Set: Node Set 2
+      Type: Displacements
+      Value: 0.5*t
+  Blocks:
+    block_1:
+      Block Names: block_1
+      Density: 1.4e-8
+      Horizon: 0.301
+      Material Model: PMMA
+    block_2:
+      Block Names: block_2
+      Density: 1.4e-8
+      Horizon: 0.301
+      Material Model: PMMA
+    block_3:
+      Block Names: block_3
+      Density: 1.4e-8
+      Horizon: 0.301
+      Material Model: PMMA
+      Damage Model: Damage
+    block_4:
+      Block Names: block_4
+      Density: 1.4e-8
+      Horizon: 0.301
+      Material Model: PMMA
+    block_5:
+      Block Names: block_5
+      Density: 1.4e-8
+      Horizon: 0.301
+      Material Model: PMMA
+  Compute Class Parameters:
+    External_Forces:
+      Compute Class: "Block_Data"
+      Calculation Type: "Sum"
+      Block: "block_1"
+      Variable: "Forces"
+    External_Displacements:
+      Compute Class: "Block_Data"
+      Calculation Type: "Maximum"
+      Block: "block_1"
+      Variable: "Displacements"
+  Outputs:
+    Output:
+      Number of Output Steps: 10
+      Output File Type: Exodus
+      Output Filename: dogbone
+      Flush File: true
+      Output Variables:
+        Damage: true
+        Displacements: true
+        Forces: true
+        Number of Neighbors: true
+        External_Forces: True
+        External_Displacements: True
+    Output2:
+      Number of Output Steps: 10
+      Flush File: False
+      Output File Type: CSV
+      Output Filename: dogbone
+      Output Variables:
+        External_Forces: True
+        External_Displacements: True
+  Solver:
+    Material Models: true
+    Damage Models: true
+    Final Time: 1e-7
+    Initial Time: 0.0
+    Verbose: false
+    Verlet:
+      Numerical Damping: 0.0005
+      Safety Factor: 1.0
