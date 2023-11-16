@@ -15,8 +15,12 @@ export compute_forces
 export determine_isotropic_parameter
 export distribute_force_densities
 
-function init_material_model(datamanager::Module, model_param::Dict)
+function init_material_model(datamanager::Module, block::Int64)
+    model_param = datamanager.get_properties(block, "Material Model")
     specifics = Dict{String,String}("Call Function" => "init_material_model", "Name" => "material_name")
+    if !haskey(model_param, "Material Model")
+        @error "Block " * string(block) * " has no material model defined."
+    end
     material_models = split(model_param["Material Model"], "+")
 
     for material_model in material_models

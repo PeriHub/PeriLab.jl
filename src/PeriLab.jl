@@ -219,7 +219,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         if solver_options["Material Models"]
             @info "Material Model init"
             for block in eachindex(block_nodes)
-                @timeit to "Material.init_material_model" datamanager = Material.init_material_model(datamanager, datamanager.get_properties(block, "Material Model"))
+                @timeit to "Material.init_material_model" datamanager = Material.init_material_model(datamanager, block)
             end
         end
         @info "Init write results"
