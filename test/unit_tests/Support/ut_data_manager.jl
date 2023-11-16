@@ -452,3 +452,13 @@ end
     @test length(inv_nlist) == 1
     @test inv_nlist[1] == Dict{Int64,Int64}(1 => 2, 2 => 1, 9 => 2)
 end
+
+@testset "ut_rotation" begin
+    rotation, angles = test_Data_manager.rotation_data()
+    @test !rotation
+    @test isnothing(angles)
+    test_angles = test_Data_manager.create_constant_node_field("Angles", Float32, 3)
+    rotation, angles = test_Data_manager.rotation_data()
+    @test rotation
+    @test angles == test_angles
+end

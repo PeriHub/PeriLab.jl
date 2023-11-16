@@ -18,10 +18,6 @@ export init_material_model
 export material_name
 export compute_force
 
-# global dof::Int64
-# global rotation::Bool = false
-# global angles::Vector{Float64}
-
 """
   init_material_model(datamanager::Module)
 
@@ -89,12 +85,8 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   # global dof
   # global rotation
   # global angles
-  rotation::Bool = false
-  if "Angles" in datamanager.get_all_field_keys()
-    rotation = true
-    angles = datamanager.get_field("Angles")
-  end
 
+  rotation::Bool, angles = datamanager.rotation_data()
   dof = datamanager.get_dof()
   deformation_gradient = datamanager.get_field("Deformation Gradient")
   bond_force = datamanager.get_field("Bond Forces")
