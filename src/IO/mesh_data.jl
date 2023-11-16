@@ -108,6 +108,7 @@ function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribu
     end
     lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
     nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+
     # provide neighborhood only for controller nodes
     nlistCore[:] = nlist[distribution[rank+1][1:nnodes]]
     nlistCore[:] = get_local_neighbors(datamanager.get_local_nodes, nlistCore)

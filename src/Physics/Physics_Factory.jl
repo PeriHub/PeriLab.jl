@@ -4,6 +4,7 @@
 
 module Physics
 include("../Support/helpers.jl")
+include("../Support/tools.jl")
 include("./Additive/Additive_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
@@ -124,6 +125,8 @@ end
 
 function init_damage_model_fields(datamanager::Module)
     datamanager.create_node_field("Damage", Float64, 1)
+    nlist = datamanager.get_field("Neighborhoodlist")
+    inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     return datamanager
 end
 
