@@ -43,20 +43,19 @@ function merge_exodus_files(exos::Vector{Any}, filedirectory::String)
     end
 end
 
-function open_result_file(result_file)
-    if result_file isa Exodus.ExodusDatabase
-        result_file = ExodusDatabase(result_file.file_name, "rw")
-    elseif result_file["file"] isa IOStream
-        result_file["file"] = open(result_file["filename"], "a")
-    else
-        @warn "Unknown result file type"
-    end
+function open_result_file(result_file::Exodus.ExodusDatabase)
+    result_file = ExodusDatabase(result_file.file_name, "rw")
 end
 
-function close_result_file(result_file)
-    if result_file isa Exodus.ExodusDatabase
-        close(result_file)
-    elseif haskey(result_file, "file") && result_file["file"] isa IOStream
+function open_result_file(result_file::IOStream)
+    result_file["file"] = open(result_file["filename"], "a")
+end
+
+function close_result_file(result_file::Exodus.ExodusDatabase)
+    close(result_file)
+end
+function close_result_file(result_file::IOStream)
+    if haskey(result_file, "file")
         close(result_file["file"])
     end
 end
@@ -133,10 +132,6 @@ function get_results_mapping(params::Dict, datamanager::Module)
             end
             # end
 
-            if datamanager.field_array_type[fieldname]["Type"] == "Matrix"
-                @warn "Matrix types not supported in Exodus export"
-                continue
-            end
             datafield = datamanager.get_field(fieldname)
             sizedatafield = size(datafield)
             if length(sizedatafield) == 0
@@ -153,13 +148,25 @@ function get_results_mapping(params::Dict, datamanager::Module)
                 else
                     output_mapping[id]["Fields"][clearNP1(fieldname)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => 1, "type" => typeof(datafield[1, 1]))
                 end
-            else
-                refDof = sizedatafield[2]
-                for dof in 1:refDof
+            elseif length(sizedatafield) == 2
+                i_ref_dof = sizedatafield[2]
+                for dof in 1:i_ref_dof
                     if global_var
-                        output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params)
+                        output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraviewCoordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params)
                     else
-                        output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, refDof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]))
+                        output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]))
+                    end
+                end
+            elseif length(sizedatafield) == 3
+                i_ref_dof = sizedatafield[2]
+                j_ref_dof = sizedatafield[3]
+                for i_dof in 1:i_ref_dof
+                    for j_dof in 1:j_ref_dof
+                        if global_var
+                            output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraviewCoordinates(i_dof, i_ref_dof)*Write_Exodus_Results.get_paraviewCoordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]), "compute_params" => compute_params)
+                        else
+                            output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraviewCoordinates(i_dof, i_ref_dof)*Write_Exodus_Results.get_paraviewCoordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]))
+                        end
                     end
                 end
             end
@@ -224,7 +231,7 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
     output_frequencies = get_output_frequency(params, nsteps)
     for id in eachindex(result_files)
 
-        if typeof(result_files[id]) == Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
+        if result_files[id] isa Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
             result_files[id] = Write_Exodus_Results.init_results_in_exodus(result_files[id], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids)
         end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))

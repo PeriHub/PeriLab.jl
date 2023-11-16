@@ -39,7 +39,7 @@ function get_node_sets(params::Dict, path::String)
     nodesets = params["Discretization"]["Node Sets"]
 
     for entry in keys(nodesets)
-        if (typeof(nodesets[entry]) == Int64) | (typeof(nodesets[entry]) == Int32)
+        if nodesets[entry] isa Int64 || nodesets[entry] isa Int32
             nsets[entry] = [nodesets[entry]]
         elseif occursin(".txt", nodesets[entry])
 

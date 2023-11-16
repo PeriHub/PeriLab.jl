@@ -6,22 +6,53 @@ module PD_Solid_Elastic
 include("../material_basis.jl")
 include("./Ordinary/Ordinary.jl")
 import .Ordinary
-export compute_force
+export init_material_model
 export material_name
+export compute_force
+
+# global dof::Int64
+# global nlist::Vector{Vector{Int64}}
+# global volume::Vector{Float64}
+
+"""
+    init_material_model(datamanager::Module)
+
+    Initializes the material model.
+
+    Parameters:
+    - `datamanager::Data_manager`: Datamanager.
+
+    Returns:
+    - `datamanager::Data_manager`: Datamanager.
+"""
+function init_material_model(datamanager::Module)
+    # global dof
+    # global nlist
+    # global volume
+
+    # dof = datamanager.get_dof()
+    # nlist = datamanager.get_nlist()
+    # volume = datamanager.get_field("Volume")
+
+    return datamanager
+end
 
 function material_name()
     return "PD Solid Elastic"
 end
 
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    # global dof
+    # global nlist
+    # global volume
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
+    volume = datamanager.get_field("Volume")
 
     nneighbors = datamanager.get_field("Number of Neighbors")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
     omega = datamanager.get_field("Influence Function")
-    volume = datamanager.get_field("Volume")
     bond_geometry = datamanager.get_field("Bond Geometry")
     bond_force = datamanager.get_field("Bond Forces")
 

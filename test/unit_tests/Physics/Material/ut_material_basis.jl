@@ -29,13 +29,6 @@ end
     @test get_symmmetry(Dict("Symmetry" => "plan strain")) == "3D"
 end
 
-function get_symmmetry(material::Dict)
-    if !haskey(material, "Symmetry")
-        return "3D"
-    end
-    return material["Symmetry"]
-end
-
 @testset "get_all_elastic_moduli" begin
     ref_parameter = Dict("Bulk Modulus" => 0, "Computed" => true, "Young's Modulus" => 0, "Shear Modulus" => 0, "Poisson's Ratio" => 0)
     test = get_all_elastic_moduli(Dict{String,Any}())
