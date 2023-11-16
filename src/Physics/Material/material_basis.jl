@@ -215,3 +215,18 @@ function check_symmetry(prop::Dict, dof::Int64)
         return true
     end
 end
+
+function get_symmmetry(material::Dict)
+    if !haskey(material, "Symmetry")
+        return "3D"
+    end
+    symmetry = lowercase(material["Symmetry"])
+    if occursin("plane", symmetry)
+        if occursin("strain", symmetry)
+            return "plane strain"
+        elseif occursin("stress", symmetry)
+            return "plane stress"
+        end
+    end
+    return "3D"
+end
