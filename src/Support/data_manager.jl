@@ -16,6 +16,7 @@ export get_crit_values_matrix
 export get_comm
 export get_field
 export get_field_type
+export get_inverse_nlist
 export get_local_nodes
 export get_nlist
 export get_nnsets
@@ -30,6 +31,7 @@ export get_max_rank
 export init_property
 export set_block_list
 export set_crit_values_matrix
+export set_inverse_nlist
 export set_glob_to_loc
 export set_num_controller
 export set_nset
@@ -57,6 +59,7 @@ global fields::Dict{DataType,Dict{String,Any}} = Dict(Int64 => Dict(), Float64 =
 global field_array_type::Dict{String,Dict{String,Any}} = Dict()
 global field_types::Dict{String,DataType} = Dict()
 global fields_to_synch::Dict{String,Any} = Dict()
+global inverse_nlist::Vector{Dict{Int64,Int64}}
 global nsets::Dict{String,Vector{Int}} = Dict()
 global overlap_map::Dict{Int64,Any}
 global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => true,
@@ -351,6 +354,10 @@ function get_field_type(name::String)
     return field_types[name]
 end
 
+function get_inverse_nlist()
+    return inverse_nlist
+end
+
 """
     get_local_nodes()
 
@@ -572,62 +579,6 @@ function get_max_rank()
     return max_rank
 end
 
-function init_property()
-    global properties
-
-    for iblock in get_block_list()
-        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
-    end
-    return collect(keys(properties[1]))
-end
-
-function set_block_list(blocks)
-    global block_list = sort(unique(blocks))
-end
-
-function set_crit_values_matrix(crit_values)
-    global crit_values_matrix = crit_values
-end
-"""
-set_dof(n)
-
-Sets the degree of freedom (dof) value globally.
-
-Parameters:
-- `n` (integer): The value to set as the degree of freedom.
-
-Example:
-```julia
-set_dof(3)  # sets the degree of freedom to 3
-```
-"""
-function set_dof(n)
-
-    global dof = n
-end
-"""
-set_glob_to_loc(dict)
-
-Sets the global-to-local mapping dict globally.
-
-Parameters:
-- `dict` (array): The dict representing the global-to-local mapping.
-
-Example:
-```julia
-set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping dict
-```
-"""
-function set_glob_to_loc(dict::Dict)
-
-    global glob_to_loc = dict
-end
-
-function set_distribution(values::Vector{Int64})
-
-    global distribution = values
-end
-
 """
 loc_to_glob(range::UnitRange{Int64})
 
@@ -646,7 +597,64 @@ function loc_to_glob(range::UnitRange{Int64})
     return distribution[range]
 end
 
-function set_material_type(key, value)
+function init_property()
+    global properties
+
+    for iblock in get_block_list()
+        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
+    end
+    return collect(keys(properties[1]))
+end
+
+function set_block_list(blocks::Union{SubArray,Vector{Int64}})
+    global block_list = sort(unique(blocks))
+end
+
+function set_crit_values_matrix(crit_values::Array{Float64,3})
+    global crit_values_matrix = crit_values
+end
+function set_distribution(values::Vector{Int64})
+    global distribution = values
+end
+
+"""
+set_dof(n::Int64)
+
+Sets the degree of freedom (dof) value globally.
+
+Parameters:
+- `n::Int64`: The value to set as the degree of freedom.
+
+Example:
+```julia
+set_dof(3)  # sets the degree of freedom to 3
+```
+"""
+function set_dof(n::Int64)
+    global dof = n
+end
+"""
+set_glob_to_loc(dict)
+
+Sets the global-to-local mapping dict globally.
+
+Parameters:
+- `dict` (array): The dict representing the global-to-local mapping.
+
+Example:
+```julia
+set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping dict
+```
+"""
+function set_glob_to_loc(dict::Dict)
+    global glob_to_loc = dict
+end
+
+function set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
+    global inverse_nlist = inv_nlist
+end
+
+function set_material_type(key::Union{Int64,AbstractString,String}, value::Union{Int64,AbstractString,String,Float64})
     if key in keys(material_type)
         global material_type[key] = value
     else
