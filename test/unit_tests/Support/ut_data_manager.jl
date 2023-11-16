@@ -37,6 +37,7 @@ end
     test_Data_manager.set_glob_to_loc(Dict{Int64,Int64}(3 => 1, 2 => 2, 4 => 3))
     @test test_Data_manager.get_local_nodes([1]) == []
     @test test_Data_manager.get_local_nodes([4]) == [3]
+    @test test_Data_manager.get_local_nodes([1, 4]) == [3]
 end
 
 
