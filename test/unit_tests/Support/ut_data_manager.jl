@@ -151,27 +151,27 @@ end
 
     F = test_Data_manager.get_field("F")
     @test typeof(F[1, 1][1]) == Float64
-    @test length(F[:, 1]) == num_controller # bonds are only of length num_controller
+    @test length(F[:, 1]) == num_controller + num_responder
     @test length(F[1]) == nn[1]
     @test length(F[2]) == nn[2]
     @test length(F[3]) == nn[3]
     G = test_Data_manager.get_field("GN")
     @test typeof(G[1, 1][1]) == Bool
-    @test length(G[:, 1]) == num_controller
+    @test length(G[:, 1]) == num_controller + num_responder
 
     H = test_Data_manager.get_field("H")
     @test typeof(H[1][1, 1][1]) == Float64
     @test length(H[1][:, 1]) == nn[1]
     @test length(H[1][1, :]) == 4
-    @test length(H[:][:, :]) == num_controller
+    @test length(H[:][:, :]) == num_controller + num_responder
 
     I = test_Data_manager.get_field("INP1")
     @test typeof(I[1][1, 1]) == Int64
-    for i in 1:num_controller
+    for i in 1:num_controller+num_responder
         @test length(I[i][:, 1]) == nn[i]
     end
     @test length(I[1][1, :]) == 7
-    @test length(I[:][:, :]) == num_controller
+    @test length(I[:][:, :]) == num_controller + num_responder
 
 end
 

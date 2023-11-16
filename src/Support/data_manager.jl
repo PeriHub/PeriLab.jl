@@ -224,7 +224,7 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
         else
             fields[vartype][name] = Matrix{vartype}[]
         end
-        for i in 1:num_controller
+        for i in 1:num_controller+num_responder
             if dof == 1
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
                 fill!(fields[vartype][name][end], vartype(default_value))
