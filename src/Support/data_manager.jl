@@ -59,7 +59,7 @@ global fields::Dict{DataType,Dict{String,Any}} = Dict(Int64 => Dict(), Float64 =
 global field_array_type::Dict{String,Dict{String,Any}} = Dict()
 global field_types::Dict{String,DataType} = Dict()
 global fields_to_synch::Dict{String,Any} = Dict()
-global inverse_nlist::Vector{Dict{Int64,Int64}}
+global inverse_nlist::Vector{Dict{Int64,Int64}} = []
 global nsets::Dict{String,Vector{Int}} = Dict()
 global overlap_map::Dict{Int64,Any}
 global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => true,
