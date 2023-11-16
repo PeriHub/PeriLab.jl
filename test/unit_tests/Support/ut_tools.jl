@@ -3,8 +3,37 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../src/Support/tools.jl")
-
+include("../../../src/Support/data_manager.jl")
 using Test
+
+@testset "ut_find_inverse_bond_id" begin
+    test_Data_manager = Data_manager
+    nnodes = 2
+    num_responder = 1
+    test_Data_manager.set_num_controller(nnodes)
+    test_Data_manager.set_num_responder(num_responder)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 1
+    nn[2] = 2
+    nn[3] = 2
+    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist[1] = [2]
+    nlist[2] = [1, 3]
+    nlist[3] = [1, 2]
+    inverse_nlist = find_inverse_bond_id(nlist)
+    nlist[1] = [2, 2]
+    nlist[2] = [1, 3]
+    nlist[3] = [1, 2]
+
+    @test length(inverse_nlist[1]) == 1
+    @test length(inverse_nlist[2]) == 2
+    @test length(inverse_nlist[3]) == 1
+    @test inverse_nlist[1][2] == 1
+    @test inverse_nlist[2][1] == 1
+    @test inverse_nlist[2][3] == 2
+    @test inverse_nlist[3][2] == 2
+
+end
 
 @testset "ut_check_inf_or_nan" begin
     a = ones(2, 2)

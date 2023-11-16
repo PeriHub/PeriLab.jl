@@ -76,3 +76,16 @@ result = get_fourth_order(CVoigt, dof)
 function get_fourth_order(CVoigt::Matrix{Float64}, dof::Int64)
     return fromvoigt(SymmetricFourthOrderTensor{dof}, CVoigt)
 end
+
+function find_inverse_bond_id(nlist::SubArray)
+    inverse_nlist = [Dict{Int64,Int64}() for _ in 1:length(nlist)]
+    for iID in eachindex(nlist)
+        for (jID, neighborID) in enumerate(nlist[iID])
+            value = findfirst(isequal(iID), nlist[neighborID])
+            if !isnothing(value)
+                inverse_nlist[neighborID][iID] = value
+            end
+        end
+    end
+    return inverse_nlist
+end
