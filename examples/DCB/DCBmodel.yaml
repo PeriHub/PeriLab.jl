@@ -7,36 +7,36 @@ PeriLab:
     block_1:
       Block Names: block_1
       Damage Model: Damage
-      Density: 1.95e-07
-      Horizon: 0.8209090909090908
+      Density: 1.95e-06
+      Horizon: 0.82
       Material Model: Aluminium
     block_2:
       Block Names: block_2
       Damage Model: Damage
-      Density: 1.95e-07
-      Horizon: 0.8209090909090908
+      Density: 1.95e-06
+      Horizon: 0.82
       Material Model: Aluminium
     block_3:
       Block Names: block_3
-      Density: 1.95e-07
-      Horizon: 0.8209090909090908
+      Density: 1.95e-06
+      Horizon: 0.82
       Material Model: Aluminium
     block_4:
       Block Names: block_4
-      Density: 1.95e-07
-      Horizon: 0.8209090909090908
+      Density: 1.95e-06
+      Horizon: 0.82
       Material Model: Aluminium
   Boundary Conditions:
     BC_1:
       Coordinate: y
       Node Set: Node Set 1
       Type: Displacements
-      Value: 2*t
+      Value: 4.4*t
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
       Type: Displacements
-      Value: -2*t
+      Value: -4.4*t
   Compute Class Parameters:
     External_Forces:
       Compute Class: Block_Data
@@ -80,21 +80,17 @@ PeriLab:
         Number of Neighbors: true
         External_Forces: True
         External_Displacements: True
-    Output2:
-      Number of Output Steps: 200
-      Output Filename: DCBmodel_Output2
-      Output File Type: Exodus
-      Output Variables:
-        Damage: true
-      Write After Damage: true
   Physics:
     Damage Models:
       Damage:
         Damage Model: Critical Energy
-        Critical Value: 3.5714285714285716
+        #DOI: 10.1007/BF02313863
+        Critical Value: 0.27
+        Only Tension: true
     Material Models:
       Aluminium:
-        Material Model: "Correspondence Elastic"
+        #Material Model: "Correspondence Elastic"
+        Material Model: "PD Solid Elastic"
         Zero Energy Control: "Global"
         Symmetry: isotropic plane stress
         Young's Modulus: 70000.0
@@ -102,15 +98,15 @@ PeriLab:
     Pre Calculation:
       Bond Associated Deformation Gradient: false
       Bond Associated Shape Tensor: false
-      Deformation Gradient: true
+      Deformation Gradient: false
       Deformed Bond Geometry: true
-      Shape Tensor: true
+      Shape Tensor: false
   Solver:
-    Final Time: 0.006
+    Final Time: 0.06
     Initial Time: 0.0
     Material Models: true
     Damage Models: true
     Verbose: false
     Verlet:
       Numerical Damping: 5.0e-06
-      Safety Factor: 0.95
+      Safety Factor: 0.9
