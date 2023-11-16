@@ -15,11 +15,11 @@ using Test
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 1
     nn[2] = 2
-    nn[3] = 2
+    nn[3] = 3
     nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     nlist[1] = [2]
     nlist[2] = [1, 3]
-    nlist[3] = [1, 2]
+    nlist[3] = [1, 2, 4]
     inverse_nlist = find_inverse_bond_id(nlist)
 
     @test length(inverse_nlist[1]) == 1
