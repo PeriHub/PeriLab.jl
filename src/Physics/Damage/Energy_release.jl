@@ -60,11 +60,13 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   horizon = datamanager.get_field("Horizon")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
   bond_geometry = datamanager.get_field("Bond Geometry")
-  forceDensities = datamanager.get_field("Force Densities", "NP1")
   bond_forces = datamanager.get_field("Bond Forces")
   deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-  critical_Energy = damage_parameter["Critical Value"]
+
   inverse_nlist = datamanager.get_inverse_nlist()
+  # for anisotropic damage models
+  rotation::Bool, angles = datamanager.rotation_data()
+
   tension::Bool = true
   interBlockDamage::Bool = false
   bond_energy::Float64 = 0.0
