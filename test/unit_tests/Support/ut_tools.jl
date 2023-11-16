@@ -21,9 +21,6 @@ using Test
     nlist[2] = [1, 3]
     nlist[3] = [1, 2]
     inverse_nlist = find_inverse_bond_id(nlist)
-    nlist[1] = [2, 2]
-    nlist[2] = [1, 3]
-    nlist[3] = [1, 2]
 
     @test length(inverse_nlist[1]) == 1
     @test length(inverse_nlist[2]) == 2
