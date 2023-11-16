@@ -86,12 +86,7 @@ function find_inverse_bond_id(nlist::SubArray)
             end
             value = findfirst(isequal(iID), nlist[neighborID])
             if !isnothing(value)
-                try
-                    inverse_nlist[neighborID][iID] = value
-                catch
-
-                    println()
-                end
+                inverse_nlist[neighborID][iID] = value
             end
         end
     end
