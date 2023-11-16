@@ -120,20 +120,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   end
   return datamanager
 end
-"""
-bond_force[iID][jID, :] - bond_force[neighborID][??]
 
-bond_force(iID,jID,:)
-
-datamanager.get_field("Bond Force")
-
-
-
-?? glob_loc_function 
-
-bondEntrylist => zeros(length(sum(numberofneighbors)))
-bond overlap map 
-"""
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
   #synchronize_bond_vector(data_manager,synchronise_field,"Bond Forces")
 

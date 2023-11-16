@@ -159,11 +159,11 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
       @error "Deformation Gradient is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
     end
     # taken from corresponcence.cxx -> computeForcesAndStresses
-    invdeformation_gradient = inv(deformation_gradient[iID, :, :])
-    piolaStress = jacobian .* invdeformation_gradient * stressNP1[iID, :, :]
-    temp = piolaStress * inverse_shape_tensor[iID, :, :]
+    invdeformation_gradient::Matrix{Float64} = inv(deformation_gradient[iID, :, :])
+    piolaStress::Matrix{Float64} = jacobian .* invdeformation_gradient * stressNP1[iID, :, :]
+    temp::Matrix{Float64} = piolaStress * inverse_shape_tensor[iID, :, :]
 
-    bond_force[iID][:, :] = temp .* (bond_damage[iID][:] .* bond_geometry[iID][:, 1:end-1])
+    bond_force[iID][:, :] = (bond_damage[iID][:] .* bond_geometry[iID][:, 1:end-1]) * temp
 
   end
   return bond_force
