@@ -26,23 +26,28 @@ function correspondence_name()
   return "Correspondence Elastic"
 end
 """
-   compute_force(datamanager, nodes, material_parameter, time, dt)
+   compute_stresses(datamanager, nodes, material_parameter, time, dt)
 
    Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
    Parameters:
         - `datamanager::Data_manager`: Datamanager.
         - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+        - `dof::Int64`: Degrees of freedom
         - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
         - `time::Float64`: The current time.
         - `dt::Float64`: The current time step.
+        - `strainInc::SubArray`: Strain increment.
+        - `stressN::SubArray`: Stress of step N.
+        - `stressNP1::SubArray`: Stress of step N+1.
    Returns:
-        - - `datamanager::Data_manager`: Datamanager.
+        - `datamanager::Data_manager`: Datamanager.
+        - `stressNP1::SubArray`: updated stresses
    Example:
    ```julia
      ```
    """
-function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter, time::Float64, dt::Float64, strainInc, stressN, stressNP1)
+function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strainInc::SubArray, stressN::SubArray, stressNP1::SubArray)
 
   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
