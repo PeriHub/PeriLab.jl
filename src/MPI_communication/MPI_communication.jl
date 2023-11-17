@@ -178,7 +178,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
     return array
 end
 
-function split(input, row_nums, dof)
+function split_vector(input, row_nums, dof)
     result = Vector{Matrix{eltype(input)}}()
     start = firstindex(input)
     for len in row_nums
@@ -209,7 +209,7 @@ function synch_controller_bonds_to_responder_flattened(comm::MPI.Comm, overlapno
             row_nums = [length(subarr) for subarr in array[overlapnodes[rank+1][jcore]["Responder"]]]
             recv_msg = zeros(sum(row_nums))
             MPI.Recv!(recv_msg, comm; source=jcore - 1, tag=0)
-            recv_msg = split(recv_msg, row_nums, dof)
+            recv_msg = split_vector(recv_msg, row_nums, dof)
             if dof == 1
                 array[overlapnodes[rank+1][jcore]["Responder"]] = recv_msg
             else
