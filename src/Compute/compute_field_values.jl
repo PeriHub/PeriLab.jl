@@ -10,7 +10,7 @@ function get_forces_from_force_density(datamanager::Module)
     return datamanager
 end
 
-function get_partial_stresses(datamanager::Module, nodes::Union{Vector{Int64,SubArray}})
+function get_partial_stresses(datamanager::Module, nodes::Vector{Union{Int64,SubArray}})
     bond_forces = datamanager.get_field("Bond Forces")
     bond_geometry = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
