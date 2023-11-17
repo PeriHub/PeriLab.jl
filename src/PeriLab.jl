@@ -216,6 +216,7 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         if verbose
             IO.show_block_summary(solver_options, params, datamanager)
         end
+        # thats wrong here
         if solver_options["Material Models"]
             @info "Material Model init"
             for block in eachindex(block_nodes)

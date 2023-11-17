@@ -76,6 +76,16 @@ end
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(4)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 1
+    nn[2] = 2
+    nn[3] = 1
+    nn[4] = 2
+    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist[1] = [2]
+    nlist[2] = [1, 3]
+    nlist[3] = [1]
+    nlist[4] = [1, 3]
     Physics.init_damage_model_fields(test_Data_manager)
     fieldkeys = test_Data_manager.get_all_field_keys()
     @test "DamageN" in fieldkeys
@@ -106,12 +116,6 @@ end
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(4)
-    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn[1] = 1
-    nn[2] = 2
-    nn[3] = 1
-    nn[4] = 2
-
     test_Data_manager.create_bond_field("Bond Damage", Float64, 1)
     test_Data_manager = Physics.init_additive_model_fields(test_Data_manager)
     fieldkeys = test_Data_manager.get_all_field_keys()
@@ -125,8 +129,7 @@ end
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(4)
-    n = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    n .= 2
+
     options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => false, "Deformation Gradient" => false, "Bond Associated Shape Tensor" => false, "Bond Associated Deformation Gradient" => false)
     test_Data_manager = Physics.init_pre_calculation(test_Data_manager, options)
 

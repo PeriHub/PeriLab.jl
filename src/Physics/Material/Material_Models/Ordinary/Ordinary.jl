@@ -22,7 +22,7 @@ function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbor
 
         # end
         # in Peridigm the weighted volume is for some reason independend from damages
-        weighted_volume[iID] = sum(omega[iID][:] .* bond_geometry[iID][:, end] .* bond_geometry[iID][:, end] .* volume[nlist[iID][:]])
+        weighted_volume[iID] = sum(omega[iID][:] .* bond_geometry[iID][:, end] .* bond_damage[iID][:] .* bond_geometry[iID][:, end] .* volume[nlist[iID][:]])
 
     end
     return weighted_volume

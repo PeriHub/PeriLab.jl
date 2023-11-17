@@ -16,13 +16,6 @@ function control_name()
 end
 
 function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter, time::Float64, dt::Float64)
-    rotation::Bool = false
-    if "Angles" in datamanager.get_all_field_keys()
-        rotation = true
-        angles = datamanager.get_field("Angles")
-    else
-        angles = nothing
-    end
     dof = datamanager.get_dof()
     deformation_gradient = datamanager.get_field("Deformation Gradient")
     bond_force = datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
@@ -30,6 +23,7 @@ function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64
     bond_geometryNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness", Float64, "Matrix", dof)
+    rotation::Bool, angles = datamanager.rotation_data()
     CVoigt = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
     zStiff = create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff, rotation)
     bond_force = get_zero_energy_mode_force(nodes, zStiff, deformation_gradient, bond_geometry, bond_geometryNP1, bond_force)

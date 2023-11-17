@@ -60,11 +60,13 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   horizon = datamanager.get_field("Horizon")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
   bond_geometry = datamanager.get_field("Bond Geometry")
-  forceDensities = datamanager.get_field("Force Densities", "NP1")
   bond_forces = datamanager.get_field("Bond Forces")
   deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-  critical_Energy = damage_parameter["Critical Value"]
+  critical_energy = damage_parameter["Critical Value"]
   inverse_nlist = datamanager.get_inverse_nlist()
+  # for anisotropic damage models
+  rotation::Bool, angles = datamanager.rotation_data()
+
   tension::Bool = true
   interBlockDamage::Bool = false
   bond_energy::Float64 = 0.0
@@ -78,7 +80,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     interBlockDamage = damage_parameter["Interblock Damage"]
   end
   if interBlockDamage
-    inter_critical_Energy::Int64 = datamanager.get_crit_values_matrix()
+    inter_critical_energy::Int64 = datamanager.get_crit_values_matrix()
   end
 
   nneighbors = datamanager.get_field("Number of Neighbors")
@@ -105,9 +107,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
       if bond_energy < 0
         @error "Bond energy smaller zero"
       end
-      crit_energy = critical_Energy
+      crit_energy = critical_energy
       if interBlockDamage
-        crit_energy = inter_critical_Energy[block_ids[iID], block_ids[neighborID], block]
+        crit_energy = inter_critical_energy[block_ids[iID], block_ids[neighborID], block]
       end
       #if time > 0.0004
       #  println(bond_energy / get_quad_horizon(horizon[iID], dof))

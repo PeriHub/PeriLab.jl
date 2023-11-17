@@ -17,8 +17,8 @@ MPI.Init()
         @testset "ut_compute_global_values" begin
             @includetests["unit_tests/Compute/ut_compute_global_values"]
         end
-        @testset "ut_compute_force" begin
-            @includetests["unit_tests/Compute/ut_compute_force"]
+        @testset "ut_compute_field_values" begin
+            @includetests["unit_tests/Compute/ut_compute_field_values"]
         end
     end
     @testset "Support" begin
@@ -174,6 +174,9 @@ MPI.Init()
         end
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
             @includetests["fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control"]
+        end
+        @testset "test_DCB" begin
+            @includetests["fullscale_tests/test_DCB/test_DCB"]
         end
     end
 

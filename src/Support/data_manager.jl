@@ -29,6 +29,7 @@ export get_rank
 export get_num_responder
 export get_max_rank
 export init_property
+export rotation_data
 export set_block_list
 export set_crit_values_matrix
 export set_inverse_nlist
@@ -59,7 +60,7 @@ global fields::Dict{DataType,Dict{String,Any}} = Dict(Int64 => Dict(), Float64 =
 global field_array_type::Dict{String,Dict{String,Any}} = Dict()
 global field_types::Dict{String,DataType} = Dict()
 global fields_to_synch::Dict{String,Any} = Dict()
-global inverse_nlist::Vector{Dict{Int64,Int64}}
+global inverse_nlist::Vector{Dict{Int64,Int64}} = []
 global nsets::Dict{String,Vector{Int}} = Dict()
 global overlap_map::Dict{Int64,Any}
 global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => true,
@@ -604,6 +605,34 @@ function init_property()
         properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
     end
     return collect(keys(properties[1]))
+end
+"""
+    rotation()
+
+Check if the "Angles" field is present in the datamanager's field keys.
+If present, return true and retrieve the value of the "Angles" field.
+If not present, return false and nothing.
+
+# Returns
+- `Tuple{Bool, Union{Nothing, Any}}`: A tuple containing a Boolean value
+  indicating whether the "Angles" field is present (`true` or `false`), and
+  the value of the "Angles" field if present; otherwise, `nothing`.
+
+# Example
+```julia
+result, angles = rotation()
+if result
+    println("Angles field is present. Value: ", angles)
+else
+    println("Angles field is not present.")
+end
+"""
+function rotation_data()
+    rotation::Bool = false
+    if "Angles" in get_all_field_keys()
+        return true, get_field("Angles")
+    end
+    return false, nothing
 end
 
 function set_block_list(blocks::Union{SubArray,Vector{Int64}})

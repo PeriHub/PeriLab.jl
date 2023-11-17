@@ -37,6 +37,7 @@ end
     test_Data_manager.set_glob_to_loc(Dict{Int64,Int64}(3 => 1, 2 => 2, 4 => 3))
     @test test_Data_manager.get_local_nodes([1]) == []
     @test test_Data_manager.get_local_nodes([4]) == [3]
+    @test test_Data_manager.get_local_nodes([1, 4]) == [3]
 end
 
 
@@ -434,4 +435,30 @@ end
     @test physics_options["Bond Associated Deformation Gradient"]
     @test physics_options["Deformation Gradient"]
     @test physics_options["Shape Tensor"]
+end
+
+@testset "ut_get_and_set_inverse_nlist" begin
+    inv_nlist = test_Data_manager.get_inverse_nlist()
+    @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}
+    @test length(inv_nlist) == 0
+    test_Data_manager.set_inverse_nlist([Dict{Int64,Int64}(1 => 2), Dict{Int64,Int64}(1 => 2, 2 => 1)])
+    inv_nlist = test_Data_manager.get_inverse_nlist()
+    @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}
+    @test length(inv_nlist) == 2
+    @test inv_nlist[1] == Dict{Int64,Int64}(1 => 2)
+    @test inv_nlist[2] == Dict{Int64,Int64}(1 => 2, 2 => 1)
+    test_Data_manager.set_inverse_nlist([Dict{Int64,Int64}(1 => 2, 2 => 1, 9 => 2)])
+    inv_nlist = test_Data_manager.get_inverse_nlist()
+    @test length(inv_nlist) == 1
+    @test inv_nlist[1] == Dict{Int64,Int64}(1 => 2, 2 => 1, 9 => 2)
+end
+
+@testset "ut_rotation" begin
+    rotation, angles = test_Data_manager.rotation_data()
+    @test !rotation
+    @test isnothing(angles)
+    test_angles = test_Data_manager.create_constant_node_field("Angles", Float32, 3)
+    rotation, angles = test_Data_manager.rotation_data()
+    @test rotation
+    @test angles == test_angles
 end
