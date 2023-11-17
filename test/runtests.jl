@@ -17,8 +17,8 @@ MPI.Init()
         @testset "ut_compute_global_values" begin
             @includetests["unit_tests/Compute/ut_compute_global_values"]
         end
-        @testset "ut_compute_force" begin
-            @includetests["unit_tests/Compute/ut_compute_force"]
+        @testset "ut_compute_field_values" begin
+            @includetests["unit_tests/Compute/ut_compute_field_values"]
         end
     end
     @testset "Support" begin

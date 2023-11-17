@@ -4,7 +4,7 @@
 
 using Test
 include("../../../src/Support/data_manager.jl")
-include("../../../src/Compute/compute_forces.jl")
+include("../../../src/Compute/compute_field_values.jl")
 @testset "ut_get_forces_from_force_density" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_num_controller(5)
