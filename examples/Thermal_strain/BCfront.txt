@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+header: global_id
+1
+41
+81
+121
+161
+201
+241
+281
+321
+361
+401
+441
+481
+521
+561
+601
+641
+681
+721
+761
+801
+841
+881
+921
+961
+1001
+1041
+1081
+1121
+1161
+1201
+1241
+1281
+1321
+1361
+1401
+1441
+1481
+1521
+1561
