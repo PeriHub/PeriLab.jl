@@ -95,7 +95,7 @@ MPI.Init()
     @testset "MPI" begin
 
         @testset "ut_MPI" begin
-            #   @includetests["unit_tests/MPI_communication/ut_MPI"]
+            @includetests["unit_tests/MPI_communication/ut_MPI_call"]
         end
 
     end

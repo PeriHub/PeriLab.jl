@@ -2,14 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-*.vscode
-*.log
-*.cov
-*build/
-Manifest.toml
-*.e*
-*.csv
-*.json
-!**/Reference/*.e*
+include("../../helper.jl")
 
-test/tryout/
+folder_name = dirname(@__FILE__)
+run_mpi_test("ut_MPI.jl", 3, true, folder_name)

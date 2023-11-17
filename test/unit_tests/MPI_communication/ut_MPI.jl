@@ -4,64 +4,69 @@
 
 import MPI
 using Test
+using JSON3
+include("../../helper.jl")
 include("../../../src/MPI_communication/MPI_communication.jl")
+include("../../../src/Physics/Material/BondBased/Bondbased_Elastic.jl")
 MPI.Init()
 
 comm = MPI.COMM_WORLD
 rank = MPI.Comm_rank(comm)
 ncores = MPI.Comm_size(comm)
 
-@testset "find_and_set_core_value_min and max" begin
-    value = rank + 1
-    value = find_and_set_core_value_min(comm, value)
-    @test value == 1
-    value = rank + 1
-    value = find_and_set_core_value_max(comm, value)
-    @test ncores == value
-end
-@testset "ut_send_value" begin
-    if rank == 0
-        send_msg = 100
-    else
-        send_msg = nothing
-    end
-    send_msg = send_value(comm, 0, send_msg)
-    @test send_msg == 100
-    if rank == 0
-        send_msg = true
-    else
-        send_msg = nothing
-    end
-    send_msg = send_value(comm, 0, send_msg)
-    @test send_msg
-    if rank == 0
-        send_msg = 100.5
-    else
-        send_msg = nothing
-    end
-    send_msg = send_value(comm, 0, send_msg)
-    @test send_msg == 100.5
-end
-@testset "ut_send_vector_from_root_to_core_i" begin
-    distribution = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
-    if rank == 0
-        send_msg = [2, 1, 5]
-    else
-        send_msg = nothing
-    end
-    recv_msg = [0, 0, 0]
+test_dict = Dict()
 
-    recv_msg = send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
-    @test recv_msg[1] == 2
-    @test recv_msg[2] == 1
-    @test recv_msg[3] == 5
-    distribution = [[1, 2, 3], [3, 2, 1], [3, 2, 1]]
-    recv_msg = send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
-    if rank != 0
-        @test recv_msg[1] == 5
-        @test recv_msg[2] == 1
-        @test recv_msg[3] == 2
-    end
+test = test_dict["find_and_set_core_value_min and max"] = Dict("tests" => [], "line" => [])
+value = rank + 1
+value = find_and_set_core_value_min(comm, value)
+push_test!(test, (value == 1), @__FILE__, @__LINE__)
+value = rank + 1
+value = find_and_set_core_value_max(comm, value)
+push_test!(test, (ncores == value), @__FILE__, @__LINE__)
+
+
+test = test_dict["ut_send_value"] = Dict("tests" => [], "line" => [])
+if rank == 0
+    send_msg = 100
+else
+    send_msg = nothing
+end
+send_msg = send_value(comm, 0, send_msg)
+push_test!(test, (send_msg == 100), @__FILE__, @__LINE__)
+if rank == 0
+    send_msg = true
+else
+    send_msg = nothing
+end
+send_msg = send_value(comm, 0, send_msg)
+push_test!(test, (send_msg), @__FILE__, @__LINE__)
+if rank == 0
+    send_msg = 100.5
+else
+    send_msg = nothing
+end
+send_msg = send_value(comm, 0, send_msg)
+push_test!(test, (send_msg == 100.5), @__FILE__, @__LINE__)
+
+test = test_dict["ut_send_vector_from_root_to_core_i"] = Dict("tests" => [], "line" => [])
+distribution = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
+if rank == 0
+    send_msg = [2, 1, 5]
+else
+    send_msg = nothing
+end
+recv_msg = [0, 0, 0]
+
+recv_msg = send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
+push_test!(test, (recv_msg[1] == 2), @__FILE__, @__LINE__)
+push_test!(test, (recv_msg[2] == 1), @__FILE__, @__LINE__)
+push_test!(test, (recv_msg[3] == 5), @__FILE__, @__LINE__)
+distribution = [[1, 2, 3], [3, 2, 1], [3, 2, 1]]
+recv_msg = send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
+if rank != 0
+    push_test!(test, (recv_msg[1] == 5), @__FILE__, @__LINE__)
+    push_test!(test, (recv_msg[2] == 1), @__FILE__, @__LINE__)
+    push_test!(test, (recv_msg[3] == 2), @__FILE__, @__LINE__)
 end
 
 if ncores == 3
@@ -71,6 +76,7 @@ if ncores == 3
     using .Data_manager
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
     ncores = 3
+    dof = 2
     ptc = [1, 2, 2, 3]
     overlap_map = Read_Mesh.create_overlap_map(distribution, ptc, ncores)
 
@@ -90,7 +96,7 @@ if ncores == 3
         test_Data_manager.set_num_controller(1)
         test_Data_manager.set_num_responder(2)
     end
-    test_Data_manager.set_dof(2)
+    test_Data_manager.set_dof(dof)
     A = test_Data_manager.create_constant_node_field("A", Float64, 1)
     B = test_Data_manager.create_constant_node_field("B", Float64, 4)
     C = test_Data_manager.create_constant_node_field("C", Int64, 1)
@@ -146,62 +152,58 @@ if ncores == 3
     E[:] = synch_responder_to_controller(comm, overlap_map, E, 1)
 
     if rank == 0
-        @testset "synch_responder_to_controller_rank_0" begin
-            @test A[1] == Float64(-2.3 + 1.4)
-            @test A[2] == 3
-            @test A[3] == 5
-            @test B[1, 4] == Float64(13.4)
-            @test B[3, 2] == -5
-            @test C[1] == 3
-            @test C[2] == 2
-            @test C[3] == 3
-            @test D[1, 1] == 5
-            @test E[1] == false
-            @test E[2] == true
-            @test E[3] == false
-
-        end
+        test = test_dict["synch_responder_to_controller_rank_0"] = Dict("tests" => [], "line" => [])
+        push_test!(test, (A[1] == Float64(-2.3 + 1.4)), @__FILE__, @__LINE__)
+        push_test!(test, (A[2] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (A[3] == 5), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 4] == Float64(13.4)), @__FILE__, @__LINE__)
+        push_test!(test, (B[3, 2] == -5), @__FILE__, @__LINE__)
+        push_test!(test, (C[1] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (C[2] == 2), @__FILE__, @__LINE__)
+        push_test!(test, (C[3] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (D[1, 1] == 5), @__FILE__, @__LINE__)
+        push_test!(test, (E[1] == false), @__FILE__, @__LINE__)
+        push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
+        push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
     end
     if rank == 1
-        @testset "synch_responder_to_controller_rank_1" begin
-            @test A[1] == 3 + 1
-            @test A[2] == Float64(88 + 5 + 1.1)
-            @test A[3] == Float64(1.6)
-            @test B[1, 2] == Float64(10)
-            @test B[1, 4] == Float64(10.4)
-            @test B[2, 2] == Float64(-5)
-            @test C[1] == 3
-            @test C[2] == 8
-            @test C[3] == 3
-            @test D[1, 1] == 2
-            @test E[1] == true
-            @test E[2] == true
-            @test E[3] == true
-        end
+        test = test_dict["synch_responder_to_controller_rank_1"] = Dict("tests" => [], "line" => [])
+        push_test!(test, (A[1] == 3 + 1), @__FILE__, @__LINE__)
+        push_test!(test, (A[2] == Float64(88 + 5 + 1.1)), @__FILE__, @__LINE__)
+        push_test!(test, (A[3] == Float64(1.6)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 2] == Float64(10)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 4] == Float64(10.4)), @__FILE__, @__LINE__)
+        push_test!(test, (B[2, 2] == Float64(-5)), @__FILE__, @__LINE__)
+        push_test!(test, (C[1] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (C[2] == 8), @__FILE__, @__LINE__)
+        push_test!(test, (C[3] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (D[1, 1] == 2), @__FILE__, @__LINE__)
+        push_test!(test, (E[1] == true), @__FILE__, @__LINE__)
+        push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
+        push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
     end
     if rank == 2
-        @testset "synch_responder_to_controller_rank_3" begin
-            @test A[1] == Float64(1.6)
-            @test A[2] == Float64(-2.3)
-            @test A[3] == Float64(1.1)
-            @test B[1, 1] == Float64(0.0)
-            @test B[1, 2] == Float64(0.0)
-            @test B[1, 3] == Float64(0.0)
-            @test B[1, 4] == Float64(0.0)
-            @test B[2, 3] == Float64(0.0)
-            @test B[2, 4] == Float64(3.0)
+        test = test_dict["synch_responder_to_controller_rank_2"] = Dict("tests" => [], "line" => [])
+        push_test!(test, (A[1] == Float64(1.6)), @__FILE__, @__LINE__)
+        push_test!(test, (A[2] == Float64(-2.3)), @__FILE__, @__LINE__)
+        push_test!(test, (A[3] == Float64(1.1)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 1] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 2] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 3] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 4] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[2, 3] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[2, 4] == Float64(3.0)), @__FILE__, @__LINE__)
 
-            @test C[1] == 4
-            @test C[2] == 2
-            @test C[3] == 3
+        push_test!(test, (C[1] == 4), @__FILE__, @__LINE__)
+        push_test!(test, (C[2] == 2), @__FILE__, @__LINE__)
+        push_test!(test, (C[3] == 3), @__FILE__, @__LINE__)
 
-            @test D[1, 4] == 3
-            @test D[2, 1] == 3
+        push_test!(test, (D[1, 4] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (D[2, 1] == 3), @__FILE__, @__LINE__)
 
-            @test E[1] == false
-            @test E[2] == false
-            @test E[3] == false
-        end
+        push_test!(test, (E[1] == false), @__FILE__, @__LINE__)
+        push_test!(test, (E[2] == false), @__FILE__, @__LINE__)
+        push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
     end
     MPI.Barrier(comm)
 
@@ -211,69 +213,101 @@ if ncores == 3
     D[:] = synch_controller_to_responder(comm, overlap_map, D, 5)
     E[:] = synch_controller_to_responder(comm, overlap_map, E, 1)
     if rank == 0
-        @testset "synch_controller_to_responder_rank_0" begin
-            @test A[1] == Float64(-0.9)
-            @test A[2] == Float64(4)
-            @test A[3] == Float64(94.1)
-            @test B[1, 4] == Float64(13.4)
-            @test B[2, 2] == Float64(10)
-            @test B[2, 4] == Float64(10.4)
-            @test B[3, 2] == Float64(-5.0)
-            @test C[1] == 3
-            @test C[2] == 3
-            @test C[3] == 8
-            @test D[1, 1] == 5
-            @test D[2, 1] == 2
-            @test E[1] == false
-            @test E[2] == true
-            @test E[3] == true
-
-        end
+        test = test_dict["synch_controller_to_responder_rank_0"] = Dict("tests" => [], "line" => [])
+        push_test!(test, isapprox(A[1], Float64(-0.9)), @__FILE__, @__LINE__)
+        push_test!(test, (A[2] == Float64(4)), @__FILE__, @__LINE__)
+        push_test!(test, (A[3] == Float64(94.1)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 4] == Float64(13.4)), @__FILE__, @__LINE__)
+        push_test!(test, (B[2, 2] == Float64(10)), @__FILE__, @__LINE__)
+        push_test!(test, (B[2, 4] == Float64(10.4)), @__FILE__, @__LINE__)
+        push_test!(test, (B[3, 2] == Float64(-5.0)), @__FILE__, @__LINE__)
+        push_test!(test, (C[1] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (C[2] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (C[3] == 8), @__FILE__, @__LINE__)
+        push_test!(test, (D[1, 1] == 5), @__FILE__, @__LINE__)
+        push_test!(test, (D[2, 1] == 2), @__FILE__, @__LINE__)
+        push_test!(test, (E[1] == false), @__FILE__, @__LINE__)
+        push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
+        push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
     end
     if rank == 1
-        @testset "synch_controller_to_responder_rank_1" begin
-            @test A[1] == Float64(4.0)
-            @test A[2] == Float64(94.1)
-            @test A[3] == Float64(1.6)
-            @test B[1, 2] == Float64(10)
-            @test B[1, 4] == Float64(10.4)
-            @test B[2, 2] == Float64(-5)
-            @test C[1] == 3
-            @test C[2] == 8
-            @test C[3] == 4
-            @test D[1, 1] == 2
-            @test D[3, 3] == 0
-            @test D[3, 4] == 3
-            @test D[3, 5] == 0
-            @test E[1] == true
-            @test E[2] == true
-            @test E[3] == false
-        end
+        test = test_dict["synch_controller_to_responder_rank_1"] = Dict("tests" => [], "line" => [])
+        push_test!(test, (A[1] == Float64(4.0)), @__FILE__, @__LINE__)
+        push_test!(test, (A[2] == Float64(94.1)), @__FILE__, @__LINE__)
+        push_test!(test, (A[3] == Float64(1.6)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 2] == Float64(10)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 4] == Float64(10.4)), @__FILE__, @__LINE__)
+        push_test!(test, (B[2, 2] == Float64(-5)), @__FILE__, @__LINE__)
+        push_test!(test, (C[1] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (C[2] == 8), @__FILE__, @__LINE__)
+        push_test!(test, (C[3] == 4), @__FILE__, @__LINE__)
+        push_test!(test, (D[1, 1] == 2), @__FILE__, @__LINE__)
+        push_test!(test, (D[3, 3] == 0), @__FILE__, @__LINE__)
+        push_test!(test, (D[3, 4] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (D[3, 5] == 0), @__FILE__, @__LINE__)
+        push_test!(test, (E[1] == true), @__FILE__, @__LINE__)
+        push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
+        push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
     end
     if rank == 2
-        @testset "synch_controller_to_responder_rank_3" begin
-            @test A[1] == Float64(1.6)
-            @test A[2] == Float64(-0.9)
-            @test A[3] == Float64(94.1)
-            @test B[1, 1] == Float64(0.0)
-            @test B[1, 2] == Float64(0.0)
-            @test B[1, 3] == Float64(0.0)
-            @test B[1, 4] == Float64(0.0)
-            @test B[2, 3] == Float64(0.0)
-            @test B[2, 4] == Float64(13.4)
-            @test B[3, 2] == Float64(-5.0)
-            @test C[1] == 4
-            @test C[2] == 3
-            @test C[3] == 8
+        test = test_dict["synch_controller_to_responder_rank_2"] = Dict("tests" => [], "line" => [])
+        push_test!(test, (A[1] == Float64(1.6)), @__FILE__, @__LINE__)
+        push_test!(test, isapprox(A[2], Float64(-0.9)), @__FILE__, @__LINE__)
+        push_test!(test, (A[3] == Float64(94.1)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 1] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 2] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 3] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[1, 4] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[2, 3] == Float64(0.0)), @__FILE__, @__LINE__)
+        push_test!(test, (B[2, 4] == Float64(13.4)), @__FILE__, @__LINE__)
+        push_test!(test, (B[3, 2] == Float64(-5.0)), @__FILE__, @__LINE__)
+        push_test!(test, (C[1] == 4), @__FILE__, @__LINE__)
+        push_test!(test, (C[2] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (C[3] == 8), @__FILE__, @__LINE__)
 
-            @test D[1, 4] == 3
-            @test D[2, 1] == 5
+        push_test!(test, (D[1, 4] == 3), @__FILE__, @__LINE__)
+        push_test!(test, (D[2, 1] == 5), @__FILE__, @__LINE__)
 
-            @test E[1] == false
-            @test E[2] == false
-            @test E[3] == true
-        end
+        push_test!(test, (E[1] == false), @__FILE__, @__LINE__)
+        push_test!(test, (E[2] == false), @__FILE__, @__LINE__)
+        push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
+    end
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn .= 2
+    h = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
+    nodes = test_Data_manager.get_nnodes()
+    h .= 5.0
+    bf = test_Data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
+
+    bdN, bdNP1 = test_Data_manager.create_bond_field("Bond Damage", Float64, 1)
+    dbN, dbNP1 = test_Data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
+    bg = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
+    for iID in 1:nodes
+        bdNP1[iID][:] .= 1
+        bg[iID][:, end] .= 1
+        dbNP1[iID][:, end] .= 1 + (-1)^iID * 0.1
+        dbNP1[iID][:, 1:dof] .= 1
+    end
+    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0), 0.0, 0.0)
+
+    bf = test_Data_manager.get_field("Bond Forces")
+
+    synch_controller_bonds_to_responder(comm, overlap_map, bf, dof)
+
+    if rank == 0
+        test = test_dict["synch_controller_bonds_to_responder_rank_0"] = Dict("tests" => [], "line" => [])
+        # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
     end
 
+    synch_controller_bonds_to_responder_flattened(comm, overlap_map, bf, dof)
+    if rank == 0
+        test = test_dict["synch_controller_bonds_to_responder_flattened_rank_0"] = Dict("tests" => [], "line" => [])
+        # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
+    end
 end
+
+open("test_results_$rank.json", "w") do f
+    JSON3.pretty(f, JSON3.write(test_dict))
+end
+
 MPI.Finalize()
