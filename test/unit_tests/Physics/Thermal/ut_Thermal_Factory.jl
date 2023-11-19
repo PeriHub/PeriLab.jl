@@ -32,21 +32,21 @@ include("../../../../src/Support/data_manager.jl")
 
     test_Data_manager = Thermal.distribute_heat_flows(test_Data_manager, nodes)
 
-    @test heat_flowNP1[1] == 0
-    @test heat_flowNP1[2] == 0
+    @test heat_flowNP1[1] == -1.0
+    @test heat_flowNP1[2] == -1.0
     heat_flowNP1[1:2] .= 0
     bond_heat_flow[1][1] = 1
     bond_heat_flow[2][1] = -1
 
     test_Data_manager = Thermal.distribute_heat_flows(test_Data_manager, nodes)
 
-    @test heat_flowNP1[1] == -2
-    @test heat_flowNP1[2] == 2
+    @test heat_flowNP1[1] == -1
+    @test heat_flowNP1[2] == 1
 
     volume[2] = 0
 
     test_Data_manager = Thermal.distribute_heat_flows(test_Data_manager, nodes)
 
-    @test heat_flowNP1[1] == -2
-    @test heat_flowNP1[2] == 4
+    @test heat_flowNP1[1] == -1
+    @test heat_flowNP1[2] == 2
 end
