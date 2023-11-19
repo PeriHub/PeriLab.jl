@@ -40,7 +40,7 @@ function distribute_heat_flows(datamanager::Module, nodes::Union{SubArray,Vector
         for (jID, neighborID) in enumerate(nlist[iID])
             # not added to neigbhors; tb checked
             heat_flow[iID] -= bond_heat_flow[iID][jID] * volume[neighborID]
-            heat_flow[neighborID] += bond_heat_flow[iID][jID] * volume[iID]
+            # heat_flow[neighborID] += bond_heat_flow[iID][jID] * volume[iID]
         end
     end
     return datamanager
