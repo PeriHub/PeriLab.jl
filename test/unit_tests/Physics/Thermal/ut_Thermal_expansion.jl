@@ -4,7 +4,7 @@
 
 using Test
 
-include("../../../../src/Physics/Thermal/Thermal_expansion.jl")
+include("../../../../src/Physics/Thermal/thermal_expansion.jl")
 using .Thermal_expansion
 include("../../../../src/Support/data_manager.jl")
 
