@@ -69,11 +69,11 @@ end
 @testset "ut_init_write_result_and_write_results" begin
     result_files, outputs = IO.init_write_results(params, "", test_Data_manager, 2)
     @test length(result_files) == 2
-    @test length(result_files[1].nodal_var_name_dict) == 6
-    entries = collect(keys(result_files[1].nodal_var_name_dict))
+    @test length(result_files[1]["file"].nodal_var_name_dict) == 6
+    entries = collect(keys(result_files[1]["file"].nodal_var_name_dict))
     @test sort(entries) == ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
-    @test length(result_files[2].nodal_var_name_dict) == 8
-    entries = collect(keys(result_files[2].nodal_var_name_dict))
+    @test length(result_files[2]["file"].nodal_var_name_dict) == 8
+    entries = collect(keys(result_files[2]["file"].nodal_var_name_dict))
     @test sort(entries) == ["Displacementsx", "Displacementsy", "Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
 
     coords = vcat(transpose(coordinates))
@@ -106,23 +106,23 @@ end
     IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
     IO.write_results(result_files, 1.5, outputs, test_Data_manager)
 
-    @test read_time(result_files[1], 2) == 1.5
-    @test read_time(result_files[2], 2) == 1.5
+    @test read_time(result_files[1]["file"], 2) == 1.5
+    @test read_time(result_files[2]["file"], 2) == 1.5
     IO.write_results(result_files, 1.6, outputs, test_Data_manager)
 
-    @test read_time(result_files[1], 3) == 1.6
-    @test read_time(result_files[2], 3) == 1.6
+    @test read_time(result_files[1]["file"], 3) == 1.6
+    @test read_time(result_files[2]["file"], 3) == 1.6
     IO.write_results([], 1.6, outputs, test_Data_manager)
     testBool = false
     try
-        read_time(result_files[1], 4) == 1.6
+        read_time(result_files[1]["file"], 4) == 1.6
     catch
         testBool = true
     end
     @test testBool
     testBool = false
     try
-        read_time(result_files[2], 4) == 1.6
+        read_time(result_files[2]["file"], 4) == 1.6
     catch
         testBool = true
     end

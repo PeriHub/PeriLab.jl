@@ -109,35 +109,35 @@ outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "ForcesNP1", "
 computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "result_id" => 1, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "result_id" => 2, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Nodeset_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
 
 exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
-exo = Write_Exodus_Results.init_results_in_exodus(exo, outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets, [1, 2, 3, 4, 5])
+exo["file"] = Write_Exodus_Results.init_results_in_exodus(exo["file"], outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets, [1, 2, 3, 4, 5])
 result_files = []
 push!(result_files, exo)
-result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 2, 2.2)
-result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 3, 3.7)
-result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 4, 4.7)
-result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 5, 5.7)
-result_files[1] = Write_Exodus_Results.write_step_and_time(result_files[1], 6, 6.7)
+result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 2, 2.2)
+result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 3, 3.7)
+result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 4, 4.7)
+result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 5, 5.7)
+result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 6, 6.7)
 
 @testset "ut_init_results_in_exodus" begin
-    @test exo.init.num_dim == dof
-    @test length(exo.nodal_var_name_dict) == 7
-    entries = collect(keys(exo.nodal_var_name_dict))
+    @test exo["file"].init.num_dim == dof
+    @test length(exo["file"].nodal_var_name_dict) == 7
+    entries = collect(keys(exo["file"].nodal_var_name_dict))
     ref = collect(keys(outputs["Fields"]))
     @test sort(entries) == deleteat!(sort(ref), 2:3)
-    exo_coords = read_coordinates(exo)
-    exo_nsets = read_sets(exo, NodeSet)
+    exo_coords = read_coordinates(exo["file"])
+    exo_nsets = read_sets(exo["file"], NodeSet)
     @test length(exo_nsets) == length(nsets)
     @test coords == exo_coords
     @warn "Info test deactivated"
-    # @test ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)] == read_info(exo)
-    @test read_number_of_time_steps(exo) == 6
-    @test read_time(exo, 2) == 2.2
-    @test read_time(exo, 3) == 3.7
-    @test read_time(exo, 4) == 4.7
-    @test read_time(exo, 5) == 5.7
-    @test read_time(exo, 6) == 6.7
-    @test read_name(exo, Block, 1) == "Block_1"
-    @test read_name(exo, Block, 2) == "Block_2"
+    # @test ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)] == read_info(exo["file"])
+    @test read_number_of_time_steps(exo["file"]) == 6
+    @test read_time(exo["file"], 2) == 2.2
+    @test read_time(exo["file"], 3) == 3.7
+    @test read_time(exo["file"], 4) == 4.7
+    @test read_time(exo["file"], 5) == 5.7
+    @test read_time(exo["file"], 6) == 6.7
+    @test read_name(exo["file"], Block, 1) == "Block_1"
+    @test read_name(exo["file"], Block, 2) == "Block_2"
 end
 
 
@@ -154,11 +154,11 @@ disp[4] = -1.8
 disp[5] = 0
 
 nodal_outputs = Dict(key => value for (key, value) in outputs["Fields"] if (!value["global_var"]))
-exo = Write_Exodus_Results.write_nodal_results_in_exodus(exo, 2, nodal_outputs, test_Data_manager)
+exo["file"] = Write_Exodus_Results.write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs, test_Data_manager)
 
-test_disp_step_zero = read_values(exo, NodalVariable, 1, 1, "Displacements")
+test_disp_step_zero = read_values(exo["file"], NodalVariable, 1, 1, "Displacements")
 
-test_disp_step_one = read_values(exo, NodalVariable, 2, 1, 1)
+test_disp_step_one = read_values(exo["file"], NodalVariable, 2, 1, 1)
 @testset "ut_write_results_in_exodus" begin
     @test isapprox(test_disp_step_zero .+ 1, ones(5))
     for id in eachindex(test_disp_step_one)
@@ -169,34 +169,34 @@ test_disp_step_one = read_values(exo, NodalVariable, 2, 1, 1)
         end
     end
 
-    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesxx")
+    ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesxx")
     for id in 1:4
         @test ftest[id] == 0
     end
     @test ftest[5] / 3.3 - 1 < 1e-8
-    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesxy")
+    ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesxy")
     for id in 1:4
         @test ftest[id] == 0
     end
     @test ftest[5] / 3.3 - 1 < 1e-8
-    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesxz")
+    ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesxz")
     for id in 1:4
         @test ftest[id] == 0
     end
     @test ftest[5] / 3.3 - 1 < 1e-8
-    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesyx")
-    for id in 1:4
-        @test ftest[id] == 0
-    end
-    @test ftest[5] / 3.3 - 1 < 1e-8
-
-    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesyy")
+    ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesyx")
     for id in 1:4
         @test ftest[id] == 0
     end
     @test ftest[5] / 3.3 - 1 < 1e-8
 
-    ftest = read_values(exo, NodalVariable, 2, 1, "Forcesyz")
+    ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesyy")
+    for id in 1:4
+        @test ftest[id] == 0
+    end
+    @test ftest[5] / 3.3 - 1 < 1e-8
+
+    ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesyz")
     @test ftest[1] / 2.3 - 1 < 1e-8
     @test ftest[2] / 2.3 - 1 < 1e-8
     @test ftest[3] / 2.3 - 1 < 1e-8
@@ -207,15 +207,15 @@ end
 
 csvfilename = "./tmp/" * "test_2.csv"
 csv_file = Write_CSV_Results.create_result_file(csvfilename, computes)
-exo = Write_Exodus_Results.write_global_results_in_exodus(exo, 2, computes["Fields"], [0.1, 0.2])
+exo["file"] = Write_Exodus_Results.write_global_results_in_exodus(exo["file"], 2, computes["Fields"], [0.1, 0.2])
 
 @testset "ut_write_global_results_in_exodus" begin
 
-    global_vars = read_names(exo, GlobalVariable)
+    global_vars = read_names(exo["file"], GlobalVariable)
     @test global_vars[1] == "External_Displacements"
     @test global_vars[2] == "External_Forces"
 
-    ftest = read_values(exo, GlobalVariable, 2)
+    ftest = read_values(exo["file"], GlobalVariable, 2)
     @test ftest[1] == 0.2
 
 end
@@ -223,7 +223,7 @@ end
 @testset "ut_merge_exodus_file" begin
     merged = true
     try
-        Write_Exodus_Results.merge_exodus_file(exo.file_name)
+        Write_Exodus_Results.merge_exodus_file(exo["file_name"])
     catch
         merged = false
     end
@@ -241,6 +241,6 @@ end
 
 
 close(exo)
-close(csv_file["file"])
+close(csv_file)
 rm(filename)
 rm(csvfilename)
