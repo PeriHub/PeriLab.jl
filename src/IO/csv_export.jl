@@ -20,7 +20,7 @@ function create_result_file(filename::String, outputs::Dict)
     end
     write(csv_file, header * "\n")
 
-    return Dict("filename" => filename, "file" => csv_file)
+    return Dict("filename" => filename, "file" => csv_file, "type" => "CSV")
 end
 
 function write_global_results_in_csv(csv_file::Dict, global_values)

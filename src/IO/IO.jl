@@ -27,10 +27,10 @@ export merge_exodus_files
 export show_block_summary
 output_frequency = []
 global_values = []
-function merge_exodus_files(exos::Vector{Any}, filedirectory::String)
-    for exo in exos
-        if exo isa Exodus.ExodusDatabase
-            filename = exo.file_name
+function merge_exodus_files(result_files::Vector{Any}, filedirectory::String)
+    for result_file in result_files
+        if result_file["type"] == "Exodus"
+            filename = result_file["filename"]
             if ".0" == filename[end-1:end]
                 @info "Merge output file " * filename
                 Write_Exodus_Results.merge_exodus_file(filename)
@@ -43,18 +43,15 @@ function merge_exodus_files(exos::Vector{Any}, filedirectory::String)
     end
 end
 
-function open_result_file(result_file::Exodus.ExodusDatabase)
-    result_file = ExodusDatabase(result_file.file_name, "rw")
+function open_result_file(result_file::Dict)
+    if result_file["type"] == "Exodus"
+        result_file["file"] = ExodusDatabase(result_file["file_name"], "rw")
+    elseif result_file["type"] == "CSV"
+        result_file["file"] = open(result_file["filename"], "a")
+    end
 end
 
-function open_result_file(result_file::IOStream)
-    result_file["file"] = open(result_file["filename"], "a")
-end
-
-function close_result_file(result_file::Exodus.ExodusDatabase)
-    close(result_file)
-end
-function close_result_file(result_file::IOStream)
+function close_result_file(result_file::Dict)
     if haskey(result_file, "file")
         close(result_file["file"])
     end
@@ -78,17 +75,19 @@ function close_result_files(result_files::Vector{Any}, outputs::Dict{Int64,Dict{
     end
 end
 
-function delete_files(exos)
-    for exo in exos
-        @info "Delete output file " * exo.file_name
-        rm(exo.file_name)
+function delete_files(result_files)
+    for result_file in result_files
+        if result_file["type"] == "Exodus"
+            @info "Delete output file " * result_file["file_name"]
+            rm(result_file["file_name"])
+        end
     end
 end
 
-function get_file_size(exos)
+function get_file_size(result_files)
     total_file_size = 0
-    for exo in exos
-        file_stat = stat(exo.file_name)  # Get file information
+    for result_file in result_files
+        file_stat = stat(result_file["file_name"])  # Get file information
         total_file_size += file_stat.size  # Add the file size to the total
     end
     return total_file_size
@@ -221,7 +220,7 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
             if rank == 0
                 push!(result_files, Write_CSV_Results.create_result_file(filename, outputs[id]))
             else
-                push!(result_files, Dict("filename" => filename))
+                push!(result_files, Dict("filename" => filename, "file" => nothing, "type" => "CSV"))
             end
             outputs[id]["Output File Type"] = "CSV"
         end
@@ -231,8 +230,8 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
     output_frequencies = get_output_frequency(params, nsteps)
     for id in eachindex(result_files)
 
-        if result_files[id] isa Exodus.ExodusDatabase{Int32,Int32,Int32,Float64}
-            result_files[id] = Write_Exodus_Results.init_results_in_exodus(result_files[id], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids)
+        if result_files[id]["type"] == "Exodus"
+            result_files[id]["file"] = Write_Exodus_Results.init_results_in_exodus(result_files[id]["file"], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids)
         end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 
@@ -264,19 +263,19 @@ function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, 
                     open_result_file(result_files[id])
                 end
             end
-            if output_type == "Exodus" && length(nodal_outputs) > 0 && result_files[id] isa Exodus.ExodusDatabase
-                result_files[id] = Write_Exodus_Results.write_step_and_time(result_files[id], output_frequency[id]["Step"], time)
-                result_files[id] = Write_Exodus_Results.write_nodal_results_in_exodus(result_files[id], output_frequency[id]["Step"], nodal_outputs, datamanager)
+            if output_type == "Exodus" && length(nodal_outputs) > 0 && result_files[id]["type"] == "Exodus"
+                result_files[id]["file"] = Write_Exodus_Results.write_step_and_time(result_files[id]["file"], output_frequency[id]["Step"], time)
+                result_files[id]["file"] = Write_Exodus_Results.write_nodal_results_in_exodus(result_files[id]["file"], output_frequency[id]["Step"], nodal_outputs, datamanager)
             end
             @debug length(global_outputs)
             if length(global_outputs) > 0
                 global_values = get_global_values(global_outputs, datamanager)
                 if output_type == "Exodus"
-                    result_files[id] = Write_Exodus_Results.write_global_results_in_exodus(result_files[id], output_frequency[id]["Step"], global_outputs, global_values)
+                    result_files[id]["file"] = Write_Exodus_Results.write_global_results_in_exodus(result_files[id]["file"], output_frequency[id]["Step"], global_outputs, global_values)
                 end
                 if datamanager.get_rank() == 0
                     if output_type == "CSV"
-                        Write_Exodus_Results.write_global_results_in_csv(result_files[id], global_values)
+                        Write_Exodus_Results.write_global_results_in_csv(result_files[id]["file"], global_values)
                     end
                 end
             end
