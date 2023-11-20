@@ -62,23 +62,27 @@ function calculate_block(datamanager::Module, fieldKey::String, calculation_type
     if calculation_type == "Sum"
         if length(blockNodes) == 0
             value = fill(field_type(0), length(field[1, :]))
+        else
+            value = global_value_sum(field, blockNodes)
         end
-        value = global_value_sum(field, blockNodes)
     elseif calculation_type == "Maximum"
         if length(blockNodes) == 0
             value = fill(typemin(field_type), length(field[1, :]))
+        else
+            value = global_value_max(field, blockNodes)
         end
-        value = global_value_max(field, blockNodes)
     elseif calculation_type == "Minimum"
         if length(blockNodes) == 0
             value = fill(typemax(field_type), length(field[1, :]))
+        else
+            value = global_value_min(field, blockNodes)
         end
-        value = global_value_min(field, blockNodes)
     elseif calculation_type == "Average"
         if length(blockNodes) == 0
             value = fill(field_type(0), length(field[1, :]))
+        else
+            value = global_value_avg(field, blockNodes)
         end
-        value = global_value_avg(field, blockNodes)
     else
         @warn "Unknown calculation type $calculation_type"
         return nothing
