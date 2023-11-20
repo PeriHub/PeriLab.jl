@@ -82,7 +82,7 @@ end
 function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
 
     if !haskey(synch_fields, synch_field)
-        @warn "Field $synch_field does not exists"
+        @warn "Field $synch_field does not exist in synch_field dictionary"
         return nothing
     end
     if direction == "download_from_cores"
@@ -95,7 +95,11 @@ function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, syn
     if direction == "upload_to_cores"
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field)
-            return synch_controller_to_responder(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+            if occursin("Bond", synch_field)
+                return synch_controller_bonds_to_responder(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+            else
+                return synch_controller_to_responder(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+            end
         end
         return nothing
     end
