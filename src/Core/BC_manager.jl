@@ -112,7 +112,7 @@ function eval_bc(field_values::Union{SubArray,Vector{Float64},Vector{Int64}}, bc
     bc_value = Meta.parse(bc)
 
     if length(coordinates) == 0
-        @warn "Ignoring boundary condition $name.\n No nodes found, check Input Deck and or Node Sets."
+        # @warn "Ignoring boundary condition $name.\n No nodes found, check Input Deck and or Node Sets."
         return field_values
     end
 
