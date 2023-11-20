@@ -80,7 +80,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     interBlockDamage = damage_parameter["Interblock Damage"]
   end
   if interBlockDamage
-    inter_critical_energy::Int64 = datamanager.get_crit_values_matrix()
+    inter_critical_energy::Array{Float64,3} = datamanager.get_crit_values_matrix()
   end
 
   nneighbors = datamanager.get_field("Number of Neighbors")
@@ -100,8 +100,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         end
       end
 
-      projected_force = dot(bond_forces[iID][jID, :] -
-                            bond_forces[neighborID][inverse_nlist[neighborID][iID], :], relative_displacement_vector) / (norm_displacement * norm_displacement) .* relative_displacement_vector
+      projected_force = dot(bond_forces[iID][jID, :] - bond_forces[neighborID][inverse_nlist[neighborID][iID], :], relative_displacement_vector) / (norm_displacement * norm_displacement) .* relative_displacement_vector
 
       bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement_vector))
       if bond_energy < 0
@@ -124,7 +123,8 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
-  #synchronize_bond_vector(data_manager,synchronise_field,"Bond Forces")
+
+  synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Bond Forces", "upload_to_cores")
 
   return datamanager
 end
