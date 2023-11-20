@@ -64,7 +64,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     if haskey(damage_parameter, "Interblock Damage")
         interBlockDamage = damage_parameter["Interblock Damage"]
         if interBlockDamage
-            inter_critical_stretch = datamanager.get_crit_values_matrix()
+            inter_critical_stretch::Array{Float64,3} = datamanager.get_crit_values_matrix()
         end
     end
     for iID in nodes
