@@ -85,7 +85,8 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
   nneighbors = datamanager.get_field("Number of Neighbors")
   norm_displacement::Float64 = 0
-  relative_displacement_vector = zeros(Float64, dof)
+  neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
+  relative_displacement_vector::Vector{Float64} = zeros(Float64, dof)
 
   for iID in nodes
     for (jID, neighborID) in enumerate(nlist[iID])
@@ -100,7 +101,14 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         end
       end
 
-      projected_force = dot(bond_forces[iID][jID, :] - bond_forces[neighborID][inverse_nlist[neighborID][iID], :], relative_displacement_vector) / (norm_displacement * norm_displacement) .* relative_displacement_vector
+      # check if the bond also exist at other node, due to different horizons
+      if haskey(inverse_nlist[neighborID], iID)
+        neighbor_bond_force = bond_forces[neighborID][inverse_nlist[neighborID][iID], :]
+      else
+        neighbor_bond_force = zeros(Float64, dof)
+      end
+
+      projected_force = dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement_vector) / (norm_displacement * norm_displacement) .* relative_displacement_vector
 
       bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement_vector))
       if bond_energy < 0
