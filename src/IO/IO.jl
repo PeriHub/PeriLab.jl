@@ -45,7 +45,7 @@ end
 
 function open_result_file(result_file::Dict)
     if result_file["type"] == "Exodus"
-        result_file["file"] = ExodusDatabase(result_file["file_name"], "rw")
+        result_file["file"] = ExodusDatabase(result_file["filename"], "rw")
     elseif result_file["type"] == "CSV"
         result_file["file"] = open(result_file["filename"], "a")
     end

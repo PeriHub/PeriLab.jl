@@ -23,13 +23,13 @@ function create_result_file(filename::String, outputs::Dict)
     return Dict("filename" => filename, "file" => csv_file, "type" => "CSV")
 end
 
-function write_global_results_in_csv(csv_file::Dict, global_values)
+function write_global_results_in_csv(csv_file::IOStream, global_values)
     value_string = ""
     for value in global_values
         value_string = string(value_string, value, ",")
     end
     value_string = value_string * "\n"
-    write(csv_file["file"], value_string)
+    write(csv_file, value_string)
 
 end
 end
