@@ -101,7 +101,6 @@ end
 function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
     send_msg = 0
     lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nnodes = datamanager.get_nnodes() # controller nodes
     rank = MPI.Comm_rank(comm)
     if rank == 0
         send_msg = get_number_of_neighbornodes(nlist)
@@ -109,7 +108,7 @@ function distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribu
     lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
     nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 
-    nlistCore[:] = nlist[distribution[rank+1][1:nnodes]]
+    nlistCore[:] = nlist[distribution[rank+1][:]]
     nlistCore[:] = get_local_neighbors(datamanager.get_local_nodes, nlistCore)
     nlist = 0
     return datamanager
