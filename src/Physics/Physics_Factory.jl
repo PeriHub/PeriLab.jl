@@ -48,8 +48,6 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
                 @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, active_nodes, datamanager.get_properties(block, "Damage Model"), block, time, dt)
             end
         end
-        force_densities = datamanager.get_field("Force Densities", "NP1")
-        force_densities[:, :] .= 0.0
     end
     update_list = datamanager.get_field("Update List")
     #update_list .= true
@@ -64,7 +62,6 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
                 @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, update_nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
             end
         end
-
         if options["Material Models"]
             if datamanager.check_property(block, "Material Model")
                 @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
@@ -81,6 +78,7 @@ function compute_damage_pre_calculation(datamanager::Module, options::Dict, node
     if options["Thermal Models"]
         datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
     end
+
     if options["Material Models"]
         datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
     end
