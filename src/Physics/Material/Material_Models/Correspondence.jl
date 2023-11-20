@@ -162,7 +162,7 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
 end
 
 
-function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::SubArray, angles::SubArray, back::Bool)
+function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
   for iID in nodes
     matrix[iID, :, :] = rotate_second_order_tensor(angles[iID, :], matrix[iID, :, :], dof, back)
   end
