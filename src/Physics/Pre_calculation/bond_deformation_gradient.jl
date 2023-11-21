@@ -7,7 +7,7 @@ module Bond_Deformation_Gradient
 export compute
 
 function compute(datamanager, nodes)
-
+    @warn "Bond_Deformation_Gradient not supported yet."
     return datamanager
 end
 
