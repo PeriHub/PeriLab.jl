@@ -81,10 +81,8 @@ function find_inverse_bond_id(nlist::SubArray)
     inverse_nlist = [Dict{Int64,Int64}() for _ in 1:length(nlist)]
     for iID in eachindex(nlist)
         for (jID, neighborID) in enumerate(nlist[iID])
-            if neighborID > length(nlist)
-                continue
-            end
             value = findfirst(isequal(iID), nlist[neighborID])
+            # Check if neighbor ID is found in nlist, due to different horizons
             if !isnothing(value)
                 inverse_nlist[neighborID][iID] = value
             end

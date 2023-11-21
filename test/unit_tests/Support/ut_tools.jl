@@ -19,7 +19,7 @@ using Test
     nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     nlist[1] = [2]
     nlist[2] = [1, 3]
-    nlist[3] = [1, 2, 4]
+    nlist[3] = [1, 2]
     inverse_nlist = find_inverse_bond_id(nlist)
 
     @test length(inverse_nlist[1]) == 1

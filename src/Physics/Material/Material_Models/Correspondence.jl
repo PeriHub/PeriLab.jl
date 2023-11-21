@@ -35,13 +35,18 @@ function init_material_model(datamanager::Module)
   # global angles
 
   dof = datamanager.get_dof()
+  nnodes = datamanager.get_nnodes()
   datamanager.create_node_field("Strain", Float64, "Matrix", dof)
   datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
 
-  # if "Angles" in datamanager.get_all_field_keys()
-  #   rotation = true
-  #   angles = datamanager.get_field("Angles")
-  # end
+  rotation::Bool, angles = datamanager.rotation_data()
+  if rotation
+    orientations = datamanager.create_constant_node_field("Orientations", Float64, "Vector", dof)
+    for iID in 1:nnodes
+      rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
+      orientations[iID, :] = diag(rotation_tensor[1:dof, 1:dof])
+    end
+  end
 
   return datamanager
 end
@@ -162,7 +167,7 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
 end
 
 
-function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::SubArray, angles::SubArray, back::Bool)
+function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
   for iID in nodes
     matrix[iID, :, :] = rotate_second_order_tensor(angles[iID, :], matrix[iID, :, :], dof, back)
   end

@@ -356,6 +356,7 @@ function get_field_type(name::String)
 end
 
 function get_inverse_nlist()
+    global inverse_nlist
     return inverse_nlist
 end
 
