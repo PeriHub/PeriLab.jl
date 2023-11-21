@@ -79,17 +79,15 @@ end
     thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation[iID][jID, :] .+ 1, undeformed_bond[iID][jID, 1:dof] .+ 1)
+            @test thermal_bond_deformation[iID][jID, :] == .-undeformed_bond[iID][jID, 1:dof]
         end
     end
-
-
 
     temperature .= 2
     thermal_bond_deformation_test = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation[iID][jID, :] .+ 1, undeformed_bond[iID][jID, 1:dof] .* 2 .+ 1)
+            @test isapprox(thermal_bond_deformation[iID][jID, :] .+ 1, .-undeformed_bond[iID][jID, 1:dof] .* 2 .+ 1)
         end
     end
 
@@ -101,8 +99,8 @@ end
     thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation[iID][jID, 1] + 1, undeformed_bond[iID][jID, 1] * alpha[1, 1] * temperature[iID] + 1)
-            @test isapprox(thermal_bond_deformation[iID][jID, 2] + 1, undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID] + 1)
+            @test isapprox(thermal_bond_deformation[iID][jID, 1] + 1, .-undeformed_bond[iID][jID, 1] * alpha[1, 1] * temperature[iID] + 1)
+            @test isapprox(thermal_bond_deformation[iID][jID, 2] + 1, .-undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID] + 1)
         end
     end
 end
