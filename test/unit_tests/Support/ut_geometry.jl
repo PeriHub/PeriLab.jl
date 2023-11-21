@@ -238,8 +238,6 @@ end
     strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc)
     deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, bond_geometry, bond_geometry, inverse_shape_tensor, deformation_gradient)
     strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc) - strainInc
-    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc) - strainInc
-
 
     for i in 1:nnodes
         @test strainInc[i, 1, 1] == 0
@@ -251,7 +249,6 @@ end
     deformation_gradient = zeros(4, 3, 3)
     strainInc = zeros(4, 3, 3)
 
-
     deformation_gradient[1, 1, 1] = 2.0
     deformation_gradient[1, 1, 2] = 1.0
     deformation_gradient[1, 1, 3] = 2.0
@@ -261,7 +258,7 @@ end
     deformation_gradient[1, 3, 1] = 2.0
     deformation_gradient[1, 3, 2] = -1.0
     deformation_gradient[1, 3, 3] = 3.0
-
+    strainInc = test_Data_manager.create_constant_node_field("Strain", Float64, "Matrix", dof)
     strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc)
     identity = zeros(3, 3)
     identity[1, 1] = 1
