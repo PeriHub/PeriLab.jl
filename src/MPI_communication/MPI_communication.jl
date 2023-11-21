@@ -4,6 +4,19 @@
 
 import MPI
 
+"""
+    send_single_value_from_vector(comm::MPI.Comm, controller::Int64, values::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}, type::Type)
+
+    Sends a single value from a vector to a controller
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `controller::Int64`: The controller
+    - `values::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The values
+    - `type::Type`: The type
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function send_single_value_from_vector(comm::MPI.Comm, controller::Int64, values::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}, type::Type)
     ncores = MPI.Comm_size(comm)
     rank = MPI.Comm_rank(comm)
@@ -28,6 +41,7 @@ function send_single_value_from_vector(comm::MPI.Comm, controller::Int64, values
     end
     return recv_msg[1]
 end
+
 """
 function synch_overlapnodes(comm::MPI.Comm, topo, vector)
     currentRank = MPI.Comm_rank(comm)
@@ -51,7 +65,6 @@ function synch_overlapnodes(comm::MPI.Comm, topo, vector)
   
 end
 """
-
 function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof)
     # does not work for bool fields
     ncores = MPI.Comm_size(comm)
@@ -96,7 +109,19 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
     return vector
 end
 
+"""
+    synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof)
 
+    Synch the controller to the responder
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `overlapnodes::Dict`: The overlap nodes
+    - `vector::Vector`: The vector
+    - `dof::Int`: The degree of freedom
+    # Returns
+    - `vector::Vector`: The vector
+"""
 function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof)
 
     ncores = MPI.Comm_size(comm)
@@ -136,6 +161,19 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
     return vector
 end
 
+"""
+    synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array, dof)
+
+    Synch the controller bonds to the responder
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `overlapnodes::Dict`: The overlap nodes
+    - `array::Array`: The array
+    - `dof::Int`: The degree of freedom
+    # Returns
+    - `array::Array`: The array
+"""
 function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array, dof)
 
     ncores = MPI.Comm_size(comm)
@@ -178,6 +216,18 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
     return array
 end
 
+"""
+    split_vector(input, row_nums, dof)
+
+    Split a vector into a vector of matrices
+
+    # Arguments
+    - `input::Vector`: The input vector
+    - `row_nums::Vector`: The row numbers
+    - `dof::Int`: The degree of freedom
+    # Returns
+    - `result::Vector`: The result vector
+"""
 function split_vector(input, row_nums, dof)
     result = Vector{Matrix{eltype(input)}}()
     start = firstindex(input)
@@ -188,6 +238,19 @@ function split_vector(input, row_nums, dof)
     result
 end
 
+"""
+    synch_controller_bonds_to_responder_flattened(comm::MPI.Comm, overlapnodes, array, dof)
+
+    Synch the controller bonds to the responder
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `overlapnodes::Dict`: The overlap nodes
+    - `array::Array`: The array
+    - `dof::Int`: The degree of freedom
+    # Returns
+    - `array::Array`: The array
+"""
 function synch_controller_bonds_to_responder_flattened(comm::MPI.Comm, overlapnodes, array, dof)
 
     ncores = MPI.Comm_size(comm)
@@ -220,6 +283,19 @@ function synch_controller_bonds_to_responder_flattened(comm::MPI.Comm, overlapno
     return array
 end
 
+"""
+    send_vectors_to_cores(comm::MPI.Comm, controller, values, type)
+
+    Sends a vector to a controller
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `controller::Int64`: The controller
+    - `values::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The values
+    - `type::Type`: The type
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function send_vectors_to_cores(comm::MPI.Comm, controller, values, type)
     #tbd
     ncores = MPI.Comm_size(comm)
@@ -246,6 +322,19 @@ function send_vectors_to_cores(comm::MPI.Comm, controller, values, type)
     return recv_msg
 end
 
+"""
+    send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, distribution)
+
+    Sends a vector from the root to the core i
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `send_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The send message
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The receive message
+    - `distribution::Vector{Int64}`: The distribution
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, distribution)
     currentRank = MPI.Comm_rank(comm)
     if currentRank == 0
@@ -258,6 +347,19 @@ function send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, dis
     end
     return recv_msg
 end
+
+"""
+    send_value(comm::MPI.Comm, controller, send_msg)
+
+    Sends a value to a controller
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `controller::Int64`: The controller
+    - `send_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The send message
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function send_value(comm::MPI.Comm, controller, send_msg)
 
     if MPI.Comm_rank(comm) == controller
@@ -269,6 +371,18 @@ function send_value(comm::MPI.Comm, controller, send_msg)
     return recv_msg
 end
 
+"""
+    get_vector(comm::MPI.Comm, vector, topo)
+
+    Gets a vector from all cores
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `vector::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The vector
+    - `topo::Vector{Vector{Tuple{Int64,Int64}}}`: The topology
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function get_vector(comm::MPI.Comm, vector, topo)
     rank = MPI.Comm_rank(comm)
     ncores = MPI.Comm_size(comm)
@@ -284,6 +398,17 @@ function get_vector(comm::MPI.Comm, vector, topo)
     return vector
 end
 
+"""
+    recv_vector_from_root(comm::MPI.Comm, recv_msg)
+
+    Receives a vector from the root
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The receive message
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function recv_vector_from_root(comm::MPI.Comm, recv_msg)
 
     #if rank == MPI.Comm_rank(comm)
@@ -292,19 +417,62 @@ function recv_vector_from_root(comm::MPI.Comm, recv_msg)
     return recv_msg
 end
 
+"""
+    find_and_set_core_value_min(comm::MPI.Comm, value::Union{Float64,Int64})
 
+    Find and set core value min
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `value::Union{Float64,Int64}`: The value
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function find_and_set_core_value_min(comm::MPI.Comm, value::Union{Float64,Int64})
     return MPI.Allreduce!([value], MPI.MIN, comm)[1]
 end
 
+"""
+    find_and_set_core_value_max(comm::MPI.Comm, value::Union{Float64,Int64})
+
+    Find and set core value max
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `value::Union{Float64,Int64}`: The value
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function find_and_set_core_value_max(comm::MPI.Comm, value::Union{Float64,Int64})
     return MPI.Allreduce!([value], MPI.MAX, comm)[1]
 end
 
+"""
+    find_and_set_core_value_sum(comm::MPI.Comm, value::Union{Float64,Int64})
+
+    Find and set core value sum
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `value::Union{Float64,Int64}`: The value
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function find_and_set_core_value_sum(comm::MPI.Comm, value::Union{Float64,Int64,Bool})
     return MPI.Allreduce!([value], MPI.SUM, comm)[1]
 end
 
+"""
+    find_and_set_core_value_avg(comm::MPI.Comm, value::Union{Float64,Int64})
+
+    Find and set core value avg
+
+    # Arguments
+    - `comm::MPI.Comm`: The MPI communicator
+    - `value::Union{Float64,Int64}`: The value
+    # Returns
+    - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
 function find_and_set_core_value_avg(comm::MPI.Comm, value::Union{Float64,Int64}, nnodes::Int64)
     nnodes = MPI.Allreduce!([nnodes], MPI.SUM, comm)[1]
     return MPI.Allreduce!([value], MPI.SUM, comm)[1] / nnodes

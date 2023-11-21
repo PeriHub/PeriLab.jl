@@ -7,6 +7,18 @@ include("../../Support/geometry.jl")
 using .Geometry
 export compute
 
+"""
+    compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, time::Float64)
+
+    Compute the bond deformation.
+
+    # Arguments
+    - `datamanager`: Datamanager.
+    - `nodes`: List of nodes.
+    - `time`: Time.
+    # Returns
+    - `datamanager`: Datamanager.
+"""
 function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, time::Float64)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()

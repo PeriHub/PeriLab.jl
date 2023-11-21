@@ -6,6 +6,18 @@ module Boundary_conditions
 export init_BCs
 export apply_bc
 include("../Support/Parameters/parameter_handling.jl")
+
+"""
+    check_valid_bcs(bcs, datamanager)
+
+    Check if the boundary conditions are valid
+
+    # Arguments
+   - `bcs::Dict{Any,Any}`: The boundary conditions
+   - `datamanager::Module`: The data manager module
+    # Returns
+   - `working_bcs::Dict{Any,Any}`: The valid boundary conditions
+"""
 function check_valid_bcs(bcs, datamanager)
     # check bc
     working_bcs = Dict()
@@ -36,12 +48,34 @@ function check_valid_bcs(bcs, datamanager)
     return working_bcs
 end
 
+"""
+    init_BCs(params::Dict, datamanager)
+
+    Initialize the boundary conditions
+
+    # Arguments
+   - `params::Dict`: The parameters
+   - `datamanager::Module`: Datamanager
+    # Returns
+   - `bcs::Dict{Any,Any}`: The boundary conditions
+"""
 function init_BCs(params::Dict, datamanager)
     bcs = boundary_condition(params, datamanager)
     bcs = check_valid_bcs(bcs, datamanager)
     return bcs
 end
 
+"""
+    boundary_condition(params::Dict, datamanager)
+
+    Initialize the boundary condition
+
+    # Arguments
+   - `params::Dict`: The parameters
+   - `datamanager::Module`: Datamanager
+    # Returns
+   - `bcs_out::Dict{Any,Any}`: The boundary conditions
+"""
 function boundary_condition(params::Dict, datamanager)
     bcs_in = get_bc_definitions(params)
     bcs_out = Dict{String,Any}()
@@ -63,6 +97,18 @@ function boundary_condition(params::Dict, datamanager)
     return bcs_out
 end
 
+"""
+    apply_bc(bcs::Dict, datamanager::Module, time::Float64)
+
+    Apply the boundary conditions
+
+    # Arguments
+   - `bcs::Dict{Any,Any}`: The boundary conditions
+   - `datamanager::Module`: Datamanager
+   - `time::Float64`: The current time
+    # Returns
+   - `datamanager::Module`: Datamanager
+"""
 function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
     dof = datamanager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
@@ -89,6 +135,16 @@ function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
     return datamanager
 end
 
+"""
+    clean_up(bc::String)
+
+    Clean up the boundary condition
+
+    # Arguments
+   - `bc::String`: The boundary condition
+    # Returns
+   - `bc::String`: The cleaned up boundary condition
+"""
 function clean_up(bc::String)
 
     bc = replace(bc, ".*" => "*")
@@ -107,6 +163,7 @@ function clean_up(bc::String)
     bc = replace(bc, "E .+ " => "e+")
     return bc
 end
+
 """
 eval_bc(field_values::Union{SubArray,Vector{Float64},Vector{Int64}}, bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
 Working with if-statements

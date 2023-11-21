@@ -15,6 +15,17 @@ export compute_forces
 export determine_isotropic_parameter
 export distribute_force_densities
 
+"""
+    init_material_model(datamanager::Module, block::Int64)
+
+    Initializes the material model.
+
+    # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `block::Int64`: Block.
+   # Returns
+   - `datamanager::Data_manager`: Datamanager.
+"""
 function init_material_model(datamanager::Module, block::Int64)
     model_param = datamanager.get_properties(block, "Material Model")
     specifics = Dict{String,String}("Call Function" => "init_material_model", "Name" => "material_name")
@@ -33,6 +44,20 @@ function init_material_model(datamanager::Module, block::Int64)
     return datamanager
 end
 
+"""
+    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+
+    Compute the forces.
+
+    # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+   - `model_param::Dict`: The material parameter.
+   - `time::Float64`: The current time.
+   - `dt::Float64`: The current time step.
+    # Returns
+   - `datamanager::Data_manager`: Datamanager.
+"""
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
     specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")
     material_models = split(model_param["Material Model"], "+")
@@ -46,14 +71,47 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
     return datamanager
 end
+
+"""
+    determine_isotropic_parameter(prop::Dict)
+
+    Determine the isotropic parameter.
+
+    # Arguments
+   - `prop::Dict`: The material property.
+    # Returns
+   - `prop::Dict`: The material property.
+"""
 function determine_isotropic_parameter(prop::Dict)
     get_all_elastic_moduli(prop)
 end
 
+"""
+    check_material_symmetry(dof::Int64, prop::Dict)
+
+    Check the symmetry of the material.
+
+    # Arguments
+   - `dof::Int64`: The degree of freedom.
+   - `prop::Dict`: The material property.
+    # Returns
+   - `prop::Dict`: The material property.
+"""
 function check_material_symmetry(dof::Int64, prop::Dict)
     return check_symmetry(prop, dof)
 end
 
+"""
+    distribute_force_densities(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+
+    Distribute the force densities.
+
+    # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+    # Returns
+   - `datamanager::Data_manager`: Datamanager.
+"""
 function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     nlist = datamanager.get_nlist()
     bond_force = datamanager.get_field("Bond Forces")

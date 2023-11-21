@@ -2,14 +2,35 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""
+    get_computes_names(params::Dict)
+
+    Get the names of the computes.
+
+    # Arguments
+    - `params::Dict`: The parameters dictionary.
+    # Returns
+    - `computes_names::Vector{String}`: The names of the computes.
+"""
 function get_computes_names(params::Dict)
-    if check_element(params::Dict, "Compute Class Parameters")
+    if haskey(params::Dict, "Compute Class Parameters")
         computes = params["Compute Class Parameters"]
         return string.(collect(keys(sort(computes))))
     end
     return String[]
 end
 
+""" 
+    get_output_variables(output::String, variables::Vector)
+
+    Get the output variable.
+
+    # Arguments
+    - `output::String`: The output variable.
+    - `variables::Vector`: The variables.
+    # Returns
+    - `output::String`: The output variable.
+"""
 function get_output_variables(output::String, variables::Vector)
     if output in variables
         return output
@@ -20,13 +41,24 @@ function get_output_variables(output::String, variables::Vector)
     end
 end
 
+"""
+    get_computes(params::Dict, variables::Vector{String})
+
+    Get the computes.
+
+    # Arguments
+    - `params::Dict`: The parameters dictionary.
+    - `variables::Vector{String}`: The variables.
+    # Returns
+    - `computes::Dict{String,Dict{Any,Any}}`: The computes.
+"""
 function get_computes(params::Dict, variables::Vector{String})
     computes = Dict{String,Dict{Any,Any}}()
-    if !check_element(params, "Compute Class Parameters")
+    if !haskey(params, "Compute Class Parameters")
         return computes
     end
     for compute in keys(params["Compute Class Parameters"])
-        if check_element(params["Compute Class Parameters"][compute], "Variable")
+        if haskey(params["Compute Class Parameters"][compute], "Variable")
             computes[compute] = params["Compute Class Parameters"][compute]
             computes[compute]["Variable"] = get_output_variables(computes[compute]["Variable"], variables)
         else
@@ -36,8 +68,18 @@ function get_computes(params::Dict, variables::Vector{String})
     return computes
 end
 
+"""
+    get_node_set(params::Dict)
+
+    Get the node set.
+
+    # Arguments
+    - `params::Dict`: The parameters dictionary.
+    # Returns
+    - `nodeset::Vector`: The node set.
+"""
 function get_node_set(params::Dict)
-    if !check_element(params::Dict, "Node Set")
+    if !haskey(params::Dict, "Node Set")
         return []
     end
     nodeset = params["Node Set"]

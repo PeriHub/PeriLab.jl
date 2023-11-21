@@ -17,6 +17,20 @@ using .Shape_Tensor
 export compute
 export init_pre_calculation
 
+"""
+    compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64)
+
+    Compute the pre-calculation.
+
+    # Arguments
+    - `datamanager`: Datamanager.
+    - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+    - `options`: Options.
+    - `time::Float64`: Time.
+    - `dt::Float64`: Time step.
+    # Returns
+    - `datamanager`: Datamanager.
+"""
 function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64)
 
     if options["Deformed Bond Geometry"]
@@ -37,6 +51,17 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, opti
     return datamanager
 end
 
+"""
+    init_pre_calculation(datamanager::Module, options::Dict)
+
+    Initialize the pre-calculation.
+
+    # Arguments
+    - `datamanager`: Datamanager.
+    - `options::Dict`: Options.
+    # Returns
+    - `datamanager`: Datamanager.
+"""
 function init_pre_calculation(datamanager::Module, options::Dict)
     dof = datamanager.get_dof()
     if options["Deformed Bond Geometry"]

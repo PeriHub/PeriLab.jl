@@ -10,9 +10,9 @@ export thermal_model_name
 
    Gives the flow name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+   # Arguments
 
-   Returns:
+   # Returns
    - `name::String`: The name of the thermal flow model.
 
    Example:
@@ -29,13 +29,13 @@ end
 
    Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
+   # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+   - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+   - `time::Float64`: The current time.
+   - `dt::Float64`: The current time step.
+   # Returns
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia
@@ -69,8 +69,20 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   return datamanager
 end
 
+"""
+   get_surface_nodes(iID::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
 
+   Returns the surface nodes.
 
+   # Arguments
+   - `iID::Int64`: The index of the node.
+   - `nlist::SubArray`: The neighbor list.
+   - `coordinates::Union{SubArray,Vector{Float64}}`: The coordinates of the nodes.
+   - `volume::SubArray`: The volume of the nodes.
+   - `surface_nodes::Union{SubArray,Vector{Bool}}`: The surface nodes.
+   # Returns
+   - `surface_nodes::Union{SubArray,Vector{Bool}}`: The surface nodes.
+"""
 function get_surface_nodes(iID::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
   compare_neighbor = 0
   neighbor_volume = 0.0

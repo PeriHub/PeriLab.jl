@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""
+    get_forces_from_force_density(datamanager::Module)
+
+    Computes the forces from the force densities.
+
+    # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+    # Returns
+   - `datamanager::Data_manager`: Datamanager.
+"""
 function get_forces_from_force_density(datamanager::Module)
     force_density = datamanager.get_field("Force Densities", "NP1")
     forces = datamanager.get_field("Forces", "NP1")
@@ -10,6 +20,17 @@ function get_forces_from_force_density(datamanager::Module)
     return datamanager
 end
 
+"""
+    get_partial_stresses(datamanager::Module, nodes::Vector{Union{Int64,SubArray}})
+
+    Computes the partial stresses.
+
+    # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `nodes::Vector{Union{Int64,SubArray}}`: List of block nodes.
+    # Returns
+   - `datamanager::Data_manager`: Datamanager.
+"""
 function get_partial_stresses(datamanager::Module, nodes::Vector{Union{Int64,SubArray}})
     bond_forces = datamanager.get_field("Bond Forces")
     bond_geometry = datamanager.get_field("Bond Geometry")

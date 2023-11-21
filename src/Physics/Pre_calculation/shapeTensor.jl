@@ -7,6 +7,17 @@ include("../../Support/geometry.jl")
 using .Geometry
 export compute
 
+"""
+    compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+
+    Compute the shape tensor.
+
+    # Arguments
+    - `datamanager`: Datamanager.
+    - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+    # Returns
+    - `datamanager`: Datamanager.
+"""
 function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()

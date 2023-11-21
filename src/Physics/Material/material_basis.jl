@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""
+    get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
+
+    Returns the elastic moduli of the material.
+
+    # Arguments
+    - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
+"""
 function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
     if haskey(parameter, "Computed")
         if parameter["Computed"]
@@ -69,6 +77,18 @@ function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}}
     parameter["Computed"] = true
 end
 
+"""
+    get_Hooke_matrix(parameter, symmetry, dof)
+
+    Returns the Hooke matrix of the material.
+
+    # Arguments
+    - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
+    - `symmetry::String`: The symmetry of the material.
+    - `dof::Int64`: The degree of freedom.
+    # Returns
+    - `matrix::Matrix{Float64}`: The Hooke matrix.
+"""
 function get_Hooke_matrix(parameter, symmetry, dof)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
@@ -167,6 +187,21 @@ function get_Hooke_matrix(parameter, symmetry, dof)
     return matrix
 end
 
+"""
+    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
+
+    Distribute the forces on the nodes
+
+    # Arguments
+   - `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+   - `nlist::SubArray`: The neighbor list.
+   - `bond_force::SubArray`: The bond forces.
+   - `volume::SubArray`: The volumes.
+   - `bond_damage::SubArray`: The bond damage.
+   - `force_densities::SubArray`: The force densities.
+   # Returns
+   - `force_densities::SubArray`: The force densities.
+"""
 function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
     for iID in nodes
         for (jID, neighborID) in enumerate(nlist[iID])
@@ -178,7 +213,16 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
     return force_densities
 end
 
-# Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
+"""
+    matrix_to_voigt(matrix)
+
+    Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
+
+    # Arguments
+    - `matrix::Matrix{Float64}`: The matrix.
+    # Returns
+    - `voigt::Vector{Float64}`: The Voigt notation.
+"""
 function matrix_to_voigt(matrix)
     if size(matrix) == (2, 2)
         return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
@@ -189,7 +233,16 @@ function matrix_to_voigt(matrix)
     end
 end
 
-# Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
+"""
+    voigt_to_matrix(voigt)
+
+    Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
+
+    # Arguments
+    - `voigt::Vector{Float64}`: The Voigt notation.
+    # Returns
+    - `matrix::Matrix{Float64}`: The matrix.
+"""
 function voigt_to_matrix(voigt)
     if length(voigt) == 3
         return [voigt[1] voigt[3]; voigt[3] voigt[2]]
@@ -202,6 +255,17 @@ function voigt_to_matrix(voigt)
     end
 end
 
+"""
+    check_symmetry(prop::Dict, dof::Int64)
+
+    Check if the symmetry information is present in the material dictionary.
+
+    # Arguments
+    - `prop::Dict`: A dictionary containing material information.
+    - `dof::Int64`: The number of degrees of freedom.
+    # Returns
+    - `true`: If the symmetry information is present.
+"""
 function check_symmetry(prop::Dict, dof::Int64)
     if haskey(prop, "Symmetry")
         symmetry = prop["Symmetry"]
@@ -218,21 +282,21 @@ function check_symmetry(prop::Dict, dof::Int64)
 end
 
 """
-    get_sym(material::Dict)
+    get_symmmetry(material::Dict)
 
-Return the symmetry information from the given material dictionary.
+    Return the symmetry information from the given material dictionary.
 
-# Arguments
-- `material::Dict`: A dictionary containing material information.
+    # Arguments
+    - `material::Dict`: A dictionary containing material information.
 
-# Returns
-- If the key "Symmetry" is present in the dictionary, the corresponding value is returned.
-- If the key is not present, the default value "3D" is returned.
+    # Returns
+    - If the key "Symmetry" is present in the dictionary, the corresponding value is returned.
+    - If the key is not present, the default value "3D" is returned.
 
-# Example
-```julia
-material_dict = Dict("Symmetry" => "Cubic", "Color" => "Red")
-symmetry = get_sym(material_dict)
+    # Example
+    ```julia
+    material_dict = Dict("Symmetry" => "Cubic", "Color" => "Red")
+    symmetry = get_sym(material_dict)
 """
 function get_symmmetry(material::Dict)
     if !haskey(material, "Symmetry")

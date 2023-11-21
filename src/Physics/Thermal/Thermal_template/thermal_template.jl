@@ -10,9 +10,9 @@ export thermal_model_name
 
    Gives the thermal model name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+   # Arguments
 
-   Returns:
+   # Returns
    - `name::String`: The name of the thermal flow model.
 
    Example:
@@ -29,13 +29,13 @@ end
 
    Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
+   # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+   - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+   - `time::Float64`: The current time.
+   - `dt::Float64`: The current time step.
+   # Returns
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia

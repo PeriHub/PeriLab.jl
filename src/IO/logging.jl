@@ -11,12 +11,31 @@ include("./IO.jl")
 export init_logging
 export set_result_files
 
-result_files = []
+result_files::Vector{Dict} = []
 
-function set_result_files(result_files_temp)
+"""
+    set_result_files(result_files_temp::Vector{Dict})
+
+    Set the result files.
+
+    # Arguments
+    - `result_files_temp::Vector{Dict}`: The result files.
+"""
+function set_result_files(result_files_temp::Vector{Dict})
     global result_files = result_files_temp
 end
 
+"""
+    progress_filter(log_args)
+
+    Filter progress messages.
+
+    # Arguments
+    - `log_args`: The log arguments.
+    # Returns
+    - `true`: If the message is not a progress message.
+    - `false`: If the message is a progress message.
+"""
 function progress_filter(log_args)
     if log_args.message isa TimerOutputs.TimerOutput || log_args.message isa DataFrames.DataFrame
         return true
@@ -32,7 +51,18 @@ function progress_filter(log_args)
     return true
 end
 
-function init_logging(filename, debug, rank, size)
+"""
+    init_logging(filename::String, debug::Bool, rank::Int64, size::Int64)
+
+    Initialize the logging.
+
+    # Arguments
+    - `filename::String`: The filename.
+    - `debug::Bool`: If debug is true.
+    - `rank::Int64`: The rank.
+    - `size::Int64`: The size.
+"""
+function init_logging(filename::String, debug::Bool, rank::Int64, size::Int64)
 
     logfilename = split(filename, ".")[1] * ".log"
 

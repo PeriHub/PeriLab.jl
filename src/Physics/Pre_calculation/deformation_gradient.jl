@@ -6,7 +6,17 @@ module Deformation_Gradient
 include("../../Support/geometry.jl")
 using .Geometry
 export compute
+"""
+    compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 
+    Compute the deformation gradient.
+
+    # Arguments
+    - `datamanager`: Datamanager.
+    - `nodes`: List of nodes.
+    # Returns
+    - `datamanager`: Datamanager.
+"""
 function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()

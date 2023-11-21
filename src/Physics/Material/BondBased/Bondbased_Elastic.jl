@@ -14,11 +14,11 @@ export compute_force
 
     Initializes the material model.
 
-    Parameters:
-    - `datamanager::Data_manager`: Datamanager.
+    # Arguments
+   - `datamanager::Data_manager`: Datamanager.
 
-    Returns:
-    - `datamanager::Data_manager`: Datamanager.
+    # Returns
+   - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
     # global dof
@@ -31,9 +31,29 @@ function init_material_model(datamanager::Module)
 end
 
 
+"""
+    material_name()
+
+    Returns the name of the material model.
+"""
 function material_name()
     return "Bond-based Elastic"
 end
+
+"""
+    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+
+    Calculate the elastic bond force for each node.
+
+    # Arguments
+    - `datamanager::Data_manager`: Datamanager.
+    - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+    - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+    - `time::Float64`: The current time.
+    - `dt::Float64`: The current time step.
+    # Returns
+    - `datamanager::Data_manager`: Datamanager.
+"""
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
     # global dof
     # global horizon

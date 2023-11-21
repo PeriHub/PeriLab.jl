@@ -19,11 +19,11 @@ export compute_force
 
     Initializes the material model.
 
-    Parameters:
-    - `datamanager::Data_manager`: Datamanager.
+    # Arguments
+   - `datamanager::Data_manager`: Datamanager.
 
-    Returns:
-    - `datamanager::Data_manager`: Datamanager.
+    # Returns
+   - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
     # global dof
@@ -37,10 +37,29 @@ function init_material_model(datamanager::Module)
     return datamanager
 end
 
+"""
+   material_name()
+
+   Returns the name of the material model.
+"""
 function material_name()
     return "PD Solid Elastic"
 end
 
+"""
+    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    
+    Computes the forces.
+
+    # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+   - `material_parameter::Dict`: The material parameter.
+   - `time::Float64`: The current time.
+   - `dt::Float64`: The current time step.
+   # Returns
+   - `datamanager::Data_manager`: Datamanager.
+"""
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
     # global dof
     # global nlist
@@ -72,7 +91,7 @@ Calculate the elastic bond force for each node.
 ``F = \\omega \\cdot \\theta \\cdot (\\frac{3K}{V} - \\frac{\\frac{15B}{V}}{3} \\cdot \\zeta + \\alpha \\cdot stretch)`` [WillbergC2023](@cite)
 for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page 152; Eq. (6.12); after (6.21) and after (6.23)
 
-Parameters:
+# Arguments
 - nodes: array of node IDs
 - dof: number of degrees of freedom
 - bond_geometry: dictionary of bond geometries for each node
@@ -84,7 +103,7 @@ Parameters:
 - material: dictionary of material properties
 - bond_force: dictionary to store the calculated bond forces for each node
 
-Returns:
+# Returns
 - bond_force: dictionary of calculated bond forces for each node
 """
 function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)

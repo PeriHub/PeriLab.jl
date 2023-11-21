@@ -286,8 +286,8 @@ function get_horizon(params::Dict, block_id::Int64)
 end
 
 function get_values(params::Dict, block_id::Int64, valueName::String)
-    if check_element(params["Blocks"], "block_" * string(block_id))
-        if check_element(params["Blocks"]["block_"*string(block_id)], valueName)
+    if haskey(params["Blocks"], "block_" * string(block_id))
+        if haskey(params["Blocks"]["block_"*string(block_id)], valueName)
             return params["Blocks"]["block_"*string(block_id)][valueName]
         end
         @error "$valueName of Block $block_id is not defined"

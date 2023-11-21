@@ -6,6 +6,17 @@ module Bond_Shape_Tensor
 
 export compute
 
+"""
+    compute(datamanager, nodes)
+
+    Compute the bond shape tensor.
+
+    # Arguments
+    - `datamanager`: Datamanager.
+    - `nodes`: List of nodes.
+    # Returns
+    - `datamanager`: Datamanager.
+"""
 function compute(datamanager, nodes)
 
     return datamanager

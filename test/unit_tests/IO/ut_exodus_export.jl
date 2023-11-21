@@ -29,18 +29,18 @@ end
     @test Write_Exodus_Results.paraview_specifics(3) == "z"
 end
 
-@testset "ut_get_paraviewCoordinates" begin
+@testset "ut_get_paraview_coordinates" begin
     for i in 1:3
-        @test Write_Exodus_Results.get_paraviewCoordinates(1, i) == "x"
-        @test Write_Exodus_Results.get_paraviewCoordinates(2, i) == "y"
-        @test Write_Exodus_Results.get_paraviewCoordinates(3, i) == "z"
+        @test Write_Exodus_Results.get_paraview_coordinates(1, i) == "x"
+        @test Write_Exodus_Results.get_paraview_coordinates(2, i) == "y"
+        @test Write_Exodus_Results.get_paraview_coordinates(3, i) == "z"
     end
-    @test isnothing(Write_Exodus_Results.get_paraviewCoordinates(3, 10))
+    @test isnothing(Write_Exodus_Results.get_paraview_coordinates(3, 10))
 
     for ref = 4:9
         for i in 1:3
             for j in 1:3
-                @test Write_Exodus_Results.get_paraviewCoordinates((i - 1) * 3 + j, ref) == Write_Exodus_Results.paraview_specifics(i) * Write_Exodus_Results.paraview_specifics(j)
+                @test Write_Exodus_Results.get_paraview_coordinates((i - 1) * 3 + j, ref) == Write_Exodus_Results.paraview_specifics(i) * Write_Exodus_Results.paraview_specifics(j)
             end
         end
     end

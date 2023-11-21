@@ -12,11 +12,11 @@ export compute_force
 
   Initializes the material model.
 
-  Parameters:
-    - `datamanager::Data_manager`: Datamanager.
+  # Arguments
+   - `datamanager::Data_manager`: Datamanager.
 
-  Returns:
-    - `datamanager::Data_manager`: Datamanager.
+  # Returns
+   - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
 
@@ -27,9 +27,9 @@ end
 
    Gives the material name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+   # Arguments
 
-   Returns:
+   # Returns
    - `name::String`: The name of the material.
 
    Example:
@@ -46,13 +46,13 @@ end
 
    Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
+   # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+   - `time::Float64`: The current time.
+   - `dt::Float64`: The current time step.
+   # Returns
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia

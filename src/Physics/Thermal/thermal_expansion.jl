@@ -21,9 +21,9 @@ export thermal_model_name
 
    Gives the expansion model name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+   # Arguments
 
-   Returns:
+   # Returns
    - `name::String`: The name of the thermal expansion model.
 
    Example:
@@ -40,13 +40,13 @@ end
 
    Calculates the thermal expansion of the material. 
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
+   # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+   - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+   - `time::Float64`: The current time.
+   - `dt::Float64`: The current time step.
+   # Returns
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia

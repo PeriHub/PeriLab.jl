@@ -23,11 +23,11 @@ export compute_force
 
   Initializes the material model.
 
-  Parameters:
-    - `datamanager::Data_manager`: Datamanager.
+  # Arguments
+   - `datamanager::Data_manager`: Datamanager.
 
-  Returns:
-    - `datamanager::Data_manager`: Datamanager.
+  # Returns
+   - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
   # global dof
@@ -59,9 +59,9 @@ end
 
    Gives the material name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+   # Arguments
 
-   Returns:
+   # Returns
    - `name::String`: The name of the material.
 
    Example:
@@ -78,13 +78,13 @@ end
 
    Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray, Vector{Int64}}`: List of block nodes.
-        - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
+   # Arguments
+   - `datamanager::Data_manager`: Datamanager.
+   - `nodes::Union{SubArray, Vector{Int64}}`: List of block nodes.
+   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+   - `time::Float64`: The current time.
+   - `dt::Float64`: The current time step.
+   # Returns
         - - `datamanager::Data_manager`: Datamanager.
    Example:
    ```julia
@@ -138,7 +138,18 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
+   zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+
+  Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
+
+  # Arguments
+  - `datamanager::Data_manager`: Datamanager.
+  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `time::Float64`: The current time.
+  - `dt::Float64`: The current time step.
+  # Returns
+  - `datamanager::Data_manager`: Datamanager.
 """
 function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
   if !haskey(material_parameter, "Zero Energy Control")
@@ -151,8 +162,22 @@ function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArra
   return datamanager
 end
 
+"""
+   calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, bond_geometry::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stressNP1::SubArray, bond_force::SubArray)
 
+  Calculates the bond force.
 
+  # Arguments
+  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `deformation_gradient::SubArray`: Deformation gradient.
+  - `bond_geometry::SubArray`: Bond geometry.
+  - `bond_damage::SubArray`: Bond damage.
+  - `inverse_shape_tensor::SubArray`: Inverse shape tensor.
+  - `stressNP1::SubArray`: Cauchy stress.
+  - `bond_force::SubArray`: Bond force.
+  # Returns
+  - `bond_force::SubArray`: Bond force.
+"""
 function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, bond_geometry::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stressNP1::SubArray, bond_force::SubArray)
   for iID in nodes
     jacobian = det(deformation_gradient[iID, :, :])
@@ -170,7 +195,20 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
   return bond_force
 end
 
+"""
+  rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
 
+  Rotates the matrix.
+
+  # Arguments
+  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `dof::Int64`: Degree of freedom.
+  - `matrix::Union{SubArray,Array{Float64,3}}`: Matrix.
+  - `angles::SubArray`: Angles.
+  - `back::Bool`: Back.
+  # Returns
+  - `matrix::SubArray`: Matrix.
+"""
 function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
   for iID in nodes
     matrix[iID, :, :] = rotate_second_order_tensor(angles[iID, :], matrix[iID, :, :], dof, back)
@@ -178,6 +216,19 @@ function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{
   return matrix
 end
 
+"""
+  rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
+
+  Rotates the second order tensor.
+
+  # Arguments
+  - `angles::Union{Vector{Float64},Vector{Int64}}`: Angles.
+  - `tensor::Matrix{Float64}`: Second order tensor.
+  - `dof::Int64`: Degree of freedom.
+  - `back::Bool`: Back.
+  # Returns
+  - `tensor::Matrix{Float64}`: Second order tensor.
+"""
 function rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
   rot = Geometry.rotation_tensor(angles)
 

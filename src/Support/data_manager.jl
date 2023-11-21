@@ -71,10 +71,24 @@ global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => tru
 global rank::Int64 = 0
 global commMPi::Any
 
+"""
+    get_comm()
+
+    Get the MPI communicator
+"""
 function get_comm()
     global commMPi
     return commMPi
 end
+
+"""
+    set_comm(comm::MPI.Comm)
+
+    Set the MPI communicator
+
+    # Arguments
+    - `comm::MPI.Comm`: MPI communicator
+"""
 function set_comm(comm::MPI.Comm)
     global commMPi = comm
 end
@@ -84,6 +98,17 @@ end
 global material_type::Dict{String,Bool} = Dict("Bond-Based" => false, "Ordinary" => false, "Correspondence" => true, "Bond-Associated" => false)
 ##########################
 
+"""
+    check_property(block_id::Int64, property::String)
+
+    Checks if the specified `property` exists for the given `block_id`.
+
+    # Arguments
+    - `block_id::Int64`: The ID of the block.
+    - `property::String`: The name of the property to check.
+    # Returns
+    - `Bool`: `true` if the property exists, `false` otherwise.
+"""
 function check_property(block_id::Int64, property::String)
     global properties
 
@@ -98,13 +123,13 @@ end
 
    Creates a bond field with the given name, data type, and degree of freedom.
 
-   Parameters:
-    - `name::String`: The name of the bond field.
-    - `vartype::Type`: The data type of the bond field.
-    - `dof::Int64`: The degrees of freedom per bond.
-    - `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
+   # Arguments
+   - `name::String`: The name of the bond field.
+   - `vartype::Type`: The data type of the bond field.
+   - `dof::Int64`: The degrees of freedom per bond.
+   - `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
 
-   Returns:
+   # Returns
    - `bond_field::Field`: The created bond field for the current time step.
    - `bond_field_np1::Field`: The created bond field for the next time step.
 
@@ -129,13 +154,13 @@ end
 
    Creates a constant bond field with the given name, data type, and degree of freedom.
 
-   Parameters:
-    - `name::String`: The name of the bond field.
-    - `vartype::Type`: The data type of the bond field.
-    - `dof::Int64`: The degrees of freedom per bond.
+   # Arguments
+   - `name::String`: The name of the bond field.
+   - `vartype::Type`: The data type of the bond field.
+   - `dof::Int64`: The degrees of freedom per bond.
     -  default_value::Union{Int64,Float64,Bool}=0) (optional) - filled with zero or false
 
-   Returns:
+   # Returns
    - `constant_bond_field::Field`: The created constant bond field.
 
    Example:
@@ -156,13 +181,13 @@ create_constant_node_field(name::String, type::Type, dof::Int64)
 
 Creates a constant node field with the given name, data type, and degree of freedom.
 
-Parameters:
+# Arguments
 - `name::String`: The name of the node field.
 - `vartype::Type`: The data type of the node field.
 - `dof::Int64`: The degrees of freedom per node.
 - `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
 
-Returns:
+# Returns
 - `constant_node_field::Field`: The created constant node field.
 
 Example:
@@ -248,12 +273,12 @@ end
 
    Creates a node field with the given name, data type, and degree of freedom.
 
-   Parameters:
+   # Arguments
    - `name::String`: The name of the node field.
    - `type::Type`: The data type of the node field.
    - `dof::Int64`: The degree of freedom of each node.
    - `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
-   Returns:
+   # Returns
    - `node_field::Field`: The created node field for the current time step.
    - `node_field_np1::Field`: The created node field for the next time step.
 
@@ -290,7 +315,7 @@ get_dof()
 
 Retrieves the degree of freedom (dof) value.
 
-Returns:
+# Returns
 - `dof` (integer): The current degree of freedom value.
 
 Example:
@@ -341,8 +366,8 @@ end
     get_field_type()
     Get the type of a field
 
-    Returns:
-    - `get_field_type` (string): returns the type of a field
+    # Returns
+   - `get_field_type` (string): returns the type of a field
 
 """
 function get_field_type(name::String)
@@ -365,8 +390,8 @@ end
 
     Determines the local node numbering.
 
-    Returns:
-    - `get_local_nodes` (array): returns local nodes.
+    # Returns
+   - `get_local_nodes` (array): returns local nodes.
 
     Example:
     ```julia
@@ -392,7 +417,7 @@ get_nnodes()
 
 Retrieves the number of nodes.
 
-Returns:
+# Returns
 - `num_controller::Int64` : The current number of nodes.
 
 Example:
@@ -422,7 +447,7 @@ end
 
    Get the number of node sets.
 
-   Returns:
+   # Returns
    - `nnsets::Int`: The number of node sets.
 
 """
@@ -436,7 +461,7 @@ get_nsets()
 
 Get the node sets
 
-Returns:
+# Returns
 - `nsets::Dict{String,Vector{Int64}}`: The node sets dictionary.
 """
 
@@ -450,7 +475,7 @@ get_num_responder()
 
 Get the the number of responder nodes
 
-Returns:
+# Returns
 - `num_responder::Int64`: The number of responder nodes
 """
 
@@ -586,7 +611,7 @@ loc_to_glob(range::UnitRange{Int64})
 
 Converts the local index to the global index.
 
-Parameters:
+# Arguments
 - `range::UnitRange{Int64}`: The range of the local index.
 
 Example:
@@ -652,7 +677,7 @@ set_dof(n::Int64)
 
 Sets the degree of freedom (dof) value globally.
 
-Parameters:
+# Arguments
 - `n::Int64`: The value to set as the degree of freedom.
 
 Example:
@@ -668,7 +693,7 @@ set_glob_to_loc(dict)
 
 Sets the global-to-local mapping dict globally.
 
-Parameters:
+# Arguments
 - `dict` (array): The dict representing the global-to-local mapping.
 
 Example:
@@ -697,7 +722,7 @@ end
 
  Sets the number all nodes of one core globally.
 
- Parameters:
+ # Arguments
 
  Example:
  ```
@@ -713,7 +738,7 @@ end
 
  Sets the number of controller nodes globally. For one core the number of nodes is equal to the number of controller nodes.
 
- Parameters:
+ # Arguments
  - `n::Int64`: The value to set as the number of nodes.
 
  Example:
@@ -730,7 +755,7 @@ set_nnsets(n::Int64)
 
 Set the number of node sets.
 
-Parameters:
+# Arguments
 - `n::Int64`: The number of node sets to be set.
 
 """
@@ -742,7 +767,7 @@ end
 set_nset(name, nodes)
 Set the nodes associated with a named node set.
 
-Parameters:
+# Arguments
 - `name::String`: The name of the node set.
 - `nodes::Vector{Int}`: The node indices associated with the node set.
 
@@ -763,7 +788,7 @@ set_num_responder(n::Int64)
 
 Sets the number of responder nodes globally. For one core the number of responder is zero. responder hold the information of the neighbors, of one node, but are not evaluated.
 
-Parameters:
+# Arguments
 - `n::Int64`: The value to set as the number of nodes.
 
 Example:

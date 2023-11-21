@@ -29,11 +29,98 @@ create_constant_node_field
 ```
 
 ```@meta
+CurrentModule = PeriLab.Solver
+```
+## Solver
+```@docs
+init
+get_blockNodes
+set_density
+set_horizon
+solver
+synchronise_field
+write_results
+```
+
+<!-- ```@meta
+CurrentModule = PeriLab.Solver.Verlet
+```
+## Verlet
+```@docs
+compute_thermodynamic_critical_time_step
+compute_mechanical_critical_time_step
+test_timestep
+compute_crititical_time_step
+init_solver
+get_integration_steps
+run_solver
+``` -->
+
+```@meta
+CurrentModule = PeriLab.Solver.Boundary_conditions
+```
+## Boundary_conditions
+```@docs
+check_valid_bcs
+init_BCs
+boundary_condition
+apply_bc
+clean_up
+eval_bc
+```
+
+```@meta
 CurrentModule = PeriLab.IO
 ```
 ## IO
 ```@docs
+merge_exodus_files
+open_result_file
+close_result_file
+close_result_files
+delete_files
+get_file_size
+clearNP1
+get_results_mapping
+initialize_data
+init_write_results
+read_input_file
+write_results
+get_global_values
+find_global_core_value!
+show_block_summary
 Read_Mesh.Geometry.bond_geometry
+calculate_nodelist
+calculate_block
+global_value_sum
+global_value_max
+global_value_min
+global_value_avg
+```
+
+```@meta
+CurrentModule = PeriLab.IO.Write_Exodus_Results
+```
+## Write_Exodus_Results
+```@docs
+create_result_file
+paraview_specifics
+get_paraview_coordinates
+get_block_nodes
+init_results_in_exodus
+write_step_and_time
+write_nodal_results_in_exodus
+write_global_results_in_exodus
+merge_exodus_file
+```
+
+```@meta
+CurrentModule = PeriLab.IO.Write_CSV_Results
+```
+## Write_Exodus_Results
+```@docs
+create_result_file
+write_global_results_in_csv
 ```
 
 ```@meta
