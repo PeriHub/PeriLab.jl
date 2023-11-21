@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+header: global_id
+800
+799
+798
+797
+796
+795
+794
+793
+792
+791
+790
+789
+788
+787
+786
+785
+784
+783
+782
+781
