@@ -37,7 +37,7 @@ end
         - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
         - `time::Float64`: The current time.
         - `dt::Float64`: The current time step.
-        - `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
+        - `strain_increment::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
         - `stressN::SubArray`: Stress of step N.
         - `stressNP1::SubArray`: Stress of step N+1.
    Returns:
@@ -47,12 +47,12 @@ end
    ```julia
      ```
    """
-function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strainInc::Union{Array{Float64,3},Array{Float64,6}}, stressN::SubArray, stressNP1::SubArray)
+function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Union{Array{Float64,3},Array{Float64,6}}, stressN::SubArray, stressNP1::SubArray)
 
   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
   for iID in nodes
-    stressNP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strainInc[iID, :, :])) + stressN[iID, :, :]
+    stressNP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) + stressN[iID, :, :]
   end
 
   return stressNP1, datamanager
