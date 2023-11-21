@@ -61,7 +61,7 @@ end
     @test exo["file"].init.num_node_sets == 0
     @test exo["file"].init.num_elem_blks == 1
 
-    close(exo)
+    close(exo["file"])
     rm(filename)
     fid = open(filename, "w")
     close(fid)
@@ -240,7 +240,7 @@ Write_Exodus_Results.write_global_results_in_csv(csv_file["file"], [0.1, 0.2])
 end
 
 
-close(exo)
-close(csv_file)
+close(exo["file"])
+close(csv_file["file"])
 rm(filename)
 rm(csvfilename)
