@@ -4,7 +4,6 @@
 
 module Physics
 include("../Support/helpers.jl")
-include("../Support/tools.jl")
 include("./Additive/Additive_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
@@ -154,6 +153,9 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     end
     if solver_options["Material Models"]
         datamanager = Physics.init_material_model_fields(datamanager)
+        for block in datamanager.get_block_list()
+            datamanager = Material.init_material_model(datamanager, block)
+        end
     end
     if solver_options["Thermal Models"]
         datamanager = Physics.init_thermal_model_fields(datamanager)

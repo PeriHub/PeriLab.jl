@@ -8,7 +8,6 @@ using LinearAlgebra
 using TimerOutputs
 using Printf
 include("../../Support/helpers.jl")
-include("../../Support/tools.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../../Support/Parameters/parameter_handling.jl")
 include("../BC_manager.jl")
