@@ -55,11 +55,11 @@ end
     dof = 3
     exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 1, 0)
     @test isfile(filename)
-    @test exo.file_name == filename
-    @test exo.init.num_dim == dof
-    @test exo.init.num_nodes == nnodes
-    @test exo.init.num_node_sets == 0
-    @test exo.init.num_elem_blks == 1
+    @test exo["file"].file_name == filename
+    @test exo["file"].init.num_dim == dof
+    @test exo["file"].init.num_nodes == nnodes
+    @test exo["file"].init.num_node_sets == 0
+    @test exo["file"].init.num_elem_blks == 1
 
     close(exo)
     rm(filename)
@@ -70,12 +70,12 @@ end
     @test isfile(filename)
     exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 3, 2)
     @test isfile(filename)
-    @test exo.file_name == filename
-    @test exo.init.num_dim == dof
-    @test exo.init.num_nodes == nnodes
-    @test exo.init.num_node_sets == 2
-    @test exo.init.num_elem_blks == 3
-    close(exo)
+    @test exo["file"].file_name == filename
+    @test exo["file"].init.num_dim == dof
+    @test exo["file"].init.num_nodes == nnodes
+    @test exo["file"].init.num_node_sets == 2
+    @test exo["file"].init.num_elem_blks == 3
+    close(exo["file"])
     rm(filename)
 end
 filename = "./tmp/" * "test_2.e"
@@ -223,14 +223,14 @@ end
 @testset "ut_merge_exodus_file" begin
     merged = true
     try
-        Write_Exodus_Results.merge_exodus_file(exo["file_name"])
+        Write_Exodus_Results.merge_exodus_file(exo["filename"])
     catch
         merged = false
     end
     @test merged
 end
 
-Write_Exodus_Results.write_global_results_in_csv(csv_file, [0.1, 0.2])
+Write_Exodus_Results.write_global_results_in_csv(csv_file["file"], [0.1, 0.2])
 
 @testset "ut_write_global_results_in_csv" begin
 
