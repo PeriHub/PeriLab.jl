@@ -216,13 +216,6 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         if verbose
             IO.show_block_summary(solver_options, params, datamanager)
         end
-        # thats wrong here
-        if solver_options["Material Models"]
-            @info "Material Model init"
-            for block in eachindex(block_nodes)
-                @timeit to "Material.init_material_model" datamanager = Material.init_material_model(datamanager, block)
-            end
-        end
         @info "Init write results"
         @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"])
         Logging_module.set_result_files(result_files)
