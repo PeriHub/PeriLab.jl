@@ -357,14 +357,14 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
-    numericalDamping::Float64 = solver_options["Numerical Damping"]
+    numerical_damping::Float64 = solver_options["Numerical Damping"]
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     for idt in iter
         @timeit to "Verlet" begin
             # one step more, because of init step (time = 0)
             if solver_options["Material Models"]
-                vNP1[find_active(active[1:nnodes]), :] = (1 - numericalDamping) .* vN[find_active(active[1:nnodes]), :] + 0.5 * dt .* a[find_active(active[1:nnodes]), :]
+                vNP1[find_active(active[1:nnodes]), :] = (1 - numerical_damping) .* vN[find_active(active[1:nnodes]), :] + 0.5 * dt .* a[find_active(active[1:nnodes]), :]
 
                 uNP1[find_active(active[1:nnodes]), :] = uN[find_active(active[1:nnodes]), :] + dt .* vNP1[find_active(active[1:nnodes]), :]
             end
