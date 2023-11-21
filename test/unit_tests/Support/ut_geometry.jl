@@ -224,7 +224,7 @@ end
     nnodes = 4
     nodes = Vector{Int64}(1:nnodes)
     deformation_gradient = test_Data_manager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
-    strainInc = test_Data_manager.create_constant_node_field("Strain", Float64, "Matrix", dof)
+    strain = test_Data_manager.create_constant_node_field("Strain", Float64, "Matrix", dof)
     nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
     omega = test_Data_manager.create_constant_bond_field("Influence Function", Float64, 1)
@@ -235,39 +235,36 @@ end
 
 
     deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, bond_geometry, bond_geometry, inverse_shape_tensor, deformation_gradient)
-    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc)
+    strain = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strain)
     deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, bond_geometry, bond_geometry, inverse_shape_tensor, deformation_gradient)
-    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc) - strainInc
+    strain = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strain) - strain
 
     for i in 1:nnodes
-        @test strainInc[i, 1, 1] == 0
-        @test strainInc[i, 2, 1] == 0
-        @test strainInc[i, 1, 2] == 0
-        @test strainInc[i, 2, 2] == 0
+        @test strain[i, 1, 1] == 0
+        @test strain[i, 2, 1] == 0
+        @test strain[i, 1, 2] == 0
+        @test strain[i, 2, 2] == 0
     end
-
-    deformation_gradient = zeros(4, 3, 3)
-    strainInc = zeros(4, 3, 3)
-
-    deformation_gradient[1, 1, 1] = 2.0
-    deformation_gradient[1, 1, 2] = 1.0
-    deformation_gradient[1, 1, 3] = 2.0
-    deformation_gradient[1, 2, 1] = 2.0
-    deformation_gradient[1, 2, 2] = 1.0
-    deformation_gradient[1, 2, 3] = 2.3
-    deformation_gradient[1, 3, 1] = 2.0
-    deformation_gradient[1, 3, 2] = -1.0
-    deformation_gradient[1, 3, 3] = 3.0
-    strainInc = test_Data_manager.create_constant_node_field("Strain", Float64, "Matrix", dof)
-    strainInc = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strainInc)
+    deformation_gradient_3D = test_Data_manager.create_constant_node_field("Deformation Gradient 3D", Float64, "Matrix", 3)
+    deformation_gradient_3D[1, 1, 1] = 2.0
+    deformation_gradient_3D[1, 1, 2] = 1.0
+    deformation_gradient_3D[1, 1, 3] = 2.0
+    deformation_gradient_3D[1, 2, 1] = 2.0
+    deformation_gradient_3D[1, 2, 2] = 1.0
+    deformation_gradient_3D[1, 2, 3] = 2.3
+    deformation_gradient_3D[1, 3, 1] = 2.0
+    deformation_gradient_3D[1, 3, 2] = -1.0
+    deformation_gradient_3D[1, 3, 3] = 3.0
+    strain_3D = test_Data_manager.create_constant_node_field("Strain_3D", Float64, "Matrix", 3)
+    strain_3D = Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient_3D, strain_3D)
     identity = zeros(3, 3)
     identity[1, 1] = 1
     identity[2, 2] = 1
     identity[3, 3] = 1
-    test = 0.5 * (transpose(deformation_gradient[1, :, :]) * deformation_gradient[1, :, :] - identity)
+    test = 0.5 * (transpose(deformation_gradient_3D[1, :, :]) * deformation_gradient_3D[1, :, :] - identity)
     for i in 1:dof
         for j in 1:dof
-            @test strainInc[1, i, j] == test[i, j]
+            @test strain_3D[1, i, j] == test[i, j]
         end
     end
 end
