@@ -78,9 +78,9 @@ end
 
     coords = vcat(transpose(coordinates))
     for exo in result_files
-        @test exo.init.num_dim == dof
-        exo_coords = read_coordinates(exo)
-        exo_nsets = read_sets(exo, NodeSet)
+        @test exo["file"].init.num_dim == dof
+        exo_coords = read_coordinates(exo["file"])
+        exo_nsets = read_sets(exo["file"], NodeSet)
         @test coords == exo_coords
         @test exo_nsets == []
     end
