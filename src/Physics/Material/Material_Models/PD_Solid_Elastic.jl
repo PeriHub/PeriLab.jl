@@ -56,7 +56,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     bond_geometry = datamanager.get_field("Bond Geometry")
     bond_force = datamanager.get_field("Bond Forces")
 
-    # optiming, because if no damage it has not to be updated
+    # optimizing, because if no damage it has not to be updated
 
     weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
     theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
@@ -116,13 +116,13 @@ function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, w
             kappa = 3 * material["Bulk Modulus"] # -> Eq. (6.12.) 
         end
 
-        #bond_deformation = deformed_bond[iID][:, end] .- bond_geometry[iID][:, end]
         deviatoric_deformation = deformed_bond[iID][:, end] .- bond_geometry[iID][:, end] - (gamma * theta[iID] / 3) .* bond_geometry[iID][:, end]
         t = bond_damage[iID][:] .* omega[iID] .* (kappa .* theta[iID] .* bond_geometry[iID][:, end] .+ alpha .* deviatoric_deformation) ./ weighted_volume[iID]
         if deformed_bond[iID][:, end] == 0
             @error "Length of bond is zero due to its deformation."
         end
         # Calculate bond force
+        #Ordinary.project_bond_forces()
         bond_force[iID][:, 1:dof] = t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
     end
 
