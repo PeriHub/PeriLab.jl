@@ -50,11 +50,15 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         end
     end
     update_list = datamanager.get_field("Update List")
-    #update_list .= true
+    nodes::Vector{Int64} = []
+    active_nodes::Vector{Int64} = []
+    update_nodes::Vector{Int64} = []
+
     for block in eachindex(block_nodes)
         nodes = block_nodes[block]
         active_nodes = nodes[find_active(active[nodes])]
         update_nodes = view(nodes, find_active(update_list[active_nodes]))
+
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
 
         if options["Thermal Models"]
@@ -62,6 +66,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
                 @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, update_nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
             end
         end
+
         if options["Material Models"]
             if datamanager.check_property(block, "Material Model")
                 @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
@@ -69,12 +74,14 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             end
         end
     end
+
     return datamanager
 
 end
 function compute_damage_pre_calculation(datamanager::Module, options::Dict, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
     datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
+
     if options["Thermal Models"]
         datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
     end
