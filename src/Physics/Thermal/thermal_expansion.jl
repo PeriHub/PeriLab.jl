@@ -72,21 +72,21 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
 
     undeformed_bond = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    thermal_bond_deformation = datamanager.create_constant_bond_field("Thermal Deformation", Float64, dof)
 
-    thermal_bond_deformation = thermal_deformation(nodes, alpha_mat, temperature, undeformed_bond, thermal_bond_deformation)
+    #if "StrainNP1" in datamanager.get_all_field_keys()
+    #    strain = datamanager.get_field("Strain", "NP1")
+    #    for iID in nodes
+    #        strain[iID, :, :] += thermal_strain(alpha_mat, temperature[iID])
+    #    end
+    #end
+
     for iID in nodes
-        for jID in 1:nneighbors[iID]
-            deformed_bond[iID][jID, 1:dof] += thermal_bond_deformation[iID][jID, 1:dof]
-            deformed_bond[iID][jID, end] = norm(deformed_bond[iID][jID, 1:dof])
-        end
+        #for jID in 1:nneighbors[iID]
+        deformed_bond[iID][:, :] .-= alpha * temperature[iID] .* undeformed_bond[iID][:, :]
+        #deformed_bond[iID][jID, end] -= alpha * undeformed_bond[iID][jID, end]
+        #end
     end
-    if "Deformation Gradient" in datamanager.get_all_field_keys()
-        datamanager = Deformation_Gradient.compute(datamanager, nodes)
-    end
-    if "Bond Associated Deformation Gradient" in datamanager.get_all_field_keys()
-        datamanager = Bond_Deformation_Gradient.compute(datamanager, nodes)
-    end
+
     return datamanager
 end
 

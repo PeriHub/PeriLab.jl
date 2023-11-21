@@ -101,7 +101,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   bond_force = datamanager.get_field("Bond Forces")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
 
-  bond_geometry = datamanager.get_field("Bond Geometry")
+  undeformed_bond = datamanager.get_field("Bond Geometry")
   inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
 
   strainN = datamanager.get_field("Strain", "N")
@@ -130,7 +130,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   if rotation
     stressNP1 = rotate(nodes, dof, stressNP1, angles, true)
   end
-  bond_force[:] = calculate_bond_force(nodes, deformation_gradient, bond_geometry, bond_damage, inverse_shape_tensor, stressNP1, bond_force)
+  bond_force[:] = calculate_bond_force(nodes, deformation_gradient, undeformed_bond, bond_damage, inverse_shape_tensor, stressNP1, bond_force)
   # general interface, because it might be a flexbile Set_modules interface in future
   datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
 
@@ -163,14 +163,14 @@ function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArra
 end
 
 """
-   calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, bond_geometry::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stressNP1::SubArray, bond_force::SubArray)
+  calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stressNP1::SubArray, bond_force::SubArray)
 
   Calculates the bond force.
 
   # Arguments
   - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
   - `deformation_gradient::SubArray`: Deformation gradient.
-  - `bond_geometry::SubArray`: Bond geometry.
+  - `undeformed_bond::SubArray`: Bond geometry.
   - `bond_damage::SubArray`: Bond damage.
   - `inverse_shape_tensor::SubArray`: Inverse shape tensor.
   - `stressNP1::SubArray`: Cauchy stress.
@@ -178,7 +178,7 @@ end
   # Returns
   - `bond_force::SubArray`: Bond force.
 """
-function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, bond_geometry::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stressNP1::SubArray, bond_force::SubArray)
+function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stressNP1::SubArray, bond_force::SubArray)
   for iID in nodes
     jacobian = det(deformation_gradient[iID, :, :])
     if jacobian <= 1e-8
@@ -189,7 +189,7 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
     piolaStress::Matrix{Float64} = jacobian .* invdeformation_gradient * stressNP1[iID, :, :]
     temp::Matrix{Float64} = piolaStress * inverse_shape_tensor[iID, :, :]
 
-    bond_force[iID][:, :] = (bond_damage[iID][:] .* bond_geometry[iID][:, 1:end-1]) * temp
+    bond_force[iID][:, :] = (bond_damage[iID][:] .* undeformed_bond[iID][:, 1:end-1]) * temp
 
   end
   return bond_force

@@ -38,19 +38,19 @@ function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64
     dof = datamanager.get_dof()
     deformation_gradient = datamanager.get_field("Deformation Gradient")
     bond_force = datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
-    bond_geometry = datamanager.get_field("Bond Geometry")
-    bond_geometryNP1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    undeformed_bond = datamanager.get_field("Bond Geometry")
+    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness", Float64, "Matrix", dof)
     rotation::Bool, angles = datamanager.rotation_data()
     CVoigt = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
     zStiff = create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff, rotation)
-    bond_force = get_zero_energy_mode_force(nodes, zStiff, deformation_gradient, bond_geometry, bond_geometryNP1, bond_force)
+    bond_force = get_zero_energy_mode_force(nodes, zStiff, deformation_gradient, undeformed_bond, deformed_bond, bond_force)
     return datamanager
 end
 
 """
-    get_zero_energy_mode_force(nodes::Union{SubArray,Vector{Int64}}, zStiff::SubArray, deformation_gradient::SubArray, bond_geometry::SubArray, bond_geometryNP1::SubArray, bond_force::SubArray)
+    get_zero_energy_mode_force(nodes::Union{SubArray,Vector{Int64}}, zStiff::SubArray, deformation_gradient::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_force::SubArray)
 
     Computes the zero energy mode force
 
@@ -58,15 +58,15 @@ end
     - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
     - `zStiff::SubArray`: The zero energy stiffness
     - `deformation_gradient::SubArray`: The deformation gradient
-    - `bond_geometry::SubArray`: The bond geometry
-    - `bond_geometryNP1::SubArray`: The bond geometry at the next time step
+    - `undeformed_bond::SubArray`: The bond geometry
+    - `deformed_bond::SubArray`: The bond geometry at the next time step
     - `bond_force::SubArray`: The bond force
     # Returns
     - `bond_force::SubArray`: The bond force
 """
-function get_zero_energy_mode_force(nodes::Union{SubArray,Vector{Int64}}, zStiff::SubArray, deformation_gradient::SubArray, bond_geometry::SubArray, bond_geometryNP1::SubArray, bond_force::SubArray)
+function get_zero_energy_mode_force(nodes::Union{SubArray,Vector{Int64}}, zStiff::SubArray, deformation_gradient::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_force::SubArray)
     for iID in nodes
-        bond_force[iID][:, :] -= (bond_geometry[iID][:, 1:end-1] * deformation_gradient[iID, :, :] - bond_geometryNP1[iID][:, 1:end-1]) * zStiff[iID, :, :]
+        bond_force[iID][:, :] -= (undeformed_bond[iID][:, 1:end-1] * deformation_gradient[iID, :, :] - deformed_bond[iID][:, 1:end-1]) * zStiff[iID, :, :]
     end
     return bond_force
 end

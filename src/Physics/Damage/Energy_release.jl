@@ -59,7 +59,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   update_list = datamanager.get_field("Update List")
   horizon = datamanager.get_field("Horizon")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
-  bond_geometry = datamanager.get_field("Bond Geometry")
+  undeformed_bond = datamanager.get_field("Bond Geometry")
   bond_forces = datamanager.get_field("Bond Forces")
   deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
   critical_energy = damage_parameter["Critical Value"]
@@ -90,13 +90,13 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
   for iID in nodes
     for (jID, neighborID) in enumerate(nlist[iID])
-      relative_displacement_vector = deformed_bond[iID][jID, 1:dof] - bond_geometry[iID][jID, 1:dof]
+      relative_displacement_vector = deformed_bond[iID][jID, 1:dof] - undeformed_bond[iID][jID, 1:dof]
       norm_displacement = norm(relative_displacement_vector)
       if norm_displacement == 0
         continue
       end
       if tension
-        if deformed_bond[iID][jID, end] - bond_geometry[iID][jID, end] < 0
+        if deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end] < 0
           continue
         end
       end

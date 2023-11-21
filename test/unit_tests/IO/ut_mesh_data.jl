@@ -241,7 +241,7 @@ end
     rm(filename)
 end
 
-@testset "get_bond_geometry" begin
+@testset "get_undeformed_bond" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_num_controller(3)
     test_Data_manager.set_dof(2)
@@ -259,27 +259,27 @@ end
     coor[2, 2] = 0
     coor[3, 1] = 0
     coor[3, 2] = 1
-    Read_Mesh.get_bond_geometry(test_Data_manager)
-    bond_geometry = test_Data_manager.get_field("Bond Geometry")
+    Read_Mesh.get_undeformed_bond(test_Data_manager)
+    undeformed_bond = test_Data_manager.get_field("Bond Geometry")
 
-    @test bond_geometry[1][1, 1] == 1
-    @test bond_geometry[1][1, 2] == 0
-    @test bond_geometry[1][1, 3] == 1
-    @test bond_geometry[1][2, 1] == 0
-    @test bond_geometry[1][2, 2] == 1
-    @test bond_geometry[1][2, 3] == 1
+    @test undeformed_bond[1][1, 1] == 1
+    @test undeformed_bond[1][1, 2] == 0
+    @test undeformed_bond[1][1, 3] == 1
+    @test undeformed_bond[1][2, 1] == 0
+    @test undeformed_bond[1][2, 2] == 1
+    @test undeformed_bond[1][2, 3] == 1
 
-    @test bond_geometry[2][1, 1] == -1
-    @test bond_geometry[2][1, 2] == 0
-    @test bond_geometry[2][1, 3] == 1
-    @test bond_geometry[2][2, 1] == -1
-    @test bond_geometry[2][2, 2] == 1
-    @test bond_geometry[2][2, 3] / sqrt(2) - 1 < 1e-8
+    @test undeformed_bond[2][1, 1] == -1
+    @test undeformed_bond[2][1, 2] == 0
+    @test undeformed_bond[2][1, 3] == 1
+    @test undeformed_bond[2][2, 1] == -1
+    @test undeformed_bond[2][2, 2] == 1
+    @test undeformed_bond[2][2, 3] / sqrt(2) - 1 < 1e-8
 
-    @test bond_geometry[3][1, 1] == 0
-    @test bond_geometry[3][1, 2] == -1
-    @test bond_geometry[3][1, 3] == 1
-    @test bond_geometry[3][2, 1] == 1
-    @test bond_geometry[3][2, 2] == -1
-    @test bond_geometry[3][2, 3] / sqrt(2) - 1 < 1e-8
+    @test undeformed_bond[3][1, 1] == 0
+    @test undeformed_bond[3][1, 2] == -1
+    @test undeformed_bond[3][1, 3] == 1
+    @test undeformed_bond[3][2, 1] == 1
+    @test undeformed_bond[3][2, 2] == -1
+    @test undeformed_bond[3][2, 3] / sqrt(2) - 1 < 1e-8
 end

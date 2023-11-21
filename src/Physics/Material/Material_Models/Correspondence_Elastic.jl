@@ -23,7 +23,7 @@ export correspondence_name
    ```
    """
 function correspondence_name()
-  return "Correspondence Elastic"
+   return "Correspondence Elastic"
 end
 """
    compute_stresses(datamanager, nodes, material_parameter, time, dt)
@@ -47,15 +47,15 @@ end
    ```julia
      ```
    """
-function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strainInc::Union{Array{Float64,3},Array{Float64,6}}, stressN::SubArray, stressNP1::SubArray)
+function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Union{Array{Float64,3},Array{Float64,6}}, stressN::SubArray, stressNP1::SubArray)
 
-  hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
+   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
-  for iID in nodes
-    stressNP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strainInc[iID, :, :])) + stressN[iID, :, :]
-  end
+   for iID in nodes
+      stressNP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) + stressN[iID, :, :]
+   end
 
-  return stressNP1, datamanager
+   return stressNP1, datamanager
 end
 
 

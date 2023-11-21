@@ -60,7 +60,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     dof = datamanager.get_dof()
     horizon = datamanager.get_field("Horizon")
 
-    bond_geometry = datamanager.get_field("Bond Geometry")
+    undeformed_bond = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
     bond_force = datamanager.get_field("Bond Forces")
@@ -73,7 +73,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             @error "Length of bond is zero due to its deformation."
         end
         # Calculate the bond force
-        bond_force[iID] = (0.5 .* constant .* bond_damage[iID][:] .* (deformed_bond[iID][:, end] .- bond_geometry[iID][:, end]) ./ bond_geometry[iID][:, end]) .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
+        bond_force[iID] = (0.5 .* constant .* bond_damage[iID][:] .* (deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end]) ./ undeformed_bond[iID][:, end]) .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
 
     end
 

@@ -5,13 +5,15 @@
 PeriLab:
   Discretization:
     Node Sets:
+      Node Set 1: "BCleft.txt"
+      Node Set 2: "BCright.txt"
       Node Set 3: "BCall.txt"
     Type: "Text File"
     Input Mesh File: "mesh.txt"
   Physics:
     Material Models:
       Test:
-        Material Model: "PD Solid Elastic"
+        Material Model: "Bond-based Elastic"
         Young's Modulus: 7.0e+10
         Poisson's Ratio: 0.3
     Thermal Models:
@@ -43,13 +45,13 @@ PeriLab:
     Thermal Models: True
     Verbose: False
     Initial Time: 0.0
-    Final Time: 2.01e-8
+    Final Time: 2.01e-6
     Verlet:
       Safety Factor: 1.00
       Numerical Damping: 1e-02
   Outputs:
     Output1:
-      Output Filename: "thermal_expansion_PD_Solid"
+      Output Filename: "thermal_expansion_bond_based"
       Output File Type: Exodus
       Number of Output Steps: 10
       Output Variables:

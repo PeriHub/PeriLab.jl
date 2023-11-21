@@ -72,14 +72,14 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
     omega = datamanager.get_field("Influence Function")
-    bond_geometry = datamanager.get_field("Bond Geometry")
+    undeformed_bond = datamanager.get_field("Bond Geometry")
     bond_force = datamanager.get_field("Bond Forces")
 
-    # optiming, because if no damage it has not to be updated
+    # optimizing, because if no damage it has not to be updated
 
-    weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, bond_geometry, bond_damage, omega, volume)
-    theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, bond_geometry, deformed_bond, bond_damage, volume, weighted_volume, omega)
-    bond_force = elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force)
+    weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, undeformed_bond, bond_damage, omega, volume)
+    theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, undeformed_bond, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    bond_force = elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force)
 
 
     return datamanager
@@ -94,7 +94,7 @@ for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page
 # Arguments
 - nodes: array of node IDs
 - dof: number of degrees of freedom
-- bond_geometry: dictionary of bond geometries for each node
+- undeformed_bond: dictionary of bond geometries for each node
 - deformed_bond: dictionary of deformed bond geometries for each node
 - bond_damage: dictionary of bond damages for each node
 - theta: dictionary of theta values for each node
@@ -106,7 +106,7 @@ for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page
 # Returns
 - bond_force: dictionary of calculated bond forces for each node
 """
-function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
+function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
     #tbd
     #shear_factor=Vector{Float64}([0,8,15])
 
@@ -135,13 +135,13 @@ function elastic(nodes, dof, bond_geometry, deformed_bond, bond_damage, theta, w
             kappa = 3 * material["Bulk Modulus"] # -> Eq. (6.12.) 
         end
 
-        #bond_deformation = deformed_bond[iID][:, end] .- bond_geometry[iID][:, end]
-        deviatoric_deformation = deformed_bond[iID][:, end] .- bond_geometry[iID][:, end] - (gamma * theta[iID] / 3) .* bond_geometry[iID][:, end]
-        t = bond_damage[iID][:] .* omega[iID] .* (kappa .* theta[iID] .* bond_geometry[iID][:, end] .+ alpha .* deviatoric_deformation) ./ weighted_volume[iID]
+        deviatoric_deformation = deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end] - (gamma * theta[iID] / 3) .* undeformed_bond[iID][:, end]
+        t = bond_damage[iID][:] .* omega[iID] .* (kappa .* theta[iID] .* undeformed_bond[iID][:, end] .+ alpha .* deviatoric_deformation) ./ weighted_volume[iID]
         if deformed_bond[iID][:, end] == 0
             @error "Length of bond is zero due to its deformation."
         end
         # Calculate bond force
+        #Ordinary.project_bond_forces()
         bond_force[iID][:, 1:dof] = t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
     end
 

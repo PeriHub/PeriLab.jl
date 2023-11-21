@@ -47,7 +47,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   nlist = datamanager.get_nlist()
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
   bond_heat_flow = datamanager.get_field("Bond Heat Flow")
-  bond_geometry = datamanager.get_field("Bond Geometry")
+  undeformed_bond = datamanager.get_field("Bond Geometry")
   volume = datamanager.get_field("Volume")
   temperature = datamanager.get_field("Temperature", "NP1")
   lambda = thermal_parameter["Lambda"]
@@ -57,7 +57,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     if length(lambda) > 1
       lambda = lambda[1]
     end
-    bond_heat_flow = compute_heat_flow_state_bond_based(nodes, dof, nlist, lambda, bond_damage, bond_geometry, horizon, temperature, bond_heat_flow)
+    bond_heat_flow = compute_heat_flow_state_bond_based(nodes, dof, nlist, lambda, bond_damage, undeformed_bond, horizon, temperature, bond_heat_flow)
     return datamanager
 
   elseif thermal_parameter["Type"] == "Correspondence"
@@ -74,7 +74,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
       end
     end
 
-    bond_heat_flow = compute_heat_flow_state_correspondence(nodes, dof, nlist, lambda_matrix, bond_damage, bond_geometry, Kinv, temperature, volume, bond_heat_flow)
+    bond_heat_flow = compute_heat_flow_state_correspondence(nodes, dof, nlist, lambda_matrix, bond_damage, undeformed_bond, Kinv, temperature, volume, bond_heat_flow)
   else
     @error "No model valid type has beed defined; ''Bond based'' or ''Correspondence''"
   end
@@ -87,7 +87,7 @@ end
 is a prototype with some errors
 """
 
-function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Matrix{Float64}, bond_damage::SubArray, bond_geometry::SubArray, Kinv::SubArray, temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
+function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Matrix{Float64}, bond_damage::SubArray, undeformed_bond::SubArray, Kinv::SubArray, temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
 
   nablaT = zeros(Float64, dof)
   H = zeros(Float64, dof)
@@ -95,7 +95,7 @@ function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int
     H .= 0
     for (jID, neighborID) in enumerate(nlist[iID])
       tempState = (temperature[neighborID] - temperature[iID]) * volume[neighborID] * bond_damage[iID][jID]
-      H += tempState .* bond_geometry[iID][jID, 1:dof]
+      H += tempState .* undeformed_bond[iID][jID, 1:dof]
     end
     nablaT = Kinv[iID, :, :] * H
     """
@@ -110,7 +110,7 @@ if (MATRICES::vectorNorm(angles, 3)!=0){
 }"""
     q = lambda * nablaT
     for (jID, neighborID) in enumerate(nlist[iID])
-      temp = Kinv[iID, :, :] * bond_geometry[iID][jID, 1:dof]
+      temp = Kinv[iID, :, :] * undeformed_bond[iID][jID, 1:dof]
       bond_heat_flow[iID][jID] = dot(temp, q)
     end
   end
@@ -119,7 +119,7 @@ if (MATRICES::vectorNorm(angles, 3)!=0){
 end
 """
     compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray,
-        lambda::Union{Float64, Int64}, bond_damage::SubArray, bond_geometry::SubArray, horizon::SubArray,
+        lambda::Union{Float64, Int64}, bond_damage::SubArray, undeformed_bond::SubArray, horizon::SubArray,
         temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
 
 Calculate heat flow based on a bond-based model for thermal analysis.
@@ -130,7 +130,7 @@ Calculate heat flow based on a bond-based model for thermal analysis.
 - `nlist::SubArray`: A SubArray representing the neighbor list for each node.
 - `lambda::Union{Float64, Int64}`: The thermal conductivity.
 - `bond_damage::SubArray`: A SubArray representing the damage state of bonds between nodes.
-- `bond_geometry::SubArray`: A SubArray representing the geometry of the bonds.
+- `undeformed_bond::SubArray`: A SubArray representing the geometry of the bonds.
 - `horizon::SubArray`: A SubArray representing the horizon for each node.
 - `temperature::SubArray`: A SubArray representing the temperature at each node.
 - `volume::SubArray`: A SubArray representing the volume at each node.
@@ -143,7 +143,7 @@ Calculate heat flow based on a bond-based model for thermal analysis.
 This function calculates the heat flow between neighboring nodes based on a bond-based model for thermal analysis [OterkusS2014b](@cite). It considers various parameters, including thermal conductivity, damage state of bonds, geometry of bonds, horizons, temperature, and volume. The calculated bond heat flow values are stored in the `bond_heat_flow` array.
 
 """
-function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Float64,Int64}, bond_damage::SubArray, bond_geometry::SubArray, horizon::SubArray, temperature::SubArray, bond_heat_flow::SubArray)
+function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Float64,Int64}, bond_damage::SubArray, undeformed_bond::SubArray, horizon::SubArray, temperature::SubArray, bond_heat_flow::SubArray)
   kernel::Float64 = 0.0
   for iID in nodes
     #nlist
@@ -158,7 +158,7 @@ function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}
         continue
       end
       tempState = bond_damage[iID][jID] * (temperature[neighborID] - temperature[iID])
-      bond_heat_flow[iID][jID] = lambda * kernel * tempState / bond_geometry[iID][jID, end]
+      bond_heat_flow[iID][jID] = lambda * kernel * tempState / undeformed_bond[iID][jID, end]
     end
   end
   return bond_heat_flow
