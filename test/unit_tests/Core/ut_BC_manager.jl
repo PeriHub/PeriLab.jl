@@ -7,6 +7,20 @@ include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 using .Boundary_conditions
+
+@testset "ut_clean_up" begin
+    @test Boundary_conditions.clean_up("") == ""
+    @test Boundary_conditions.clean_up("-") == ".-"
+    @test Boundary_conditions.clean_up("+") == ".+"
+    @test Boundary_conditions.clean_up("*") == ".*"
+    @test Boundary_conditions.clean_up("/") == "./"
+    @test Boundary_conditions.clean_up("5e-8") == "5e-8"
+    @test Boundary_conditions.clean_up("5.0e-8") == "5.0e-8"
+    @test Boundary_conditions.clean_up("5.0e-8-5") == "5.0e-8 .- 5"
+    @test Boundary_conditions.clean_up("5.0e-8/5e+5*t") == "5.0e-8 ./ 5e+5 .* t"
+    @test Boundary_conditions.clean_up("5-8.0/5e+5") == "5 .- 8.0 ./ 5e+5"
+end
+
 @testset "ut_evaluation" begin
     unit = ones(Float64, 3)
     dof = 2
