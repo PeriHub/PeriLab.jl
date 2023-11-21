@@ -113,11 +113,8 @@ function eval_bc(field_values::Union{SubArray,Vector{Float64},Vector{Int64}}, bc
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
     # the yaml input allows multiple types. But for further use this input has to be a string
-    println(bc)
     bc = string(bc)
-    println(bc)
     bc = clean_up(bc)
-    println(bc)
     bc_value = Meta.parse(bc)
 
     if length(coordinates) == 0
@@ -134,7 +131,7 @@ function eval_bc(field_values::Union{SubArray,Vector{Float64},Vector{Int64}}, bc
     else
         global z = zeros(typeof(x[1]), length(x))
     end
-    println(bc, bc_value)
+
     value = eval(bc_value)
 
     if isnothing(value) || (initial && t != 0.0)
