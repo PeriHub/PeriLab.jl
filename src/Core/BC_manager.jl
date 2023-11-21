@@ -90,6 +90,11 @@ function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
 end
 
 function clean_up(bc::String)
+
+    bc = replace(bc, ".*" => "*")
+    bc = replace(bc, "./" => "/")
+    bc = replace(bc, ".+" => "+")
+    bc = replace(bc, ".-" => "-")
     # set space before the operator to avoid integer and float problems, because the dot is connected to the number and not the operator
     bc = replace(bc, "*" => " .* ")
     bc = replace(bc, "/" => " ./ ")
