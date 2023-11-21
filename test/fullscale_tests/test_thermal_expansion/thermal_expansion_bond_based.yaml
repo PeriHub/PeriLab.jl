@@ -11,7 +11,7 @@ PeriLab:
   Physics:
     Material Models:
       Test:
-        Material Model: "PD Solid Elastic"
+        Material Model: "Bond-based Elastic"
         Young's Modulus: 7.0e+10
         Poisson's Ratio: 0.3
     Thermal Models:
@@ -49,7 +49,7 @@ PeriLab:
       Numerical Damping: 1e-02
   Outputs:
     Output1:
-      Output Filename: "thermal_expansion_PD_Solid"
+      Output Filename: "thermal_expansion_bond_based"
       Output File Type: Exodus
       Number of Output Steps: 10
       Output Variables:
