@@ -153,7 +153,7 @@ deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, bond_geometry, deformed_bond, inverse_shape_tensor, deformation_gradient)
 """
 
-function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, bond_geometry, inverse_shape_tensor, deformation_gradient)
+function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, bond_geometry::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
     for iID in nodes
         deformation_gradient[iID, :, :] = zeros(Float64, dof, dof)
         for i in 1:dof
@@ -163,9 +163,7 @@ function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, 
         end
         deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]
     end
-
     return deformation_gradient
-
 end
 """
     function strain(nodes::Union{SubArray, Vector{Int64}}, deformation_gradient, strainInc)
@@ -184,9 +182,8 @@ This function iterates over the specified nodes and computes strain increments u
 
 """
 
-function strain(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient, strain)
+function strain(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, strain::SubArray)
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
-    # First equation gives Strain increment as shown
     for iID in nodes
         strain[iID, :, :] = 0.5 * (transpose(deformation_gradient[iID, :, :]) * deformation_gradient[iID, :, :] - I)
     end
