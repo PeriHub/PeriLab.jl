@@ -13,129 +13,127 @@ MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
 
-    @testset "Compute" begin
-        @testset "ut_compute_global_values" begin
-            @includetests["unit_tests/Compute/ut_compute_global_values"]
+    @testset "unit_tests" begin
+        @testset "Compute" begin
+            @testset "ut_compute_global_values" begin
+                @includetests["unit_tests/Compute/ut_compute_global_values"]
+            end
+            @testset "ut_compute_field_values" begin
+                @includetests["unit_tests/Compute/ut_compute_field_values"]
+            end
         end
-        @testset "ut_compute_field_values" begin
-            @includetests["unit_tests/Compute/ut_compute_field_values"]
+        @testset "Support" begin
+
+            @testset "Parameters" begin
+
+                @testset "ut_parameter_handling" begin
+                    @includetests["unit_tests/Support/Parameters/ut_parameter_handling"]
+                end
+
+            end
+
+            @testset "ut_data_manager" begin
+                @includetests["unit_tests/Support/ut_data_manager"]
+            end
+
+            @testset "ut_helpers" begin
+                @includetests["unit_tests/Support/ut_helpers"]
+            end
+
+            @testset "ut_geometry" begin
+                @includetests["unit_tests/Support/ut_geometry"]
+            end
         end
-    end
-    @testset "Support" begin
 
-        @testset "Parameters" begin
+        @testset "Core" begin
 
-            @testset "ut_parameter_handling" begin
-                @includetests["unit_tests/Support/Parameters/ut_parameter_handling"]
+
+            @testset "Solver" begin
+
+                # @testset "ut_Solver_control" begin
+                #     @includetests["unit_tests/Core/Solver/ut_Solver_control"]
+                # end
+
+                @testset "ut_Verlet" begin
+                    @includetests["unit_tests/Core/Solver/ut_Verlet"]
+                end
+
+            end
+            @testset "Module_inclusion" begin
+                @includetests["unit_tests/Core/Module_inclusion/ut_set_Modules"]
+            end
+            @testset "ut_BC_manager" begin
+                @includetests["unit_tests/Core/ut_BC_manager"]
+            end
+        end
+
+        @testset "IO" begin
+
+            @testset "ut_exodus_export" begin
+                @includetests["unit_tests/IO/ut_exodus_export"]
+            end
+            @testset "ut_read_inputdeck" begin
+                @includetests["unit_tests/IO/ut_read_inputdeck"]
+            end
+            @testset "ut_IO" begin
+                @includetests["unit_tests/IO/ut_IO"]
+            end
+
+            @testset "ut_mesh_data" begin
+                @includetests["unit_tests/IO/ut_mesh_data"]
+            end
+
+            @testset "ut_bond_filter" begin
+                @includetests["unit_tests/IO/ut_bond_filter"]
+            end
+        end
+
+
+        @testset "MPI" begin
+
+            @testset "ut_MPI" begin
+                @includetests["unit_tests/MPI_communication/ut_MPI_call"]
             end
 
         end
 
-        @testset "ut_data_manager" begin
-            @includetests["unit_tests/Support/ut_data_manager"]
-        end
 
-        @testset "ut_helpers" begin
-            @includetests["unit_tests/Support/ut_helpers"]
-        end
-
-        @testset "ut_tools" begin
-            @includetests["unit_tests/Support/ut_tools"]
-        end
-
-        @testset "ut_geometry" begin
-            @includetests["unit_tests/Support/ut_geometry"]
-        end
-    end
-
-    @testset "Core" begin
-
-
-        @testset "Solver" begin
-
-            # @testset "ut_Solver_control" begin
-            #     @includetests["unit_tests/Core/Solver/ut_Solver_control"]
-            # end
-
-            @testset "ut_Verlet" begin
-                @includetests["unit_tests/Core/Solver/ut_Verlet"]
+        @testset "Physics" begin
+            @testset "ut_templates" begin
+                @includetests["unit_tests/Physics/ut_templates"]
+            end
+            @testset "Thermal" begin
+                @testset "ut_Thermal_Factory" begin
+                    @includetests["unit_tests/Physics/Thermal/ut_Thermal_Factory"]
+                end
+                @testset "ut_Thermal_Flow" begin
+                    @includetests["unit_tests/Physics/Thermal/ut_Thermal_flow"]
+                end
+                @testset "ut_Thermal_Expansion" begin
+                    @includetests["unit_tests/Physics/Thermal/ut_Thermal_expansion"]
+                end
             end
 
-        end
-        @testset "Module_inclusion" begin
-            @includetests["unit_tests/Core/Module_inclusion/ut_set_Modules"]
-        end
-        @testset "ut_BC_manager" begin
-            @includetests["unit_tests/Core/ut_BC_manager"]
-        end
-    end
-
-    @testset "IO" begin
-
-        @testset "ut_exodus_export" begin
-            @includetests["unit_tests/IO/ut_exodus_export"]
-        end
-        @testset "ut_read_inputdeck" begin
-            @includetests["unit_tests/IO/ut_read_inputdeck"]
-        end
-        @testset "ut_IO" begin
-            @includetests["unit_tests/IO/ut_IO"]
-        end
-
-        @testset "ut_mesh_data" begin
-            @includetests["unit_tests/IO/ut_mesh_data"]
-        end
-
-        @testset "ut_bond_filter" begin
-            @includetests["unit_tests/IO/ut_bond_filter"]
-        end
-    end
-
-
-    @testset "MPI" begin
-
-        @testset "ut_MPI" begin
-            @includetests["unit_tests/MPI_communication/ut_MPI_call"]
-        end
-
-    end
-
-
-    @testset "Physics" begin
-        @testset "ut_templates" begin
-            @includetests["unit_tests/Physics/ut_templates"]
-        end
-        @testset "Thermal" begin
-            @testset "ut_Thermal_Factory" begin
-                @includetests["unit_tests/Physics/Thermal/ut_Thermal_Factory"]
+            @testset "ut_Physics_Factory" begin
+                @includetests["unit_tests/Physics/ut_Physics_Factory"]
             end
-            @testset "ut_Thermal_Flow" begin
-                @includetests["unit_tests/Physics/Thermal/ut_Thermal_flow"]
+            @testset "ut_Damage" begin
+                @includetests["unit_tests/Physics/Damage/ut_Damage_Factory"]
+                @includetests["unit_tests/Physics/Damage/ut_Energy_release"]
             end
-            @testset "ut_Thermal_Expansion" begin
-                @includetests["unit_tests/Physics/Thermal/ut_Thermal_expansion"]
-            end
-        end
-
-        @testset "ut_Physics_Factory" begin
-            @includetests["unit_tests/Physics/ut_Physics_Factory"]
-        end
-        @testset "ut_Damage" begin
-            @includetests["unit_tests/Physics/Damage/ut_Damage_Factory"]
-            @includetests["unit_tests/Physics/Damage/ut_Energy_release"]
-        end
-        @testset "ut_Material" begin
-            @testset "ut_control" begin
-                @includetests["unit_tests/Physics/Material/Zero_Energy_Control/ut_global_control"]
-            end
-            @testset "ut_material_basis" begin
-                @includetests["unit_tests/Physics/Material/ut_material_basis"]
-            end
-            @testset "ut_correspondence" begin
-                @includetests["unit_tests/Physics/Material/Material_Models/ut_Correspondence"]
-            end
-            @testset "ut_ordinary" begin
-                @includetests["unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary"]
+            @testset "ut_Material" begin
+                @testset "ut_control" begin
+                    @includetests["unit_tests/Physics/Material/Zero_Energy_Control/ut_global_control"]
+                end
+                @testset "ut_material_basis" begin
+                    @includetests["unit_tests/Physics/Material/ut_material_basis"]
+                end
+                @testset "ut_correspondence" begin
+                    @includetests["unit_tests/Physics/Material/Material_Models/ut_Correspondence"]
+                end
+                @testset "ut_ordinary" begin
+                    @includetests["unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary"]
+                end
             end
         end
     end
