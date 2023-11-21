@@ -9,6 +9,11 @@
 
 module Thermal_expansion
 using LinearAlgebra
+include("../Pre_calculation/deformation_gradient.jl")
+include("../Pre_calculation/bond_deformation_gradient.jl")
+using .Deformation_Gradient
+using .Bond_Deformation_Gradient
+
 export compute_thermal_model
 export thermal_model_name
 """
@@ -54,17 +59,15 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     dof = datamanager.get_dof()
     alpha = thermal_parameter["Heat expansion"]
 
-    alpha_mat = zeros(Float64, dof, dof)
+    alpha_mat::Matrix{Float64} = zeros(Float64, dof, dof)
     if length(alpha) == 1
-        for i in 1:dof
-            alpha_mat[i, i] = alpha
-        end
+        alpha_mat = alpha .* I(dof)
     elseif length(alpha) == dof || length(alpha) == 3
         for i in 1:dof
             alpha_mat[i, i] = alpha[i]
         end
     elseif length(alpha) == dof * dof || length(alpha) == 9
-        @error "not yet implemented for full heat expansion matrix"
+        @error "Full heat expansion matrix is not implemented yet."
     end
 
     undeformed_bond = datamanager.get_field("Bond Geometry")
@@ -74,13 +77,17 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     thermal_bond_deformation = thermal_deformation(nodes, alpha_mat, temperature, undeformed_bond, thermal_bond_deformation)
     for iID in nodes
         for jID in 1:nneighbors[iID]
-            deformed_bond[iID][jID, 1:dof] -= thermal_bond_deformation[iID][jID, 1:dof]
+            deformed_bond[iID][jID, 1:dof] += thermal_bond_deformation[iID][jID, 1:dof]
             deformed_bond[iID][jID, end] = norm(deformed_bond[iID][jID, 1:dof])
         end
     end
-
+    if "Deformation Gradient" in datamanager.get_all_field_keys()
+        datamanager = Deformation_Gradient.compute(datamanager, nodes)
+    end
+    if "Bond Associated Deformation Gradient" in datamanager.get_all_field_keys()
+        datamanager = Bond_Deformation_Gradient.compute(datamanager, nodes)
+    end
     return datamanager
-
 end
 
 """
@@ -125,7 +132,7 @@ result = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal
 function thermal_deformation(nodes::Union{SubArray,Vector{Int64}}, alpha::Union{Matrix{Float64},Matrix{Int64}}, temperature::Union{Vector{Float64},SubArray}, undeformed_bond::SubArray, thermal_deformation::SubArray)
     for iID in nodes
         for jID in eachindex(undeformed_bond[iID][:, 1])
-            thermal_deformation[iID][jID, 1:end] = thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID, 1:end-1]
+            thermal_deformation[iID][jID, 1:end] = -thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID, 1:end-1]
         end
     end
     return thermal_deformation
