@@ -57,7 +57,7 @@ end
     test_Data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5))
 
     nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
+    undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
     nlist[1] = [2, 3, 4, 5]
     nlist[2] = [1, 3, 4, 5]
     nlist[3] = [1, 2, 4, 5]
@@ -79,7 +79,7 @@ end
     horizon[:] = [1.1, 1.1, 1.1, 1.1, 1.1]
     node_list = zeros(Int64, nnodes)
     node_list[:] = 1:nnodes
-    bond_geometry = Geometry.bond_geometry(node_list, dof, nlist, coor, bond_geometry)
+    undeformed_bond = Geometry.undeformed_bond(node_list, dof, nlist, coor, undeformed_bond)
     @test !("Active" in test_Data_manager.get_all_field_keys())
     blockNodes, bcs, datamanager, solver_options = Solver.init(params, test_Data_manager)
 

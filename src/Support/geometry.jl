@@ -5,10 +5,10 @@
 module Geometry
 using LinearAlgebra
 using Rotations
-export bond_geometry
+export undeformed_bond
 export shape_tensor
 """
-     bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, bond_geometry)
+     undeformed_bond(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
 
  Calculate bond geometries between nodes based on their coordinates.
 
@@ -17,10 +17,10 @@ export shape_tensor
  - `dof::Int64`: An integer representing the degrees of freedom.
  - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
  - `coor`: A matrix representing the coordinates of each node.
- - `bond_geometry`: A preallocated array or data structure to store bond geometries.
+ - `undeformed_bond`: A preallocated array or data structure to store bond geometries.
 
 # # Output
- - `bond_geometry`: An updated `bond_geometry` array with calculated bond geometries.
+ - `undeformed_bond`: An updated `undeformed_bond` array with calculated bond geometries.
 
 # # Description
  This function calculates bond geometries between nodes. For each node in `nodes`, it computes the bond vector between the node and its neighboring nodes based on their coordinates. It also calculates the distance (magnitude) of each bond vector.
@@ -33,26 +33,26 @@ export shape_tensor
  dof = 2
  nlist = [[2, 3], [1, 3], [1, 2]]
  coor = [0.0 0.0; 1.0 0.0; 0.0 1.0]
- bond_geometry = zeros(Float64, length(nodes), length(nlist[1]), dof + 1)
+ undeformed_bond = zeros(Float64, length(nodes), length(nlist[1]), dof + 1)
 
- bond_geometry(nodes, dof, nlist, coor, bond_geometry)
+ undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
 """
-function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, bond_geometry)
+function undeformed_bond(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
     for iID in nodes
         for (jID, neighborID) in enumerate(nlist[iID])
             # add distance to include thermal extension
-            bond_geometry[iID][jID, 1:dof] = coor[neighborID, :] - coor[iID, :]
-            bond_geometry[iID][jID, dof+1] = norm(bond_geometry[iID][jID, 1:dof])
-            if bond_geometry[iID][jID, dof+1] == 0
+            undeformed_bond[iID][jID, 1:dof] = coor[neighborID, :] - coor[iID, :]
+            undeformed_bond[iID][jID, dof+1] = norm(undeformed_bond[iID][jID, 1:dof])
+            if undeformed_bond[iID][jID, dof+1] == 0
                 @error "Identical point coordinates with no distance $iID, $jID"
                 return nothing
             end
         end
     end
-    return bond_geometry
+    return undeformed_bond
 end
 """
-    shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, bond_geometry, shapeTensor, inverse_shape_tensor)
+    shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
 
 Calculate the shape tensor and its inverse for a set of nodes in a computational mechanics context.
 
@@ -63,7 +63,7 @@ Calculate the shape tensor and its inverse for a set of nodes in a computational
 - `volume`: A vector or array containing volume information for each node.
 - `omega`: A vector or array containing omega information for each node.
 - `bond_damage`: A data structure representing bond damage for each node.
-- `bond_geometry`: A data structure representing bond geometries for each node.
+- `undeformed_bond`: A data structure representing bond geometries for each node.
 - `shapeTensor`: A preallocated 3D array to store the shape tensors for each node.
 - `inverse_shape_tensor`: A preallocated 3D array to store the inverse shape tensors for each node.
 
@@ -84,20 +84,20 @@ nlist = [[2, 3], [1, 3], [1, 2]]
 volume = [0.1, 0.2, 0.3]
 omega = [0.5, 0.4, 0.6]
 bond_damage = zeros(Float64, length(nodes), length(nlist[1]))
-bond_geometry = rand(Float64, length(nodes), length(nlist[1]), dof)
+undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 shapeTensor = zeros(Float64, length(nodes), dof, dof)
 inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 
-shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, bond_geometry, shapeTensor, inverse_shape_tensor)
+shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
 """
 
-function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, bond_geometry, shapeTensor, inverse_shape_tensor)
+function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
 
     for iID in nodes
         shapeTensor[iID, :, :] = zeros(Float64, dof, dof)
         for i in 1:dof
             for j in 1:dof
-                shapeTensor[iID, i, j] = sum(bond_damage[iID][:] .* bond_geometry[iID][:, i] .* bond_geometry[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
+                shapeTensor[iID, i, j] = sum(bond_damage[iID][:] .* undeformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
             end
 
         end
@@ -113,7 +113,7 @@ function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, v
 end
 
 """
-    deformation_gradient(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, bond_geometry, deformed_bond, inverse_shape_tensor, deformation_gradient)
+    deformation_gradient(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 
 Calculate the deformation gradient tensor for a set of nodes in a computational mechanics context.
 
@@ -124,7 +124,7 @@ Calculate the deformation gradient tensor for a set of nodes in a computational 
 - `volume`: A vector or array containing volume information for each node.
 - `omega`: A vector or array containing omega information for each node.
 - `bond_damage`: A data structure representing bond damage for each node.
-- `bond_geometry`: A data structure representing bond geometries for each node.
+- `undeformed_bond`: A data structure representing bond geometries for each node.
 - `deformed_bond`: A data structure representing deformed bond properties for each node.
 - `inverse_shape_tensor`: A data structure representing the inverse shape tensors for each node.
 - `deformation_gradient`: A preallocated 3D array to store the deformation gradient tensors for each node.
@@ -145,20 +145,20 @@ nlist = [[2, 3], [1, 3], [1, 2]]
 volume = [0.1, 0.2, 0.3]
 omega = [0.5, 0.4, 0.6]
 bond_damage = zeros(Float64, length(nodes), length(nlist[1]))
-bond_geometry = rand(Float64, length(nodes), length(nlist[1]), dof)
+undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 deformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 inverse_shape_tensor = rand(Float64, length(nodes), dof, dof)
 deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 
-deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, bond_geometry, deformed_bond, inverse_shape_tensor, deformation_gradient)
+deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 """
 
-function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, bond_geometry::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
+function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, undeformed_bond::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
     for iID in nodes
         deformation_gradient[iID, :, :] = zeros(Float64, dof, dof)
         for i in 1:dof
             for j in 1:dof
-                deformation_gradient[iID, i, j] = sum(bond_damage[iID][:] .* deformed_bond[iID][:, i] .* bond_geometry[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
+                deformation_gradient[iID, i, j] = sum(bond_damage[iID][:] .* deformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
             end
         end
         deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]

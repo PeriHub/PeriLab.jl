@@ -13,10 +13,10 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
-    bond_geometry = datamanager.get_field("Bond Geometry")
+    undeformed_bond = datamanager.get_field("Bond Geometry")
     shapeTensor = datamanager.get_field("Shape Tensor")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
-    shapeTensor, inverse_shape_tensor = Geometry.shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, bond_geometry, shapeTensor, inverse_shape_tensor)
+    shapeTensor, inverse_shape_tensor = Geometry.shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
     return datamanager
 end
 

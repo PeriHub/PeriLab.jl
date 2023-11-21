@@ -28,12 +28,12 @@ end
 
 @testset "ut_get_cs_denominator" begin
     volume = Float64[1, 2, 3]
-    bond_geometry = [1, 2, 3]
-    @test Verlet.get_cs_denominator(volume, bond_geometry) == 3
-    bond_geometry = [2, 4, 6]
-    @test Verlet.get_cs_denominator(volume, bond_geometry) == 1.5
-    bond_geometry = [1, 0.5, 2]
-    @test Verlet.get_cs_denominator(volume, bond_geometry) == 6.5
+    undeformed_bond = [1, 2, 3]
+    @test Verlet.get_cs_denominator(volume, undeformed_bond) == 3
+    undeformed_bond = [2, 4, 6]
+    @test Verlet.get_cs_denominator(volume, undeformed_bond) == 1.5
+    undeformed_bond = [1, 0.5, 2]
+    @test Verlet.get_cs_denominator(volume, undeformed_bond) == 6.5
 end
 
 # nnodes = 5
@@ -52,7 +52,7 @@ end
 # lenNlist .= 4
 
 # nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-# bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
+# undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
 # nlist[1] = [2, 3, 4, 5]
 # nlist[2] = [1, 3, 4, 5]
 # nlist[3] = [1, 2, 4, 5]
@@ -74,7 +74,7 @@ end
 # density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
 # horizon[:] = [3.1, 3.1, 3.1, 3.1, 3.1]
 
-# bond_geometry = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, bond_geometry)
+# undeformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
 
 # blocks[:] = [1, 1, 2, 2, 1]
 # blocks = test_Data_manager.set_block_list(blocks)

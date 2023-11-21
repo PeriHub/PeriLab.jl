@@ -12,7 +12,7 @@ end
 
 function get_partial_stresses(datamanager::Module, nodes::Vector{Union{Int64,SubArray}})
     bond_forces = datamanager.get_field("Bond Forces")
-    bond_geometry = datamanager.get_field("Bond Geometry")
+    undeformed_bond = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     stress = datamanager.get_field("Cauchy Stress", "NP1")
     dof = datamanager.get_dof()
@@ -20,7 +20,7 @@ function get_partial_stresses(datamanager::Module, nodes::Vector{Union{Int64,Sub
         for jID in eachindex(bond_forces[iID][:, 1])
             for i in 1:dof
                 for j in 1:dof
-                    stress[iID, i, j] += bond_forces[iID][jID, i] * bond_geometry[iID][jID, j] * volume[iID]
+                    stress[iID, i, j] += bond_forces[iID][jID, i] * undeformed_bond[iID][jID, j] * volume[iID]
                 end
             end
         end
