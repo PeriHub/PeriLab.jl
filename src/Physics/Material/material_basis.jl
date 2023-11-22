@@ -179,7 +179,7 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
 end
 
 # Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
-function matrix_to_voigt(matrix)
+function matrix_to_voigt(matrix::Union{Matrix{Float64},Matrix{Int64}})
     if size(matrix) == (2, 2)
         return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
     elseif size(matrix) == (3, 3)
