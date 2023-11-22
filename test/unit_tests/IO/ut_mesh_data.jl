@@ -241,7 +241,7 @@ end
     rm(filename)
 end
 
-@testset "get_undeformed_bond" begin
+@testset "get_bond_geometry" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_num_controller(3)
     test_Data_manager.set_dof(2)
