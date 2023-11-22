@@ -79,7 +79,7 @@ end
     horizon[:] = [1.1, 1.1, 1.1, 1.1, 1.1]
     node_list = zeros(Int64, nnodes)
     node_list[:] = 1:nnodes
-    undeformed_bond = Geometry.bond_geometry(node_list, dof, nlist, coor, undeformed_bond)
+    undeformed_bond = Geometry.undeformed_bond(node_list, dof, nlist, coor, undeformed_bond)
     @test !("Active" in test_Data_manager.get_all_field_keys())
     blockNodes, bcs, datamanager, solver_options = Solver.init(params, test_Data_manager)
 

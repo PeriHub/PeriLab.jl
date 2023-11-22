@@ -319,7 +319,7 @@ This function depends on various data fields and properties from the `datamanage
 4. Write simulation results using the `write_results` function.
 5. Return the updated `result_files` vector.
 """
-function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, synchronise_field, write_results, to::TimerOutputs.TimerOutput, silent::Bool)
+function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Dict}, synchronise_field, write_results, to::TimerOutputs.TimerOutput, silent::Bool)
     @info "Run Verlet Solver"
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()

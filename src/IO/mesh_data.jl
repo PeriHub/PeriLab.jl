@@ -190,7 +190,7 @@ function get_undeformed_bond(datamanager::Module)
     coor = datamanager.get_field("Coordinates")
     undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
     bond_damage = datamanager.create_constant_bond_field("Bond Damage", Float64, 1)
-    undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
+    undeformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
     return datamanager
 end
 

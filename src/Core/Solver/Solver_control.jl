@@ -140,7 +140,7 @@ Runs the solver.
 # Returns
 - `result_files`: A vector of updated result files
 """
-function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, to, silent::Bool)
+function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Dict}, write_results, to, silent::Bool)
 
     return Verlet.run_solver(solver_options, blockNodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)
 

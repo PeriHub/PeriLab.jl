@@ -381,7 +381,7 @@ Write results.
 # Returns
 - `result_files::Vector{Any}`: The result files
 """
-function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, datamanager::Module)
+function write_results(result_files::Vector{Dict}, time::Float64, outputs::Dict, datamanager::Module)
 
     for id in eachindex(result_files)
         @debug id
