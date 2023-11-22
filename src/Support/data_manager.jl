@@ -706,10 +706,11 @@ This function initializes the properties dictionary.
 function init_property()
     global properties
 
-    for iblock in get_block_list()
+    block_list = get_block_list()
+    for iblock in block_list
         properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
     end
-    return collect(keys(properties[1]))
+    return collect(keys(properties[block_list[1]]))
 end
 """
     rotation_data()

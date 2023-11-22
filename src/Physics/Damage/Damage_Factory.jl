@@ -125,8 +125,8 @@ Initialize the critical values
 """
 function init_interface_crit_values(datamanager::Module, params::Dict)
     blockList = datamanager.get_block_list()
-
-    inter_critical_value = zeros(Float64, (length(blockList), length(blockList), length(blockList)))
+    max_block_id = maximum(blockList)
+    inter_critical_value = zeros(Float64, (max_block_id, max_block_id, max_block_id))
     for block_id in blockList
         if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
             continue
@@ -140,8 +140,8 @@ function init_interface_crit_values(datamanager::Module, params::Dict)
             continue
         end
         critical_value = damage_parameter["Critical Value"]
-        for block_iId in blockList
-            for block_jId in blockList
+        for block_iId in 1:max_block_id
+            for block_jId in 1:max_block_id
                 critValueName = "Interblock Critical Value $(block_iId)_$block_jId"
                 if haskey(damage_parameter, critValueName)
                     inter_critical_value[block_iId, block_jId, block_id] = damage_parameter[critValueName]
