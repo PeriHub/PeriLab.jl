@@ -14,43 +14,42 @@ export compute_damage_pre_calculation
 export damage_name
 
 """
-   damage_name()
+  damage_name()
 
-   Gives the damage name. It is needed for comparison with the yaml input deck.
+Gives the damage name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+# Returns
+- `name::String`: The name of the damage.
 
-   Returns:
-   - `name::String`: The name of the damage.
-
-   Example:
-   ```julia
-   println(damage_name())
-   "Critical Energy"
-   ```
-   """
+Example:
+```julia
+println(damage_name())
+"Critical Energy"
+```
+"""
 function damage_name()
   return "Critical Energy"
 end
+
 """
-   compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
+  compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
 
-   Calculates the elastic energy of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
-   [WillbergC2019](@cite), [FosterJT2011](@cite)
+Calculates the elastic energy of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
+[WillbergC2019](@cite), [FosterJT2011](@cite)
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
-        - `block::Int64`: Block number.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
-        - - `datamanager::Data_manager`: Datamanager.
-   Example:
-   ```julia
-     ```
-   """
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `block::Int64`: Block number.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+Example:
+```julia
+```
+"""
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
   dof::Int64 = datamanager.get_dof()
   nlist = datamanager.get_nlist()
@@ -130,6 +129,21 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   return datamanager
 end
 
+"""
+  compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+
+Compute the pre calculation for the damage.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `block::Int64`: Block number
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
   synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Bond Forces", "upload_to_cores")
@@ -137,6 +151,17 @@ function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArr
   return datamanager
 end
 
+"""
+  get_quad_horizon(horizon::Float64, dof::Int64)
+
+Get the quadric of the horizon.
+
+# Arguments
+- `horizon::Float64`: The horizon of the block.
+- `dof::Int64`: The degree of freedom.
+# Returns
+- `quad_horizon::Float64`: The quadric of the horizon.
+"""
 function get_quad_horizon(horizon::Float64, dof::Int64)
   if dof == 2
     thickness::Float64 = 1 # is a placeholder
@@ -144,6 +169,4 @@ function get_quad_horizon(horizon::Float64, dof::Int64)
   end
   return Float64(4 / (pi * horizon^4))
 end
-
-
 end

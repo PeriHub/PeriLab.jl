@@ -32,7 +32,7 @@ import .Geometry
     coor[4, 1] = 0
     coor[4, 2] = 1
 
-    undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
+    undeformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
 
     @test undeformed_bond[1][1, 1] == 0.5
     @test undeformed_bond[1][1, 2] == 0.5
@@ -58,7 +58,7 @@ import .Geometry
     @test undeformed_bond[4][1, 1] == 0.5
     @test undeformed_bond[4][1, 2] == -0.5
     @test undeformed_bond[4][1, 3] / sqrt(1.25) - 1 < 1e-8
-    undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
+    undeformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
     # test if a sum exists or not
     @test undeformed_bond[1][1, 1] == 0.5
     @test undeformed_bond[1][1, 2] == 0.5
@@ -93,7 +93,7 @@ import .Geometry
     undeformed_bond[3][:, :] .= 0
     undeformed_bond[4][:, :] .= 0
 
-    undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
+    undeformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
     println()
     @test isnothing(undeformed_bond)
 end
@@ -145,7 +145,7 @@ end
     coor[4, 1] = 1
     coor[4, 2] = 0.5
 
-    undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
+    undeformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
     shapeTensor, inverse_shape_tensor = Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
 
     deformed_coor = copy(coor)
@@ -162,7 +162,7 @@ end
     deformed_coor[2, 1] = 0.25
     deformed_coor[4, 1] = 0.25
 
-    deformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, deformed_coor, deformed_bond)
+    deformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, deformed_coor, deformed_bond)
     deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, deformed_bond, undeformed_bond, inverse_shape_tensor, deformation_gradient)
 
     for i in 1:nnodes
@@ -178,7 +178,7 @@ end
     deformed_coor[3, 2] = 1.5
     deformed_coor[4, 2] = 1.5
 
-    deformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, deformed_coor, deformed_bond)
+    deformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, deformed_coor, deformed_bond)
     deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, deformed_bond, undeformed_bond, inverse_shape_tensor, deformation_gradient)
     for i in 1:nnodes
         for j in nn[i]
@@ -198,7 +198,7 @@ end
     deformed_coor[4, 1] = 1.5
     deformed_coor[4, 2] = 0.5
 
-    deformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, deformed_coor, deformed_bond)
+    deformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, deformed_coor, deformed_bond)
     deformation_gradient = Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, deformed_bond, undeformed_bond, inverse_shape_tensor, deformation_gradient)
     for i in 1:nnodes
         for j in nn[i]

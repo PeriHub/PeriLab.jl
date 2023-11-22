@@ -5,68 +5,67 @@
 module Material_template
 export init_material_model
 export material_name
-export compute_force
+export compute_forces
 
 """
   init_material_model(datamanager::Module)
 
-  Initializes the material model.
+Initializes the material model.
 
-  Parameters:
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+  - `datamanager::Data_manager`: Datamanager.
 
-  Returns:
-    - `datamanager::Data_manager`: Datamanager.
+# Returns
+  - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
 
   return datamanager
 end
+
 """
-   material_name()
+  material_name()
 
-   Gives the material name. It is needed for comparison with the yaml input deck.
+Gives the material name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+# Arguments
 
-   Returns:
-   - `name::String`: The name of the material.
+# Returns
+- `name::String`: The name of the material.
 
-   Example:
-   ```julia
-   println(material_name())
-   "Material Template"
-   ```
-   """
+Example:
+```julia
+println(material_name())
+"Material Template"
+```
+"""
 function material_name()
   return "Material Template"
 end
+
 """
-   compute_force(datamanager, nodes, material_parameter, time, dt)
+  compute_forces(datamanager, nodes, material_parameter, time, dt)
 
-   Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
-        - - `datamanager::Data_manager`: Datamanager.
-   Example:
-   ```julia
-     ```
-   """
-function compute_force(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+Example:
+```julia
+```
+"""
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
   @info "Please write a material name in material_name()."
   @info "You can call your routine within the yaml file."
-  @info "Fill the compute_force() and init_material_model() function."
+  @info "Fill the compute_forces() and init_material_model() function."
   @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
   @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
   return datamanager
 end
-
-
-
 end

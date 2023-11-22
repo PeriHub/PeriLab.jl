@@ -6,37 +6,38 @@ module Thermal_Flow
 using LinearAlgebra
 export compute_thermal_model
 export thermal_model_name
+
 """
-   thermal_model_name()
+  thermal_model_name()
 
-   Gives the model name. It is needed for comparison with the yaml input deck.
+Gives the model name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+# Arguments
 
-   Returns:
-   - `name::String`: "Thermal Flow"
-
-    """
+# Returns
+- `name::String`: "Thermal Flow"
+"""
 function thermal_model_name()
   return "Thermal Flow"
 end
+
 """
-   compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+  compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
 
-   Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
-        - - `datamanager::Data_manager`: Datamanager.
-   Example:
-   ```julia
-     ```
-   """
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+Example:
+```julia
+```
+"""
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
 
   if !haskey(thermal_parameter, "Type")
@@ -86,7 +87,6 @@ end
 [BrighentiR2021](@cite)
 is a prototype with some errors
 """
-
 function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Matrix{Float64}, bond_damage::SubArray, undeformed_bond::SubArray, Kinv::SubArray, temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
 
   nablaT = zeros(Float64, dof)
@@ -117,10 +117,11 @@ if (MATRICES::vectorNorm(angles, 3)!=0){
   return bond_heat_flow
 
 end
+
 """
-    compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray,
-        lambda::Union{Float64, Int64}, bond_damage::SubArray, undeformed_bond::SubArray, horizon::SubArray,
-        temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
+  compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray,
+      lambda::Union{Float64, Int64}, bond_damage::SubArray, undeformed_bond::SubArray, horizon::SubArray,
+      temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
 
 Calculate heat flow based on a bond-based model for thermal analysis.
 

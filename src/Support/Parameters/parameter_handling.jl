@@ -10,11 +10,19 @@ include("./parameter_handling_output.jl")
 include("./parameter_handling_computes.jl")
 include("./parameter_handling_solver.jl")
 
-function check_element(params::Dict, key)
-    return haskey(params::Dict, key)
-end
+
+"""
+    check_key_elements(params::Dict)
+
+Checks if the keys exist in the parameters
+
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `params::Dict`: The parameters dictionary.
+"""
 function check_key_elements(params::Dict)
-    if !check_element(params, "Physics")
+    if !haskey(params, "Physics")
         @error "No physics defined"
         return nothing
     end
@@ -23,17 +31,17 @@ function check_key_elements(params::Dict)
         return nothing
     end
 
-    if !check_element(params, "Blocks")
+    if !haskey(params, "Blocks")
         @error "No blocks defined"
         return nothing
     end
 
-    if !check_element(params, "Discretization")
+    if !haskey(params, "Discretization")
         @error "No discretization defined"
         return nothing
     end
 
-    if !check_element(params, "Solver")
+    if !haskey(params, "Solver")
         @error "No solver defined"
         return nothing
     end

@@ -112,7 +112,6 @@ end
 
     @test read_time(result_files[1]["file"], 3) == 1.6
     @test read_time(result_files[2]["file"], 3) == 1.6
-    IO.write_results([], 1.6, outputs, test_Data_manager)
     testBool = false
     try
         read_time(result_files[1]["file"], 4) == 1.6

@@ -63,20 +63,7 @@ export main
 Prints a banner displaying information about the PeriLab application.
 
 This function prints a banner containing details about the PeriLab application, including its name, version, copyright, contact information, and license. It provides a visual introduction to the application.
-
-## Arguments
-
-None.
-
-## Returns
-
-None.
-
-## Usage
-
-```julia
 """
-
 function print_banner()
     println("""\e[]
     \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: """ * string(Pkg.project().version) * """ 
@@ -142,25 +129,13 @@ function parse_commandline()
 
     return parse_args(s)
 end
+
 """
     main()
 
 Entry point for the PeriLab application.
 
-This function serves as the entry point for the PeriLab application. It parses command-line arguments using `parse_commandline`, processes the arguments, and calls the core `main` function with the parsed arguments.
-
-## Arguments
-
-None.
-
-## Returns
-
-None.
-
-## Usage
-
-```julia
-main()
+This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 """
 function main()
     parsed_args = parse_commandline()
@@ -174,16 +149,20 @@ function main()
 end
 
 """
-    main(filename, dry_run, verbose, debug, silent)
+    main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
-Main function that performs the core functionality of the program.
+Entry point for the PeriLab application.
+
+This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
+
 # Arguments
-- `filename`: The name of the file to process.
-- `to`: The destination directory.
-- `dry_run`: If `true`, performs a dry run without actually moving the file. Default is `false`.
-- `verbose`: If `true`, prints additional information during the execution. Default is `false`.
+- `filename::String`: The filename of the input file.
+- `dry_run::Bool=false`: Whether to run in dry-run mode.
+- `verbose::Bool=false`: Whether to run in verbose mode.
+- `debug::Bool=false`: Whether to run in debug mode.
+- `silent::Bool=false`: Whether to run in silent mode.
 """
-function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
+function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
     @timeit to "PeriLab" begin
 
@@ -215,13 +194,6 @@ function main(filename, dry_run=false, verbose=false, debug=false, silent=false)
         @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
         if verbose
             IO.show_block_summary(solver_options, params, datamanager)
-        end
-        # thats wrong here
-        if solver_options["Material Models"]
-            @info "Material Model init"
-            for block in eachindex(block_nodes)
-                @timeit to "Material.init_material_model" datamanager = Material.init_material_model(datamanager, block)
-            end
         end
         @info "Init write results"
         @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"])

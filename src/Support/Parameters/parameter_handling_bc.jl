@@ -5,9 +5,19 @@
 using CSV
 using DataFrames
 
+"""
+    get_bc_definitions(params::Dict)
+
+Get the boundary condition definitions
+
+# Arguments
+- `params::Dict`: The parameters
+# Returns
+- `bcs::Dict{String,Any}`: The boundary conditions
+"""
 function get_bc_definitions(params::Dict)
     bcs = Dict{String,Any}()
-    if check_element(params::Dict, "Boundary Conditions") == false
+    if haskey(params::Dict, "Boundary Conditions") == false
         return bcs
     end
     for entry in keys(params["Boundary Conditions"])

@@ -8,42 +8,43 @@ export compute_damage
 export compute_damage_pre_calculation
 export damage_name
 """
-   damage_name()
+  damage_name()
 
-   Gives the damage name. It is needed for comparison with the yaml input deck.
+Gives the damage name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+# Arguments
 
-   Returns:
-   - `name::String`: The name of the damage.
+# Returns
+- `name::String`: The name of the damage.
 
-   Example:
-   ```julia
-   println(damage_name())
-   "Damage Template"
-   ```
-   """
+Example:
+```julia
+println(damage_name())
+"Damage Template"
+```
+"""
 function damage_name()
   return "Damage Template"
 end
+
 """
-   compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
+c ompute_damage(datamanager, nodes, damage_parameter, block, time, dt)
 
-   Calculates the damage criterion of each bond. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the damage criterion of each bond. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
-        - `block::Int64`: Block number
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
-        - - `datamanager::Data_manager`: Datamanager.
-   Example:
-   ```julia
-     ```
-   """
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `block::Int64`: Block number
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+Example:
+```julia
+```
+"""
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
   @info "Please write a damage model name in damage_name()."
   @info "You can call your routine within the yaml file."
@@ -54,23 +55,23 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-   compute_damage_pre_calculation(datamanager, nodes, synchronise_field, time, dt)
+  compute_damage_pre_calculation(datamanager, nodes, synchronise_field, time, dt)
 
-   Pre computes values needed for the damage calculation.Calculates the damage criterion of each bond. This template has to be copied, the file renamed and edited by the user to create a new damages. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Pre computes values needed for the damage calculation.Calculates the damage criterion of each bond. This template has to be copied, the file renamed and edited by the user to create a new damages. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `block::Int64`: Block number
-        - `synchronise_field`: Synchronise function to distribute parameter through cores.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
-        - - `datamanager::Data_manager`: Datamanager.
-   Example:
-   ```julia
-     ```
-   """
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `block::Int64`: Block number
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+Example:
+```julia
+```
+"""
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
   @info "Please write a damage model name in damage_name()."
   @info "You can call your routine within the yaml file."

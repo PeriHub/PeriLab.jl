@@ -7,7 +7,7 @@ export include_files
 export find_module_files
 
 """
-find_jl_files(directory::AbstractString)
+    find_jl_files(directory::AbstractString)
 
 Recursively find Julia files (.jl) in a directory.
 
@@ -29,7 +29,6 @@ for jl_file in jl_files
     println("Found Julia file: ", jl_file)
 end
 """
-
 function find_jl_files(directory::AbstractString)
     jl_files = Vector{String}()
     if !isdir(directory)
@@ -55,7 +54,7 @@ function find_jl_files(directory::AbstractString)
 end
 
 """
-find_module_files(directory::AbstractString, specific::String)
+    find_module_files(directory::AbstractString, specific::String)
 
 Search for Julia modules containing a specific function in a given directory.
 
@@ -81,7 +80,6 @@ for module_info in result
     println("Module file path: ", module_info["File"])
 end
 """
-
 function find_module_files(directory::AbstractString, specific::String)
 
     files_in_folder = find_jl_files(directory)
@@ -105,7 +103,7 @@ function find_module_files(directory::AbstractString, specific::String)
 end
 
 """
-include_files(module_list::Vector{Any})
+    include_files(module_list::Vector{Any})
 
 Include files specified in a list of modules.
 
@@ -120,7 +118,6 @@ in each module's "File" key.
 ```julia
 include_files([Dict("File" => "module1.jl"), Dict("File" => "module2.jl")])
 """
-
 function include_files(module_list::Vector{Any})
     for mod in module_list
         include(mod["File"])
@@ -128,8 +125,7 @@ function include_files(module_list::Vector{Any})
 end
 
 """
-    create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),
-                            specifics::Dict{String,String}(), values::Tuple)
+    create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),specifics::Dict{String,String}(), values::Tuple)
 
 Searches for a specific function within a list of modules and calls that function if found.
 

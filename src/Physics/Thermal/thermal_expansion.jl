@@ -16,42 +16,44 @@ using .Bond_Deformation_Gradient
 
 export compute_thermal_model
 export thermal_model_name
+
 """
    thermal_model_name()
 
-   Gives the expansion model name. It is needed for comparison with the yaml input deck.
+Gives the expansion model name. It is needed for comparison with the yaml input deck.
 
-   Parameters:
+# Arguments
 
-   Returns:
-   - `name::String`: The name of the thermal expansion model.
+# Returns
+- `name::String`: The name of the thermal expansion model.
 
-   Example:
-   ```julia
-   println(flow_name())
-   "Thermal Expansion"
-   ```
-   """
+Example:
+```julia
+println(flow_name())
+"Thermal Expansion"
+```
+"""
 function thermal_model_name()
     return "Thermal Expansion"
 end
+
 """
    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
 
-   Calculates the thermal expansion of the material. 
+Calculates the thermal expansion of the material. 
 
-   Parameters:
-        - `datamanager::Data_manager`: Datamanager.
-        - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-        - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
-        - `time::Float64`: The current time.
-        - `dt::Float64`: The current time step.
-   Returns:
-        - - `datamanager::Data_manager`: Datamanager.
-   Example:
-   ```julia
-     ```
-   """
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+Example:
+```julia
+```
+"""
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
     temperature_N = datamanager.get_field("Temperature", "N")
     temperature_NP1 = datamanager.get_field("Temperature", "NP1")
@@ -124,7 +126,6 @@ thermal_deformation = SubArray(zeros(3, 3)) # Initialize thermal_deformation wit
 
 result = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_deformation)
 """
-
 function thermal_deformation(nodes::Union{SubArray,Vector{Int64}}, alpha::Union{Matrix{Float64},Matrix{Int64}}, temperature::Union{Vector{Float64},SubArray}, undeformed_bond::SubArray, thermal_deformation::SubArray)
     for iID in nodes
         for jID in eachindex(undeformed_bond[iID][:, 1])
@@ -163,7 +164,6 @@ temperature = 100.0 # Example temperature value
 
 result = thermal_strain(alpha, temperature)
 """
-
 function thermal_strain(alpha::Union{Matrix{Float64},Matrix{Int64}}, temperature::Union{Float64,Int64})
     return alpha .* temperature
 end

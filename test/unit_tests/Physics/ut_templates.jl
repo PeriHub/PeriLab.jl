@@ -28,7 +28,7 @@ end
 
 @testset "ut_material_template" begin
     @test Material_template.material_name() == "Material Template"
-    @test Material_template.compute_force(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
+    @test Material_template.compute_forces(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
 end
 
 @testset "ut_thermal_template" begin

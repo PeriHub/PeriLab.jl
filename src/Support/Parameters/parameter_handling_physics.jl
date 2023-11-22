@@ -50,11 +50,11 @@ else
 end
 """
 function get_model_parameter(params::Dict, model::String, id::String)
-    if !check_element(params["Physics"], model * "s")
+    if !haskey(params["Physics"], model * "s")
         @error model * " is defined in blocks, but no " * model * "s definition block exists"
         return
     end
-    if check_element(params["Physics"][model*"s"], id)
+    if haskey(params["Physics"][model*"s"], id)
         return params["Physics"][model*"s"][id]
     else
         @error model * " model with name " * id * " is defined in blocks, but missing in the " * model * "s definition."
@@ -113,11 +113,10 @@ options = Dict(
 updated_options = get_physics_option(params, options)
 println("Updated Options: ", updated_options)
 """
-
 function get_physics_option(params::Dict, options::Dict)
-    if check_element(params["Physics"], "Pre Calculation")
+    if haskey(params["Physics"], "Pre Calculation")
         for option in keys(options)
-            if check_element(params["Physics"]["Pre Calculation"], option)
+            if haskey(params["Physics"]["Pre Calculation"], option)
                 options[option] = params["Physics"]["Pre Calculation"][option]
             end
         end
@@ -128,7 +127,7 @@ function get_physics_option(params::Dict, options::Dict)
     end
     materials = params["Physics"]["Material Models"]
     for material in eachindex(materials)
-        if check_element(materials[material], "Material Model")
+        if haskey(materials[material], "Material Model")
             if occursin("Correspondence", materials[material]["Material Model"])
                 options["Shape Tensor"] = true
                 options["Deformation Gradient"] = true
