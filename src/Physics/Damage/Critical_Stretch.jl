@@ -9,43 +9,45 @@ using TimerOutputs
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
+
 """
    damage_name()
 
-   Gives the damage name. It is needed for comparison with the yaml input deck.
+Gives the damage name. It is needed for comparison with the yaml input deck.
 
-   # Arguments
+# Arguments
 
-   # Returns
-   - `name::String`: The name of the damage.
+# Returns
+- `name::String`: The name of the damage.
 
-   Example:
-   ```julia
-   println(damage_name())
-   "Critical Stretch"
-   ```
-   """
+Example:
+```julia
+println(damage_name())
+"Critical Stretch"
+```
+"""
 function damage_name()
     return "Critical Stretch"
 end
+
 """
    compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
 
-   Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
+Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 
-   # Arguments
-   - `datamanager::Data_manager`: Datamanager.
-   - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-   - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
-   - `block::Int64`: Block number.
-   - `time::Float64`: The current time.
-   - `dt::Float64`: The current time step.
-   # Returns
-   - `datamanager::Data_manager`: Datamanager.
-   Example:
-   ```julia
-     ```
-   """
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `block::Int64`: Block number.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+Example:
+```julia
+```
+"""
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
 
     nlist = datamanager.get_nlist()
@@ -86,22 +88,20 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     return datamanager
 end
 
-
 """
    compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
-   Compute the pre calculation for the damage.
+Compute the pre calculation for the damage.
 
-    # Arguments
-    - `datamanager::Data_manager`: Datamanager.
-    - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-    - `block::Int64`: Block number
-    - `synchronise_field`: Synchronise function to distribute parameter through cores.
-    - `time::Float64`: The current time.
-    - `dt::Float64`: The current time step.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
-
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `block::Int64`: Block number
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 

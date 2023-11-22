@@ -16,18 +16,18 @@ using .Correspondence_Elastic
 using .Geometry
 export init_material_model
 export material_name
-export compute_force
+export compute_forces
 
 """
   init_material_model(datamanager::Module)
 
-  Initializes the material model.
+Initializes the material model.
 
-  # Arguments
-   - `datamanager::Data_manager`: Datamanager.
+# Arguments
+  - `datamanager::Data_manager`: Datamanager.
 
-  # Returns
-   - `datamanager::Data_manager`: Datamanager.
+# Returns
+  - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
   # global dof
@@ -54,42 +54,44 @@ function init_material_model(datamanager::Module)
 
   return datamanager
 end
+
 """
-   material_name()
+  material_name()
 
-   Gives the material name. It is needed for comparison with the yaml input deck.
+Gives the material name. It is needed for comparison with the yaml input deck.
 
-   # Arguments
+# Arguments
 
-   # Returns
-   - `name::String`: The name of the material.
+# Returns
+- `name::String`: The name of the material.
 
-   Example:
-   ```julia
-   println(material_name())
-   "Material Template"
-   ```
-   """
+Example:
+```julia
+println(material_name())
+"Material Template"
+```
+"""
 function material_name()
   return Correspondence_Elastic.correspondence_name()
 end
+
 """
-   compute_force(datamanager, nodes, material_parameter, time, dt)
+  compute_forces(datamanager, nodes, material_parameter, time, dt)
 
-   Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
-   # Arguments
-   - `datamanager::Data_manager`: Datamanager.
-   - `nodes::Union{SubArray, Vector{Int64}}`: List of block nodes.
-   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-   - `time::Float64`: The current time.
-   - `dt::Float64`: The current time step.
-   # Returns
-        - - `datamanager::Data_manager`: Datamanager.
-   Example:
-   ```julia
-     ```
-   """
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray, Vector{Int64}}`: List of block nodes.
+- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+Example:
+```julia
+```
+"""
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
   # global dof
   # global rotation
@@ -138,18 +140,18 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-   zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+  zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
 
-  Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
+Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 
-  # Arguments
-  - `datamanager::Data_manager`: Datamanager.
-  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-  - `time::Float64`: The current time.
-  - `dt::Float64`: The current time step.
-  # Returns
-  - `datamanager::Data_manager`: Datamanager.
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
   if !haskey(material_parameter, "Zero Energy Control")
@@ -165,18 +167,18 @@ end
 """
   calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stressNP1::SubArray, bond_force::SubArray)
 
-  Calculates the bond force.
+Calculates the bond force.
 
-  # Arguments
-  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-  - `deformation_gradient::SubArray`: Deformation gradient.
-  - `undeformed_bond::SubArray`: Bond geometry.
-  - `bond_damage::SubArray`: Bond damage.
-  - `inverse_shape_tensor::SubArray`: Inverse shape tensor.
-  - `stressNP1::SubArray`: Cauchy stress.
-  - `bond_force::SubArray`: Bond force.
-  # Returns
-  - `bond_force::SubArray`: Bond force.
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `deformation_gradient::SubArray`: Deformation gradient.
+- `undeformed_bond::SubArray`: Bond geometry.
+- `bond_damage::SubArray`: Bond damage.
+- `inverse_shape_tensor::SubArray`: Inverse shape tensor.
+- `stressNP1::SubArray`: Cauchy stress.
+- `bond_force::SubArray`: Bond force.
+# Returns
+- `bond_force::SubArray`: Bond force.
 """
 function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stressNP1::SubArray, bond_force::SubArray)
   for iID in nodes
@@ -198,16 +200,16 @@ end
 """
   rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
 
-  Rotates the matrix.
+Rotates the matrix.
 
-  # Arguments
-  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-  - `dof::Int64`: Degree of freedom.
-  - `matrix::Union{SubArray,Array{Float64,3}}`: Matrix.
-  - `angles::SubArray`: Angles.
-  - `back::Bool`: Back.
-  # Returns
-  - `matrix::SubArray`: Matrix.
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `dof::Int64`: Degree of freedom.
+- `matrix::Union{SubArray,Array{Float64,3}}`: Matrix.
+- `angles::SubArray`: Angles.
+- `back::Bool`: Back.
+# Returns
+- `matrix::SubArray`: Matrix.
 """
 function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
   for iID in nodes
@@ -219,15 +221,15 @@ end
 """
   rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
 
-  Rotates the second order tensor.
+Rotates the second order tensor.
 
-  # Arguments
-  - `angles::Union{Vector{Float64},Vector{Int64}}`: Angles.
-  - `tensor::Matrix{Float64}`: Second order tensor.
-  - `dof::Int64`: Degree of freedom.
-  - `back::Bool`: Back.
-  # Returns
-  - `tensor::Matrix{Float64}`: Second order tensor.
+# Arguments
+- `angles::Union{Vector{Float64},Vector{Int64}}`: Angles.
+- `tensor::Matrix{Float64}`: Second order tensor.
+- `dof::Int64`: Degree of freedom.
+- `back::Bool`: Back.
+# Returns
+- `tensor::Matrix{Float64}`: Second order tensor.
 """
 function rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
   rot = Geometry.rotation_tensor(angles)

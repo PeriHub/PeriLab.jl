@@ -16,16 +16,16 @@ export merge_exodus_file
 """
     create_result_file(filename::Union{AbstractString,String}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64)
 
-    Creates a exodus file for the results
-    
-    # Arguments
-    - `filename::Union{AbstractString,String}`: The name of the file to create
-    - `num_nodes::Int64`: The number of nodes
-    - `num_dim::Int64`: The number of dimensions
-    - `num_elem_blks::Int64`: The number of element blocks
-    - `num_node_sets::Int64`: The number of node sets
-    # Returns
-    - `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
+Creates a exodus file for the results
+
+# Arguments
+- `filename::Union{AbstractString,String}`: The name of the file to create
+- `num_nodes::Int64`: The number of nodes
+- `num_dim::Int64`: The number of dimensions
+- `num_elem_blks::Int64`: The number of element blocks
+- `num_node_sets::Int64`: The number of node sets
+# Returns
+- `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
 """
 function create_result_file(filename::Union{AbstractString,String}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64)
 
@@ -56,12 +56,12 @@ end
 """
     paraview_specifics(dof::Int64)
 
-    Returns the paraview specific dof
+Returns the paraview specific dof
 
-    # Arguments
-    - `dof::Int64`: The degrees of freedom
-    # Returns
-    - `paraview_specifics::String`: The paraview specific dof
+# Arguments
+- `dof::Int64`: The degrees of freedom
+# Returns
+- `paraview_specifics::String`: The paraview specific dof
 """
 function paraview_specifics(dof::Int64)
     convention = Dict(1 => "x", 2 => "y", 3 => "z")
@@ -71,13 +71,13 @@ end
 """
     get_paraview_coordinates(dof::Int64, refDof::Int64)
 
-    Returns the paraview specific dof
+Returns the paraview specific dof
 
-    # Arguments
-    - `dof::Int64`: The degrees of freedom
-    - `refDof::Int64`: The reference degrees of freedom
-    # Returns
-    - `paraview_specifics::String`: The paraview specific dof
+# Arguments
+- `dof::Int64`: The degrees of freedom
+- `refDof::Int64`: The reference degrees of freedom
+# Returns
+- `paraview_specifics::String`: The paraview specific dof
 """
 function get_paraview_coordinates(dof::Int64, refDof::Int64)
     if dof > refDof
@@ -99,13 +99,13 @@ end
 """
     get_block_nodes(block_Id::Union{SubArray,Vector{Int64}}, block::Int64)
 
-    Returns the nodes of a block
+Returns the nodes of a block
 
-    # Arguments
-    - `block_Id::Union{SubArray,Vector{Int64}}`: The block Id
-    - `block::Int64`: The block
-    # Returns
-    - `nodes::Vector{Int64}`: The nodes of the block
+# Arguments
+- `block_Id::Union{SubArray,Vector{Int64}}`: The block Id
+- `block::Int64`: The block
+# Returns
+- `nodes::Vector{Int64}`: The nodes of the block
 """
 function get_block_nodes(block_Id::Union{SubArray,Vector{Int64}}, block::Int64)
     conn = findall(x -> x == block, block_Id)
@@ -115,18 +115,18 @@ end
 """
     init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64})
 
-    Initializes the results in exodus
+Initializes the results in exodus
 
-    # Arguments
-    - `exo::ExodusDatabase`: The exodus database
-    - `output::Dict{String,Any}`: The output
-    - `coords::Union{Matrix{Int64},Matrix{Float64}}`: The coordinates
-    - `block_Id::Vector{Int64}`: The block Id
-    - `uniqueBlocks::Vector{Int64}`: The unique blocks
-    - `nsets::Dict{String,Vector{Int64}}`: The node sets
-    - `global_ids::Vector{Int64}`: The global ids
-    # Returns
-    - `result_file::Dict{String,Any}`: The result file
+# Arguments
+- `exo::ExodusDatabase`: The exodus database
+- `output::Dict{String,Any}`: The output
+- `coords::Union{Matrix{Int64},Matrix{Float64}}`: The coordinates
+- `block_Id::Vector{Int64}`: The block Id
+- `uniqueBlocks::Vector{Int64}`: The unique blocks
+- `nsets::Dict{String,Vector{Int64}}`: The node sets
+- `global_ids::Vector{Int64}`: The global ids
+# Returns
+- `result_file::Dict{String,Any}`: The result file
 """
 function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64})
     info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
@@ -203,14 +203,14 @@ end
 """
     write_step_and_time(exo::ExodusDatabase, step::Int64, time::Float64)
 
-    Writes the step and time in the exodus file
+Writes the step and time in the exodus file
 
-    # Arguments
-    - `exo::ExodusDatabase`: The exodus file
-    - `step::Int64`: The step
-    - `time::Float64`: The time
-    # Returns
-    - `exo::ExodusDatabase`: The exodus file
+# Arguments
+- `exo::ExodusDatabase`: The exodus file
+- `step::Int64`: The step
+- `time::Float64`: The time
+# Returns
+- `exo::ExodusDatabase`: The exodus file
 """
 function write_step_and_time(exo::ExodusDatabase, step::Int64, time::Float64)
     write_time(exo, step, Float64(time))
@@ -220,15 +220,15 @@ end
 """
     write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict, datamanager::Module)
 
-    Writes the nodal results in the exodus file
+Writes the nodal results in the exodus file
 
-    # Arguments
-    - `exo::ExodusDatabase`: The exodus file
-    - `step::Int64`: The step
-    - `output::Dict`: The output
-    - `datamanager::Module`: The datamanager
-    # Returns
-    - `exo::ExodusDatabase`: The exodus file
+# Arguments
+- `exo::ExodusDatabase`: The exodus file
+- `step::Int64`: The step
+- `output::Dict`: The output
+- `datamanager::Module`: The datamanager
+# Returns
+- `exo::ExodusDatabase`: The exodus file
 """
 function write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict, datamanager::Module)
     #write_values
@@ -251,15 +251,15 @@ end
 """
     write_global_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict, global_values)
 
-    Writes the global results in the exodus file
+Writes the global results in the exodus file
 
-    # Arguments
-    - `exo::ExodusDatabase`: The exodus file
-    - `step::Int64`: The step
-    - `output::Dict`: The output
-    - `global_values`: The global values
-    # Returns
-    - `exo::ExodusDatabase`: The exodus file
+# Arguments
+- `exo::ExodusDatabase`: The exodus file
+- `step::Int64`: The step
+- `output::Dict`: The output
+- `global_values`: The global values
+# Returns
+- `exo::ExodusDatabase`: The exodus file
 """
 function write_global_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict, global_values)
 
@@ -272,12 +272,12 @@ end
 """
     merge_exodus_file(file_name::Union{AbstractString,String})
 
-    Merges the exodus file
+Merges the exodus file
 
-    # Arguments
-    - `file_name::Union{AbstractString,String}`: The name of the file to merge
-    # Returns
-    - `exo::ExodusDatabase`: The exodus file
+# Arguments
+- `file_name::Union{AbstractString,String}`: The name of the file to merge
+# Returns
+- `exo::ExodusDatabase`: The exodus file
 """
 function merge_exodus_file(file_name::Union{AbstractString,String})
     epu(file_name)

@@ -28,21 +28,20 @@ end
 """
     compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::Vector{Float64}, omega::SubArray)
 
-    Calculate the dilatation for each node.
+Calculate the dilatation for each node.
 
-    # Arguments
-   - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
-   - `nneighbors::SubArray`: Number of neighbors.
-   - `nlist::SubArray`: Neighbor list.
-   - `undeformed_bond::SubArray`: Bond geometry.
-   - `deformed_bond::SubArray`: Deformed bond geometry.
-   - `bond_damage::SubArray`: Bond damage.
-   - `volume::SubArray`: Volume.
-   - `weighted_volume::Vector{Float64}`: Weighted volume.
-   - `omega::SubArray`: Influence function.
-    # Returns
-    - `theta::Vector{Float64}`: Dilatation.
-
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
+- `nneighbors::SubArray`: Number of neighbors.
+- `nlist::SubArray`: Neighbor list.
+- `undeformed_bond::SubArray`: Bond geometry.
+- `deformed_bond::SubArray`: Deformed bond geometry.
+- `bond_damage::SubArray`: Bond damage.
+- `volume::SubArray`: Volume.
+- `weighted_volume::Vector{Float64}`: Weighted volume.
+- `omega::SubArray`: Influence function.
+# Returns
+- `theta::Vector{Float64}`: Dilatation.
 """
 function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::Vector{Float64}, omega::SubArray)
     # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization

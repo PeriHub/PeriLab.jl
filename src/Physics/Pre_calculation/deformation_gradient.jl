@@ -9,13 +9,13 @@ export compute
 """
     compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 
-    Compute the deformation gradient.
+Compute the deformation gradient.
 
-    # Arguments
-    - `datamanager`: Datamanager.
-    - `nodes`: List of nodes.
-    # Returns
-    - `datamanager`: Datamanager.
+# Arguments
+- `datamanager`: Datamanager.
+- `nodes`: List of nodes.
+# Returns
+- `datamanager`: Datamanager.
 """
 function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     dof = datamanager.get_dof()

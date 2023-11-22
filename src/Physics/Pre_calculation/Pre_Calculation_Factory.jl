@@ -20,16 +20,16 @@ export init_pre_calculation
 """
     compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64)
 
-    Compute the pre-calculation.
+Compute the pre-calculation.
 
-    # Arguments
-    - `datamanager`: Datamanager.
-    - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-    - `options`: Options.
-    - `time::Float64`: Time.
-    - `dt::Float64`: Time step.
-    # Returns
-    - `datamanager`: Datamanager.
+# Arguments
+- `datamanager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `options`: Options.
+- `time::Float64`: Time.
+- `dt::Float64`: Time step.
+# Returns
+- `datamanager`: Datamanager.
 """
 function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64)
 
@@ -54,13 +54,13 @@ end
 """
     init_pre_calculation(datamanager::Module, options::Dict)
 
-    Initialize the pre-calculation.
+Initialize the pre-calculation.
 
-    # Arguments
-    - `datamanager`: Datamanager.
-    - `options::Dict`: Options.
-    # Returns
-    - `datamanager`: Datamanager.
+# Arguments
+- `datamanager`: Datamanager.
+- `options::Dict`: Options.
+# Returns
+- `datamanager`: Datamanager.
 """
 function init_pre_calculation(datamanager::Module, options::Dict)
     dof = datamanager.get_dof()

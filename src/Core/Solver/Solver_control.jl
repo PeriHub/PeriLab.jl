@@ -20,16 +20,16 @@ using TimerOutputs
 """
     init(params::Dict, datamanager::Module)
 
-    Initialize the solver
+Initialize the solver
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `datamanager::Module`: Datamanager
-    # Returns
-   - `blockNodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
-   - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
-   - `datamanager::Module`: The data manager module that provides access to data fields and properties.
-   - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
+# Arguments
+- `params::Dict`: The parameters
+- `datamanager::Module`: Datamanager
+# Returns
+- `blockNodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
+- `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
+- `datamanager::Module`: The data manager module that provides access to data fields and properties.
+- `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
 function init(params::Dict, datamanager::Module)
     nnodes = datamanager.get_nnodes()
@@ -68,13 +68,13 @@ end
 """
     get_blockNodes(block_ids, nnodes)
 
-    Returns a dictionary mapping block IDs to collections of nodes.
+Returns a dictionary mapping block IDs to collections of nodes.
 
-    # Arguments
-   - `block_ids::Vector{Int64}`: A vector of block IDs
-   - `nnodes::Int64`: The number of nodes
-    # Returns
-   - `blockNodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
+# Arguments
+- `block_ids::Vector{Int64}`: A vector of block IDs
+- `nnodes::Int64`: The number of nodes
+# Returns
+- `blockNodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
 """
 function get_blockNodes(block_ids, nnodes)
     blockNodes = Dict{Int64,Vector{Int64}}()
@@ -87,14 +87,14 @@ end
 """
     set_density(params::Dict, blockNodes::Dict, density::SubArray)
 
-    Sets the density of the nodes in the dictionary.
+Sets the density of the nodes in the dictionary.
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `blockNodes::Dict`: A dictionary mapping block IDs to collections of nodes
-   - `density::SubArray`: The density
-    # Returns
-   - `density::SubArray`: The density
+# Arguments
+- `params::Dict`: The parameters
+- `blockNodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `density::SubArray`: The density
+# Returns
+- `density::SubArray`: The density
 """
 function set_density(params::Dict, blockNodes::Dict, density::SubArray)
     for block in eachindex(blockNodes)
@@ -106,14 +106,14 @@ end
 """
     set_horizon(params::Dict, blockNodes::Dict, horizon::SubArray)
 
-    Sets the horizon of the nodes in the dictionary.
+Sets the horizon of the nodes in the dictionary.
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `blockNodes::Dict`: A dictionary mapping block IDs to collections of nodes
-   - `horizon::SubArray`: The horizon
-    # Returns
-   - `horizon::SubArray`: The horizon
+# Arguments
+- `params::Dict`: The parameters
+- `blockNodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `horizon::SubArray`: The horizon
+# Returns
+- `horizon::SubArray`: The horizon
 """
 function set_horizon(params::Dict, blockNodes::Dict, horizon::SubArray)
     for block in eachindex(blockNodes)
@@ -125,20 +125,20 @@ end
 """
     solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, to, silent::Bool)
 
-    Runs the solver.
+Runs the solver.
 
-    # Arguments
-   - `solver_options::Dict{String,Any}`: The solver options
-   - `blockNodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
-   - `bcs::Dict{Any,Any}`: The boundary conditions
-   - `datamanager::Module`: The data manager module
-   - `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings
-   - `result_files::Vector{Any}`: A vector of result files
-   - `write_results`: A function to write simulation results
-   - `to::TimerOutputs.TimerOutput`: A timer output
-   - `silent::Bool`: A boolean flag to suppress progress bars
-    # Returns
-   - `result_files`: A vector of updated result files
+# Arguments
+- `solver_options::Dict{String,Any}`: The solver options
+- `blockNodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
+- `bcs::Dict{Any,Any}`: The boundary conditions
+- `datamanager::Module`: The data manager module
+- `outputs::Dict{Int64,Dict{}}`: A dictionary for output settings
+- `result_files::Vector{Any}`: A vector of result files
+- `write_results`: A function to write simulation results
+- `to::TimerOutputs.TimerOutput`: A timer output
+- `silent::Bool`: A boolean flag to suppress progress bars
+# Returns
+- `result_files`: A vector of updated result files
 """
 function solver(solver_options::Dict{String,Any}, blockNodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, to, silent::Bool)
 
@@ -149,17 +149,17 @@ end
 """
     synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
 
-    Synchronises field.
+Synchronises field.
 
-    # Arguments
-   - `comm`: The MPI communicator
-   - `synch_fields::Dict`: A dictionary of fields
-   - `overlap_map`: The overlap map
-   - `get_field`: The function to get the field
-   - `synch_field::String`: The field
-   - `direction::String`: The direction
-    # Returns
-   - `nothing`
+# Arguments
+- `comm`: The MPI communicator
+- `synch_fields::Dict`: A dictionary of fields
+- `overlap_map`: The overlap map
+- `get_field`: The function to get the field
+- `synch_field::String`: The field
+- `direction::String`: The direction
+# Returns
+- `nothing`
 """
 function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
 
@@ -192,15 +192,15 @@ end
 """
     write_results(result_files, dt, outputs, datamanager)
 
-    Writes simulation results.
+Writes simulation results.
 
-    # Arguments
-   - `result_files`: A vector of result files
-   - `dt`: The time step
-   - `outputs`: A dictionary for output settings
-   - `datamanager`: The data manager module
-    # Returns
-   - `result_files`: A vector of updated result files
+# Arguments
+- `result_files`: A vector of result files
+- `dt`: The time step
+- `outputs`: A dictionary for output settings
+- `datamanager`: The data manager module
+# Returns
+- `result_files`: A vector of updated result files
 """
 function write_results(result_files, dt, outputs, datamanager)
     return IO.write_results(result_files, dt, outputs, datamanager)

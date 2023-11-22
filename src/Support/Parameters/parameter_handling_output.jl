@@ -5,10 +5,10 @@
 """
     check_for_duplicates(filenames)
 
-    Check for duplicate filenames.
+Check for duplicate filenames.
 
-    # Arguments
-   - `filenames::Vector{String}`: The filenames
+# Arguments
+- `filenames::Vector{String}`: The filenames
 """
 function check_for_duplicates(filenames::Vector{String})
     returnfilenames = []
@@ -26,13 +26,13 @@ end
 """
     get_output_filenames(params::Dict, filedirectory::String)
 
-    Gets the output filenames.
+Gets the output filenames.
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `filedirectory::String`: The file directory
-   # Returns
-   - `filenames::Vector{String}`: The filenames
+# Arguments
+- `params::Dict`: The parameters
+- `filedirectory::String`: The file directory
+# Returns
+- `filenames::Vector{String}`: The filenames
 """
 function get_output_filenames(params::Dict, filedirectory::String)
     if haskey(params::Dict, "Outputs")
@@ -60,13 +60,13 @@ end
 """
     get_output_type(outputs::Dict, output::String)
 
-    Gets the output type.
+Gets the output type.
 
-    # Arguments
-   - `outputs::Dict`: The outputs
-   - `output::String`: The output
-    # Returns
-   - `output_type::String`: The output type
+# Arguments
+- `outputs::Dict`: The outputs
+- `output::String`: The output
+# Returns
+- `output_type::String`: The output type
 """
 function get_output_type(outputs::Dict, output::String)
     if haskey(outputs[output], "Output File Type")
@@ -80,13 +80,13 @@ end
 """
     get_flush_file(outputs::Dict, output::String)
 
-    Gets the flush file.
+Gets the flush file.
 
-    # Arguments
-   - `outputs::Dict`: The outputs
-   - `output::String`: The output
-    # Returns
-   - `flush_file::Bool`: The flush file
+# Arguments
+- `outputs::Dict`: The outputs
+- `output::String`: The output
+# Returns
+- `flush_file::Bool`: The flush file
 """
 function get_flush_file(outputs::Dict, output::String)
     if haskey(outputs[output], "Flush File")
@@ -99,15 +99,15 @@ end
 """
     get_output_fieldnames(outputs::Dict, variables::Vector{String}, computes::Vector{String}, output_type::String)
 
-    Gets the output fieldnames.
+Gets the output fieldnames.
 
-    # Arguments
-   - `outputs::Dict`: The outputs
-   - `variables::Vector{String}`: The variables
-   - `computes::Vector{String}`: The computes
-   - `output_type::String`: The output type
-    # Returns
-   - `output_fieldnames::Vector{String}`: The output fieldnames
+# Arguments
+- `outputs::Dict`: The outputs
+- `variables::Vector{String}`: The variables
+- `computes::Vector{String}`: The computes
+- `output_type::String`: The output type
+# Returns
+- `output_fieldnames::Vector{String}`: The output fieldnames
 """
 function get_output_fieldnames(outputs::Dict, variables::Vector{String}, computes::Vector{String}, output_type::String)
     return_outputs = String[]
@@ -139,14 +139,14 @@ end
 """
     get_outputs(params::Dict, variables::Vector{String}, compute_names::Vector{String})
 
-    Gets the outputs.
+Gets the outputs.
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `variables::Vector{String}`: The variables
-   - `compute_names::Vector{String}`: The compute names
-    # Returns
-   - `outputs::Dict`: The outputs
+# Arguments
+- `params::Dict`: The parameters
+- `variables::Vector{String}`: The variables
+- `compute_names::Vector{String}`: The compute names
+# Returns
+- `outputs::Dict`: The outputs
 """
 function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vector{String})
     num = 0
@@ -168,13 +168,13 @@ end
 """
     get_output_frequency(params::Dict, nsteps::Int64)
 
-    Gets the output frequency.
+Gets the output frequency.
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `nsteps::Int64`: The number of steps
-    # Returns
-   - `freq::Vector{Int64}`: The output frequency
+# Arguments
+- `params::Dict`: The parameters
+- `nsteps::Int64`: The number of steps
+# Returns
+- `freq::Vector{Int64}`: The output frequency
 """
 function get_output_frequency(params::Dict, nsteps::Int64)
 

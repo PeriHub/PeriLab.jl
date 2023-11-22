@@ -5,13 +5,13 @@
 """
     get_density(params::Dict, block_id::Int64)
 
-    Get the density of a block.
+Get the density of a block.
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `block_id::Int64`: The ID of the block
-   # Returns
-   - `density::Float64`: The density of the block
+# Arguments
+- `params::Dict`: The parameters
+- `block_id::Int64`: The ID of the block
+# Returns
+- `density::Float64`: The density of the block
 """
 function get_density(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Density")
@@ -20,13 +20,13 @@ end
 """
     get_heatcapacity(params::Dict, block_id::Int64)
 
-    Get the heat capacity of a block.
+Get the heat capacity of a block.
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `block_id::Int64`: The ID of the block
-   # Returns
-   - `heatcapacity::Float64`: The heat capacity of the block
+# Arguments
+- `params::Dict`: The parameters
+- `block_id::Int64`: The ID of the block
+# Returns
+- `heatcapacity::Float64`: The heat capacity of the block
 """
 function get_heatcapacity(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Specific Heat Capacity")
@@ -35,13 +35,13 @@ end
 """
     get_horizon(params::Dict, block_id::Int64)
 
-    Get the horizon of a block.
+Get the horizon of a block.
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `block_id::Int64`: The ID of the block
-   # Returns
-   - `horizon::Float64`: The horizon of the block
+# Arguments
+- `params::Dict`: The parameters
+- `block_id::Int64`: The ID of the block
+# Returns
+- `horizon::Float64`: The horizon of the block
 """
 function get_horizon(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Horizon")
@@ -50,14 +50,14 @@ end
 """
     get_values(params::Dict, block_id::Int64, valueName::String)
 
-    Get the value of a block.
+Get the value of a block.
 
-    # Arguments
-    - `params::Dict`: The parameters
-    - `block_id::Int64`: The ID of the block
-    - `valueName::String`: The name of the value
-    # Returns
-    - `value::Float64`: The value of the block
+# Arguments
+- `params::Dict`: The parameters
+- `block_id::Int64`: The ID of the block
+- `valueName::String`: The name of the value
+# Returns
+- `value::Float64`: The value of the block
 """
 function get_values(params::Dict, block_id::Int64, valueName::String)
     if haskey(params["Blocks"], "block_" * string(block_id))
@@ -74,12 +74,12 @@ end
 """
     get_number_of_blocks(params::Dict)
 
-    Get the number of blocks.
+Get the number of blocks.
 
-    # Arguments
-    - `params::Dict`: The parameters
-    # Returns
-    - `number_of_blocks::Int64`: The number of blocks
+# Arguments
+- `params::Dict`: The parameters
+# Returns
+- `number_of_blocks::Int64`: The number of blocks
 """
 function get_number_of_blocks(params::Dict)
     check = haskey(params::Dict, "Blocks")
@@ -93,13 +93,13 @@ end
 """
     get_block_models(params::Dict, block_id::Int64)
 
-    Get the models of a block.
+Get the models of a block.
 
-    # Arguments
-    - `params::Dict`: The parameters
-    - `block_id::Int64`: The ID of the block
-    # Returns
-    - `modelDict::Dict{String,String}`: The models of the block
+# Arguments
+- `params::Dict`: The parameters
+- `block_id::Int64`: The ID of the block
+# Returns
+- `modelDict::Dict{String,String}`: The models of the block
 """
 function get_block_models(params::Dict, block_id::Int64)
     modelDict = Dict{String,String}()

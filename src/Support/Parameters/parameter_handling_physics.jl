@@ -113,7 +113,6 @@ options = Dict(
 updated_options = get_physics_option(params, options)
 println("Updated Options: ", updated_options)
 """
-
 function get_physics_option(params::Dict, options::Dict)
     if haskey(params["Physics"], "Pre Calculation")
         for option in keys(options)

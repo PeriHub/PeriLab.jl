@@ -5,16 +5,16 @@
 """
     calculate_nodelist(datamanager::Module, fieldKey::String, calculation_type::String, node_set::Vector{Int64})
 
-    Calculate the global value of a field for a given set of nodes.
+Calculate the global value of a field for a given set of nodes.
 
-    # Arguments
-   - `datamanager::Data_manager`: Datamanager.
-   - `fieldKey::String`: Field key.
-   - `calculation_type::String`: Calculation type.
-   - `node_set::Vector{Int64}`: Node set.
-    # Returns
-   - `value::Vector`: Global value.
-   - `nnodes::Int64`: Number of nodes.
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `fieldKey::String`: Field key.
+- `calculation_type::String`: Calculation type.
+- `node_set::Vector{Int64}`: Node set.
+# Returns
+- `value::Vector`: Global value.
+- `nnodes::Int64`: Number of nodes.
 """
 function calculate_nodelist(datamanager::Module, fieldKey::String, calculation_type::String, node_set::Vector{Int64})
     # get blockNodes
@@ -60,16 +60,16 @@ end
 """
     calculate_block(datamanager::Module, fieldKey::String, calculation_type::String, block::Int64)
 
-    Calculate the global value of a field for a given block.
+Calculate the global value of a field for a given block.
 
-    # Arguments
-   - `datamanager::Data_manager`: Datamanager.
-   - `fieldKey::String`: Field key.
-   - `calculation_type::String`: Calculation type.
-   - `block::Int64`: Block number.
-    # Returns
-   - `value::Vector`: Global value.
-   - `nnodes::Int64`: Number of nodes.
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `fieldKey::String`: Field key.
+- `calculation_type::String`: Calculation type.
+- `block::Int64`: Block number.
+# Returns
+- `value::Vector`: Global value.
+- `nnodes::Int64`: Number of nodes.
 """
 function calculate_block(datamanager::Module, fieldKey::String, calculation_type::String, block::Int64)
     # get blockNodes
@@ -121,13 +121,13 @@ end
 """
     global_value_sum(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
 
-    Calculate the global sum of a field for given nodes.
-    
-    # Arguments
-   - `field::SubArray`: Field.
-   - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
-    # Returns
-   - `returnValue::Vector`: Global value.
+Calculate the global sum of a field for given nodes.
+
+# Arguments
+- `field::SubArray`: Field.
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
+# Returns
+- `returnValue::Vector`: Global value.
 """
 function global_value_sum(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
 
@@ -141,13 +141,13 @@ end
 """
     global_value_max(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
 
-    Calculate the global maximum of a field for given nodes.
-    
-    # Arguments
-   - `field::SubArray`: Field.
-   - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
-    # Returns
-   - `returnValue::Vector`: Global value.
+Calculate the global maximum of a field for given nodes.
+
+# Arguments
+- `field::SubArray`: Field.
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
+# Returns
+- `returnValue::Vector`: Global value.
 """
 function global_value_max(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
     returnValue = zeros(length(field[1, :]))
@@ -160,13 +160,13 @@ end
 """
     global_value_min(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
 
-    Calculate the global minimum of a field for given nodes.
+Calculate the global minimum of a field for given nodes.
 
-    # Arguments
-   - `field::SubArray`: Field.
-   - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
-    # Returns
-   - `returnValue::Vector`: Global value.
+# Arguments
+- `field::SubArray`: Field.
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
+# Returns
+- `returnValue::Vector`: Global value.
 """
 function global_value_min(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
 
@@ -180,13 +180,13 @@ end
 """
     global_value_avg(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
 
-    Calculate the global average of a field for given nodes.
-    
-    # Arguments
-   - `field::SubArray`: Field.
-   - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
-    # Returns
-   - `returnValue::Vector`: Global value.
+Calculate the global average of a field for given nodes.
+
+# Arguments
+- `field::SubArray`: Field.
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
+# Returns
+- `returnValue::Vector`: Global value.
 """
 function global_value_avg(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
 

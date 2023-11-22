@@ -7,12 +7,12 @@
 """
     get_mesh_name(params::Dict)
 
-    Returns the name of the mesh file from the parameters
+Returns the name of the mesh file from the parameters
 
-    # Arguments
-    - `params::Dict`: The parameters
-    # Returns
-    - `String`: The name of the mesh file
+# Arguments
+- `params::Dict`: The parameters
+# Returns
+- `String`: The name of the mesh file
 """
 function get_mesh_name(params::Dict)
     check = haskey(params["Discretization"], "Input Mesh File")
@@ -26,13 +26,13 @@ end
 """
     get_topology_name(params::Dict)
 
-    Returns the name of the topology file from the parameters
+Returns the name of the topology file from the parameters
 
-    # Arguments
-    - `params::Dict`: The parameters
-    # Returns
-    - `check::Bool`: Whether the topology file is defined
-    - `topoFile::String`: The name of the topology file
+# Arguments
+- `params::Dict`: The parameters
+# Returns
+- `check::Bool`: Whether the topology file is defined
+- `topoFile::String`: The name of the topology file
 """
 function get_topology_name(params::Dict)
     check = haskey(params["Discretization"], "Input FEM Topology File")
@@ -46,13 +46,13 @@ end
 """
     get_bond_filters(params::Dict)
 
-    Returns the bond filters from the parameters
+Returns the bond filters from the parameters
 
-    # Arguments
-    - `params::Dict`: The parameters
-    # Returns
-    - `check::Bool`: Whether the bond filters are defined
-    - `bfList::Dict{String,Dict{String,Any}}`: The bond filters
+# Arguments
+- `params::Dict`: The parameters
+# Returns
+- `check::Bool`: Whether the bond filters are defined
+- `bfList::Dict{String,Dict{String,Any}}`: The bond filters
 """
 function get_bond_filters(params::Dict)
     check = haskey(params["Discretization"], "Bond Filters")
@@ -66,13 +66,13 @@ end
 """
     get_node_sets(params::Dict, path::String)
 
-    Returns the node sets from the parameters
+Returns the node sets from the parameters
 
-    # Arguments
-    - `params::Dict`: The parameters
-    - `path::String`: The path to the mesh file
-    # Returns
-    - `nsets::Dict{String,Any}`: The node sets
+# Arguments
+- `params::Dict`: The parameters
+- `path::String`: The path to the mesh file
+# Returns
+- `nsets::Dict{String,Any}`: The node sets
 """
 function get_node_sets(params::Dict, path::String)
     nsets = Dict{String,Any}()

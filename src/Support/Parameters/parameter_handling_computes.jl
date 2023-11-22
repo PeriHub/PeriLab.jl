@@ -5,12 +5,12 @@
 """
     get_computes_names(params::Dict)
 
-    Get the names of the computes.
+Get the names of the computes.
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `computes_names::Vector{String}`: The names of the computes.
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `computes_names::Vector{String}`: The names of the computes.
 """
 function get_computes_names(params::Dict)
     if haskey(params::Dict, "Compute Class Parameters")
@@ -23,13 +23,13 @@ end
 """ 
     get_output_variables(output::String, variables::Vector)
 
-    Get the output variable.
+Get the output variable.
 
-    # Arguments
-    - `output::String`: The output variable.
-    - `variables::Vector`: The variables.
-    # Returns
-    - `output::String`: The output variable.
+# Arguments
+- `output::String`: The output variable.
+- `variables::Vector`: The variables.
+# Returns
+- `output::String`: The output variable.
 """
 function get_output_variables(output::String, variables::Vector)
     if output in variables
@@ -44,13 +44,13 @@ end
 """
     get_computes(params::Dict, variables::Vector{String})
 
-    Get the computes.
+Get the computes.
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    - `variables::Vector{String}`: The variables.
-    # Returns
-    - `computes::Dict{String,Dict{Any,Any}}`: The computes.
+# Arguments
+- `params::Dict`: The parameters dictionary.
+- `variables::Vector{String}`: The variables.
+# Returns
+- `computes::Dict{String,Dict{Any,Any}}`: The computes.
 """
 function get_computes(params::Dict, variables::Vector{String})
     computes = Dict{String,Dict{Any,Any}}()
@@ -71,12 +71,12 @@ end
 """
     get_node_set(params::Dict)
 
-    Get the node set.
+Get the node set.
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `nodeset::Vector`: The node set.
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `nodeset::Vector`: The node set.
 """
 function get_node_set(params::Dict)
     if !haskey(params::Dict, "Node Set")

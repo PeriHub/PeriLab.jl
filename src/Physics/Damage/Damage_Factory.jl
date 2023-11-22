@@ -16,17 +16,17 @@ export init_interface_crit_values
 """
     compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
-    Computes the damage model
+Computes the damage model
 
-    # Arguments
-    - `datamanager::Module`: The datamanager
-    - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
-    - `model_param::Dict`: The model parameters
-    - `block::Int64`: The block
-    - `time::Float64`: The current time
-    - `dt::Float64`: The time step
-    # Returns
-    - `datamanager::Module`: The datamanager
+# Arguments
+- `datamanager::Module`: The datamanager
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `model_param::Dict`: The model parameters
+- `block::Int64`: The block
+- `time::Float64`: The current time
+- `dt::Float64`: The time step
+# Returns
+- `datamanager::Module`: The datamanager
 """
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
@@ -43,18 +43,17 @@ end
 """
    compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
-   Compute the pre calculation for the damage.
+Compute the pre calculation for the damage.
 
-    # Arguments
-    - `datamanager::Data_manager`: Datamanager.
-    - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-    - `block::Int64`: Block number
-    - `synchronise_field`: Synchronise function to distribute parameter through cores.
-    - `time::Float64`: The current time.
-    - `dt::Float64`: The current time step.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
-
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `block::Int64`: Block number
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, model_param::Dict, synchronise_field, time::Float64, dt::Float64)
     specifics = Dict{String,String}("Call Function" => "compute_damage_pre_calculation", "Name" => "damage_name")
@@ -69,14 +68,13 @@ end
 """
   damage_index(datamananager,::Union{SubArray, Vector{Int64})
 
-    Function calculates the damage index related to the neighborhood volume for a set of corresponding nodes. 
-    The damage index is defined as damaged volume in relation the neighborhood volume.
-    damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
+Function calculates the damage index related to the neighborhood volume for a set of corresponding nodes. 
+The damage index is defined as damaged volume in relation the neighborhood volume.
+damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 
-    # Arguments
-   - `datamanager::Data_manager`: all model data
-   - `nodes::Union{SubArray, Vector{Int64}}`: corresponding nodes to this model
-
+# Arguments
+- `datamanager::Data_manager`: all model data
+- `nodes::Union{SubArray, Vector{Int64}}`: corresponding nodes to this model
 """
 function damage_index(datamananager::Module, nodes::Union{SubArray,Vector{Int64}})
     nlist = datamananager.get_nlist()
@@ -97,13 +95,13 @@ end
 """
     set_bond_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 
-    Set the bond damage field to the bond damage field
+Set the bond damage field to the bond damage field
 
-    # Arguments
-    - `datamanager::Module`: The datamanager
-    - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
-    # Returns
-    - `datamanager::Module`: The datamanager
+# Arguments
+- `datamanager::Module`: The datamanager
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+# Returns
+- `datamanager::Module`: The datamanager
 """
 function set_bond_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     bond_damageN = datamanager.get_field("Bond Damage", "N")
@@ -117,13 +115,13 @@ end
 """
     init_interface_crit_values(datamanager::Module, params::Dict)
 
-    Initialize the critical values
+Initialize the critical values
 
-    # Arguments
-    - `datamanager::Module`: The datamanager
-    - `params::Dict`: The parameters
-    # Returns
-    - `datamanager::Module`: The datamanager
+# Arguments
+- `datamanager::Module`: The datamanager
+- `params::Dict`: The parameters
+# Returns
+- `datamanager::Module`: The datamanager
 """
 function init_interface_crit_values(datamanager::Module, params::Dict)
     blockList = datamanager.get_block_list()

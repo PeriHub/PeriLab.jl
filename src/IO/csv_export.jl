@@ -9,13 +9,13 @@ export write_global_results_in_csv
 """
     create_result_file(filename::String, outputs::Dict)
 
-    Creates a csv file for the results
+Creates a csv file for the results
 
-    # Arguments
-   - `filename::String`: The name of the file to create
-   - `outputs::Dict`: The outputs dictionary
-    # Returns
-   - `Dict`: The result file
+# Arguments
+- `filename::String`: The name of the file to create
+- `outputs::Dict`: The outputs dictionary
+# Returns
+- `Dict`: The result file
 """
 function create_result_file(filename::String, outputs::Dict)
 
@@ -37,11 +37,11 @@ end
 """
     write_global_results_in_csv(csv_file::IOStream, global_values)
 
-    Writes the global results to the csv file
+Writes the global results to the csv file
 
-    # Arguments
-   - `csv_file::IOStream`: The csv file
-   - `global_values`: The global values
+# Arguments
+- `csv_file::IOStream`: The csv file
+- `global_values`: The global values
 """
 function write_global_results_in_csv(csv_file::IOStream, global_values)
     value_string = ""

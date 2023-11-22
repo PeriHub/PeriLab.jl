@@ -28,18 +28,18 @@ export init_thermal_model_fields
 """
     compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
 
-    Computes the physics models
+Computes the physics models
 
-    # Arguments
-    - `datamanager::Module`: The datamanager
-    - `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
-    - `dt::Float64`: The time step
-    - `time::Float64`: The current time
-    - `options::Dict`: The options
-    - `synchronise_field`: The synchronise field
-    - `to::TimerOutput`: The timer output
-    # Returns
-    - `datamanager`: The datamanager
+# Arguments
+- `datamanager::Module`: The datamanager
+- `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
+- `dt::Float64`: The time step
+- `time::Float64`: The current time
+- `options::Dict`: The options
+- `synchronise_field`: The synchronise field
+- `to::TimerOutput`: The timer output
+# Returns
+- `datamanager`: The datamanager
 """
 function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
 
@@ -96,17 +96,17 @@ end
 """
     compute_damage_pre_calculation(datamanager::Module, options::Dict, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
-    Compute the damage pre calculation
+Compute the damage pre calculation
 
-    # Arguments
-    - `datamanager::Data_manager`: Datamanager.
-    - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-    - `block::Int64`: Block number
-    - `synchronise_field`: Synchronise function to distribute parameter through cores.
-    - `time::Float64`: The current time.
-    - `dt::Float64`: The current time step.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `block::Int64`: Block number
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+- `time::Float64`: The current time.
+- `dt::Float64`: The current time step.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function compute_damage_pre_calculation(datamanager::Module, options::Dict, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
@@ -131,15 +131,15 @@ end
 """
     get_block_model_definition(params::Dict, block_id::Int64, prop_keys::Vector{String}, properties)
 
-    Get block model definition
+Get block model definition
 
-    # Arguments
-    - `params::Dict`: Parameters.
-    - `block_id::Int64`: Block id.
-    - `prop_keys::Vector{String}`: Property keys.
-    - `properties`: Properties function.
-    # Returns
-    - `properties`: Properties function.    
+# Arguments
+- `params::Dict`: Parameters.
+- `block_id::Int64`: Block id.
+- `prop_keys::Vector{String}`: Property keys.
+- `properties`: Properties function.
+# Returns
+- `properties`: Properties function.    
 """
 function get_block_model_definition(params::Dict, block_id::Int64, prop_keys::Vector{String}, properties)
     # properties function from datamanager
@@ -157,12 +157,12 @@ end
 """
     init_material_model_fields(datamanager::Module)
 
-    Initialize material model fields
+Initialize material model fields
 
-    # Arguments
-    - `datamanager::Data_manager`: Datamanager.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model_fields(datamanager::Module)
     dof = datamanager.get_dof()
@@ -186,12 +186,12 @@ end
 """
     init_damage_model_fields(datamanager::Module)
 
-    Initialize damage model fields
+Initialize damage model fields
 
-    # Arguments
-    - `datamanager::Data_manager`: Datamanager.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function init_damage_model_fields(datamanager::Module)
     datamanager.create_node_field("Damage", Float64, 1)
@@ -203,15 +203,15 @@ end
 """
     init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
 
-    Initialize models
+Initialize models
 
-    # Arguments
-    - `params::Dict`: Parameters.
-    - `datamanager::Module`: Datamanager.
-    - `allBlockNodes::Dict{Int64,Vector{Int64}}`: All block nodes.
-    - `solver_options::Dict`: Solver options.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+- `params::Dict`: Parameters.
+- `datamanager::Module`: Datamanager.
+- `allBlockNodes::Dict{Int64,Vector{Int64}}`: All block nodes.
+- `solver_options::Dict`: Solver options.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
     dof = datamanager.get_dof()
@@ -247,12 +247,12 @@ end
 """
     init_thermal_model_fields(datamanager::Module)
 
-    Initialize thermal model fields
+Initialize thermal model fields
 
-    # Arguments
-    - `datamanager::Data_manager`: Datamanager.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function init_thermal_model_fields(datamanager::Module)
     datamanager.create_node_field("Temperature", Float64, 1)
@@ -267,12 +267,12 @@ end
 """
     init_additive_model_fields(datamanager::Module)
 
-    Initialize additive model fields
+Initialize additive model fields
 
-    # Arguments
-    - `datamanager::Data_manager`: Datamanager.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function init_additive_model_fields(datamanager::Module)
     if !("Activation_Time" in datamanager.get_all_field_keys())
@@ -297,13 +297,13 @@ end
 """
     init_pre_calculation(datamanager::Module, options)
 
-    Initialize pre-calculation
+Initialize pre-calculation
 
-    # Arguments
-    - `datamanager::Data_manager`: Datamanager.
-    - `options`: Options.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `options`: Options.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function init_pre_calculation(datamanager::Module, options)
     return Pre_calculation.init_pre_calculation(datamanager, options)
@@ -312,14 +312,14 @@ end
 """
     read_properties(params::Dict, datamanager::Module, material_model::Bool)
 
-    Read properties
+Read properties
 
-    # Arguments
-    - `params::Dict`: Parameters.
-    - `datamanager::Data_manager`: Datamanager.
-    - `material_model::Bool`: Material model.
-    # Returns
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+- `params::Dict`: Parameters.
+- `datamanager::Data_manager`: Datamanager.
+- `material_model::Bool`: Material model.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
 """
 function read_properties(params::Dict, datamanager::Module, material_model::Bool)
     datamanager.init_property()
@@ -345,14 +345,14 @@ end
 """
     set_heatcapacity(params::Dict, blockNodes::Dict, heatCapacity::SubArray)
 
-    Sets the heat capacity of the nodes in the dictionary.
+Sets the heat capacity of the nodes in the dictionary.
 
-    # Arguments
-   - `params::Dict`: The parameters
-   - `blockNodes::Dict`: The block nodes
-   - `heatCapacity::SubArray`: The heat capacity array
-    # Returns
-   - `heatCapacity::SubArray`: The heat capacity array
+# Arguments
+- `params::Dict`: The parameters
+- `blockNodes::Dict`: The block nodes
+- `heatCapacity::SubArray`: The heat capacity array
+# Returns
+- `heatCapacity::SubArray`: The heat capacity array
 """
 function set_heatcapacity(params::Dict, blockNodes::Dict, heatCapacity::SubArray)
     for block in eachindex(blockNodes)

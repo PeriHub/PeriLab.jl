@@ -5,12 +5,12 @@
 """
     get_solver_name(params::Dict)
 
-    Get the name of the solver
+Get the name of the solver
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `solver_name::String`: The name of the solver
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `solver_name::String`: The name of the solver
 """
 function get_solver_name(params::Dict)
     if haskey(params["Solver"], "Verlet")
@@ -23,12 +23,12 @@ end
 """
     get_initial_time(params::Dict)
 
-    Get the initial time
+Get the initial time
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `initial_time::Float64`: The initial time
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `initial_time::Float64`: The initial time
 """
 function get_initial_time(params::Dict)
 
@@ -42,12 +42,12 @@ end
 """
     get_final_time(params::Dict)
 
-    Get the final time
+Get the final time
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `final_time::Float64`: The final time
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `final_time::Float64`: The final time
 """
 function get_final_time(params::Dict)
 
@@ -60,12 +60,12 @@ end
 """
     get_safety_factor(params::Dict)
 
-    Get the safety factor
+Get the safety factor
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `safety_factor::Float64`: The safety factor
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `safety_factor::Float64`: The safety factor
 """
 function get_safety_factor(params::Dict)
     if haskey(params["Solver"]["Verlet"], "Safety Factor")
@@ -77,12 +77,12 @@ end
 """
     get_fixed_dt(params::Dict)
 
-    Get the fixed time step
+Get the fixed time step
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `fixed_dt::Float64`: The fixed time step
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `fixed_dt::Float64`: The fixed time step
 """
 function get_fixed_dt(params::Dict)
     if haskey(params["Solver"]["Verlet"], "Fixed dt")
@@ -94,12 +94,12 @@ end
 """
     get_numerical_damping(params::Dict)
 
-    Get the numerical damping
+Get the numerical damping
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `numerical_damping::Float64`: The numerical damping
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `numerical_damping::Float64`: The numerical damping
 """
 function get_numerical_damping(params::Dict)
     if haskey(params["Solver"], "Numerical Damping")
@@ -111,12 +111,12 @@ end
 """
     get_solver_options(params::Dict)
     
-    Get the solver options
+Get the solver options
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `solver_options::Dict`: The solver options
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `solver_options::Dict`: The solver options
 """
 function get_solver_options(params::Dict)
     additive::Bool = false

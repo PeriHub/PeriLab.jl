@@ -14,12 +14,12 @@ include("./parameter_handling_solver.jl")
 """
     check_key_elements(params::Dict)
 
-    Checks if the keys exist in the parameters
+Checks if the keys exist in the parameters
 
-    # Arguments
-    - `params::Dict`: The parameters dictionary.
-    # Returns
-    - `params::Dict`: The parameters dictionary.
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `params::Dict`: The parameters dictionary.
 """
 function check_key_elements(params::Dict)
     if !haskey(params, "Physics")

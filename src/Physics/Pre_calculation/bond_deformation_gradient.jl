@@ -9,13 +9,13 @@ export compute
 """
     compute(datamanager, nodes)
 
-    Compute the bond deformation gradient.
+Compute the bond deformation gradient.
 
-    # Arguments
-    - `datamanager`: Datamanager.
-    - `nodes`: List of nodes.
-    # Returns
-    - `datamanager`: Datamanager.
+# Arguments
+- `datamanager`: Datamanager.
+- `nodes`: List of nodes.
+# Returns
+- `datamanager`: Datamanager.
 """
 function compute(datamanager, nodes)
     @warn "Bond_Deformation_Gradient not supported yet."

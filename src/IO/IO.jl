@@ -32,11 +32,11 @@ global_values = []
 """
     merge_exodus_files(result_files::Vector{Any}, filedirectory::String)
 
-    Merges exodus output files
+Merges exodus output files
 
-    # Arguments
-    - `result_files::Vector{Any}`: The result files
-    - `filedirectory::String`: The file directory
+# Arguments
+- `result_files::Vector{Any}`: The result files
+- `filedirectory::String`: The file directory
 """
 function merge_exodus_files(result_files::Vector{Any}, filedirectory::String)
     for result_file in result_files
@@ -57,10 +57,10 @@ end
 """
     open_result_file(result_file::Dict)
 
-    Opens the result file
+Opens the result file
 
-    # Arguments
-    - `result_file::Dict`: The result file
+# Arguments
+- `result_file::Dict`: The result file
 """
 function open_result_file(result_file::Dict)
     if result_file["type"] == "Exodus"
@@ -73,10 +73,10 @@ end
 """
     close_result_file(result_file::Dict)
 
-    Closes the result file
+Closes the result file
 
-    # Arguments
-    - `result_file::Dict`: The result file
+# Arguments
+- `result_file::Dict`: The result file
 """
 function close_result_file(result_file::Dict)
     if haskey(result_file, "file")
@@ -87,10 +87,10 @@ end
 """
     close_result_files(result_files::Vector{Dict})
 
-    Closes the result files
+Closes the result files
 
-    # Arguments
-    - `result_files::Vector{Dict}`: The result files
+# Arguments
+- `result_files::Vector{Dict}`: The result files
 """
 function close_result_files(result_files::Vector{Dict})
     for result_file in result_files
@@ -105,11 +105,11 @@ end
 """
     close_result_files(result_files::Vector{Dict}, outputs::Dict{Int64,Dict{}})
 
-    Closes the result files if the flush_file flag is not set
+Closes the result files if the flush_file flag is not set
 
-    # Arguments
-    - `result_files::Vector{Dict}`: The result files
-    - `outputs::Dict{Int64,Dict{}}`: The output settings
+# Arguments
+- `result_files::Vector{Dict}`: The result files
+- `outputs::Dict{Int64,Dict{}}`: The output settings
 """
 function close_result_files(result_files::Vector{Dict}, outputs::Dict{Int64,Dict{}})
     for (id, result_file) in enumerate(result_files)
@@ -122,10 +122,10 @@ end
 """
     delete_files(result_files::Vector{Dict})
 
-    Deletes the result files
+Deletes the result files
 
-    # Arguments
-    - `result_files`: The result files
+# Arguments
+- `result_files`: The result files
 """
 function delete_files(result_files::Vector{Dict})
     for result_file in result_files
@@ -139,12 +139,12 @@ end
 """
     get_file_size(result_files::Vector{Dict})
 
-    Gets the file size of the result files
+Gets the file size of the result files
 
-    # Arguments
-    - `result_files`: The result files
-    # Returns
-    - `total_file_size`: The total file size
+# Arguments
+- `result_files`: The result files
+# Returns
+- `total_file_size`: The total file size
 """
 function get_file_size(result_files::Vector{Dict})
     total_file_size = 0
@@ -158,13 +158,12 @@ end
 """
     clearNP1(name::String)
 
-    Clears the NP1 from the name
+Clears the NP1 from the name
 
-    # Arguments
-    - `name::String`: The name
-    # Returns
-    - `name::String`: The cleared name
-
+# Arguments
+- `name::String`: The name
+# Returns
+- `name::String`: The cleared name
 """
 function clearNP1(name::String)
     if "NP1" == name[end-2:end]
@@ -176,13 +175,13 @@ end
 """
     get_results_mapping(params::Dict, datamanager::Module)
 
-    Gets the results mapping
+Gets the results mapping
 
-    # Arguments
-    - `params::Dict`: The parameters
-    - `datamanager::Module`: The datamanager
-    # Returns
-    - `output_mapping::Dict{Int64,Dict{}}`: The results mapping
+# Arguments
+- `params::Dict`: The parameters
+- `datamanager::Module`: The datamanager
+# Returns
+- `output_mapping::Dict{Int64,Dict{}}`: The results mapping
 """
 function get_results_mapping(params::Dict, datamanager::Module)
     compute_names = get_computes_names(params)
@@ -261,16 +260,16 @@ end
 """
     initialize_data(filename::String, filedirectory::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
 
-    Initialize data.
+Initialize data.
 
-    # Arguments
-    - `filename::String`: The name of the input file.
-    - `filedirectory::String`: The directory of the input file.
-    - `datamanager::Module`: The datamanager
-    - `comm::MPI.Comm`: The MPI communicator
-    - `to::TimerOutputs.TimerOutput`: The TimerOutput
-    # Returns
-    - `data::Dict`: The data
+# Arguments
+- `filename::String`: The name of the input file.
+- `filedirectory::String`: The directory of the input file.
+- `datamanager::Module`: The datamanager
+- `comm::MPI.Comm`: The MPI communicator
+- `to::TimerOutputs.TimerOutput`: The TimerOutput
+# Returns
+- `data::Dict`: The data
 """
 function initialize_data(filename::String, filedirectory::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
 
@@ -286,16 +285,16 @@ end
 """
     init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64)
 
-    Initialize write results.
+Initialize write results.
 
-    # Arguments
-    - `params::Dict`: The parameters
-    - `filedirectory::String`: The directory of the input file.
-    - `datamanager::Module`: The datamanager
-    - `nsteps::Int64`: The number of steps
-    # Returns
-    - `result_files::Array`: The result files
-    - `outputs::Dict`: The outputs
+# Arguments
+- `params::Dict`: The parameters
+- `filedirectory::String`: The directory of the input file.
+- `datamanager::Module`: The datamanager
+- `nsteps::Int64`: The number of steps
+# Returns
+- `result_files::Array`: The result files
+- `outputs::Dict`: The outputs
 """
 function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64)
     filenames = get_output_filenames(params, filedirectory)
@@ -358,12 +357,12 @@ end
 """
     read_input_file(filename::String)
 
-    Read input file.
+Read input file.
 
-    # Arguments
-    - `filename::String`: The filename
-    # Returns
-    - `data::Dict`: The data
+# Arguments
+- `filename::String`: The filename
+# Returns
+- `data::Dict`: The data
 """
 function read_input_file(filename::String)
     return Read_Input_Deck.read_input_file(filename)
@@ -372,15 +371,15 @@ end
 """
     write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, datamanager::Module)
 
-    Write results.
+Write results.
 
-    # Arguments
-    - `result_files::Vector{Any}`: The result files
-    - `time::Float64`: The time
-    - `outputs::Dict`: The outputs
-    - `datamanager::Module`: The datamanager
-    # Returns
-    - `result_files::Vector{Any}`: The result files
+# Arguments
+- `result_files::Vector{Any}`: The result files
+- `time::Float64`: The time
+- `outputs::Dict`: The outputs
+- `datamanager::Module`: The datamanager
+# Returns
+- `result_files::Vector{Any}`: The result files
 """
 function write_results(result_files::Vector{Any}, time::Float64, outputs::Dict, datamanager::Module)
 
@@ -429,13 +428,13 @@ end
 """
     get_global_values(output::Dict, datamanager::Module)
 
-    Get global values.
+Get global values.
 
-    # Arguments
-    - `output::Dict`: The output
-    - `datamanager::Module`: The datamanager
-    # Returns
-    - `global_values::Vector`: The global values
+# Arguments
+- `output::Dict`: The output
+- `datamanager::Module`: The datamanager
+# Returns
+- `global_values::Vector`: The global values
 """
 function get_global_values(output::Dict, datamanager::Module)
     global_values = []
@@ -468,15 +467,15 @@ end
 """
     find_global_core_value!(global_value::Union{Int64,Float64}, calculation_type::String, nnodes::Int64, datamanager::Module)
 
-    Find global core value.
+Find global core value.
 
-    # Arguments
-    - `global_value::Union{Int64,Float64}`: The global value
-    - `calculation_type::String`: The calculation type
-    - `nnodes::Int64`: The number of nodes
-    - `datamanager::Module`: The datamanager
-    # Returns
-    - `global_value::Union{Int64,Float64}`: The global value
+# Arguments
+- `global_value::Union{Int64,Float64}`: The global value
+- `calculation_type::String`: The calculation type
+- `nnodes::Int64`: The number of nodes
+- `datamanager::Module`: The datamanager
+# Returns
+- `global_value::Union{Int64,Float64}`: The global value
 """
 function find_global_core_value!(global_value::Union{Int64,Float64}, calculation_type::String, nnodes::Int64, datamanager::Module)
     comm = datamanager.get_comm()
@@ -498,12 +497,12 @@ end
 """
     show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)
 
-    Show block summary.
+Show block summary.
 
-    # Arguments
-    - `solver_options::Dict`: The solver options
-    - `params::Dict`: The params
-    - `datamanager::Module`: The datamanager
+# Arguments
+- `solver_options::Dict`: The solver options
+- `params::Dict`: The params
+- `datamanager::Module`: The datamanager
 """
 function show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)
     headers = ["Block", "Material", "Damage", "Thermal", "Additive", "Density", "Horizon", "Number of Nodes"]

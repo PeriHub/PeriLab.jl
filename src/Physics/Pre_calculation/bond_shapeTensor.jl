@@ -9,13 +9,13 @@ export compute
 """
     compute(datamanager, nodes)
 
-    Compute the bond shape tensor.
+Compute the bond shape tensor.
 
-    # Arguments
-    - `datamanager`: Datamanager.
-    - `nodes`: List of nodes.
-    # Returns
-    - `datamanager`: Datamanager.
+# Arguments
+- `datamanager`: Datamanager.
+- `nodes`: List of nodes.
+# Returns
+- `datamanager`: Datamanager.
 """
 function compute(datamanager, nodes)
 

@@ -8,9 +8,9 @@ using Rotations
 export undeformed_bond
 export shape_tensor
 """
-     undeformed_bond(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
+    undeformed_bond(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
 
- Calculate bond geometries between nodes based on their coordinates.
+Calculate bond geometries between nodes based on their coordinates.
 
 # # Arguments
  - `nodes::Union{SubArray,Vector{Int64}}`: A vector of integers representing node IDs.
@@ -51,6 +51,7 @@ function undeformed_bond(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist
     end
     return undeformed_bond
 end
+
 """
     shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
 
@@ -90,7 +91,6 @@ inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 
 shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
 """
-
 function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
 
     for iID in nodes
@@ -152,7 +152,6 @@ deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 
 deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 """
-
 function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, undeformed_bond::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
     for iID in nodes
         deformation_gradient[iID, :, :] = zeros(Float64, dof, dof)
@@ -165,6 +164,7 @@ function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, 
     end
     return deformation_gradient
 end
+
 """
     function strain(nodes::Union{SubArray, Vector{Int64}}, deformation_gradient, strainInc)
 
@@ -181,7 +181,6 @@ Calculate strain increments for specified nodes based on deformation gradients.
 This function iterates over the specified nodes and computes strain increments using the given deformation gradients.
 
 """
-
 function strain(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, strain::SubArray)
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     for iID in nodes
@@ -204,7 +203,6 @@ Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package
 - Rotation tensor
 
 """
-
 function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}})
     if length(angles) == 3
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)

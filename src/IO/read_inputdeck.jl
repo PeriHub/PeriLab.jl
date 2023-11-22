@@ -11,12 +11,12 @@ export read_input_file
 """
     read_input(filename::String)
 
-    Reads the input deck from a yaml file
+Reads the input deck from a yaml file
 
-    # Arguments
-    - `filename::String`: The name of the yaml file
-    # Returns
-    - `params::Dict{String,Any}`: The parameters read from the yaml file
+# Arguments
+- `filename::String`: The name of the yaml file
+# Returns
+- `params::Dict{String,Any}`: The parameters read from the yaml file
 """
 function read_input(filename::String)
     try
@@ -30,12 +30,12 @@ end
 """
     read_input_file(filename::String)
 
-    Reads the input deck from a yaml file
+Reads the input deck from a yaml file
 
-    # Arguments
-    - `filename::String`: The name of the yaml file
-    # Returns
-    - `params::Dict{String,Any}`: The parameters read from the yaml file
+# Arguments
+- `filename::String`: The name of the yaml file
+# Returns
+- `params::Dict{String,Any}`: The parameters read from the yaml file
 """
 function read_input_file(filename::String)
     params = Dict{String,Any}()

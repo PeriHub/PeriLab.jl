@@ -74,7 +74,7 @@ global commMPi::Any
 """
     get_comm()
 
-    Get the MPI communicator
+Get the MPI communicator
 """
 function get_comm()
     global commMPi
@@ -84,10 +84,10 @@ end
 """
     set_comm(comm::MPI.Comm)
 
-    Set the MPI communicator
+Set the MPI communicator
 
-    # Arguments
-    - `comm::MPI.Comm`: MPI communicator
+# Arguments
+- `comm::MPI.Comm`: MPI communicator
 """
 function set_comm(comm::MPI.Comm)
     global commMPi = comm
@@ -101,13 +101,13 @@ global material_type::Dict{String,Bool} = Dict("Bond-Based" => false, "Ordinary"
 """
     check_property(block_id::Int64, property::String)
 
-    Checks if the specified `property` exists for the given `block_id`.
+Checks if the specified `property` exists for the given `block_id`.
 
-    # Arguments
-    - `block_id::Int64`: The ID of the block.
-    - `property::String`: The name of the property to check.
-    # Returns
-    - `Bool`: `true` if the property exists, `false` otherwise.
+# Arguments
+- `block_id::Int64`: The ID of the block.
+- `property::String`: The name of the property to check.
+# Returns
+- `Bool`: `true` if the property exists, `false` otherwise.
 """
 function check_property(block_id::Int64, property::String)
     global properties
@@ -121,24 +121,23 @@ end
 """
    create_bond_field(name::String, type::Type, dof::Int64)
 
-   Creates a bond field with the given name, data type, and degree of freedom.
+Creates a bond field with the given name, data type, and degree of freedom.
 
-   # Arguments
-   - `name::String`: The name of the bond field.
-   - `vartype::Type`: The data type of the bond field.
-   - `dof::Int64`: The degrees of freedom per bond.
-   - `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
+# Arguments
+- `name::String`: The name of the bond field.
+- `vartype::Type`: The data type of the bond field.
+- `dof::Int64`: The degrees of freedom per bond.
+- `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
 
-   # Returns
-   - `bond_field::Field`: The created bond field for the current time step.
-   - `bond_field_np1::Field`: The created bond field for the next time step.
+# Returns
+- `bond_field::Field`: The created bond field for the current time step.
+- `bond_field_np1::Field`: The created bond field for the next time step.
 
-   Example:
-   ```julia
-   create_bond_field("stress", Float64, 6)  # creates a stress bond field with 6 degrees of freedom
-   ```
-   """
-
+Example:
+```julia
+create_bond_field("stress", Float64, 6)  # creates a stress bond field with 6 degrees of freedom
+```
+"""
 function create_bond_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
 
     return create_field(name * "N", type, "Bond_Field", dof, default_value), create_field(name * "NP1", type, "Bond_Field", dof, default_value)
@@ -152,21 +151,21 @@ end
 """
    create_constant_bond_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0))
 
-   Creates a constant bond field with the given name, data type, and degree of freedom.
+Creates a constant bond field with the given name, data type, and degree of freedom.
 
-   # Arguments
-   - `name::String`: The name of the bond field.
-   - `vartype::Type`: The data type of the bond field.
-   - `dof::Int64`: The degrees of freedom per bond.
-    -  default_value::Union{Int64,Float64,Bool}=0) (optional) - filled with zero or false
+# Arguments
+- `name::String`: The name of the bond field.
+- `vartype::Type`: The data type of the bond field.
+- `dof::Int64`: The degrees of freedom per bond.
+-  default_value::Union{Int64,Float64,Bool}=0) (optional) - filled with zero or false
 
-   # Returns
-   - `constant_bond_field::Field`: The created constant bond field.
+# Returns
+- `constant_bond_field::Field`: The created constant bond field.
 
-   Example:
-   ```julia
-   create_constant_bond_field("density", Float64, 1)  # creates a density constant bond field
-   ```
+Example:
+```julia
+create_constant_bond_field("density", Float64, 1)  # creates a density constant bond field
+```
    """
 function create_constant_bond_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
     return create_field(name, type, "Bond_Field", dof, default_value)
@@ -177,7 +176,7 @@ function create_constant_bond_field(name::String, type::Type, VectorOrArray::Str
 end
 
 """
-create_constant_node_field(name::String, type::Type, dof::Int64)
+    create_constant_node_field(name::String, type::Type, dof::Int64)
 
 Creates a constant node field with the given name, data type, and degree of freedom.
 
@@ -203,8 +202,9 @@ function create_constant_node_field(name::String, type::Type, VectorOrArray::Str
 
     return create_field(name, type, "Node_Field", VectorOrArray, dof, default_value)
 end
+
 """
-create_field(name::String, vartype::Type, bondNode::String, dof::Int64, default_value::Any=0)
+    create_field(name::String, vartype::Type, bondNode::String, dof::Int64, default_value::Any=0)
 
 Create a field with the given `name` for the specified `vartype`. If the field already exists, return the existing field. If the field does not exist, create a new field with the specified characteristics.
 
@@ -216,9 +216,7 @@ Create a field with the given `name` for the specified `vartype`. If the field a
 
 # Returns
 The field with the given `name` and specified characteristics.
-
 """
-
 function create_field(name::String, vartype::Type, bondOrNode::String, dof::Int64, default_value::Union{Int64,Float64,Bool})
     create_field(name, vartype, bondOrNode, "Vector", dof, default_value)
 end
@@ -271,21 +269,21 @@ end
 """
    create_node_field(name::String, type::Type, dof::Int64)
 
-   Creates a node field with the given name, data type, and degree of freedom.
+Creates a node field with the given name, data type, and degree of freedom.
 
-   # Arguments
-   - `name::String`: The name of the node field.
-   - `type::Type`: The data type of the node field.
-   - `dof::Int64`: The degree of freedom of each node.
-   - `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
-   # Returns
-   - `node_field::Field`: The created node field for the current time step.
-   - `node_field_np1::Field`: The created node field for the next time step.
+# Arguments
+- `name::String`: The name of the node field.
+- `type::Type`: The data type of the node field.
+- `dof::Int64`: The degree of freedom of each node.
+- `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
+# Returns
+- `node_field::Field`: The created node field for the current time step.
+- `node_field_np1::Field`: The created node field for the next time step.
 
-   Example:
-   ```julia
-   create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
-   ```
+Example:
+```julia
+create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
+```
 """
 function create_node_field(name::String, type::Type, dof::Int64, default_value::Any=0)
 
@@ -296,22 +294,38 @@ function create_node_field(name::String, type::Type, VectorOrArray::String, dof:
     return create_field(name * "N", type, "Node_Field", VectorOrArray, dof, default_value), create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof, default_value)
 end
 
+"""
+   get_all_field_keys()
+
+Returns a list of all field keys.
+"""
 function get_all_field_keys()
     global field_types
     return collect(keys(field_types))
 end
 
+"""
+   get_block_list()
+
+Returns a list of all block IDs.
+"""
 function get_block_list()
     global block_list
     return block_list
 end
 
+"""
+    get_crit_values_matrix()
+
+Retrieves the critical values matrix.
+"""
 function get_crit_values_matrix()
     global crit_values_matrix
     return crit_values_matrix
 end
+
 """
-get_dof()
+    get_dof()
 
 Retrieves the degree of freedom (dof) value.
 
@@ -328,6 +342,17 @@ function get_dof()
     return dof
 end
 
+"""
+   get_field(name::String, time::String)
+
+Returns the field with the given name and time.
+
+# Arguments
+- `name::String`: The name of the field.
+- `time::String`: The time of the field.
+# Returns
+- `field::Field`: The field with the given name and time.
+"""
 function get_field(name::String, time::String)
 
     if time == "Constant" || time == "CONSTANT"
@@ -337,6 +362,16 @@ function get_field(name::String, time::String)
 
 end
 
+"""
+   get_field(name::String)
+
+Returns the field with the given name.
+
+# Arguments
+- `name::String`: The name of the field.
+# Returns
+- `field::Field`: The field with the given name.
+"""
 function get_field(name::String)
     global fields
     global field_array_type
@@ -364,11 +399,10 @@ end
 
 """
     get_field_type()
-    Get the type of a field
+Get the type of a field
 
-    # Returns
-   - `get_field_type` (string): returns the type of a field
-
+# Returns
+- `get_field_type` (string): returns the type of a field
 """
 function get_field_type(name::String)
     global field_types
@@ -380,6 +414,11 @@ function get_field_type(name::String)
     return field_types[name]
 end
 
+"""
+    get_inverse_nlist()
+
+Get the inverse of the neighborhood list.
+"""
 function get_inverse_nlist()
     global inverse_nlist
     return inverse_nlist
@@ -388,16 +427,16 @@ end
 """
     get_local_nodes()
 
-    Determines the local node numbering.
+Determines the local node numbering.
 
-    # Returns
-   - `get_local_nodes` (array): returns local nodes.
+# Returns
+- `get_local_nodes` (array): returns local nodes.
 
-    Example:
-    ```julia
-    get_local_nodes()  # returns local nodes or if they do not exist at the core an empty array
-    ```
-    """
+Example:
+```julia
+get_local_nodes()  # returns local nodes or if they do not exist at the core an empty array
+```
+"""
 function get_local_nodes(global_nodes)
     global glob_to_loc
 
@@ -405,15 +444,31 @@ function get_local_nodes(global_nodes)
 
 end
 
+"""
+    get_material_type(key)
+
+Get the material type.
+
+# Arguments
+- `key` (string): The key of the material type.
+# Returns
+- `get_material_type` (string): returns the material type
+"""
 function get_material_type(key)
     return material_type[key]
 end
 
+"""
+    get_nlist()
+
+Get the neighborhood list.
+"""
 function get_nlist()
     return get_field("Neighborhoodlist")
 end
+
 """
-get_nnodes()
+    get_nnodes()
 
 Retrieves the number of nodes.
 
@@ -430,8 +485,11 @@ function get_nnodes()
     return num_controller
 end
 
+"""
+    get_NP1_to_N_Dict()
 
-
+Get the NP1 to N dictionary
+"""
 function get_NP1_to_N_Dict()
     NP1_to_N = Dict{String,String}()
     for key in get_all_field_keys()
@@ -445,11 +503,10 @@ end
 """
    get_nnsets()
 
-   Get the number of node sets.
+Get the number of node sets.
 
-   # Returns
-   - `nnsets::Int`: The number of node sets.
-
+# Returns
+- `nnsets::Int`: The number of node sets.
 """
 function get_nnsets()
     global nnsets
@@ -457,43 +514,56 @@ function get_nnsets()
 end
 
 """
-get_nsets()
+    get_nsets()
 
 Get the node sets
 
 # Returns
 - `nsets::Dict{String,Vector{Int64}}`: The node sets dictionary.
 """
-
 function get_nsets()
     global nsets
     return nsets
 end
 
 """
-get_num_responder()
+    get_num_responder()
 
 Get the the number of responder nodes
 
 # Returns
 - `num_responder::Int64`: The number of responder nodes
 """
-
 function get_num_responder()
     global num_responder
     return num_responder
 end
 
+"""
+    get_overlap_map()
+
+Get the overlap map
+"""
 function get_overlap_map()
     global overlap_map
     return overlap_map
 end
 
+"""
+    get_synch_fields()
+
+Get the fields to synchronize
+"""
 function get_synch_fields()
     global fields_to_synch
     return fields_to_synch
 end
 
+"""
+    get_physics_options()
+
+Get the physics options
+"""
 function get_physics_options()
     global physics_options
 
@@ -590,6 +660,7 @@ function get_rank()
     global rank
     return rank
 end
+
 """
     get_max_rank()
 
@@ -607,7 +678,7 @@ function get_max_rank()
 end
 
 """
-loc_to_glob(range::UnitRange{Int64})
+    loc_to_glob(range::UnitRange{Int64})
 
 Converts the local index to the global index.
 
@@ -624,6 +695,14 @@ function loc_to_glob(range::UnitRange{Int64})
     return distribution[range]
 end
 
+"""
+    init_property()
+
+This function initializes the properties dictionary.
+
+# Returns
+- `keys(properties[1])`: The keys of the properties dictionary.
+"""
 function init_property()
     global properties
 
@@ -633,7 +712,7 @@ function init_property()
     return collect(keys(properties[1]))
 end
 """
-    rotation()
+    rotation_data()
 
 Check if the "Angles" field is present in the datamanager's field keys.
 If present, return true and retrieve the value of the "Angles" field.
@@ -646,7 +725,7 @@ If not present, return false and nothing.
 
 # Example
 ```julia
-result, angles = rotation()
+result, angles = rotation_data()
 if result
     println("Angles field is present. Value: ", angles)
 else
@@ -661,19 +740,44 @@ function rotation_data()
     return false, nothing
 end
 
+"""
+    set_block_list(blocks::Union{SubArray,Vector{Int64}})
+
+Sets the block list globally.
+
+# Arguments
+- `blocks::Union{SubArray,Vector{Int64}}`: The block list.
+"""
 function set_block_list(blocks::Union{SubArray,Vector{Int64}})
     global block_list = sort(unique(blocks))
 end
 
+"""
+    set_crit_values_matrix(crit_values::Array{Float64,3})
+
+Sets the critical values matrix globally.
+
+# Arguments
+- `crit_values::Array{Float64,3}`: The critical values matrix.
+"""
 function set_crit_values_matrix(crit_values::Array{Float64,3})
     global crit_values_matrix = crit_values
 end
+
+"""
+    set_distribution(values::Vector{Int64})
+
+Sets the distribution globally.
+
+# Arguments
+- `values::Vector{Int64}`: The distribution.
+"""
 function set_distribution(values::Vector{Int64})
     global distribution = values
 end
 
 """
-set_dof(n::Int64)
+    set_dof(n::Int64)
 
 Sets the degree of freedom (dof) value globally.
 
@@ -688,8 +792,9 @@ set_dof(3)  # sets the degree of freedom to 3
 function set_dof(n::Int64)
     global dof = n
 end
+
 """
-set_glob_to_loc(dict)
+    set_glob_to_loc(dict)
 
 Sets the global-to-local mapping dict globally.
 
@@ -705,10 +810,27 @@ function set_glob_to_loc(dict::Dict)
     global glob_to_loc = dict
 end
 
+"""
+    set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
+
+Sets the inverse nlist globally.
+
+# Arguments
+- `inv_nlist::Vector{Dict{Int64,Int64}}`: The inverse nlist.
+"""
 function set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
     global inverse_nlist = inv_nlist
 end
 
+"""
+    set_material_type(key::Union{Int64,AbstractString,String}, value::Union{Int64,AbstractString,String,Float64})
+
+Sets the material type globally.
+
+# Arguments
+- `key::Union{Int64,AbstractString,String}`: The key of the material type.
+- `value::Union{Int64,AbstractString,String,Float64}`: The value of the material type.
+"""
 function set_material_type(key::Union{Int64,AbstractString,String}, value::Union{Int64,AbstractString,String,Float64})
     if key in keys(material_type)
         global material_type[key] = value
@@ -718,15 +840,15 @@ function set_material_type(key::Union{Int64,AbstractString,String}, value::Union
 end
 
 """
- set_nnodes()
+    set_nnodes()
 
- Sets the number all nodes of one core globally.
+Sets the number all nodes of one core globally.
 
- # Arguments
+# Arguments
 
- Example:
- ```
- """
+Example:
+```
+"""
 function set_nnodes()
     global num_controller
     global num_responder
@@ -734,43 +856,43 @@ function set_nnodes()
 end
 
 """
- set_num_controller(n::Int64)
+    set_num_controller(n::Int64)
 
- Sets the number of controller nodes globally. For one core the number of nodes is equal to the number of controller nodes.
+Sets the number of controller nodes globally. For one core the number of nodes is equal to the number of controller nodes.
 
- # Arguments
- - `n::Int64`: The value to set as the number of nodes.
+# Arguments
+- `n::Int64`: The value to set as the number of nodes.
 
- Example:
- ```julia
- set_num_controller(10)  # sets the number of nodes to 10
- ```
- """
+Example:
+```julia
+set_num_controller(10)  # sets the number of nodes to 10
+```
+"""
 function set_num_controller(n::Int64)
     global num_controller = n
     set_nnodes()
 end
+
 """
-set_nnsets(n::Int64)
+    set_nnsets(n::Int64)
 
 Set the number of node sets.
 
 # Arguments
 - `n::Int64`: The number of node sets to be set.
-
 """
 function set_nnsets(n::Int64)
 
     global nnsets = n
 end
+
 """
-set_nset(name, nodes)
+    set_nset(name, nodes)
 Set the nodes associated with a named node set.
 
 # Arguments
 - `name::String`: The name of the node set.
 - `nodes::Vector{Int}`: The node indices associated with the node set.
-
 """
 function set_nset(name::String, nodes::Vector{Int})
     global nsets
@@ -784,7 +906,7 @@ function set_nset(name::String, nodes::Vector{Int})
 end
 
 """
-set_num_responder(n::Int64)
+    set_num_responder(n::Int64)
 
 Sets the number of responder nodes globally. For one core the number of responder is zero. responder hold the information of the neighbors, of one node, but are not evaluated.
 
@@ -801,34 +923,97 @@ function set_num_responder(n)
     set_nnodes()
 end
 
+"""
+    set_overlap_map(topo)
+
+Sets the overlap map globally.
+
+# Arguments
+- `topo`: The overlap map.
+"""
 function set_overlap_map(topo)
     global overlap_map = topo
 end
 
+"""
+    set_physics_options(values::Dict{String,Bool})
+
+Sets the physics options globally.
+
+# Arguments
+- `values::Dict{String,Bool}`: The physics options.
+"""
 function set_physics_options(values::Dict{String,Bool})
     global physics_options = values
 end
 
+"""
+    set_property(block_id, property, value_name, value)
+
+Sets the value of a specified `property` for a given `block_id`.
+
+# Arguments
+- `block_id`::Int64: The identifier of the block for which to set the property.
+- `property`::String: The name of the property.
+- `value_name`::String: The name of the value within the specified `property`.
+- `value`::Any: The value to set for the specified `value_name`.
+"""
 function set_property(block_id, property, value_name, value)
     global properties
 
     properties[block_id][property][value_name] = value
 end
 
+"""
+    set_properties(block_id, property, values)
+
+Sets the values of a specified `property` for a given `block_id`.
+
+# Arguments
+- `block_id`::Int64: The identifier of the block for which to set the property.
+- `property`::String: The name of the property.
+- `values`::Any: The values to set for the specified `property`.
+"""
 function set_properties(block_id, property, values)
     global properties
 
     properties[block_id][property] = values
 end
 
+"""
+    set_rank(value::Int64)
+
+Sets the rank globally.
+
+# Arguments
+- `value::Int64`: The value to set as the rank.
+"""
 function set_rank(value::Int64)
     global rank = value
 end
 
+"""
+    set_max_rank(value::Int64)
+
+Sets the maximum rank globally.
+
+# Arguments
+- `value::Int64`: The value to set as the maximum rank.
+"""
 function set_max_rank(value::Int64)
     global max_rank = value
 end
 
+"""
+    set_synch(name, download_from_cores, upload_to_cores)
+
+Sets the synchronization dictionary globally.
+
+# Arguments
+- `name`::String: The name of the field.
+- `download_from_cores`::Bool: Whether to download the field from the cores.
+- `upload_to_cores`::Bool: Whether to upload the field to the cores.
+"""
 function set_synch(name, download_from_cores, upload_to_cores)
     global fields_to_synch
 
@@ -842,10 +1027,27 @@ function set_synch(name, download_from_cores, upload_to_cores)
 
 end
 
+"""
+    set_fields_equal(name::String, NP1::String)
+
+Sets the fields equal.
+
+# Arguments
+- `name::String`: The name of the field.
+- `NP1::String`: The name of the field.
+"""
 function set_fields_equal(name::String, NP1::String)
     set_fields_equal(name * NP1)
 end
 
+"""
+    set_fields_equal(NP1::String)
+
+Sets the fields equal.
+
+# Arguments
+- `NP1::String`: The name of the field.
+"""
 function set_fields_equal(NP1::String)
     global field_array_type
 
@@ -866,6 +1068,11 @@ function set_fields_equal(NP1::String)
     field_N[:] = field_NP1[:]
 end
 
+"""
+    switch_NP1_to_N()
+
+Switches the fields from NP1 to N.
+"""
 function switch_NP1_to_N()
     global field_types
     global field_array_type
@@ -899,6 +1106,16 @@ function switch_NP1_to_N()
         end
     end
 end
+
+"""
+    synch_manager(synchronise_field, direction::String)
+
+Synchronises the fields.
+
+# Arguments
+- `synchronise_field`: The function to synchronise the field.
+- `direction::String`: The direction of the synchronisation.
+"""
 function synch_manager(synchronise_field, direction::String)
     global overlap_map
 

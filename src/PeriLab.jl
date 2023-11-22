@@ -60,9 +60,9 @@ export main
 """
     print_banner()
 
-    Prints a banner displaying information about the PeriLab application.
+Prints a banner displaying information about the PeriLab application.
 
-    This function prints a banner containing details about the PeriLab application, including its name, version, copyright, contact information, and license. It provides a visual introduction to the application.
+This function prints a banner containing details about the PeriLab application, including its name, version, copyright, contact information, and license. It provides a visual introduction to the application.
 """
 function print_banner()
     println("""\e[]
@@ -133,9 +133,9 @@ end
 """
     main()
 
-    Entry point for the PeriLab application.
+Entry point for the PeriLab application.
 
-    This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
+This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 """
 function main()
     parsed_args = parse_commandline()
@@ -151,16 +151,16 @@ end
 """
     main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
-    Entry point for the PeriLab application.
+Entry point for the PeriLab application.
 
-    This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
+This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 
-    # Arguments
-    - `filename::String`: The filename of the input file.
-    - `dry_run::Bool=false`: Whether to run in dry-run mode.
-    - `verbose::Bool=false`: Whether to run in verbose mode.
-    - `debug::Bool=false`: Whether to run in debug mode.
-    - `silent::Bool=false`: Whether to run in silent mode.
+# Arguments
+- `filename::String`: The filename of the input file.
+- `dry_run::Bool=false`: Whether to run in dry-run mode.
+- `verbose::Bool=false`: Whether to run in verbose mode.
+- `debug::Bool=false`: Whether to run in debug mode.
+- `silent::Bool=false`: Whether to run in silent mode.
 """
 function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 

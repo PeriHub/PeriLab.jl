@@ -25,17 +25,17 @@ const TOLERANCE = 1.0e-14
 """
     init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm, to::TimerOutput)
 
-    Initializes the data for the mesh.
+Initializes the data for the mesh.
 
-    # Arguments
-    - `params::Dict`: The parameters for the simulation.
-    - `path::String`: The path to the mesh file.
-    - `datamanager::Data_manager`: The data manager.
-    - `comm::MPI.Comm`: The MPI communicator.
-    - `to::TimerOutput`: The timer output.
-    # Returns
-    - `datamanager::Data_manager`: The data manager.
-    - `params::Dict`: The parameters for the simulation.
+# Arguments
+- `params::Dict`: The parameters for the simulation.
+- `path::String`: The path to the mesh file.
+- `datamanager::Data_manager`: The data manager.
+- `comm::MPI.Comm`: The MPI communicator.
+- `to::TimerOutput`: The timer output.
+# Returns
+- `datamanager::Data_manager`: The data manager.
+- `params::Dict`: The parameters for the simulation.
 """
 function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm, to::TimerOutput)
     @timeit to "init_data - mesh_data,jl" begin
@@ -81,19 +81,19 @@ end
 """
     get_local_overlap_map()
 
-    Changes entries in the overlap map from the global numbering to the local computer core one.
+Changes entries in the overlap map from the global numbering to the local computer core one.
 
-    # Arguments
-    - `overlap_map::Dict{Int64, Dict{Int64, String}}`: overlap map with global nodes.
-    - `distribution Array{Int64}`: global nodes distribution at cores, needed for the gobal to local mapping
-    - `ranks Array{Int64}` : number of used computer cores
-    # Returns
-    - `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
+# Arguments
+- `overlap_map::Dict{Int64, Dict{Int64, String}}`: overlap map with global nodes.
+- `distribution Array{Int64}`: global nodes distribution at cores, needed for the gobal to local mapping
+- `ranks Array{Int64}` : number of used computer cores
+# Returns
+- `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
 
-    Example:
-    ```julia
-    get_local_overlap_map(overlap_map, distribution, ranks)  # returns local nodes 
-    ```
+Example:
+```julia
+get_local_overlap_map(overlap_map, distribution, ranks)  # returns local nodes 
+```
 """
 function get_local_overlap_map(overlap_map, distribution, ranks)
     if ranks == 1
@@ -114,13 +114,13 @@ end
 """
     local_nodes_from_dict(glob_to_loc::Dict{Int,Int}, global_nodes::Vector{Int64})
 
-    Changes entries in the overlap map from the global numbering to the local computer core one.
+Changes entries in the overlap map from the global numbering to the local computer core one.
 
-    # Arguments
-    - `glob_to_loc::Dict{Int,Int}`: global to local mapping
-    - `global_nodes::Vector{Int64}`: global nodes
-    # Returns
-    - `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
+# Arguments
+- `glob_to_loc::Dict{Int,Int}`: global to local mapping
+- `global_nodes::Vector{Int64}`: global nodes
+# Returns
+- `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
 """
 function local_nodes_from_dict(glob_to_loc::Dict{Int,Int}, global_nodes::Vector{Int64})
     return Int64[glob_to_loc[global_node] for global_node in global_nodes if haskey(glob_to_loc, global_node)]
@@ -129,15 +129,15 @@ end
 """
     distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist, distribution)
 
-    Distributes the neighborhood list to the cores.
+Distributes the neighborhood list to the cores.
 
-    # Arguments
-    - `comm::MPI.Comm`: MPI communicator
-    - `datamanager::Module`: Data manager
-    - `nlist`: neighborhood list
-    - `distribution Array{Int64}`: global nodes distribution at cores
-    # Returns
-    - `datamanager::Module`: data manager
+# Arguments
+- `comm::MPI.Comm`: MPI communicator
+- `datamanager::Module`: Data manager
+- `nlist`: neighborhood list
+- `distribution Array{Int64}`: global nodes distribution at cores
+# Returns
+- `datamanager::Module`: data manager
 """
 function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist, distribution)
     send_msg = 0
@@ -158,13 +158,13 @@ end
 """
     get_local_neighbors(mapping, nlistCore)
 
-    Gets the local neighborhood list from the global neighborhood list
+Gets the local neighborhood list from the global neighborhood list
 
-    # Arguments
-    - `mapping`: mapping function
-    - `nlistCore`: global neighborhood list
-    # Returns
-    - `nlistCore`: local neighborhood list
+# Arguments
+- `mapping`: mapping function
+- `nlistCore`: global neighborhood list
+# Returns
+- `nlistCore`: local neighborhood list
 """
 function get_local_neighbors(mapping, nlistCore)
     for id in eachindex(nlistCore)
@@ -176,12 +176,12 @@ end
 """
     get_undeformed_bond(datamanager::Module)
 
-    Gets the bond geometry
+Gets the bond geometry
 
-    # Arguments
-    - `datamanager::Module`: Data manager
-    # Returns
-    - `datamanager::Module`: data manager
+# Arguments
+- `datamanager::Module`: Data manager
+# Returns
+- `datamanager::Module`: data manager
 """
 function get_undeformed_bond(datamanager::Module)
     dof = datamanager.get_dof()
@@ -197,12 +197,12 @@ end
 """
     define_nsets(params::Dict, path::String, datamanager::Module)
 
-    Defines the node sets
+Defines the node sets
 
-    # Arguments
-    - `params::Dict`: Parameters
-    - `path::String`: Path
-    - `datamanager::Module`: Data manager
+# Arguments
+- `params::Dict`: Parameters
+- `path::String`: Path
+- `datamanager::Module`: Data manager
 """
 function define_nsets(params::Dict, path::String, datamanager::Module)
     nsets = get_node_sets(params, path)
@@ -214,16 +214,16 @@ end
 """
     distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh, distribution, dof::Int64)
 
-    Distributes the mesh data to the cores
+Distributes the mesh data to the cores
 
-    # Arguments
-    - `comm::MPI.Comm`: MPI communicator
-    - `datamanager::Module`: Data manager
-    - `mesh`: Mesh
-    - `distribution Array{Int64}`: global nodes distribution at cores
-    - `dof::Int64`: Degree of freedom
-    # Returns
-    - `datamanager::Module`: data manager
+# Arguments
+- `comm::MPI.Comm`: MPI communicator
+- `datamanager::Module`: Data manager
+- `mesh`: Mesh
+- `distribution Array{Int64}`: global nodes distribution at cores
+- `dof::Int64`: Degree of freedom
+# Returns
+- `datamanager::Module`: data manager
 """
 function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh, distribution, dof::Int64)
     # init block_id field
@@ -337,12 +337,12 @@ end
 """
     read_mesh(filename::String)
 
-    Read mesh data from a file and return it as a DataFrame.
+Read mesh data from a file and return it as a DataFrame.
 
-    # Arguments
-    - `filename::String`: The path to the mesh file.
-    # Returns
-    - `mesh::DataFrame`: The mesh data as a DataFrame.
+# Arguments
+- `filename::String`: The path to the mesh file.
+# Returns
+- `mesh::DataFrame`: The mesh data as a DataFrame.
 """
 function read_mesh(filename::String)
     if !isfile(filename)
@@ -356,12 +356,12 @@ end
 """
     set_dof(mesh::DataFrame)
 
-    Set the degrees of freedom (DOF) for the mesh elements.
+Set the degrees of freedom (DOF) for the mesh elements.
 
-    # Arguments
-    - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-    # Returns
-    - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
+# Arguments
+- `mesh::DataFrame`: The input mesh data represented as a DataFrame.
+# Returns
+- `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 """
 function set_dof(mesh::DataFrame)
     if "z" in names(mesh)
@@ -374,19 +374,19 @@ end
 """
     load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
 
-    Load and evaluate the mesh data.
+Load and evaluate the mesh data.
 
-    # Arguments
-    - `params::Dict`: The input parameters.
-    - `path::String`: The path to the mesh file.
-    - `ranksize::Int64`: The number of ranks.
-    # Returns
-    - `distribution::Array{Int64,1}`: The distribution of the mesh elements.
-    - `mesh::DataFrame`: The mesh data as a DataFrame.
-    - `ntype::Dict`: The type of the mesh elements.
-    - `overlap_map::Array{Array{Int64,1},1}`: The overlap map of the mesh elements.
-    - `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
-    - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
+# Arguments
+- `params::Dict`: The input parameters.
+- `path::String`: The path to the mesh file.
+- `ranksize::Int64`: The number of ranks.
+# Returns
+- `distribution::Array{Int64,1}`: The distribution of the mesh elements.
+- `mesh::DataFrame`: The mesh data as a DataFrame.
+- `ntype::Dict`: The type of the mesh elements.
+- `overlap_map::Array{Array{Int64,1},1}`: The overlap map of the mesh elements.
+- `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
+- `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 """
 function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
 
@@ -415,14 +415,14 @@ end
 """
     create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
 
-    Create the neighborhood list of the mesh elements.
+Create the neighborhood list of the mesh elements.
 
-    # Arguments
-    - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-    - `params::Dict`: The input parameters.
-    - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
-    # Returns
-    - `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
+# Arguments
+- `mesh::DataFrame`: The input mesh data represented as a DataFrame.
+- `params::Dict`: The input parameters.
+- `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
+# Returns
+- `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
 """
 function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
     coor = names(mesh)
@@ -434,12 +434,12 @@ end
 """
     get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
 
-    Get the number of neighbors for each node.
+Get the number of neighbors for each node.
 
-    # Arguments
-    - `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
-    # Returns
-    - `lenNlist::Vector{Int64}`: The number of neighbors for each node.
+# Arguments
+- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+# Returns
+- `lenNlist::Vector{Int64}`: The number of neighbors for each node.
 """
 function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
     len = length(nlist)
@@ -456,15 +456,15 @@ end
 """
     node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
 
-    Create the distribution of the nodes.
+Create the distribution of the nodes.
 
-    # Arguments
-    - `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
-    - `size::Int64`: The number of ranks.
-    # Returns
-    - `distribution::Array{Int64,1}`: The distribution of the nodes.
-    - `ptc::Array{Int64,1}`: The number of nodes in each rank.
-    - `ntype::Dict`: The type of the nodes.
+# Arguments
+- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+- `size::Int64`: The number of ranks.
+# Returns
+- `distribution::Array{Int64,1}`: The distribution of the nodes.
+- `ptc::Array{Int64,1}`: The number of nodes in each rank.
+- `ntype::Dict`: The type of the nodes.
 """
 function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
 
@@ -513,12 +513,12 @@ end
 """
     _init_overlap_map_(size)
 
-    Initialize the overlap map.
+Initialize the overlap map.
 
-    # Arguments
-    - `size::Int64`: The number of ranks.
-    # Returns
-    - `overlap_map::Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}`: The overlap map.
+# Arguments
+- `size::Int64`: The number of ranks.
+# Returns
+- `overlap_map::Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}`: The overlap map.
 """
 function _init_overlap_map_(size)
     #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
@@ -538,14 +538,14 @@ end
 """
     create_overlap_map(distribution, ptc, size)
 
-    Create the overlap map.
+Create the overlap map.
 
-    # Arguments
-    - `distribution::Array{Int64,1}`: The distribution of the nodes.
-    - `ptc::Array{Int64,1}`: The number of nodes in each rank.
-    - `size::Int64`: The number of ranks.
-    # Returns
-    - `overlap_map::Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}`: The overlap map.
+# Arguments
+- `distribution::Array{Int64,1}`: The distribution of the nodes.
+- `ptc::Array{Int64,1}`: The number of nodes in each rank.
+- `size::Int64`: The number of ranks.
+# Returns
+- `overlap_map::Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}`: The overlap map.
 """
 function create_overlap_map(distribution, ptc, size)
 
@@ -572,14 +572,14 @@ end
 """
     create_base_chunk(nnodes::Int64, size::Int64)
 
-    Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
+Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
-    # Arguments
-    - `nnodes::Int64`: The number of nodes.
-    - `size::Int64`: The number of cores.
-    # Returns
-    - `distribution::Array{Int64,1}`: The distribution of the nodes.
-    - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
+# Arguments
+- `nnodes::Int64`: The number of nodes.
+- `size::Int64`: The number of cores.
+# Returns
+- `distribution::Array{Int64,1}`: The distribution of the nodes.
+- `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
 function create_base_chunk(nnodes::Int64, size::Int64)
     if size > nnodes
@@ -603,7 +603,7 @@ function create_base_chunk(nnodes::Int64, size::Int64)
 end
 
 """
-neighbors(mesh, params::Dict, coor)
+    neighbors(mesh, params::Dict, coor)
 
 Compute the neighbor list for each node in a mesh based on their proximity using a BallTree data structure.
 
@@ -638,16 +638,16 @@ end
 """
     bondIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
 
-    Check if a line segment intersects a disk.
+Check if a line segment intersects a disk.
 
-    # Arguments
-    - `p0::Vector{Float64}`: The start point of the line segment.
-    - `p1::Vector{Float64}`: The end point of the line segment.
-    - `center::Vector{Float64}`: The center of the disk.
-    - `normal::Vector{Float64}`: The normal of the plane.
-    - `radius::Float64`: The radius of the disk.
-    # Returns
-    - `Bool`: True if the line segment intersects the disk, False otherwise.
+# Arguments
+- `p0::Vector{Float64}`: The start point of the line segment.
+- `p1::Vector{Float64}`: The end point of the line segment.
+- `center::Vector{Float64}`: The center of the disk.
+- `normal::Vector{Float64}`: The normal of the plane.
+- `radius::Float64`: The radius of the disk.
+# Returns
+- `Bool`: True if the line segment intersects the disk, False otherwise.
 """
 function bondIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
     numerator = dot((lower_left_corner - p0), normal)
@@ -682,15 +682,15 @@ end
 """
     bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
 
-    Check if a line segment intersects an infinite plane.
+Check if a line segment intersects an infinite plane.
 
-    # Arguments
-    - `p0::Vector{Float64}`: The start point of the line segment.
-    - `p1::Vector{Float64}`: The end point of the line segment.
-    - `lower_left_corner::Vector{Float64}`: The lower left corner of the plane.
-    - `normal::Vector{Float64}`: The normal of the plane.
-    # Returns
-    - `Bool`: True if the line segment intersects the plane, False otherwise.
+# Arguments
+- `p0::Vector{Float64}`: The start point of the line segment.
+- `p1::Vector{Float64}`: The end point of the line segment.
+- `lower_left_corner::Vector{Float64}`: The lower left corner of the plane.
+- `normal::Vector{Float64}`: The normal of the plane.
+# Returns
+- `Bool`: True if the line segment intersects the plane, False otherwise.
 """
 function bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
     numerator = dot((lower_left_corner - p0), normal)
@@ -716,17 +716,17 @@ end
 """
     bondIntersectRectanglePlane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
 
-    Check if a bond intersects a rectangle plane.
+Check if a bond intersects a rectangle plane.
 
-    # Arguments
-    - `x::Vector{Float64}`: The point.
-    - `lower_left_corner::Vector{Float64}`: The lower left corner of the rectangle.
-    - `bottom_unit_vector::Vector{Float64}`: The unit vector along the bottom of the rectangle.
-    - `normal::Vector{Float64}`: The normal of the plane.
-    - `side_length::Float64`: The side length of the rectangle.
-    - `bottom_length::Float64`: The bottom length of the rectangle.
-    # Returns
-    - `Bool`: True if the point is inside the rectangle, False otherwise.
+# Arguments
+- `x::Vector{Float64}`: The point.
+- `lower_left_corner::Vector{Float64}`: The lower left corner of the rectangle.
+- `bottom_unit_vector::Vector{Float64}`: The unit vector along the bottom of the rectangle.
+- `normal::Vector{Float64}`: The normal of the plane.
+- `side_length::Float64`: The side length of the rectangle.
+- `bottom_length::Float64`: The bottom length of the rectangle.
+# Returns
+- `Bool`: True if the point is inside the rectangle, False otherwise.
 """
 function bondIntersectRectanglePlane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
     zero = TOLERANCE
@@ -752,15 +752,15 @@ end
 """
     apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, params::Dict, dof::Int64)
 
-    Apply the bond filters to the neighborhood list.
+Apply the bond filters to the neighborhood list.
 
-    # Arguments
-    - `nlist::Vector{Vector{Int64}}`: The neighborhood list.
-    - `mesh::DataFrame`: The mesh.
-    - `params::Dict`: The parameters.
-    - `dof::Int64`: The degrees of freedom.
-    # Returns
-    - `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
+# Arguments
+- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `mesh::DataFrame`: The mesh.
+- `params::Dict`: The parameters.
+- `dof::Int64`: The degrees of freedom.
+# Returns
+- `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
 """
 function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, params::Dict, dof::Int64)
     bond_filters = get_bond_filters(params)
@@ -788,16 +788,16 @@ end
 """
     disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
 
-    Apply the disk filter to the neighborhood list.
+Apply the disk filter to the neighborhood list.
 
-    # Arguments
-    - `nnodes::Int64`: The number of nodes.
-    - `data::Matrix{Float64}`: The data.
-    - `filter::Dict`: The filter.
-    - `nlist::Vector{Vector{Int64}}`: The neighborhood list.
-    - `dof::Int64`: The degrees of freedom.
-    # Returns
-    - `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
+# Arguments
+- `nnodes::Int64`: The number of nodes.
+- `data::Matrix{Float64}`: The data.
+- `filter::Dict`: The filter.
+- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `dof::Int64`: The degrees of freedom.
+# Returns
+- `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
 """
 function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
     if dof == 2
@@ -822,16 +822,16 @@ end
 """
     rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
 
-    Apply the rectangular plane filter to the neighborhood list.
+Apply the rectangular plane filter to the neighborhood list.
 
-    # Arguments
-    - `nnodes::Int64`: The number of nodes.
-    - `data::Matrix{Float64}`: The data.
-    - `filter::Dict`: The filter.
-    - `nlist::Vector{Vector{Int64}}`: The neighborhood list.
-    - `dof::Int64`: The degrees of freedom.
-    # Returns
-    - `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
+# Arguments
+- `nnodes::Int64`: The number of nodes.
+- `data::Matrix{Float64}`: The data.
+- `filter::Dict`: The filter.
+- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `dof::Int64`: The degrees of freedom.
+# Returns
+- `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
 """
 function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
     if dof == 2
@@ -866,12 +866,12 @@ end
 """
     glob_to_loc(distribution)
 
-    Get the global to local mapping
+Get the global to local mapping
 
-    # Arguments
-    - `distribution`: The distribution
-    # Returns
-    - `glob_to_loc`: The global to local mapping
+# Arguments
+- `distribution`: The distribution
+# Returns
+- `glob_to_loc`: The global to local mapping
 """
 function glob_to_loc(distribution)
     glob_to_loc = Dict{Int64,Int64}()
