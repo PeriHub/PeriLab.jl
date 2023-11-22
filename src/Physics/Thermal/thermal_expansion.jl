@@ -55,8 +55,8 @@ Example:
 ```
 """
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
-
-    temperature = datamanager.get_field("Temperature", "NP1")
+    temperature_N = datamanager.get_field("Temperature", "N")
+    temperature_NP1 = datamanager.get_field("Temperature", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
     dof = datamanager.get_dof()
     alpha = thermal_parameter["Heat expansion"]
@@ -71,22 +71,18 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     elseif length(alpha) == dof * dof || length(alpha) == 9
         @error "Full heat expansion matrix is not implemented yet."
     end
-
     undeformed_bond = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
 
-    #if "StrainNP1" in datamanager.get_all_field_keys()
-    #    strain = datamanager.get_field("Strain", "NP1")
-    #    for iID in nodes
-    #        strain[iID, :, :] += thermal_strain(alpha_mat, temperature[iID])
-    #    end
-    #end
-
     for iID in nodes
-        #for jID in 1:nneighbors[iID]
-        deformed_bond[iID][:, :] .-= alpha * temperature[iID] .* undeformed_bond[iID][:, :]
-        #deformed_bond[iID][jID, end] -= alpha * undeformed_bond[iID][jID, end]
-        #end
+        for j in 1:dof
+            deformed_bond[iID][:, j] -= temperature_NP1[iID] * alpha_mat[j, j] .* undeformed_bond[iID][:, j]
+        end
+        deformed_bond[iID][:, end] -= sum(alpha_mat) / dof * temperature_NP1[iID] * undeformed_bond[iID][:, end]
+    end
+
+    if "Deformation Gradient" in datamanager.get_all_field_keys()
+        datamanager = Deformation_Gradient.compute(datamanager, nodes)
     end
 
     return datamanager

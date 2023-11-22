@@ -72,7 +72,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
         @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
-        datamanager = get_undeformed_bond(datamanager) # gives the initial length and bond damage
+        datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
         @info "Finish init data"
     end
     return datamanager, params
@@ -174,7 +174,7 @@ function get_local_neighbors(mapping, nlistCore)
 end
 
 """
-    get_undeformed_bond(datamanager::Module)
+    get_bond_geometry(datamanager::Module)
 
 Gets the bond geometry
 
@@ -183,14 +183,14 @@ Gets the bond geometry
 # Returns
 - `datamanager::Module`: data manager
 """
-function get_undeformed_bond(datamanager::Module)
+function get_bond_geometry(datamanager::Module)
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     nlist = datamanager.get_field("Neighborhoodlist")
     coor = datamanager.get_field("Coordinates")
     undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
     bond_damage = datamanager.create_constant_bond_field("Bond Damage", Float64, 1)
-    undeformed_bond = Geometry.undeformed_bond(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
+    undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
     return datamanager
 end
 

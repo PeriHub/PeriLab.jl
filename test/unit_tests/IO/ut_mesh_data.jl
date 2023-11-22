@@ -241,7 +241,7 @@ end
     rm(filename)
 end
 
-@testset "get_undeformed_bond" begin
+@testset "get_bond_geometry" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_num_controller(3)
     test_Data_manager.set_dof(2)
@@ -259,7 +259,7 @@ end
     coor[2, 2] = 0
     coor[3, 1] = 0
     coor[3, 2] = 1
-    Read_Mesh.get_undeformed_bond(test_Data_manager)
+    Read_Mesh.get_bond_geometry(test_Data_manager)
     undeformed_bond = test_Data_manager.get_field("Bond Geometry")
 
     @test undeformed_bond[1][1, 1] == 1

@@ -38,16 +38,16 @@ Calculates the force densities of the material. This template has to be copied, 
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 - `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
-- `stressN::SubArray`: Stress of step N.
-- `stressNP1::SubArray`: Stress of step N+1.
+- `stress_N::SubArray`: Stress of step N.
+- `stress_NP1::SubArray`: Stress of step N+1.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
-- `stressNP1::SubArray`: updated stresses
+- `stress_NP1::SubArray`: updated stresses
 Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Union{Array{Float64,3},Array{Float64,6}}, stressN::SubArray, stressNP1::SubArray)
+function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Union{Array{Float64,3},Array{Float64,6}}, stress_N::SubArray, stress_NP1::SubArray)
 
    hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 

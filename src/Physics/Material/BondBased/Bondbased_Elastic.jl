@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bondbased_Elastic
+include("../material_basis.jl")
 export init_material_model
 export material_name
 export compute_forces
@@ -59,16 +60,22 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     # global horizon
     dof = datamanager.get_dof()
     horizon = datamanager.get_field("Horizon")
-
+    symmetry::String = get_symmmetry(material_parameter)
     undeformed_bond = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
     bond_force = datamanager.get_field("Bond Forces")
 
     K = material_parameter["Bulk Modulus"]
-
+    E = material_parameter["Young's Modulus"]
     for iID in nodes
-        constant = 18.0 * K / (pi * horizon[iID]^4)
+        if symmetry == "plane stress"
+            constant = 12.0 * E / (pi * (1 + 1.0 / 3) * horizon[iID]^3)
+        elseif symmetry == "plane strain"
+            constant = 12.0 * E / (pi * (1.25) * horizon[iID]^3)
+        else
+            constant = 18.0 * K / (pi * horizon[iID]^4)
+        end
         if deformed_bond[iID][:, end] == 0
             @error "Length of bond is zero due to its deformation."
         end

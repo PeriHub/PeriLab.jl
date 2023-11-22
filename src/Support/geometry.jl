@@ -5,10 +5,10 @@
 module Geometry
 using LinearAlgebra
 using Rotations
-export undeformed_bond
+export bond_geometry
 export shape_tensor
 """
-    undeformed_bond(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
+     bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
 
 Calculate bond geometries between nodes based on their coordinates.
 
@@ -37,7 +37,7 @@ Calculate bond geometries between nodes based on their coordinates.
 
  undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
 """
-function undeformed_bond(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
+function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
     for iID in nodes
         for (jID, neighborID) in enumerate(nlist[iID])
             # add distance to include thermal extension
@@ -166,9 +166,9 @@ function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, 
 end
 
 """
-    function strain(nodes::Union{SubArray, Vector{Int64}}, deformation_gradient, strainInc)
+    function strain(nodes::Union{SubArray, Vector{Int64}}, deformation_gradient, strain)
 
-Calculate strain increments for specified nodes based on deformation gradients.
+Calculate strains for specified nodes based on deformation gradients.
 
 ## Arguments
 -  `nodes::Union{SubArray, Vector{Int64}}`: List of nodes
@@ -176,9 +176,9 @@ Calculate strain increments for specified nodes based on deformation gradients.
 
 ## Returns
 
-- Updated `strainInc` array containing strain increments.
+- Updated `strain` array containing strains.
 
-This function iterates over the specified nodes and computes strain increments using the given deformation gradients.
+This function iterates over the specified nodes and computes strain at each node using the given deformation gradients.
 
 """
 function strain(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, strain::SubArray)

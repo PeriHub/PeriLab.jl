@@ -5,57 +5,62 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12
+      Node Set 3: "BCall.txt"
     Type: "Text File"
     Input Mesh File: "mesh.txt"
   Physics:
     Material Models:
       Test:
-        Material Model: "Correspondence Elastic"
+        Material Model: "Correspondence Elastic"   
         Symmetry: "isotropic plane stress"
-        Young's Modulus: 7.0e+5
-        Poisson's Ratio: 0.33
+        Young's Modulus: 7.0e+10
+        Poisson's Ratio: 0.3
         Zero Energy Control: "Global"
     Thermal Models:
       Thermal test:
         Thermal Model: "Thermal Expansion"
         Heat expansion: 2.5e-2
-        Lambda: 2
   Blocks:
     block_1:
       Block Names: "block_1"
       Material Model: "Test"
       Thermal Model: "Thermal test"
-      Density: 2.0e-9
-      Horizon: 1.1005
-      Specific Heat Capacity: 1
+      Density: 20
+      Horizon: 0.001505
+      Specific Heat Capacity: 0.33
     block_2:
       Block Names: "block_2"
       Material Model: "Test"
       Thermal Model: "Thermal test"
-      Density: 2.0e-9
-      Horizon: 1.1005
-      Specific Heat Capacity: 1
+      Density: 20
+      Horizon: 0.001505
+      Specific Heat Capacity: 0.33
   Boundary Conditions:
     BC_1:
       Type: "Temperature"
-      Node Set: "Node Set 1"
-      Value: "1.0*t"
+      Node Set: "Node Set 3"
+      Value: "100*t"
   Solver:
     Material Models: True
     Thermal Models: True
     Verbose: False
     Initial Time: 0.0
-    Final Time: 1e-7
+    Final Time: 2.01e-8
     Verlet:
+      #Fixed dt: 1e-9
       Safety Factor: 1.00
-      Numerical Damping: 0e-00
+      Numerical Damping: 0
   Outputs:
     Output1:
       Output Filename: "thermal_expansion_correspondence"
       Output File Type: Exodus
-      Number of Output Steps: 10
+      Number of Output Steps: 40
       Output Variables:
         Temperature: True
         Displacements: True
-        Volume: True
+        Number of Neighbors: True
+        Cauchy Stress: True
+        Strain: True
+        Deformation Gradient: True
+        Shape Tensor: True
+        Inverse Shape Tensor: True

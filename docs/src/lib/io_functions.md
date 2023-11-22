@@ -43,7 +43,7 @@ get_local_overlap_map
 local_nodes_from_dict
 distribute_neighborhoodlist_to_cores
 get_local_neighbors
-get_undeformed_bond
+get_bond_geometry
 define_nsets
 distribution_to_cores
 check_mesh_elements
