@@ -5,52 +5,53 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 1: 9 10 11 12
+      Node Set 1: "BCall.txt"
     Type: "Text File"
-    Input Mesh File: "test_mesh.txt"
+    Input Mesh File: "mesh.txt"
   Physics:
+    Pre Calculation:
+      Deformed Bond Geometry: false
     Thermal Models:
       Thermal test:
         Thermal Model: "Thermal Flow+Heat Transfer"
         Type: "Bond based"
-        Heat expansion: 0.22
-        Specific Heat Capacity: 1
-        Lambda: 2000.0
-        Kappa: 2
-        Environmental Temperature: 100
+        Lambda: 100
+        Environmental Temperature: 0
+        Kappa: 1000
   Blocks:
     block_1:
       Block Names: "block_1"
       Thermal Model: "Thermal test"
-      Density: 1.24e03
-      Horizon: 1.1005e-3
-      Specific Heat Capacity: 18000.0
+      Density: 1000
+      Horizon: 0.00151
+      Specific Heat Capacity: 100
     block_2:
       Block Names: "block_2"
       Thermal Model: "Thermal test"
-      Density: 1.24e03
-      Horizon: 1.1005e-3
-      Specific Heat Capacity: 18000.0
+      Density: 1000
+      Horizon: 0.00151
+      Specific Heat Capacity: 100
   Boundary Conditions:
     BC_1:
-      Type: "Temperature"
+      Type: "Initial Temperature"
       Node Set: "Node Set 1"
-      Value: "0"
+      Value: "10"
   Solver:
     Material Models: False
     Thermal Models: True
     Verbose: False
     Initial Time: 0.0
-    Final Time: 5e-4
+    Final Time: 2e-5
     Verlet:
       Safety Factor: 1.00
-      Fixed dt: 1e-5
+      Fixed dt: 1e-7
+      
       Numerical Damping: 0e-00
   Outputs:
     Output1:
       Output Filename: "heat_transfer"
       Output File Type: Exodus
-      Number of Output Steps: 10
+      Number of Output Steps: 20
       Output Variables:
         Temperature: True
-        Heat Flow: True
+        Surface_Nodes: True
