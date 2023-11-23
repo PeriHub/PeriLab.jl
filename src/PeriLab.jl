@@ -139,11 +139,9 @@ This function serves as the entry point for the PeriLab application. It calls th
 """
 function main()
     parsed_args = parse_commandline()
-    if parsed_args["verbose"]
-        @info "Parsed args:"
-        for (arg, val) in parsed_args
-            @info "  $arg  =>  $val"
-        end
+    @debug "Parsed args:"
+    for (arg, val) in parsed_args
+        @debug "  $arg  =>  $val"
     end
     main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
 end
