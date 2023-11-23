@@ -16,7 +16,7 @@ PeriLab:
         Heat expansion: 0.22
         Specific Heat Capacity: 1
         Lambda: 2000.0
-        Alpha: 2
+        Kappa: 2
         Environmental Temperature: 100
   Blocks:
     block_1:
