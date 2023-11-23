@@ -166,8 +166,22 @@ function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArra
   return datamanager
 end
 
+"""
+  calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stress_NP1::SubArray, bond_force::SubArray)
 
+Calculate bond forces for specified nodes based on deformation gradients.
 
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `deformation_gradient::SubArray`: Deformation gradient.
+- `undeformed_bond::SubArray`: Undeformed bond geometry.
+- `bond_damage::SubArray`: Bond damage.
+- `inverse_shape_tensor::SubArray`: Inverse shape tensor.
+- `stress_NP1::SubArray`: Stress at time step n+1.
+- `bond_force::SubArray`: Bond force.
+# Returns
+- `bond_force::SubArray`: Bond force.
+"""
 function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stress_NP1::SubArray, bond_force::SubArray)
   for iID in nodes
     jacobian = det(deformation_gradient[iID, :, :])

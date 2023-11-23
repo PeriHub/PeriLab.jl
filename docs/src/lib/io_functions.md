@@ -71,7 +71,7 @@ CurrentModule = PeriLab.IO.Read_Mesh.Geometry
 ```
 ## Geometry
 ```@docs
-undeformed_bond
+bond_geometry
 shape_tensor
 deformation_gradient
 strain
