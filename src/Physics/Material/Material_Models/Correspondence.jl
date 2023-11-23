@@ -37,6 +37,7 @@ function init_material_model(datamanager::Module)
   dof = datamanager.get_dof()
   nnodes = datamanager.get_nnodes()
   datamanager.create_node_field("Strain", Float64, "Matrix", dof)
+  datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
   datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
 
   rotation::Bool, angles = datamanager.rotation_data()
@@ -110,10 +111,9 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   strain_NP1 = datamanager.get_field("Strain", "NP1")
   stress_N = datamanager.get_field("Cauchy Stress", "N")
   stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
-
+  strain_increment = datamanager.get_field("Strain Increment")
   strain_NP1 = Geometry.strain(nodes, deformation_gradient, strain_NP1)
-
-  strain_increment::Array{Float64} = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
+  strain_increment[nodes, :, :] = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
 
 
   if rotation
