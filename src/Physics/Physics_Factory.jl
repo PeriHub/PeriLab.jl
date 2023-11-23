@@ -84,7 +84,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         if options["Material Models"]
             if datamanager.check_property(block, "Material Model")
                 @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
-                datamanager = Material.distribute_force_densities(datamanager, nodes)
+                datamanager = Material.distribute_force_densities(datamanager, active_nodes)
             end
         end
     end
