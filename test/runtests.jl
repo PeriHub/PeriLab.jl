@@ -16,7 +16,7 @@ MPI.Init()
     @testset "unit_tests" begin
         @testset "FEM" begin
             @testset "ut_FEM_routines" begin
-                @includetests["unit_tests/FEM/ut_FEM_routines."]
+                @includetests["unit_tests/FEM/ut_FEM_routines"]
             end
 
         end
