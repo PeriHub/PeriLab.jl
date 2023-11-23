@@ -79,7 +79,7 @@ Closes the result file
 - `result_file::Dict`: The result file
 """
 function close_result_file(result_file::Dict)
-    if haskey(result_file, "file")
+    if !isnothing(result_file["file"])
         close(result_file["file"])
     end
 end
