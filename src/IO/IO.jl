@@ -321,9 +321,10 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
     for (id, filename) in enumerate(filenames)
         @debug filename
         rank = datamanager.get_rank()
+        max_rank = datamanager.get_max_rank()
         if ".e" == filename[end-1:end]
             if datamanager.get_max_rank() > 1
-                filename = filename * "." * string(datamanager.get_max_rank()) * "." * string(rank)
+                filename = filename * "." * string(max_rank) * "." * get_mpi_rank_string(rank, max_rank)
             end
             outputs[id]["Output File Type"] = "Exodus"
             push!(result_files, Write_Exodus_Results.create_result_file(filename, nnodes, dof, max_block_id, nnsets))
@@ -492,6 +493,23 @@ function find_global_core_value!(global_value::Union{Int64,Float64}, calculation
         @warn "Unknown calculation type $calculation_type"
         return 0
     end
+end
+
+"""
+    get_mpi_rank_string(rank::Int64, max_rank::Int64)
+
+Get MPI rank string.
+
+# Arguments
+- `value::Int64`: The rank
+- `max_rank::Int64`: The max rank
+# Returns
+- `result::String`: The result
+"""
+function get_mpi_rank_string(rank::Int64, max_rank::Int64)
+    max_rank_length::Int64 = length(string(max_rank))
+    rank_length::Int64 = length(string(rank))
+    return "0"^(max_rank_length - rank_length) * string(rank)
 end
 
 """
