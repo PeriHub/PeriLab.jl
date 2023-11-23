@@ -53,4 +53,53 @@ end
     @test isapprox(bf[2][3, 1], 0.016277210088943853)
     @test isapprox(bf[2][3, 2], 0.016277210088943853)
     @test isapprox(bf[2][3, 3], 0.016277210088943853)
+    bf[1][:, :] .= 0
+    bf[2][:, :] .= 0
+
+    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "here is something"), 0.0, 0.0)
+
+    bf = test_Data_manager.get_field("Bond Forces")
+    @test isapprox(bf[1][1, 1], -0.31830988618379064)
+    @test isapprox(bf[1][1, 2], -0.31830988618379064)
+    @test isapprox(bf[1][1, 3], -0.31830988618379064)
+    @test isapprox(bf[1][2, 1], -0.31830988618379064)
+    @test isapprox(bf[1][2, 2], -0.31830988618379064)
+    @test isapprox(bf[1][2, 3], -0.31830988618379064)
+    @test isapprox(bf[2][1, 1], 0.016277210088943853)
+    @test isapprox(bf[2][1, 2], 0.016277210088943853)
+    @test isapprox(bf[2][1, 3], 0.016277210088943853)
+    @test isapprox(bf[2][2, 1], 0.016277210088943853)
+    @test isapprox(bf[2][2, 2], 0.016277210088943853)
+    @test isapprox(bf[2][2, 3], 0.016277210088943853)
+    @test isapprox(bf[2][3, 1], 0.016277210088943853)
+    @test isapprox(bf[2][3, 2], 0.016277210088943853)
+    @test isapprox(bf[2][3, 3], 0.016277210088943853)
+    bf[1][:, :] .= 0
+    bf[2][:, :] .= 0
+    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane strain"), 0.0, 0.0)
+
+    bf = test_Data_manager.get_field("Bond Forces")
+    @test isapprox(bf[1][1, 1], -0.16976527263135502)
+    @test isapprox(bf[1][1, 2], -0.16976527263135502)
+    @test isapprox(bf[1][2, 1], -0.16976527263135502)
+    @test isapprox(bf[1][2, 2], -0.16976527263135502)
+    @test isapprox(bf[2][1, 1], 0.01736235742820678)
+    @test isapprox(bf[2][1, 2], 0.01736235742820678)
+    @test isapprox(bf[2][2, 1], 0.01736235742820678)
+    @test isapprox(bf[2][2, 2], 0.01736235742820678)
+
+    bf[1][:, :] .= 0
+    bf[2][:, :] .= 0
+    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane stress"), 0.0, 0.0)
+
+    bf = test_Data_manager.get_field("Bond Forces")
+    @test isapprox(bf[1][1, 1], -0.15915494309189532)
+    @test isapprox(bf[1][1, 2], -0.15915494309189532)
+    @test isapprox(bf[1][2, 1], -0.15915494309189532)
+    @test isapprox(bf[1][2, 2], -0.15915494309189532)
+    @test isapprox(bf[2][1, 1], 0.016277210088943856)
+    @test isapprox(bf[2][1, 2], 0.016277210088943856)
+    @test isapprox(bf[2][2, 1], 0.016277210088943856)
+    @test isapprox(bf[2][2, 2], 0.016277210088943856)
+
 end

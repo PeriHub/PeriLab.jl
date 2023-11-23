@@ -288,7 +288,7 @@ if ncores == 3
         dbNP1[iID][:, end] .= 1 + (-1)^iID * 0.1
         dbNP1[iID][:, 1:dof] .= 1
     end
-    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0), 0.0, 0.0)
+    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0), 0.0, 0.0)
 
     bf = test_Data_manager.get_field("Bond Forces")
 
