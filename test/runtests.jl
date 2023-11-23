@@ -14,6 +14,12 @@ MPI.Init()
 @testset ExtendedTestSet "PeriLab" begin
 
     @testset "unit_tests" begin
+        @testset "FEM" begin
+            @testset "ut_FEM_routines" begin
+                @includetests["unit_tests/FEM/ut_FEM_routines."]
+            end
+
+        end
         @testset "Compute" begin
             @testset "ut_compute_global_values" begin
                 @includetests["unit_tests/Compute/ut_compute_global_values"]
