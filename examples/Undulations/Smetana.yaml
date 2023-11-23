@@ -77,7 +77,7 @@ PeriLab:
       Coordinate: x
       Node Set: Node Set 1
       Type: Displacements
-      Value: 3*t
+      Value: 6*t
     BC_2:
       Coordinate: x
       Node Set: Node Set 2
@@ -107,7 +107,7 @@ PeriLab:
       Output File Type: Exodus
       Output Filename: "Smetana_Output1"
       Output Variables:
-        Forces: True
+        Forces: False
         Displacements: True
         Number of Neighbors: True
         External_Forces: True
@@ -129,23 +129,23 @@ PeriLab:
   Physics:
     Damage Models:
       dam_1:
-        Critical Value: 2.5e+0
-        Damage Model: Critical Stretch
-        Interblock Critical Value 1_2: 2.5e-1
-        Interblock Critical Value 2_3: 2.5e-1
-        Interblock Critical Value 3_4: 2.5e-1
-        Interblock Critical Value 4_5: 2.5e-1
-        Interblock Critical Value 5_6: 2.5e-1
-        Interblock Critical Value 6_7: 2.5e-1
-        Interblock Critical Value 7_8: 2.5e-1
-        Interblock Critical Value 2_1: 2.5e-1
-        Interblock Critical Value 3_2: 2.5e-1
-        Interblock Critical Value 4_3: 2.5e-1
-        Interblock Critical Value 5_4: 2.5e-1
-        Interblock Critical Value 6_5: 2.5e-1
-        Interblock Critical Value 7_6: 2.5e-1
-        Interblock Critical Value 8_7: 2.5e-1
-        Interblock Damage: false
+        Critical Value: 2.5e-2
+        Damage Model: Critical Energy
+        Interblock Critical Value 1_2: 2.5e-4
+        Interblock Critical Value 2_3: 2.5e-4
+        Interblock Critical Value 3_4: 2.5e-4
+        Interblock Critical Value 4_5: 2.5e-4
+        Interblock Critical Value 5_6: 2.5e-4
+        Interblock Critical Value 6_7: 2.5e-4
+        Interblock Critical Value 7_8: 2.5e-4
+        Interblock Critical Value 2_1: 2.5e-4
+        Interblock Critical Value 3_2: 2.5e-4
+        Interblock Critical Value 4_3: 2.5e-4
+        Interblock Critical Value 5_4: 2.5e-4
+        Interblock Critical Value 6_5: 2.5e-4
+        Interblock Critical Value 7_6: 2.5e-4
+        Interblock Critical Value 8_7: 2.5e-4
+        Interblock Damage: False
     Material Models:
       mat_1:
         C11: 53619.92831989742
@@ -551,7 +551,7 @@ PeriLab:
       Shape Tensor: true
   Solver:
     Material Models: True
-    Damage Models: True
+    Damage Models: False
     Final Time: 2.0e-05
     Initial Time: 0.0
     Verbose: false

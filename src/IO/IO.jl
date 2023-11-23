@@ -38,7 +38,7 @@ Merges exodus output files
 - `result_files::Vector{Any}`: The result files
 - `filedirectory::String`: The file directory
 """
-function merge_exodus_files(result_files::Vector{Any}, filedirectory::String)
+function merge_exodus_files(result_files::Vector{Dict}, filedirectory::String)
     for result_file in result_files
         if result_file["type"] == "Exodus"
             filename = result_file["filename"]
