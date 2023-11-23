@@ -20,7 +20,7 @@ export init_solver
 export run_solver
 
 """
-   compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Float64, Cv::Float64)
+    compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Float64, Cv::Float64)
 
 Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
 

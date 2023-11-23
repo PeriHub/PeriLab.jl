@@ -8,7 +8,7 @@ export compute_damage
 export compute_damage_pre_calculation
 export damage_name
 """
-  damage_name()
+    damage_name()
 
 Gives the damage name. It is needed for comparison with the yaml input deck.
 
@@ -55,7 +55,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-  compute_damage_pre_calculation(datamanager, nodes, synchronise_field, time, dt)
+    compute_damage_pre_calculation(datamanager, nodes, synchronise_field, time, dt)
 
 Pre computes values needed for the damage calculation.Calculates the damage criterion of each bond. This template has to be copied, the file renamed and edited by the user to create a new damages. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 

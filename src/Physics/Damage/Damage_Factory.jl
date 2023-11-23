@@ -41,7 +41,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-   compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+    compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
 Compute the pre calculation for the damage.
 
@@ -66,7 +66,7 @@ function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArr
 end
 
 """
-  damage_index(datamananager,::Union{SubArray, Vector{Int64})
+    damage_index(datamananager,::Union{SubArray, Vector{Int64})
 
 Function calculates the damage index related to the neighborhood volume for a set of corresponding nodes. 
 The damage index is defined as damaged volume in relation the neighborhood volume.

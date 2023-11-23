@@ -7,7 +7,7 @@ export compute_thermal_model
 export thermal_model_name
 
 """
-  thermal_model_name()
+    thermal_model_name()
 
 Gives the flow name. It is needed for comparison with the yaml input deck.
 
@@ -27,7 +27,7 @@ function thermal_model_name()
 end
 
 """
-  compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
 
 Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
@@ -72,7 +72,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
 end
 
 """
-  get_surface_nodes(iID::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
+    get_surface_nodes(iID::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
 
 Returns the surface nodes.
 

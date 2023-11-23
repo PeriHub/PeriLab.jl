@@ -11,7 +11,7 @@ export compute_damage_pre_calculation
 export damage_name
 
 """
-   damage_name()
+    damage_name()
 
 Gives the damage name. It is needed for comparison with the yaml input deck.
 
@@ -31,7 +31,7 @@ function damage_name()
 end
 
 """
-   compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
+    compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
 
 Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 
@@ -89,7 +89,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-   compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+    compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
 Compute the pre calculation for the damage.
 

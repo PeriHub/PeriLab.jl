@@ -8,7 +8,7 @@ export compute_thermal_model
 export thermal_model_name
 
 """
-  thermal_model_name()
+    thermal_model_name()
 
 Gives the model name. It is needed for comparison with the yaml input deck.
 
@@ -22,7 +22,7 @@ function thermal_model_name()
 end
 
 """
-  compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
 
 Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -119,7 +119,7 @@ if (MATRICES::vectorNorm(angles, 3)!=0){
 end
 
 """
-  compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray,
+    compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray,
       lambda::Union{Float64, Int64}, bond_damage::SubArray, undeformed_bond::SubArray, horizon::SubArray,
       temperature::SubArray, volume::SubArray, bond_heat_flow::SubArray)
 

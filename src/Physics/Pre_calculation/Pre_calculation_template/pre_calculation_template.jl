@@ -6,7 +6,7 @@ module Pre_calculation_template
 export compute_Pre_calculation
 export Pre_calculation_name
 """
-  pre_calculation_name()
+    pre_calculation_name()
 
 Gives the pre_calculation name. It is needed for comparison with the yaml input deck.
 
@@ -26,7 +26,7 @@ function pre_calculation_name()
 end
 
 """
-  pre_calculation(datamanager, nodes, Pre_calculation_parameter, time, dt)
+    pre_calculation(datamanager, nodes, Pre_calculation_parameter, time, dt)
 
 This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -37,7 +37,7 @@ This template has to be copied, the file renamed and edited by the user to creat
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-    - - `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_manager`: Datamanager.
 Example:
 ```julia
   ```

@@ -38,7 +38,7 @@ function init_material_model(datamanager::Module)
 end
 
 """
-   material_name()
+    material_name()
 
 Returns the name of the material model.
 """

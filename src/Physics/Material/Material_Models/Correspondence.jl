@@ -19,7 +19,7 @@ export material_name
 export compute_forces
 
 """
-  init_material_model(datamanager::Module)
+    init_material_model(datamanager::Module)
 
 Initializes the material model.
 
@@ -57,7 +57,7 @@ function init_material_model(datamanager::Module)
 end
 
 """
-  material_name()
+    material_name()
 
 Gives the material name. It is needed for comparison with the yaml input deck.
 
@@ -77,7 +77,7 @@ function material_name()
 end
 
 """
-  compute_forces(datamanager, nodes, material_parameter, time, dt)
+    compute_forces(datamanager, nodes, material_parameter, time, dt)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -142,7 +142,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-  zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 
@@ -167,7 +167,7 @@ function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArra
 end
 
 """
-  calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stress_NP1::SubArray, bond_force::SubArray)
+    calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stress_NP1::SubArray, bond_force::SubArray)
 
 Calculate bond forces for specified nodes based on deformation gradients.
 
@@ -200,7 +200,7 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
 end
 
 """
-  rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
+    rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
 
 Rotates the matrix.
 
@@ -221,7 +221,7 @@ function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{
 end
 
 """
-  rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
+    rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
 
 Rotates the second order tensor.
 

@@ -18,7 +18,7 @@ export compute_thermal_model
 export thermal_model_name
 
 """
-   thermal_model_name()
+    thermal_model_name()
 
 Gives the expansion model name. It is needed for comparison with the yaml input deck.
 
@@ -38,7 +38,7 @@ function thermal_model_name()
 end
 
 """
-   compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
 
 Calculates the thermal expansion of the material. 
 
