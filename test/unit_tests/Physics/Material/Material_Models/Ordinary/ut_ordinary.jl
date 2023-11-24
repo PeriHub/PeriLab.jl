@@ -33,12 +33,12 @@ using .Ordinary
 
     volume = Float64[0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883, 0.8615883]
     vec = Vector{Int64}(1:nnodes)
-    weighted_volume = Ordinary.compute_weighted_volume(view(vec, 1:nnodes), view(nneighbors, :), view(nlist, :), view(undeformed_bond, :), view(bond_damage, :), view(omega, :), view(volume, :))
+    weighted_volume = Ordinary.compute_weighted_volume(view(vec, 1:nnodes), view(nlist, :), view(undeformed_bond, :), view(bond_damage, :), view(omega, :), view(volume, :))
 
     for iID in 1:nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
     end
-    weighted_volume = Ordinary.compute_weighted_volume(Int64[], view(nneighbors, :), view(nlist, :), view(undeformed_bond, :), view(bond_damage, :), view(omega, :), view(volume, :))
+    weighted_volume = Ordinary.compute_weighted_volume(Int64[], view(nlist, :), view(undeformed_bond, :), view(bond_damage, :), view(omega, :), view(volume, :))
     @test weighted_volume == []
 end
 
