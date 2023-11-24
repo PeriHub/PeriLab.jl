@@ -1093,10 +1093,10 @@ function switch_NP1_to_N()
             N = NP1_to_N[NP1]
             field_N = get_field(N)
         end
-        field_N .= deepcopy(field_NP1)
-        # set field_NP1 to 0
+
         if size(field_NP1[1]) == () # vector
-            # field_NP1[:] = fill(field_types[NP1](0), size(field_NP1))
+
+            copyto!(field_N, field_NP1)
             fill!(field_NP1, field_types[NP1](0))
         else # matrix
             value = 0
@@ -1104,7 +1104,7 @@ function switch_NP1_to_N()
                 value = 1
             end
             for fieldID in eachindex(field_NP1)
-                # field_NP1[fieldID] = fill(field_types[NP1](value), size(field_NP1[fieldID]))
+                copyto!(field_N[fieldID], field_NP1[fieldID])
                 fill!(field_NP1[fieldID], field_types[NP1](value))
             end
         end
