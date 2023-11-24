@@ -6,7 +6,7 @@ file_content = "header: x y block_id volume\n"
 file_content_ns = "header: global_id\n"
 
 # Generate x and y values using for loops
-num_points = 100  # Adjust the number of points as needed
+num_points = 1000  # Adjust the number of points as needed
 step_size = 0.1
 
 data = []
