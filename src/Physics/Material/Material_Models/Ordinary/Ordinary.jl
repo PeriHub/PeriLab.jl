@@ -9,12 +9,12 @@ export compute_weighted_volume
 """
 taken from Peridigm -> but adding the bond_damage; this is missing in Peridigm, but should be there
 """
-function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, omega::SubArray, volume::SubArray)
+function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, omega::SubArray, volume::SubArray)
 
     if length(nodes) == 0
         return Float64[]
     end
-    weighted_volume = zeros(Float64, maximum(nodes))
+    weighted_volume::Vector{Float64} = zeros(Float64, maximum(nodes))
 
     for iID in nodes
         # in Peridigm the weighted volume is for some reason independend from damages
@@ -48,7 +48,7 @@ function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::Su
     if length(nodes) == 0
         return Float64[]
     end
-    theta = zeros(Float64, maximum(nodes))
+    theta::Vector{Float64} = zeros(Float64, maximum(nodes))
     for iID in nodes
         if weighted_volume[iID] == 0
             @warn "Weighted volume is zero for local point ID: $iID"

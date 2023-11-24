@@ -77,7 +77,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     # optimizing, because if no damage it has not to be updated
 
-    weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, undeformed_bond, bond_damage, omega, volume)
+    weighted_volume = Ordinary.compute_weighted_volume(nodes, nlist, undeformed_bond, bond_damage, omega, volume)
     theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, undeformed_bond, deformed_bond, bond_damage, volume, weighted_volume, omega)
     bond_force = elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force)
 
