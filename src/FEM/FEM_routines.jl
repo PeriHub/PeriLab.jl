@@ -37,7 +37,7 @@ function get_weights_and_integration_points(dof::Int64, p::Vector{Int64})
     for idof in 1:dof
         x[idof, 1:p[idof]+1], w[idof, 1:p[idof]+1] = gausslegendre(p[idof] + 1)
     end
-    return x, w
+    return w, x
 end
 
 function get_Jacobian(B::SubArray, coordinates::SubArray)
@@ -76,4 +76,19 @@ function define_lagarangian_grid_space(dof::Int64, p::Vector{Int64})
         end
     end
     return xi
+end
+
+
+function get_recursive_lagrange_shape_functions(xi::Vector{Float64}, element_coordinate::Union{Float64,Int64}, p::Int64)
+    N::Vector{Float64} = zeros(Float64, p + 1)
+    for ip::Int64 in 1:p+1
+        N[ip] = 1
+        for jp::Int64 in 1:p+1
+            if ip == jp
+                continue
+            end
+            N[ip] *= (element_coordinate - xi[jp]) / (xi[ip] - xi[jp])
+        end
+    end
+    return N
 end
