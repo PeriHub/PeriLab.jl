@@ -150,6 +150,7 @@ Gets the outputs.
 """
 function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vector{String})
     num = 0
+    outputs = Dict()
     if haskey(params, "Outputs")
         outputs = params["Outputs"]
         for output in keys(outputs)
@@ -178,6 +179,7 @@ Gets the output frequency.
 """
 function get_output_frequency(params::Dict, nsteps::Int64)
 
+    freq = zeros(1)
     if haskey(params::Dict, "Outputs")
         outputs = params["Outputs"]
         freq = zeros(Int64, length(keys(outputs)))
