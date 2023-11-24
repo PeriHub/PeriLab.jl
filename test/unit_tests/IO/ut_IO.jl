@@ -27,7 +27,7 @@ test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
 block_Id = test_Data_manager.get_field("Block_Id")
 test_Data_manager.create_node_field("Displacements", Float64, 2)
 test_Data_manager.create_node_field("Forces", Float64, 6)
-params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1, "Output Variables" => Dict("Forces" => true)), "Output2" => Dict("Output Filename" => filename2, "Output Variables" => Dict("Displacements" => true, "Forces" => true))))
+params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1, "Flush File" => false, "Output Variables" => Dict("Forces" => true)), "Output2" => Dict("Output Filename" => filename2, "Flush File" => false, "Output Variables" => Dict("Displacements" => true, "Forces" => true))))
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
