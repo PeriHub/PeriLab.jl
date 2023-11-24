@@ -299,7 +299,7 @@ Initialize write results.
 function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64)
     filenames = get_output_filenames(params, filedirectory)
     if length(filenames) == 0
-        @warn "No futput file or output defined"
+        @warn "No output file or output defined"
     end
     result_files::Vector{Dict} = []
 
@@ -393,10 +393,8 @@ function write_results(result_files::Vector{Dict}, time::Float64, outputs::Dict,
             output_frequency[id]["Step"] += 1
             nodal_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (!value["global_var"]))
             global_outputs = Dict(key => value for (key, value) in outputs[id]["Fields"] if (value["global_var"]))
-            if datamanager.get_rank() == 0 && output_type == "CSV" || output_type == "Exodus"
-                if outputs[id]["flush_file"]
-                    open_result_file(result_files[id])
-                end
+            if outputs[id]["flush_file"] && ((datamanager.get_rank() == 0 && output_type == "CSV") || output_type == "Exodus")
+                open_result_file(result_files[id])
             end
             if output_type == "Exodus" && length(nodal_outputs) > 0 && result_files[id]["type"] == "Exodus"
                 result_files[id]["file"] = Write_Exodus_Results.write_step_and_time(result_files[id]["file"], output_frequency[id]["Step"], time)
@@ -415,7 +413,7 @@ function write_results(result_files::Vector{Dict}, time::Float64, outputs::Dict,
                 end
             end
 
-            if outputs[id]["flush_file"]
+            if outputs[id]["flush_file"] && ((datamanager.get_rank() == 0 && output_type == "CSV") || output_type == "Exodus")
                 close_result_file(result_files[id])
             end
             output_frequency[id]["Counter"] = 0

@@ -92,7 +92,7 @@ function get_flush_file(outputs::Dict, output::String)
     if haskey(outputs[output], "Flush File")
         return outputs[output]["Flush File"]
     else
-        return false
+        return true
     end
 end
 
