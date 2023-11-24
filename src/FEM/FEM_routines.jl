@@ -65,6 +65,10 @@ xi = define_lagrangian_grid_space(dof, p)
 function define_lagarangian_grid_space(dof::Int64, p::Vector{Int64})
     xi::Matrix{Float64} = zeros(Float64, dof, maximum(p) + 1)
     len::Float64 = 0.0
+    if minimum(p) == 0
+        @error "p order for lagarangian grid space must be at least p = 1 and not zero"
+        return nothing
+    end
     for idof in 1:dof
         len = 2.0 / p[idof]
         for ip in 1:p[idof]+1
