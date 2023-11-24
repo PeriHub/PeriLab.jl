@@ -38,9 +38,6 @@ function create_result_file(filename::Union{AbstractString,String}, num_nodes::I
     float_type = Float64
     num_elems = num_nodes
     num_side_sets = 0
-    @debug "num_nodes: $num_nodes"
-    @debug "num_elem_blks: $num_elem_blks"
-    @debug "num_node_sets: $num_node_sets"
     init = Initialization{bulk_int_type}(
         Int32(num_dim), Int32(num_nodes), Int32(num_elems),
         Int32(num_elem_blks), Int32(num_node_sets), Int32(num_side_sets)
@@ -143,32 +140,26 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
     id::Int32 = 0
     # bloecke checken
     for name in eachindex(nsets)
-        @debug name
         id += Int32(1)
-        @debug id
         # if length(block_Id) < length(nsets[name])
         #     nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name][1:length(block_Id)]))
         #     @debug convert(Array{Int32}, nsets[name][1:length(block_Id)])
         # else
         # existing_nodes = intersect(global_ids, nsets[name])
         nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name]))
-        @debug nsets[name]
         # end
         write_set(exo, nsetExo)
         write_name(exo, nsetExo, name)
     end
 
     for block in uniqueBlocks
-        @debug block
         conn = get_block_nodes(block_Id, block)# virtual elements   
-        @debug conn
         write_block(exo, block, "SPHERE", conn)
         write_name(exo, Block, block, "Block_" * string(block))
     end
 
     # write element id map
 
-    @debug global_ids
     write_id_map(exo, NodeMap, Int32.(global_ids))
     write_id_map(exo, ElementMap, Int32.(global_ids))
 
@@ -187,7 +178,6 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
 
     for varname in nodal_output_names
         # interface does not work with Int yet 28//08//2023
-        @debug "$varname $nnodes"
         write_values(exo, NodalVariable, 1, output["Fields"][varname]["result_id"], varname, zeros(Float64, nnodes))
     end
     if length(global_output_names) > 0

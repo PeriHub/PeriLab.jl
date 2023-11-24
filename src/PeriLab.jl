@@ -175,6 +175,9 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
             if rank == 0
                 print_banner()
                 @info "\n PeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------"
+                if size > 1
+                    @info "MPI: Running on " * string(size) * " processes"
+                end
             end
         else
             Logging.disable_logging(Logging.Error)
@@ -191,7 +194,7 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
         @info "Solver init"
         @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
         if verbose
-            IO.show_block_summary(solver_options, params, datamanager)
+            IO.show_block_summary(solver_options, params, comm, datamanager)
         end
         @info "Init write results"
         @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"])

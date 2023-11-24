@@ -107,6 +107,7 @@ find_and_set_core_value_min
 find_and_set_core_value_max
 find_and_set_core_value_sum
 find_and_set_core_value_avg
+gather_values
 ```
 
 ```@meta

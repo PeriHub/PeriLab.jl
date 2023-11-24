@@ -319,7 +319,6 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
     end
 
     for (id, filename) in enumerate(filenames)
-        @debug filename
         rank = datamanager.get_rank()
         max_rank = datamanager.get_max_rank()
         if ".e" == filename[end-1:end]
@@ -385,7 +384,6 @@ Write results.
 function write_results(result_files::Vector{Dict}, time::Float64, outputs::Dict, datamanager::Module)
 
     for id in eachindex(result_files)
-        @debug id
         output_type = outputs[id]["Output File Type"]
         # step 1 ist the zero step?!
         output_frequency[id]["Counter"] += 1
@@ -400,7 +398,6 @@ function write_results(result_files::Vector{Dict}, time::Float64, outputs::Dict,
                 result_files[id]["file"] = Write_Exodus_Results.write_step_and_time(result_files[id]["file"], output_frequency[id]["Step"], time)
                 result_files[id]["file"] = Write_Exodus_Results.write_nodal_results_in_exodus(result_files[id]["file"], output_frequency[id]["Step"], nodal_outputs, datamanager)
             end
-            @debug length(global_outputs)
             if length(global_outputs) > 0
                 global_values = get_global_values(global_outputs, datamanager)
                 if output_type == "Exodus"
@@ -420,7 +417,6 @@ function write_results(result_files::Vector{Dict}, time::Float64, outputs::Dict,
         end
     end
 
-    @debug "finished result_files"
     return result_files
 end
 
@@ -452,14 +448,12 @@ function get_global_values(output::Dict, datamanager::Module)
         end
 
         if datamanager.get_max_rank() > 1
-            @debug global_value
             for iID in eachindex(global_value)
                 global_value[iID] = find_global_core_value!(global_value[iID], calculation_type, nnodes, datamanager)
             end
         end
         append!(global_values, global_value)
     end
-    @debug global_values
     return global_values
 end
 
@@ -478,7 +472,6 @@ Find global core value.
 """
 function find_global_core_value!(global_value::Union{Int64,Float64}, calculation_type::String, nnodes::Int64, datamanager::Module)
     comm = datamanager.get_comm()
-    @debug global_value
     if calculation_type == "Sum"
         return find_and_set_core_value_sum(comm, global_value)
     elseif calculation_type == "Maximum"
@@ -520,7 +513,7 @@ Show block summary.
 - `params::Dict`: The params
 - `datamanager::Module`: The datamanager
 """
-function show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)
+function show_block_summary(solver_options::Dict, params::Dict, comm::MPI.Comm, datamanager::Module)
     headers = ["Block", "Material", "Damage", "Thermal", "Additive", "Density", "Horizon", "Number of Nodes"]
     df = DataFrame([header => [] for header in headers])
     # tbd
@@ -530,6 +523,9 @@ function show_block_summary(solver_options::Dict, params::Dict, datamanager::Mod
     block_Id = datamanager.get_field("Block_Id")
     block_list = datamanager.get_block_list()
     block_list = ["block_" * string(block) for block in block_list]
+
+    rank = MPI.Comm_rank(comm)
+    size = MPI.Comm_size(comm)
 
     for id in eachindex(block_list)
         row = [block_list[id]]
@@ -550,11 +546,34 @@ function show_block_summary(solver_options::Dict, params::Dict, datamanager::Mod
             end
         end
         # get number of nodes
-        push!(row, string(length(findall(x -> x == id, block_Id))))
+        num_nodes = string(length(findall(x -> x == id, block_Id)))
+        if size > 1
+            push!(row, num_nodes * "($rank)")
+        else
+            push!(row, num_nodes)
+        end
         push!(df, row)
     end
 
-    @info df
+    # Gather all DataFrames to the root process (rank 0)
+    all_dfs = gather_values(comm, df)
+
+    if rank == 0 && size > 1
+        merged_df = vcat(all_dfs...)
+        blocks = unique(merged_df.Block)
+        full_df = DataFrame()
+        for block in blocks
+            block_rows = filter(row -> row.Block == block, merged_df)
+            new_row = block_rows[1, :]
+            for row in eachrow(block_rows[2:end, :])
+                new_row["Number of Nodes"] = new_row["Number of Nodes"] * ", " * row["Number of Nodes"]
+            end
+            push!(full_df, new_row)
+        end
+        @info full_df
+    else
+        @info df
+    end
 
 end
 
