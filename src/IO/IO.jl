@@ -43,18 +43,12 @@ function merge_exodus_files(result_files::Vector{Dict}, filedirectory::String)
     for result_file in result_files
         if result_file["type"] == "Exodus"
             filename = result_file["filename"]
-            if "0" == filename[end]
-                epu_path = joinpath(filedirectory, "epu.log")
-                if isfile(epu_path)
-                    rm(epu_path)
-                end
-                @info "Merge output file " * filename
-                Write_Exodus_Results.merge_exodus_file(filename)
-                base = basename(filename)
-                filename = split(base, ".")[1] * ".e"
-                mv(filename, joinpath(filedirectory, filename), force=true)
-                mv("epu.log", epu_path, force=true)
-            end
+            @info "Merge output file " * filename
+            Write_Exodus_Results.merge_exodus_file(filename)
+            base = basename(filename)
+            filename = split(base, ".")[1] * ".e"
+            mv(filename, joinpath(filedirectory, filename), force=true)
+            mv("epu.log", joinpath(filedirectory, "epu.log"), force=true)
         end
     end
 end
@@ -135,9 +129,9 @@ Deletes the result files
 function delete_files(result_files::Vector{Dict}, filedirectory::String)
     for result_file in result_files
         if result_file["type"] == "Exodus"
-            while isfile(joinpath(filedirectory, "epu.log")) == false
-                sleep(1)
-            end
+            # while isfile(joinpath(filedirectory, "epu.log")) == false
+            #     sleep(1)
+            # end
             @info "Delete output file " * result_file["filename"]
             rm(result_file["filename"])
         end
