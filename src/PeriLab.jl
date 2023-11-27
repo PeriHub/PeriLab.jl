@@ -217,16 +217,12 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
 
         IO.close_result_files(result_files, outputs)
 
-        if dry_run
-            IO.delete_files(result_files)
-        end
-
         if size > 1 && rank == 0
             IO.merge_exodus_files(result_files, filedirectory)
         end
-        MPI.Barrier(comm)
-        if size > 1
-            # IO.delete_files(exos)
+
+        if size > 1 || dry_run
+            IO.delete_files(result_files, filedirectory)
         end
         MPI.Finalize()
     end

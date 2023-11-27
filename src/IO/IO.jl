@@ -39,16 +39,21 @@ Merges exodus output files
 - `filedirectory::String`: The file directory
 """
 function merge_exodus_files(result_files::Vector{Dict}, filedirectory::String)
+
     for result_file in result_files
         if result_file["type"] == "Exodus"
             filename = result_file["filename"]
-            if ".0" == filename[end-1:end]
+            if "0" == filename[end]
+                epu_path = joinpath(filedirectory, "epu.log")
+                if isfile(epu_path)
+                    rm(epu_path)
+                end
                 @info "Merge output file " * filename
                 Write_Exodus_Results.merge_exodus_file(filename)
                 base = basename(filename)
                 filename = split(base, ".")[1] * ".e"
                 mv(filename, joinpath(filedirectory, filename), force=true)
-                mv("epu.log", joinpath(filedirectory, "epu.log"), force=true)
+                mv("epu.log", epu_path, force=true)
             end
         end
     end
@@ -127,11 +132,15 @@ Deletes the result files
 # Arguments
 - `result_files`: The result files
 """
-function delete_files(result_files::Vector{Dict})
+function delete_files(result_files::Vector{Dict}, filedirectory::String)
     for result_file in result_files
         if result_file["type"] == "Exodus"
-            @info "Delete output file " * result_file["file_name"]
-            rm(result_file["file_name"])
+            while isfile(joinpath(filedirectory, "epu.log")) == false
+                println("Waiting for epu.log to be created")
+                sleep(1)
+            end
+            @info "Delete output file " * result_file["filename"]
+            rm(result_file["filename"])
         end
     end
 end
@@ -149,7 +158,7 @@ Gets the file size of the result files
 function get_file_size(result_files::Vector{Dict})
     total_file_size = 0
     for result_file in result_files
-        file_stat = stat(result_file["file_name"])  # Get file information
+        file_stat = stat(result_file["filename"])  # Get file information
         total_file_size += file_stat.size  # Add the file size to the total
     end
     return total_file_size
@@ -566,7 +575,9 @@ function show_block_summary(solver_options::Dict, params::Dict, comm::MPI.Comm, 
             block_rows = filter(row -> row.Block == block, merged_df)
             new_row = block_rows[1, :]
             for row in eachrow(block_rows[2:end, :])
-                new_row["Number of Nodes"] = new_row["Number of Nodes"] * ", " * row["Number of Nodes"]
+                if row["Number of Nodes"][1] != "0"
+                    new_row["Number of Nodes"] = new_row["Number of Nodes"] * ", " * row["Number of Nodes"]
+                end
             end
             push!(full_df, new_row)
         end
