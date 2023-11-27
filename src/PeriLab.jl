@@ -218,7 +218,7 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
         IO.close_result_files(result_files, outputs)
 
         if size > 1 && rank == 0
-            println("merge $ranke")
+            println("merge $rank")
             IO.merge_exodus_files(result_files, filedirectory)
         end
         if size > 1 || dry_run
