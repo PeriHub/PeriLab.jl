@@ -136,7 +136,6 @@ function delete_files(result_files::Vector{Dict}, filedirectory::String)
     for result_file in result_files
         if result_file["type"] == "Exodus"
             while isfile(joinpath(filedirectory, "epu.log")) == false
-                println("Waiting for epu.log to be created")
                 sleep(1)
             end
             @info "Delete output file " * result_file["filename"]

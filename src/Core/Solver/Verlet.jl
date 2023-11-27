@@ -393,11 +393,11 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 # heat capacity check. if it is zero deltaT = 0
                 deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
             end
-            result_files = write_results(result_files, start_time + step_time, outputs, datamanager)
+            @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, outputs, datamanager)
             # for file in result_files
             #     flush(file)
             # end
-            datamanager.switch_NP1_to_N()
+            @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
             update_list .= true
             step_time += dt
             if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0

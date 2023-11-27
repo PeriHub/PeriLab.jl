@@ -171,7 +171,7 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
         size = MPI.Comm_size(comm)
 
         if !silent
-            @timeit to "Logging.init_logging" Logging_module.init_logging(filename, debug, rank, size)
+            Logging_module.init_logging(filename, debug, rank, size)
             if rank == 0
                 print_banner()
                 @info "\n PeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------"
@@ -204,7 +204,7 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
             nsteps = solver_options["nsteps"]
             solver_options["nsteps"] = 10
             elapsed_time = @elapsed begin
-                @timeit to "Solver.solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+                @timeit to "Solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
             end
 
             @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
@@ -218,10 +218,11 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
         IO.close_result_files(result_files, outputs)
 
         if size > 1 && rank == 0
+            println("merge $ranke")
             IO.merge_exodus_files(result_files, filedirectory)
         end
-
         if size > 1 || dry_run
+            println("delete $rank")
             IO.delete_files(result_files, filedirectory)
         end
         MPI.Finalize()

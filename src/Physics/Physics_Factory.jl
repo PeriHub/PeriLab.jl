@@ -58,8 +58,8 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             active_nodes = @view nodes[find_active(active[nodes])][:]
             if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
                 datamanager = Damage.set_bond_damage(datamanager, active_nodes)
-                @timeit to "compute_damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, active_nodes, block, synchronise_field, time, dt)
-                @timeit to "compute_damage" datamanager = Damage.compute_damage(datamanager, active_nodes, datamanager.get_properties(block, "Damage Model"), block, time, dt)
+                @timeit to "damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, active_nodes, block, synchronise_field, time, dt)
+                @timeit to "damage" datamanager = Damage.compute_damage(datamanager, active_nodes, datamanager.get_properties(block, "Damage Model"), block, time, dt)
             end
         end
     end
@@ -69,8 +69,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     # update_nodes::Vector{Int64} = []
 
     for block in eachindex(block_nodes)
-        nodes = @view block_nodes[block][:]
-        active_nodes = @view nodes[find_active(active[nodes])][:]
+        active_nodes = @view nodes[find_active(active[block_nodes[block]])][:]
         update_nodes = view(nodes, find_active(update_list[active_nodes]))
 
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
@@ -83,8 +82,8 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
 
         if options["Material Models"]
             if datamanager.check_property(block, "Material Model")
-                @timeit to "compute_bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
-                datamanager = Material.distribute_force_densities(datamanager, active_nodes)
+                @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+                @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, active_nodes)
             end
         end
     end
