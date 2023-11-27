@@ -33,6 +33,8 @@ function init_material_model(datamanager::Module)
     # dof = datamanager.get_dof()
     # nlist = datamanager.get_nlist()
     # volume = datamanager.get_field("Volume")
+    datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
+    datamanager.create_constant_node_field("Dilatation", Float64, 1)
 
     return datamanager
 end
@@ -74,11 +76,13 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     omega = datamanager.get_field("Influence Function")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     bond_force = datamanager.get_field("Bond Forces")
+    weighted_volume = datamanager.get_field("Weighted Volume")
+    theta = datamanager.get_field("Dilatation")
 
     # optimizing, because if no damage it has not to be updated
 
-    weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, undeformed_bond, bond_damage, omega, volume)
-    theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, undeformed_bond, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, undeformed_bond, bond_damage, omega, volume, weighted_volume)
+    theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, undeformed_bond, deformed_bond, bond_damage, volume, weighted_volume, omega, theta)
     bond_force = elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force)
 
 
