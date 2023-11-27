@@ -69,7 +69,8 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     # update_nodes::Vector{Int64} = []
 
     for block in eachindex(block_nodes)
-        active_nodes = @view nodes[find_active(active[block_nodes[block]])][:]
+        nodes = @view block_nodes[block][:]
+        active_nodes = @view nodes[find_active(active[nodes])][:]
         update_nodes = view(nodes, find_active(update_list[active_nodes]))
 
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
