@@ -54,8 +54,8 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     if options["Damage Models"]
         #tbd damage specific pre_calculation-> in damage template
         for block in eachindex(block_nodes)
-            nodes = block_nodes[block]
-            active_nodes = nodes[find_active(active[nodes])]
+            nodes = @view block_nodes[block][:]
+            active_nodes = @view nodes[find_active(active[nodes])][:]
             if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
                 datamanager = Damage.set_bond_damage(datamanager, active_nodes)
                 @timeit to "compute_damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, active_nodes, block, synchronise_field, time, dt)
@@ -64,13 +64,13 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         end
     end
     update_list = datamanager.get_field("Update List")
-    nodes::Vector{Int64} = []
-    active_nodes::Vector{Int64} = []
-    update_nodes::Vector{Int64} = []
+    # nodes::Vector{Int64} = []
+    # active_nodes::Vector{Int64} = []
+    # update_nodes::Vector{Int64} = []
 
     for block in eachindex(block_nodes)
-        nodes = block_nodes[block]
-        active_nodes = nodes[find_active(active[nodes])]
+        nodes = @view block_nodes[block][:]
+        active_nodes = @view nodes[find_active(active[nodes])][:]
         update_nodes = view(nodes, find_active(update_list[active_nodes]))
 
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
