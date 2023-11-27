@@ -221,6 +221,7 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
             println("merge $rank")
             IO.merge_exodus_files(result_files, filedirectory)
         end
+        MPI.Barrier(comm)
         if size > 1 || dry_run
             println("delete $rank")
             IO.delete_files(result_files, filedirectory)
