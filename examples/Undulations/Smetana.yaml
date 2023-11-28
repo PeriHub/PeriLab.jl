@@ -545,7 +545,7 @@ PeriLab:
         Zero Energy Control: "Global"
     Pre Calculation:
       Bond Associated Deformation Gradient: false
-      Bond Associated Shape Tensorr: false
+      Bond Associated Shape Tensor: false
       Deformation Gradient: true
       Deformed Bond Geometry: true
       Shape Tensor: true

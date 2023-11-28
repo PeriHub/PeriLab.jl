@@ -48,17 +48,17 @@ PeriLab:
       Material Model: Aluminium
   Bond Filters:
     bf_1:
-      Bottom_Length: 6.5
-      Bottom_Unit_Vector_X: 1.0
-      Bottom_Unit_Vector_Y: 0.0
-      Bottom_Unit_Vector_Z: 0.0
-      Lower_Left_Corner_X: -0.5
-      Lower_Left_Corner_Y: 0.5
-      Lower_Left_Corner_Z: -0.5
-      Normal_X: 0.0
-      Normal_Y: 1.0
-      Normal_Z: 0.0
-      Side_Length: 1.0
+      Bottom Length: 6.5
+      Bottom Unit Vector X: 1.0
+      Bottom Unit Vector Y: 0.0
+      Bottom Unit Vector Z: 0.0
+      Lower Left Corner X: -0.5
+      Lower Left Corner Y: 0.5
+      Lower Left Corner Z: -0.5
+      Normal X: 0.0
+      Normal Y: 1.0
+      Normal Z: 0.0
+      Side Length: 1.0
       Type: Rectangular_Plane
   Boundary Conditions:
     BC_1:
@@ -121,8 +121,8 @@ PeriLab:
         Damage Model: Critical Energy
         Detached Nodes Check: true
         Hourglass Coefficient: 1.0
-        Interblock Critical Value 1_2: 0.1
-        Interblock Damage: true
+        Interblock Damage:
+          Interblock Critical Value 1_2: 0.1
         Number of Blocks: 3
         Only Tension: false
         Plane Stress: true

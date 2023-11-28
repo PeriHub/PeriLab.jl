@@ -13,26 +13,26 @@ PeriLab:
     # Bond Filters:
     #   # bf_1:
     #   #   Type: "Disk"
-    #   #   Normal_X: 0.0
-    #   #   Normal_Y: 1.0
-    #   #   Normal_Z: 0.0
-    #   #   Center_X: 0.0
-    #   #   Center_Y: 1.5
-    #   #   Center_Z: 0.0
+    #   #   Normal X: 0.0
+    #   #   Normal Y: 1.0
+    #   #   Normal Z: 0.0
+    #   #   Center X: 0.0
+    #   #   Center Y: 1.5
+    #   #   Center Z: 0.0
     #   #   Radius: 5.0
     #   bf_1:
     #     Type: "Rectangular_Plane"
-    #     Normal_X: 0.0
-    #     Normal_Y: 1.0
-    #     Normal_Z: 0.0
-    #     Lower_Left_Corner_X: -0.5
-    #     Lower_Left_Corner_Y: 0.5
-    #     Lower_Left_Corner_Z: -1.0
-    #     Bottom_Unit_Vector_X: 1.0
-    #     Bottom_Unit_Vector_Y: 0.0
-    #     Bottom_Unit_Vector_Z: 0.0
-    #     Bottom_Length: 56.75
-    #     Side_Length: 2.0
+    #     Normal X: 0.0
+    #     Normal Y: 1.0
+    #     Normal Z: 0.0
+    #     Lower Left Corner X: -0.5
+    #     Lower Left Corner Y: 0.5
+    #     Lower Left Corner Z: -1.0
+    #     Bottom Unit Vector X: 1.0
+    #     Bottom Unit Vector Y: 0.0
+    #     Bottom Unit Vector Z: 0.0
+    #     Bottom Length: 56.75
+    #     Side Length: 2.0
   Physics:
     Material Models:
       Aluminium:
@@ -46,8 +46,8 @@ PeriLab:
       Damage:
         Critical Value: 1.3947001394700143
         Damage Model: Critical Energy
-        Interblock Critical Value 1_2: 0.1
-        Interblock Damage: true
+        Interblock Damage:
+          Interblock Critical Value 1_2: 0.1
   Blocks:
     block_1:
       Block Names: "block_1"
