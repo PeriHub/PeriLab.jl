@@ -10,6 +10,7 @@ Manifest.toml
 *.e*
 *.csv
 *.json
+*.out
 !**/Reference/*.e*
 
 test/tryout/

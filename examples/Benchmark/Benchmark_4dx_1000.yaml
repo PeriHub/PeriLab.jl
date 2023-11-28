@@ -34,9 +34,9 @@ PeriLab:
       Block: block_2
       Variable: Displacements
   Discretization:
-    Input Mesh File: mesh100.txt
+    Input Mesh File: mesh1000.txt
     Node Sets:
-      Node Set 1: ns100.txt
+      Node Set 1: ns1000.txt
     Type: Text File
     Bond Filters:
       bf_1:
@@ -54,9 +54,10 @@ PeriLab:
         Type: Rectangular_Plane
   Outputs:
     Output1:
-      Number of Output Steps: 100
+      Number of Output Steps: 2
       Output Filename: Benchmark
       Output File Type: Exodus
+      Flush File: false
       Output Variables:
         Damage: true
         Displacements: true
@@ -65,9 +66,10 @@ PeriLab:
         External_Forces: True
         External_Displacements: True
     Output2:
-      Number of Output Steps: 100
+      Number of Output Steps: 2
       Output Filename: Benchmark
       Output File Type: CSV
+      Flush File: false
       Output Variables:
         External_Forces: True
         External_Displacements: True
