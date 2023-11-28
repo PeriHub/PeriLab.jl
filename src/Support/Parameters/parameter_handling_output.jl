@@ -97,6 +97,25 @@ function get_flush_file(outputs::Dict, output::String)
 end
 
 """
+    get_write_after_damage(outputs::Dict, output::String)
+
+Get the write after damage.
+
+# Arguments
+- `outputs::Dict`: The outputs
+- `output::String`: The output
+# Returns
+- `write_after_damage::Bool`: The value
+"""
+function get_write_after_damage(outputs::Dict, output::String)
+    if haskey(outputs[output], "Write After Damage")
+        return outputs[output]["Write After Damage"]
+    else
+        return true
+    end
+end
+
+"""
     get_output_fieldnames(outputs::Dict, variables::Vector{String}, computes::Vector{String}, output_type::String)
 
 Gets the output fieldnames.

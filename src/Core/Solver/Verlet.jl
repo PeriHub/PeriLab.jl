@@ -347,6 +347,9 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         heatCapacity = datamanager.get_field("Specific Heat Capacity")
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
+    if solver_options["Damage Models"]
+        damage = datamanager.get_field("Damage", "NP1")
+    end
     active = datamanager.get_field("Active")
     update_list = datamanager.get_field("Update List")
 
@@ -355,6 +358,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     start_time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
     numerical_damping::Float64 = solver_options["Numerical Damping"]
+    damage_occurs::Bool = false
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     for idt in iter
@@ -393,7 +397,10 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 # heat capacity check. if it is zero deltaT = 0
                 deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
             end
-            @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, outputs, datamanager)
+            if solver_options["Damage Models"]
+                damage_occurs = !all(dam -> dam == 1.0, damage[find_active(active[1:nnodes])])
+            end
+            @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, damage_occurs, outputs, datamanager)
             # for file in result_files
             #     flush(file)
             # end
