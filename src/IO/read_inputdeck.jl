@@ -20,7 +20,7 @@ Reads the input deck from a yaml file
 """
 function read_input(filename::String)
     try
-        return YAML.load_file(filename)["PeriLab"]
+        return YAML.load_file(filename)
     catch
         @error "No compatible Yaml file."
         return nothing
@@ -50,7 +50,7 @@ function read_input_file(filename::String)
         @error "Not a supported filetype  $filename"
         return nothing
     end
-    return check_key_elements(params)
+    return validate_yaml(params)
 
 end
 

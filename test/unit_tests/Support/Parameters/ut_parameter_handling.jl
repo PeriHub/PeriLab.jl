@@ -85,25 +85,24 @@ end
     @test !haskey(nsets, "Nset_2")
     rm(filename)
 end
-@testset "ut_check_key_elements" begin
-    params = Dict()
+@testset "ut_validate_yaml" begin
+    params = Dict{Any,Any}()
     @info "Error messages are tested and therefore okay."
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict(), "Blocks" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict("Material Models" => Dict()), "Blocks" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Blocks" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
-    @test isnothing(check_key_elements(params))
-
-    params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
-    @test check_key_elements(params) == params
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()), "Discretization" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()), "Discretization" => Dict{Any,Any}(), "Blocks" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()), "Blocks" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}(), "Discretization" => Dict{Any,Any}(), "Blocks" => Dict{Any,Any}(), "Solver" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}("mat_1" => Dict{Any,Any}("Material Model" => "a"))), "Discretization" => Dict{Any,Any}("Input Mesh File" => "test", "Type" => "test"), "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,Any}("Block Names" => "Block_1", "Density" => 1.0, "Horizon" => 1.0)), "Solver" => Dict{Any,Any}("Final Time" => 1.0, "Initial Time" => 0.0)))
+    @test validate_yaml(params) == params["PeriLab"]
 end
 
 @testset "ut_get_mesh_name" begin

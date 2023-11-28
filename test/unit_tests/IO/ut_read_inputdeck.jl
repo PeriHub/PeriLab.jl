@@ -13,8 +13,8 @@ using Test
     println(fid, " data: 1")
     close(fid)
     dict = Read_Input_Deck.read_input(filename)
-    @test haskey(dict, "data")
-    @test dict["data"] == 1
+    @test haskey(dict["PeriLab"], "data")
+    @test dict["PeriLab"]["data"] == 1
     rm(filename)
     fid = open(filename, "w")
     close(fid)
@@ -47,15 +47,21 @@ end
     println(fid, " Physics:")
     println(fid, "  d: 3")
     println(fid, "  a: 1")
-    println(fid, " Discretization: 1")
-    println(fid, " Blocks: 1.7")
-    println(fid, " Solver: true")
+    println(fid, " Discretization:")
+    println(fid, "  Input Mesh File: test")
+    println(fid, "  Type: test")
+    println(fid, " Blocks:")
+    println(fid, "  Block_1:")
+    println(fid, " Solver:")
+    println(fid, "  Initial Time: 0.0")
+    println(fid, "  Final Time: 1.0")
     close(fid)
     dict = Read_Input_Deck.read_input_file(filename)
     @test dict["Physics"]["d"] == 3
     @test dict["Physics"]["a"] == 1
-    @test dict["Discretization"] == 1
-    @test dict["Blocks"] == 1.7
-    @test dict["Solver"]
+    @test dict["Discretization"]["Input Mesh File"] == "test"
+    @test dict["Discretization"]["Type"] == "test"
+    @test dict["Solver"]["Initial Time"] == 0.0
+    @test dict["Solver"]["Final Time"] == 1.0
     rm(filename)
 end

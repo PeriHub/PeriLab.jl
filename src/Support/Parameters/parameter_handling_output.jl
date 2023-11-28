@@ -111,7 +111,7 @@ function get_write_after_damage(outputs::Dict, output::String)
     if haskey(outputs[output], "Write After Damage")
         return outputs[output]["Write After Damage"]
     else
-        return true
+        return false
     end
 end
 

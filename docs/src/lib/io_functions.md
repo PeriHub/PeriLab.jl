@@ -170,7 +170,9 @@ CurrentModule = PeriLab.IO
 ```
 ## parameter_handling
 ```@docs
-check_key_elements
+validate_yaml
+validate_structure_recursive
+get_all_keys
 get_density
 get_heatcapacity
 get_horizon
@@ -189,6 +191,7 @@ check_for_duplicates
 get_output_filenames
 get_output_type
 get_flush_file
+get_write_after_damage
 get_output_fieldnames
 get_outputs
 get_output_frequency
