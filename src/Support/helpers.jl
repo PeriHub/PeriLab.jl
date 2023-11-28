@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using ProgressBars
-using Tensorial
+using Tensors
 
 """
     find_indices(vector, what)
@@ -138,7 +138,7 @@ end
 """
     get_fourth_order(CVoigt, dof)
 
-Constructs a symmetric fourth-order tensor from a Voigt notation vector. It uses Tensorial.jl package.
+Constructs a symmetric fourth-order tensor from a Voigt notation vector. It uses Tensors.jl package.
 
 This function takes a Voigt notation vector `CVoigt` and the degree of freedom `dof` 
 to create a symmetric fourth-order tensor. The `CVoigt` vector contains components 
@@ -159,7 +159,7 @@ dof = 3
 result = get_fourth_order(CVoigt, dof)
 """
 function get_fourth_order(CVoigt::Matrix{Float64}, dof::Int64)
-    return fromvoigt(SymmetricFourthOrderTensor{dof}, CVoigt)
+    return fromvoigt(SymmetricTensor{4,dof}, CVoigt)
 end
 
 """
