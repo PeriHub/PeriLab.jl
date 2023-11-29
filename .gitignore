@@ -11,6 +11,7 @@ Manifest.toml
 *.csv
 *.json
 *.out
+*.sbatch
 !**/Reference/*.e*
 
 test/tryout/
