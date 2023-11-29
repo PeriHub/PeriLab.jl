@@ -378,12 +378,12 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
             deformed_coorNP1[:, :] = coor[:, :] + uNP1[:, :]
             #end
-            datamanager.synch_manager(synchronise_field, "upload_to_cores")
+            @timeit to "upload_to_cores" datamanager.synch_manager(synchronise_field, "upload_to_cores")
             # synch
 
             @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, block_nodes, dt, step_time, solver_options, synchronise_field, to)
 
-            datamanager.synch_manager(synchronise_field, "download_from_cores")
+            @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field, "download_from_cores")
             # synch
             @timeit to "second apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
 

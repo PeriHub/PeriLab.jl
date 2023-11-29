@@ -41,7 +41,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
     @timeit to "init_data - mesh_data,jl" begin
         ranks = MPI.Comm_size(comm)
         if (MPI.Comm_rank(comm)) == 0
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params::Dict, path, ranks)
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params::Dict, path, ranks, to)
         else
             num_controller = 0
             num_responder = 0
@@ -372,7 +372,7 @@ function set_dof(mesh::DataFrame)
 end
 
 """
-    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
+    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
 Load and evaluate the mesh data.
 
@@ -380,6 +380,7 @@ Load and evaluate the mesh data.
 - `params::Dict`: The input parameters.
 - `path::String`: The path to the mesh file.
 - `ranksize::Int64`: The number of ranks.
+- `to::TimerOutput`: The timer output
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the mesh elements.
 - `mesh::DataFrame`: The mesh data as a DataFrame.
@@ -388,21 +389,21 @@ Load and evaluate the mesh data.
 - `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
 - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 """
-function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
+function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
-    mesh = read_mesh(joinpath(path, get_mesh_name(params)))
+    @timeit to "read_mesh" mesh = read_mesh(joinpath(path, get_mesh_name(params)))
     duplicates = findall(nonunique(mesh))
     if length(duplicates) > 0
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
     end
     dof::Int64 = set_dof(mesh)
-    nlist = create_neighborhoodlist(mesh, params, dof)
-    nlist = apply_bond_filters(nlist, mesh, params, dof)
+    @timeit to "neighborhoodlist" nlist = create_neighborhoodlist(mesh, params, dof)
+    @timeit to "apply_bond_filters" nlist = apply_bond_filters(nlist, mesh, params, dof)
     @info "Start distribution"
-    distribution, ptc, ntype = node_distribution(nlist, ranksize)
+    @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize)
     @info "Finished distribution"
     @info "Create Overlap"
-    overlap_map = create_overlap_map(distribution, ptc, ranksize)
+    @timeit to "overlap_map" overlap_map = create_overlap_map(distribution, ptc, ranksize)
     @info "Finished Overlap"
     @info "Mesh input overview"
     @info "-------------------"
@@ -603,29 +604,34 @@ function create_base_chunk(nnodes::Int64, size::Int64)
 end
 
 """
-    neighbors(mesh, params::Dict, coor)
+    neighbors(mesh::DataFrame, params::Dict, coor::Vector{String})
 
 Compute the neighbor list for each node in a mesh based on their proximity using a BallTree data structure.
 
 # Arguments
-- `mesh`: A mesh data structure containing the coordinates and other information.
-- `params`: paramss needed for computing the neighbor list.
-- `coor`: A vector of coordinate names along which to compute the neighbor list.
+- `mesh::DataFrame`: A mesh data structure containing the coordinates and other information.
+- `params::Dict`: paramss needed for computing the neighbor list.
+- `coor:;:Vector{String}`: A vector of coordinate names along which to compute the neighbor list.
 
 # Returns
 An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
 """
-function neighbors(mesh::DataFrame, params::Dict, coor)
+function neighbors(mesh::DataFrame, params::Dict, coor::Vector{String})
     @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
     data = zeros(dof, nnodes)
-    neighborList = fill(Vector{Int64}([]), nnodes)
+    neighborList = Vector{Int64}[]
+    resize!(neighborList, nnodes)
 
+    # data = [mesh[!, coor[i]] for i in 1:dof]
     for i in 1:dof
         data[i, :] = values(mesh[!, coor[i]])
     end
+
+    # balltree = BallTree(hcat(data...))
     balltree = BallTree(data)
+
     for i in 1:nnodes
         neighborList[i] = inrange(balltree, data[:, i], get_horizon(params, mesh[!, "block_id"][i]), true)
         # avoid self reference in neighborhood

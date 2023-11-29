@@ -263,7 +263,7 @@ function validate_yaml(params::Dict)
     #Check if all keys have been checked
     for key in all_keys
         if !(key in checked_keys)
-            @warn "Key not checked - $key"
+            @warn "Key not known - $key, going to ignore it"
         end
     end
     if !validate
