@@ -45,10 +45,12 @@ function merge_exodus_files(result_files::Vector{Dict}, filedirectory::String)
             filename = result_file["filename"]
             @info "Merge output file " * filename
             Write_Exodus_Results.merge_exodus_file(filename)
-            base = basename(filename)
-            filename = split(base, ".")[1] * ".e"
-            mv(filename, joinpath(filedirectory, filename), force=true)
-            mv("epu.log", joinpath(filedirectory, "epu.log"), force=true)
+            filename = split(basename(filename), ".")[1] * ".e"
+            new_path = joinpath(filedirectory, filename)
+            if abspath(filename) != abspath(new_path)
+                mv(filename, new_path, force=true)
+                mv("epu.log", joinpath(filedirectory, "epu.log"), force=true)
+            end
         end
     end
 end
