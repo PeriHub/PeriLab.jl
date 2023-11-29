@@ -49,7 +49,54 @@ function set_weights(w::Matrix{Float64})
 
     return weigths
 end
+"""
+    get_multi_dimensional_integration_points(dof::Int64, p::Vector{Int64}, xi::Matrix{Float64})
 
+Generate integration points for multi-dimensional problems.
+
+# Arguments
+- `dof::Int64`: Degree of freedom, only 2 and 3 are supported.
+- `p::Vector{Int64}`: Vector containing the number of integration points in each dimension.
+- `xi::Matrix{Float64}`: Matrix containing the coordinates of the reference element.
+
+# Returns
+- `integration_point_coordinates::Matrix{Float64}`: Matrix of integration point coordinates.
+
+# Example
+```julia
+dof = 2
+p = [2, 3]
+xi = rand(3, dof)
+result = get_multi_dimensional_integration_points(dof, p, xi)
+"""
+function get_multi_dimensional_integration_points(dof::Int64, p::Vector{Int64}, xi::Matrix{Float64})
+    count::Int64 = 0
+    integration_point_coordinates::Matrix{Float64} = zeros(prod(p .+ 1), dof)
+    if dof == 2
+        for pid in 1:p[1]+1
+            for pjd in 1:p[2]+1
+                count += 1
+                integration_point_coordinates[count, 1] = xi[pid, 1]
+                integration_point_coordinates[count, 2] = xi[pjd, 2]
+            end
+        end
+    elseif dof == 3
+        for pid in 1:p[1]+1
+            for pjd in 1:p[2]+1
+                for pkd in 1:p[3]+1
+                    count += 1
+                    integration_point_coordinates[count, 1] = xi[pid, 1]
+                    integration_point_coordinates[count, 2] = xi[pjd, 2]
+                    integration_point_coordinates[count, 3] = xi[pkd, 3]
+                end
+            end
+        end
+    else
+        @error "degree of freedom = $dof is not supported, only 2 and 3."
+        return nothing
+    end
+    return integration_point_coordinates
+end
 
 function get_Jacobian(B::SubArray, coordinates::SubArray)
     return det(dot(B, coordinates))
