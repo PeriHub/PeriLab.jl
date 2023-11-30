@@ -42,7 +42,6 @@ include("./Core/Solver/Solver_control.jl")
 include("./Physics/Material/Material_Factory.jl")
 # external packages
 using MPI
-using Pkg
 using TimerOutputs
 using Logging
 using ArgParse
@@ -55,6 +54,8 @@ import .IO
 import .Solver
 # end
 
+PERILAB_VERSION = "1.0.0"
+
 export main
 
 """
@@ -66,7 +67,7 @@ This function prints a banner containing details about the PeriLab application, 
 """
 function print_banner()
     println("""\e[]
-    \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: """ * string(Pkg.project().version) * """ 
+    \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: $PERILAB_VERSION
     \e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |
     \e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse 
     \e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |  Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de
@@ -137,13 +138,14 @@ Entry point for the PeriLab application.
 
 This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 """
-function main()
+function main()::Cint
     parsed_args = parse_commandline()
     @debug "Parsed args:"
     for (arg, val) in parsed_args
         @debug "  $arg  =>  $val"
     end
     main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
+    return 0
 end
 
 """
@@ -174,7 +176,7 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
             Logging_module.init_logging(filename, debug, rank, size)
             if rank == 0
                 print_banner()
-                @info "\n PeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------"
+                @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------"
                 if size > 1
                     @info "MPI: Running on " * string(size) * " processes"
                 end
@@ -197,7 +199,7 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
             IO.show_block_summary(solver_options, params, comm, datamanager)
         end
         @info "Init write results"
-        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"])
+        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"], PERILAB_VERSION)
         Logging_module.set_result_files(result_files)
 
         if dry_run

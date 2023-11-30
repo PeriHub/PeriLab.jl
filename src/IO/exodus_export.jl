@@ -6,7 +6,6 @@ module Write_Exodus_Results
 include("csv_export.jl")
 include("../Support/Parameters/parameter_handling.jl")
 using Exodus
-using Pkg
 using .Write_CSV_Results
 export get_paraview_coordinates
 export create_result_file
@@ -110,7 +109,7 @@ function get_block_nodes(block_Id::Union{SubArray,Vector{Int64}}, block::Int64)
 end
 
 """
-    init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64})
+    init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String)
 
 Initializes the results in exodus
 
@@ -125,8 +124,8 @@ Initializes the results in exodus
 # Returns
 - `result_file::Dict{String,Any}`: The result file
 """
-function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64})
-    info = ["PeriLab Version " * string(Pkg.project().version) * ", under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
+function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String)
+    info = ["PeriLab Version $PERILAB_VERSION, under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
 
     write_info(exo, info)
 

@@ -286,7 +286,7 @@ function initialize_data(filename::String, filedirectory::String, datamanager::M
 end
 
 """
-    init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64)
+    init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
 
 Initialize write results.
 
@@ -299,7 +299,7 @@ Initialize write results.
 - `result_files::Array`: The result files
 - `outputs::Dict`: The outputs
 """
-function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64)
+function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
     filenames = get_output_filenames(params, filedirectory)
     if length(filenames) == 0
         @warn "No output file or output defined"
@@ -345,7 +345,7 @@ function init_write_results(params::Dict, filedirectory::String, datamanager::Mo
     for id in eachindex(result_files)
 
         if result_files[id]["type"] == "Exodus"
-            result_files[id]["file"] = Write_Exodus_Results.init_results_in_exodus(result_files[id]["file"], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids)
+            result_files[id]["file"] = Write_Exodus_Results.init_results_in_exodus(result_files[id]["file"], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids, PERILAB_VERSION)
         end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 
