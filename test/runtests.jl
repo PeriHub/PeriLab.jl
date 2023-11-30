@@ -4,7 +4,7 @@
 
 using Test
 using TestSetExtensions
-using Aqua
+# using Aqua
 using Logging
 using MPI
 using PeriLab
