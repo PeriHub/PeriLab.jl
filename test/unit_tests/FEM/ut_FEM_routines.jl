@@ -4,6 +4,11 @@
 include("../../../src/FEM/FEM_routines.jl")
 
 using Test
+
+dof::Int64 = 2
+p::Vector{Int64} = [1, 1]
+create_element_matrices(dof, p)
+
 @testset "ut_get_weights_and_integration_points" begin
     @test get_weights_and_integration_points(2, [0, 0]) == ([2.0 2.0], [0.0 0.0])
     @test get_weights_and_integration_points(2, [1, 1]) == ([1.0 1.0; 1.0 1.0], [-0.5773502691896258 -0.5773502691896258; 0.5773502691896258 0.5773502691896258])

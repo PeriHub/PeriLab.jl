@@ -23,8 +23,8 @@ Compute integration points and weights using Gauss-Legendre quadrature.
 - `p::Vector{Int64}`: A vector containing the polynomial degrees for each degree of freedom.
 
 # Returns
-- `x::Matrix{Float64}`: Matrix of integration points. Each row corresponds to a degree of freedom, and columns contain the integration points.
 - `w::Matrix{Float64}`: Matrix of integration weights. Each row corresponds to a degree of freedom, and columns contain the integration weights.
+- `x::Matrix{Float64}`: Matrix of integration points. Each row corresponds to a degree of freedom, and columns contain the integration points.
 
 # Example
 ```julia
@@ -123,5 +123,7 @@ N^TN*\rho give than the mass matrix and B^TCB the stiffness matrix [WillbergC201
 
 function create_element_matrices(dof::Int64, p::Vector{Int64})
     weights, integration_points = get_weights_and_integration_points(dof, p)
-    return Lagrange_element.create_element_matrices(dof, p, weights, integration_points)
+    ip_coordinates = get_multi_dimensional_integration_point_data(dof, p, integration_points)
+    ip_weights = get_multi_dimensional_integration_point_data(dof, p, weights)
+    return Lagrange_element.create_element_matrices(dof, p, ip_weights, ip_coordinates)
 end

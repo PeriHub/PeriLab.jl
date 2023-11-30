@@ -96,20 +96,30 @@ function get_recursive_lagrange_shape_functions_derivative(xi::Vector{Float64}, 
     return B
 end
 
-function create_element_matrices(dof::Int64, p::Vector{Int64}, weights::Matrix{Float64}, integration_points::Matrix{Float64})
+function create_element_matrices(dof::Int64, p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64})
     if dof > 3 || dof < 2
         @error "Not support degree of freedom for the finite element matrix creation"
         return nothing
     end
-    N = zeros()
+
+    # sortieren in die element matrizen 
+    N::Vector{Float64} = zeros(Float64, prod(p .+ 1))
+    B::Matrix{Float64} = zeros(Float64, prod(p .+ 1), dof)
     xi = define_lagarangian_grid_space(dof, p)
-    for idof in dof
-        for (id, integration_point) in enumerate(integration_points[idof, :])
-            N[id, dof] *= get_recursive_lagrange_shape_functions(xi[idof, :], integration_point, p[idof])
-            B = get_recursive_lagrange_shape_functions_derivative(xi[idof, :], integration_point, p[idof])
+
+    for (id, (ip_coordinate, ip_weights)) in enumerate(zip(eachrow(ip_coordinates), eachrow(ip_weights)))
+        for idof in 1:dof
+            N[id] = get_recursive_lagrange_shape_functions(xi[idof, :], ip_coordinate[idof], p[idof]) * ip_weights[idof]
+            B[id, idof] = get_recursive_lagrange_shape_functions_derivative(xi[1, :], ip_coordinate[idof], p[idof]) * ip_weights[idof]
+            for jdof in 1:dof
+                if jdof != idof
+                    N[id] *= get_recursive_lagrange_shape_functions(xi[jdof, :], ip_coordinate[jdof], p[jdof]) * ip_weights[jdof]
+                    B[id, idof] *= get_recursive_lagrange_shape_functions(xi[jdof, :], ip_coordinate[jdof], p[jdof]) * ip_weights[jdof]
+                end
+            end
         end
     end
-
+    return N, B
     """
     if dof == 3
     get_recursive_lagrange_shape_functions()
