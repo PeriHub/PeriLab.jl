@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+module Lagrange_element
+
+
+
 """
     define_lagrangian_grid_space(dof::Int64, p::Vector{Int64})
 
@@ -71,12 +75,6 @@ function get_recursive_lagrange_shape_functions(xi::Vector{Float64}, value::Unio
     return N
 end
 
-
-function get_recursive_lagrange_shape_functions_derivative()
-
-end
-
-
 function get_recursive_lagrange_shape_functions_derivative(xi::Vector{Float64}, value::Union{Float64,Int64}, p::Int64)
     # https://en.wikipedia.org/wiki/Lagrange_polynomial#Derivation[6]
     # sympy calculated
@@ -96,4 +94,46 @@ function get_recursive_lagrange_shape_functions_derivative(xi::Vector{Float64}, 
         end
     end
     return B
+end
+
+function create_element_matrices(dof::Int64, p::Vector{Int64}, weights::Matrix{Float64}, integration_points::Matrix{Float64})
+    if dof > 3 || dof < 2
+        @error "Not support degree of freedom for the finite element matrix creation"
+        return nothing
+    end
+    N = zeros()
+    xi = define_lagarangian_grid_space(dof, p)
+    for idof in dof
+        for (id, integration_point) in enumerate(integration_points[idof, :])
+            N[id, dof] *= get_recursive_lagrange_shape_functions(xi[idof, :], integration_point, p[idof])
+            B = get_recursive_lagrange_shape_functions_derivative(xi[idof, :], integration_point, p[idof])
+        end
+    end
+
+    """
+    if dof == 3
+    get_recursive_lagrange_shape_functions()
+    elseif dof==2
+
+     for (int jID=0 ; jID<numIntDir[1] ; ++jID){
+          FEM::getLagrangeElementData(order[1],elCoory[jID],Neta,Beta);
+          for (int iID=0 ; iID<numIntDir[0] ; ++iID){
+            FEM::getLagrangeElementData(order[0],elCoorx[iID],Nxi,Bxi);
+            FEM::setElementMatrices(twoD, intPointPtr, order, Nxi, Neta, Npsi, Bxi, Beta, Bpsi, Bx, By, Bz);  
+            intPointPtr += nnode;
+          }
+
+        #element_mass_matrix = zeros(dof*nodes,dof*nodes)
+
+        #element_mass_matrix=transpose(N) * N * rho
+
+        N[i, j] = get_recursive_lagrange_shape_functions(integration_points, value, p[i])
+        """
+end
+
+
+
+
+
+
 end
