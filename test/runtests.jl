@@ -155,31 +155,31 @@ MPI.Init()
         @testset "test_PD_Solid_Elastic" begin
             @includetests["fullscale_tests/test_PD_solid_elastic/test_PD_solid_elastic"]
         end
-        # @testset "test_PD_Solid_Elastic_3D" begin
-        #     @includetests["fullscale_tests/test_PD_solid_elastic_3D/test_PD_solid_elastic_3D"]
-        # end
-        # @testset "test_Critical_stretch" begin
-        #     @includetests["fullscale_tests/test_critical_stretch/test_critical_stretch"]
-        # end
-        # @testset "test_critical_energy" begin
-        #     @includetests["fullscale_tests/test_critical_energy/test_critical_energy"]
-        # end
-        # @testset "test_thermal_expansion" begin
-        #     @includetests["fullscale_tests/test_thermal_expansion/test_thermal_expansion"]
-        # end
-        # @testset "test_thermal_flow" begin
-        #     @includetests["fullscale_tests/test_thermal_flow/test_thermal_flow"]
-        #     @includetests["fullscale_tests/test_thermal_flow_paper/test_thermal_flow"]
-        # end
-        # @testset "test_Correspondence_Elastic" begin
-        #     @includetests["fullscale_tests/test_correspondence_elastic/test_correspondence_elastic"]
-        # end
-        # @testset "test_Correspondence_Elastic_with_zero_E_control" begin
-        #     @includetests["fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control"]
-        # end
-        # @testset "test_DCB" begin
-        #     @includetests["fullscale_tests/test_DCB/test_DCB"]
-        # end
+        @testset "test_PD_Solid_Elastic_3D" begin
+            @includetests["fullscale_tests/test_PD_solid_elastic_3D/test_PD_solid_elastic_3D"]
+        end
+        @testset "test_Critical_stretch" begin
+            @includetests["fullscale_tests/test_critical_stretch/test_critical_stretch"]
+        end
+        @testset "test_critical_energy" begin
+            @includetests["fullscale_tests/test_critical_energy/test_critical_energy"]
+        end
+        @testset "test_thermal_expansion" begin
+            @includetests["fullscale_tests/test_thermal_expansion/test_thermal_expansion"]
+        end
+        @testset "test_thermal_flow" begin
+            @includetests["fullscale_tests/test_thermal_flow/test_thermal_flow"]
+            @includetests["fullscale_tests/test_thermal_flow_paper/test_thermal_flow"]
+        end
+        @testset "test_Correspondence_Elastic" begin
+            @includetests["fullscale_tests/test_correspondence_elastic/test_correspondence_elastic"]
+        end
+        @testset "test_Correspondence_Elastic_with_zero_E_control" begin
+            @includetests["fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control"]
+        end
+        @testset "test_DCB" begin
+            @includetests["fullscale_tests/test_DCB/test_DCB"]
+        end
     end
 
 

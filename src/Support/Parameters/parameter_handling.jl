@@ -29,7 +29,7 @@ expected_structure = Dict(
                             "Coordinate" => [String, false],
                             "Node Set" => [String, true],
                             "Type" => [String, true],
-                            "Value" => [String, true],
+                            "Value" => [Union{Float64,Int64,String}, true],
                         ), true],
                 ), false],
             "Compute Class Parameters" => [Dict{Any,Any}(
@@ -216,7 +216,7 @@ function validate_structure_recursive(expected::Dict, actual::Dict, validate::Bo
                 validate, checked_keys = validate_structure_recursive(value[1], actual[key], validate, checked_keys, current_path)
             end
         else
-            @error "Validation Error: Wrong type, expected - $(typeof(value[1])), got - $(typeof(actual[key])) in $current_path"
+            @error "Validation Error: Wrong type, expected - $(value[1]), got - $(typeof(actual[key])) in $current_path"
             validate = false
         end
     end
