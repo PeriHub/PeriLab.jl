@@ -26,7 +26,7 @@ relevant variables into your current namespace.
 
 ## Using `PeriLab` 
 
-The simplest way to run the `PeriLab` simulation core is to use a provided example import the module and go. 
+The simplest way to run the `PeriLab` simulation core is to use a provided example. 
 
 ```julia PeriLab
 using PeriLab
