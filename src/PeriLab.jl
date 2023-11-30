@@ -149,6 +149,20 @@ function main()::Cint
 end
 
 """
+    get_examples()
+
+Copy the examples folder to the current directory.
+"""
+function get_examples()
+    package_dir = dirname(dirname(pathof(PeriLab)))
+    examples_dir = joinpath(package_dir, "examples")
+    dest_folder = joinpath(pwd(), "examples")
+    if isdir(examples_dir)
+        cp(examples_dir, dest_folder)
+    end
+end
+
+"""
     main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
 Entry point for the PeriLab application.

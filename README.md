@@ -26,12 +26,13 @@ relevant variables into your current namespace.
 
 ## Using `PeriLab` 
 
-The simplest way to run the `PeriLab` simulation core is to use a provided example. 
+The simplest way to run the `PeriLab` simulation core is to use the provided examples. 
 
 ```julia PeriLab
 using PeriLab
 
-PeriLab.main("Dogbone.yaml")
+PeriLab.get_examples()
+PeriLab.main("examples/Dogbone.yaml")
 ```
 The main functionalities for the `yaml` input deck is given in
 ```
@@ -50,7 +51,7 @@ julia> MPI.install_mpiexecjl()
 
 Run PeriLab with two processors:
 ```sh
-$ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" Dogbone.yaml -v
+$ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" examples/Dogbone.yaml -v
 ```
 
 ## Contributing
