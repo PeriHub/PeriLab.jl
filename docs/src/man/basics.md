@@ -6,9 +6,9 @@ If want to use the PeriLab package you need to install it first.
 You can do it using the following commands:
 
 ```julia
-julia> using Pkg
+using Pkg
 
-julia> Pkg.add("PeriLab")
+Pkg.add("PeriLab")
 ```
 
 or
@@ -26,22 +26,22 @@ julia> ]
 
 (@v1.9) pkg> status PeriLab
       Status `~\v1.6\Project.toml`
-  [a93c6f00] PeriLab v1.5.0
+  [a93c6f00] PeriLab v1.0.0
 ```
 
 Throughout the rest of the tutorial we will assume that you have installed the
 PeriLab package and have already typed `using PeriLab` which loads the
 package:
 
-```jldoctest PeriLab
-julia> using PeriLab
+```julia
+using PeriLab
 ```
 If you want to make sure everything works as expected you can run the tests
 bundled with PeriLab, but be warned that it will take more than 30
 minutes:
 
 ```julia
-julia> using Pkg
+using Pkg
 
-julia> Pkg.test("PeriLab") # Warning! This will take more than 30 minutes.
+Pkg.test("PeriLab") # Warning! This will take more than 30 minutes.
 ```
