@@ -52,27 +52,6 @@ PeriLab:
         Normal Z: 0.0
         Side Length: 2.0
         Type: Rectangular_Plane
-  Outputs:
-    Output1:
-      Number of Output Steps: 2
-      Output Filename: Benchmark
-      Output File Type: Exodus
-      Flush File: false
-      Output Variables:
-        Damage: true
-        Displacements: true
-        Forces: true
-        Number of Neighbors: true
-        External_Forces: True
-        External_Displacements: True
-    Output2:
-      Number of Output Steps: 2
-      Output Filename: Benchmark
-      Output File Type: CSV
-      Flush File: false
-      Output Variables:
-        External_Forces: True
-        External_Displacements: True
   Physics:
     Damage Models:
       Damage:
