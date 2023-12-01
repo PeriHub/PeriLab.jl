@@ -21,7 +21,7 @@ test:
       - src/**/*
       - test/**/*
   script:
-    - julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler"); create_app(".", "PeriLab_Image", executables=["main" => "main"], incremental=true)'
+    - julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler"); using PackageCompiler; create_app(".", "PeriLab_Image", executables=["main" => "main"], incremental=true)'
     - julia --project=@. -e "import Pkg; Pkg.test(; coverage = true)"
     # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
     # - julia --project=test/coverage test/coverage/coverage-summary.jl
