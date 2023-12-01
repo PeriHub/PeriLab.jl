@@ -23,13 +23,10 @@ MPI.Init()
             end
         end
         @testset "Support" begin
-
             @testset "Parameters" begin
-
                 @testset "ut_parameter_handling" begin
                     @includetests["unit_tests/Support/Parameters/ut_parameter_handling"]
                 end
-
             end
 
             @testset "ut_data_manager" begin
@@ -44,10 +41,7 @@ MPI.Init()
                 @includetests["unit_tests/Support/ut_geometry"]
             end
         end
-
         @testset "Core" begin
-
-
             @testset "Solver" begin
 
                 # @testset "ut_Solver_control" begin
@@ -66,7 +60,6 @@ MPI.Init()
                 @includetests["unit_tests/Core/ut_BC_manager"]
             end
         end
-
         @testset "IO" begin
 
             @testset "ut_exodus_export" begin
@@ -87,17 +80,12 @@ MPI.Init()
                 @includetests["unit_tests/IO/ut_bond_filter"]
             end
         end
-
-
         @testset "MPI" begin
-
             @testset "ut_MPI" begin
                 @includetests["unit_tests/MPI_communication/ut_MPI_call"]
             end
 
         end
-
-
         @testset "Physics" begin
             @testset "ut_templates" begin
                 @includetests["unit_tests/Physics/ut_templates"]
