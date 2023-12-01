@@ -95,55 +95,92 @@ function get_recursive_lagrange_shape_functions_derivative(xi::Vector{Float64}, 
     end
     return B
 end
+function get_2D_matrices(p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64}, xi::Matrix{Float64}, N::Matrix{Float64}, B::Matrix{Float64})
+    Nxi::Vector{Float64} = zeros(p[1] + 1)
+    Neta::Vector{Float64} = zeros(p[2] + 1)
 
+    Bxi::Vector{Float64} = zeros(p[1] + 1)
+    Beta::Vector{Float64} = zeros(p[2] + 1)
+
+    for (point_id, (ip_coordinate, ip_weight)) in enumerate(zip(eachrow(ip_coordinates), eachrow(ip_weights)))
+
+        for jID in 1:p[2]+1
+            Neta = get_recursive_lagrange_shape_functions(xi[2, :], ip_coordinate[2], p[2])[jID] * ip_weight[2]
+            Beta = get_recursive_lagrange_shape_functions_derivative(xi[2, :], ip_coordinate[2], p[2])[jID] * ip_weights[2]
+            for iID in 1:p[1]+1
+                offset = (jID - 1) * (p[1] + 1)
+                offset_B = ((jID - 1) * (p[1] + 1)) * dof
+                Nxi = get_recursive_lagrange_shape_functions(xi[1, :], ip_coordinate[1], p[1])[iID] * ip_weight[1]
+                Bxi = get_recursive_lagrange_shape_functions_derivative(xi[1, :], ip_coordinate[1], p[1])[iID] * ip_weight[1]
+                N[point_id, iID+offset] = Nxi[iID] * Neta[jID]
+                B[point_id, iID+offset_B] = Bxi[iID] * Neta[jID]
+
+            end
+        end
+    end
+    return N, B
+end
+
+function get_3D_matrices(p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64}, xi::Matrix{Float64}, N::Matrix{Float64}, B::Matrix{Float64})
+    Nxi::Vector{Float64} = zeros(p[1] + 1)
+    Neta::Vector{Float64} = zeros(p[2] + 1)
+    Npsi::Vector{Float64} = zeros(p[3] + 1)
+    Bxi::Vector{Float64} = zeros(p[1] + 1)
+    Beta::Vector{Float64} = zeros(p[2] + 1)
+    Bpsi::Vector{Float64} = zeros(p[3] + 1)
+    for (point_id, (ip_coordinate, ip_weights)) in enumerate(zip(eachrow(ip_coordinates), eachrow(ip_weights)))
+        for kID in 1:p[3]+1
+            Npsi = get_recursive_lagrange_shape_functions(xi[3, :], ip_coordinate[3, 3], p[3])[kID] * ip_weight[3]
+            Bpsi = get_recursive_lagrange_shape_functions_derivative(xi[3, :], ip_coordinate[3, 3], p[3])[kID] * ip_weights[3]
+            for jID in 1:p[2]+1
+                Neta = get_recursive_lagrange_shape_functions(xi[2, :], ip_coordinate[2, 2], p[2])[jID] * ip_weight[2]
+                Beta = get_recursive_lagrange_shape_functions_derivative(xi[2, :], ip_coordinate[2, 2], p[2])[jID] * ip_weights[2]
+                for iID in 1:p[1]+1
+                    offset = (jID - 1) * (p[1] + 1) + (kID - 1) * (p[2] + 1) * (p[1] + 1)
+                    offset_B = ((jID - 1) * (p[1] + 1) + (kID - 1) * (p[2] + 1) * (p[1] + 1)) * dof
+                    Nxi = get_recursive_lagrange_shape_functions(xi[1, :], ip_coordinate[1, 1], p[1])[iID] * ip_weights[1]
+                    Bxi = get_recursive_lagrange_shape_functions_derivative(xi[1, :], ip_coordinate[1, 1], p[1])[iID] * ip_weights[1]
+                    N[point_id, iID+offset] = Nxi[iID] * Neta[jID] * Npsi[kID]
+                    B[point_id, iID+offset_B] = Bxi[iID] * Neta[jID] * Npsi[kID]
+                    B[point_id, iID+offset_B+1] = Nxi[iID] * Beta[jID] * Npsi[kID]
+                    B[point_id, iID+offset_B+2] = Nxi[iID] * Neta[jID] * Bpsi[kID]
+                end
+            end
+        end
+    end
+    return N, B
+end
+
+"""
+    create_element_matrices(dof::Int64, p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64})
+    
+    creates the element matrices for each integration point. This is needed, because if 
+    the stresses are not constant at all integration points or the coordinates are rotated these 
+    fields are needed. However, for each element type this has to be done ones.       
+
+    # Arguments
+
+    Return
+    N, B
+    Size of N and B is for each integration point number of nodes times dof for N and for Beta
+    number of nodes times dof + shear part (1 for 2D and 3 for 3D)
+    For other elements the number of nodes are not equal to the number of integration points in
+    a fully integrated element
+
+"""
 function create_element_matrices(dof::Int64, p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64})
     if dof > 3 || dof < 2
         @error "Not support degree of freedom for the finite element matrix creation"
         return nothing
     end
 
-    # sortieren in die element matrizen 
-    N::Vector{Float64} = zeros(Float64, prod(p .+ 1))
-    B::Matrix{Float64} = zeros(Float64, prod(p .+ 1), dof)
+    N::Matrix{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1))
+    B::Matrix{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1) * dof)
     xi = define_lagarangian_grid_space(dof, p)
 
-    for (id, (ip_coordinate, ip_weights)) in enumerate(zip(eachrow(ip_coordinates), eachrow(ip_weights)))
-        for idof in 1:dof
-            N[id] = get_recursive_lagrange_shape_functions(xi[idof, :], ip_coordinate[idof], p[idof]) * ip_weights[idof]
-            B[id, idof] = get_recursive_lagrange_shape_functions_derivative(xi[1, :], ip_coordinate[idof], p[idof]) * ip_weights[idof]
-            for jdof in 1:dof
-                if jdof != idof
-                    N[id] *= get_recursive_lagrange_shape_functions(xi[jdof, :], ip_coordinate[jdof], p[jdof]) * ip_weights[jdof]
-                    B[id, idof] *= get_recursive_lagrange_shape_functions(xi[jdof, :], ip_coordinate[jdof], p[jdof]) * ip_weights[jdof]
-                end
-            end
-        end
+    if dof == 2
+        return get_2D_matrices(p, ip_weights, ip_coordinates, xi, N, B)
     end
-    return N, B
-    """
-    if dof == 3
-    get_recursive_lagrange_shape_functions()
-    elseif dof==2
-
-     for (int jID=0 ; jID<numIntDir[1] ; ++jID){
-          FEM::getLagrangeElementData(order[1],elCoory[jID],Neta,Beta);
-          for (int iID=0 ; iID<numIntDir[0] ; ++iID){
-            FEM::getLagrangeElementData(order[0],elCoorx[iID],Nxi,Bxi);
-            FEM::setElementMatrices(twoD, intPointPtr, order, Nxi, Neta, Npsi, Bxi, Beta, Bpsi, Bx, By, Bz);  
-            intPointPtr += nnode;
-          }
-
-        #element_mass_matrix = zeros(dof*nodes,dof*nodes)
-
-        #element_mass_matrix=transpose(N) * N * rho
-
-        N[i, j] = get_recursive_lagrange_shape_functions(integration_points, value, p[i])
-        """
+    return get_3D_matrices(p, ip_weights, ip_coordinates, xi, N, B)
 end
-
-
-
-
-
-
 end
