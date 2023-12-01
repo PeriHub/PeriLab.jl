@@ -20,7 +20,8 @@ The simplest way to run the `PeriLab` simulation core is to use a provided examp
 ```julia PeriLab
 using PeriLab
 
-PeriLab.main("Dogbone.yaml")
+PeriLab.get_examples()
+PeriLab.main("examples/DCB/DCBmodel.yaml")
 ```
 The main functionalities for the `yaml` input deck is given in
 ```
@@ -42,10 +43,17 @@ Run PeriLab with two processors:
 $ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" Dogbone.yaml -v
 ```
 
+## Index
+```@index
+Pages = ["gettin_started.md"]
+```
+
+## Functions
 ```@meta
 CurrentModule = PeriLab
 ```
 
 ```@docs
 main
+get_examples
 ```

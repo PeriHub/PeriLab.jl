@@ -24,6 +24,8 @@ makedocs(
         "First Steps with PeriLab"=>"man/basics.md",
         "User Guide"=>Any[
             "Getting Started"=>"man/getting_started.md",
+            "Input File"=>"man/input_yaml.md",
+            "Mesh and Nodesets"=>"man/mesh_input.md",
         ],
         "API"=>Any[
             # "Types" => "lib/types.md",

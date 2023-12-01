@@ -60,11 +60,11 @@ Contributions in all forms (bug reports, documentation, features, suggestions, .
 welcome. 
 
 ## Questions
-If you have questions about Ferrite.jl you're welcome to reach out to us on the authors e mail adresses.
+If you have questions about PeriLab.jl you're welcome to reach out to us on the authors e mail adresses.
+
 ## Authors and acknowledgment
-'''
-Dr.-Ing. Christian Willberg; christian.willberg@dlr.de
-M.Sc. Jan-Timo Hesse; jan-timo.hesse@dlr.de
-'''
+[Dr.-Ing. Christian Willberg](mailto::christian.willberg@dlr.de)
+[M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
+
 ## Project status
 In development.
