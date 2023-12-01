@@ -64,6 +64,7 @@ If you have questions about PeriLab.jl you're welcome to reach out to us on the 
 
 ## Authors and acknowledgment
 [Dr.-Ing. Christian Willberg](mailto::christian.willberg@dlr.de)
+
 [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
 
 ## Project status

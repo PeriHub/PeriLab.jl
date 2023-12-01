@@ -25,9 +25,10 @@ test:
     # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
     # - julia --project=test/coverage test/coverage/coverage-summary.jl
 
-    - julia -e 'import Pkg; Pkg.add("Coverage");
+    - CODECOV_TOKEN=$CODECOV_TOKEN julia -e 'import Pkg; Pkg.add("Coverage");
       using Coverage; cl, tl = get_summary(process_folder());
-      println("(", cl/tl*100, "%) covered")'
+      println("(", cl/tl*100, "%) covered");
+      Codecov.submit_local(process_folder())'
   coverage: '/\(\d+.\d+\%\) covered/'
   artifacts:
     paths:
