@@ -5,7 +5,7 @@ include("../../../src/FEM/FEM_routines.jl")
 
 using Test
 @testset "ut_create_element_matrices" begin
-    dof::Int64 = 0
+    dof::Int64 = 1
     p::Vector{Int64} = [1, 1]
 
     N, B = create_element_matrices(dof, p)
