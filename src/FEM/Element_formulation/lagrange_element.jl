@@ -95,7 +95,7 @@ function get_recursive_lagrange_shape_functions_derivative(xi::Vector{Float64}, 
     end
     return B
 end
-function get_2D_matrices(p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64}, xi::Matrix{Float64}, N::Matrix{Float64}, B::Matrix{Float64})
+function get_2D_matrices(p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64}, xi::Matrix{Float64}, N::Array{Float64}, B::Array{Float64})
     Nxi::Vector{Float64} = zeros(p[1] + 1)
     Neta::Vector{Float64} = zeros(p[2] + 1)
 
@@ -105,23 +105,27 @@ function get_2D_matrices(p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coord
     for (point_id, (ip_coordinate, ip_weight)) in enumerate(zip(eachrow(ip_coordinates), eachrow(ip_weights)))
 
         for jID in 1:p[2]+1
-            Neta = get_recursive_lagrange_shape_functions(xi[2, :], ip_coordinate[2], p[2])[jID] * ip_weight[2]
-            Beta = get_recursive_lagrange_shape_functions_derivative(xi[2, :], ip_coordinate[2], p[2])[jID] * ip_weights[2]
+            Neta[jID] = get_recursive_lagrange_shape_functions(xi[2, :], ip_coordinate[2], p[2])[jID] * ip_weight[2]
+            Beta[jID] = get_recursive_lagrange_shape_functions_derivative(xi[2, :], ip_coordinate[2], p[2])[jID] * ip_weights[2]
             for iID in 1:p[1]+1
-                offset = (jID - 1) * (p[1] + 1)
-                offset_B = ((jID - 1) * (p[1] + 1)) * dof
-                Nxi = get_recursive_lagrange_shape_functions(xi[1, :], ip_coordinate[1], p[1])[iID] * ip_weight[1]
-                Bxi = get_recursive_lagrange_shape_functions_derivative(xi[1, :], ip_coordinate[1], p[1])[iID] * ip_weight[1]
-                N[point_id, iID+offset] = Nxi[iID] * Neta[jID]
-                B[point_id, iID+offset_B] = Bxi[iID] * Neta[jID]
+                offset = (jID - 1) * (p[1] + 1) * 2
+                offset_B = ((jID - 1) * (p[1] + 1)) * 2
+                Nxi[iID] = get_recursive_lagrange_shape_functions(xi[1, :], ip_coordinate[1], p[1])[iID] * ip_weight[1]
+                Bxi[iID] = get_recursive_lagrange_shape_functions_derivative(xi[1, :], ip_coordinate[1], p[1])[iID] * ip_weight[1]
+                N[point_id, iID+offset, 1] = Nxi[iID] * Neta[jID]
+                N[point_id, iID+offset+1, 2] = Nxi[iID] * Neta[jID]
 
+                B[point_id, iID+offset_B, 1] = Bxi[iID] * Neta[jID]
+                B[point_id, iID+offset_B+1, 2] = Nxi[iID] * Beta[jID]
+                B[point_id, iID+offset_B, 3] = Nxi[iID] * Beta[jID]
+                B[point_id, iID+offset_B+1, 3] = Bxi[iID] * Neta[jID]
             end
         end
     end
     return N, B
 end
 
-function get_3D_matrices(p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64}, xi::Matrix{Float64}, N::Matrix{Float64}, B::Matrix{Float64})
+function get_3D_matrices(p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64}, xi::Matrix{Float64}, N::Array{Float64}, B::Array{Float64})
     Nxi::Vector{Float64} = zeros(p[1] + 1)
     Neta::Vector{Float64} = zeros(p[2] + 1)
     Npsi::Vector{Float64} = zeros(p[3] + 1)
@@ -130,20 +134,35 @@ function get_3D_matrices(p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coord
     Bpsi::Vector{Float64} = zeros(p[3] + 1)
     for (point_id, (ip_coordinate, ip_weights)) in enumerate(zip(eachrow(ip_coordinates), eachrow(ip_weights)))
         for kID in 1:p[3]+1
-            Npsi = get_recursive_lagrange_shape_functions(xi[3, :], ip_coordinate[3, 3], p[3])[kID] * ip_weight[3]
-            Bpsi = get_recursive_lagrange_shape_functions_derivative(xi[3, :], ip_coordinate[3, 3], p[3])[kID] * ip_weights[3]
+            Npsi[kID] = get_recursive_lagrange_shape_functions(xi[3, :], ip_coordinate[3, 3], p[3])[kID] * ip_weight[3]
+            Bpsi[kID] = get_recursive_lagrange_shape_functions_derivative(xi[3, :], ip_coordinate[3, 3], p[3])[kID] * ip_weights[3]
             for jID in 1:p[2]+1
-                Neta = get_recursive_lagrange_shape_functions(xi[2, :], ip_coordinate[2, 2], p[2])[jID] * ip_weight[2]
-                Beta = get_recursive_lagrange_shape_functions_derivative(xi[2, :], ip_coordinate[2, 2], p[2])[jID] * ip_weights[2]
+                Neta[jID] = get_recursive_lagrange_shape_functions(xi[2, :], ip_coordinate[2, 2], p[2])[jID] * ip_weight[2]
+                Beta[jID] = get_recursive_lagrange_shape_functions_derivative(xi[2, :], ip_coordinate[2, 2], p[2])[jID] * ip_weights[2]
                 for iID in 1:p[1]+1
                     offset = (jID - 1) * (p[1] + 1) + (kID - 1) * (p[2] + 1) * (p[1] + 1)
-                    offset_B = ((jID - 1) * (p[1] + 1) + (kID - 1) * (p[2] + 1) * (p[1] + 1)) * dof
-                    Nxi = get_recursive_lagrange_shape_functions(xi[1, :], ip_coordinate[1, 1], p[1])[iID] * ip_weights[1]
-                    Bxi = get_recursive_lagrange_shape_functions_derivative(xi[1, :], ip_coordinate[1, 1], p[1])[iID] * ip_weights[1]
-                    N[point_id, iID+offset] = Nxi[iID] * Neta[jID] * Npsi[kID]
-                    B[point_id, iID+offset_B] = Bxi[iID] * Neta[jID] * Npsi[kID]
-                    B[point_id, iID+offset_B+1] = Nxi[iID] * Beta[jID] * Npsi[kID]
-                    B[point_id, iID+offset_B+2] = Nxi[iID] * Neta[jID] * Bpsi[kID]
+                    offset_B = ((jID - 1) * (p[1] + 1) + (kID - 1) * (p[2] + 1) * (p[1] + 1)) * 3
+                    Nxi[iID] = get_recursive_lagrange_shape_functions(xi[1, :], ip_coordinate[1, 1], p[1])[iID] * ip_weights[1]
+                    Bxi[iID] = get_recursive_lagrange_shape_functions_derivative(xi[1, :], ip_coordinate[1, 1], p[1])[iID] * ip_weights[1]
+                    N[point_id, iID+offset, 1] = Nxi[iID] * Neta[jID] * Npsi[kID]
+                    N[point_id, iID+offset+1, 2] = Nxi[iID] * Neta[jID] * Npsi[kID]
+                    N[point_id, iID+offset+2, 3] = Nxi[iID] * Neta[jID] * Npsi[kID]
+
+                    B[point_id, iID+offset_B, 1] = Bxi[iID] * Neta[jID] * Npsi[kID]
+                    B[point_id, iID+offset_B+1, 2] = Nxi[iID] * Beta[jID] * Npsi[kID]
+                    B[point_id, iID+offset_B+2, 3] = Nxi[iID] * Neta[jID] * Bpsi[kID]
+
+
+                    B[point_id, iID+offset_B+1, 4] = Nxi[iID] * Neta[jID] * Bpsi[kID]
+                    B[point_id, iID+offset_B+2, 4] = Nxi[iID] * Beta[jID] * Npsi[kID]
+
+                    B[point_id, iID+offset_B, 5] = Nxi[iID] * Neta[jID] * Bpsi[kID]
+                    B[point_id, iID+offset_B+2, 5] = Bxi[iID] * Neta[jID] * Npsi[kID]
+
+                    B[point_id, iID+offset_B, 6] = Nxi[iID] * Beta[jID] * Npsi[kID]
+                    B[point_id, iID+offset_B+1, 6] = Bxi[iID] * Neta[jID] * Npsi[kID]
+
+
                 end
             end
         end
@@ -174,8 +193,8 @@ function create_element_matrices(dof::Int64, p::Vector{Int64}, ip_weights::Matri
         return nothing
     end
 
-    N::Matrix{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1))
-    B::Matrix{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1) * dof)
+    N::Array{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1) * dof, dof)
+    B::Array{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1) * dof, 3 * dof - 3)
     xi = define_lagarangian_grid_space(dof, p)
 
     if dof == 2
