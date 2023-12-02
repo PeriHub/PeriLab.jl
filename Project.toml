@@ -25,6 +25,7 @@ TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [compat]
+julia = "1"
 ArgParse = "1.1.4"
 CSV = "0.10.11"
 DataFrames = "1.6.1"
