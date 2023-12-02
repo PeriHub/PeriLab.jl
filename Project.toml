@@ -24,6 +24,23 @@ Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
+[compat]
+ArgParse = "1.1.4"
+CSV = "0.10.11"
+DataFrames = "1.6.1"
+Exodus = "0.11.0"
+JSON3 = "1.13.2"
+LoggingExtras = "1.0.3"
+MPI = "0.20.19"
+NearestNeighbors = "0.4.13"
+ProgressBars = "1.5.1"
+Rotations = "1.6.1"
+TensorOperations = "4.0.7"
+Tensors = "1.16.1"
+TestSetExtensions = "2.0.0"
+TimerOutputs = "0.5.23"
+YAML = "0.4.9"
+
 [extras]
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
