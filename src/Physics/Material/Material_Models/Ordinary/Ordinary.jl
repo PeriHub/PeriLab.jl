@@ -13,9 +13,10 @@ function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nneighbor
 
     for iID in nodes
         # in Peridigm the weighted volume is for some reason independend from damages
-        weighted_volume[iID] = sum(omega[iID][:] .* bond_damage[iID][:] .* undeformed_bond[iID][:, end] .* bond_damage[iID][:] .* undeformed_bond[iID][:, end] .* volume[nlist[iID][:]])
+        @inbounds weighted_volume[iID] = sum(omega[iID][:] .* bond_damage[iID][:] .* undeformed_bond[iID][:, end] .* bond_damage[iID][:] .* undeformed_bond[iID][:, end] .* volume[nlist[iID][:]])
 
     end
+    # @. weighted_volume[nodes] = sum(omega[nodes][:] .* bond_damage[nodes][:] .* undeformed_bond[nodes][:, end] .* bond_damage[nodes][:] .* undeformed_bond[nodes][:, end] .* volume[nlist[nodes][:]], dims=2)
     return weighted_volume
 end
 
@@ -47,13 +48,27 @@ function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::Su
             theta[iID] = 0
             continue
         end
-        theta[iID] = 3.0 * sum(omega[iID][jID] *
-                               bond_damage[iID][jID] * undeformed_bond[iID][jID, end] *
-                               (deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end]) *
-                               volume[nlist[iID][jID]] / weighted_volume[iID]
-                               for jID in 1:nneighbors[iID])
+        @inbounds theta[iID] = 3.0 * sum(omega[iID][jID] *
+                                         bond_damage[iID][jID] * undeformed_bond[iID][jID, end] *
+                                         (deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end]) *
+                                         volume[nlist[iID][jID]] / weighted_volume[iID]
+                                         for jID in 1:nneighbors[iID])
     end
     return theta
 end
+# function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, omega::SubArray, theta::SubArray)
+#     # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
+#     @. begin
+#         if weighted_volume[nodes] == 0
+#             @warn "Weighted volume is zero for local point ID: $nodes"
+#             theta[nodes] = 0
+#         else
+#             theta[nodes] = 3.0 * sum(omega[nodes, :] .* bond_damage[nodes, :] .* undeformed_bond[nodes, :, end] .* (deformed_bond[nodes, :, end] - undeformed_bond[nodes, :, end]) .* volume[nlist[nodes, :]] / weighted_volume[nodes], dims=2)
+#         end
+#     end
+#     return theta
+# end
+
+
 
 end

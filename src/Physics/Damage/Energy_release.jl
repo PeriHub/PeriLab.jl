@@ -28,7 +28,7 @@ println(damage_name())
 ```
 """
 function damage_name()
-  return "Critical Energy"
+    return "Critical Energy"
 end
 
 """
@@ -51,82 +51,80 @@ Example:
 ```
 """
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
-  dof::Int64 = datamanager.get_dof()
-  nlist = datamanager.get_nlist()
-  blockList = datamanager.get_block_list()
-  block_ids = datamanager.get_field("Block_Id")
-  update_list = datamanager.get_field("Update List")
-  horizon = datamanager.get_field("Horizon")
-  bond_damage = datamanager.get_field("Bond Damage", "NP1")
-  undeformed_bond = datamanager.get_field("Bond Geometry")
-  bond_forces = datamanager.get_field("Bond Forces")
-  deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-  critical_energy = damage_parameter["Critical Value"]
-  inverse_nlist = datamanager.get_inverse_nlist()
-  # for anisotropic damage models
-  rotation::Bool, angles = datamanager.rotation_data()
+    dof::Int64 = datamanager.get_dof()
+    nlist = datamanager.get_nlist()
+    blockList = datamanager.get_block_list()
+    block_ids = datamanager.get_field("Block_Id")
+    update_list = datamanager.get_field("Update List")
+    horizon = datamanager.get_field("Horizon")
+    bond_damage = datamanager.get_field("Bond Damage", "NP1")
+    undeformed_bond = datamanager.get_field("Bond Geometry")
+    bond_forces = datamanager.get_field("Bond Forces")
+    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    critical_energy = damage_parameter["Critical Value"]
+    inverse_nlist = datamanager.get_inverse_nlist()
+    # for anisotropic damage models
+    rotation::Bool, angles = datamanager.rotation_data()
 
-  tension::Bool = true
-  interBlockDamage::Bool = false
-  bond_energy::Float64 = 0.0
-  dist::Float64 = 0.0
+    tension::Bool = get(damage_parameter, "Only Tension", true)
+    interBlockDamage::Bool = get(damage_parameter, "Interblock Damage", false)
 
-  projected_force = zeros(Float64, dof)
-  if haskey(damage_parameter, "Only Tension")
-    tension = damage_parameter["Only Tension"]
-  end
-  if haskey(damage_parameter, "Interblock Damage")
-    interBlockDamage = damage_parameter["Interblock Damage"]
-  end
-  if interBlockDamage
-    inter_critical_energy::Array{Float64,3} = datamanager.get_crit_values_matrix()
-  end
-
-  nneighbors = datamanager.get_field("Number of Neighbors")
-  norm_displacement::Float64 = 0
-  neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
-  relative_displacement_vector::Vector{Float64} = zeros(Float64, dof)
-
-  for iID in nodes
-    for (jID, neighborID) in enumerate(nlist[iID])
-      relative_displacement_vector = deformed_bond[iID][jID, 1:dof] - undeformed_bond[iID][jID, 1:dof]
-      norm_displacement = norm(relative_displacement_vector)
-      if norm_displacement == 0
-        continue
-      end
-      if tension
-        if deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end] < 0
-          continue
-        end
-      end
-
-      # check if the bond also exist at other node, due to different horizons
-      if haskey(inverse_nlist[neighborID], iID)
-        neighbor_bond_force = bond_forces[neighborID][inverse_nlist[neighborID][iID], :]
-      else
-        neighbor_bond_force = zeros(Float64, dof)
-      end
-
-      projected_force = dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement_vector) / (norm_displacement * norm_displacement) .* relative_displacement_vector
-
-      bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement_vector))
-      if bond_energy < 0
-        @error "Bond energy smaller zero"
-      end
-      crit_energy = critical_energy
-      if interBlockDamage
-        crit_energy = inter_critical_energy[block_ids[iID], block_ids[neighborID], block]
-      end
-      #if time > 0.0004
-      #  println(bond_energy / get_quad_horizon(horizon[iID], dof))
-      #end
-      if (bond_energy / get_quad_horizon(horizon[iID], dof)) > crit_energy
-        bond_damage[iID][jID] = 0.0
-        update_list[iID] = true
-      end
+    if interBlockDamage
+        inter_critical_energy::Array{Float64,3} = datamanager.get_crit_values_matrix()
     end
-  end
-  return datamanager
+
+    quad_horizon::Float64 = 0.0
+    bond_energy::Float64 = 0.0
+    dist::Float64 = 0.0
+    norm_displacement::Float64 = 0.0
+
+    nneighbors = datamanager.get_field("Number of Neighbors")
+
+    neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
+    projected_force::Vector{Float64} = zeros(Float64, dof)
+
+    for iID in nodes
+
+        quad_horizon = get_quad_horizon(horizon[iID], dof)
+
+        @views relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
+
+        for (jID, neighborID) in enumerate(nlist[iID])
+            norm_displacement = norm(relative_displacement_vector[jID])
+
+            if norm_displacement == 0
+                continue
+            end
+            if tension && deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end] < 0
+                continue
+            end
+
+            # check if the bond also exist at other node, due to different horizons
+            if haskey(inverse_nlist[neighborID], iID)
+                @views neighbor_bond_force = bond_forces[neighborID][inverse_nlist[neighborID][iID], :]
+            else
+                fill!(neighbor_bond_force, 0.0)
+            end
+
+            @views projected_force = dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement_vector[jID, :]) / (norm_displacement * norm_displacement) .* relative_displacement_vector[jID, :]
+
+            bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement_vector[jID, :]))
+            if bond_energy < 0
+                @error "Bond energy smaller zero"
+            end
+
+            crit_energy = interBlockDamage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
+
+            #if time > 0.0004
+            #  println(bond_energy / get_quad_horizon(horizon[iID], dof))
+            #end
+            if (bond_energy / quad_horizon) > crit_energy
+                @inbounds bond_damage[iID][jID] = 0.0
+                @inbounds update_list[iID] = true
+            end
+        end
+    end
+    return datamanager
 end
 
 """
@@ -146,9 +144,9 @@ Compute the pre calculation for the damage.
 """
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
-  synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Bond Forces", "upload_to_cores")
+    synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Bond Forces", "upload_to_cores")
 
-  return datamanager
+    return datamanager
 end
 
 """
@@ -163,10 +161,10 @@ Get the quadric of the horizon.
 - `quad_horizon::Float64`: The quadric of the horizon.
 """
 function get_quad_horizon(horizon::Float64, dof::Int64)
-  if dof == 2
-    thickness::Float64 = 1 # is a placeholder
-    return Float64(3 / (pi * horizon^3 * thickness))
-  end
-  return Float64(4 / (pi * horizon^4))
+    if dof == 2
+        thickness::Float64 = 1 # is a placeholder
+        return Float64(3 / (pi * horizon^3 * thickness))
+    end
+    return Float64(4 / (pi * horizon^4))
 end
 end

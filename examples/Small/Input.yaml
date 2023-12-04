@@ -17,10 +17,15 @@ PeriLab:
         Shear Modulus: 1.0e5
         Symmetry: "isotropic plane stress"
         Zero Energy Control: "Global"
+    Damage Models:
+      Damage:
+        Critical Value: 10.1
+        Damage Model: Critical Energy
   Blocks:
     block_1:
       Block Names: "block_1"
       Material Model: "Aluminium"
+      Damage Model: Damage
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_2:
@@ -55,7 +60,8 @@ PeriLab:
       Coordinate: "y"
       Value: "20*t"
   Solver:
-    Solve For Displacement: True
+    Material Models: True
+    Damage Models: True
     Verbose: False
     Initial Time: 0.0
     Final Time: 0.00001

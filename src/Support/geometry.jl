@@ -40,12 +40,20 @@ Calculate bond geometries between nodes based on their coordinates.
 function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
     for iID in nodes
         for (jID, neighborID) in enumerate(nlist[iID])
-            # add distance to include thermal extension
-            undeformed_bond[iID][jID, 1:dof] = coor[neighborID, :] - coor[iID, :]
-            undeformed_bond[iID][jID, dof+1] = norm(undeformed_bond[iID][jID, 1:dof])
-            if undeformed_bond[iID][jID, dof+1] == 0
+            # Calculate bond vector and distance
+            bond_vector = coor[neighborID, :] - coor[iID, :]
+            distance = norm(bond_vector)
+
+            # Check for identical point coordinates
+            if distance == 0
                 @error "Identical point coordinates with no distance $iID, $jID"
                 return nothing
+            end
+
+            # Store results in undeformed_bond
+            @inbounds begin
+                undeformed_bond[iID][jID, 1:dof] .= bond_vector
+                undeformed_bond[iID][jID, dof+1] = distance
             end
         end
     end

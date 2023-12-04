@@ -9,6 +9,7 @@ include("bond_shapeTensor.jl")
 include("deformation_gradient.jl")
 include("shapeTensor.jl")
 
+using TimerOutputs
 using .Bond_Deformation
 using .Bond_Deformation_Gradient
 using .Bond_Shape_Tensor
@@ -31,22 +32,22 @@ Compute the pre-calculation.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64)
+function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64, to::TimerOutput)
 
     if options["Deformed Bond Geometry"]
-        datamanager = Bond_Deformation.compute(datamanager, nodes, time)
+        @timeit to "Deformed Bond Geometry" datamanager = Bond_Deformation.compute(datamanager, nodes, time)
     end
     if options["Shape Tensor"]
-        datamanager = Shape_Tensor.compute(datamanager, nodes)
+        @timeit to "Shape Tensor" datamanager = Shape_Tensor.compute(datamanager, nodes)
     end
     if options["Deformation Gradient"]
-        datamanager = Deformation_Gradient.compute(datamanager, nodes)
+        @timeit to "Deformation Gradient" datamanager = Deformation_Gradient.compute(datamanager, nodes)
     end
     if options["Bond Associated Shape Tensor"]
-        datamanager = Bond_Shape_Tensor.compute(datamanager, nodes)
+        @timeit to "Bond Associated Shape Tensor" datamanager = Bond_Shape_Tensor.compute(datamanager, nodes)
     end
     if options["Bond Associated Deformation Gradient"]
-        datamanager = Bond_Deformation_Gradient.compute(datamanager, nodes)
+        @timeit to "Bond Associated Deformation Gradient" datamanager = Bond_Deformation_Gradient.compute(datamanager, nodes)
     end
     return datamanager
 end

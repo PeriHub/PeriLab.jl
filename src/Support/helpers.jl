@@ -173,7 +173,7 @@ Finds the inverse of the bond id in the nlist.
 - `inverse_nlist::Vector{Dict{Int64,Int64}}`: The inverse nlist.
 """
 function find_inverse_bond_id(nlist::SubArray)
-    inverse_nlist = [Dict{Int64,Int64}() for _ in 1:length(nlist)]
+    inverse_nlist = [Dict{Int64,Int64}() for _ in eachindex(nlist)]
     for iID in eachindex(nlist)
         for (jID, neighborID) in enumerate(nlist[iID])
             value = findfirst(isequal(iID), nlist[neighborID])

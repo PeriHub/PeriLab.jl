@@ -115,12 +115,16 @@ for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page
 function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta, weighted_volume, omega, material, bond_force)
     #tbd
     #shear_factor=Vector{Float64}([0,8,15])
+    shear_modulus = material["Shear Modulus"]
+    bulk_modulus = material["Bulk Modulus"]
+    three_bulk_modulus = 3 * bulk_modulus
 
     symmetry::String = get_symmmetry(material)
     kappa::Float64 = 0
     gamma::Float64 = 0
     alpha::Float64 = 0
-    deviatoric_deformation = Vector{Float64}
+    deviatoric_deformation::Vector{Float64} = zeros(Float64, dof)
+
     for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
@@ -128,27 +132,28 @@ function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta,
         end
         # from Peridigm damage model. to be checked with literature
         if symmetry == "plane stress"
-            alpha = 8 * material["Shear Modulus"]
-            gamma = 4.0 * material["Shear Modulus"] / (3.0 * material["Bulk Modulus"] + 4.0 * material["Shear Modulus"])
-            kappa = 4.0 * material["Bulk Modulus"] * material["Shear Modulus"] / (3 * material["Bulk Modulus"] + 4.0 * material["Shear Modulus"])
+            alpha = 8 * shear_modulus
+            gamma = 4.0 * shear_modulus / (three_bulk_modulus + 4.0 * shear_modulus)
+            kappa = 4.0 * bulk_modulus * shear_modulus / (three_bulk_modulus + 4.0 * shear_modulus)
         elseif symmetry == "plane strain"
-            alpha = 8 * material["Shear Modulus"]
+            alpha = 8 * shear_modulus
             gamma = 2 / 3
-            kappa = (12.0 * material["Bulk Modulus"] - 4.0 * material["Shear Modulus"]) / 9
+            kappa = (12.0 * bulk_modulus - 4.0 * shear_modulus) / 9
         else
-            alpha = 15 * material["Shear Modulus"]
+            alpha = 15 * shear_modulus
             gamma = 1
-            kappa = 3 * material["Bulk Modulus"] # -> Eq. (6.12.) 
+            kappa = 3 * bulk_modulus # -> Eq. (6.12.) 
         end
 
         deviatoric_deformation = deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end] - (gamma * theta[iID] / 3) .* undeformed_bond[iID][:, end]
         t = bond_damage[iID][:] .* omega[iID] .* (kappa .* theta[iID] .* undeformed_bond[iID][:, end] .+ alpha .* deviatoric_deformation) ./ weighted_volume[iID]
-        if deformed_bond[iID][:, end] == 0
+        if any(deformed_bond[iID][:, end] .== 0)
             @error "Length of bond is zero due to its deformation."
+        else
+            @inbounds bond_force[iID][:, 1:dof] .= t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
         end
         # Calculate bond force
         #Ordinary.project_bond_forces()
-        bond_force[iID][:, 1:dof] = t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
     end
 
     return bond_force

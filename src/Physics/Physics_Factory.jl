@@ -58,7 +58,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             active_nodes = @view nodes[find_active(active[nodes])][:]
             if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
                 datamanager = Damage.set_bond_damage(datamanager, active_nodes)
-                @timeit to "damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, active_nodes, block, synchronise_field, time, dt)
+                @timeit to "damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, active_nodes, block, synchronise_field, time, dt, to)
                 @timeit to "damage" datamanager = Damage.compute_damage(datamanager, active_nodes, datamanager.get_properties(block, "Damage Model"), block, time, dt)
             end
         end
@@ -73,7 +73,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         active_nodes = @view nodes[find_active(active[nodes])][:]
         update_nodes = view(nodes, find_active(update_list[active_nodes]))
 
-        @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
+        @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt, to)
 
         if options["Thermal Models"]
             if datamanager.check_property(block, "Thermal Model")
@@ -105,19 +105,20 @@ Compute the damage pre calculation
 - `synchronise_field`: Synchronise function to distribute parameter through cores.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
+- `to::TimerOutput`: The timer output.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_damage_pre_calculation(datamanager::Module, options::Dict, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+function compute_damage_pre_calculation(datamanager::Module, options::Dict, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64, to::TimerOutput)
 
-    datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt)
+    @timeit to "compute" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt, to)
 
     if options["Thermal Models"]
-        datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
+        @timeit to "thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
     end
 
     if options["Material Models"]
-        datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+        @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
     end
     datamanager = Damage.compute_damage_pre_calculation(datamanager, nodes, block, datamanager.get_properties(block, "Damage Model"), synchronise_field, time, dt)
     update_list = datamanager.get_field("Update List")
