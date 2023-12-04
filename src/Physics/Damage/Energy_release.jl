@@ -101,12 +101,12 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
             # check if the bond also exist at other node, due to different horizons
             if haskey(inverse_nlist[neighborID], iID)
-                @views neighbor_bond_force = bond_forces[neighborID][inverse_nlist[neighborID][iID], :]
+                @views neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID], :]
             else
                 fill!(neighbor_bond_force, 0.0)
             end
 
-            @views projected_force = dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement_vector[jID, :]) / (norm_displacement * norm_displacement) .* relative_displacement_vector[jID, :]
+            @views projected_force .= dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement_vector[jID, :]) / (norm_displacement * norm_displacement) .* relative_displacement_vector[jID, :]
 
             bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement_vector[jID, :]))
             if bond_energy < 0
