@@ -10,6 +10,9 @@ include("../../../src/Physics/Material/Material_template/material_template.jl")
 include("../../../src/Physics/Thermal/Thermal_template/thermal_template.jl")
 
 using Test
+using TimerOutputs
+
+const to = TimerOutput()
 
 test_Data_manager = Data_manager
 test_Data_manager.set_num_controller(3)
@@ -28,7 +31,7 @@ end
 
 @testset "ut_material_template" begin
     @test Material_template.material_name() == "Material Template"
-    @test Material_template.compute_forces(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
+    @test Material_template.compute_forces(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0, to) == test_Data_manager
 end
 
 @testset "ut_thermal_template" begin
