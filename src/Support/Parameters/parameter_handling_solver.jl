@@ -82,7 +82,7 @@ Get the fixed time step
 - `fixed_dt::Float64`: The fixed time step
 """
 function get_fixed_dt(params::Dict)
-    return get(params["Solver"], "Fixed dt", true)
+    return get(params["Solver"]["Verlet"], "Fixed dt", true)
 end
 
 """
@@ -96,7 +96,7 @@ Get the numerical damping
 - `numerical_damping::Float64`: The numerical damping
 """
 function get_numerical_damping(params::Dict)
-    return get(params["Solver"]["Verlet"], "Numerical Damping", Float64(0.0))
+    return get(params["Solver"], "Numerical Damping", Float64(0.0))
 end
 
 """

@@ -104,11 +104,11 @@ end
         end
     end
     IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
-    IO.write_results(result_files, 1.5, false, outputs, test_Data_manager)
+    IO.write_results(result_files, 1.5, 0.0, outputs, test_Data_manager)
 
     @test read_time(result_files[1]["file"], 2) == 1.5
     @test read_time(result_files[2]["file"], 2) == 1.5
-    IO.write_results(result_files, 1.6, false, outputs, test_Data_manager)
+    IO.write_results(result_files, 1.6, 0.0, outputs, test_Data_manager)
 
     @test read_time(result_files[1]["file"], 3) == 1.6
     @test read_time(result_files[2]["file"], 3) == 1.6
