@@ -120,7 +120,17 @@ testfield_keys = test_Data_manager.get_all_field_keys()
     @test "INP1" in testfield_keys
 end
 
-@testset "create_existing_field" begin
+@testset "ut_number_of_elements" begin
+    test_Data_manager.set_num_elements(5)
+    @test test_Data_manager.get_num_elements() == 5
+    test_Data_manager.set_num_elements(10)
+    @test test_Data_manager.get_num_elements() == 10
+    test_Data_manager.set_num_elements(1)
+    @test test_Data_manager.get_num_elements() == 1
+    @test isnothing(test_Data_manager.set_num_elements(0))
+    @test isnothing(test_Data_manager.set_num_elements(-1))
+end
+@testset "ut_create_existing_field" begin
     field1, field2 = test_Data_manager.create_node_field("D", Int64, 3)
     testfield_keys = test_Data_manager.get_all_field_keys()
     @test "DN" in testfield_keys

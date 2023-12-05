@@ -22,6 +22,7 @@ export get_nlist
 export get_nnsets
 export get_nsets
 export get_nnodes
+export get_num_elements
 export get_physics_options
 export get_properties
 export get_property
@@ -36,6 +37,7 @@ export set_inverse_nlist
 export set_glob_to_loc
 export set_num_controller
 export set_nset
+export set_num_elements
 export set_num_responder
 export set_physics_options
 export set_property
@@ -49,6 +51,7 @@ export synch_manager
 global nnodes::Int64 = 0
 global num_controller::Int64 = 0
 global num_responder::Int64 = 0
+global num_elements::Int64 = 0
 global nnsets::Int64 = 0
 global dof::Int64 = 1
 global block_list::Vector{Int64} = []
@@ -550,6 +553,19 @@ function get_nsets()
 end
 
 """
+    get_num_elements()
+
+Get the the number of finite elements
+
+# Returns
+- `get_num_elements::Int64`: The number of finite elements
+"""
+function get_num_elements()
+    global num_elements
+    return num_elements
+end
+
+"""
     get_num_responder()
 
 Get the the number of responder nodes
@@ -918,7 +934,7 @@ Set the nodes associated with a named node set.
 - `name::String`: The name of the node set.
 - `nodes::Vector{Int}`: The node indices associated with the node set.
 """
-function set_nset(name::String, nodes::Vector{Int})
+function set_nset(name::String, nodes::Vector{Int64})
     global nsets
 
     if name in keys(nsets)
@@ -927,6 +943,28 @@ function set_nset(name::String, nodes::Vector{Int})
     nsets[name] = nodes
     # set the number of node sets
     set_nnsets(length(nsets))
+end
+
+"""
+    set_num_elements(n::Int64)
+
+Sets the number of finite elements globally. 
+
+# Arguments
+- `n::Int64`: The value to set as the number of finite elements.
+
+Example:
+```julia
+set_num_elements(10)  # sets the number of finite elements to 10
+```
+"""
+
+function set_num_elements(n::Int64)
+    if n < 1
+        @error "Number of elements must be positive."
+        return nothing
+    end
+    global num_elements = n
 end
 
 """
@@ -942,7 +980,7 @@ Example:
 set_num_responder(10)  # sets the number of responder nodes to 10
 ```
 """
-function set_num_responder(n)
+function set_num_responder(n::Int64)
     global num_responder = n
     set_nnodes()
 end
