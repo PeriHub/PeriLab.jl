@@ -176,13 +176,43 @@ end
 
 end
 
-@testset "get_field_type" begin
+@testset "ut_get_field_type" begin
     @test test_Data_manager.get_field_type("A") == Float64
     @test test_Data_manager.get_field_type("DN") == Int64
     @test test_Data_manager.get_field_type("DNP1") == Int64
     @test test_Data_manager.get_field_type("GN") == Bool
     @test isnothing(test_Data_manager.get_field_type("not there"))
     @test isnothing(test_Data_manager.get_field_type("D"))
+end
+
+@testset "ut_create_constant_field" begin
+    test = test_Data_manager.create_constant_field("BMatrix", Float64, (50, 3))
+    @test size(test) == (50, 3)
+    @test test_Data_manager.get_field_type("BMatrix") == Float64
+    test2 = test_Data_manager.get_field("BMatrix")
+    @test test == test2
+    test = test_Data_manager.create_constant_field("BMatrix", Float64, (2, 3))
+    @test size(test) == (50, 3)
+    test = test_Data_manager.create_constant_field("GN", Float64, (2, 3))
+    @test size(test) == (5,)
+    test = test_Data_manager.create_constant_node_field("BMatrix", Float64, 3)
+    @test size(test) == (50, 3)
+end
+
+function create_constant_field(name::String, type::Type, dof::Tuple)
+    if haskey(fields, vartype) == false
+        fields[vartype] = Dict{String,Any}()
+    end
+    if name in get_all_field_keys()
+        if size(get_field(name)) != dof
+            @warn "Field $name exists already with different size. Predefined field is returned"
+        end
+        return get_field(name)
+    end
+    fields[vartype][name] = Array{type}(zeros(dof))
+    field_types[name] = vartype
+    field_array_type[name] = Dict("Type" => "Field", "Dof" => dof)
+    return get_field(name)
 end
 
 @testset "set_get_field" begin
@@ -462,3 +492,4 @@ end
     @test rotation
     @test angles == test_angles
 end
+

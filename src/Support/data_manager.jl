@@ -175,6 +175,24 @@ function create_constant_bond_field(name::String, type::Type, VectorOrArray::Str
     return create_field(name, type, "Bond_Field", VectorOrArray, dof, default_value)
 end
 
+function create_constant_field(name::String, vartype::Type, dof::Tuple)
+    if haskey(fields, vartype) == false
+        fields[vartype] = Dict{String,Any}()
+    end
+    if name in get_all_field_keys()
+        if size(get_field(name)) != dof
+            @warn "Field $name exists already with different size. Predefined field is returned"
+        end
+        return get_field(name)
+    end
+    fields[vartype][name] = Array{vartype}(zeros(dof))
+    field_types[name] = vartype
+    field_array_type[name] = Dict("Type" => "Field", "Dof" => dof)
+    return get_field(name)
+end
+
+
+
 """
     create_constant_node_field(name::String, type::Type, dof::Int64)
 
@@ -233,6 +251,9 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
         fields[vartype] = Dict{String,Any}()
     end
     if name in get_all_field_keys()
+        if length(get_field(name)[:, 1]) != nnodes
+            @warn "Field $name exists already with different size. Predefined field is returned"
+        end
         return get_field(name)
     end
     if VectorOrArray == "Matrix"
