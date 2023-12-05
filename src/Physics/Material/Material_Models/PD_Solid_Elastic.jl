@@ -5,6 +5,7 @@
 module PD_Solid_Elastic
 include("../material_basis.jl")
 include("./Ordinary/Ordinary.jl")
+using TimerOutputs
 import .Ordinary
 export init_material_model
 export material_name
@@ -49,7 +50,7 @@ function material_name()
 end
 
 """
-    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
     
 Computes the forces.
 
@@ -62,7 +63,7 @@ Computes the forces.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
     # global dof
     # global nlist
     # global volume
@@ -81,9 +82,9 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     # optimizing, because if no damage it has not to be updated
 
-    weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, undeformed_bond, bond_damage, omega, volume, weighted_volume)
-    theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, undeformed_bond, deformed_bond, bond_damage, volume, weighted_volume, omega, theta)
-    bond_force = elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force)
+    @timeit to "Weighted Volume" weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, undeformed_bond, bond_damage, omega, volume, weighted_volume)
+    @timeit to "Dilatation" theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, undeformed_bond, deformed_bond, bond_damage, volume, weighted_volume, omega, theta)
+    @timeit to "Bond Forces" bond_force = elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force)
 
 
     return datamanager
@@ -117,7 +118,6 @@ function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta,
     #shear_factor=Vector{Float64}([0,8,15])
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
-    three_bulk_modulus = 3 * bulk_modulus
 
     symmetry::String = get_symmmetry(material)
     kappa::Float64 = 0
@@ -125,24 +125,12 @@ function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta,
     alpha::Float64 = 0
     deviatoric_deformation::Vector{Float64} = zeros(Float64, dof)
 
+    alpha, gamma, kappa = calculate_symmetry_params(symmetry, shear_modulus, bulk_modulus)
+
     for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
             continue
-        end
-        # from Peridigm damage model. to be checked with literature
-        if symmetry == "plane stress"
-            alpha = 8 * shear_modulus
-            gamma = 4.0 * shear_modulus / (three_bulk_modulus + 4.0 * shear_modulus)
-            kappa = 4.0 * bulk_modulus * shear_modulus / (three_bulk_modulus + 4.0 * shear_modulus)
-        elseif symmetry == "plane strain"
-            alpha = 8 * shear_modulus
-            gamma = 2 / 3
-            kappa = (12.0 * bulk_modulus - 4.0 * shear_modulus) / 9
-        else
-            alpha = 15 * shear_modulus
-            gamma = 1
-            kappa = 3 * bulk_modulus # -> Eq. (6.12.) 
         end
 
         deviatoric_deformation = deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end] - (gamma * theta[iID] / 3) .* undeformed_bond[iID][:, end]
@@ -157,6 +145,33 @@ function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta,
     end
 
     return bond_force
+end
+
+"""
+    calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
+
+Calculate the shear modulus, bulk modulus and three bulk modulus for the given symmetry.
+
+# Arguments
+- symmetry: symmetry of the material
+- shear_modulus: shear modulus
+- bulk_modulus: bulk modulus
+
+# Returns
+- alpha: alpha
+- gamma: gamma
+- kappa: kappa
+"""
+function calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
+    three_bulk_modulus = 3 * bulk_modulus
+    # from Peridigm damage model. to be checked with literature
+    if symmetry == "plane stress"
+        return 8 * shear_modulus, 4.0 * shear_modulus / (three_bulk_modulus + 4.0 * shear_modulus), 4.0 * bulk_modulus * shear_modulus / (three_bulk_modulus + 4.0 * shear_modulus)
+    elseif symmetry == "plane strain"
+        return 8 * shear_modulus, 2 / 3, (12.0 * bulk_modulus - 4.0 * shear_modulus) / 9
+    else
+        return 15 * shear_modulus, 1, 3 * bulk_modulus
+    end
 end
 
 end

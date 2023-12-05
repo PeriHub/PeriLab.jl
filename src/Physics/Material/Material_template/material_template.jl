@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Material_template
+using TimerOutputs
 export init_material_model
 export material_name
 export compute_forces
@@ -44,7 +45,7 @@ function material_name()
 end
 
 """
-    compute_forces(datamanager, nodes, material_parameter, time, dt)
+    compute_forces(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -60,7 +61,7 @@ Example:
 ```julia
 ```
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
   @info "Please write a material name in material_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_forces() and init_material_model() function."

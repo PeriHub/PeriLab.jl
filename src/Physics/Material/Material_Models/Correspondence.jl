@@ -5,6 +5,7 @@
 module Correspondence
 using LinearAlgebra
 using TensorOperations
+using TimerOutputs
 include("Correspondence_Elastic.jl")
 include("./Zero_Energy_Control/global_control.jl")
 include("../material_basis.jl")
@@ -77,7 +78,7 @@ function material_name()
 end
 
 """
-    compute_forces(datamanager, nodes, material_parameter, time, dt)
+    compute_forces(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -93,7 +94,7 @@ Example:
 ```julia
 ```
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
   # global dof
   # global rotation
   # global angles

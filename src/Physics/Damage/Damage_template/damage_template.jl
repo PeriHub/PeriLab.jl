@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Damage_template
-using TimerOutputs
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name

@@ -83,7 +83,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
 
         if options["Material Models"]
             if datamanager.check_property(block, "Material Model")
-                @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+                @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt, to)
                 @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, active_nodes)
             end
         end
@@ -118,7 +118,7 @@ function compute_damage_pre_calculation(datamanager::Module, options::Dict, node
     end
 
     if options["Material Models"]
-        @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt)
+        @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt, to)
     end
     datamanager = Damage.compute_damage_pre_calculation(datamanager, nodes, block, datamanager.get_properties(block, "Damage Model"), synchronise_field, time, dt)
     update_list = datamanager.get_field("Update List")

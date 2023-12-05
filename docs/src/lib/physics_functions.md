@@ -65,6 +65,7 @@ voigt_to_matrix
 check_symmetry
 get_symmmetry
 Set_modules.PD_Solid_Elastic.elastic
+Set_modules.PD_Solid_Elastic.calculate_symmetry_params
 Set_modules.PD_Solid_Elastic.Ordinary.compute_weighted_volume
 Set_modules.PD_Solid_Elastic.Ordinary.compute_dilatation
 Set_modules.Correspondence.zero_energy_mode_compensation

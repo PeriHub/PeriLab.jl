@@ -5,7 +5,6 @@
 module Damage
 include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
-using TimerOutputs
 global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
 Set_modules.include_files(module_list)
 

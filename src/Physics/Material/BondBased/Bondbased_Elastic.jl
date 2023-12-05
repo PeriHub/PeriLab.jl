@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bondbased_Elastic
+using TimerOutputs
 include("../material_basis.jl")
 export init_material_model
 export material_name
@@ -42,7 +43,7 @@ function material_name()
 end
 
 """
-    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
 Calculate the elastic bond force for each node.
 
@@ -55,7 +56,7 @@ Calculate the elastic bond force for each node.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
     # global dof
     # global horizon
     dof = datamanager.get_dof()

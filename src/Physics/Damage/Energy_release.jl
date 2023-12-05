@@ -7,7 +7,6 @@ include("../Material/Material_Factory.jl")
 include("../Pre_calculation/Pre_Calculation_Factory.jl")
 using .Material
 using .Pre_calculation
-using TimerOutputs
 using LinearAlgebra
 export compute_damage
 export compute_damage_pre_calculation
