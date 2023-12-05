@@ -164,9 +164,9 @@ MPI.Init()
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
             @includetests["fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control"]
         end
-        # @testset "test_DCB" begin
-        #     @includetests["fullscale_tests/test_DCB/test_DCB"]
-        # end
+        @testset "test_DCB" begin
+            @includetests["fullscale_tests/test_DCB/test_DCB"]
+        end
     end
 
 

@@ -21,12 +21,8 @@ test:
       - src/**/*
       - test/**/*
   script:
-    - julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler");
-      using PackageCompiler; create_app(".", "build", executables=["main" => "PeriLab", "get_examples" => "get_examples"], incremental=true);
+    - julia --project=@. -e 'import Pkg;
       Pkg.test(; coverage = true)'
-    # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
-    # - julia --project=test/coverage test/coverage/coverage-summary.jl
-
     - CODECOV_TOKEN=$CODECOV_TOKEN julia -e 'import Pkg; Pkg.add("Coverage");
       using Coverage; cl, tl = get_summary(process_folder());
       println("(", cl/tl*100, "%) covered");
@@ -35,7 +31,6 @@ test:
   artifacts:
     paths:
       - test
-      - build
 
 deploy:
   stage: deploy
@@ -48,6 +43,18 @@ deploy:
   script:
     - docker build -t perihub/perilab .
     - docker push perihub/perilab
+
+release:
+  stage: deploy
+  only:
+    - tags
+  script:
+    - julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler");
+      using PackageCompiler;
+      create_app(".", "build", executables=["main" => "PeriLab", "get_examples" => "get_examples"], incremental=true)'
+  artifacts:
+    paths:
+      - build
 
 pages:
   stage: deploy

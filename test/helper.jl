@@ -13,9 +13,8 @@ export run_mpi_test
 export push_test!
 
 function run_perilab(filename, cores, compare, folder_name="")
-    # main_path = dirname(@__FILE__)[1:end-4] * "src/main.jl"
-    image_path = dirname(@__FILE__)[1:end-4] * "build/bin/PeriLab"
-    command = `$image_path -s $(filename).yaml`
+    main_path = dirname(@__FILE__)[1:end-4] * "src/main.jl"
+    command = `$(Base.julia_cmd()) --math-mode=fast $main_path -s $(filename).yaml`
     if cores == 1
         exit_code = run(command).exitcode
         @test exit_code == 0

@@ -68,7 +68,6 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     tension::Bool = get(damage_parameter, "Only Tension", true)
     interBlockDamage::Bool = get(damage_parameter, "Interblock Damage", false)
-
     if interBlockDamage
         inter_critical_energy::Array{Float64,3} = datamanager.get_crit_values_matrix()
     end
@@ -84,13 +83,11 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     projected_force::Vector{Float64} = zeros(Float64, dof)
 
     for iID in nodes
-
         quad_horizon = get_quad_horizon(horizon[iID], dof)
-
         @views relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
 
         for (jID, neighborID) in enumerate(nlist[iID])
-            norm_displacement = norm(relative_displacement_vector[jID])
+            norm_displacement = norm(relative_displacement_vector[jID, :])
 
             if norm_displacement == 0
                 continue
@@ -114,7 +111,6 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             end
 
             crit_energy = interBlockDamage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
-
             #if time > 0.0004
             #  println(bond_energy / get_quad_horizon(horizon[iID], dof))
             #end
