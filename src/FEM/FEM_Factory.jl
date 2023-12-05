@@ -1,11 +1,20 @@
 module FEM
 include("../Core/Module_inclusion/set_Modules.jl")
+include("FEM_routines.jl")
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
 
 using .Set_modules
+
+
+function init_FEM(datamanager::Module, params::Dict)
+    dof = datamanager.get_dof()
+    N = datamanager.create_constant_field("Integration point N Matrix", Float64, (prod(p .+ 1), prod(p .+ 1) * dof, dof))
+    B = datamanager.create_constant_field("Integration point B Matrix", Float64, (prod(p .+ 1), prod(p .+ 1) * dof, 3 * dof - 3))
+    N[:], B[:] = create_element_matrices(dof::Int64, p::Vector{Int64})
+end
 
 #global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
 #Set_modules.include_files(module_list)
