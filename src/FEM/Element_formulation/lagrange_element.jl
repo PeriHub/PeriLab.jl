@@ -4,8 +4,33 @@
 
 module Lagrange_element
 
+export element_name
+export init_element
+#export compute_element
 
+function element_name()
+    return "Lagrange"
+end
 
+"""
+    init_element(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, element_params::Dict, p::Vector{Int64})
+
+Init the Lagrange element of a given polynomial degree. This degree can be different for each direction
+
+# Arguments
+- `datamanager::Module`: Datamanger.
+- `elements::Union{SubArray,Vector{Int64}}`: listed element numbers
+- `element_params::Dict`: Element specific data.
+- `p::Vector{Int64}`: A vector containing the polynomial degrees for each degree of freedom.
+
+# Returns
+- `Datamager::Module`: Datamager containing additional fields needed for the Lagrange element.
+"""
+
+function init_element(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, element_params::Dict, p::Vector{Int64})
+
+    return datamanager
+end
 """
     define_lagrangian_grid_space(dof::Int64, p::Vector{Int64})
 
@@ -24,7 +49,7 @@ dof = 3
 p = [2, 3, 1]
 xi = define_lagrangian_grid_space(dof, p)
 """
-function define_lagarangian_grid_space(dof::Int64, p::Vector{Int64})
+function define_lagrangian_grid_space(dof::Int64, p::Vector{Int64})
     xi::Matrix{Float64} = zeros(Float64, dof, maximum(p) + 1)
     len::Float64 = 0.0
     if minimum(p) == 0
@@ -191,7 +216,7 @@ function create_element_matrices(dof::Int64, p::Vector{Int64}, ip_weights::Matri
 
     N::Array{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1) * dof, dof)
     B::Array{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1) * dof, 3 * dof - 3)
-    xi = define_lagarangian_grid_space(dof, p)
+    xi = define_lagrangian_grid_space(dof, p)
 
     if dof == 2
         return get_2D_matrices(p, ip_weights, ip_coordinates, xi, N, B)

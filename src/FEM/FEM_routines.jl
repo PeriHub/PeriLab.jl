@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 using LinearAlgebra
 using FastGaussQuadrature
-include("Element_formulation/lagrange_element.jl")
-using .Lagrange_element
+
 function compute_strain(nodes::Union{SubArray,Vector{Int64}}, topology, B, u, strain)
 
     for iID in nodes
@@ -95,6 +94,8 @@ function get_Jacobian(B::SubArray, coordinates::SubArray)
     return det(dot(B, coordinates))
 end
 
+
+
 """
     create_element_matrices()
 
@@ -120,13 +121,12 @@ N^TN*\rho give than the mass matrix and B^TCB the stiffness matrix [WillbergC201
 
 """
 
-
-function create_element_matrices(dof::Int64, p::Vector{Int64})
+function create_element_matrices(dof::Int64, p::Vector{Int64}, create_matrices)
     weights, integration_points = get_weights_and_integration_points(dof, p)
     ip_coordinates = get_multi_dimensional_integration_point_data(dof, p, integration_points)
     if isnothing(ip_coordinates)
         return nothing, nothing
     end
     ip_weights = get_multi_dimensional_integration_point_data(dof, p, weights)
-    return Lagrange_element.create_element_matrices(dof, p, ip_weights, ip_coordinates)
+    return create_matrices(dof, p, ip_weights, ip_coordinates)
 end

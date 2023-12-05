@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module FEM_template
-export compute_element
-export element_name
-export shape_function
+#export init_element
+#export compute_element
+#export element_name
+#export shape_function
 """
   element_name()
 
@@ -26,6 +27,10 @@ function element_name()
   return "element Template"
 end
 
+
+function init_element(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, element_params::Dict, p::Vector{Int64})
+
+end
 """
   compute_element(datamanager, nodes, element_parameter, time, dt)
 
