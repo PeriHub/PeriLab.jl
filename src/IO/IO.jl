@@ -372,25 +372,25 @@ function read_input_file(filename::String)
 end
 
 """
-    write_results(result_files::Vector{Any}, time::Float64, damage_occurs::Bool, outputs::Dict, datamanager::Module)
+    write_results(result_files::Vector{Any}, time::Float64, max_damage::Float64, outputs::Dict, datamanager::Module)
 
 Write results.
 
 # Arguments
 - `result_files::Vector{Any}`: The result files
 - `time::Float64`: The time
-- `damage_occurs::Bool`: The damage occurs
+- `max_damage::Float64`: The maximum damage
 - `outputs::Dict`: The outputs
 - `datamanager::Module`: The datamanager
 # Returns
 - `result_files::Vector{Any}`: The result files
 """
-function write_results(result_files::Vector{Dict}, time::Float64, damage_occurs::Bool, outputs::Dict, datamanager::Module)
+function write_results(result_files::Vector{Dict}, time::Float64, max_damage::Float64, outputs::Dict, datamanager::Module)
 
     for id in eachindex(result_files)
         output_type = outputs[id]["Output File Type"]
         # step 1 ist the zero step?!
-        if outputs[id]["write_after_damage"] && !damage_occurs
+        if outputs[id]["write_after_damage"] && max_damage == 0.0
             continue
         end
         output_frequency[id]["Counter"] += 1

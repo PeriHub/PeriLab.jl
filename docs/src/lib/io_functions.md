@@ -203,6 +203,7 @@ get_final_time
 get_safety_factor
 get_fixed_dt
 get_numerical_damping
+get_max_damage
 get_solver_options
 ```
 

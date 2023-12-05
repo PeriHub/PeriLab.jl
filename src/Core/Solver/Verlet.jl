@@ -211,6 +211,7 @@ A tuple `(initial_time, dt, nsteps, numerical_damping)` where:
 - `dt::Float64`: The time step for the simulation.
 - `nsteps::Int64`: The number of time integration steps.
 - `numerical_damping::Float64`: The numerical damping factor.
+- `max_damage::Float64`: The maximum damage in the simulation.
 
 # Dependencies
 This function may depend on the following functions:
@@ -241,12 +242,14 @@ function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     comm = datamanager.get_comm()
     dt = find_and_set_core_value_min(comm, dt)
     nsteps = find_and_set_core_value_max(comm, nsteps)
+    numerical_damping = get_numerical_damping(params)
+    max_damage = get_max_damage(params)
 
     @info "Safety Factor: " * string(safety_factor)
     @info "Time increment: " * string(dt) * " [s]"
     @info "Number of steps: " * string(nsteps)
-    @info "Numerical Damping " * string(get_numerical_damping(params))
-    return initial_time, dt, nsteps, get_numerical_damping(params)
+    @info "Numerical Damping " * string(numerical_damping)
+    return initial_time, dt, nsteps, numerical_damping, max_damage
 end
 
 """
@@ -356,9 +359,10 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float64 = solver_options["Initial Time"]
+    max_cancel_damage::Float64 = solver_options["Maximum Damage"]
     step_time::Float64 = 0
     numerical_damping::Float64 = solver_options["Numerical Damping"]
-    damage_occurs::Bool = false
+    max_damage::Float64 = 0
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     for idt in iter
@@ -398,12 +402,20 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
             end
             if solver_options["Damage Models"]
-                damage_occurs = !all(dam -> dam == 1.0, damage[find_active(active[1:nnodes])])
+                max_damage = maximum(damage[find_active(active[1:nnodes])])
+                if max_damage > max_cancel_damage
+                    @info "Maximum damage reached"
+                    datamanager.set_cancel(true)
+                end
             end
-            @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, damage_occurs, outputs, datamanager)
+            @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, max_damage, outputs, datamanager)
             # for file in result_files
             #     flush(file)
             # end
+            if datamanager.get_cancel()
+                set_multiline_postfix(iter, "Simulation canceled!")
+                break
+            end
             @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
             update_list .= true
             step_time += dt
@@ -411,7 +423,6 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 @info "Step: $idt / $(nsteps+1) [$step_time s]"
             end
             if rank == 0 && !silent
-                # set_multiline_postfix(iter, "Simulation Time: $step_time")
                 set_postfix(iter, t=@sprintf("%.4e", step_time))
             end
 

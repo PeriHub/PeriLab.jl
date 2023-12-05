@@ -52,7 +52,7 @@ function init(params::Dict, datamanager::Module)
     bcs = Boundary_conditions.init_BCs(params, datamanager)
 
     if get_solver_name(params) == "Verlet"
-        solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"] = Verlet.init_solver(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
+        solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = Verlet.init_solver(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
     end
 
     if "Active" in datamanager.get_all_field_keys()

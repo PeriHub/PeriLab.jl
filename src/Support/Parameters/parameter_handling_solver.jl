@@ -100,6 +100,20 @@ function get_numerical_damping(params::Dict)
 end
 
 """
+get_max_damage(params::Dict)
+
+Get the maximum damage.
+
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `write_after_damage::Bool`: The value
+"""
+function get_max_damage(params::Dict)
+    return get(params["Solver"], "Maximum Damage", 1.0)
+end
+
+"""
     get_solver_options(params::Dict)
     
 Get the solver options

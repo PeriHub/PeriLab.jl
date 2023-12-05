@@ -150,6 +150,7 @@ expected_structure = Dict(
                     "Solve For Displacement" => [Bool, false],
                     "Material Models" => [Bool, false],
                     "Damage Models" => [Bool, false],
+                    "Maximum Damage" => [Float64, false],
                     "Thermal Models" => [Bool, false],
                     "Additive Models" => [Bool, false],
                     "Final Time" => [Union{Float64,Int64}, true],

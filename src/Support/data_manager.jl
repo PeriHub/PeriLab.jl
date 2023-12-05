@@ -28,6 +28,7 @@ export get_property
 export get_rank
 export get_num_responder
 export get_max_rank
+export get_cancel
 export init_property
 export rotation_data
 export set_block_list
@@ -41,6 +42,7 @@ export set_physics_options
 export set_property
 export set_rank
 export set_max_rank
+export set_cancel
 export switch_NP1_to_N
 export synch_manager
 ##########################
@@ -70,6 +72,9 @@ global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => tru
     "Bond Associated Deformation Gradient" => false)
 global rank::Int64 = 0
 global commMPi::Any
+global cancel::Bool = false
+global max_rank::Int64 = 0
+##########################
 
 """
     get_comm()
@@ -674,7 +679,21 @@ This function returns the maximal rank of MPI the `max_rank`.
 rank = get_max_rank()
 """
 function get_max_rank()
+    global max_rank
     return max_rank
+end
+
+"""
+    get_cancel()
+
+This function returns the `cancel` flag.
+
+# Returns
+- `cancel`::Bool: The value of the `cancel` variable.
+"""
+function get_cancel()
+    global cancel
+    return cancel
 end
 
 """
@@ -1003,6 +1022,18 @@ Sets the maximum rank globally.
 """
 function set_max_rank(value::Int64)
     global max_rank = value
+end
+
+"""
+    set_cancel(value::Int64)
+
+Sets the cancel flag.
+
+# Arguments
+- `value::Bool`: The cancel flag.
+"""
+function set_cancel(value::Bool)
+    global cancel = value
 end
 
 """
