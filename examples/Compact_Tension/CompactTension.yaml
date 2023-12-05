@@ -1,0 +1,115 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1:
+      Block Names: block_1
+      Damage Model: Damage
+      Density: 2.81e-09
+      Horizon: 3.7221534653465347
+      Material Model: Aluminium
+    block_2:
+      Block Names: block_2
+      Density: 2.81e-09
+      Horizon: 3.7221534653465347
+      Material Model: Aluminium
+    block_3:
+      Block Names: block_3
+      Density: 2.81e-09
+      Horizon: 3.7221534653465347
+      Material Model: Aluminium
+    block_4:
+      Block Names: block_4
+      Density: 2.81e-09
+      Horizon: 3.7221534653465347
+      Material Model: Aluminium
+    block_5:
+      Block Names: block_5
+      Density: 2.81e-09
+      Horizon: 3.7221534653465347
+      Material Model: Aluminium
+  Discretization:
+    Input Mesh File: CompactTension.txt
+    Type: Text File
+    Node Sets:
+      Node Set 1: ns_CompactTension_1.txt
+      Node Set 2: ns_CompactTension_2.txt
+      Node Set 3: ns_CompactTension_3.txt
+    Bond Filters:
+      bf_1:
+        Bottom Length: 56.75
+        Bottom Unit Vector X: 1.0
+        Bottom Unit Vector Y: 0.0
+        Bottom Unit Vector Z: 0.0
+        Lower Left Corner X: -0.5
+        Lower Left Corner Y: 0.0
+        Lower Left Corner Z: -1.0
+        Normal X: 0.0
+        Normal Y: 1.0
+        Normal Z: 0.0
+        Side Length: 2.0
+        Type: Rectangular_Plane
+  Boundary Conditions:
+    BC_1:
+      Coordinate: y
+      Node Set: Node Set 1
+      Type: Force Densities
+      Value: 50000*t
+    BC_2:
+      Coordinate: y
+      Node Set: Node Set 2
+      Type: Force Densities
+      Value: -50000*t
+    BC_3:
+      Coordinate: x
+      Node Set: Node Set 1
+      Type: Displacements
+      Value: "0"
+    BC_4:
+      Coordinate: x
+      Node Set: Node Set 2
+      Type: Displacements
+      Value: "0"
+  Physics:
+    Material Models:
+      Aluminium:
+        Density: 2.81e-09
+        Material Model: Correspondence Elastic
+        Symmetry: isotropic plane stress
+        Zero Energy Control: Global
+        Young's Modulus: 71700.0
+        Poisson's Ratio: 0.33
+    Damage Models:
+      Damage:
+        Critical Value: 5.578800557880057
+        Damage Model: Critical Energy
+  Outputs:
+    Output1:
+      Number of Output Steps: 100
+      Output File Type: Exodus
+      Output Filename: CompactTension_Output1
+      Output Variables:
+        Damage: true
+        Displacements: true
+        Forces: true
+        Number of Neighbors: true
+    Output2:
+      Output File Type: Exodus
+      Output Filename: CompactTension_Output2
+      Output Frequency: 1
+      Output Variables:
+        Damage: true
+        Displacements: true
+      Write After Damage: true
+  Solver:
+    Final Time: 0.0003
+    Initial Time: 0.0
+    Material Models: true
+    Damage Models: true
+    Maximum Damage: 0.3
+    Verbose: false
+    Verlet:
+      Numerical Damping: 5.0e-06
+      Safety Factor: 0.95
