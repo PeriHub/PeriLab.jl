@@ -156,4 +156,20 @@ function create_module_specifics(name::Union{String,SubString}, module_list::Vec
     @error "Functionality $name not found."
     return nothing
 end
+"""
+    create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),specifics::Dict{String,String}())
+    # Returns: the function itself
+"""
+function create_module_specifics(name::Union{String,SubString}, module_list::Vector{Any}, specifics::Dict{String,String})
+    for m in module_list
+        parse_statement = "module_name=" * m["Module Name"] * "." * specifics["Name"] * "()"
+        if eval(Meta.parse(parse_statement)) == name
+            parse_statement = m["Module Name"] * "." * specifics["Call Function"]
+            function_call = eval(Meta.parse(parse_statement))
+            return function_call
+        end
+    end
+    @error "Functionality $name not found."
+    return nothing
+end
 end
