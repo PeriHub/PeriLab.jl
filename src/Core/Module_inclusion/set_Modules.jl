@@ -153,5 +153,7 @@ function create_module_specifics(name::Union{String,SubString}, module_list::Vec
             return function_call(values...)
         end
     end
+    @error "Functionality $name not found."
+    return nothing
 end
 end
