@@ -176,7 +176,7 @@ function create_constant_bond_field(name::String, type::Type, VectorOrArray::Str
 end
 
 function create_constant_field(name::String, vartype::Type, dof::Tuple)
-    if haskey(fields, vartype) == false
+    if !haskey(fields, vartype)
         fields[vartype] = Dict{String,Any}()
     end
     if name in get_all_field_keys()
@@ -247,7 +247,7 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
     global field_types
 
     field_dof = dof
-    if haskey(fields, vartype) == false
+    if !haskey(fields, vartype)
         fields[vartype] = Dict{String,Any}()
     end
     if name in get_all_field_keys()
@@ -406,7 +406,9 @@ function get_field(name::String)
                 field_dof = field_array_type[name]["Dof"]
                 return view(reshape(fields[field_types[name]][name], (:, field_dof, field_dof)), :, :, :)
             end
-            return view(fields[field_types[name]][name], :, :)
+            code::String = "view(fields[field_types[\"$name\"]][\"$name\"]" * join(repeat(", :", length(size(fields[field_types[name]][name])))) * ")"
+            return eval(Meta.parse(code))
+            #return view(fields[field_types[name]][name], :, :)
         end
         if field_array_type[name]["Type"] == "Matrix"
             field_dof = field_array_type[name]["Dof"]
