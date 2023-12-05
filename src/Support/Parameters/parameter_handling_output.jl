@@ -89,11 +89,7 @@ Gets the flush file.
 - `flush_file::Bool`: The flush file
 """
 function get_flush_file(outputs::Dict, output::String)
-    if haskey(outputs[output], "Flush File")
-        return outputs[output]["Flush File"]
-    else
-        return true
-    end
+    get(outputs[output], "Flush File", true)
 end
 
 """
@@ -108,11 +104,7 @@ Get the write after damage.
 - `write_after_damage::Bool`: The value
 """
 function get_write_after_damage(outputs::Dict, output::String)
-    if haskey(outputs[output], "Write After Damage")
-        return outputs[output]["Write After Damage"]
-    else
-        return false
-    end
+    get(outputs[output], "Write After Damage", false)
 end
 
 """
