@@ -16,6 +16,8 @@ before_script:
 
 test:
   stage: test
+  except:
+    - tags
   only:
     changes:
       - src/**/*
@@ -50,7 +52,7 @@ release:
     - tags
   script:
     - apt-get -y install build-essential
-    - julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler");
+    - julia --project=@. -e 'import Pkg; Pkg.test(); Pkg.add("PackageCompiler");
       using PackageCompiler;
       create_app(".", "build", executables=["main" => "PeriLab", "get_examples" => "get_examples"], incremental=true)'
   artifacts:
