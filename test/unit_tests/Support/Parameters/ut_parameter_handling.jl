@@ -11,7 +11,11 @@ include("../../../../src/Support/helpers.jl")
 using Test
 using Random
 
-
+@testset "ut_get_element_type" begin
+    @test isnothing(get_element_type(Dict()))
+    @test get_element_type(Dict("Element Type" => "ABC")) == "ABC"
+    get_element_type(Dict("Element Type" => 12)) == "12"
+end
 
 @testset "ut_get_output_type" begin
     @test get_output_type(Dict("Output1" => Dict()), "Output1") == "Exodus"

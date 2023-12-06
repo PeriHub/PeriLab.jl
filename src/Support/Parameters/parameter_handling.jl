@@ -9,7 +9,7 @@ include("./parameter_handling_mesh.jl")
 include("./parameter_handling_output.jl")
 include("./parameter_handling_computes.jl")
 include("./parameter_handling_solver.jl")
-
+include("./parameter_handling_FEM.jl")
 
 """
     check_key_elements(params::Dict)
