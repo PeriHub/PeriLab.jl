@@ -30,15 +30,15 @@ global_values = []
 
 
 """
-    merge_exodus_files(result_files::Vector{Any}, filedirectory::String)
+    merge_exodus_files(result_files::Vector{Any}, output_dir::String)
 
 Merges exodus output files
 
 # Arguments
 - `result_files::Vector{Any}`: The result files
-- `filedirectory::String`: The file directory
+- `output_dir::String`: The file directory
 """
-function merge_exodus_files(result_files::Vector{Dict}, filedirectory::String)
+function merge_exodus_files(result_files::Vector{Dict}, output_dir::String)
 
     for result_file in result_files
         if result_file["type"] == "Exodus"
@@ -46,10 +46,10 @@ function merge_exodus_files(result_files::Vector{Dict}, filedirectory::String)
             @info "Merge output file " * filename
             Write_Exodus_Results.merge_exodus_file(filename)
             filename = split(basename(filename), ".")[1] * ".e"
-            new_path = joinpath(filedirectory, filename)
+            new_path = joinpath(output_dir, filename)
             if abspath(filename) != abspath(new_path)
                 mv(filename, new_path, force=true)
-                mv("epu.log", joinpath(filedirectory, "epu.log"), force=true)
+                mv("epu.log", joinpath(output_dir, "epu.log"), force=true)
             end
         end
     end
@@ -128,10 +128,10 @@ Deletes the result files
 # Arguments
 - `result_files`: The result files
 """
-function delete_files(result_files::Vector{Dict}, filedirectory::String)
+function delete_files(result_files::Vector{Dict}, output_dir::String)
     for result_file in result_files
         if result_file["type"] == "Exodus"
-            # while isfile(joinpath(filedirectory, "epu.log")) == false
+            # while isfile(joinpath(output_dir, "epu.log")) == false
             #     sleep(1)
             # end
             @info "Delete output file " * result_file["filename"]
@@ -286,21 +286,21 @@ function initialize_data(filename::String, filedirectory::String, datamanager::M
 end
 
 """
-    init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
+    init_write_results(params::Dict, output_dir::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
 
 Initialize write results.
 
 # Arguments
 - `params::Dict`: The parameters
-- `filedirectory::String`: The directory of the input file.
+- `output_dir::String`: The directory of the input file.
 - `datamanager::Module`: The datamanager
 - `nsteps::Int64`: The number of steps
 # Returns
 - `result_files::Array`: The result files
 - `outputs::Dict`: The outputs
 """
-function init_write_results(params::Dict, filedirectory::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
-    filenames = get_output_filenames(params, filedirectory)
+function init_write_results(params::Dict, output_dir::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
+    filenames = get_output_filenames(params, output_dir)
     if length(filenames) == 0
         @warn "No output file or output defined"
     end

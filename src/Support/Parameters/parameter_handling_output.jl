@@ -24,17 +24,17 @@ function check_for_duplicates(filenames::Vector{String})
 end
 
 """
-    get_output_filenames(params::Dict, filedirectory::String)
+    get_output_filenames(params::Dict, output_dir::String)
 
 Gets the output filenames.
 
 # Arguments
 - `params::Dict`: The parameters
-- `filedirectory::String`: The file directory
+- `output_dir::String`: The file directory
 # Returns
 - `filenames::Vector{String}`: The filenames
 """
-function get_output_filenames(params::Dict, filedirectory::String)
+function get_output_filenames(params::Dict, output_dir::String)
     if haskey(params::Dict, "Outputs")
         filenames::Vector{String} = []
         outputs = params["Outputs"]
@@ -47,7 +47,7 @@ function get_output_filenames(params::Dict, filedirectory::String)
                 else
                     filename = filename * ".e"
                 end
-                push!(filenames, joinpath(filedirectory, filename))
+                push!(filenames, joinpath(output_dir, filename))
             end
         end
         check_for_duplicates(filenames)

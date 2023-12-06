@@ -209,6 +209,7 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
 
         ################################
         filename = juliaPath * filename
+        filedirectory = dirname(filename)
         if output_dir != ""
             if !isdir(output_dir)
                 try
@@ -217,9 +218,8 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
                     @error "Could not create output directory"
                 end
             end
-            filedirectory = output_dir
         else
-            filedirectory = dirname(filename)
+            output_dir = filedirectory
         end
         # @info filename
 
@@ -230,7 +230,7 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
             IO.show_block_summary(solver_options, params, comm, datamanager)
         end
         @info "Init write results"
-        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"], PERILAB_VERSION)
+        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, output_dir, datamanager, solver_options["nsteps"], PERILAB_VERSION)
         Logging_module.set_result_files(result_files)
 
         if dry_run
@@ -251,11 +251,11 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         IO.close_result_files(result_files, outputs)
 
         if size > 1 && rank == 0
-            IO.merge_exodus_files(result_files, filedirectory)
+            IO.merge_exodus_files(result_files, output_dir)
         end
         MPI.Barrier(comm)
         if size > 1 || dry_run
-            IO.delete_files(result_files, filedirectory)
+            IO.delete_files(result_files, output_dir)
         end
         MPI.Finalize()
     end
