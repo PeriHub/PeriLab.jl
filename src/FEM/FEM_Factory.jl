@@ -10,7 +10,7 @@ global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
 Set_modules.include_files(module_list)
 
 function init_FEM(datamanager::Module, params::Dict)
-
+    valid_models(params)
     dof = datamanager.get_dof()
     nelements = datamanager.get_num_elements()
     elements::Vector{Int64} = 1:nelements
@@ -40,10 +40,28 @@ end
 
 
 
-#datamanager = Set_modules.create_module_specifics(fem_model, module_list, specifics, (datamanager, nodes, model_param, time, dt))
-#if isnothing(datamanager)
-#    @error "No shape function of name " * fem_model * " exists."
-#end
+function valid_models(params::Dict)
+    if haskey(params, "Additive Model")
+        @warn "Additive models are not supported for FEM yet"
+    end
+    if haskey(params, "Damage Model")
+        @warn "Damage models are not supported for FEM"
+
+    end
+    if haskey(params, "Thermal Model")
+        @warn "Thermal models are not supported for FEM yet"
+    end
+    if !haskey(params, "Material Model")
+        @error "No material model has been defined for the block"
+        return nothing
+    else
+        if !occursin(params["Material Model"], "Correspondence")
+            @error "Only correspondence material is supported for FEM"
+            return nothing
+        end
+    end
+    return nothing
+end
 
 
 function get_polynomial_degree(params::Dict, dof::Int64)

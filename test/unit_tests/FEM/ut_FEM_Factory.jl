@@ -5,6 +5,16 @@ include("../../../src/FEM/FEM_Factory.jl")
 
 using Test
 include("../../../src/Support/data_manager.jl")
+@testset "ut_valid_models" begin
+    @test isnothing(FEM.valid_models(Dict()))
+    @test isnothing(FEM.valid_models(Dict("Additive Model" => "a")))
+    @test isnothing(FEM.valid_models(Dict("Damage Model" => "a")))
+    @test isnothing(FEM.valid_models(Dict("Damage Model" => "a", "Additive Model" => "a", "Material Model" => "a Correspondence")))
+    @test isnothing(FEM.valid_models(Dict("Thermal Model" => "a")))
+    @test isnothing(FEM.valid_models(Dict("Material Model" => "a")))
+    @test isnothing(FEM.valid_models(Dict("Material Model" => "a Correspondence")))
+end
+
 @testset "ut_init_FEM" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(2)
