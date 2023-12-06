@@ -2,22 +2,23 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 include("../../../src/FEM/FEM_routines.jl")
-
+include("../../../src/FEM/Element_formulation/lagrange_element.jl")
 using Test
 @testset "ut_create_element_matrices" begin
     dof::Int64 = 1
     p::Vector{Int64} = [1, 1]
 
-    N, B = create_element_matrices(dof, p)
+
+    N, B = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
 
     @test isnothing(N)
     @test isnothing(B)
     dof = 4
-    N, B = create_element_matrices(dof, Vector{Int64}([1, 1, 1, 1]))
+    N, B = create_element_matrices(dof, Vector{Int64}([1, 1, 1, 1]), Lagrange_element.create_element_matrices)
     @test isnothing(N)
     @test isnothing(B)
     dof = 2
-    N, B = create_element_matrices(dof, p)
+    N, B = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
 
     @test size(N) == (4, 8, 2)
     @test size(B) == (4, 8, 3)
@@ -38,8 +39,8 @@ using Test
 
     dof = 3
     p = [1, 1, 1]
-    N, B = create_element_matrices(dof, p)
-    println()
+    N, B = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+
     @test size(N) == (8, 24, 3)
     @test size(B) == (8, 24, 6)
     @test N[1, 1:4, :] == [0.4905626121623441 0.0 0.0; 0.0 0.4905626121623441 0.0; 0.0 0.0 0.4905626121623441; 0.13144585576580212 0.0 0.0]
@@ -53,12 +54,12 @@ using Test
 
     dof = 2
     p = [2, 1]
-    N, B = create_element_matrices(dof, p)
+    N, B = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
     @test size(N) == (6, 12, 2)
     @test size(B) == (6, 12, 3)
     dof = 3
     p = [5, 3, 1]
-    N, B = create_element_matrices(dof, p)
+    N, B = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
     @test size(N) == (48, 144, 3)
     @test size(B) == (48, 144, 6)
 
