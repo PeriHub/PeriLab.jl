@@ -259,7 +259,7 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         end
         MPI.Finalize()
     end
-
+    @info "Finished simulation"
     if verbose
         @info to
     end
