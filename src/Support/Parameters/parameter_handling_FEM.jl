@@ -15,3 +15,15 @@ function get_element_type(params::Dict)
     end
     return string(params["Element Type"])
 end
+
+function get_element_degree(params::Dict)
+    if !haskey(params, "Degree")
+        @error "Element degree is not defined."
+        return nothing
+    end
+    if typeof(params["Degree"]) == String
+        @error "Degree must be an integer or a list of integers."
+        return nothing
+    end
+    return params["Degree"]
+end

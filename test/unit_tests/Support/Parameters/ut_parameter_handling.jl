@@ -11,10 +11,20 @@ include("../../../../src/Support/helpers.jl")
 using Test
 using Random
 
+
+@testset "ut_get_element_degree" begin
+    @test isnothing(get_element_degree(Dict()))
+    @test isnothing(get_element_degree(Dict("Degree" => "ABC")))
+    @test isnothing(get_element_degree(Dict("Degree" => "1")))
+    @test get_element_degree(Dict("Degree" => 1)) == 1
+    @test get_element_degree(Dict("Degree" => [1, 2, 3])) == [1, 2, 3]
+    @test get_element_degree(Dict("Degree" => [1, 2, 3, 5])) == [1, 2, 3, 5]
+end
+
 @testset "ut_get_element_type" begin
     @test isnothing(get_element_type(Dict()))
     @test get_element_type(Dict("Element Type" => "ABC")) == "ABC"
-    get_element_type(Dict("Element Type" => 12)) == "12"
+    @test get_element_type(Dict("Element Type" => 12)) == "12"
 end
 
 @testset "ut_get_output_type" begin
