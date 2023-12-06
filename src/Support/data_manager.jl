@@ -254,7 +254,7 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
         fields[vartype] = Dict{String,Any}()
     end
     if name in get_all_field_keys()
-        if length(get_field(name)[:, 1]) != nnodes
+        if size(get_field(name))[1] != nnodes
             @warn "Field $name exists already with different size. Predefined field is returned"
         end
         return get_field(name)

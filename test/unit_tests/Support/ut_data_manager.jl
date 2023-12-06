@@ -211,6 +211,10 @@ end
     @test size(test) == (2, 3, 3)
     test = test_Data_manager.create_constant_field("Test_size_2", Float64, (2, 3, 3, 4))
     @test size(test) == (2, 3, 3, 4)
+    test = test_Data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
+    @test size(test) == (5, 3, 3)
+    test = test_Data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
+    @test size(test) == (5, 3, 3)
 end
 
 function create_constant_field(name::String, type::Type, dof::Tuple)
