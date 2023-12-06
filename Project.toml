@@ -24,7 +24,7 @@ TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
 Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
-ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
+ZipArchives = "49080126-0e18-4c2a-b176-c102e4b3760c"
 
 [compat]
 ArgParse = "1.1.4"
@@ -42,7 +42,7 @@ Tensors = "1.16.1"
 TestSetExtensions = "2.0.0"
 TimerOutputs = "0.5.23"
 YAML = "0.4.9"
-ZipFile = "0.10.1"
+ZipArchives = "1.1.1"
 julia = "1"
 
 [extras]

@@ -3,21 +3,23 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using PeriLab
-using ZipFile
+using ZipArchives: ZipWriter, zip_newfile
 
 function zip_folder(source_folder::AbstractString, zip_filename::AbstractString)
     files = readdir(source_folder, join=true)
 
-    # Create a Zip file
-    zip = ZipFile.ZipWriter(zip_filename)
-
-    for file in files
-        # Add each file to the Zip file
-        addfile(zip, file, file)
+    ZipWriter(zip_filename) do w
+        for (root, dirs, files) in walkdir(source_folder)
+            for file in files
+                filepath = joinpath(root, file)
+                f = open(filepath, "r")
+                content = read(f, String)
+                close(f)
+                zip_newfile(w, basename(filepath))
+                write(w, content)
+            end
+        end
     end
-
-    # Close the Zip file
-    close(zip)
 end
 
 filename = get(ENV, "filename", "examples/DCB/DCBmodel.yaml")

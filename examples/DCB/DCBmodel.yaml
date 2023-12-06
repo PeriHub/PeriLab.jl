@@ -71,7 +71,7 @@ PeriLab:
   Outputs:
     Output1:
       Number of Output Steps: 100
-      Output Filename: DCBmodel_Output1_1core
+      Output Filename: DCBmodel_Output1
       Output File Type: Exodus
       Output Variables:
         Damage: true
@@ -84,7 +84,7 @@ PeriLab:
         Cauchy Stress: True
     Output2:
       Number of Output Steps: 200
-      Output Filename: DCBmodel_Output2_1core
+      Output Filename: DCBmodel_Output2
       Output File Type: Exodus
       Output Variables:
         Damage: true
