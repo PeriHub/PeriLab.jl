@@ -225,6 +225,7 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     if solver_options["Damage Models"]
         datamanager = Physics.init_damage_model_fields(datamanager)
         datamanager = Damage.init_interface_crit_values(datamanager, params)
+        datamanager = Damage.init_aniso_crit_values(datamanager, params)
     end
     if solver_options["Material Models"]
         datamanager = Physics.init_material_model_fields(datamanager)

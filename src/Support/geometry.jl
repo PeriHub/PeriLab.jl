@@ -7,27 +7,29 @@ using LinearAlgebra
 using Rotations
 export bond_geometry
 export shape_tensor
+export angle_between_vectors
+
 """
      bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
 
 Calculate bond geometries between nodes based on their coordinates.
 
-# # Arguments
+# Arguments
  - `nodes::Union{SubArray,Vector{Int64}}`: A vector of integers representing node IDs.
  - `dof::Int64`: An integer representing the degrees of freedom.
  - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
  - `coor`: A matrix representing the coordinates of each node.
  - `undeformed_bond`: A preallocated array or data structure to store bond geometries.
 
-# # Output
+# Output
  - `undeformed_bond`: An updated `undeformed_bond` array with calculated bond geometries.
 
-# # Description
+# Description
  This function calculates bond geometries between nodes. For each node in `nodes`, it computes the bond vector between the node and its neighboring nodes based on their coordinates. It also calculates the distance (magnitude) of each bond vector.
 
  If the distance of any bond vector is found to be zero, indicating identical point coordinates, an error is raised.
 
-# # Example
+# Example
  ```julia
  nodes = [1, 2, 3]
  dof = 2
@@ -202,12 +204,10 @@ end
 
 Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package.
 
-## Arguments
+# Arguments
 -  `angles::Vector{Float64}`: Vector of angles definede in degrees of length one or three
 
-
-## Returns
-
+# Returns
 - Rotation tensor
 
 """
@@ -216,6 +216,34 @@ function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}})
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end
     return RotXYZ(0, 0, angles[1] / 180 * pi)
+end
+
+"""
+    function angle_between_vectors(v1, v2)
+    
+Calculates the angle between two vectors in degrees.
+
+# Arguments
+-  `v1`: First vector
+- `v2`: Second vector
+
+# Returns
+- Angle in degrees
+"""
+function angle_between_vectors(v1, v2)
+    dot_product = dot(v1, v2)
+    magnitude_v1 = norm(v1)
+    magnitude_v2 = norm(v2)
+
+    cos_theta = dot_product / (magnitude_v1 * magnitude_v2)
+
+    # Ensure that the cosine value is within the valid range [-1, 1]
+    cos_theta = min(1.0, max(-1.0, cos_theta))
+
+    # Convert the cosine value to degrees
+    angle_in_degrees = acos(cos_theta) * (180 / π)
+
+    return angle_in_degrees
 end
 
 end

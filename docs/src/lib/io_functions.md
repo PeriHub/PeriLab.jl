@@ -76,6 +76,7 @@ shape_tensor
 deformation_gradient
 strain
 rotation_tensor
+angle_between_vectors
 ```
 
 ```@meta

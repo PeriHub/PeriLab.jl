@@ -5,9 +5,11 @@
 module Critical_Energy_Model
 include("../Material/Material_Factory.jl")
 include("../Pre_calculation/Pre_Calculation_Factory.jl")
+include("../../Support/geometry.jl")
 using .Material
 using .Pre_calculation
 using LinearAlgebra
+using .Geometry
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
@@ -28,6 +30,30 @@ println(damage_name())
 """
 function damage_name()
     return "Critical Energy"
+end
+
+"""
+    calculate_energy_components(total_energy::Float64, angle_degrees::Float64)
+
+Calculates the horizontal and vertical components of an elastic energy release.
+
+# Arguments
+- `total_energy::Float64`: Total elastic energy.
+- `angle_degrees::Float64`: Angle in degrees.
+
+# Returns
+- `energy_horizontal::Float64`: Horizontal elastic energy.
+- `energy_vertical::Float64`: Vertical elastic energy.
+"""
+function calculate_energy_components(total_energy::Float64, angle_degrees::Float64)
+    # Convert angle from degrees to radians
+    angle_radians = deg2rad(angle_degrees)
+
+    # Calculate horizontal and vertical components
+    energy_horizontal = total_energy * cos(angle_radians)
+    energy_vertical = total_energy * sin(angle_radians)
+
+    return abs(energy_horizontal), abs(energy_vertical)
 end
 
 """
@@ -66,15 +92,22 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     rotation::Bool, angles = datamanager.rotation_data()
 
     tension::Bool = get(damage_parameter, "Only Tension", true)
-    interBlockDamage::Bool = get(damage_parameter, "Interblock Damage", false)
-    if interBlockDamage
+    inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
+    if inter_block_damage
         inter_critical_energy::Array{Float64,3} = datamanager.get_crit_values_matrix()
+    end
+    aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
+    if aniso_damage
+        aniso_crit_values = datamanager.get_aniso_crit_values()
     end
 
     quad_horizon::Float64 = 0.0
     bond_energy::Float64 = 0.0
     dist::Float64 = 0.0
     norm_displacement::Float64 = 0.0
+    bond_angle::Float64 = 0.0
+    x_vector::Vector{Float64} = zeros(Float64, dof)
+    x_vector[1] = 1.0
 
     nneighbors = datamanager.get_field("Number of Neighbors")
 
@@ -95,6 +128,10 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 continue
             end
 
+            if rotation && aniso_damage
+                bond_angle = angle_between_vectors(deformed_bond[iID][jID, 1:dof], x_vector) - angles[iID, 1]
+            end
+
             # check if the bond also exist at other node, due to different horizons
             if haskey(inverse_nlist[neighborID], iID)
                 @views neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID], :]
@@ -109,13 +146,20 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 @error "Bond energy smaller zero"
             end
 
-            crit_energy = interBlockDamage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
-            #if time > 0.0004
-            #  println(bond_energy / get_quad_horizon(horizon[iID], dof))
-            #end
-            if (bond_energy / quad_horizon) > crit_energy
-                @inbounds bond_damage[iID][jID] = 0.0
-                @inbounds update_list[iID] = true
+            crit_energy = inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
+
+
+            if aniso_damage
+                horizontal, vertical = calculate_energy_components(bond_energy, bond_angle)
+                if (horizontal / quad_horizon) > aniso_crit_values[block_ids[iID]][1] || (vertical / quad_horizon) > aniso_crit_values[block_ids[iID]][2]
+                    @inbounds bond_damage[iID][jID] = 0.0
+                    @inbounds update_list[iID] = true
+                end
+            else
+                if (bond_energy / quad_horizon) > crit_energy
+                    @inbounds bond_damage[iID][jID] = 0.0
+                    @inbounds update_list[iID] = true
+                end
             end
         end
     end

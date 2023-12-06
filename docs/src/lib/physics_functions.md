@@ -43,7 +43,9 @@ Set_modules.Damage_template.compute_damage_pre_calculation
 damage_index
 set_bond_damage
 init_interface_crit_values
+init_aniso_crit_values
 Set_modules.Critical_Energy_Model.get_quad_horizon
+Set_modules.Critical_Energy_Model.calculate_energy_components
 ```
 
 ```@meta

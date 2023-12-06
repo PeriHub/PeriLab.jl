@@ -34,7 +34,7 @@ using PeriLab
 PeriLab.get_examples()
 PeriLab.main("examples/DCB/DCBmodel.yaml")
 ```
-Find more details about the main functionalities in the yaml input deck [here](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Support/Parameters/parameter_handling.jl?ref_type=heads).
+>Note: More details about the main functionalities in the yaml input deck [here](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Support/Parameters/parameter_handling.jl?ref_type=heads).
 
 ## Parallel Processing with `PeriLab` (MPI)
 

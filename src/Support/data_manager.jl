@@ -13,6 +13,7 @@ export create_node_field
 export get_all_field_keys
 export get_block_list
 export get_crit_values_matrix
+export get_aniso_crit_values
 export get_comm
 export get_field
 export get_field_type
@@ -33,6 +34,7 @@ export init_property
 export rotation_data
 export set_block_list
 export set_crit_values_matrix
+export set_aniso_crit_values
 export set_inverse_nlist
 export set_glob_to_loc
 export set_num_controller
@@ -56,6 +58,7 @@ global dof::Int64 = 1
 global block_list::Vector{Int64} = []
 global distribution::Vector{Int64}
 global crit_values_matrix::Array{Float64,3}
+global aniso_crit_values::Dict{Int64,Vector{Float64}}
 global properties::Dict{Int64,Dict{String,Any}} = Dict()
 global glob_to_loc::Dict{Int64,Int64}
 global fields::Dict{DataType,Dict{String,Any}} = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
@@ -327,6 +330,16 @@ Retrieves the critical values matrix.
 function get_crit_values_matrix()
     global crit_values_matrix
     return crit_values_matrix
+end
+
+"""
+    get_aniso_crit_values()
+
+Retrieves the critical values matrix.
+"""
+function get_aniso_crit_values()
+    global aniso_crit_values
+    return aniso_crit_values
 end
 
 """
@@ -782,6 +795,18 @@ Sets the critical values matrix globally.
 """
 function set_crit_values_matrix(crit_values::Array{Float64,3})
     global crit_values_matrix = crit_values
+end
+
+"""
+set_aniso_crit_values(crit_values::Dict{Int64,Any})
+
+Sets the anisotropic critical values globally.
+
+# Arguments
+- `crit_values::Dict{Int64,Any}`: The critical values.
+"""
+function set_aniso_crit_values(crit_values::Dict{Int64,Any})
+    global aniso_crit_values = crit_values
 end
 
 """
