@@ -31,7 +31,7 @@ To run a simulation using PeriLab, you can use the `main()` function, which take
 
 For example:
 ```julia
-main("examples/Dogbone/Dogbone.yaml", dry_run=true, verbose=true, debug=true, silent=true)
+main("examples/Dogbone/Dogbone.yaml", output_dir="", dry_run=false, verbose=false, debug=false, silent=false)
 """
 
 module PeriLab
@@ -96,6 +96,7 @@ None.
 ## Command-Line Arguments
 
 - `--dry_run`: If provided, it stores `true` in the dictionary.
+- `--output_dir` or `-o`: If provided, it stores `true` in the dictionary.
 - `--verbose` or `-v`: If provided, it stores `true` in the dictionary.
 - `--debug` or `-d`: If provided, it stores `true` in the dictionary.
 - `--silent` or `-s`: If provided, it stores `true` in the dictionary.
@@ -114,6 +115,10 @@ function parse_commandline()
         "--dry_run"
         help = "dry_run"
         action = :store_true
+        "--output_dir", "-o"
+        help = "output_dir"
+        arg_type = String
+        default = ""
         "--verbose", "-v"
         help = "verbose"
         action = :store_true
@@ -144,7 +149,7 @@ function main()::Cint
     for (arg, val) in parsed_args
         @debug "  $arg  =>  $val"
     end
-    main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
+    main(parsed_args["filename"], parsed_args["output_dir"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
     return 0
 end
 
@@ -163,7 +168,7 @@ function get_examples()
 end
 
 """
-    main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
+    main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
 Entry point for the PeriLab application.
 
@@ -171,12 +176,13 @@ This function serves as the entry point for the PeriLab application. It calls th
 
 # Arguments
 - `filename::String`: The filename of the input file.
+- `output_dir::String`: The output directory.
 - `dry_run::Bool=false`: Whether to run in dry-run mode.
 - `verbose::Bool=false`: Whether to run in verbose mode.
 - `debug::Bool=false`: Whether to run in debug mode.
 - `silent::Bool=false`: Whether to run in silent mode.
 """
-function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
+function main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
     @timeit to "PeriLab" begin
 
@@ -203,7 +209,18 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
 
         ################################
         filename = juliaPath * filename
-        filedirectory = dirname(filename)
+        if output_dir != ""
+            if !isdir(output_dir)
+                try
+                    mkpath(output_dir)
+                catch
+                    @error "Could not create output directory"
+                end
+            end
+            filedirectory = output_dir
+        else
+            filedirectory = dirname(filename)
+        end
         # @info filename
 
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
