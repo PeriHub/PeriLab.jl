@@ -509,5 +509,15 @@ end
     rotation, angles = test_Data_manager.rotation_data()
     @test rotation
     @test angles == test_angles
+    rotation, angles = test_Data_manager.rotation_data("Node")
+    @test rotation
+    @test angles == test_angles
+    rotation, angles = test_Data_manager.rotation_data("Element")
+    @test !rotation
+    @test isnothing(angles)
+    test_angles = test_Data_manager.create_constant_node_field("Element Angles", Float32, 3)# in code it has length number of elements
+    rotation, angles = test_Data_manager.rotation_data("Element")
+    @test rotation
+    @test angles == test_angles
 end
 

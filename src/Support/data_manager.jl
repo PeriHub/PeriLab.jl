@@ -772,10 +772,17 @@ else
     println("Angles field is not present.")
 end
 """
-function rotation_data()
+function rotation_data(element_or_node::String="Node")
     rotation::Bool = false
-    if "Angles" in get_all_field_keys()
+    if element_or_node != "Node" && element_or_node != "Element"
+        @error "Invalid input. Please provide 'Node' or 'Element'."
+        return nothing
+    end
+    if "Angles" in get_all_field_keys() && element_or_node == "Node"
         return true, get_field("Angles")
+    end
+    if "Element Angles" in get_all_field_keys() && element_or_node == "Element"
+        return true, get_field("Element Angles")
     end
     return false, nothing
 end
