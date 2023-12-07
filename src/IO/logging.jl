@@ -68,7 +68,7 @@ function init_logging(filename::String, debug::Bool, rank::Int64, size::Int64)
 
     if debug
         if size > 1
-            logfilename = split(filename, ".")[1] * "$size.$rank.log"
+            logfilename = split(filename, ".")[1] * "_$size.$rank.log"
         end
         file_logger = FormatLogger(logfilename; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]

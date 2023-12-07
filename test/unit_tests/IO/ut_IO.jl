@@ -132,3 +132,8 @@ end
     rm(filename2 * ".e")
 end
 
+@testset "ut_show_block_summary" begin
+    solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
+    params = Dict("Blocks" => Dict("1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
+    IO.show_block_summary(solver_options, params, comm, test_Data_manager)
+end

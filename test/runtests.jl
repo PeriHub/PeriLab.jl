@@ -79,6 +79,9 @@ MPI.Init()
             @testset "ut_bond_filter" begin
                 @includetests["unit_tests/IO/ut_bond_filter"]
             end
+            @testset "ut_logging" begin
+                @includetests["unit_tests/IO/ut_logging"]
+            end
         end
         @testset "MPI" begin
             @testset "ut_MPI" begin
