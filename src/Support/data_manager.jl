@@ -7,6 +7,7 @@ using MPI
 
 export check_properties
 export create_bond_field
+export create_constant_free_size_field
 export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
@@ -178,7 +179,15 @@ function create_constant_bond_field(name::String, type::Type, VectorOrArray::Str
     return create_field(name, type, "Bond_Field", VectorOrArray, dof, default_value)
 end
 
-function create_constant_field(name::String, vartype::Type, dof::Tuple)
+function create_constant_free_size_field(name::String, vartype::Type, dof::Tuple)
+    return create_field(name, vartype, dof)
+end
+
+function create_free_size_field(name::String, vartype::Type, dof::Tuple)
+    return create_field(name * "N", vartype, dof), create_field(name * "NP1", vartype, dof)
+end
+
+function create_field(name::String, vartype::Type, dof::Tuple)
     if !haskey(fields, vartype)
         fields[vartype] = Dict{String,Any}()
     end
@@ -193,8 +202,6 @@ function create_constant_field(name::String, vartype::Type, dof::Tuple)
     field_array_type[name] = Dict("Type" => "Field", "Dof" => dof)
     return get_field(name)
 end
-
-
 
 """
     create_constant_node_field(name::String, type::Type, dof::Int64)
@@ -216,11 +223,9 @@ create_constant_node_field("temperature", Float64, 1)  # creates a temperature c
 ```
 """
 function create_constant_node_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
-
     return create_field(name, type, "Node_Field", dof, default_value)
 end
 function create_constant_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
-
     return create_field(name, type, "Node_Field", VectorOrArray, dof, default_value)
 end
 
@@ -757,6 +762,9 @@ end
 Check if the "Angles" field is present in the datamanager's field keys.
 If present, return true and retrieve the value of the "Angles" field.
 If not present, return false and nothing.
+
+# Input
+element_or_node::String="Node" :  "Node" or "Element" angles; Node is default
 
 # Returns
 - `Tuple{Bool, Union{Nothing, Any}}`: A tuple containing a Boolean value

@@ -195,29 +195,37 @@ end
     @test isnothing(test_Data_manager.get_field_type("D"))
 end
 
-@testset "ut_create_constant_field" begin
-    test = test_Data_manager.create_constant_field("BMatrix", Float64, (50, 3))
+@testset "ut_create_free_size_field" begin
+    test = test_Data_manager.create_constant_free_size_field("BMatrix", Float64, (50, 3))
     @test size(test) == (50, 3)
     @test test_Data_manager.get_field_type("BMatrix") == Float64
     test2 = test_Data_manager.get_field("BMatrix")
     @test test == test2
-    test = test_Data_manager.create_constant_field("BMatrix", Float64, (2, 3))
+    test = test_Data_manager.create_constant_free_size_field("BMatrix", Float64, (2, 3))
     @test size(test) == (50, 3)
-    test = test_Data_manager.create_constant_field("GN", Float64, (2, 3))
+    test = test_Data_manager.create_constant_free_size_field("GN", Float64, (2, 3))
     @test size(test) == (5,)
     test = test_Data_manager.create_constant_node_field("BMatrix", Float64, 3)
     @test size(test) == (50, 3)
-    test = test_Data_manager.create_constant_field("Test_size", Float64, (2, 3, 3))
+    test = test_Data_manager.create_constant_free_size_field("Test_size", Float64, (2, 3, 3))
     @test size(test) == (2, 3, 3)
-    test = test_Data_manager.create_constant_field("Test_size_2", Float64, (2, 3, 3, 4))
+    test = test_Data_manager.create_constant_free_size_field("Test_size_2", Float64, (2, 3, 3, 4))
     @test size(test) == (2, 3, 3, 4)
     test = test_Data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
     @test size(test) == (5, 3, 3)
     test = test_Data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
     @test size(test) == (5, 3, 3)
+    test, test2 = test_Data_manager.create_free_size_field("Test_size_4", Float64, (3, 3, 1, 3))
+    @test size(test) == (3, 3, 1, 3)
+    @test size(test2) == (3, 3, 1, 3)
+    @test "Test_size_4N" in test_Data_manager.get_all_field_keys()
+    @test "Test_size_4NP1" in test_Data_manager.get_all_field_keys()
+    test, test2 = test_Data_manager.create_node_field("Test_size_4", Float64, "Matrix", 3)
+    @test size(test) == (3, 3, 1, 3)
+    @test size(test2) == (3, 3, 1, 3)
 end
 
-function create_constant_field(name::String, type::Type, dof::Tuple)
+function create_constant_free_size_field(name::String, type::Type, dof::Tuple)
     if haskey(fields, vartype) == false
         fields[vartype] = Dict{String,Any}()
     end
@@ -515,9 +523,11 @@ end
     rotation, angles = test_Data_manager.rotation_data("Element")
     @test !rotation
     @test isnothing(angles)
-    test_angles = test_Data_manager.create_constant_node_field("Element Angles", Float32, 3)# in code it has length number of elements
+    test_angles = test_Data_manager.create_constant_node_field("Element Angles", Float32, 3)# in code it has length number of elements * element integration points
     rotation, angles = test_Data_manager.rotation_data("Element")
     @test rotation
     @test angles == test_angles
+    @test isnothing(test_Data_manager.rotation_data("Hello"))
+
 end
 
