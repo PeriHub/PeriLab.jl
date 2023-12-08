@@ -176,8 +176,8 @@ function init_aniso_crit_values(datamanager::Module, params::Dict)
         if !haskey(damage_parameter, "Anisotropic Damage")
             continue
         end
-        crit_0 = damage_parameter["Anisotropic Damage"]["Critical Value 0"]
-        crit_90 = damage_parameter["Anisotropic Damage"]["Critical Value 90"]
+        crit_0 = damage_parameter["Anisotropic Damage"]["Critical Value X"]
+        crit_90 = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
         aniso_crit[block_id] = [crit_0, crit_90]
     end
     datamanager.set_aniso_crit_values(aniso_crit)

@@ -7,7 +7,6 @@ using LinearAlgebra
 using Rotations
 export bond_geometry
 export shape_tensor
-export angle_between_vectors
 
 """
      bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
@@ -216,34 +215,6 @@ function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}})
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end
     return RotXYZ(0, 0, angles[1] / 180 * pi)
-end
-
-"""
-    function angle_between_vectors(v1, v2)
-    
-Calculates the angle between two vectors in degrees.
-
-# Arguments
--  `v1`: First vector
-- `v2`: Second vector
-
-# Returns
-- Angle in degrees
-"""
-function angle_between_vectors(v1, v2)
-    dot_product = dot(v1, v2)
-    magnitude_v1 = norm(v1)
-    magnitude_v2 = norm(v2)
-
-    cos_theta = dot_product / (magnitude_v1 * magnitude_v2)
-
-    # Ensure that the cosine value is within the valid range [-1, 1]
-    cos_theta = min(1.0, max(-1.0, cos_theta))
-
-    # Convert the cosine value to degrees
-    angle_in_degrees = acos(cos_theta) * (180 / π)
-
-    return angle_in_degrees
 end
 
 end

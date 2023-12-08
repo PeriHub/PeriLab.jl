@@ -89,8 +89,8 @@ expected_structure = Dict(
                                             "Any" => [Union{Float64,Int64}, true],
                                         ), false],
                                     "Anisotropic Damage" => [Dict{Any,Any}(
-                                            "Critical Value 0" => [Union{Float64,Int64}, true],
-                                            "Critical Value 90" => [Union{Float64,Int64}, true],
+                                            "Critical Value X" => [Union{Float64,Int64}, true],
+                                            "Critical Value Y" => [Union{Float64,Int64}, true],
                                         ), false],
                                 ), true],
                         ), false],

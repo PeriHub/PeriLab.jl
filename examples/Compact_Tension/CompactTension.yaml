@@ -86,8 +86,8 @@ PeriLab:
         Critical Value: 5.578800557880057
         Damage Model: Critical Energy
         Anisotropic Damage:
-          Critical Value 0: 5.0
-          Critical Value 90: 2.5
+          Critical Value X: 4.0
+          Critical Value Y: 5.578800557880057
   Outputs:
     Output1:
       Number of Output Steps: 100
@@ -111,7 +111,7 @@ PeriLab:
         Displacements: true
       Write After Damage: true
   Solver:
-    Final Time: 0.0003
+    Final Time: 0.0001
     Initial Time: 0.0
     Material Models: true
     Damage Models: true

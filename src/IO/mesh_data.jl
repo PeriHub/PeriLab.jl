@@ -189,7 +189,6 @@ function get_bond_geometry(datamanager::Module)
     nlist = datamanager.get_field("Neighborhoodlist")
     coor = datamanager.get_field("Coordinates")
     undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
-    bond_damage = datamanager.create_constant_bond_field("Bond Damage", Float64, 1)
     undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
     return datamanager
 end

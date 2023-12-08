@@ -22,8 +22,8 @@ PeriLab:
         Critical Value: 10.1
         Damage Model: Critical Energy
         Anisotropic Damage:
-          Critical Value 0: 10.1
-          Critical Value 90: 10.1
+          Critical Value X: 10.1
+          Critical Value Y: 10.1
   Blocks:
     block_1:
       Block Names: "block_1"

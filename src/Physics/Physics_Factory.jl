@@ -192,7 +192,9 @@ Initialize damage model fields
 - `datamanager::Data_manager`: Datamanager.
 """
 function init_damage_model_fields(datamanager::Module)
+    dof = datamanager.get_dof()
     datamanager.create_node_field("Damage", Float64, 1)
+    datamanager.create_constant_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
     nlist = datamanager.get_field("Neighborhoodlist")
     inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     return datamanager

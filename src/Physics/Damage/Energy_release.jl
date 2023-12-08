@@ -4,12 +4,12 @@
 
 module Critical_Energy_Model
 include("../Material/Material_Factory.jl")
-include("../Pre_calculation/Pre_Calculation_Factory.jl")
 include("../../Support/geometry.jl")
+include("../Pre_calculation/Pre_Calculation_Factory.jl")
 using .Material
+using .Geometry
 using .Pre_calculation
 using LinearAlgebra
-using .Geometry
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
@@ -83,6 +83,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     update_list = datamanager.get_field("Update List")
     horizon = datamanager.get_field("Horizon")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
+    bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     bond_forces = datamanager.get_field("Bond Forces")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
@@ -117,6 +118,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     for iID in nodes
         quad_horizon = get_quad_horizon(horizon[iID], dof)
         @views relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
+        @views bond_components = deformed_bond[iID][:, 1:dof] ./ undeformed_bond[iID][:, end]
+
+        rotation_tensor = Geometry.rotation_tensor(angles[iID, :]) # Can be moved
 
         for (jID, neighborID) in enumerate(nlist[iID])
             norm_displacement = norm(relative_displacement_vector[jID, :])
@@ -126,10 +130,6 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             end
             if tension && deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end] < 0
                 continue
-            end
-
-            if rotation && aniso_damage
-                bond_angle = angle_between_vectors(deformed_bond[iID][jID, 1:dof], x_vector) - angles[iID, 1]
             end
 
             # check if the bond also exist at other node, due to different horizons
@@ -150,8 +150,24 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
 
             if aniso_damage
-                horizontal, vertical = calculate_energy_components(bond_energy, bond_angle)
-                if (horizontal / quad_horizon) > aniso_crit_values[block_ids[iID]][1] || (vertical / quad_horizon) > aniso_crit_values[block_ids[iID]][2]
+                # for i in 1:dof
+                #     if undeformed_bond[iID][jID, i] == 0 || bond_damage_aniso[iID][jID, i] == 0
+                #         continue
+                #     end
+                #     bond_component = sum(abs.(deformed_bond[iID][jID, 1:dof])) / abs(undeformed_bond[iID][jID, i])
+                #     # bond_energy_component = bond_energy * bond_component
+                #     bond_energy_component = bond_energy * bond_components[jID, i]
+                #     if bond_energy_component > aniso_crit_values[block_ids[iID]][i]
+                #         # @inbounds bond_damage[iID][jID] -= bond_component # TODO: check if this is correct, i think this will lead to a problem because bonds can break multiple times
+                #         # bond_damage_aniso[iID][jID, i] = 0.0
+                #         @inbounds bond_damage[iID][jID] = 0.0
+                #         @inbounds update_list[iID] = true
+                #     end
+                # end
+                #get index of max value
+                rotated_bond = rotation_tensor[1:dof, 1:dof] * deformed_bond[iID][jID, 1:dof]
+                max_index = argmax(abs.(rotated_bond))
+                if bond_energy > aniso_crit_values[block_ids[iID]][max_index]
                     @inbounds bond_damage[iID][jID] = 0.0
                     @inbounds update_list[iID] = true
                 end
@@ -160,6 +176,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                     @inbounds bond_damage[iID][jID] = 0.0
                     @inbounds update_list[iID] = true
                 end
+            end
+            if 1 < bond_damage[iID][jID] < 0
+                @error "Bond damage out of bounds"
             end
         end
     end
