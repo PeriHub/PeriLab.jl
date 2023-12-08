@@ -54,7 +54,7 @@ import .IO
 import .Solver
 # end
 
-PERILAB_VERSION = "1.0.1"
+PERILAB_VERSION = "1.0.2"
 
 export main
 
