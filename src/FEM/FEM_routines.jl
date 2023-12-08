@@ -137,28 +137,28 @@ function create_element_matrices(dof::Int64, p::Vector{Int64}, create_matrices)
 end
 
 
-function calculate_FEM(datamanager::Module)
+function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int64}})
 
     rotation::Bool, angles = datamanager.rotation_data("Element")
     dof = datamanager.get_dof()
 
     force_densities = datamanager.get_field("Force Density", "NP1")
+    displacement = datamanager.get_field("Displacemenent", "NP1")
     strain_N = datamanager.get_field("Element Strain", "N")
     strain_NP1 = datamanager.get_field("Element Strain", "NP1")
-    stress_N = datamanager.get_field("Element Cauchy Stress", "N")
-    stress_NP1 = datamanager.get_field("Element Cauchy Stress", "NP1")
+    stress_N = datamanager.get_field("Element Stress", "N")
+    stress_NP1 = datamanager.get_field("Element Stress", "NP1")
     strain_increment = datamanager.get_field("Element Strain Increment")
     topology = datamanager.get_field("FE Element Topology")
-
 
     N_matrix = datamanager.get_field("N Matrix")
     B_matrix = datamanager.get_field("B Matrix")
     #topo::Array{Int64} = zeros(Int64, tuple(p...))
     for idEL in elements
-        topo::Array{Int64} = view(topoloagy[idEL][:])
-        for (idInt, (N, B)) in enumerate(zip(N_matrix, B_matrix))
-
-            strain_increment[:, :, :] = strain_NP1[:, :, :] - strain_N[:, :, :]
+        topo::Array{Int64} = view(topology[idEL][:])
+        for (idInt, (N, B)) in enumerate(zip(eachrow(N_matrix[idEL, :, :]), eachrow(B_matrix[idEL, :, :])))
+            strain_NP1 = B * transpose(reshape(displacement[topo], (:, dof * length(topo))))
+            strain_increment[iID, idInt, :] = strain_NP1[iID, idInt, :] - strain_N[iID, idInt, :]
 
             if rotation
                 stress_N = rotate(nodes, dof, stress_N, angles, false)

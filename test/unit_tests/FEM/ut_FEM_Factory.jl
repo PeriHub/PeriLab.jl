@@ -5,6 +5,28 @@ include("../../../src/FEM/FEM_Factory.jl")
 
 using Test
 include("../../../src/Support/data_manager.jl")
+
+test_Data_manager = Data_manager
+test_Data_manager.set_dof(2)
+test_Data_manager.set_num_elements(2)
+test_Data_manager.set_num_controller(6)
+test_Data_manager.create_node_field("Force Density", Float64, 3)
+test_Data_manager.create_node_field("Displacements", Float64, 3)
+test_Data_manager.create_constant_node_field("Coordinates", Float64, 3)
+test_Data_manager = FEM.init_FEM(test_Data_manager, Dict("Degree" => 1, "Element Type" => "Lagrange"))
+topology = test_Data_manager.get_field("FE Element Topology")
+topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (3, 4))
+topology[1, 1] = 1
+topology[1, 2] = 2
+topology[1, 3] = 3
+topology[1, 4] = 4
+topology[2, 1] = 3
+topology[2, 2] = 5
+topology[2, 3] = 4
+topology[2, 4] = 6
+
+elements = Vector{Int64}([1, 2])
+#test_Data_manager = FEM.eval(test_Data_manager, elements)
 @testset "ut_valid_models" begin
     @test isnothing(FEM.valid_models(Dict()))
     @test isnothing(FEM.valid_models(Dict("Additive Model" => "a")))
@@ -44,6 +66,9 @@ end
     @test "Element Strain Increment" in test_Data_manager.get_all_field_keys()
 
 end
+
+
+
 @testset "ut_get_polynomial_degree" begin
 
     @test isnothing(FEM.get_polynomial_degree(Dict(), 1))

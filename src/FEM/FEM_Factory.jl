@@ -27,9 +27,9 @@ function init_FEM(datamanager::Module, params::Dict)
     N = datamanager.create_constant_free_size_field("N Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, dof))
     B = datamanager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
 
-    strainN, strainNP1 = datamanager.create_free_size_field("Element Strain", Float64, (nelements, prod(num_int), dof, dof))
-    stressN, stressNP1 = datamanager.create_free_size_field("Element Stress", Float64, (nelements, prod(num_int), dof, dof))
-    strain_increment = datamanager.create_constant_free_size_field("Element Strain Increment", Float64, (nelements, prod(num_int), dof, dof))
+    strainN, strainNP1 = datamanager.create_free_size_field("Element Strain", Float64, (nelements, prod(num_int), 3 * dof - 3))
+    stressN, stressNP1 = datamanager.create_free_size_field("Element Stress", Float64, (nelements, prod(num_int), 3 * dof - 3))
+    strain_increment = datamanager.create_constant_free_size_field("Element Strain Increment", Float64, (nelements, prod(num_int), 3 * dof - 3))
     if isnothing(N) || isnothing(B)
         return nothing
     end
@@ -67,7 +67,9 @@ function valid_models(params::Dict)
     end
     return nothing
 end
-
+function eval(datamanager::Module, elements::Union{SubArray,Vector{Int64}})
+    return calculate_FEM(datamanager, elements)
+end
 
 function get_polynomial_degree(params::Dict, dof::Int64)
     if !haskey(params, "Degree")
