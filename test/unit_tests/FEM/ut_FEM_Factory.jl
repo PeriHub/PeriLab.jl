@@ -36,6 +36,13 @@ end
     B = test_Data_manager.get_field("B Matrix")
     @test size(B) == (4, 8, 3)
     @test B[3, 1:6, 3] == [-0.39433756729740643, -0.10566243270259354, -0.10566243270259354, 0.10566243270259354, 0.39433756729740643, -0.39433756729740643]
+
+    @test "Element StrainN" in test_Data_manager.get_all_field_keys()
+    @test "Element StressN" in test_Data_manager.get_all_field_keys()
+    @test "Element StrainNP1" in test_Data_manager.get_all_field_keys()
+    @test "Element StressNP1" in test_Data_manager.get_all_field_keys()
+    @test "Element Strain Increment" in test_Data_manager.get_all_field_keys()
+
 end
 @testset "ut_get_polynomial_degree" begin
 
