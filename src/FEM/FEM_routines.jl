@@ -4,6 +4,8 @@
 using LinearAlgebra
 using FastGaussQuadrature
 
+
+
 function compute_strain(nodes::Union{SubArray,Vector{Int64}}, topology, B, u, strain)
 
     for iID in nodes
@@ -31,12 +33,12 @@ dof = 3
 p = [2, 3, 1]
 x, w = get_weights_and_integration_points(dof, p)
 """
-function get_weights_and_integration_points(dof::Int64, p::Vector{Int64})
+function get_weights_and_integration_points(dof::Int64, num_int::Vector{Int64})
 
-    x::Matrix{Float64} = zeros(Float64, maximum(p) + 1, dof)
-    w::Matrix{Float64} = zeros(Float64, maximum(p) + 1, dof)
+    x::Matrix{Float64} = zeros(Float64, maximum(num_int), dof)
+    w::Matrix{Float64} = zeros(Float64, maximum(num_int), dof)
     for idof in 1:dof
-        x[1:p[idof]+1, idof], w[1:p[idof]+1, idof] = gausslegendre(p[idof] + 1)
+        x[1:num_int[idof], idof], w[1:num_int[idof], idof] = gausslegendre(num_int[idof])
     end
     return w, x
 end
@@ -61,25 +63,26 @@ p = [2, 3]
 value = rand(3, dof)
 result = get_multi_dimensional_integration_points(dof, p, value)
 """
-function get_multi_dimensional_integration_point_data(dof::Int64, p::Vector{Int64}, value::Matrix{Float64})
+function get_multi_dimensional_integration_point_data(dof::Int64, num_int::Vector{Int64}, value::Matrix{Float64})
     count::Int64 = 0
-    integration_point::Matrix{Float64} = zeros(prod(p .+ 1), dof)
+    integration_point::Matrix{Float64} = zeros(prod(num_int), dof)
+
     if dof == 2
-        for pid in 1:p[1]+1
-            for pjd in 1:p[2]+1
+        for jID in 1:num_int[2]
+            for iID in 1:num_int[1]
                 count += 1
-                integration_point[count, 1] = value[pid, 1]
-                integration_point[count, 2] = value[pjd, 2]
+                integration_point[count, 1] = value[iID, 1]
+                integration_point[count, 2] = value[jID, 2]
             end
         end
     elseif dof == 3
-        for pid in 1:p[1]+1
-            for pjd in 1:p[2]+1
-                for pkd in 1:p[3]+1
+        for kID in 1:num_int[3]
+            for jID in 1:num_int[2]
+                for iID in 1:num_int[1]
                     count += 1
-                    integration_point[count, 1] = value[pid, 1]
-                    integration_point[count, 2] = value[pjd, 2]
-                    integration_point[count, 3] = value[pkd, 3]
+                    integration_point[count, 1] = value[iID, 1]
+                    integration_point[count, 2] = value[jID, 2]
+                    integration_point[count, 3] = value[kID, 3]
                 end
             end
         end
@@ -122,11 +125,80 @@ N^TN*\rho give than the mass matrix and B^TCB the stiffness matrix [WillbergC201
 """
 
 function create_element_matrices(dof::Int64, p::Vector{Int64}, create_matrices)
-    weights, integration_points = get_weights_and_integration_points(dof, p)
-    ip_coordinates = get_multi_dimensional_integration_point_data(dof, p, integration_points)
+    num_int = get_number_of_integration_points(p, dof)
+    weights, integration_points = get_weights_and_integration_points(dof, num_int)
+    ip_coordinates = get_multi_dimensional_integration_point_data(dof, num_int, integration_points)
+
     if isnothing(ip_coordinates)
         return nothing, nothing
     end
-    ip_weights = get_multi_dimensional_integration_point_data(dof, p, weights)
-    return create_matrices(dof, p, ip_weights, ip_coordinates)
+    ip_weights = get_multi_dimensional_integration_point_data(dof, num_int, weights)
+    return create_matrices(dof, num_int, p, ip_weights, ip_coordinates)
+end
+
+
+function calculate_FEM(datamanager::Module)
+
+    rotation::Bool, angles = datamanager.rotation_data("Element")
+    dof = datamanager.get_dof()
+
+    force_densities = datamanager.get_field("Force Density", "NP1")
+    strain_N = datamanager.get_field("Element Strain", "N")
+    strain_NP1 = datamanager.get_field("Element Strain", "NP1")
+    stress_N = datamanager.get_field("Element Cauchy Stress", "N")
+    stress_NP1 = datamanager.get_field("Element Cauchy Stress", "NP1")
+    strain_increment = datamanager.get_field("Element Strain Increment")
+    topology = datamanager.get_field("FE Element Topology")
+
+
+    N_matrix = datamanager.get_field("N Matrix")
+    B_matrix = datamanager.get_field("B Matrix")
+    #topo::Array{Int64} = zeros(Int64, tuple(p...))
+    for idEL in elements
+        topo::Array{Int64} = view(topoloagy[idEL][:])
+        for (idInt, (N, B)) in enumerate(zip(N_matrix, B_matrix))
+
+            strain_increment[:, :, :] = strain_NP1[:, :, :] - strain_N[:, :, :]
+
+            if rotation
+                stress_N = rotate(nodes, dof, stress_N, angles, false)
+                strain_increment = rotate(nodes, dof, strain_increment, angles, false)
+            end
+
+            # in future this part must be changed -> using set Modules
+
+            stress_NP1, datamanager = Correspondence_Elastic.compute_stresses(datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1)
+
+            #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
+            # material_model is missing
+            #stress_NP1, datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1))
+
+
+
+            if rotation
+                stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
+            end
+            bond_force = calculate_bond_force(nodes, deformation_gradient, undeformed_bond, bond_damage, inverse_shape_tensor, stress_NP1, bond_force)
+            # general interface, because it might be a flexbile Set_modules interface in future
+            datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
+
+            datamanager.get_field("Angles")
+            if rotation
+                stress_N = rotate(nodes, dof, stress_N, angles, false)
+                strain_increment = rotate(nodes, dof, strain_increment, angles, false)
+            end
+        end
+    end
+end
+
+function get_number_of_integration_points(p::Vector{Int64}, dof::Int64)
+    num_int::Vector{Int64} = zeros(Int64, dof)
+    for idof in 1:dof
+        if p[idof] == 1
+            num_int[idof] = 2
+            continue
+        end
+        num_int[idof] = 2 * p[idof] - 1
+    end
+    return num_int
 end

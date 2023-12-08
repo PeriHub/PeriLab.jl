@@ -34,14 +34,14 @@ end
 """
     define_lagrangian_grid_space(dof::Int64, p::Vector{Int64})
 
-Define a Lagrangian grid space for shape functions.
+Define a Lagrangian grid space for shape functions. The grid size is defined by the polynomial degree and not the number of integration points.
 
 # Arguments
 - `dof::Int64`: The number of degrees of freedom.
 - `p::Vector{Int64}`: A vector containing the polynomial degrees for each degree of freedom.
 
 # Returns
-- `xi::Matrix{Float64}`: Matrix representing the Lagrangian grid space. Each row corresponds to a degree of freedom, and columns contain the grid points.
+- `xi::Matrix{Float64}`: Matrix representing the Lagrangian grid space. Each row corresponds to a degree of freedom, and columns contain the grid points. 
 
 # Example
 ```julia
@@ -208,14 +208,14 @@ end
     a fully integrated element
 
 """
-function create_element_matrices(dof::Int64, p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64})
+function create_element_matrices(dof::Int64, num_int::Vector{Int64}, p::Vector{Int64}, ip_weights::Matrix{Float64}, ip_coordinates::Matrix{Float64})
     if dof > 3 || dof < 2
         @error "Not support degree of freedom for the finite element matrix creation"
         return nothing
     end
 
-    N::Array{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1) * dof, dof)
-    B::Array{Float64} = zeros(Float64, prod(p .+ 1), prod(p .+ 1) * dof, 3 * dof - 3)
+    N::Array{Float64} = zeros(Float64, prod(num_int), prod(p .+ 1) * dof, dof)
+    B::Array{Float64} = zeros(Float64, prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3)
     xi = define_lagrangian_grid_space(dof, p)
 
     if dof == 2

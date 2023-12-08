@@ -15,6 +15,7 @@ function init_FEM(datamanager::Module, params::Dict)
     nelements = datamanager.get_num_elements()
     elements::Vector{Int64} = 1:nelements
     p = get_polynomial_degree(params, dof)
+
     if isnothing(p)
         return p
     end
@@ -22,8 +23,11 @@ function init_FEM(datamanager::Module, params::Dict)
         @error "Degree of freedom = $dof is not supported, only 2 and 3."
         return nothing
     end
-    N = datamanager.create_constant_field("N Matrix", Float64, (prod(p .+ 1), prod(p .+ 1) * dof, dof))
-    B = datamanager.create_constant_field("B Matrix", Float64, (prod(p .+ 1), prod(p .+ 1) * dof, 3 * dof - 3))
+    num_int = get_number_of_integration_points(p, dof)
+    N = datamanager.create_constant_free_size_field("N Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, dof))
+    B = datamanager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
+
+    #strainN, strainNP1 = datamanager.create_free_size_field("Element Strain", Float64, (nelements , prod(num_int),dof,dof))
 
     if isnothing(N) || isnothing(B)
         return nothing
