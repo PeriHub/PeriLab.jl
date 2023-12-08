@@ -26,7 +26,6 @@ get_field
 get_field_type
 get_inverse_nlist
 get_local_nodes
-get_material_type
 get_nlist
 get_nnodes
 get_NP1_to_N_Dict
@@ -49,7 +48,6 @@ set_distribution
 set_dof
 set_glob_to_loc
 set_inverse_nlist
-set_material_type
 set_nnodes
 set_num_controller
 set_nnsets
@@ -62,7 +60,6 @@ set_properties
 set_rank
 set_max_rank
 set_synch
-set_fields_equal
 switch_NP1_to_N
 synch_manager
 ```

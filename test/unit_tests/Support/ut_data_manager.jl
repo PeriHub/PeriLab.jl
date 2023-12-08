@@ -462,3 +462,17 @@ end
     @test rotation
     @test angles == test_angles
 end
+
+@testset "ut_cancel" begin
+    test_Data_manager.set_cancel(true)
+    @test test_Data_manager.get_cancel()
+    test_Data_manager.set_cancel(false)
+    @test !test_Data_manager.get_cancel()
+end
+
+@testset "ut_crit_values_matrix" begin
+    crit_values = zeros(Float64, (2, 2, 2))
+    crit_values[1, 1, 1] = 1.0
+    test_Data_manager.set_crit_values_matrix(crit_values)
+    @test test_Data_manager.get_crit_values_matrix() == crit_values
+end

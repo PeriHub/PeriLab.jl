@@ -450,20 +450,6 @@ function get_local_nodes(global_nodes)
 end
 
 """
-    get_material_type(key)
-
-Get the material type.
-
-# Arguments
-- `key` (string): The key of the material type.
-# Returns
-- `get_material_type` (string): returns the material type
-"""
-function get_material_type(key)
-    return material_type[key]
-end
-
-"""
     get_nlist()
 
 Get the neighborhood list.
@@ -843,23 +829,6 @@ function set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
 end
 
 """
-    set_material_type(key::Union{Int64,AbstractString,String}, value::Union{Int64,AbstractString,String,Float64})
-
-Sets the material type globally.
-
-# Arguments
-- `key::Union{Int64,AbstractString,String}`: The key of the material type.
-- `value::Union{Int64,AbstractString,String,Float64}`: The value of the material type.
-"""
-function set_material_type(key::Union{Int64,AbstractString,String}, value::Union{Int64,AbstractString,String,Float64})
-    if key in keys(material_type)
-        global material_type[key] = value
-    else
-        @warn "Type " * key * " is not defined"
-    end
-end
-
-"""
     set_nnodes()
 
 Sets the number all nodes of one core globally.
@@ -1057,47 +1026,6 @@ function set_synch(name, download_from_cores, upload_to_cores)
         fields_to_synch[name*"NP1"] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, "dof" => length(field[1, :]))
     end
 
-end
-
-"""
-    set_fields_equal(name::String, NP1::String)
-
-Sets the fields equal.
-
-# Arguments
-- `name::String`: The name of the field.
-- `NP1::String`: The name of the field.
-"""
-function set_fields_equal(name::String, NP1::String)
-    set_fields_equal(name * NP1)
-end
-
-"""
-    set_fields_equal(NP1::String)
-
-Sets the fields equal.
-
-# Arguments
-- `NP1::String`: The name of the field.
-"""
-function set_fields_equal(NP1::String)
-    global field_array_type
-
-    NP1_to_N = get_NP1_to_N_Dict()
-    if field_array_type[NP1]["Type"] == "Matrix"
-        field_array_type[NP1]["Type"] = "Vector"
-        field_NP1 = get_field(NP1)
-        field_array_type[NP1]["Type"] = "Matrix"
-        N = NP1_to_N[NP1]
-        field_array_type[N]["Type"] = "Vector"
-        field_N = get_field(N)
-        field_array_type[N]["Type"] = "Matrix"
-    else
-        field_NP1 = get_field(NP1)
-        N = NP1_to_N[NP1]
-        field_N = get_field(N)
-    end
-    field_N[:] = field_NP1[:]
 end
 
 """
