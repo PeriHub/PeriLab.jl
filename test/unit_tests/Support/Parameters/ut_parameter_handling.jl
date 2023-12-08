@@ -85,6 +85,27 @@ end
     @test !haskey(nsets, "Nset_2")
     rm(filename)
 end
+@testset "ut_node_set" begin
+
+    filename = "test.txt"
+    numbers = [11, 12, 13, 44, 125]
+    file = open(filename, "w")
+    println(file, "header: global_id")
+    for number in numbers
+        println(file, number)
+    end
+    close(file)
+
+    params = Dict("Node Setas" => 12)
+    @test [] == get_node_set(params)
+    params = Dict("Node Set" => 12)
+    @test [12] == get_node_set(params)
+    params = Dict("Node Set" => filename)
+    @test [11, 12, 13, 44, 125] == get_node_set(params)
+    params = Dict("Node Set" => "13 44 125")
+    @test [13, 44, 125] == get_node_set(params)
+    rm(filename)
+end
 @testset "ut_validate_yaml" begin
     params = Dict{Any,Any}()
     @info "Error messages are tested and therefore okay."
