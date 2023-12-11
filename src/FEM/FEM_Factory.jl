@@ -57,10 +57,10 @@ function valid_models(params::Dict)
         @warn "Thermal models are not supported for FEM yet"
     end
     if !haskey(params, "Material Model")
-        @error "No material model has been defined for the block"
+        @error "No material model has been defined for FEM in the block."
         return nothing
     else
-        if !occursin(params["Material Model"], "Correspondence")
+        if !occursin("Correspondence", params["Material Model"])
             @error "Only correspondence material is supported for FEM"
             return nothing
         end
