@@ -4,6 +4,19 @@
 include("../../../src/FEM/FEM_routines.jl")
 include("../../../src/FEM/Element_formulation/lagrange_element.jl")
 using Test
+@testset "ut_get_FE_material_model" begin
+    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+        "Material Models" => Dict("Elastic Model 2" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)))
+
+    @test isnothing(get_FE_material_model(params, "FE_1"))
+
+    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+        "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)))
+
+    @test get_FE_material_model(params, "FE_1") == Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)
+end
+
+
 @testset "ut_get_number_of_integration_points" begin
     @test get_number_of_integration_points(Vector{Int64}([1, 1]), 2) == [2, 2]
     @test get_number_of_integration_points(Vector{Int64}([1, 1, 1]), 3) == [2, 2, 2]

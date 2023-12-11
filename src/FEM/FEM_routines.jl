@@ -3,7 +3,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 using LinearAlgebra
 using FastGaussQuadrature
+include("../Physics/Material/material_basis.jl")
 
+function get_FE_material_model(params::Dict, name::String)
+    if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
+        @error "Material model " * params["FEM"][name]["Material Model"] * " defined in FEM are not defined as material"
+        return nothing
+    end
+    return params["Material Models"][params["FEM"][name]["Material Model"]]
+end
 
 
 function compute_strain(nodes::Union{SubArray,Vector{Int64}}, topology, B, u, strain)
@@ -137,59 +145,6 @@ function create_element_matrices(dof::Int64, p::Vector{Int64}, create_matrices)
 end
 
 
-function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int64}})
-
-    rotation::Bool, angles = datamanager.rotation_data("Element")
-    dof = datamanager.get_dof()
-
-    force_densities = datamanager.get_field("Force Density", "NP1")
-    displacement = datamanager.get_field("Displacemenent", "NP1")
-    strain_N = datamanager.get_field("Element Strain", "N")
-    strain_NP1 = datamanager.get_field("Element Strain", "NP1")
-    stress_N = datamanager.get_field("Element Stress", "N")
-    stress_NP1 = datamanager.get_field("Element Stress", "NP1")
-    strain_increment = datamanager.get_field("Element Strain Increment")
-    topology = datamanager.get_field("FE Element Topology")
-
-    N_matrix = datamanager.get_field("N Matrix")
-    B_matrix = datamanager.get_field("B Matrix")
-    #topo::Array{Int64} = zeros(Int64, tuple(p...))
-    for idEL in elements
-        topo::Array{Int64} = view(topology[idEL][:])
-        for (idInt, (N, B)) in enumerate(zip(eachrow(N_matrix[idEL, :, :]), eachrow(B_matrix[idEL, :, :])))
-            strain_NP1 = B * transpose(reshape(displacement[topo], (:, dof * length(topo))))
-            strain_increment[iID, idInt, :] = strain_NP1[iID, idInt, :] - strain_N[iID, idInt, :]
-
-            if rotation
-                stress_N = rotate(nodes, dof, stress_N, angles, false)
-                strain_increment = rotate(nodes, dof, strain_increment, angles, false)
-            end
-
-            # in future this part must be changed -> using set Modules
-
-            stress_NP1, datamanager = Correspondence_Elastic.compute_stresses(datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1)
-
-            #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
-            # material_model is missing
-            #stress_NP1, datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1))
-
-
-
-            if rotation
-                stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
-            end
-            bond_force = calculate_bond_force(nodes, deformation_gradient, undeformed_bond, bond_damage, inverse_shape_tensor, stress_NP1, bond_force)
-            # general interface, because it might be a flexbile Set_modules interface in future
-            datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
-
-            datamanager.get_field("Angles")
-            if rotation
-                stress_N = rotate(nodes, dof, stress_N, angles, false)
-                strain_increment = rotate(nodes, dof, strain_increment, angles, false)
-            end
-        end
-    end
-end
 
 function get_number_of_integration_points(p::Vector{Int64}, dof::Int64)
     num_int::Vector{Int64} = zeros(Int64, dof)
