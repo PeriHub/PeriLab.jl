@@ -8,6 +8,7 @@ include("../../../src/Physics/Additive/Additive_template/additive_template.jl")
 include("../../../src/Physics/Damage/Damage_template/damage_template.jl")
 include("../../../src/Physics/Material/Material_template/material_template.jl")
 include("../../../src/Physics/Thermal/Thermal_template/thermal_template.jl")
+include("../../../src/Physics/Pre_calculation/Pre_calculation_template/pre_calculation_template.jl")
 
 using Test
 using TimerOutputs
@@ -20,7 +21,6 @@ test_Data_manager.set_num_controller(3)
 @testset "ut_additive_template" begin
     @test Additive_template.additive_name() == "Additive Template"
     @test Additive_template.compute_additive(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
-
 end
 
 @testset "ut_damage_template" begin
@@ -37,4 +37,9 @@ end
 @testset "ut_thermal_template" begin
     @test Thermal_template.thermal_model_name() == "Thermal Template"
     @test Thermal_template.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
+end
+
+@testset "ut_pre_calculation_template" begin
+    @test Pre_calculation_template.pre_calculation_name() == "pre_calculation Template"
+    @test Pre_calculation_template.pre_calculation(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
 end

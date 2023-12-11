@@ -49,33 +49,51 @@ if !isdir("tmp")
     mkdir("tmp")
 end
 @testset "ut_create_result_file" begin
-    filename = "./tmp/" * "test.e"
+    filename1 = "./tmp/" * "test.2.1.e"
     nnodes = 4
     dof = 3
-    exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 1, 0)
-    @test isfile(filename)
-    @test exo["file"].file_name == filename
+    exo = Write_Exodus_Results.create_result_file(filename1, nnodes, dof, 1, 0)
+    @test isfile(filename1)
+    @test exo["file"].file_name == filename1
     @test exo["file"].init.num_dim == dof
     @test exo["file"].init.num_nodes == nnodes
     @test exo["file"].init.num_node_sets == 0
     @test exo["file"].init.num_elem_blks == 1
 
     close(exo["file"])
-    rm(filename)
-    fid = open(filename, "w")
+    rm(filename1)
+    fid = open(filename1, "w")
     close(fid)
     nnodes = 300
     dof = 2
-    @test isfile(filename)
-    exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 3, 2)
-    @test isfile(filename)
-    @test exo["file"].file_name == filename
+    @test isfile(filename1)
+    exo = Write_Exodus_Results.create_result_file(filename1, nnodes, dof, 3, 2)
+    @test isfile(filename1)
+    @test exo["file"].file_name == filename1
     @test exo["file"].init.num_dim == dof
     @test exo["file"].init.num_nodes == nnodes
     @test exo["file"].init.num_node_sets == 2
     @test exo["file"].init.num_elem_blks == 3
     close(exo["file"])
-    rm(filename)
+
+    filename2 = "./tmp/" * "test.2.2.e"
+    nnodes = 4
+    dof = 3
+    exo = Write_Exodus_Results.create_result_file(filename2, nnodes, dof, 1, 0)
+
+    close(exo["file"])
+    rm(filename2)
+    fid = open(filename2, "w")
+    close(fid)
+    nnodes = 300
+    dof = 2
+    exo = Write_Exodus_Results.create_result_file(filename2, nnodes, dof, 3, 2)
+    close(exo["file"])
+
+    Write_Exodus_Results.merge_exodus_file(filename1)
+    @test isfile(filename2)
+    rm(filename1)
+    rm(filename2)
 end
 filename = "./tmp/" * "test_2.e"
 nnodes = 5
