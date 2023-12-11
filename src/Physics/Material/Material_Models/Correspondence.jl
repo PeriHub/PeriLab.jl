@@ -36,23 +36,9 @@ function init_material_model(datamanager::Module)
   # global angles
 
   dof = datamanager.get_dof()
-  nnodes = datamanager.get_nnodes()
   datamanager.create_node_field("Strain", Float64, "Matrix", dof)
   datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
   datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
-
-  rotation::Bool, angles = datamanager.rotation_data()
-  if rotation
-    orientations = datamanager.create_constant_node_field("Orientations", Float64, "Vector", 3)
-    for iID in 1:nnodes
-      rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
-      if dof == 2
-        orientations[iID, :] = rotation_tensor * [1, 0, 0]
-      elseif dof == 3
-        orientations[iID, :] = rotation_tensor * [1, 1, 1]
-      end
-    end
-  end
 
   return datamanager
 end

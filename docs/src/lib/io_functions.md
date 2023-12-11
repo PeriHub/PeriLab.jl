@@ -19,6 +19,7 @@ get_file_size
 clearNP1
 get_results_mapping
 initialize_data
+init_orientations
 init_write_results
 read_input_file
 write_results

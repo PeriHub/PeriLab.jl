@@ -10,10 +10,12 @@ include("csv_export.jl")
 include("../Compute/compute_global_values.jl")
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_communication.jl")
+include("../Support/geometry.jl")
 using .Read_Input_Deck
 using .Read_Mesh
 using .Write_Exodus_Results
 using .Write_CSV_Results
+using .Geometry
 using MPI
 using CSV
 using Exodus
@@ -281,8 +283,36 @@ function initialize_data(filename::String, filedirectory::String, datamanager::M
         datamanager.set_max_rank(MPI.Comm_size(comm))
         datamanager.set_comm(comm)
     end
+    datamanager = init_orientations(datamanager)
     return Read_Mesh.init_data(read_input_file(filename), filedirectory, datamanager, comm, to)
 
+end
+
+"""
+    init_orientations(datamanager::Module)
+
+Initialize orientations.
+
+# Arguments
+- `datamanager::Module`: The datamanager
+"""
+function init_orientations(datamanager::Module)
+    rotation::Bool, angles = datamanager.rotation_data()
+    if !rotation
+        return datamanager
+    end
+    dof = datamanager.get_dof()
+    nnodes = datamanager.get_nnodes()
+    orientations = datamanager.create_constant_node_field("Orientations", Float64, "Vector", 3)
+    for iID in 1:nnodes
+        rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
+        if dof == 2
+            orientations[iID, :] = rotation_tensor * [1, 0, 0]
+        elseif dof == 3
+            orientations[iID, :] = rotation_tensor * [1, 1, 1]
+        end
+    end
+    return datamanager
 end
 
 """
