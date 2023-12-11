@@ -6,24 +6,41 @@ module PD_Solid_Elastic
 include("../material_basis.jl")
 include("./Ordinary/Ordinary.jl")
 import .Ordinary
+export fe_support
 export init_material_model
 export material_name
 export compute_forces
 
-# global dof::Int64
-# global nlist::Vector{Vector{Int64}}
-# global volume::Vector{Float64}
+"""
+  fe_support()
+
+Gives the information if the material supports the FEM part of PeriLab
+
+# Arguments
+
+# Returns
+- bool: true - for FEM support; false - for no FEM support
+
+Example:
+```julia
+println(fe_support())
+false
+```
+"""
+function fe_support()
+    return false
+end
 
 """
-    init_material_model(datamanager::Module)
+  init_material_model(datamanager::Module)
 
 Initializes the material model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_manager`: Datamanager.
 
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
     # global dof

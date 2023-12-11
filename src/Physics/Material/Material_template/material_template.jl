@@ -3,9 +3,30 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Material_template
+export fe_support
 export init_material_model
 export material_name
 export compute_forces
+
+"""
+  fe_support()
+
+Gives the information if the material supports the FEM part of PeriLab
+
+# Arguments
+
+# Returns
+- bool: true - for FEM support; false - for no FEM support
+
+Example:
+```julia
+println(fe_support())
+false
+```
+"""
+function fe_support()
+  return false
+end
 
 """
   init_material_model(datamanager::Module)
@@ -19,7 +40,6 @@ Initializes the material model.
   - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
-
   return datamanager
 end
 

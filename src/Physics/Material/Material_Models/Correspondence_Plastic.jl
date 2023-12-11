@@ -4,20 +4,41 @@
 
 module Correspondence_Plastic
 using LinearAlgebra
+export fe_support
 export init_material_model
 export material_name
-export compute_force
+export compute_forces
+
+"""
+  fe_support()
+
+Gives the information if the material supports the FEM part of PeriLab
+
+# Arguments
+
+# Returns
+- bool: true - for FEM support; false - for no FEM support
+
+Example:
+```julia
+println(fe_support())
+false
+```
+"""
+function fe_support()
+  return false
+end
 
 """
   init_material_model(datamanager::Module)
 
-  Initializes the material model.
+Initializes the material model.
 
-  Parameters:
-    - `datamanager::Data_manager`: Datamanager.
+# Arguments
+  - `datamanager::Data_manager`: Datamanager.
 
-  Returns:
-    - `datamanager::Data_manager`: Datamanager.
+# Returns
+  - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
 
