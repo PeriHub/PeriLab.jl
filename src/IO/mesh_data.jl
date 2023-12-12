@@ -324,12 +324,15 @@ function check_mesh_elements(mesh, dof)
     end
     if !(haskey(meshInfoDict, "Coordinates"))
         @error "No coordinates defined"
+        return nothing
     end
     if !(haskey(meshInfoDict, "Block_Id"))
         @error "No blocks defined"
+        return nothing
     end
     if !(haskey(meshInfoDict, "Volume"))
         @error "No volumes defined"
+        return nothing
     end
     return meshInfoDict
 end

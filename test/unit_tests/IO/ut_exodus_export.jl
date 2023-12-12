@@ -205,6 +205,8 @@ test_disp_step_one = read_values(exo["file"], NodalVariable, 2, 1, 1)
 end
 
 csvfilename = "./tmp/" * "test_2.csv"
+csv_file = open(csvfilename, "w")
+println(csv_file, "Test")
 csv_file = Write_CSV_Results.create_result_file(csvfilename, computes)
 exo["file"] = Write_Exodus_Results.write_global_results_in_exodus(exo["file"], 2, computes["Fields"], [0.1, 0.2])
 

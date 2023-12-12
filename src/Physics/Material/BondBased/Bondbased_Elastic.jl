@@ -70,15 +70,16 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     K = material_parameter["Bulk Modulus"]
     E = material_parameter["Young's Modulus"]
     for iID in nodes
+        if 0 in deformed_bond[iID][:, end]
+            @error "Length of bond is zero due to its deformation."
+            return nothing
+        end
         if symmetry == "plane stress"
             constant = 12.0 * E / (pi * (1 + 1.0 / 3) * horizon[iID]^3)
         elseif symmetry == "plane strain"
             constant = 12.0 * E / (pi * (1.25) * horizon[iID]^3)
         else
             constant = 18.0 * K / (pi * horizon[iID]^4)
-        end
-        if deformed_bond[iID][:, end] == 0
-            @error "Length of bond is zero due to its deformation."
         end
         # Calculate the bond force
         bond_force[iID] = (0.5 .* constant .* bond_damage[iID][:] .* (deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end]) ./ undeformed_bond[iID][:, end]) .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]

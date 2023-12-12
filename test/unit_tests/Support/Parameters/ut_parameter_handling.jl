@@ -122,6 +122,8 @@ end
     @test isnothing(validate_yaml(params))
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}(), "Discretization" => Dict{Any,Any}(), "Blocks" => Dict{Any,Any}(), "Solver" => Dict{Any,Any}()))
     @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}("mat_1" => Dict{Any,Any}("Material Model" => "a"))), "Discretization" => Dict{Any,Any}("Input Mesh File" => "test", "Type" => "test"), "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,Any}("Block Names" => "Block_1", "Density" => 1.0, "Horizon" => "1.0")), "Solver" => Dict{Any,Any}("Final Time" => 1.0, "Initial Time" => 0.0)))
+    @test isnothing(validate_yaml(params))
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}("mat_1" => Dict{Any,Any}("Material Model" => "a"))), "Discretization" => Dict{Any,Any}("Input Mesh File" => "test", "Type" => "test"), "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,Any}("Block Names" => "Block_1", "Density" => 1.0, "Horizon" => 1.0)), "Solver" => Dict{Any,Any}("Final Time" => 1.0, "Initial Time" => 0.0)))
     @test validate_yaml(params) == params["PeriLab"]
 end
@@ -467,4 +469,9 @@ end
         "Shape Tensor" => false,
         "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
+end
+
+@testset "ut_check_for_duplicates" begin
+    check_for_duplicates(["a", "b", "c"])
+    check_for_duplicates(["a", "b", "c", "a"])
 end

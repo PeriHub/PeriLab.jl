@@ -46,6 +46,27 @@ end
 end
 @testset "ut_check_mesh_elements" begin
     data = Dict(
+        "volume" => [1, 1, 1],
+        "block_id" => [1, 1, 1]
+    )
+    df = DataFrame(data)
+    @test isnothing(Read_Mesh.check_mesh_elements(df, 2))
+    data = Dict(
+        "x" => [1.0, 1.1, 3],
+        "y" => [25, 30, 22],
+        "block_id" => [1, 1, 1]
+    )
+    df = DataFrame(data)
+    @test isnothing(Read_Mesh.check_mesh_elements(df, 2))
+    data = Dict(
+        "x" => [1.0, 1.1, 3],
+        "y" => [25, 30, 22],
+        "volume" => [1, 1, 1]
+    )
+    df = DataFrame(data)
+    @test isnothing(Read_Mesh.check_mesh_elements(df, 2))
+
+    data = Dict(
         "x" => [1.0, 1.1, 3],
         "y" => [25, 30, 22],
         "volume" => [1, 1, 1],

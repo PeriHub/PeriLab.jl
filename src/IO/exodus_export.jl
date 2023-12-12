@@ -162,9 +162,8 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
     write_id_map(exo, NodeMap, Int32.(global_ids))
     write_id_map(exo, ElementMap, Int32.(global_ids))
 
-    """
-    output structure var_name -> [fieldname, exodus id, field dof]
-    """
+    # output structure var_name -> [fieldname, exodus id, field dof]
+
     nodal_outputs = Dict(key => value for (key, value) in output["Fields"] if (!value["global_var"]))
     global_outputs = Dict(key => value for (key, value) in output["Fields"] if (value["global_var"]))
     nodal_output_names = collect(keys(sort(nodal_outputs)))

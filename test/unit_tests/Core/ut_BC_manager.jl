@@ -175,6 +175,6 @@ end
     @test sum(disp) == 0
 
     params = Dict("Boundary Conditions" => Dict("BC_2" => Dict("Type" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "u", "Value" => "5")))
-    # test must be improved. The error does not work
-    # @test isnothing(Boundary_conditions.apply_bc(bcs, test_Data_manager, 0.2))
+    bcs = Boundary_conditions.init_BCs(params, test_Data_manager)
+    @test isnothing(Boundary_conditions.apply_bc(bcs, test_Data_manager, 0.2))
 end

@@ -33,7 +33,7 @@ function find_jl_files(directory::AbstractString)
     jl_files = Vector{String}()
     if !isdir(directory)
         @error "$directory does not exists. Modules won't be loaded accurately."
-        return jl_files
+        return nothing
     end
 
     function find_jl_recursive(current_dir::AbstractString)
