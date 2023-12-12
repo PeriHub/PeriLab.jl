@@ -28,6 +28,7 @@ end
 
 @testset "ut_get_partial_stresses" begin
     test_Data_manager = Data_manager
+    test_Data_manager.set_dof(2)
     test_Data_manager.set_num_controller(5)
 
     test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
@@ -44,8 +45,8 @@ end
     test_Data_manager = get_partial_stresses(test_Data_manager, nodes)
     csNP1 = test_Data_manager.get_field("Cauchy Stress", "NP1")
     # for iID in 1:5
-    #     for i in 1:3
-    #         for j in 1:3
+    #     for i in 1:2
+    #         for j in 1:2
     #             @test csNP1[iID, i, j] == f[iID, i]
     #         end
     #     end

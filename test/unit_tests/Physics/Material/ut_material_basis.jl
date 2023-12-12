@@ -88,7 +88,6 @@ end
     E = parameter["Young's Modulus"]
     nu = parameter["Poisson's Ratio"]
     temp = 1 / ((1 + nu) * (1 - 2 * nu))
-    println(parameter)
     C = get_Hooke_matrix(parameter, symmetry, 3)
     for iID in 1:3
         @test C[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
@@ -158,5 +157,22 @@ end
     @test C[3, 2] == parameter["C26"]
 
     symmetry = "anisotropic plane stress"
+
+end
+
+@testset "ut_matrix_to_voigt" begin
+    matrix = [1 2; 3 4]
+    voigt = matrix_to_voigt(matrix)
+    @test voigt[1] == 1
+    @test voigt[2] == 4
+    @test voigt[3] == 2.5
+    matrix = [1 2 3; 4 5 6; 7 8 9]
+    voigt = matrix_to_voigt(matrix)
+    @test voigt[1] == 1
+    @test voigt[2] == 5
+    @test voigt[3] == 9
+    @test voigt[4] == 7
+    @test voigt[5] == 5
+    @test voigt[6] == 3
 
 end

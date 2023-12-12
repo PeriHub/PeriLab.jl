@@ -128,12 +128,24 @@ end
     @test testBool
     IO.close_result_files(result_files)
 
+    IO.merge_exodus_files(result_files, "")
+
     rm(filename1 * ".e")
     rm(filename2 * ".e")
 end
 
 @testset "ut_show_block_summary" begin
+    test_Data_manager.set_block_list([1])
     solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
-    params = Dict("Blocks" => Dict("1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
+    params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
     IO.show_block_summary(solver_options, params, comm, test_Data_manager)
+end
+
+@testset "ut_init_orientations" begin
+    angles = test_Data_manager.create_constant_node_field("Angles", Float64, 1, 90)
+    IO.init_orientations(test_Data_manager)
+    orientations = test_Data_manager.get_field("Orientations")
+    @test isapprox(orientations[1, 1], 0; atol=0.00001)
+    @test isapprox(orientations[1, 2], 1; atol=0.00001)
+    @test isapprox(orientations[1, 3], 0; atol=0.00001)
 end
