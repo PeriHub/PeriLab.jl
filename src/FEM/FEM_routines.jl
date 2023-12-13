@@ -13,6 +13,60 @@ function get_FE_material_model(params::Dict, name::String)
     return params["Material Models"][params["FEM"][name]["Material Model"]]
 end
 
+function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, params::Dict, name::String, compute_stresses, time::Float64, dt::Float64)
+
+    material_params = get_FE_material_model(params, name)
+    rotation::Bool, angles = datamanager.rotation_data("Element")
+    dof = datamanager.get_dof()
+
+    force_densities = datamanager.get_field("Force Density", "NP1")
+    displacement = datamanager.get_field("Displacements", "NP1")
+    strain_N = datamanager.get_field("Element Strain", "N")
+    strain_NP1 = datamanager.get_field("Element Strain", "NP1")
+    stress_N = datamanager.get_field("Element Stress", "N")
+    stress_NP1 = datamanager.get_field("Element Stress", "NP1")
+    strain_increment = datamanager.get_field("Element Strain Increment")
+    topology = datamanager.get_field("FE Element Topology")
+    jacobi = datamanager.get_field("Element Jacobi Matrix")
+    det_jacobi = datamanager.get_field("Element Jacobi Determinant")
+
+    N_matrix = datamanager.get_field("N Matrix")
+    B_matrix = datamanager.get_field("B Matrix")
+
+    le::Int64 = 0
+    for idEL in elements
+        topo = view(topology, idEL, :)
+        le = dof * length(topo)
+        for idInt in eachindex(B_matrix[:, 1, 1])
+            #zip(eachrow(N_matrix[:, :, :]), eachrow(B_matrix[:, :, :])))
+            # epsilon  = B*u -> because of indexing its moved around
+            strain_NP1[idEL, idInt, :] = reshape(displacement[topo, :], (:, le)) * B_matrix[idInt, :, :]
+            strain_increment[idEL, idInt, :] = strain_NP1[idEL, idInt, :] - strain_N[idEL, idInt, :]
+
+            if rotation
+                #tbd
+                stress_N = rotate(nodes, dof, stress_N, angles, false)
+                strain_increment = rotate(nodes, dof, strain_increment, angles, false)
+            end
+
+            # in future this part must be changed -> using set Modules
+
+            stress_NP1[idEL, idInt, :], datamanager = compute_stresses(datamanager, dof, material_params, time, dt, strain_increment[idEL, idInt, :], stress_N[idEL, idInt, :], stress_NP1[idEL, idInt, :])
+
+            #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
+            # material_model is missing
+            #stress_NP1, datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1))
+
+            if rotation
+                #tbd
+                stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
+            end
+            #tbd
+            force_densities[topo, :] += B_matrix * jacobi * det_jacobi * stress_NP1
+        end
+    end
+    return datamanager
+end
 
 function compute_strain(nodes::Union{SubArray,Vector{Int64}}, topology, B, u, strain)
 
@@ -101,10 +155,34 @@ function get_multi_dimensional_integration_point_data(dof::Int64, num_int::Vecto
     return integration_point
 end
 
-function get_Jacobian(B::SubArray, coordinates::SubArray)
-    return det(dot(B, coordinates))
+
+function get_Jacobian(elements::Vector{Int64}, num_int::Vector{Int64}, topology::SubArray, coordinates::SubArray, B::SubArray, jacobian::SubArray, determinant_jacobian::SubArray)
+
+    return jacobian, determinant_jacobian
 end
 
+
+function get_polynomial_degree(params::Dict, dof::Int64)
+    if !haskey(params, "Degree")
+        @error "No element degree defined"
+        return nothing
+    end
+    value = params["Degree"]
+    if sum(typeof.(value) .!= Int64) != 0
+        @warn "Degree was defined as Float and set to Int."
+        value = Int64.(round.(value))
+    end
+    if length(value) == 1
+        return_value::Vector{Int64} = zeros(dof)
+        return_value[1:dof] .= value[1]
+        return return_value
+    elseif length(value) == dof
+        return value[1:dof]
+    else
+        @error "Degree must be defined with length one or number of dof."
+        return nothing
+    end
+end
 
 
 """

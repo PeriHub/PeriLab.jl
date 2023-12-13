@@ -4,6 +4,39 @@
 include("../../../src/FEM/FEM_routines.jl")
 include("../../../src/FEM/Element_formulation/lagrange_element.jl")
 using Test
+include("../../../src/Support/data_manager.jl")
+
+@testset "ut_get_polynomial_degree" begin
+
+    @test isnothing(get_polynomial_degree(Dict(), 1))
+    @test isnothing(get_polynomial_degree(Dict(), 2))
+    @test isnothing(get_polynomial_degree(Dict(), 3))
+
+    params = Dict("Degree" => 1)
+
+    @test get_polynomial_degree(params, 2) == [1, 1]
+    @test get_polynomial_degree(params, 3) == [1, 1, 1]
+
+    params = Dict("Degree" => 2)
+    @test get_polynomial_degree(params, 2) == [2, 2]
+    @test get_polynomial_degree(params, 3) == [2, 2, 2]
+
+    params = Dict("Degree" => 2.1)
+    println()
+    @test get_polynomial_degree(params, 2) == [2, 2]
+    @test get_polynomial_degree(params, 3) == [2, 2, 2]
+
+    params = Dict("Degree" => [2 3 1])
+    @test isnothing(get_polynomial_degree(params, 2))
+    @test get_polynomial_degree(params, 3) == [2, 3, 1]
+
+    params = Dict("Degree" => [2.1 2])
+    @test get_polynomial_degree(params, 2) == [2, 2]
+    @test isnothing(get_polynomial_degree(params, 3))
+
+end
+
+
 @testset "ut_get_FE_material_model" begin
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
         "Material Models" => Dict("Elastic Model 2" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)))
