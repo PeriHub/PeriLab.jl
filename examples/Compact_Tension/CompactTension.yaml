@@ -86,11 +86,12 @@ PeriLab:
         Critical Value: 5.578800557880057
         Damage Model: Critical Energy
         Anisotropic Damage:
-          Critical Value X: 4.0
-          Critical Value Y: 5.578800557880057
+          Critical Value X: 0.5
+          Critical Value Y: 500
   Outputs:
     Output1:
       Number of Output Steps: 100
+      # Output Frequency: 1
       Output File Type: Exodus
       Output Filename: CompactTension_Output1
       Output Variables:

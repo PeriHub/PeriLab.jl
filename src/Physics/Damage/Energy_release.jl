@@ -118,9 +118,11 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     for iID in nodes
         quad_horizon = get_quad_horizon(horizon[iID], dof)
         @views relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
-        @views bond_components = deformed_bond[iID][:, 1:dof] ./ undeformed_bond[iID][:, end]
+        # @views bond_components = deformed_bond[iID][:, 1:dof] ./ undeformed_bond[iID][:, end]
 
         rotation_tensor = Geometry.rotation_tensor(angles[iID, :]) # Can be moved
+        # rotated_bond = rotation_tensor[1:dof, 1:dof] .* deformed_bond[iID][:, 1:dof]
+        # bond_norm = abs.(rotated_bond) ./ deformed_bond[iID][:, end]
 
         for (jID, neighborID) in enumerate(nlist[iID])
             norm_displacement = norm(relative_displacement_vector[jID, :])
@@ -150,34 +152,39 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
 
             if aniso_damage
-                # for i in 1:dof
-                #     if undeformed_bond[iID][jID, i] == 0 || bond_damage_aniso[iID][jID, i] == 0
-                #         continue
-                #     end
-                #     bond_component = sum(abs.(deformed_bond[iID][jID, 1:dof])) / abs(undeformed_bond[iID][jID, i])
-                #     # bond_energy_component = bond_energy * bond_component
-                #     bond_energy_component = bond_energy * bond_components[jID, i]
-                #     if bond_energy_component > aniso_crit_values[block_ids[iID]][i]
-                #         # @inbounds bond_damage[iID][jID] -= bond_component # TODO: check if this is correct, i think this will lead to a problem because bonds can break multiple times
-                #         # bond_damage_aniso[iID][jID, i] = 0.0
-                #         @inbounds bond_damage[iID][jID] = 0.0
-                #         @inbounds update_list[iID] = true
-                #     end
-                # end
-                #get index of max value
-                rotated_bond = rotation_tensor[1:dof, 1:dof] * deformed_bond[iID][jID, 1:dof]
-                max_index = argmax(abs.(rotated_bond))
-                if bond_energy > aniso_crit_values[block_ids[iID]][max_index]
-                    @inbounds bond_damage[iID][jID] = 0.0
-                    @inbounds update_list[iID] = true
+                for i in 1:dof
+                    rotated_bond = rotation_tensor[1:dof, 1:dof] * deformed_bond[iID][jID, 1:dof]
+                    if bond_damage_aniso[iID][jID, i] == 0 || rotated_bond[i] == 0
+                        continue
+                    end
+                    bond_norm = abs(rotated_bond[i]) / deformed_bond[iID][jID, end]
+                    bond_energy_component = bond_energy * bond_norm
+                    if bond_energy_component > aniso_crit_values[block_ids[iID]][i]
+                        # println(bond_norm)
+                        # println(rotated_bond)
+                        # @inbounds bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct, i think this will lead to a problem because bonds can break multiple times
+                        # if bond_damage[iID][jID] < 0
+                        #     bond_damage[iID][jID] = 0
+                        # end
+                        bond_damage_aniso[iID][jID, i] = 0
+                        @inbounds bond_damage[iID][jID] = 0.0
+                        @inbounds update_list[iID] = true
+                    end
                 end
+                #get index of max value
+                # rotated_bond = rotation_tensor[1:dof, 1:dof] * deformed_bond[iID][jID, 1:dof]
+                # max_index = argmax(abs.(rotated_bond))
+                # if bond_energy > aniso_crit_values[block_ids[iID]][max_index]
+                #     @inbounds bond_damage[iID][jID] = 0.0
+                #     @inbounds update_list[iID] = true
+                # end
             else
                 if (bond_energy / quad_horizon) > crit_energy
                     @inbounds bond_damage[iID][jID] = 0.0
                     @inbounds update_list[iID] = true
                 end
             end
-            if 1 < bond_damage[iID][jID] < 0
+            if 1 < bond_damage[iID][jID] || bond_damage[iID][jID] < 0
                 @error "Bond damage out of bounds"
             end
         end
