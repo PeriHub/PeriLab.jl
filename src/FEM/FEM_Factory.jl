@@ -1,9 +1,12 @@
-module FEM
-include("../Core/Module_inclusion/set_Modules.jl")
-include("./FEM_routines.jl")
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
+module FEM
+include("../Core/Module_inclusion/set_Modules.jl")
+include("./FEM_routines.jl")
+# in future using set modules for material
+# test case is correspondence material
+include("./../Physics/Material/Material_Models/Correspondence_Elastic.jl")
 
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
@@ -15,7 +18,7 @@ function init_FEM(datamanager::Module, params::Dict)
     nelements = datamanager.get_num_elements()
     elements::Vector{Int64} = 1:nelements
     p = get_polynomial_degree(params, dof)
-
+    coordinates = datamanager.get_field("Coordinates")
     if isnothing(p)
         return p
     end
@@ -39,10 +42,15 @@ function init_FEM(datamanager::Module, params::Dict)
     specifics = Dict{String,String}("Call Function" => "init_element", "Name" => "element_name")
     datamanager = Set_modules.create_module_specifics(params["Element Type"], module_list, specifics, (datamanager, elements, params, p))
 
+    elements = Vector{Int64}(1:nelements)
+    topology = datamanager.get_field("FE Element Topology")
+    jacobian = datamanager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
+    determinant_jacobian = datamanager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
+    jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
+
     return datamanager
 
 end
-
 
 
 function valid_models(params::Dict)
@@ -60,38 +68,19 @@ function valid_models(params::Dict)
         @error "No material model has been defined for FEM in the block."
         return nothing
     else
-        if !occursin("Correspondence", params["Material Model"])
-            @error "Only correspondence material is supported for FEM"
+        # in future -> FE support -> check with set modules 
+        if Correspondence_Elastic.fe_support()
+            @error "No FEM support for " * params["Material Model"]
             return nothing
         end
     end
     return nothing
 end
-function eval(datamanager::Module, elements::Union{SubArray,Vector{Int64}})
-    return calculate_FEM(datamanager, elements)
+
+function eval(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, params::Dict, name::String, time::Float64, dt::Float64)
+    return calculate_FEM(datamanager, elements, params, name, Correspondence_Elastic.compute_stresses, time, dt)
 end
 
-function get_polynomial_degree(params::Dict, dof::Int64)
-    if !haskey(params, "Degree")
-        @error "No element degree defined"
-        return nothing
-    end
-    value = params["Degree"]
-    if sum(typeof.(value) .!= Int64) != 0
-        @warn "Degree was defined as Float and set to Int."
-        value = Int64.(round.(value))
-    end
-    if length(value) == 1
-        return_value::Vector{Int64} = zeros(dof)
-        return_value[1:dof] .= value[1]
-        return return_value
-    elseif length(value) == dof
-        return value[1:dof]
-    else
-        @error "Degree must be defined with length one or number of dof."
-        return nothing
-    end
-end
 
 
 end

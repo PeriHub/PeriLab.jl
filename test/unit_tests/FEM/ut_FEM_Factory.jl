@@ -6,16 +6,20 @@ include("../../../src/FEM/FEM_Factory.jl")
 using Test
 include("../../../src/Support/data_manager.jl")
 
+
 test_Data_manager = Data_manager
-test_Data_manager.set_dof(2)
+dof = 2
+test_Data_manager.set_dof(dof)
 test_Data_manager.set_num_elements(2)
 test_Data_manager.set_num_controller(6)
-test_Data_manager.create_node_field("Force Density", Float64, 3)
-test_Data_manager.create_node_field("Displacements", Float64, 3)
-test_Data_manager.create_constant_node_field("Coordinates", Float64, 3)
-test_Data_manager = FEM.init_FEM(test_Data_manager, Dict("Degree" => 1, "Element Type" => "Lagrange"))
-topology = test_Data_manager.get_field("FE Element Topology")
-topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (3, 4))
+test_Data_manager.create_node_field("Force Density", Float64, dof)
+test_Data_manager.create_node_field("Displacements", Float64, dof)
+test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
+params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+    "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
+
+
+topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (2, 4))
 topology[1, 1] = 1
 topology[1, 2] = 2
 topology[1, 3] = 3
@@ -24,9 +28,9 @@ topology[2, 1] = 3
 topology[2, 2] = 5
 topology[2, 3] = 4
 topology[2, 4] = 6
-
+test_Data_manager = FEM.init_FEM(test_Data_manager, params["FEM"]["FE_1"])
 elements = Vector{Int64}([1, 2])
-#test_Data_manager = FEM.eval(test_Data_manager, elements)
+#test_Data_manager = FEM.eval(test_Data_manager, elements, params, "FE_1", 0.0, 1.0e-6)
 @testset "ut_valid_models" begin
     @test isnothing(FEM.valid_models(Dict()))
     @test isnothing(FEM.valid_models(Dict("Additive Model" => "a")))
@@ -34,7 +38,6 @@ elements = Vector{Int64}([1, 2])
     @test isnothing(FEM.valid_models(Dict("Damage Model" => "a", "Additive Model" => "a", "Material Model" => "a Correspondence")))
     @test isnothing(FEM.valid_models(Dict("Thermal Model" => "a")))
     @test isnothing(FEM.valid_models(Dict("Material Model" => "a")))
-    @test isnothing(FEM.valid_models(Dict("Material Model" => "a Correspondence")))
 end
 
 @testset "ut_init_FEM" begin
@@ -69,32 +72,3 @@ end
 
 
 
-@testset "ut_get_polynomial_degree" begin
-
-    @test isnothing(FEM.get_polynomial_degree(Dict(), 1))
-    @test isnothing(FEM.get_polynomial_degree(Dict(), 2))
-    @test isnothing(FEM.get_polynomial_degree(Dict(), 3))
-
-    params = Dict("Degree" => 1)
-
-    @test FEM.get_polynomial_degree(params, 2) == [1, 1]
-    @test FEM.get_polynomial_degree(params, 3) == [1, 1, 1]
-
-    params = Dict("Degree" => 2)
-    @test FEM.get_polynomial_degree(params, 2) == [2, 2]
-    @test FEM.get_polynomial_degree(params, 3) == [2, 2, 2]
-
-    params = Dict("Degree" => 2.1)
-    println()
-    @test FEM.get_polynomial_degree(params, 2) == [2, 2]
-    @test FEM.get_polynomial_degree(params, 3) == [2, 2, 2]
-
-    params = Dict("Degree" => [2 3 1])
-    @test isnothing(FEM.get_polynomial_degree(params, 2))
-    @test FEM.get_polynomial_degree(params, 3) == [2, 3, 1]
-
-    params = Dict("Degree" => [2.1 2])
-    @test FEM.get_polynomial_degree(params, 2) == [2, 2]
-    @test isnothing(FEM.get_polynomial_degree(params, 3))
-
-end
