@@ -3,8 +3,118 @@
 # SPDX-License-Identifier: BSD-3-Clause
 include("../../../src/FEM/FEM_routines.jl")
 include("../../../src/FEM/Element_formulation/lagrange_element.jl")
-using Test
 include("../../../src/Support/data_manager.jl")
+using Test
+
+@testset "ut_jacobi" begin
+    test_Data_manager = Data_manager
+    dof = 2
+    nelements = 1
+    test_Data_manager.set_dof(dof)
+    test_Data_manager.set_num_elements(nelements)
+    test_Data_manager.set_num_controller(4)
+    test_Data_manager.create_node_field("Force Density", Float64, dof)
+
+    coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+        "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
+
+    topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (2, 4))
+    topology[1, 1] = 1
+    topology[1, 2] = 2
+    topology[1, 3] = 3
+    topology[1, 4] = 4
+    elements = Vector{Int64}(1:nelements)
+    p = get_polynomial_degree(params["FEM"]["FE_1"], dof)
+    num_int = get_number_of_integration_points(p, dof)
+
+    N = test_Data_manager.create_constant_free_size_field("N Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, dof))
+    B = test_Data_manager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
+
+    N, B = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+
+    jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
+    determinant_jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
+    println()
+    test_jacobian, test_determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
+    @test isnothing(test_jacobian)
+    @test isnothing(test_determinant_jacobian)
+    coordinates[1, 1] = 0
+    coordinates[1, 2] = 0
+    coordinates[2, 1] = 1
+    coordinates[2, 2] = 0
+    coordinates[3, 1] = 0
+    coordinates[3, 2] = 1
+    coordinates[4, 1] = 1
+    coordinates[4, 2] = 1
+
+    jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
+
+    for i in 1:4
+        @test determinant_jacobian[1, i] == 0.25
+        @test jacobian[1, i, :, :] == [2.0 0.0; 0.0 2.0]
+    end
+
+    coordinates[1, 1] = 0
+    coordinates[1, 2] = 0
+    coordinates[2, 1] = 2
+    coordinates[2, 2] = 0
+    coordinates[3, 1] = 0
+    coordinates[3, 2] = 0.5
+    coordinates[4, 1] = 2
+    coordinates[4, 2] = 0.5
+    jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
+
+    for i in 1:4
+        @test determinant_jacobian[1, i] == 0.25
+        @test jacobian[1, i, :, :] == [1.0 0.0; 0.0 4.0]
+    end
+
+    coordinates[1, 1] = 0
+    coordinates[1, 2] = 0
+    coordinates[2, 1] = 1.0
+    coordinates[2, 2] = 0.0
+    coordinates[3, 1] = 0.5
+    coordinates[3, 2] = 1
+    coordinates[4, 1] = 1.5
+    coordinates[4, 2] = 1.0
+
+
+    jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
+
+    for i in 1:4
+        @test isapprox(determinant_jacobian[1, i], 0.25)
+        @test jacobian[1, i, :, :] == [2.0000000000000004 -1.0; 0.0 2.0]
+    end
+
+    coordinates[1, 1] = 0
+    coordinates[1, 2] = 0
+    coordinates[2, 1] = 1.0
+    coordinates[2, 2] = 0.5
+    coordinates[3, 1] = 0.0
+    coordinates[3, 2] = 1
+    coordinates[4, 1] = 1.0
+    coordinates[4, 2] = 1.5
+
+    jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
+    for i in 1:4
+        @test isapprox(determinant_jacobian[1, i], 0.25)
+        @test jacobian[1, i, :, :] == [2.0 0.0; -1.0 2.0000000000000004]
+    end
+end
+
+@testset "ut_get_FE_material_model" begin
+    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+        "Material Models" => Dict("Elastic Model 2" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)))
+
+    @test isnothing(get_FE_material_model(params, "FE_1"))
+
+    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+        "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)))
+
+    @test get_FE_material_model(params, "FE_1") == Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)
+end
+
 
 @testset "ut_get_polynomial_degree" begin
 
@@ -35,21 +145,6 @@ include("../../../src/Support/data_manager.jl")
     @test isnothing(get_polynomial_degree(params, 3))
 
 end
-
-
-@testset "ut_get_FE_material_model" begin
-    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
-        "Material Models" => Dict("Elastic Model 2" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)))
-
-    @test isnothing(get_FE_material_model(params, "FE_1"))
-
-    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
-        "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)))
-
-    @test get_FE_material_model(params, "FE_1") == Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)
-end
-
-
 @testset "ut_get_number_of_integration_points" begin
     @test get_number_of_integration_points(Vector{Int64}([1, 1]), 2) == [2, 2]
     @test get_number_of_integration_points(Vector{Int64}([1, 1, 1]), 3) == [2, 2, 2]

@@ -156,8 +156,26 @@ function get_multi_dimensional_integration_point_data(dof::Int64, num_int::Vecto
 end
 
 
-function get_Jacobian(elements::Vector{Int64}, num_int::Vector{Int64}, topology::SubArray, coordinates::SubArray, B::SubArray, jacobian::SubArray, determinant_jacobian::SubArray)
+function get_Jacobian(elements::Vector{Int64}, dof::Int64, topology::SubArray{Int64}, coordinates::Union{SubArray{Float64},SubArray{Float64}}, B::Union{Array{Float64},SubArray}, jacobian::SubArray{Float64}, determinant_jacobian::SubArray{Float64})
 
+    mapping = Vector{Int64}(1:dof:length(B[1, :, 1]))
+    for idEl in elements
+        for idInt in eachindex(B[:, 1, 1])
+            for idof in 1:dof
+                for jdof in 1:dof
+
+                    jacobian[idEl, idInt, idof, jdof] = dot(coordinates[topology[idEl, :], idof], B[idInt, mapping.+(jdof-1), jdof])
+                end
+            end
+
+            determinant_jacobian[idEl, idInt] = det(jacobian[idEl, idInt, :, :])
+            if determinant_jacobian[idEl, idInt] <= 0
+                @error "The determinat of the Jacobian is " * string(determinant_jacobian[idEl, idInt]) * " in local element $idEl, and must be greater zero."
+                return nothing, nothing
+            end
+            jacobian[idEl, idInt, :, :] = inv(jacobian[idEl, idInt, :, :])
+        end
+    end
     return jacobian, determinant_jacobian
 end
 
