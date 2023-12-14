@@ -9,6 +9,11 @@ using Test
 using .Read_Mesh
 using .Data_manager
 using DataFrames
+@testset "ut_read_mesh" begin
+    @test isnothing(Read_Mesh.read_mesh("./"))
+    @test isnothing(Read_Mesh.read_FE_mesh("./"))
+end
+
 @testset "ut_create_base_chunk" begin
     distribution, point_to_core = Read_Mesh.create_base_chunk(4, 1)
     @test length(distribution) == 1

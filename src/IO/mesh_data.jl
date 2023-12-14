@@ -335,6 +335,25 @@ function check_mesh_elements(mesh, dof)
 end
 
 """
+    read_FE_mesh(filename::String)
+
+Read mesh data from a file and return it as a DataFrame.
+
+# Arguments
+- `filename::String`: The path to the mesh file.
+# Returns
+- `mesh::DataFrame`: The mesh data as a DataFrame.
+"""
+function read_FE_mesh(filename::String)
+    if !isfile(filename)
+        return nothing
+    end
+    @info "Read FE mesh file $filename"
+    header_line, header = get_header(filename)
+    return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
+end
+
+"""
     read_mesh(filename::String)
 
 Read mesh data from a file and return it as a DataFrame.
@@ -347,6 +366,7 @@ Read mesh data from a file and return it as a DataFrame.
 function read_mesh(filename::String)
     if !isfile(filename)
         @error "File $filename does not exist"
+        return nothing
     end
     @info "Read mesh file $filename"
     header_line, header = get_header(filename)
@@ -395,6 +415,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     if length(duplicates) > 0
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
     end
+    meshFE = read_FE_mesh(joinpath(path, get_mesh_FE_name(params)))
     dof::Int64 = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params, dof)
     nlist = apply_bond_filters(nlist, mesh, params, dof)
