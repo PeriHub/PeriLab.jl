@@ -27,21 +27,22 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
     stress_NP1 = datamanager.get_field("Element Stress", "NP1")
     strain_increment = datamanager.get_field("Element Strain Increment")
     topology = datamanager.get_field("FE Element Topology")
-    jacobi = datamanager.get_field("Element Jacobi Matrix")
-    det_jacobi = datamanager.get_field("Element Jacobi Determinant")
+    jacobian = datamanager.get_field("Element Jacobi Matrix")
+    det_jacobian = datamanager.get_field("Element Jacobi Determinant")
 
     N_matrix = datamanager.get_field("N Matrix")
     B_matrix = datamanager.get_field("B Matrix")
 
     le::Int64 = 0
-    for idEL in elements
-        topo = view(topology, idEL, :)
+    for idEl in elements
+        topo = view(topology, idEl, :)
         le = dof * length(topo)
+        nnodes::Int64 = length(topo)
         for idInt in eachindex(B_matrix[:, 1, 1])
-            #zip(eachrow(N_matrix[:, :, :]), eachrow(B_matrix[:, :, :])))
-            # epsilon  = B*u -> because of indexing its moved around
-            strain_NP1[idEL, idInt, :] = reshape(displacement[topo, :], (:, le)) * B_matrix[idInt, :, :]
-            strain_increment[idEL, idInt, :] = strain_NP1[idEL, idInt, :] - strain_N[idEL, idInt, :]
+
+            # epsilon  = BT*u 
+            strain_NP1[idEl, idInt, :] = B_matrix[idInt, :, :]' * reshape((displacement[topo, :] * jacobian[idEl, idInt, :, :])', le)
+            strain_increment[idEl, idInt, :] = strain_NP1[idEl, idInt, :] - strain_N[idEl, idInt, :]
 
             if rotation
                 #tbd
@@ -51,7 +52,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
 
             # in future this part must be changed -> using set Modules
 
-            stress_NP1[idEL, idInt, :], datamanager = compute_stresses(datamanager, dof, material_params, time, dt, strain_increment[idEL, idInt, :], stress_N[idEL, idInt, :], stress_NP1[idEL, idInt, :])
+            stress_NP1[idEl, idInt, :], datamanager = compute_stresses(datamanager, dof, material_params, time, dt, strain_increment[idEl, idInt, :], stress_N[idEl, idInt, :], stress_NP1[idEl, idInt, :])
 
             #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
             # material_model is missing
@@ -61,8 +62,8 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
                 #tbd
                 stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
             end
-            #tbd
-            force_densities[topo, :] += B_matrix * jacobi * det_jacobi * stress_NP1
+            #tbd reshape
+            force_densities[topo, :] += reshape(B_matrix[idInt, :, :] * stress_NP1[idEl, idInt, :] .* det_jacobian[idEl, idInt], (nnodes, dof)) * jacobian[idEl, idInt, :, :]
         end
     end
     return datamanager

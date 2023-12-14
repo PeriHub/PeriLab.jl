@@ -33,12 +33,12 @@ function init_FEM(datamanager::Module, params::Dict)
     strainN, strainNP1 = datamanager.create_free_size_field("Element Strain", Float64, (nelements, prod(num_int), 3 * dof - 3))
     stressN, stressNP1 = datamanager.create_free_size_field("Element Stress", Float64, (nelements, prod(num_int), 3 * dof - 3))
     strain_increment = datamanager.create_constant_free_size_field("Element Strain Increment", Float64, (nelements, prod(num_int), 3 * dof - 3))
+
+    specifics = Dict{String,String}("Call Function" => "create_element_matrices", "Name" => "element_name")
+    N[:], B[:] = create_element_matrices(dof, p, Set_modules.create_module_specifics(params["Element Type"], module_list, specifics))
     if isnothing(N) || isnothing(B)
         return nothing
     end
-    specifics = Dict{String,String}("Call Function" => "create_element_matrices", "Name" => "element_name")
-    N[:], B[:] = create_element_matrices(dof, p, Set_modules.create_module_specifics(params["Element Type"], module_list, specifics))
-
     specifics = Dict{String,String}("Call Function" => "init_element", "Name" => "element_name")
     datamanager = Set_modules.create_module_specifics(params["Element Type"], module_list, specifics, (datamanager, elements, params, p))
 

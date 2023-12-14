@@ -6,31 +6,6 @@ include("../../../src/FEM/FEM_Factory.jl")
 using Test
 include("../../../src/Support/data_manager.jl")
 
-
-test_Data_manager = Data_manager
-dof = 2
-test_Data_manager.set_dof(dof)
-test_Data_manager.set_num_elements(2)
-test_Data_manager.set_num_controller(6)
-test_Data_manager.create_node_field("Force Density", Float64, dof)
-test_Data_manager.create_node_field("Displacements", Float64, dof)
-test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
-params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
-    "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
-
-
-topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (2, 4))
-topology[1, 1] = 1
-topology[1, 2] = 2
-topology[1, 3] = 3
-topology[1, 4] = 4
-topology[2, 1] = 3
-topology[2, 2] = 5
-topology[2, 3] = 4
-topology[2, 4] = 6
-test_Data_manager = FEM.init_FEM(test_Data_manager, params["FEM"]["FE_1"])
-elements = Vector{Int64}([1, 2])
-#test_Data_manager = FEM.eval(test_Data_manager, elements, params, "FE_1", 0.0, 1.0e-6)
 @testset "ut_valid_models" begin
     @test isnothing(FEM.valid_models(Dict()))
     @test isnothing(FEM.valid_models(Dict("Additive Model" => "a")))
@@ -40,10 +15,13 @@ elements = Vector{Int64}([1, 2])
     @test isnothing(FEM.valid_models(Dict("Material Model" => "a")))
 end
 
+
+
 @testset "ut_init_FEM" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(2)
-    test_Data_manager.set_num_elements(3)
+    test_Data_manager.set_num_elements(2)
+    test_Data_manager.set_num_controller(6)
     test = FEM.init_FEM(test_Data_manager, Dict())
     @test isnothing(test)
     test_Data_manager.set_dof(1)
@@ -51,8 +29,39 @@ end
     @test isnothing(test)
     test = FEM.init_FEM(test_Data_manager, Dict("Degree" => 4))
     @test isnothing(test)
-    test_Data_manager.set_dof(2)
-    test_Data_manager = FEM.init_FEM(test_Data_manager, Dict("Degree" => 1, "Element Type" => "Lagrange"))
+    dof = 2
+    test_Data_manager.set_dof(dof)
+    test_Data_manager.create_node_field("Displacements", Float64, dof)
+    coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    coordinates[1, 1] = 0
+    coordinates[1, 2] = 0
+    coordinates[2, 1] = 1
+    coordinates[2, 2] = 0
+    coordinates[3, 1] = 0
+    coordinates[3, 2] = 1
+    coordinates[4, 1] = 1
+    coordinates[4, 2] = 1
+    coordinates[5, 1] = 2
+    coordinates[5, 2] = 0
+    coordinates[6, 1] = 2
+    coordinates[6, 2] = 1
+
+    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+        "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
+
+    topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (2, 4))
+    topology[1, 1] = 1
+    topology[1, 2] = 2
+    topology[1, 3] = 3
+    topology[1, 4] = 4
+    topology[2, 1] = 2
+    topology[2, 2] = 5
+    topology[2, 3] = 4
+    topology[2, 4] = 6
+    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+        "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
+    test_Data_manager = FEM.init_FEM(test_Data_manager, params["FEM"]["FE_1"])
+
     @test "N Matrix" in test_Data_manager.get_all_field_keys()
     @test "B Matrix" in test_Data_manager.get_all_field_keys()
     N = test_Data_manager.get_field("N Matrix")
@@ -67,8 +76,88 @@ end
     @test "Element StrainNP1" in test_Data_manager.get_all_field_keys()
     @test "Element StressNP1" in test_Data_manager.get_all_field_keys()
     @test "Element Strain Increment" in test_Data_manager.get_all_field_keys()
-
+    @test "Element Jacobi Matrix" in test_Data_manager.get_all_field_keys()
+    @test "Element Jacobi Determinant" in test_Data_manager.get_all_field_keys()
 end
 
+@testset "ut_eval" begin
 
+    test_Data_manager = Data_manager
+    dof = 2
+    test_Data_manager.set_dof(dof)
+    test_Data_manager.set_num_elements(2)
+    test_Data_manager.set_num_controller(6)
+    test_Data_manager.create_node_field("Force Density", Float64, dof)
+    test_Data_manager.create_node_field("Displacements", Float64, dof)
+    coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    coordinates[1, 1] = 0
+    coordinates[1, 2] = 0
+    coordinates[2, 1] = 1
+    coordinates[2, 2] = 0
+    coordinates[3, 1] = 0
+    coordinates[3, 2] = 1
+    coordinates[4, 1] = 1
+    coordinates[4, 2] = 1
+    coordinates[5, 1] = 2
+    coordinates[5, 2] = 0
+    coordinates[6, 1] = 2
+    coordinates[6, 2] = 1
 
+    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+        "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 1.5, "Poisson's Ratio" => 0.33, "Shear Modulus" => 0.5639)))
+
+    topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (2, 4))
+    topology[1, 1] = 1
+    topology[1, 2] = 2
+    topology[1, 3] = 3
+    topology[1, 4] = 4
+    topology[2, 1] = 2
+    topology[2, 2] = 5
+    topology[2, 3] = 4
+    topology[2, 4] = 6
+
+    test_Data_manager = FEM.init_FEM(test_Data_manager, params["FEM"]["FE_1"])
+    elements = Vector{Int64}([1, 2])
+    test_Data_manager = FEM.eval(test_Data_manager, elements, params, "FE_1", 0.0, 1.0e-6)
+
+    stress = test_Data_manager.get_field("Element Stress", "NP1")
+    strain = test_Data_manager.get_field("Element Strain", "NP1")
+    for iEl in 1:2
+        for i_int in 1:4
+            for i in 1:3
+                @test stress[iEl, i_int, i] == 0
+                @test strain[iEl, i_int, i] == 0
+            end
+        end
+    end
+    displacements = test_Data_manager.get_field("Displacements", "NP1")
+
+    displacements[1, 1] = -1
+    displacements[1, 2] = 0.5
+    displacements[2, 1] = 0
+    displacements[2, 2] = 0.5
+    displacements[3, 1] = -1
+    displacements[3, 2] = 0.5
+    displacements[4, 1] = 0
+    displacements[4, 2] = 0.5
+    displacements[5, 1] = 1
+    displacements[5, 2] = 0.5
+    displacements[6, 1] = 1
+    displacements[6, 2] = 0.5
+    test_Data_manager = FEM.eval(test_Data_manager, elements, params, "FE_1", 0.0, 1.0e-6)
+    stress = test_Data_manager.get_field("Element Stress", "NP1")
+    strain = test_Data_manager.get_field("Element Strain", "NP1")
+
+    for iEl in 1:2
+        for i_int in 1:4
+            @test isapprox(strain[iEl, i_int, 1], 1)
+            @test isapprox(strain[iEl, i_int, 2] + 1, 1)
+            @test isapprox(strain[iEl, i_int, 3] + 1, 1)
+            @test isapprox(stress[iEl, i_int, 1], 2.222467934542238)
+            @test isapprox(stress[iEl, i_int, 2], 1.0946483856700575)
+            @test isapprox(stress[iEl, i_int, 3] + 1, 1)
+        end
+
+    end
+
+end
