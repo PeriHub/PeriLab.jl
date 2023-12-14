@@ -103,6 +103,68 @@ using Test
     end
 end
 
+@testset "ut_lumped_mass" begin
+    test_Data_manager = Data_manager
+    dof = 2
+    nelements = 1
+    test_Data_manager.set_dof(dof)
+    test_Data_manager.set_num_elements(nelements)
+    test_Data_manager.set_num_controller(4)
+
+    coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
+        "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
+
+    topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (2, 4))
+    topology[1, 1] = 1
+    topology[1, 2] = 2
+    topology[1, 3] = 3
+    topology[1, 4] = 4
+    elements = Vector{Int64}(1:nelements)
+    p = get_polynomial_degree(params["FEM"]["FE_1"], dof)
+    num_int = get_number_of_integration_points(p, dof)
+
+    N = test_Data_manager.create_constant_free_size_field("N Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, dof))
+    B = test_Data_manager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
+
+    N[:], B[:] = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+    lumped_mass = test_Data_manager.create_constant_node_field("Lumped Mass Matrix", Float64, dof)
+
+    coordinates[1, 1] = 0
+    coordinates[1, 2] = 0
+    coordinates[2, 1] = 1
+    coordinates[2, 2] = 0
+    coordinates[3, 1] = 0
+    coordinates[3, 2] = 1
+    coordinates[4, 1] = 1
+    coordinates[4, 2] = 1
+    jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
+    determinant_jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
+    jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
+    N = test_Data_manager.get_field("N Matrix")
+    rho = test_Data_manager.create_constant_free_size_field("Element Density", Float64, (nelements,))
+
+    rho[1] = 1.0
+    lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
+    for i in 1:4
+        @test isapprox(lumped_mass[i, 1], 0.25)
+        @test isapprox(lumped_mass[i, 2], 0.25)
+    end
+    lumped_mass[:, :] .= 0
+    rho[1] = 2.0
+
+    lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
+    for i in 1:4
+        @test isapprox(lumped_mass[i, 1], 0.5)
+        @test isapprox(lumped_mass[i, 2], 0.5)
+    end
+    lumped_mass[:, :] .= 0
+    rho[1] = 1.2
+
+    lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
+    @test lumped_mass == [0.3 0.3; 0.3 0.3; 0.3 0.3; 0.3 0.3]
+end
+
 @testset "ut_get_FE_material_model" begin
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
         "Material Models" => Dict("Elastic Model 2" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)))
@@ -114,7 +176,6 @@ end
 
     @test get_FE_material_model(params, "FE_1") == Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Bulk Modulus" => 2.5e+3, "Shear Modulus" => 1.15e3)
 end
-
 
 @testset "ut_get_polynomial_degree" begin
 
@@ -132,7 +193,7 @@ end
     @test get_polynomial_degree(params, 3) == [2, 2, 2]
 
     params = Dict("Degree" => 2.1)
-    println()
+
     @test get_polynomial_degree(params, 2) == [2, 2]
     @test get_polynomial_degree(params, 3) == [2, 2, 2]
 

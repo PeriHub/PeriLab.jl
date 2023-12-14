@@ -19,8 +19,9 @@ end
 
 @testset "ut_init_FEM" begin
     test_Data_manager = Data_manager
+    nelements = 2
     test_Data_manager.set_dof(2)
-    test_Data_manager.set_num_elements(2)
+    test_Data_manager.set_num_elements(nelements)
     test_Data_manager.set_num_controller(6)
     test = FEM.init_FEM(test_Data_manager, Dict())
     @test isnothing(test)
@@ -58,6 +59,11 @@ end
     topology[2, 2] = 5
     topology[2, 3] = 4
     topology[2, 4] = 6
+
+    rho = test_Data_manager.create_constant_free_size_field("Element Density", Float64, (nelements,))
+
+    rho[1, :] .= 1.0
+    rho[2, :] .= 2.0
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
         "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
     test_Data_manager = FEM.init_FEM(test_Data_manager, params["FEM"]["FE_1"])
@@ -78,6 +84,10 @@ end
     @test "Element Strain Increment" in test_Data_manager.get_all_field_keys()
     @test "Element Jacobi Matrix" in test_Data_manager.get_all_field_keys()
     @test "Element Jacobi Determinant" in test_Data_manager.get_all_field_keys()
+    @test "Lumped Mass Matrix" in test_Data_manager.get_all_field_keys()
+    lumped_mass = test_Data_manager.get_field("Lumped Mass Matrix")
+    @test lumped_mass[:, 1] == [0.24999999999999997, 0.7499999999999997, 0.24999999999999997, 0.75, 0.4999999999999999, 0.49999999999999994]
+    @test lumped_mass[:, 2] == [0.24999999999999997, 0.7499999999999997, 0.24999999999999997, 0.75, 0.4999999999999999, 0.49999999999999994]
 end
 
 @testset "ut_eval" begin

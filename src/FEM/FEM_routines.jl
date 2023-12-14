@@ -34,15 +34,15 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
     B_matrix = datamanager.get_field("B Matrix")
 
     le::Int64 = 0
-    for idEl in elements
-        topo = view(topology, idEl, :)
+    for id_el in elements
+        topo = view(topology, id_el, :)
         le = dof * length(topo)
         nnodes::Int64 = length(topo)
-        for idInt in eachindex(B_matrix[:, 1, 1])
+        for id_int in eachindex(B_matrix[:, 1, 1])
 
             # epsilon  = BT*u 
-            strain_NP1[idEl, idInt, :] = B_matrix[idInt, :, :]' * reshape((displacement[topo, :] * jacobian[idEl, idInt, :, :])', le)
-            strain_increment[idEl, idInt, :] = strain_NP1[idEl, idInt, :] - strain_N[idEl, idInt, :]
+            strain_NP1[id_el, id_int, :] = B_matrix[id_int, :, :]' * reshape((displacement[topo, :] * jacobian[id_el, id_int, :, :])', le)
+            strain_increment[id_el, id_int, :] = strain_NP1[id_el, id_int, :] - strain_N[id_el, id_int, :]
 
             if rotation
                 #tbd
@@ -52,7 +52,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
 
             # in future this part must be changed -> using set Modules
 
-            stress_NP1[idEl, idInt, :], datamanager = compute_stresses(datamanager, dof, material_params, time, dt, strain_increment[idEl, idInt, :], stress_N[idEl, idInt, :], stress_NP1[idEl, idInt, :])
+            stress_NP1[id_el, id_int, :], datamanager = compute_stresses(datamanager, dof, material_params, time, dt, strain_increment[id_el, id_int, :], stress_N[id_el, id_int, :], stress_NP1[id_el, id_int, :])
 
             #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
             # material_model is missing
@@ -63,20 +63,29 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
                 stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
             end
             #tbd reshape
-            force_densities[topo, :] += reshape(B_matrix[idInt, :, :] * stress_NP1[idEl, idInt, :] .* det_jacobian[idEl, idInt], (nnodes, dof)) * jacobian[idEl, idInt, :, :]
+            force_densities[topo, :] += reshape(B_matrix[id_int, :, :] * stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int], (nnodes, dof)) * jacobian[id_el, id_int, :, :]
         end
     end
     return datamanager
 end
 
-function compute_strain(nodes::Union{SubArray,Vector{Int64}}, topology, B, u, strain)
-
-    for iID in nodes
-        strain[iID, :] = dot(B[iID, :, :], u[topology[iID, :]])
-
+function get_lumped_mass(elements::Vector{Int64}, dof::Int64, topology::SubArray{Int64}, N::SubArray{Float64}, determinant_jacobian::SubArray{Float64}, rho::SubArray{Float64}, lumped_mass::SubArray{Float64})
+    for id_int in eachindex(N[:, 1, 1])
+        temp = N[id_int, :, :] * N[id_int, :, :]'
+        for id_el in elements
+            nnodes = length(topology[id_el, :])
+            for i_node in 1:nnodes
+                for idof in 1:dof
+                    lumped_mass[topology[id_el, i_node], idof] += sum(temp[(i_node-1)*dof+idof, :]) .* rho[id_el] * determinant_jacobian[id_el, id_int]
+                end
+            end
+        end
     end
-    return strain
+    return lumped_mass
 end
+
+
+
 """
     get_weights_and_integration_points(dof::Int64, p::Vector{Int64})
 
@@ -160,21 +169,21 @@ end
 function get_Jacobian(elements::Vector{Int64}, dof::Int64, topology::SubArray{Int64}, coordinates::Union{SubArray{Float64},SubArray{Float64}}, B::Union{Array{Float64},SubArray}, jacobian::SubArray{Float64}, determinant_jacobian::SubArray{Float64})
 
     mapping = Vector{Int64}(1:dof:length(B[1, :, 1]))
-    for idEl in elements
-        for idInt in eachindex(B[:, 1, 1])
+    for id_el in elements
+        for id_int in eachindex(B[:, 1, 1])
             for idof in 1:dof
                 for jdof in 1:dof
 
-                    jacobian[idEl, idInt, idof, jdof] = dot(coordinates[topology[idEl, :], idof], B[idInt, mapping.+(jdof-1), jdof])
+                    jacobian[id_el, id_int, idof, jdof] = dot(coordinates[topology[id_el, :], idof], B[id_int, mapping.+(jdof-1), jdof])
                 end
             end
 
-            determinant_jacobian[idEl, idInt] = det(jacobian[idEl, idInt, :, :])
-            if determinant_jacobian[idEl, idInt] <= 0
-                @error "The determinat of the Jacobian is " * string(determinant_jacobian[idEl, idInt]) * " in local element $idEl, and must be greater zero."
+            determinant_jacobian[id_el, id_int] = det(jacobian[id_el, id_int, :, :])
+            if determinant_jacobian[id_el, id_int] <= 0
+                @error "The determinat of the Jacobian is " * string(determinant_jacobian[id_el, id_int]) * " in local element $id_el, and must be greater zero."
                 return nothing, nothing
             end
-            jacobian[idEl, idInt, :, :] = inv(jacobian[idEl, idInt, :, :])
+            jacobian[id_el, id_int, :, :] = inv(jacobian[id_el, id_int, :, :])
         end
     end
     return jacobian, determinant_jacobian
