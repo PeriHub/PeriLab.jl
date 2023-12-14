@@ -5,6 +5,25 @@
 # include("../helpers.jl")
 
 """
+    get_FE_mesh_name(params::Dict)
+
+Returns the name of the mesh file from the parameters
+
+# Arguments
+- `params::Dict`: The parameters
+# Returns
+- `String`: The name of the finite element topology file
+"""
+function get_FE_mesh_name(params::Dict)
+    check = haskey(params["Discretization"], "Input FE File")
+    if !check
+        @error "No FE mesh file is defined."
+        return nothing
+    end
+    return params["Discretization"]["Input FE File"]
+end
+
+"""
     get_mesh_name(params::Dict)
 
 Returns the name of the mesh file from the parameters

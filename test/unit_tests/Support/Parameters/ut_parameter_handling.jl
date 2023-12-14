@@ -120,6 +120,13 @@ end
     @test check_key_elements(params) == params
 end
 
+@testset "ut_get_FE_mesh_name" begin
+    params = Dict("Discretization" => Dict())
+    @test get_FE_mesh_name(params) === nothing
+    name = randstring(12)
+    params = Dict("Discretization" => Dict("Input FE File" => name))
+    @test get_FE_mesh_name(params) == name
+end
 @testset "ut_get_mesh_name" begin
     params = Dict("Discretization" => Dict())
     @test get_mesh_name(params) === nothing
