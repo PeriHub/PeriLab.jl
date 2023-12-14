@@ -153,7 +153,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
             if aniso_damage
                 for i in 1:dof
-                    rotated_bond = rotation_tensor[1:dof, 1:dof] * deformed_bond[iID][jID, 1:dof]
+                    rotated_bond = rotation_tensor[1:dof, 1:dof]' * deformed_bond[iID][jID, 1:dof]
                     if bond_damage_aniso[iID][jID, i] == 0 || rotated_bond[i] == 0
                         continue
                     end
