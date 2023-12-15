@@ -414,10 +414,18 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     duplicates = findall(nonunique(mesh))
     if length(duplicates) > 0
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
+        return nothing
     end
     meshFE = read_FE_mesh(joinpath(path, get_mesh_FE_name(params)))
+    if !isnothing(meshFE)
+        @info "FE topology files was read."
+    end
     dof::Int64 = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params, dof)
+    if !isnothing(meshFE)
+        @info "Adapt FE consistent neighborhood list"
+        nlist, topology = create_FE_consistent_neighborhoodlist(mesh, meshFE, params, nlist, dof)
+    end
     nlist = apply_bond_filters(nlist, mesh, params, dof)
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
@@ -431,6 +439,40 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     @info "Geometrical degrees of freedoms: $dof"
     @info "-------------------"
     return distribution, mesh, ntype, overlap_map, nlist, dof
+end
+
+function create_FE_consistent_neighborhoodlist(mesh::DataFrame, meshFE::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+    number_of_elements = length(meshFE[:, 1])
+    topology::Vector{Vector{Int64}} = []
+    for i_el in 1:number_of_elements
+        push!(topology, collect(skipmissing(meshFE[:, i_el])))
+    end
+    nodes_to_element = [Any[] for _ in 1:maximum(maximum(topology))]
+    fe_nodes = Vector{Int64}()
+    for (el_id, topo) in enumerate(topology)
+        for node in topo
+            push!(nodes_to_element[node], el_id)
+            push!(fe_nodes, nodes)
+        end
+    end
+    fe_nodes = unique(fe_nodes)
+    for fe_node in fe_nodes
+        nlist[fe_node] = []
+        for el_id in nodes_to_element[fe_node]
+            append!(nlist[fe_node], topology[el_id])
+        end
+        nlist[fe_node] = unique(nlist[fe_node])
+        nlist[fe_node] = filter(x -> x != fe_node, nlist[fe_node])
+    end
+    return nlist, topology, node_to_element
+end
+
+
+function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
+    coor = names(mesh)
+    nlist::Vector{Vector{Int64}} = neighbors(mesh, params, coor[1:dof])
+    @info "Finished init Neighborhoodlist"
+    return nlist
 end
 
 """

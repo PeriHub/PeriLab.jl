@@ -30,6 +30,18 @@ using DataFrames
 
 end
 
+path = "./test/unit_tests/IO/"
+dof::Int64 = 2
+params = Dict()
+mesh = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"))
+meshFE = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
+nlist::Vector{Vector{Int64}} = []
+nlist, topology = Read_Mesh.create_FE_consistent_neighborhoodlist(mesh, meshFE, params, nlist, dof)
+@test topology[1] == [1, 2, 3, 4]
+@test topology[2] == [3, 4, 5, 6]
+@test topology[3] == [2, 3, 4, 5, 6, 7]
+@test topology[4] == [5, 6, 7, 8]
+
 @testset "ut_create_base_chunk" begin
     distribution, point_to_core = Read_Mesh.create_base_chunk(4, 1)
     @test length(distribution) == 1
