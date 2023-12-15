@@ -162,12 +162,12 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                     if bond_energy_component > aniso_crit_values[block_ids[iID]][i]
                         # println(bond_norm)
                         # println(rotated_bond)
-                        # @inbounds bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct, i think this will lead to a problem because bonds can break multiple times
-                        # if bond_damage[iID][jID] < 0
-                        #     bond_damage[iID][jID] = 0
-                        # end
+                        @inbounds bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct, i think this will lead to a problem because bonds can break multiple times
+                        if bond_damage[iID][jID] < 0
+                            bond_damage[iID][jID] = 0
+                        end
                         bond_damage_aniso[iID][jID, i] = 0
-                        @inbounds bond_damage[iID][jID] = 0.0
+                        # @inbounds bond_damage[iID][jID] = 0.0
                         @inbounds update_list[iID] = true
                     end
                 end

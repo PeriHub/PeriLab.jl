@@ -76,18 +76,18 @@ PeriLab:
     Material Models:
       Aluminium:
         Density: 2.81e-09
-        Material Model: Correspondence Elastic
+        Material Model: PD Solid Elastic
         Symmetry: isotropic plane stress
-        Zero Energy Control: Global
+        # Zero Energy Control: Global
         Young's Modulus: 71700.0
         Poisson's Ratio: 0.33
     Damage Models:
       Damage:
-        Critical Value: 5.578800557880057
+        Critical Value: 19.550259414225938
         Damage Model: Critical Energy
         Anisotropic Damage:
-          Critical Value X: 500
-          Critical Value Y: 0.5
+          Critical Value X: 19.550259414225938
+          Critical Value Y: 6.2920167364016715
   Outputs:
     Output1:
       Number of Output Steps: 100
@@ -95,28 +95,27 @@ PeriLab:
       Output File Type: Exodus
       Output Filename: CompactTension_Output1
       Output Variables:
-        Orientations: True
+        # Orientations: True
         Damage: True
         Angles: True
         Displacements: true
         Forces: true
         Number of Neighbors: true
-        Strain: True
-        Cauchy Stress: True
+        # Strain: True
+        # Cauchy Stress: True
     Output2:
       Output File Type: Exodus
       Output Filename: CompactTension_Output2
-      Output Frequency: 1
+      Output Frequency: 10
       Output Variables:
         Damage: true
         Displacements: true
       Write After Damage: true
   Solver:
-    Final Time: 0.0001
+    Final Time: 0.01
     Initial Time: 0.0
     Material Models: true
     Damage Models: true
-    # Maximum Damage: 0.3
     Verbose: false
     Verlet:
       Numerical Damping: 5.0e-06
