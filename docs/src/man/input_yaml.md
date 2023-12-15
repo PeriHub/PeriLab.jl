@@ -6,7 +6,6 @@ The PeriLab configuration file is a YAML file used to specify the parameters for
 PeriLab:
   - Blocks:
     - Any:
-        - Block Names: [String, true]
         - Density: [Union{Float64,Int64}, true]
         - Horizon: [Union{Float64,Int64}, true]
         - Specific Heat Capacity: [Union{Float64,Int64}, false]

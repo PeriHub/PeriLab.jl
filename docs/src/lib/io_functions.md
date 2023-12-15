@@ -48,7 +48,8 @@ get_bond_geometry
 define_nsets
 distribution_to_cores
 check_mesh_elements
-read_mesh
+read_mesh_from_txt
+read_mesh_from_exodus
 set_dof
 load_and_evaluate_mesh
 create_neighborhoodlist

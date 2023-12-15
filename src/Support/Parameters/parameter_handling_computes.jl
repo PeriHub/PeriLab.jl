@@ -79,6 +79,15 @@ Get the node set.
 - `nodeset::Vector`: The node set.
 """
 function get_node_set(params::Dict)
+    # if params["Discretization"]["Type"] == "Exodus"
+    #     exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
+    #     nset_names = read_names(exo, NodeSet)
+    #     for entry in nset_names
+    #         nset = read_set(exo, NodeSet, entry)
+    #         nsets[entry] = parse.(Int, nset.nodes)
+    #     end
+    #     return nsets
+    # end
     if !haskey(params::Dict, "Node Set")
         return []
     end

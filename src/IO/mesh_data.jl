@@ -4,6 +4,7 @@
 
 module Read_Mesh
 using CSV
+using Exodus
 using DataFrames
 using MPI
 using TimerOutputs
@@ -338,7 +339,7 @@ function check_mesh_elements(mesh, dof)
 end
 
 """
-    read_mesh(filename::String)
+    read_mesh_from_txt(filename::String)
 
 Read mesh data from a file and return it as a DataFrame.
 
@@ -347,13 +348,54 @@ Read mesh data from a file and return it as a DataFrame.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 """
-function read_mesh(filename::String)
+function read_mesh_from_txt(filename::String)
     if !isfile(filename)
         @error "File $filename does not exist"
     end
     @info "Read mesh file $filename"
     header_line, header = get_header(filename)
     return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
+end
+
+"""
+    read_mesh_from_exodus(filename::String)
+
+Read mesh data from a file and return it as a DataFrame.
+
+# Arguments
+- `filename::String`: The path to the mesh file.
+# Returns
+- `mesh::DataFrame`: The mesh data as a DataFrame.
+"""
+function read_mesh_from_exodus(filename::String)
+    if !isfile(filename)
+        @error "File $filename does not exist"
+    end
+
+    @info "Read mesh file $filename"
+
+    exo = ExodusDatabase(filename, "r")
+
+    coords = read_coordinates(exo)
+    volume = 0.25
+    mesh_df = DataFrame(
+        x=coords[1, :],
+        y=coords[2, :],
+        z=coords[3, :],
+        volume=volume,
+        block_id=1,
+    )
+    block_ids = read_ids(exo, Block)
+
+    for (iID, block_id) in enumerate(block_ids)
+        block = read_block(exo, block_id)
+        block_id_map = Exodus.read_block_connectivity(exo, block_id, block.num_nodes_per_elem * block.num_elem)
+        mesh_df.block_id[block_id_map] .= block_id
+    end
+
+    close(exo)
+
+    return mesh_df
 end
 
 """
@@ -394,7 +436,13 @@ Load and evaluate the mesh data.
 """
 function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
-    @timeit to "read_mesh" mesh = read_mesh(joinpath(path, get_mesh_name(params)))
+    if params["Discretization"]["Type"] == "Exodus"
+        @timeit to "read_mesh" mesh = read_mesh_from_exodus(joinpath(path, get_mesh_name(params)))
+    elseif params["Discretization"]["Type"] == "Text File"
+        @timeit to "read_mesh" mesh = read_mesh_from_txt(joinpath(path, get_mesh_name(params)))
+    else
+        @error "Discretization type not supported"
+    end
     duplicates = findall(nonunique(mesh))
     if length(duplicates) > 0
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
@@ -450,7 +498,7 @@ function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
     lenNlist = zeros(Int64, len)
     for id in 1:len
         if length(nlist[id]) == 0
-            @error "Node $id has no neighbors please check the horizon"
+            @warn "Node $id has no neighbors please check the horizon"
         end
         lenNlist[id] = length(nlist[id])
     end
