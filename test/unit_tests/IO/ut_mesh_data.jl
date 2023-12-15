@@ -11,7 +11,23 @@ using .Data_manager
 using DataFrames
 @testset "ut_read_mesh" begin
     @test isnothing(Read_Mesh.read_mesh("./"))
+    path = "./test/unit_tests/IO/"
+    data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"))
+
+    @test length(data[:, 1]) == 3
+    @test data[!, "x"] == [-1.5, -0.5, 0.5]
+    @test data[!, "y"] == [0.5, 0.2, 0.0]
+    @test data[!, "block_id"] == [1, 1, 2]
+    @test data[!, "volume"] == [0.1, 0.1, 0.1]
+
     @test isnothing(Read_Mesh.read_FE_mesh("./"))
+    data = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
+    @test length(data[:, 1]) == 4
+    @test collect(skipmissing(data[1, :])) == [1, 2, 3, 4]
+    @test collect(skipmissing(data[2, :])) == [3, 4, 5, 6]
+    @test collect(skipmissing(data[3, :])) == [2, 3, 4, 5, 6, 7]
+    @test collect(skipmissing(data[4, :])) == [5, 6, 7, 8]
+
 end
 
 @testset "ut_create_base_chunk" begin
