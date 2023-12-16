@@ -17,7 +17,6 @@ Returns the name of the mesh file from the parameters
 function get_FE_mesh_name(params::Dict)
     check = haskey(params["Discretization"], "Input FE File")
     if !check
-        @error "No FE mesh file is defined."
         return nothing
     end
     return params["Discretization"]["Input FE File"]

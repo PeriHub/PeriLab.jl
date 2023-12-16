@@ -417,7 +417,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
         return nothing
     end
     meshFE = nothing
-    if get_FE_mesh_name(params)
+    if !isnothing(get_FE_mesh_name(params))
         meshFE = read_FE_mesh(joinpath(path, get_FE_mesh_name(params)))
     end
     if !isnothing(meshFE)
