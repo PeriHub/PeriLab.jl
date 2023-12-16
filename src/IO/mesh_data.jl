@@ -416,7 +416,10 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
         return nothing
     end
-    meshFE = read_FE_mesh(joinpath(path, get_FE_mesh_name(params)))
+    meshFE = nothing
+    if get_FE_mesh_name(params)
+        meshFE = read_FE_mesh(joinpath(path, get_FE_mesh_name(params)))
+    end
     if !isnothing(meshFE)
         @info "FE topology files was read."
     end
