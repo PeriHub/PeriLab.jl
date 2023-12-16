@@ -424,7 +424,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     nlist = create_neighborhoodlist(mesh, params, dof)
     if !isnothing(meshFE)
         @info "Adapt FE consistent neighborhood list"
-        nlist, topology = create_FE_consistent_neighborhoodlist(mesh, meshFE, params, nlist, dof)
+        nlist, topology = create_FE_consistent_neighborhoodlist(meshFE, params, nlist, dof)
     end
     nlist = apply_bond_filters(nlist, mesh, params, dof)
     @info "Start distribution"
@@ -441,30 +441,37 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     return distribution, mesh, ntype, overlap_map, nlist, dof
 end
 
-function create_FE_consistent_neighborhoodlist(mesh::DataFrame, meshFE::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+function create_FE_consistent_neighborhoodlist(meshFE::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+    pd_neighbors::Bool = false
+    if haskey(params, "PD neighbors")
+        @info "Nodes found by neighborhood search will be deleted from neighborhoodlist"
+        pd_neighbors = params["PD neighbors"]
+    end
     number_of_elements = length(meshFE[:, 1])
     topology::Vector{Vector{Int64}} = []
     for i_el in 1:number_of_elements
-        push!(topology, collect(skipmissing(meshFE[:, i_el])))
+        push!(topology, collect(skipmissing(meshFE[i_el, :])))
     end
     nodes_to_element = [Any[] for _ in 1:maximum(maximum(topology))]
     fe_nodes = Vector{Int64}()
     for (el_id, topo) in enumerate(topology)
         for node in topo
             push!(nodes_to_element[node], el_id)
-            push!(fe_nodes, nodes)
+            push!(fe_nodes, node)
         end
     end
     fe_nodes = unique(fe_nodes)
     for fe_node in fe_nodes
-        nlist[fe_node] = []
+        if !pd_neighbors
+            nlist[fe_node] = Int64[]
+        end
         for el_id in nodes_to_element[fe_node]
             append!(nlist[fe_node], topology[el_id])
         end
         nlist[fe_node] = unique(nlist[fe_node])
         nlist[fe_node] = filter(x -> x != fe_node, nlist[fe_node])
     end
-    return nlist, topology, node_to_element
+    return nlist, topology, nodes_to_element
 end
 
 

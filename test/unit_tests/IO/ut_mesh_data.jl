@@ -30,18 +30,33 @@ using DataFrames
 
 end
 
-path = "./test/unit_tests/IO/"
-dof::Int64 = 2
-params = Dict()
-mesh = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"))
-meshFE = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
-nlist::Vector{Vector{Int64}} = []
-nlist, topology = Read_Mesh.create_FE_consistent_neighborhoodlist(mesh, meshFE, params, nlist, dof)
-@test topology[1] == [1, 2, 3, 4]
-@test topology[2] == [3, 4, 5, 6]
-@test topology[3] == [2, 3, 4, 5, 6, 7]
-@test topology[4] == [5, 6, 7, 8]
 
+@testset "ut_create_FE_consistent_neighborhoodlist" begin
+    path = "./test/unit_tests/IO/"
+    dof::Int64 = 2
+    params = Dict()
+    meshFE = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
+    nlist::Vector{Vector{Int64}} = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
+
+    nlist_test, topology, nodes_to_element = Read_Mesh.create_FE_consistent_neighborhoodlist(meshFE, params, nlist, dof)
+    println()
+    @test topology[1] == [1, 2, 3, 4]
+    @test topology[2] == [3, 4, 5, 6]
+    @test topology[3] == [2, 3, 4, 5, 6, 7]
+    @test topology[4] == [5, 6, 7, 8]
+    @test nodes_to_element == [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
+    @test nlist == [[2, 3, 4], [1, 3, 4, 5, 6, 7], [1, 2, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [3, 4, 6, 2, 7, 8], [3, 4, 5, 2, 7, 8], [2, 3, 4, 5, 6, 8], [5, 6, 7], [10]]
+    params = Dict("PD neighbors" => true)
+    nlist = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
+    nlist, topology, nodes_to_element = Read_Mesh.create_FE_consistent_neighborhoodlist(meshFE, params, nlist, dof)
+
+    @test topology[1] == [1, 2, 3, 4]
+    @test topology[2] == [3, 4, 5, 6]
+    @test topology[3] == [2, 3, 4, 5, 6, 7]
+    @test topology[4] == [5, 6, 7, 8]
+    @test nodes_to_element == [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
+    @test nlist == [[2, 3, 4, 11], [1, 3, 4, 5, 6, 7], [1, 2, 22, 23, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [8, 3, 4, 6, 2, 7], [9, 3, 4, 5, 2, 7, 8], [1, 6, 2, 3, 4, 5, 8], [3, 2, 5, 6, 7], [10]]
+end
 @testset "ut_create_base_chunk" begin
     distribution, point_to_core = Read_Mesh.create_base_chunk(4, 1)
     @test length(distribution) == 1
