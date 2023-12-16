@@ -10,10 +10,15 @@ using .Read_Mesh
 using .Data_manager
 using DataFrames
 @testset "ut_read_mesh" begin
-    @test isnothing(Read_Mesh.read_mesh("./"))
-    path = "./test/unit_tests/IO/"
-    data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"))
 
+    @test isnothing(Read_Mesh.read_mesh("./"))
+    path = "./unit_tests/IO/"
+
+    data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"))
+    if isnothing(data)
+        path = "./test/unit_tests/IO/"
+        data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"))
+    end
     @test length(data[:, 1]) == 3
     @test data[!, "x"] == [-1.5, -0.5, 0.5]
     @test data[!, "y"] == [0.5, 0.2, 0.0]
@@ -30,16 +35,21 @@ using DataFrames
 
 end
 
-
 @testset "ut_create_FE_consistent_neighborhoodlist" begin
-    path = "./test/unit_tests/IO/"
+    path = "./unit_tests/IO/"
+
+    meshFE = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
+    if isnothing(meshFE)
+        path = "./test/unit_tests/IO/"
+        meshFE = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
+    end
     dof::Int64 = 2
     params = Dict()
-    meshFE = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
+
     nlist::Vector{Vector{Int64}} = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
 
     nlist_test, topology, nodes_to_element = Read_Mesh.create_FE_consistent_neighborhoodlist(meshFE, params, nlist, dof)
-    println()
+
     @test topology[1] == [1, 2, 3, 4]
     @test topology[2] == [3, 4, 5, 6]
     @test topology[3] == [2, 3, 4, 5, 6, 7]
@@ -128,7 +138,6 @@ end
     )
     df = DataFrame(data)
     meshInfoDict = Read_Mesh.check_mesh_elements(df, 3)
-    println()
     @test meshInfoDict["Coordinates"]["Mesh ID"] == ["x", "y", "z"]
     @test meshInfoDict["Coordinates"]["Type"] == Int64
     @test meshInfoDict["Block_Id"]["Mesh ID"] == ["block_id"]
