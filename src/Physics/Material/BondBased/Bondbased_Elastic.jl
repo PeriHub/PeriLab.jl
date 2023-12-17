@@ -90,8 +90,9 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         else
             constant = 18.0 * K / (pi * horizon[iID]^4)
         end
-        if deformed_bond[iID][:, end] == 0
+        if any(deformed_bond[iID][:, end] .== 0)
             @error "Length of bond is zero due to its deformation."
+            return nothing
         end
         # Calculate the bond force
         bond_force[iID] = (0.5 .* constant .* bond_damage[iID][:] .* (deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end]) ./ undeformed_bond[iID][:, end]) .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]

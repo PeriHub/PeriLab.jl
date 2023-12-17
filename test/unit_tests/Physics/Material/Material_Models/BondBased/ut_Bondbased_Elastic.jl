@@ -102,4 +102,6 @@ end
     @test isapprox(bf[2][2, 1], 0.016277210088943856)
     @test isapprox(bf[2][2, 2], 0.016277210088943856)
 
+    dbNP1[1][1, end] = 0
+    @test isnothing(Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane stress"), 0.0, 0.0))
 end
