@@ -270,6 +270,7 @@ A tuple `(nsteps, dt)` where:
 function get_integration_steps(initial_time::Float64, end_time::Float64, dt::Float64)
     if dt <= 0
         @error "Time step $dt [s] is not valid"
+        return nothing
     end
     nsteps::Int64 = ceil((end_time - initial_time) / dt)
     dt = (end_time - initial_time) / nsteps
