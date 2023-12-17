@@ -519,7 +519,8 @@ function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
     lenNlist = zeros(Int64, len)
     for id in 1:len
         if length(nlist[id]) == 0
-            @error "Node $id has no neighbors please check the horizon"
+            @error "Node $id has no neighbors please check the horizon."
+            return nothing
         end
         lenNlist[id] = length(nlist[id])
     end

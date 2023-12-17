@@ -253,7 +253,8 @@ end
     for i in 1:4
         @test lenNlist[i] == 3 * i * i - 2
     end
-
+    nlist[1] = 0
+    @test isnothing(Read_Mesh.get_number_of_neighbornodes(nlist))
 end
 
 @testset "ut_glob_to_loc" begin
