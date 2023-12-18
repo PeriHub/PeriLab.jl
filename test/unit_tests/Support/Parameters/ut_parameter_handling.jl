@@ -120,12 +120,14 @@ end
     @test check_key_elements(params) == params
 end
 
-@testset "ut_get_FE_mesh_name" begin
+@testset "ut_get_external_topology_name" begin
     params = Dict("Discretization" => Dict())
-    @test get_FE_mesh_name(params) === nothing
+    @test isnothing(get_external_topology_name(params))
+    params = Dict("Discretization" => Dict("Input External Topology" => Dict()))
+    @test isnothing(get_external_topology_name(params))
     name = randstring(12)
-    params = Dict("Discretization" => Dict("Input External Topology File" => name))
-    @test get_FE_mesh_name(params) == name
+    params = Dict("Discretization" => Dict("Input External Topology" => Dict("File" => name)))
+    @test get_external_topology_name(params) == name
 end
 @testset "ut_get_mesh_name" begin
     params = Dict("Discretization" => Dict())
