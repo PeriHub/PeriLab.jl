@@ -348,7 +348,7 @@ function read_external_topology(filename::String)
     if !isfile(filename)
         return nothing
     end
-    @info "Read FE mesh file $filename"
+    @info "Read external topology file $filename"
     header_line, header = get_header(filename)
     return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
 end
@@ -421,7 +421,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
         external_topology = read_external_topology(joinpath(path, get_FE_mesh_name(params)))
     end
     if !isnothing(external_topology)
-        @info "FE topology files was read."
+        @info "External topology files was read."
     end
     dof::Int64 = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params, dof)
