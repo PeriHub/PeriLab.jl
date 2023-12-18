@@ -40,9 +40,8 @@ test:
   stage: test
   except:
     - tags
+    - main
   only:
-    refs:
-      - /^(?!main).*$/ # Exclude main branch
     changes:
       - src/**/*
       - test/**/*
