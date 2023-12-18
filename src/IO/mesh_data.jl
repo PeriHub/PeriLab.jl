@@ -433,7 +433,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
     if haskey(params, "FEM") && !isnothing(external_topology)
-        element_distribution, ptc, ntype = element_distribution(nlist, ptc, ranksize)
+        element_distribution, pte = element_distribution(topology, ptc, ranksize)
     end
     @info "Finished distribution"
     @info "Create Overlap"
@@ -450,7 +450,6 @@ end
 function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
     pd_neighbors::Bool = false
     if haskey(params, "Add Neighbor Search")
-        @info "Nodes found by neighborhood search will be deleted from neighborhoodlist"
         pd_neighbors = params["Add Neighbor Search"]
     end
     number_of_elements = length(external_topology[:, 1])
@@ -522,39 +521,54 @@ function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
     return lenNlist
 end
 
+"""
+    element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64}, size::Int64)
+
+Create the distribution of the finite elements. Is needed to avoid multiple element calls. Each element should run only one time at the cores.
+
+# Arguments
+- `topology::Vector{Vector{Int64}}`: The topology list of the mesh elements.
+- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+- `size::Int64`: The number of ranks.
+# Returns
+- `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
+- `etc::Vector{Int64}`: The number of nodes in each rank.
+"""
 function element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64}, size::Int64)
     nelements = length(topology)
-
     if size == 1
         distribution = [collect(1:nelements)]
-        etc = []
+        etc::Vector{Int64} = []
     else
         distribution, etc = create_base_chunk(nelements, size)
-
-        # check neighborhood & overlap -> all nodes after chunk are overlap
-        for i in 1:size
-            nchunks = length(distribution[i])
-            append!(ntype["controllers"], nchunks)
-
-            tempid = Int64[]
-            for j in 1:nchunks
-                id = distribution[i][j]
-                # find all nodes which are not in chunk
-                # add them to list as responder nodes for data exchange
-                # findall give the index of the valid statement
-                # that means that this indices have to be used to obtain the values
-                indices = findall(item -> item != i, ptc[nlist[id]])
-                if length(indices) > 0
-                    append!(tempid, nlist[id][indices])
+        # check if at least one node of an element is at the same core
+        temp = []
+        for i_core in 1:size
+            push!(temp, Vector{Int64}([]))
+            #nchunks = length(distribution[i])
+            for el_id in distribution[i_core]
+                if !(i_core in ptc[topology[el_id]])
+                    push!(temp[i_core], el_id)
                 end
             end
-            # only single new elements where added
-            append!(distribution[i], sort(unique(tempid)))
-            append!(ntype["responder"], length(unique(tempid)))
         end
-
+        for i_core in 1:size
+            if length(temp[i_core]) > 0
+                for el_id in temp[i_core]
+                    # find core with the lowest number of elements on it
+                    # first find cores where all the nodes are
+                    # check the number of elements at all of these cores
+                    # find the core with the lowest number of elements
+                    # put the element there
+                    min_core = ptc[topology[el_id][argmin(length.(distribution[ptc[topology[el_id]]]))]]
+                    push!(distribution[min_core], el_id)
+                    distribution[etc[el_id]] = filter(x -> x != el_id, distribution[etc[el_id]])
+                    etc[el_id] = min_core
+                end
+            end
+        end
     end
-    return distribution, ptc, ntype
+    return distribution, etc
 end
 
 """
@@ -566,8 +580,8 @@ Create the distribution of the nodes.
 - `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
 - `size::Int64`: The number of ranks.
 # Returns
-- `distribution::Array{Int64,1}`: The distribution of the nodes.
-- `ptc::Array{Int64,1}`: The number of nodes in each rank.
+- `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
+- `ptc::Vector{Int64}`: Defines at which core / rank each node lies.
 - `ntype::Dict`: The type of the nodes.
 """
 function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
@@ -577,7 +591,7 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
     if size == 1
         distribution = [collect(1:nnodes)]
         overlap_map = [[[]]]
-        ptc = []
+        ptc::Vector{Int64} = []
         append!(ntype["controllers"], nnodes)
         append!(ntype["responder"], 0)
     else

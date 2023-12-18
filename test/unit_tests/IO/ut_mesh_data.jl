@@ -72,6 +72,33 @@ end
     @test nodes_to_element == [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
     @test nlist == [[2, 3, 4, 11], [1, 3, 4, 5, 6, 7], [1, 2, 22, 23, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [8, 3, 4, 6, 2, 7], [9, 3, 4, 5, 2, 7, 8], [1, 6, 2, 3, 4, 5, 8], [3, 2, 5, 6, 7], [10]]
 end
+@testset "ut_element_distribution" begin
+    nnodes = 8
+    topology = Vector([[1, 2, 3, 4], [2, 4, 5, 6], [7, 8, 5, 6]])
+
+    ptc::Vector{Int64} = zeros(8)
+    ptc[:] .= 1
+    ranksize = 1
+    element_distribution, etc = Read_Mesh.element_distribution(topology, ptc, ranksize)
+    @test length(element_distribution) == 1
+    @test element_distribution[1] == [1, 2, 3]
+    @test etc == []
+    ptc[5:8] .= 2
+    ranksize = 2
+    element_distribution, etc = Read_Mesh.element_distribution(topology, ptc, ranksize)
+    @test etc == [1, 2, 2]
+    @test length(element_distribution) == 2
+    @test element_distribution[1] == [1]
+    @test element_distribution[2] == [2, 3]
+
+    topology = Vector([[7, 8, 5, 6], [1, 2, 3, 4], [2, 4, 5, 6]])
+    element_distribution, etc = Read_Mesh.element_distribution(topology, ptc, ranksize)
+    @test etc == [2, 1, 2]
+    @test length(element_distribution) == 2
+    @test element_distribution[1] == [2]
+    @test element_distribution[2] == [3, 1]
+
+end
 @testset "ut_create_base_chunk" begin
     distribution, point_to_core = Read_Mesh.create_base_chunk(4, 1)
     @test length(distribution) == 1
