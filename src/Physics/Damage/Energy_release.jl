@@ -119,7 +119,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     for iID in nodes
         quad_horizon = get_quad_horizon(horizon[iID], dof)
         @views relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
-        rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
+        if aniso_damage
+            rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
+        end
 
         for (jID, neighborID) in enumerate(nlist[iID])
             norm_displacement = norm(relative_displacement_vector[jID, :])
