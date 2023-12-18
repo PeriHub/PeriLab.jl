@@ -428,7 +428,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     nlist = apply_bond_filters(nlist, mesh, params, dof)
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
-        nlist, topology = create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+        nlist, topology = create_consistent_neighborhoodlist(external_topology, params["Discretization"]["Input External Topology"], nlist, dof)
     end
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
@@ -651,7 +651,7 @@ Create the overlap map.
 # Returns
 - `overlap_map::Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}`: The overlap map.
 """
-function create_overlap_map(distribution::Vector{Int64}, ptc::Vector{Int64}, size::Int64)
+function create_overlap_map(distribution::Vector{Vector{Int64}}, ptc::Vector{Int64}, size::Int64)
 
     overlap_map = _init_overlap_map_(size)
     if size == 1
