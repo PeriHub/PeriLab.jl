@@ -85,7 +85,7 @@ Changes entries in the overlap map from the global numbering to the local comput
 
 # Arguments
 - `overlap_map::Dict{Int64, Dict{Int64, String}}`: overlap map with global nodes.
-- `distribution Array{Int64}`: global nodes distribution at cores, needed for the gobal to local mapping
+- `distribution::Vector{Vector{Int64}}`: global nodes distribution at cores, needed for the gobal to local mapping
 - `ranks Array{Int64}` : number of used computer cores
 # Returns
 - `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
@@ -95,7 +95,7 @@ Example:
 get_local_overlap_map(overlap_map, distribution, ranks)  # returns local nodes 
 ```
 """
-function get_local_overlap_map(overlap_map, distribution, ranks)
+function get_local_overlap_map(overlap_map, distribution::Vector{Vector{Int64}}, ranks::Int64)
     if ranks == 1
         return overlap_map
     end
@@ -139,7 +139,7 @@ Distributes the neighborhood list to the cores.
 # Returns
 - `datamanager::Module`: data manager
 """
-function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist, distribution)
+function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist::Vector{Vector{Int64}}, distribution::Vector{Vector{Int64}})
     send_msg = 0
     lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
     rank = MPI.Comm_rank(comm)
@@ -225,7 +225,7 @@ Distributes the mesh data to the cores
 # Returns
 - `datamanager::Module`: data manager
 """
-function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh, distribution, dof::Int64)
+function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh::DataFrame, distribution::Vector{Vector{Int64}}, dof::Int64)
     # init block_id field
     rank = MPI.Comm_rank(comm)
     if rank == 0
@@ -275,7 +275,7 @@ mesh_data = DataFrame(x1 = [1.0, 2.0, 3.0], x2 = [4.0, 5.0, 6.0], volume = [10.0
 dof = 3
 result = check_mesh_elements(mesh_data, dof)
 """
-function check_mesh_elements(mesh, dof)
+function check_mesh_elements(mesh::DataFrame, dof::Int64)
     mnames = names(mesh)
     meshInfoDict = Dict{String,Dict{String,Any}}()
 
@@ -425,13 +425,16 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     end
     dof::Int64 = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params, dof)
+    nlist = apply_bond_filters(nlist, mesh, params, dof)
     if !isnothing(external_topology)
-        @info "Adapt FE consistent neighborhood list"
+        @info "Create a consistent neighborhood list with external topology definition."
         nlist, topology = create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
     end
-    nlist = apply_bond_filters(nlist, mesh, params, dof)
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
+    if haskey(params, "FEM") && !isnothing(external_topology)
+        element_distribution, ptc, ntype = element_distribution(nlist, ranksize)
+    end
     @info "Finished distribution"
     @info "Create Overlap"
     overlap_map = create_overlap_map(distribution, ptc, ranksize)
@@ -525,6 +528,41 @@ function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
         lenNlist[id] = length(nlist[id])
     end
     return lenNlist
+end
+
+function element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64}, size::Int64)
+    nelements = length(topology)
+
+    if size == 1
+        distribution = [collect(1:nelements)]
+        etc = []
+    else
+        distribution, etc = create_base_chunk(nelements, size)
+
+        # check neighborhood & overlap -> all nodes after chunk are overlap
+        for i in 1:size
+            nchunks = length(distribution[i])
+            append!(ntype["controllers"], nchunks)
+
+            tempid = Int64[]
+            for j in 1:nchunks
+                id = distribution[i][j]
+                # find all nodes which are not in chunk
+                # add them to list as responder nodes for data exchange
+                # findall give the index of the valid statement
+                # that means that this indices have to be used to obtain the values
+                indices = findall(item -> item != i, ptc[nlist[id]])
+                if length(indices) > 0
+                    append!(tempid, nlist[id][indices])
+                end
+            end
+            # only single new elements where added
+            append!(distribution[i], sort(unique(tempid)))
+            append!(ntype["responder"], length(unique(tempid)))
+        end
+
+    end
+    return distribution, ptc, ntype
 end
 
 """
@@ -621,7 +659,7 @@ Create the overlap map.
 # Returns
 - `overlap_map::Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}`: The overlap map.
 """
-function create_overlap_map(distribution, ptc, size)
+function create_overlap_map(distribution::Vector{Int64}, ptc::Vector{Int64}, size::Int64)
 
     overlap_map = _init_overlap_map_(size)
     if size == 1
@@ -663,7 +701,7 @@ function create_base_chunk(nnodes::Int64, size::Int64)
     chunk_size = div(nnodes, size)
     # Split the data into chunks
     distribution = fill(Int64[], size)
-    point_to_core = zeros(Int64, nnodes)
+    point_to_core::Vector{Int64} = zeros(Int64, nnodes)
     for i in 1:size
         start_idx = (i - 1) * chunk_size + 1
         end_idx = min(i * chunk_size, nnodes)
@@ -689,7 +727,7 @@ Compute the neighbor list for each node in a mesh based on their proximity using
 # Returns
 An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
 """
-function neighbors(mesh::DataFrame, params::Dict, coor)
+function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vector{Float64}})
     @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
