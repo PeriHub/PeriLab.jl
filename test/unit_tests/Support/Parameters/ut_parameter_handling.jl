@@ -124,7 +124,7 @@ end
     params = Dict("Discretization" => Dict())
     @test get_FE_mesh_name(params) === nothing
     name = randstring(12)
-    params = Dict("Discretization" => Dict("Input FE File" => name))
+    params = Dict("Discretization" => Dict("Input External Topology File" => name))
     @test get_FE_mesh_name(params) == name
 end
 @testset "ut_get_mesh_name" begin

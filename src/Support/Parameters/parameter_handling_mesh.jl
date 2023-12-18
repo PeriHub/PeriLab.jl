@@ -15,11 +15,11 @@ Returns the name of the mesh file from the parameters
 - `String`: The name of the finite element topology file
 """
 function get_FE_mesh_name(params::Dict)
-    check = haskey(params["Discretization"], "Input FE File")
+    check = haskey(params["Discretization"], "Input External Topology File")
     if !check
         return nothing
     end
-    return params["Discretization"]["Input FE File"]
+    return params["Discretization"]["Input External Topology File"]
 end
 
 """
