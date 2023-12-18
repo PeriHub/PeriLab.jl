@@ -14,11 +14,13 @@ before_script:
   - apt-get -qq update; apt-get -y install git jq bc
   - julia --project=@. -e "import Pkg; Pkg.build()"
 
-test:
+main_test:
   stage: test
   except:
     - tags
   only:
+    refs:
+      - main
     changes:
       - src/**/*
       - test/**/*
@@ -29,6 +31,27 @@ test:
       using Coverage; cl, tl = get_summary(process_folder());
       println("(", cl/tl*100, "%) covered");
       Codecov.submit_local(process_folder())'
+  coverage: '/\(\d+.\d+\%\) covered/'
+  artifacts:
+    paths:
+      - test
+
+test:
+  stage: test
+  except:
+    - tags
+  only:
+    refs:
+      - /^(?!main).*$/ # Exclude main branch
+    changes:
+      - src/**/*
+      - test/**/*
+  script:
+    - julia --project=@. -e 'import Pkg;
+      Pkg.test(; coverage = true)'
+    - CODECOV_TOKEN=$CODECOV_TOKEN julia -e 'import Pkg; Pkg.add("Coverage");
+      using Coverage; cl, tl = get_summary(process_folder());
+      println("(", cl/tl*100, "%) covered")'
   coverage: '/\(\d+.\d+\%\) covered/'
   artifacts:
     paths:
