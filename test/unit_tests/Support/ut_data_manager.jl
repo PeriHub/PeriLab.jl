@@ -127,7 +127,8 @@ end
     @test test_Data_manager.get_num_elements() == 10
     test_Data_manager.set_num_elements(1)
     @test test_Data_manager.get_num_elements() == 1
-    @test isnothing(test_Data_manager.set_num_elements(0))
+    test_Data_manager.set_num_elements(0)
+    @test test_Data_manager.get_num_elements() == 0
     @test isnothing(test_Data_manager.set_num_elements(-1))
 end
 @testset "ut_create_existing_field" begin

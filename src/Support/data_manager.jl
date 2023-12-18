@@ -975,8 +975,8 @@ set_num_elements(10)  # sets the number of finite elements to 10
 """
 
 function set_num_elements(n::Int64)
-    if n < 1
-        @error "Number of elements must be positive."
+    if n < 0
+        @error "Number of elements must be positive or zero."
         return nothing
     end
     global num_elements = n
