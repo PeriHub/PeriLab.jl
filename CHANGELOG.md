@@ -8,6 +8,12 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.2] - 2023-12-18
+
+### Added
+
+- Anistropic Damage Model
+
 ## [1.0.1] - 2023-12-06
 
 ### Added
@@ -39,5 +45,6 @@ All notable changes to this project will be documented in this file.
 
 - First full PeriLab release
 
+[1.0.2]: https://gitlab.com/dlr-perihub/PeriLab.jl/-/compare/v1.0.1...v1.0.2
 [1.0.1]: https://gitlab.com/dlr-perihub/PeriLab.jl/-/compare/v1.0.0...v1.0.1
 [1.0.0]: https://gitlab.com/dlr-perihub/PeriLab.jl/-/tags/v1.0.0
