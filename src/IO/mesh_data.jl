@@ -337,12 +337,12 @@ end
 """
     read_external_topology(filename::String)
 
-Read mesh data from a file and return it as a DataFrame.
+Read external topoloy data from a file and return it as a DataFrame.
 
 # Arguments
 - `filename::String`: The path to the mesh file.
 # Returns
-- `mesh::DataFrame`: The mesh data as a DataFrame.
+- `external_topology::DataFrame`: The external topology data as a DataFrame.
 """
 function read_external_topology(filename::String)
     if !isfile(filename)
@@ -417,8 +417,8 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
         return nothing
     end
     external_topology = nothing
-    if !isnothing(get_FE_mesh_name(params))
-        external_topology = read_external_topology(joinpath(path, get_FE_mesh_name(params)))
+    if !isnothing(get_external_topology_name(params))
+        external_topology = read_external_topology(joinpath(path, get_external_topology_name(params)))
     end
     if !isnothing(external_topology)
         @info "External topology files was read."
@@ -433,7 +433,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
     if haskey(params, "FEM") && !isnothing(external_topology)
-        element_distribution, ptc, ntype = element_distribution(nlist, ranksize)
+        element_distribution, ptc, ntype = element_distribution(nlist, ptc, ranksize)
     end
     @info "Finished distribution"
     @info "Create Overlap"
@@ -478,14 +478,6 @@ function create_consistent_neighborhoodlist(external_topology::DataFrame, params
         nlist[fe_node] = filter(x -> x != fe_node, nlist[fe_node])
     end
     return nlist, topology, nodes_to_element
-end
-
-
-function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
-    coor = names(mesh)
-    nlist::Vector{Vector{Int64}} = neighbors(mesh, params, coor[1:dof])
-    @info "Finished init Neighborhoodlist"
-    return nlist
 end
 
 """
@@ -727,7 +719,7 @@ Compute the neighbor list for each node in a mesh based on their proximity using
 # Returns
 An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
 """
-function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vector{Float64}})
+function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vector{String}})
     @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
