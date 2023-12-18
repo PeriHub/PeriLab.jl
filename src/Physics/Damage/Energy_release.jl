@@ -100,6 +100,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
     if aniso_damage
         aniso_crit_values = datamanager.get_aniso_crit_values()
+        bond_norm::Float64 = 0.0
     end
 
     quad_horizon::Float64 = 0.0
@@ -118,11 +119,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     for iID in nodes
         quad_horizon = get_quad_horizon(horizon[iID], dof)
         @views relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
-        # @views bond_components = deformed_bond[iID][:, 1:dof] ./ undeformed_bond[iID][:, end]
-
-        rotation_tensor = Geometry.rotation_tensor(angles[iID, :]) # Can be moved
-        # rotated_bond = rotation_tensor[1:dof, 1:dof] .* deformed_bond[iID][:, 1:dof]
-        # bond_norm = abs.(rotated_bond) ./ deformed_bond[iID][:, end]
+        rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
 
         for (jID, neighborID) in enumerate(nlist[iID])
             norm_displacement = norm(relative_displacement_vector[jID, :])
@@ -152,32 +149,21 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
 
             if aniso_damage
+                rotated_bond = rotation_tensor[1:dof, 1:dof]' * deformed_bond[iID][jID, 1:dof]
                 for i in 1:dof
-                    rotated_bond = rotation_tensor[1:dof, 1:dof]' * deformed_bond[iID][jID, 1:dof]
                     if bond_damage_aniso[iID][jID, i] == 0 || rotated_bond[i] == 0
                         continue
                     end
-                    bond_norm = abs(rotated_bond[i]) / deformed_bond[iID][jID, end]
-                    bond_energy_component = bond_energy * bond_norm
-                    if bond_energy_component > aniso_crit_values[block_ids[iID]][i]
-                        # println(bond_norm)
-                        # println(rotated_bond)
-                        @inbounds bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct, i think this will lead to a problem because bonds can break multiple times
+                    @views bond_norm = abs(rotated_bond[i]) / deformed_bond[iID][jID, end]
+                    if bond_energy / quad_horizon * bond_norm > aniso_crit_values[block_ids[iID]][i]
+                        @inbounds bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct
                         if bond_damage[iID][jID] < 0
                             bond_damage[iID][jID] = 0
                         end
                         bond_damage_aniso[iID][jID, i] = 0
-                        # @inbounds bond_damage[iID][jID] = 0.0
                         @inbounds update_list[iID] = true
                     end
                 end
-                #get index of max value
-                # rotated_bond = rotation_tensor[1:dof, 1:dof] * deformed_bond[iID][jID, 1:dof]
-                # max_index = argmax(abs.(rotated_bond))
-                # if bond_energy > aniso_crit_values[block_ids[iID]][max_index]
-                #     @inbounds bond_damage[iID][jID] = 0.0
-                #     @inbounds update_list[iID] = true
-                # end
             else
                 if (bond_energy / quad_horizon) > crit_energy
                     @inbounds bond_damage[iID][jID] = 0.0

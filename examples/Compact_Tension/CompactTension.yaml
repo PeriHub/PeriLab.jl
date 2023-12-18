@@ -112,7 +112,7 @@ PeriLab:
         Displacements: true
       Write After Damage: true
   Solver:
-    Final Time: 0.01
+    Final Time: 0.0002
     Initial Time: 0.0
     Material Models: true
     Damage Models: true
