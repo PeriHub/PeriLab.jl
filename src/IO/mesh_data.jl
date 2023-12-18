@@ -45,12 +45,14 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         else
             num_controller = 0
             num_responder = 0
+            number_of_elements = 0
             ntype = Dict("controllers" => 0, "responder" => 0)
             nlist = 0
             dof = 0
             mesh = []
             overlap_map = nothing
             distribution = nothing
+            element_distribution = nothing
         end
         dof = send_value(comm, 0, dof)
         dof = datamanager.set_dof(dof)
@@ -433,7 +435,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
     if haskey(params, "FEM") && !isnothing(external_topology)
-        element_distribution, pte = element_distribution(topology, ptc, ranksize)
+        element_distribution = element_distribution(topology, ptc, ranksize)
     end
     @info "Finished distribution"
     @info "Create Overlap"
@@ -444,7 +446,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     @info "Number of nodes: $(length(mesh[!, "x"]))"
     @info "Geometrical degrees of freedoms: $dof"
     @info "-------------------"
-    return distribution, mesh, ntype, overlap_map, nlist, dof
+    return distribution, mesh, ntype, overlap_map, nlist, dof, element_distribution
 end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
@@ -568,7 +570,7 @@ function element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64
             end
         end
     end
-    return distribution, etc
+    return distribution
 end
 
 """
