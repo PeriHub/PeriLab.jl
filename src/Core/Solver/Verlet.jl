@@ -363,6 +363,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     step_time::Float64 = 0
     numerical_damping::Float64 = solver_options["Numerical Damping"]
     max_damage::Float64 = 0
+    damage_init::Bool = false
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     for idt in iter
@@ -404,8 +405,12 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             if solver_options["Damage Models"]
                 max_damage = maximum(damage[find_active(active[1:nnodes])])
                 if max_damage > max_cancel_damage
-                    @info "Maximum damage reached"
+                    set_multiline_postfix(iter, "Maximum damage reached!")
                     datamanager.set_cancel(true)
+                end
+                if !damage_init && max_damage > 0
+                    damage_init = true
+                    # set_multiline_postfix(iter, "Bond damage initiated!")
                 end
             end
             @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, max_damage, outputs, datamanager)

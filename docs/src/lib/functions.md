@@ -21,6 +21,7 @@ create_node_field
 get_all_field_keys
 get_block_list
 get_crit_values_matrix
+get_aniso_crit_values
 get_dof
 get_field
 get_field_type
@@ -44,6 +45,7 @@ init_property
 rotation_data
 set_block_list
 set_crit_values_matrix
+set_aniso_crit_values
 set_distribution
 set_dof
 set_glob_to_loc

@@ -87,6 +87,10 @@ expected_structure = Dict(
                                     "Interblock Damage" => [Dict{Any,Any}(
                                             "Any" => [Union{Float64,Int64}, true],
                                         ), false],
+                                    "Anisotropic Damage" => [Dict{Any,Any}(
+                                            "Critical Value X" => [Union{Float64,Int64}, true],
+                                            "Critical Value Y" => [Union{Float64,Int64}, true],
+                                        ), false],
                                 ), true],
                         ), false],
                     "Material Models" => [Dict{Any,Any}(

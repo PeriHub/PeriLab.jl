@@ -110,7 +110,7 @@ Get the maximum damage.
 - `write_after_damage::Bool`: The value
 """
 function get_max_damage(params::Dict)
-    return get(params["Solver"], "Maximum Damage", 1.0)
+    return get(params["Solver"], "Maximum Damage", Inf64)
 end
 
 """

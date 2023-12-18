@@ -7,27 +7,28 @@ using LinearAlgebra
 using Rotations
 export bond_geometry
 export shape_tensor
+
 """
      bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
 
 Calculate bond geometries between nodes based on their coordinates.
 
-# # Arguments
+# Arguments
  - `nodes::Union{SubArray,Vector{Int64}}`: A vector of integers representing node IDs.
  - `dof::Int64`: An integer representing the degrees of freedom.
  - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
  - `coor`: A matrix representing the coordinates of each node.
  - `undeformed_bond`: A preallocated array or data structure to store bond geometries.
 
-# # Output
+# Output
  - `undeformed_bond`: An updated `undeformed_bond` array with calculated bond geometries.
 
-# # Description
+# Description
  This function calculates bond geometries between nodes. For each node in `nodes`, it computes the bond vector between the node and its neighboring nodes based on their coordinates. It also calculates the distance (magnitude) of each bond vector.
 
  If the distance of any bond vector is found to be zero, indicating identical point coordinates, an error is raised.
 
-# # Example
+# Example
  ```julia
  nodes = [1, 2, 3]
  dof = 2
@@ -202,12 +203,10 @@ end
 
 Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package.
 
-## Arguments
+# Arguments
 -  `angles::Vector{Float64}`: Vector of angles definede in degrees of length one or three
 
-
-## Returns
-
+# Returns
 - Rotation tensor
 
 """

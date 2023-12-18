@@ -150,4 +150,37 @@ function init_interface_crit_values(datamanager::Module, params::Dict)
     datamanager.set_crit_values_matrix(inter_critical_value)
     return datamanager
 end
+
+"""
+    init_aniso_crit_values(datamanager::Module, params::Dict)
+
+Initialize the anisotropic critical values
+
+# Arguments
+- `datamanager::Module`: The datamanager
+- `params::Dict`: The parameters
+# Returns
+- `datamanager::Module`: The datamanager
+"""
+function init_aniso_crit_values(datamanager::Module, params::Dict)
+    blockList = datamanager.get_block_list()
+    aniso_crit::Dict{Int64,Any} = Dict()
+    for block_id in blockList
+        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
+            continue
+        end
+        damageName = params["Blocks"]["block_$block_id"]["Damage Model"]
+        damage_parameter = params["Physics"]["Damage Models"][damageName]
+        crit_0 = damage_parameter["Critical Value"]
+        crit_90 = damage_parameter["Critical Value"]
+        if !haskey(damage_parameter, "Anisotropic Damage")
+            continue
+        end
+        crit_0 = damage_parameter["Anisotropic Damage"]["Critical Value X"]
+        crit_90 = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
+        aniso_crit[block_id] = [crit_0, crit_90]
+    end
+    datamanager.set_aniso_crit_values(aniso_crit)
+    return datamanager
+end
 end
