@@ -35,20 +35,20 @@ using DataFrames
 
 end
 
-@testset "ut_create_FE_consistent_neighborhoodlist" begin
+@testset "ut_create_consistent_neighborhoodlist" begin
     path = "./unit_tests/IO/"
 
-    meshFE = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
-    if isnothing(meshFE)
+    external_topology = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
+    if isnothing(external_topology)
         path = "./test/unit_tests/IO/"
-        meshFE = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
+        external_topology = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
     end
     dof::Int64 = 2
     params = Dict()
 
     nlist::Vector{Vector{Int64}} = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
 
-    nlist_test, topology, nodes_to_element = Read_Mesh.create_FE_consistent_neighborhoodlist(meshFE, params, nlist, dof)
+    nlist_test, topology, nodes_to_element = Read_Mesh.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
 
     @test topology[1] == [1, 2, 3, 4]
     @test topology[2] == [3, 4, 5, 6]
@@ -58,7 +58,7 @@ end
     @test nlist == [[2, 3, 4], [1, 3, 4, 5, 6, 7], [1, 2, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [3, 4, 6, 2, 7, 8], [3, 4, 5, 2, 7, 8], [2, 3, 4, 5, 6, 8], [5, 6, 7], [10]]
     params = Dict("Add Neighbor Search" => true)
     nlist = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
-    nlist, topology, nodes_to_element = Read_Mesh.create_FE_consistent_neighborhoodlist(meshFE, params, nlist, dof)
+    nlist, topology, nodes_to_element = Read_Mesh.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
 
     @test topology[1] == [1, 2, 3, 4]
     @test topology[2] == [3, 4, 5, 6]

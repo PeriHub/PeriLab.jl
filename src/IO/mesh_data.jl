@@ -416,18 +416,18 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
         return nothing
     end
-    meshFE = nothing
+    external_topology = nothing
     if !isnothing(get_FE_mesh_name(params))
-        meshFE = read_external_topology(joinpath(path, get_FE_mesh_name(params)))
+        external_topology = read_external_topology(joinpath(path, get_FE_mesh_name(params)))
     end
-    if !isnothing(meshFE)
+    if !isnothing(external_topology)
         @info "FE topology files was read."
     end
     dof::Int64 = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params, dof)
-    if !isnothing(meshFE)
+    if !isnothing(external_topology)
         @info "Adapt FE consistent neighborhood list"
-        nlist, topology = create_FE_consistent_neighborhoodlist(meshFE, params, nlist, dof)
+        nlist, topology = create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
     end
     nlist = apply_bond_filters(nlist, mesh, params, dof)
     @info "Start distribution"
@@ -444,16 +444,16 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     return distribution, mesh, ntype, overlap_map, nlist, dof
 end
 
-function create_FE_consistent_neighborhoodlist(meshFE::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
     pd_neighbors::Bool = false
     if haskey(params, "Add Neighbor Search")
         @info "Nodes found by neighborhood search will be deleted from neighborhoodlist"
         pd_neighbors = params["Add Neighbor Search"]
     end
-    number_of_elements = length(meshFE[:, 1])
+    number_of_elements = length(external_topology[:, 1])
     topology::Vector{Vector{Int64}} = []
     for i_el in 1:number_of_elements
-        push!(topology, collect(skipmissing(meshFE[i_el, :])))
+        push!(topology, collect(skipmissing(external_topology[i_el, :])))
     end
     nodes_to_element = [Any[] for _ in 1:maximum(maximum(topology))]
     fe_nodes = Vector{Int64}()
