@@ -25,8 +25,8 @@ using DataFrames
     @test data[!, "block_id"] == [1, 1, 2]
     @test data[!, "volume"] == [0.1, 0.1, 0.1]
 
-    @test isnothing(Read_Mesh.read_FE_mesh("./"))
-    data = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
+    @test isnothing(Read_Mesh.read_external_topology("./"))
+    data = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
     @test length(data[:, 1]) == 4
     @test collect(skipmissing(data[1, :])) == [1, 2, 3, 4]
     @test collect(skipmissing(data[2, :])) == [3, 4, 5, 6]
@@ -38,10 +38,10 @@ end
 @testset "ut_create_FE_consistent_neighborhoodlist" begin
     path = "./unit_tests/IO/"
 
-    meshFE = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
+    meshFE = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
     if isnothing(meshFE)
         path = "./test/unit_tests/IO/"
-        meshFE = Read_Mesh.read_FE_mesh(joinpath(path, "example_FE_mesh.txt"))
+        meshFE = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
     end
     dof::Int64 = 2
     params = Dict()
@@ -56,7 +56,7 @@ end
     @test topology[4] == [5, 6, 7, 8]
     @test nodes_to_element == [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
     @test nlist == [[2, 3, 4], [1, 3, 4, 5, 6, 7], [1, 2, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [3, 4, 6, 2, 7, 8], [3, 4, 5, 2, 7, 8], [2, 3, 4, 5, 6, 8], [5, 6, 7], [10]]
-    params = Dict("PD neighbors" => true)
+    params = Dict("Add Neighbor Search" => true)
     nlist = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
     nlist, topology, nodes_to_element = Read_Mesh.create_FE_consistent_neighborhoodlist(meshFE, params, nlist, dof)
 

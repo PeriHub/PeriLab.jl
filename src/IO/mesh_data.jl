@@ -335,7 +335,7 @@ function check_mesh_elements(mesh, dof)
 end
 
 """
-    read_FE_mesh(filename::String)
+    read_external_topology(filename::String)
 
 Read mesh data from a file and return it as a DataFrame.
 
@@ -344,7 +344,7 @@ Read mesh data from a file and return it as a DataFrame.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 """
-function read_FE_mesh(filename::String)
+function read_external_topology(filename::String)
     if !isfile(filename)
         return nothing
     end
@@ -418,7 +418,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     end
     meshFE = nothing
     if !isnothing(get_FE_mesh_name(params))
-        meshFE = read_FE_mesh(joinpath(path, get_FE_mesh_name(params)))
+        meshFE = read_external_topology(joinpath(path, get_FE_mesh_name(params)))
     end
     if !isnothing(meshFE)
         @info "FE topology files was read."
@@ -446,9 +446,9 @@ end
 
 function create_FE_consistent_neighborhoodlist(meshFE::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
     pd_neighbors::Bool = false
-    if haskey(params, "PD neighbors")
+    if haskey(params, "Add Neighbor Search")
         @info "Nodes found by neighborhood search will be deleted from neighborhoodlist"
-        pd_neighbors = params["PD neighbors"]
+        pd_neighbors = params["Add Neighbor Search"]
     end
     number_of_elements = length(meshFE[:, 1])
     topology::Vector{Vector{Int64}} = []
