@@ -12,7 +12,7 @@ using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
 Set_modules.include_files(module_list)
 
-function init_FEM(datamanager::Module, params::Dict)
+function init_FEM(params::Dict, datamanager::Module)
     valid_models(params)
     dof = datamanager.get_dof()
     nelements = datamanager.get_num_elements()

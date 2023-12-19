@@ -23,12 +23,12 @@ end
     test_Data_manager.set_dof(2)
     test_Data_manager.set_num_elements(nelements)
     test_Data_manager.set_num_controller(6)
-    test = FEM.init_FEM(test_Data_manager, Dict())
+    test = FEM.init_FEM(Dict(), test_Data_manager)
     @test isnothing(test)
     test_Data_manager.set_dof(1)
-    test = FEM.init_FEM(test_Data_manager, Dict("Degree" => 1))
+    test = FEM.init_FEM(Dict("Degree" => 1), test_Data_manager)
     @test isnothing(test)
-    test = FEM.init_FEM(test_Data_manager, Dict("Degree" => 4))
+    test = FEM.init_FEM(Dict("Degree" => 4), test_Data_manager)
     @test isnothing(test)
     dof = 2
     test_Data_manager.set_dof(dof)
@@ -66,7 +66,7 @@ end
     rho[2, :] .= 2.0
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
         "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
-    test_Data_manager = FEM.init_FEM(test_Data_manager, params["FEM"]["FE_1"])
+    test_Data_manager = FEM.init_FEM(params["FEM"]["FE_1"], test_Data_manager)
 
     @test "N Matrix" in test_Data_manager.get_all_field_keys()
     @test "B Matrix" in test_Data_manager.get_all_field_keys()
@@ -126,7 +126,7 @@ end
     topology[2, 3] = 4
     topology[2, 4] = 6
 
-    test_Data_manager = FEM.init_FEM(test_Data_manager, params["FEM"]["FE_1"])
+    test_Data_manager = FEM.init_FEM(params["FEM"]["FE_1"], test_Data_manager)
     elements = Vector{Int64}([1, 2])
     test_Data_manager = FEM.eval(test_Data_manager, elements, params, "FE_1", 0.0, 1.0e-6)
 
