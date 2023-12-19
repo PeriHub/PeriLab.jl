@@ -26,7 +26,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
     stress_N = datamanager.get_field("Element Stress", "N")
     stress_NP1 = datamanager.get_field("Element Stress", "NP1")
     strain_increment = datamanager.get_field("Element Strain Increment")
-    topology = datamanager.get_field("FE Element Topology")
+    topology = datamanager.get_field("FE Topology")
     jacobian = datamanager.get_field("Element Jacobi Matrix")
     det_jacobian = datamanager.get_field("Element Jacobi Determinant")
 

@@ -43,7 +43,7 @@ function init_FEM(datamanager::Module, params::Dict)
     datamanager = Set_modules.create_module_specifics(params["Element Type"], module_list, specifics, (datamanager, elements, params, p))
 
     elements = Vector{Int64}(1:nelements)
-    topology = datamanager.get_field("FE Element Topology")
+    topology = datamanager.get_field("FE Topology")
     jacobian = datamanager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
     determinant_jacobian = datamanager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
     jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)

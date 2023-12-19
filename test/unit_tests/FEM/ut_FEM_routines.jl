@@ -19,7 +19,7 @@ using Test
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
         "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
 
-    topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (2, 4))
+    topology = test_Data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
     topology[1, 1] = 1
     topology[1, 2] = 2
     topology[1, 3] = 3
@@ -115,7 +115,7 @@ end
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
         "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
 
-    topology = test_Data_manager.create_constant_free_size_field("FE Element Topology", Int64, (2, 4))
+    topology = test_Data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
     topology[1, 1] = 1
     topology[1, 2] = 2
     topology[1, 3] = 3
