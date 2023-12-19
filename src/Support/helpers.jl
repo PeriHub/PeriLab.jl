@@ -175,12 +175,15 @@ Finds the inverse of the bond id in the nlist.
 function find_inverse_bond_id(nlist::SubArray)
     inverse_nlist = [Dict{Int64,Int64}() for _ in eachindex(nlist)]
     for iID in eachindex(nlist)
-        for (jID, neighborID) in enumerate(nlist[iID])
+        neighbors = nlist[iID]
+        for (jID, neighborID) in enumerate(neighbors)
             value = findfirst(isequal(iID), nlist[neighborID])
             # Check if neighbor ID is found in nlist, due to different horizons
-            if !isnothing(value)
-                inverse_nlist[neighborID][iID] = value
+            if isnothing(value)
+                continue
             end
+
+            inverse_nlist[neighborID][iID] = value
         end
     end
     return inverse_nlist

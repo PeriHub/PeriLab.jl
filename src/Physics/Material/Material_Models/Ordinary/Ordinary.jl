@@ -44,7 +44,7 @@ function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::Su
     # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
     for iID in nodes
         if weighted_volume[iID] == 0
-            @warn "Weighted volume is zero for local point ID: $iID"
+            # @warn "Weighted volume is zero for local point ID: $iID"
             theta[iID] = 0
             continue
         end
