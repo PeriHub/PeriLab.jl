@@ -873,6 +873,7 @@ set_fem(true)  # sets the fem_option to true
 ```
 """
 function set_fem(n::Bool)
+    @info "FEM option is set to $n"
     global fem_option = n
 end
 

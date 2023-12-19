@@ -40,10 +40,10 @@ Initializes the data for the mesh.
 function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm, to::TimerOutput)
     @timeit to "init_data - mesh_data,jl" begin
         ranks = MPI.Comm_size(comm)
-        rank = MPI.Comm_rank(comm)
+        rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
-        if rank == 0
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof, topology, element_distribution = load_and_evaluate_mesh(params::Dict, path, ranks)
+        if rank == 1
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks)
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -72,13 +72,14 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         @info "Get node sets"
         define_nsets(params, path, datamanager)
         # defines the order of the global nodes to the local core nodes
-        datamanager.set_distribution(distribution[MPI.Comm_rank(comm)+1])
-        datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
+        datamanager.set_distribution(distribution[rank])
+        datamanager.set_glob_to_loc(glob_to_loc(distribution[rank]))
         @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
         @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
         @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
+        datamanager.set_fem(fem_active)
         if fem_active
             @info "Set and synchronize elements"
             element_distribution = send_value(comm, 0, element_distribution)
@@ -468,9 +469,10 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     end
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
-    element_distribution = nothing
+    el_distribution = nothing
     if haskey(params, "FEM") && !isnothing(external_topology)
-        element_distribution = element_distribution(topology, ptc, ranksize)
+        @info "Start element distribution"
+        el_distribution = element_distribution(topology, ptc, ranksize)
     end
     @info "Finished distribution"
     @info "Create Overlap"
@@ -483,10 +485,10 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     @info "-------------------"
     if haskey(params, "FEM") && !isnothing(external_topology)
         @info "Finite element option active"
-        @info "Number of finite elements: " * length(topology)
+        @info "Number of finite elements: $(length(topology))"
         @info "-------------------"
     end
-    return distribution, mesh, ntype, overlap_map, nlist, dof, topology, element_distribution
+    return distribution, mesh, ntype, overlap_map, nlist, dof, topology, el_distribution
 end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
