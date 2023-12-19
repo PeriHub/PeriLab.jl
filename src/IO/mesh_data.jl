@@ -40,24 +40,28 @@ Initializes the data for the mesh.
 function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm, to::TimerOutput)
     @timeit to "init_data - mesh_data,jl" begin
         ranks = MPI.Comm_size(comm)
-        if (MPI.Comm_rank(comm)) == 0
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params::Dict, path, ranks)
+        rank = MPI.Comm_rank(comm)
+        fem_active::Bool = false
+        if rank == 0
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof, topology, element_distribution = load_and_evaluate_mesh(params::Dict, path, ranks)
+            if !isnothing(element_distribution)
+                fem_active = true
+            end
         else
             num_controller = 0
             num_responder = 0
-            number_of_elements = 0
             ntype = Dict("controllers" => 0, "responder" => 0)
             nlist = 0
-            dof = 0
+            dof::Int64 = 0
             mesh = []
             overlap_map = nothing
             distribution = nothing
             element_distribution = nothing
         end
+        fem_active = send_value(comm, 0, fem_active)
         dof = send_value(comm, 0, dof)
         dof = datamanager.set_dof(dof)
         overlap_map = send_value(comm, 0, overlap_map)
-
         distribution = send_value(comm, 0, distribution)
         nlist = send_value(comm, 0, nlist)
         datamanager.set_overlap_map(overlap_map)
@@ -75,11 +79,41 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
+        if fem_active
+            @info "Set and synchronize elements"
+            element_distribution = send_value(comm, 0, element_distribution)
+            topology = send_value(comm, 0, topology)
+            datamanager.set_num_elements(length(element_distribution[rank]))
+            @info "Set local topology vector"
+            datamanager = get_local_element_topology(datamanager, topology[element_distribution[rank]], distribution[rank])
+        end
         @info "Finish init data"
     end
     return datamanager, params
 end
 
+function get_local_element_topology(datamanager::Module, topology::Vector{Vector{Int64}}, distribution::Vector{Int64})
+    if length(topology[1]) == 0
+        return datamanager
+    end
+    master_len = length(topology[1][:])
+    for top in topology
+        if length(top) != master_len
+            @error "Only one element type is supported. Please define the same numbers of nodes per element."
+            return nothing
+            """
+            - new field like the bond field has to be defined for elements in the datamanager
+            - can be avoided right now by setting zeros in the topology vector as empty nodes
+            """
+        end
+    end
+    topo = datamanager.create_constant_free_size_field("FE Topology", Int64, (length(topology), master_len))
+    ilocal = glob_to_loc(distribution)
+    for el_id in eachindex(topology)
+        topo[el_id, :] = local_nodes_from_dict(ilocal, topology[el_id])
+    end
+    return datamanager
+end
 """
     get_local_overlap_map()
 
@@ -434,6 +468,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     end
     @info "Start distribution"
     distribution, ptc, ntype = node_distribution(nlist, ranksize)
+    element_distribution = nothing
     if haskey(params, "FEM") && !isnothing(external_topology)
         element_distribution = element_distribution(topology, ptc, ranksize)
     end
@@ -446,7 +481,12 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     @info "Number of nodes: $(length(mesh[!, "x"]))"
     @info "Geometrical degrees of freedoms: $dof"
     @info "-------------------"
-    return distribution, mesh, ntype, overlap_map, nlist, dof, element_distribution
+    if haskey(params, "FEM") && !isnothing(external_topology)
+        @info "Finite element option active"
+        @info "Number of finite elements: " * length(topology)
+        @info "-------------------"
+    end
+    return distribution, mesh, ntype, overlap_map, nlist, dof, topology, element_distribution
 end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)

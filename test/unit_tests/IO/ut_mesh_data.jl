@@ -97,6 +97,59 @@ end
     @test element_distribution[2] == [3, 1]
 
 end
+@testset "ut_get_local_element_topology" begin
+
+    test_Data_manager = Data_manager
+    topology::Vector{Vector{Int64}} = [[1, 2, 3, 4], [3, 4, 2, 1]]
+    distribution::Vector{Vector{Int64}} = [[2, 3, 4, 1], [1, 2, 3, 4], [5, 6, 3, 2, 8, 1, 4]]
+    test_Data_manager = Read_Mesh.get_local_element_topology(test_Data_manager, topology, distribution[1])
+    topo = test_Data_manager.get_field("FE Topology")
+
+    @test topo[1, 1] == 4
+    @test topo[1, 2] == 1
+    @test topo[1, 3] == 2
+    @test topo[1, 4] == 3
+    @test topo[2, 1] == 2
+    @test topo[2, 2] == 3
+    @test topo[2, 3] == 1
+    @test topo[2, 4] == 4
+    test_Data_manager = Read_Mesh.get_local_element_topology(test_Data_manager, topology, distribution[2])
+    topo = test_Data_manager.get_field("FE Topology")
+    @test topo[1, 1] == 1
+    @test topo[1, 2] == 2
+    @test topo[1, 3] == 3
+    @test topo[1, 4] == 4
+    @test topo[2, 1] == 3
+    @test topo[2, 2] == 4
+    @test topo[2, 3] == 2
+    @test topo[2, 4] == 1
+    test_Data_manager = Read_Mesh.get_local_element_topology(test_Data_manager, topology, distribution[3])
+    topo = test_Data_manager.get_field("FE Topology")
+    @test topo[1, 1] == 6
+    @test topo[1, 2] == 4
+    @test topo[1, 3] == 3
+    @test topo[1, 4] == 7
+    @test topo[2, 1] == 3
+    @test topo[2, 2] == 7
+    @test topo[2, 3] == 4
+    @test topo[2, 4] == 6
+
+    test_Data_manager = Read_Mesh.get_local_element_topology(test_Data_manager, Vector([Vector{Int64}([])]), distribution[3])
+    # nothing happens, because no field is initialized
+    topo = test_Data_manager.get_field("FE Topology")
+    @test topo[1, 1] == 6
+    @test topo[1, 2] == 4
+    @test topo[1, 3] == 3
+    @test topo[1, 4] == 7
+    @test topo[2, 1] == 3
+    @test topo[2, 2] == 7
+    @test topo[2, 3] == 4
+    @test topo[2, 4] == 6
+
+    topology = [[1, 2, 3, 4], [3, 4, 2, 1, 3]]
+
+    @test isnothing(Read_Mesh.get_local_element_topology(test_Data_manager, topology, distribution[3]))
+end
 @testset "ut_create_base_chunk" begin
     distribution, point_to_core = Read_Mesh.create_base_chunk(4, 1)
     @test length(distribution) == 1
