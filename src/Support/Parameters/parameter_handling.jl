@@ -33,7 +33,8 @@ expected_structure = Dict(
                 ), false],
             "Compute Class Parameters" => [Dict{Any,Any}(
                     "Any" => [Dict{Any,Any}(
-                            "Block" => [String, true],
+                            "Block" => [String, false],
+                            "Node Set" => [String, false],
                             "Calculation Type" => [String, true],
                             "Compute Class" => [String, true],
                             "Variable" => [String, true],

@@ -230,7 +230,7 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
             IO.show_block_summary(solver_options, params, comm, datamanager)
         end
         @info "Init write results"
-        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, output_dir, datamanager, solver_options["nsteps"], PERILAB_VERSION)
+        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, output_dir, filedirectory, datamanager, solver_options["nsteps"], PERILAB_VERSION)
         Logging_module.set_result_files(result_files)
 
         if dry_run

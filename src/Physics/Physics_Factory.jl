@@ -188,13 +188,26 @@ Initialize damage model fields
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
+- `params::Dict`: Parameters.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_damage_model_fields(datamanager::Module)
+function init_damage_model_fields(datamanager::Module, params::Dict)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Damage", Float64, 1)
-    datamanager.create_constant_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
+    blockList = datamanager.get_block_list()
+    anistropic_damage = false
+    for block_id in blockList
+        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
+            continue
+        end
+        damageName = params["Blocks"]["block_$block_id"]["Damage Model"]
+        damage_parameter = params["Physics"]["Damage Models"][damageName]
+        anistropic_damage = haskey(damage_parameter, "Anisotropic Damage")
+    end
+    if anistropic_damage
+        datamanager.create_constant_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
+    end
     nlist = datamanager.get_field("Neighborhoodlist")
     inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     return datamanager
@@ -225,7 +238,7 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
         heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
     end
     if solver_options["Damage Models"]
-        datamanager = Physics.init_damage_model_fields(datamanager)
+        datamanager = Physics.init_damage_model_fields(datamanager, params)
         datamanager = Damage.init_interface_crit_values(datamanager, params)
         datamanager = Damage.init_aniso_crit_values(datamanager, params)
     end

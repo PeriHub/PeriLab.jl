@@ -179,17 +179,18 @@ function clearNP1(name::String)
 end
 
 """
-    get_results_mapping(params::Dict, datamanager::Module)
+    get_results_mapping(params::Dict, path::String, datamanager::Module)
 
 Gets the results mapping
 
 # Arguments
 - `params::Dict`: The parameters
+- `path::String`: The path
 - `datamanager::Module`: The datamanager
 # Returns
 - `output_mapping::Dict{Int64,Dict{}}`: The results mapping
 """
-function get_results_mapping(params::Dict, datamanager::Module)
+function get_results_mapping(params::Dict, path::String, datamanager::Module)
     compute_names = get_computes_names(params)
     outputs = get_outputs(params, datamanager.get_all_field_keys(), compute_names)
     computes = get_computes(params, datamanager.get_all_field_keys())
@@ -208,6 +209,7 @@ function get_results_mapping(params::Dict, datamanager::Module)
             compute_name = ""
             compute_params = Dict{}
             global_var = false
+            nodeset = []
 
             for key in keys(computes)
                 if fieldname == key
@@ -215,6 +217,9 @@ function get_results_mapping(params::Dict, datamanager::Module)
                     compute_name = string(key)
                     compute_params = computes[key]
                     global_var = true
+                    if computes[key]["Compute Class"] == "Node_Set_Data"
+                        nodeset = get_node_set(computes[key], path, params)
+                    end
                 end
             end
             # end
@@ -231,7 +236,7 @@ function get_results_mapping(params::Dict, datamanager::Module)
 
             if length(sizedatafield) == 1
                 if global_var
-                    output_mapping[id]["Fields"][compute_name] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => 1, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params)
+                    output_mapping[id]["Fields"][compute_name] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => 1, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
                 else
                     output_mapping[id]["Fields"][clearNP1(fieldname)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => 1, "type" => typeof(datafield[1, 1]))
                 end
@@ -239,7 +244,7 @@ function get_results_mapping(params::Dict, datamanager::Module)
                 i_ref_dof = sizedatafield[2]
                 for dof in 1:i_ref_dof
                     if global_var
-                        output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params)
+                        output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
                     else
                         output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]))
                     end
@@ -250,7 +255,7 @@ function get_results_mapping(params::Dict, datamanager::Module)
                 for i_dof in 1:i_ref_dof
                     for j_dof in 1:j_ref_dof
                         if global_var
-                            output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraview_coordinates(i_dof, i_ref_dof)*Write_Exodus_Results.get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]), "compute_params" => compute_params)
+                            output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraview_coordinates(i_dof, i_ref_dof)*Write_Exodus_Results.get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
                         else
                             output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraview_coordinates(i_dof, i_ref_dof)*Write_Exodus_Results.get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]))
                         end
@@ -316,20 +321,21 @@ function init_orientations(datamanager::Module)
 end
 
 """
-    init_write_results(params::Dict, output_dir::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
+    init_write_results(params::Dict, output_dir::String, path::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
 
 Initialize write results.
 
 # Arguments
 - `params::Dict`: The parameters
 - `output_dir::String`: The directory of the input file.
+- `path::String`: The path
 - `datamanager::Module`: The datamanager
 - `nsteps::Int64`: The number of steps
 # Returns
 - `result_files::Array`: The result files
 - `outputs::Dict`: The outputs
 """
-function init_write_results(params::Dict, output_dir::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
+function init_write_results(params::Dict, output_dir::String, path::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
     filenames = get_output_filenames(params, output_dir)
     if length(filenames) == 0
         @warn "No output file or output defined"
@@ -345,7 +351,7 @@ function init_write_results(params::Dict, output_dir::String, datamanager::Modul
     max_block_id = maximum(block_Id)
     max_block_id = find_and_set_core_value_max(datamanager.get_comm(), max_block_id)
     nsets = datamanager.get_nsets()
-    outputs = get_results_mapping(params, datamanager)
+    outputs = get_results_mapping(params, path, datamanager)
     for name in eachindex(nsets)
         existing_nodes = intersect(global_ids, nsets[name])
         nsets[name] = datamanager.get_local_nodes(existing_nodes)
@@ -479,8 +485,8 @@ function get_global_values(output::Dict, datamanager::Module)
             block = output[varname]["compute_params"]["Block"]
             block_id = parse(Int, block[7:end])
             global_value, nnodes = calculate_block(datamanager, fieldname, calculation_type, block_id)
-        elseif compute_class == "Nodeset_Data"
-            node_set = get_node_set(output[varname]["compute_params"])
+        elseif compute_class == "Node_Set_Data"
+            node_set = output[varname]["nodeset"]
             global_value, nnodes = calculate_nodelist(datamanager, fieldname, calculation_type, node_set)
         end
 

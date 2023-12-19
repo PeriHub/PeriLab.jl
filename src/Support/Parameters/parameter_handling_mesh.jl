@@ -80,12 +80,14 @@ function get_node_sets(params::Dict, path::String)
     if type == "Exodus"
         exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
         nset_names = read_names(exo, NodeSet)
+        conn = collect_element_connectivities(exo)
         for entry in nset_names
-            nset = read_set(exo, NodeSet, entry)
-            if length(nset.nodes) > 1
-                nsets[entry] = Int.(nset.nodes)
-            end
+            nset_nodes = Vector{Int64}(read_set(exo, NodeSet, entry).nodes)
+            matching_indices = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+            nsets[entry] = matching_indices
+            # end
         end
+        @info "Found $(length(nsets)) node sets"
         return nsets
     end
     if !haskey(params["Discretization"], "Node Sets")

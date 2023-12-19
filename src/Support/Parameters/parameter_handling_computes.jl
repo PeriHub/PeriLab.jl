@@ -69,29 +69,28 @@ function get_computes(params::Dict, variables::Vector{String})
 end
 
 """
-    get_node_set(params::Dict)
+    get_node_set(computes::Dict, path::String, params::Dict)
 
 Get the node set.
 
 # Arguments
+- `computes::Dict`: The computes dictionary.
+- `path::String`: The path to the mesh.
 - `params::Dict`: The parameters dictionary.
 # Returns
 - `nodeset::Vector`: The node set.
 """
-function get_node_set(params::Dict)
-    # if params["Discretization"]["Type"] == "Exodus"
-    #     exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
-    #     nset_names = read_names(exo, NodeSet)
-    #     for entry in nset_names
-    #         nset = read_set(exo, NodeSet, entry)
-    #         nsets[entry] = parse.(Int, nset.nodes)
-    #     end
-    #     return nsets
-    # end
-    if !haskey(params::Dict, "Node Set")
+function get_node_set(computes::Dict, path::String, params::Dict)
+    if !haskey(computes::Dict, "Node Set")
         return []
     end
-    nodeset = params["Node Set"]
+    nodeset = computes["Node Set"]
+
+    if params["Discretization"]["Type"] == "Exodus"
+        exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
+        nset = read_set(exo, NodeSet, nodeset)
+        return Vector{Int64}(nset.nodes)
+    end
 
     if nodeset isa Int64 || nodeset isa Int32
         return [nodeset]
