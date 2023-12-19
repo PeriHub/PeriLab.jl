@@ -42,7 +42,7 @@ block_Id .+= 1
 block_Id[end] = 2
 
 @testset "ut_get_results_mapping" begin
-    output = IO.get_results_mapping(params, test_Data_manager)
+    output = IO.get_results_mapping(params, "", test_Data_manager)
     @test sort(collect(keys(output[1]["Fields"]))) == ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     @test sort(collect(keys(output[2]["Fields"]))) == ["Displacementsx", "Displacementsy", "Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     for i in 1:2
@@ -67,7 +67,7 @@ block_Id[end] = 2
 end
 
 @testset "ut_init_write_result_and_write_results" begin
-    result_files, outputs = IO.init_write_results(params, "", test_Data_manager, 2, "1.0.0")
+    result_files, outputs = IO.init_write_results(params, "", "", test_Data_manager, 2, "1.0.0")
     @test length(result_files) == 2
     @test length(result_files[1]["file"].nodal_var_name_dict) == 6
     entries = collect(keys(result_files[1]["file"].nodal_var_name_dict))

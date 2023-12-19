@@ -86,7 +86,7 @@ end
     nlist[2] = [1, 3]
     nlist[3] = [1]
     nlist[4] = [1, 3]
-    Physics.init_damage_model_fields(test_Data_manager)
+    Physics.init_damage_model_fields(test_Data_manager, Dict("Blocks" => Dict("block_1" => Dict("Damage Model" => "a"), "block_2" => Dict("Damage Model" => "a"), "block_3" => Dict("Damage Model" => "a")), "Physics" => Dict("Damage Models" => Dict("a" => Dict("value" => "b")))))
     fieldkeys = test_Data_manager.get_all_field_keys()
     @test "DamageN" in fieldkeys
     @test "DamageNP1" in fieldkeys

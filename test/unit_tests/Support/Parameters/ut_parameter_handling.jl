@@ -96,14 +96,15 @@ end
     end
     close(file)
 
-    params = Dict("Node Setas" => 12)
-    @test [] == get_node_set(params)
-    params = Dict("Node Set" => 12)
-    @test [12] == get_node_set(params)
-    params = Dict("Node Set" => filename)
-    @test [11, 12, 13, 44, 125] == get_node_set(params)
-    params = Dict("Node Set" => "13 44 125")
-    @test [13, 44, 125] == get_node_set(params)
+    params = Dict("Discretization" => Dict("Type" => "Text File"))
+    computes = Dict("Node Setas" => 12)
+    @test [] == get_node_set(computes, "", params)
+    computes = Dict("Node Set" => 12)
+    @test [12] == get_node_set(computes, "", params)
+    computes = Dict("Node Set" => filename)
+    @test [11, 12, 13, 44, 125] == get_node_set(computes, "", params)
+    computes = Dict("Node Set" => "13 44 125")
+    @test [13, 44, 125] == get_node_set(computes, "", params)
     rm(filename)
 end
 @testset "ut_validate_yaml" begin
