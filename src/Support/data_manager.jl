@@ -11,6 +11,7 @@ export create_constant_free_size_field
 export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
+export fem_active
 export get_all_field_keys
 export get_block_list
 export get_crit_values_matrix
@@ -35,6 +36,7 @@ export rotation_data
 export set_block_list
 export set_crit_values_matrix
 export set_inverse_nlist
+export set_fem
 export set_glob_to_loc
 export set_num_controller
 export set_nset
@@ -55,6 +57,7 @@ global num_responder::Int64 = 0
 global num_elements::Int64 = 0
 global nnsets::Int64 = 0
 global dof::Int64 = 1
+global fem_option = false
 global block_list::Vector{Int64} = []
 global distribution::Vector{Int64}
 global crit_values_matrix::Array{Float64,3}
@@ -321,6 +324,14 @@ end
 
 function create_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64, default_value::Any=0)
     return create_field(name * "N", type, "Node_Field", VectorOrArray, dof, default_value), create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof, default_value)
+end
+"""
+   fem_active()
+
+Returns if FEM is active (true) or not (false).
+"""
+function fem_active()
+    return fem_option
 end
 
 """
@@ -846,6 +857,23 @@ set_dof(3)  # sets the degree of freedom to 3
 """
 function set_dof(n::Int64)
     global dof = n
+end
+
+"""
+    set_fem(n::Bool)
+
+Activates and deactivates the FEM option in PeriLab
+
+# Arguments
+- `n::Bool`: The value to set FEM active (true) or not (false).
+
+Example:
+```julia
+set_fem(true)  # sets the fem_option to true
+```
+"""
+function set_fem(n::Bool)
+    global fem_option = n
 end
 
 """

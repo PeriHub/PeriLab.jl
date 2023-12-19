@@ -119,6 +119,14 @@ testfield_keys = test_Data_manager.get_all_field_keys()
     @test "IN" in testfield_keys
     @test "INP1" in testfield_keys
 end
+@testset "ut_set_fem" begin
+    @test test_Data_manager.fem_active() == false
+    test_Data_manager.set_fem(true)
+    @test test_Data_manager.fem_active() == true
+    test_Data_manager.set_fem(false)
+    @test test_Data_manager.fem_active() == false
+end
+
 
 @testset "ut_number_of_elements" begin
     test_Data_manager.set_num_elements(5)
