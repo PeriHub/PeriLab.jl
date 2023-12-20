@@ -75,3 +75,21 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 
 ## Project status
 `PeriLab` is currently in development.
+
+## Acknowledgments
+<p align="center" style="font-size:0;"><!--
+  DLR      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/blob/main/assets/dlr.jpg" height="120"><!--
+  DFG      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/blob/main/assets/dfg.jpg" height="120"><!--
+  SACHSEN      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/blob/main/assets/sachsen.jpg" height="120"><!--
+  -->
+</p>
+
+This project has benefited from funding by the [Deutsche
+Forschungsgemeinschaft](https://www.dfg.de/) (DFG, German Research Foundation)
+through the following grant "Gekoppelte Peridynamik-Finite-Elemente-Simulationen zur Schädigungsanalyse von
+Faserverbundstrukturen" WI 4835/5-1
+
+M-ERA.NET funded project Exploring Multi-Method Analysis of composite structures and joints
+under consideration of uncertainties engineering and processing (EMMA)
+
+This measure is co-financed with tax funds on the basis of the budget passed by the Saxon state parlament. Grant number: 3028223.
