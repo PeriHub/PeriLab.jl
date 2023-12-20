@@ -78,9 +78,9 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 
 ## Acknowledgments
 <p align="center" style="font-size:0;"><!--
-  DLR      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/blob/main/assets/dlr.jpg" height="120"><!--
-  DFG      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/blob/main/assets/dfg.jpg" height="120"><!--
-  SACHSEN      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/blob/main/assets/sachsen.jpg" height="120"><!--
+  DLR      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/slr.jpg" height="120"><!--
+  DFG      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dfg.jpg" height="120"><!--
+  SACHSEN      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/sachsen.jpg" height="120"><!--
   -->
 </p>
 
