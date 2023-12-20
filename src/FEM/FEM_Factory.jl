@@ -49,8 +49,10 @@ function init_FEM(params::Dict, datamanager::Module)
     jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
 
     lumped_mass = datamanager.create_constant_node_field("Lumped Mass Matrix", Float64, dof)
-    rho = datamanager.get_field("Element Density")
+    rho = datamanager.get_field("Density")
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
+
+    datamanager = get_FEM_nodes(datamanager, topology)
 
     return datamanager
 
@@ -85,6 +87,13 @@ function eval(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, para
     return calculate_FEM(datamanager, elements, params, name, Correspondence_Elastic.compute_stresses, time, dt)
 end
 
+function get_FEM_nodes(datamanager::Module, topology::SubArray{Int64})
+    fem_nodes = datamanager.create_constant_node_field("FE Nodes", Bool, 1)
+    for el_topo in eachrow(topology)
+        fem_nodes[el_topo] .= true
+    end
+    return datamanager
+end
 
 
 end

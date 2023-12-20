@@ -6,6 +6,7 @@ include("../../../src/FEM/FEM_Factory.jl")
 using Test
 include("../../../src/Support/data_manager.jl")
 
+
 @testset "ut_valid_models" begin
     @test isnothing(FEM.valid_models(Dict()))
     @test isnothing(FEM.valid_models(Dict("Additive Model" => "a")))
@@ -14,15 +15,14 @@ include("../../../src/Support/data_manager.jl")
     @test isnothing(FEM.valid_models(Dict("Thermal Model" => "a")))
     @test isnothing(FEM.valid_models(Dict("Material Model" => "a")))
 end
-
-
-
 @testset "ut_init_FEM" begin
     test_Data_manager = Data_manager
     nelements = 2
     test_Data_manager.set_dof(2)
     test_Data_manager.set_num_elements(nelements)
     test_Data_manager.set_num_controller(6)
+    rho = test_Data_manager.create_constant_node_field("Density", Float64, 1)
+    rho .= 2
     test = FEM.init_FEM(Dict(), test_Data_manager)
     @test isnothing(test)
     test_Data_manager.set_dof(1)
@@ -60,10 +60,7 @@ end
     topology[2, 3] = 4
     topology[2, 4] = 6
 
-    rho = test_Data_manager.create_constant_free_size_field("Element Density", Float64, (nelements,))
 
-    rho[1, :] .= 1.0
-    rho[2, :] .= 2.0
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
         "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
     test_Data_manager = FEM.init_FEM(params["FEM"]["FE_1"], test_Data_manager)
@@ -86,8 +83,9 @@ end
     @test "Element Jacobi Determinant" in test_Data_manager.get_all_field_keys()
     @test "Lumped Mass Matrix" in test_Data_manager.get_all_field_keys()
     lumped_mass = test_Data_manager.get_field("Lumped Mass Matrix")
-    @test lumped_mass[:, 1] == [0.24999999999999997, 0.7499999999999997, 0.24999999999999997, 0.75, 0.4999999999999999, 0.49999999999999994]
-    @test lumped_mass[:, 2] == [0.24999999999999997, 0.7499999999999997, 0.24999999999999997, 0.75, 0.4999999999999999, 0.49999999999999994]
+
+    @test lumped_mass[:, 1] == [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994]
+    @test lumped_mass[:, 2] == [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994]
 end
 
 @testset "ut_eval" begin
@@ -170,4 +168,30 @@ end
 
     end
 
+end
+@testset "ut_get_FEM_nodes" begin
+    test_Data_manager = Data_manager
+    topology = test_Data_manager.get_field("FE Topology")
+    test_Data_manager = FEM.get_FEM_nodes(test_Data_manager, topology)
+    @test "FE Nodes" in test_Data_manager.get_all_field_keys()
+    fem_nodes = test_Data_manager.get_field("FE Nodes")
+    for i in eachindex(fem_nodes)
+        @test fem_nodes[i]
+    end
+    fem_nodes[:] .= false
+    topology[1, 1] = 1
+    topology[1, 2] = 5
+    topology[1, 3] = 3
+    topology[1, 4] = 4
+    topology[2, 1] = 1
+    topology[2, 2] = 5
+    topology[2, 3] = 3
+    topology[2, 4] = 4
+    test_Data_manager = FEM.get_FEM_nodes(test_Data_manager, topology)
+    @test fem_nodes[1]
+    @test !fem_nodes[2]
+    @test fem_nodes[3]
+    @test fem_nodes[4]
+    @test fem_nodes[5]
+    @test !fem_nodes[6]
 end
