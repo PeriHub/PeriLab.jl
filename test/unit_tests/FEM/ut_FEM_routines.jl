@@ -142,16 +142,16 @@ end
     determinant_jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
     jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
     N = test_Data_manager.get_field("N Matrix")
-    rho = test_Data_manager.create_constant_free_size_field("Element Density", Float64, (nelements,))
+    rho = test_Data_manager.create_constant_node_field("Density", Float64, 1)
 
-    rho[1] = 1.0
+    rho[:] .= 1.0
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
     for i in 1:4
         @test isapprox(lumped_mass[i, 1], 0.25)
         @test isapprox(lumped_mass[i, 2], 0.25)
     end
     lumped_mass[:, :] .= 0
-    rho[1] = 2.0
+    rho[:] .= 2.0
 
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
     for i in 1:4
@@ -159,7 +159,7 @@ end
         @test isapprox(lumped_mass[i, 2], 0.5)
     end
     lumped_mass[:, :] .= 0
-    rho[1] = 1.2
+    rho[:] .= 1.2
 
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
     @test lumped_mass == [0.3 0.3; 0.3 0.3; 0.3 0.3; 0.3 0.3]

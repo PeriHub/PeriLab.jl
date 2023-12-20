@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 using LinearAlgebra
 using FastGaussQuadrature
+using Statistics
 include("../Physics/Material/material_basis.jl")
 
 function get_FE_material_model(params::Dict, name::String)
@@ -76,7 +77,7 @@ function get_lumped_mass(elements::Vector{Int64}, dof::Int64, topology::SubArray
             nnodes = length(topology[id_el, :])
             for i_node in 1:nnodes
                 for idof in 1:dof
-                    lumped_mass[topology[id_el, i_node], idof] += sum(temp[(i_node-1)*dof+idof, :]) .* rho[id_el] * determinant_jacobian[id_el, id_int]
+                    lumped_mass[topology[id_el, i_node], idof] += sum(temp[(i_node-1)*dof+idof, :]) .* mean(rho[topology[id_el, :]]) * determinant_jacobian[id_el, id_int]
                 end
             end
         end
