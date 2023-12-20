@@ -74,6 +74,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
+        mesh = nothing
         @info "Finish init data"
     end
     return datamanager, params

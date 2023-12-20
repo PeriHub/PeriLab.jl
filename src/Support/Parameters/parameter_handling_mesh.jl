@@ -88,6 +88,7 @@ function get_node_sets(params::Dict, path::String)
             # end
         end
         @info "Found $(length(nsets)) node sets"
+        close(exo)
         return nsets
     end
     if !haskey(params["Discretization"], "Node Sets")

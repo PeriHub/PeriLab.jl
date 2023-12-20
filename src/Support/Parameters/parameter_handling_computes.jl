@@ -89,6 +89,7 @@ function get_node_set(computes::Dict, path::String, params::Dict)
     if params["Discretization"]["Type"] == "Exodus"
         exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
         nset = read_set(exo, NodeSet, nodeset)
+        close(exo)
         return Vector{Int64}(nset.nodes)
     end
 
