@@ -156,7 +156,7 @@ Global - J. Wan et al., "Improved method for zero-energy mode suppression in per
 - `datamanager::Data_manager`: Datamanager.
 """
 function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
-  if !haskey(material_parameter, "Zero Energy Control")
+  if !haskey(material_parameter, "Zero Energy Control") && time == 0
     @warn "No zero energy control activated for corresponcence."
     return datamanager
   end
