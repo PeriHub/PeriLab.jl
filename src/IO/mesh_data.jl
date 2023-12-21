@@ -463,6 +463,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     dof::Int64 = set_dof(mesh)
     nlist = create_neighborhoodlist(mesh, params, dof)
     nlist = apply_bond_filters(nlist, mesh, params, dof)
+    topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
         nlist, topology = create_consistent_neighborhoodlist(external_topology, params["Discretization"]["Input External Topology"], nlist, dof)
