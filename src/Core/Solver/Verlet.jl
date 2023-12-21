@@ -348,6 +348,11 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         heatCapacity = datamanager.get_field("Specific Heat Capacity")
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
+    fem_option = datamanager.fem_active()
+    if fem_option
+        lumped_mass = datamanager.get_field("Lumped Mass Matrix")
+        fe_nodes = datamanager.get_field("FE Nodes")
+    end
     active = datamanager.get_field("Active")
     update_list = datamanager.get_field("Update List")
 
@@ -358,16 +363,18 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     numerical_damping::Float64 = solver_options["Numerical Damping"]
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
+    nodes::Vector{Int64} = []
     for idt in iter
         @timeit to "Verlet" begin
+            nodes = find_active(active[1:nnodes])
             # one step more, because of init step (time = 0)
             if solver_options["Material Models"]
-                vNP1[find_active(active[1:nnodes]), :] = (1 - numerical_damping) .* vN[find_active(active[1:nnodes]), :] + 0.5 * dt .* a[find_active(active[1:nnodes]), :]
+                vNP1[nodes, :] = (1 - numerical_damping) .* vN[nodes, :] + 0.5 * dt .* a[nodes, :]
 
-                uNP1[find_active(active[1:nnodes]), :] = uN[find_active(active[1:nnodes]), :] + dt .* vNP1[find_active(active[1:nnodes]), :]
+                uNP1[nodes, :] = uN[nodes, :] + dt .* vNP1[nodes, :]
             end
             if solver_options["Thermal Models"]
-                temperatureNP1[find_active(active[1:nnodes])] = temperatureN[find_active(active[1:nnodes])] + deltaT[find_active(active[1:nnodes])]
+                temperatureNP1[nodes] = temperatureN[nodes] + deltaT[nodes]
             end
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
             #if solver_options["Material Models"]
@@ -386,13 +393,22 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
 
             if solver_options["Material Models"]
                 check_inf_or_nan(forces_density, "Forces")
-                a[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] ./ density[find_active(active[1:nnodes])] # element wise
-                forces[find_active(active[1:nnodes]), :] = forces_density[find_active(active[1:nnodes]), :] .* volume[find_active(active[1:nnodes])]
+                if fem_option
+                    a[find_active(fe_nodes[nodes]), :] = forces_density[find_active(fe_nodes[nodes]), :] ./ lumped_mass[find_active(fe_nodes[nodes])] # element wise
+                    forces[find_active(fe_nodes[nodes]), :] = forces_density[find_active(fe_nodes[nodes]), :]
+                    # toggles the value and switch the non FEM nodes to true
+                    nodes = find_active(Vector{Bool}(.~fe_nodes[nodes]))
+                end
+                a[nodes, :] = forces_density[nodes, :] ./ density[nodes] # element wise
+                forces[nodes, :] = forces_density[nodes, :] .* volume[nodes]
             end
             if solver_options["Thermal Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
                 # heat capacity check. if it is zero deltaT = 0
-                deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
+                deltaT[nodes] = -flowNP1[nodes] .* dt ./ (density[nodes] .* heatCapacity[nodes])
+                if fem_option && time == 0
+                    @warn "Thermal models are not supported for FEM yet."
+                end
             end
             result_files = write_results(result_files, start_time + step_time, outputs, datamanager)
             # for file in result_files

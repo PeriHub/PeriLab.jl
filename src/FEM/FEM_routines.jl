@@ -14,12 +14,12 @@ function get_FE_material_model(params::Dict, name::String)
     return params["Material Models"][params["FEM"][name]["Material Model"]]
 end
 
-function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, material_params::Dict, compute_stresses, time::Float64, dt::Float64)
+function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, params::Dict, compute_stresses, time::Float64, dt::Float64)
 
     rotation::Bool, angles = datamanager.rotation_data("Element")
     dof = datamanager.get_dof()
 
-    force_densities = datamanager.get_field("Force Density", "NP1")
+    force_densities = datamanager.get_field("Force Densities", "NP1")
     displacement = datamanager.get_field("Displacements", "NP1")
     strain_N = datamanager.get_field("Element Strain", "N")
     strain_NP1 = datamanager.get_field("Element Strain", "NP1")
@@ -51,7 +51,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
 
             # in future this part must be changed -> using set Modules
 
-            stress_NP1[id_el, id_int, :], datamanager = compute_stresses(datamanager, dof, material_params, time, dt, strain_increment[id_el, id_int, :], stress_N[id_el, id_int, :], stress_NP1[id_el, id_int, :])
+            stress_NP1[id_el, id_int, :], datamanager = compute_stresses(datamanager, dof, params["Material Model"], time, dt, strain_increment[id_el, id_int, :], stress_N[id_el, id_int, :], stress_NP1[id_el, id_int, :])
 
             #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
             # material_model is missing

@@ -13,7 +13,7 @@ using Test
     test_Data_manager.set_dof(dof)
     test_Data_manager.set_num_elements(nelements)
     test_Data_manager.set_num_controller(4)
-    test_Data_manager.create_node_field("Force Density", Float64, dof)
+    test_Data_manager.create_node_field("Force Densities", Float64, dof)
 
     coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
