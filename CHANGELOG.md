@@ -8,6 +8,18 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 
+
+### Added
+
+- Specific volume for additive models
+- Tests for additive models
+- Exodus input
+
+### Fixed
+
+- Memory issues with exodus
+
 ## [1.0.2] - 2023-12-18
 
 ### Added
