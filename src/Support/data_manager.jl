@@ -1064,11 +1064,18 @@ Sets the value of a specified `property` for a given `block_id`.
 - `value_name`::String: The name of the value within the specified `property`.
 - `value`::Any: The value to set for the specified `value_name`.
 """
-function set_property(block_id, property, value_name, value)
+function set_property(block_id::Int64, property::String, value_name::String, value)
     global properties
-
     properties[block_id][property][value_name] = value
 end
+
+function set_property(property::String, value_name::String, value)
+    global properties
+    for block_id in eachindex(properties)
+        properties[block_id][property][value_name] = value
+    end
+end
+
 
 """
     set_properties(block_id, property, values)
