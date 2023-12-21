@@ -14,6 +14,8 @@ Set_modules.include_files(module_list)
 
 function init_FEM(params::Dict, datamanager::Module)
     valid_models(params)
+    datamanager.set_properties("FEM", params)
+
     dof = datamanager.get_dof()
     nelements = datamanager.get_num_elements()
     elements::Vector{Int64} = 1:nelements
@@ -58,7 +60,6 @@ function init_FEM(params::Dict, datamanager::Module)
 
 end
 
-
 function valid_models(params::Dict)
     if haskey(params, "Additive Model")
         @warn "Additive models are not supported for FEM yet"
@@ -83,8 +84,8 @@ function valid_models(params::Dict)
     return nothing
 end
 
-function eval(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, params::Dict, name::String, time::Float64, dt::Float64)
-    return calculate_FEM(datamanager, elements, params, name, Correspondence_Elastic.compute_stresses, time, dt)
+function eval(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, params::Dict, time::Float64, dt::Float64)
+    return calculate_FEM(datamanager, elements, params, Correspondence_Elastic.compute_stresses, time, dt)
 end
 
 function get_FEM_nodes(datamanager::Module, topology::SubArray{Int64})
