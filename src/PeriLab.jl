@@ -225,14 +225,13 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
 
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
         @info "Solver init"
-        @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
+        @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
         if verbose
             IO.show_block_summary(solver_options, params, comm, datamanager)
         end
         @info "Init write results"
         @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, output_dir, filedirectory, datamanager, solver_options["nsteps"], PERILAB_VERSION)
         Logging_module.set_result_files(result_files)
-
         if dry_run
             nsteps = solver_options["nsteps"]
             solver_options["nsteps"] = 10

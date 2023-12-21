@@ -386,6 +386,8 @@ function read_mesh(filename::String, params::Dict)
         end
 
         close(exo)
+        coords = nothing
+        block_ids = nothing
 
         return mesh_df
 

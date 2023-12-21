@@ -152,23 +152,16 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
             # check ut_create_overlap_map test
             # the function is clear there
             if dof == 1
-                send_msg = vector[overlapnodes[rank+1][jcore]["Controller"]]
+                MPI.Send(vector[overlapnodes[rank+1][jcore]["Controller"]], comm; dest=jcore - 1, tag=0)
             else
-                send_msg = vector[overlapnodes[rank+1][jcore]["Controller"], :]
+                MPI.Send(vector[overlapnodes[rank+1][jcore]["Controller"], :], comm; dest=jcore - 1, tag=0)
             end
-            MPI.Send(send_msg, comm; dest=jcore - 1, tag=0)
         end
         if overlapnodes[rank+1][jcore]["Responder"] != []
             if dof == 1
-                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Responder"]])
+                MPI.Recv!(vector[overlapnodes[rank+1][jcore]["Responder"]], comm; source=jcore - 1, tag=0)
             else
-                recv_msg = similar(vector[overlapnodes[rank+1][jcore]["Responder"], :])
-            end
-            MPI.Recv!(recv_msg, comm; source=jcore - 1, tag=0)
-            if dof == 1
-                vector[overlapnodes[rank+1][jcore]["Responder"]] = recv_msg
-            else
-                vector[overlapnodes[rank+1][jcore]["Responder"], :] = recv_msg
+                MPI.Recv!(vector[overlapnodes[rank+1][jcore]["Responder"], :], comm; source=jcore - 1, tag=0)
             end
         end
     end
@@ -203,11 +196,10 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
         if overlapnodes[rank+1][jcore]["Controller"] != []
             for iID in overlapnodes[rank+1][jcore]["Controller"]
                 if dof == 1
-                    send_msg = array[iID][:]
+                    MPI.Send(array[iID][:], comm; dest=jcore - 1, tag=0)
                 else
-                    send_msg = array[iID][:, :]
+                    MPI.Send(array[iID][:, :], comm; dest=jcore - 1, tag=0)
                 end
-                MPI.Send(send_msg, comm; dest=jcore - 1, tag=0)
             end
         end
         if overlapnodes[rank+1][jcore]["Responder"] != []

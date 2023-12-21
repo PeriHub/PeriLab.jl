@@ -226,26 +226,26 @@ Initialize models
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, to::TimerOutput)
     dof = datamanager.get_dof()
     deformed_coorN, deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
     deformed_coorN[:] = copy(datamanager.get_field("Coordinates"))
     deformed_coorNP1[:] = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
     if solver_options["Additive Models"]
-        datamanager = Physics.init_additive_model_fields(datamanager)
+        @timeit to "additive_model_fields" datamanager = Physics.init_additive_model_fields(datamanager)
         heatCapacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
     end
     if solver_options["Damage Models"]
-        datamanager = Physics.init_damage_model_fields(datamanager, params)
-        datamanager = Damage.init_interface_crit_values(datamanager, params)
-        datamanager = Damage.init_aniso_crit_values(datamanager, params)
+        @timeit to "damage_model_fields" datamanager = Physics.init_damage_model_fields(datamanager, params)
+        @timeit to "interface_crit_values" datamanager = Damage.init_interface_crit_values(datamanager, params)
+        @timeit to "aniso_crit_values" datamanager = Damage.init_aniso_crit_values(datamanager, params)
     end
     if solver_options["Material Models"]
-        datamanager = Physics.init_material_model_fields(datamanager)
+        @timeit to "model_fields" datamanager = Physics.init_material_model_fields(datamanager)
         for block in datamanager.get_block_list()
-            datamanager = Material.init_material_model(datamanager, block)
+            @timeit to "material" datamanager = Material.init_material_model(datamanager, block)
         end
     end
     if solver_options["Thermal Models"]

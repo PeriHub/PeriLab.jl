@@ -81,12 +81,14 @@ function get_node_sets(params::Dict, path::String)
         exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
         nset_names = read_names(exo, NodeSet)
         conn = collect_element_connectivities(exo)
+        nset_nodes = []
         for entry in nset_names
             nset_nodes = Vector{Int64}(read_set(exo, NodeSet, entry).nodes)
-            matching_indices = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
-            nsets[entry] = matching_indices
+            nsets[entry] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
             # end
         end
+        conn = nothing
+        nset_nodes = nothing
         @info "Found $(length(nsets)) node sets"
         close(exo)
         return nsets

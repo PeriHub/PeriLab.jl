@@ -25,13 +25,14 @@ Initialize the solver
 # Arguments
 - `params::Dict`: The parameters
 - `datamanager::Module`: Datamanager
+- `to::TimerOutputs.TimerOutput`: A timer output
 # Returns
 - `blockNodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `bcs::Dict{Any,Any}`: A dictionary containing boundary conditions.
 - `datamanager::Module`: The data manager module that provides access to data fields and properties.
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
-function init(params::Dict, datamanager::Module)
+function init(params::Dict, datamanager::Module, to::TimerOutput)
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
     allBlockNodes = get_blockNodes(datamanager.get_field("Block_Id"), nnodes + num_responder)
@@ -48,11 +49,11 @@ function init(params::Dict, datamanager::Module)
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
 
     Physics.read_properties(params, datamanager, solver_options["Material Models"])
-    datamanager = Physics.init_models(params, datamanager, allBlockNodes, solver_options)
-    bcs = Boundary_conditions.init_BCs(params, datamanager)
+    @timeit to "init_models" datamanager = Physics.init_models(params, datamanager, allBlockNodes, solver_options, to)
+    @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
 
     if get_solver_name(params) == "Verlet"
-        solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = Verlet.init_solver(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
+        @timeit to "init_solver" solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = Verlet.init_solver(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
     end
 
     if "Active" in datamanager.get_all_field_keys()

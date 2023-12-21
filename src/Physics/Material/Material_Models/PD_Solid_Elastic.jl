@@ -123,7 +123,7 @@ function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta,
     kappa::Float64 = 0
     gamma::Float64 = 0
     alpha::Float64 = 0
-    deviatoric_deformation::Vector{Float64} = zeros(Float64, dof)
+    deviatoric_deformation = zeros(Float64, dof)
 
     alpha, gamma, kappa = calculate_symmetry_params(symmetry, shear_modulus, bulk_modulus)
 
@@ -143,6 +143,7 @@ function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta,
         # Calculate bond force
         #Ordinary.project_bond_forces()
     end
+    deviatoric_deformation = nothing
 
     return bond_force
 end
