@@ -30,6 +30,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     specifics = Dict{String,String}("Call Function" => "compute_thermal_model", "Name" => "thermal_model_name")
 
     thermal_models = split(model_param["Thermal Model"], "+")
+    thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
         datamanager = Set_modules.create_module_specifics(thermal_model, module_list, specifics, (datamanager, nodes, model_param, time, dt))
         if isnothing(datamanager)

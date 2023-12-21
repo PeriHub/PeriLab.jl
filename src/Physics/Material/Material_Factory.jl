@@ -34,6 +34,7 @@ function init_material_model(datamanager::Module, block::Int64)
         @error "Block " * string(block) * " has no material model defined."
     end
     material_models = split(model_param["Material Model"], "+")
+    material_models = map(r -> strip(r), material_models)
 
     for material_model in material_models
         datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager,))
