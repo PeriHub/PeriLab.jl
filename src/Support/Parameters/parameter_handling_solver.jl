@@ -52,7 +52,7 @@ Get the final time
 function get_final_time(params::Dict)
 
     if haskey(params["Solver"], "Final Time")
-        return params["Solver"]["Final Time"]
+        return Float64(params["Solver"]["Final Time"])
     end
     @error "No final time defined"
 end
@@ -82,7 +82,7 @@ Get the fixed time step
 - `fixed_dt::Float64`: The fixed time step
 """
 function get_fixed_dt(params::Dict)
-    return get(params["Solver"]["Verlet"], "Fixed dt", true)
+    return get(params["Solver"]["Verlet"], "Fixed dt", -1.0)
 end
 
 """
