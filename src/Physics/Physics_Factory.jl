@@ -234,8 +234,8 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     datamanager.create_node_field("Displacements", Float64, dof)
     if solver_options["Additive Models"]
         @timeit to "additive_model_fields" datamanager = Physics.init_additive_model_fields(datamanager)
-        heatCapacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
-        heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
+        heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
+        heat_capacity = set_heat_capacity(params, allBlockNodes, heat_capacity) # includes the neighbors
     end
     if solver_options["Damage Models"]
         @timeit to "damage_model_fields" datamanager = Physics.init_damage_model_fields(datamanager, params)
@@ -250,8 +250,8 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     end
     if solver_options["Thermal Models"]
         datamanager = Physics.init_thermal_model_fields(datamanager)
-        heatCapacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
-        heatCapacity = set_heatcapacity(params, allBlockNodes, heatCapacity) # includes the neighbors
+        heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
+        heat_capacity = set_heat_capacity(params, allBlockNodes, heat_capacity) # includes the neighbors
     end
 
 
@@ -274,7 +274,7 @@ function init_thermal_model_fields(datamanager::Module)
     datamanager.create_node_field("Specific Volume", Float64, 1)
     datamanager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
     # if it is already initialized via mesh file no new field is created here
-    datamanager.create_constant_node_field("Surface_nodes", Bool, 1)
+    datamanager.create_constant_node_field("Surface_Nodes", Bool, 1)
     return datamanager
 end
 
@@ -357,22 +357,22 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
 end
 
 """
-    set_heatcapacity(params::Dict, blockNodes::Dict, heatCapacity::SubArray)
+    set_heat_capacity(params::Dict, blockNodes::Dict, heat_capacity::SubArray)
 
 Sets the heat capacity of the nodes in the dictionary.
 
 # Arguments
 - `params::Dict`: The parameters
 - `blockNodes::Dict`: The block nodes
-- `heatCapacity::SubArray`: The heat capacity array
+- `heat_capacity::SubArray`: The heat capacity array
 # Returns
-- `heatCapacity::SubArray`: The heat capacity array
+- `heat_capacity::SubArray`: The heat capacity array
 """
-function set_heatcapacity(params::Dict, blockNodes::Dict, heatCapacity::SubArray)
+function set_heat_capacity(params::Dict, blockNodes::Dict, heat_capacity::SubArray)
     for block in eachindex(blockNodes)
-        heatCapacity[blockNodes[block]] .= get_heatcapacity(params, block)
+        heat_capacity[blockNodes[block]] .= get_heat_capacity(params, block)
     end
-    return heatCapacity
+    return heat_capacity
 end
 
 end

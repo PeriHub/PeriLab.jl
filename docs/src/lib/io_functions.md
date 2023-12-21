@@ -175,7 +175,7 @@ validate_yaml
 validate_structure_recursive
 get_all_keys
 get_density
-get_heatcapacity
+get_heat_capacity
 get_horizon
 get_values
 get_number_of_blocks

@@ -300,7 +300,7 @@ function get_density(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Density")
 end
 
-function get_heatcapacity(params::Dict, block_id::Int64)
+function get_heat_capacity(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Specific Heat Capacity")
 end
 
@@ -324,17 +324,17 @@ end
     params = Dict("Blocks" => Dict())
     @test isnothing(get_horizon(params, 1))
     @test isnothing(get_density(params, 1))
-    @test isnothing(get_heatcapacity(params, 1))
+    @test isnothing(get_heat_capacity(params, 1))
     @test isnothing(get_values(params, 1, "Density"))
     @test isnothing(get_values(params, 1, "not there"))
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
     @test isnothing(get_horizon(params, 1))
     @test isnothing(get_density(params, 1))
-    @test isnothing(get_heatcapacity(params, 1))
+    @test isnothing(get_heat_capacity(params, 1))
     @test isnothing(get_values(params, 1, "Density"))
     @test isnothing(get_horizon(params, 2))
     @test isnothing(get_density(params, 2))
-    @test isnothing(get_heatcapacity(params, 2))
+    @test isnothing(get_heat_capacity(params, 2))
     @test isnothing(get_values(params, 2, "Density"))
     params = Dict("Blocks" => Dict("block_1" => Dict("Density" => 1, "Specific Heat Capacity" => 3), "block_2" => Dict("Density" => 12.3, "Horizon" => 2)))
     @test get_values(params, 1, "Density") == 1
@@ -354,9 +354,9 @@ end
     @test get_values(params, 2, "Horizon") == get_horizon(params, 2)
     @test get_values(params, 3, "Horizon") == get_horizon(params, 3)
 
-    @test get_values(params, 1, "Specific Heat Capacity") == get_heatcapacity(params, 1)
-    @test get_values(params, 2, "Specific Heat Capacity") == get_heatcapacity(params, 2)
-    @test get_values(params, 3, "Specific Heat Capacity") == get_heatcapacity(params, 3)
+    @test get_values(params, 1, "Specific Heat Capacity") == get_heat_capacity(params, 1)
+    @test get_values(params, 2, "Specific Heat Capacity") == get_heat_capacity(params, 2)
+    @test get_values(params, 3, "Specific Heat Capacity") == get_heat_capacity(params, 3)
 end
 
 @testset "ut_solver" begin
@@ -369,7 +369,7 @@ end
     @test get_numerical_damping(params) == params["Solver"]["Numerical Damping"]
     params = Dict("Solver" => Dict("Verlet" => Dict()))
     @test get_safety_factor(params) == 1
-    @test get_fixed_dt(params) == true
+    @test get_fixed_dt(params) == -1.0
     @test get_numerical_damping(params) == 0.0
     @test isnothing(get_initial_time(Dict("Solver" => Dict())))
     @test isnothing(get_final_time(Dict("Solver" => Dict())))

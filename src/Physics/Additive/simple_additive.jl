@@ -48,7 +48,7 @@ function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   activation_time = datamanager.get_field("Activation_Time")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
   active = datamanager.get_field("Active")
-  heatCapacity = datamanager.get_field("Specific Heat Capacity")
+  heat_capacity = datamanager.get_field("Specific Heat Capacity")
   density = datamanager.get_field("Density")
   printTemperature = additive_parameter["Print Temperature"]
   # must be specified, because it might be that no temperature model has been defined
@@ -58,7 +58,7 @@ function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int6
     if time - dt <= activation_time[iID] < time
       active[iID] = true
       bond_damage[iID][:] .= 1.0
-      flux[iID] = -printTemperature * heatCapacity[iID] * density[iID] ./ dt
+      flux[iID] = -printTemperature * heat_capacity[iID] * density[iID] ./ dt
     end
   end
 

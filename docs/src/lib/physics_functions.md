@@ -20,7 +20,7 @@ init_thermal_model_fields
 init_additive_model_fields
 init_pre_calculation
 read_properties
-set_heatcapacity
+set_heat_capacity
 ```
 
 ```@meta
@@ -91,7 +91,7 @@ CurrentModule = PeriLab.Solver.Physics.Thermal
 Set_modules.Thermal_template.thermal_model_name
 Set_modules.Thermal_template.compute_thermal_model
 distribute_heat_flows
-Thermal.Set_modules.Heat_transfer.get_surface_nodes
+Thermal.Set_modules.Heat_transfer.calculate_specific_volume
 Thermal.Set_modules.Thermal_expansion.thermal_deformation
 Thermal.Set_modules.Thermal_Flow.compute_heat_flow_state_correspondence
 Thermal.Set_modules.Thermal_Flow.compute_heat_flow_state_bond_based

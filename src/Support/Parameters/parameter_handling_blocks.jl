@@ -18,7 +18,7 @@ function get_density(params::Dict, block_id::Int64)
 end
 
 """
-    get_heatcapacity(params::Dict, block_id::Int64)
+    get_heat_capacity(params::Dict, block_id::Int64)
 
 Get the heat capacity of a block.
 
@@ -26,9 +26,9 @@ Get the heat capacity of a block.
 - `params::Dict`: The parameters
 - `block_id::Int64`: The ID of the block
 # Returns
-- `heatcapacity::Float64`: The heat capacity of the block
+- `heat_capacity::Float64`: The heat capacity of the block
 """
-function get_heatcapacity(params::Dict, block_id::Int64)
+function get_heat_capacity(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Specific Heat Capacity")
 end
 
