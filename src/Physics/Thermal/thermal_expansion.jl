@@ -59,7 +59,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     temperature_NP1 = datamanager.get_field("Temperature", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
     dof = datamanager.get_dof()
-    alpha = thermal_parameter["Heat expansion"]
+    alpha = thermal_parameter["Thermal Expansion Coefficient"]
 
     alpha_mat::Matrix{Float64} = zeros(Float64, dof, dof)
     if length(alpha) == 1

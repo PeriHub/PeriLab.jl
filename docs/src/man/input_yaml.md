@@ -88,10 +88,10 @@ PeriLab:
       - Any:
           - Thermal Model: [String, true]
           - Type: [String, false]
-          - Lambda: [Union{Float64,Int64}, false]
+          - Heat Transfer Coefficient: [Union{Float64,Int64}, false]
           - Environmental Temperature: [Union{Float64,Int64}, false]
-          - Kappa: [Union{Float64,Int64}, false]
-          - Heat expansion: [Union{Float64,Int64}, false]
+          - Thermal Conductivity: [Union{Float64,Int64}, false]
+          - Thermal Expansion Coefficient: [Union{Float64,Int64}, false]
 
     - Additive Models:
       - Any:

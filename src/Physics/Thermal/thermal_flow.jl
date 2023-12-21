@@ -51,7 +51,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   undeformed_bond = datamanager.get_field("Bond Geometry")
   volume = datamanager.get_field("Volume")
   temperature = datamanager.get_field("Temperature", "NP1")
-  lambda = thermal_parameter["Lambda"]
+  lambda = thermal_parameter["Heat Transfer Coefficient"]
 
   if thermal_parameter["Type"] == "Bond based"
     horizon = datamanager.get_field("Horizon")

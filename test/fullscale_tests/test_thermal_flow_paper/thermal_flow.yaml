@@ -27,7 +27,7 @@ PeriLab:
         Thermal Model: "Thermal Flow"
         Type: "Bond based"
         #Type: "Correspondence"
-        Lambda: 2000
+        Heat Transfer Coefficient: 2000
   Blocks:
     block_1:
       Block Names: "block_1"
@@ -61,7 +61,7 @@ PeriLab:
     Verlet:
       Safety Factor: 1.00
       Fixed dt: 1e-7
-      
+
       Numerical Damping: 0e-00
   Outputs:
     Output1:

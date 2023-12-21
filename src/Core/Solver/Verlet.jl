@@ -170,7 +170,7 @@ function compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int
     criticalTimeStep::Float64 = 1.0e50
     for iblock in eachindex(block_nodes)
         if thermal
-            lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
+            lambda = datamanager.get_property(iblock, "Thermal Model", "Heat Transfer Coefficient")
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
             if !isnothing(lambda)
                 t = compute_thermodynamic_critical_time_step(block_nodes[iblock], datamanager, lambda)
@@ -231,7 +231,7 @@ function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     dt = get_fixed_dt(params)
     @info "Initial time: " * string(initial_time) * " [s]"
     @info "Final time: " * string(final_time) * " [s]"
-    if dt == true
+    if dt == -1.0
         dt = compute_crititical_time_step(datamanager, block_nodes, mechanical, thermo)
         @info "Minimal time increment: " * string(dt) * " [s]"
     else
@@ -347,7 +347,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         flowNP1 = datamanager.get_field("Heat Flow", "NP1")
         temperatureN = datamanager.get_field("Temperature", "N")
         temperatureNP1 = datamanager.get_field("Temperature", "NP1")
-        heatCapacity = datamanager.get_field("Specific Heat Capacity")
+        heat_capacity = datamanager.get_field("Specific Heat Capacity")
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
     if solver_options["Damage Models"]
@@ -400,7 +400,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             if solver_options["Thermal Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
                 # heat capacity check. if it is zero deltaT = 0
-                deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heatCapacity[find_active(active[1:nnodes])])
+                deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heat_capacity[find_active(active[1:nnodes])])
             end
             if solver_options["Damage Models"]
                 max_damage = maximum(damage[find_active(active[1:nnodes])])
