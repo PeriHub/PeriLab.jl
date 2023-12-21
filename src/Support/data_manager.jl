@@ -763,7 +763,7 @@ function init_property()
 
     block_list = get_block_list()
     for iblock in block_list
-        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
+        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}(), "FEM" => Dict{String,Any}())
     end
     return collect(keys(properties[block_list[1]]))
 end
@@ -1082,8 +1082,23 @@ Sets the values of a specified `property` for a given `block_id`.
 """
 function set_properties(block_id, property, values)
     global properties
-
     properties[block_id][property] = values
+end
+
+"""
+    set_properties(property, values)
+
+Sets the values of a specified `property` for a all `blocks`. E.g. for FEM, because it corresponds not to a block yet,
+
+# Arguments
+- `property`::String: The name of the property.
+- `values`::Any: The values to set for the specified `property`.
+"""
+function set_properties(property, values)
+    global properties
+    for id in eachindex(properties)
+        properties[id][property] = values
+    end
 end
 
 """

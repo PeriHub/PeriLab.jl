@@ -453,6 +453,10 @@ end
     @test test_Data_manager.get_properties(1, "") == Dict()
     @test !test_Data_manager.check_property(1, "This is not a property")
     @test isnothing(test_Data_manager.get_property(1, "Thermal Model", "This is not a property"))
+    test_Data_manager.set_properties("FEM", Dict("A" => 2, "C" => "Model"))
+    @test test_Data_manager.get_properties(1, "FEM") == Dict("A" => 2, "C" => "Model")
+    @test test_Data_manager.get_properties(2, "FEM") == Dict("A" => 2, "C" => "Model")
+    @test test_Data_manager.get_properties(3, "FEM") == Dict("A" => 2, "C" => "Model")
 end
 
 @testset "get_physics_options" begin
