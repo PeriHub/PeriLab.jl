@@ -85,7 +85,7 @@ function valid_models(params::Dict)
 end
 
 function eval(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, params::Dict, time::Float64, dt::Float64)
-    return calculate_FEM(datamanager, elements, params, Correspondence_Elastic.compute_stresses, time, dt)
+    return calculate_FEM(datamanager, elements, params["Physics"]["Material Models"][params["FEM"]["Material Model"]], Correspondence_Elastic.compute_stresses, time, dt)
 end
 
 function get_FEM_nodes(datamanager::Module, topology::SubArray{Int64})

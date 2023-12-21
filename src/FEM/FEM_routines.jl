@@ -14,9 +14,8 @@ function get_FE_material_model(params::Dict, name::String)
     return params["Material Models"][params["FEM"][name]["Material Model"]]
 end
 
-function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, params::Dict, name::String, compute_stresses, time::Float64, dt::Float64)
+function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, material_params::Dict, compute_stresses, time::Float64, dt::Float64)
 
-    material_params = get_FE_material_model(params, name)
     rotation::Bool, angles = datamanager.rotation_data("Element")
     dof = datamanager.get_dof()
 
@@ -31,7 +30,6 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
     jacobian = datamanager.get_field("Element Jacobi Matrix")
     det_jacobian = datamanager.get_field("Element Jacobi Determinant")
 
-    N_matrix = datamanager.get_field("N Matrix")
     B_matrix = datamanager.get_field("B Matrix")
 
     le::Int64 = 0

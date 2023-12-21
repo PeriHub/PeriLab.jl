@@ -111,8 +111,7 @@ end
     coordinates[6, 1] = 2
     coordinates[6, 2] = 1
 
-    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
-        "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 1.5, "Poisson's Ratio" => 0.33, "Shear Modulus" => 0.5639)))
+    params = Dict("FEM" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model"), "Physics" => Dict("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 1.5, "Poisson's Ratio" => 0.33, "Shear Modulus" => 0.5639))))
 
     topology = test_Data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
     topology[1, 1] = 1
@@ -124,9 +123,9 @@ end
     topology[2, 3] = 4
     topology[2, 4] = 6
 
-    test_Data_manager = FEM.init_FEM(params["FEM"]["FE_1"], test_Data_manager)
+    test_Data_manager = FEM.init_FEM(params["FEM"], test_Data_manager)
     elements = Vector{Int64}([1, 2])
-    test_Data_manager = FEM.eval(test_Data_manager, elements, params, "FE_1", 0.0, 1.0e-6)
+    test_Data_manager = FEM.eval(test_Data_manager, elements, params, 0.0, 1.0e-6)
 
     stress = test_Data_manager.get_field("Element Stress", "NP1")
     strain = test_Data_manager.get_field("Element Strain", "NP1")
@@ -152,7 +151,7 @@ end
     displacements[5, 2] = 0.5
     displacements[6, 1] = 1
     displacements[6, 2] = 0.5
-    test_Data_manager = FEM.eval(test_Data_manager, elements, params, "FE_1", 0.0, 1.0e-6)
+    test_Data_manager = FEM.eval(test_Data_manager, elements, params, 0.0, 1.0e-6)
     stress = test_Data_manager.get_field("Element Stress", "NP1")
     strain = test_Data_manager.get_field("Element Strain", "NP1")
 
