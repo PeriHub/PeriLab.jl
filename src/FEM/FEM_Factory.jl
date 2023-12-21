@@ -12,8 +12,15 @@ using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
 Set_modules.include_files(module_list)
 
-function init_FEM(params::Dict, datamanager::Module)
-    valid_models(params)
+function init_FEM(complete_params::Dict, datamanager::Module)
+    if !haskey(complete_params, "FEM")
+        return nothing
+    end
+    params = complete_params["FEM"]
+    if isnothing(valid_models(params))
+        return nothing
+    end
+
     datamanager.set_properties("FEM", params)
 
     dof = datamanager.get_dof()
@@ -81,7 +88,7 @@ function valid_models(params::Dict)
             return nothing
         end
     end
-    return nothing
+    return true
 end
 
 function eval(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, params::Dict, time::Float64, dt::Float64)
