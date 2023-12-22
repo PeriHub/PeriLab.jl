@@ -189,6 +189,9 @@ MPI.Init()
         @testset "test_DCB" begin
             @includetests["fullscale_tests/test_DCB/test_DCB"]
         end
+        @testset "test_FEM" begin
+            @includetests["fullscale_tests/test_FEM/test_FEM"]
+        end
     end
 
 
