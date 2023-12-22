@@ -89,6 +89,9 @@ end
 
     @test lumped_mass[:, 1] == [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994]
     @test lumped_mass[:, 2] == [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994]
+    # only in tests for resize or redefinition reasons
+    test_Data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
+    @test isnothing(FEM.init_FEM(params, test_Data_manager))
 end
 
 @testset "ut_eval" begin
@@ -97,9 +100,12 @@ end
     test_Data_manager.set_dof(dof)
     test_Data_manager.set_num_elements(2)
     test_Data_manager.set_num_controller(6)
+    test_Data_manager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
     test_Data_manager.create_node_field("Force Densities", Float64, dof)
     test_Data_manager.create_node_field("Displacements", Float64, dof)
     coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    # only in tests for resize or redefinition reasons
+    test_Data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 2, 4)
     coordinates[1, 1] = 0
     coordinates[1, 2] = 0
     coordinates[2, 1] = 1

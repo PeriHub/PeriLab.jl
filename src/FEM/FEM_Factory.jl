@@ -58,6 +58,10 @@ function init_FEM(complete_params::Dict, datamanager::Module)
 
     elements = Vector{Int64}(1:nelements)
     topology = datamanager.get_field("FE Topology")
+    if length(topology[1, :]) != prod(p .+ 1)
+        @error "Size of topology and polynomial degree does not match."
+        return nothing
+    end
     jacobian = datamanager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
     determinant_jacobian = datamanager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
     jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
