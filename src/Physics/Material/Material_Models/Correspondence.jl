@@ -42,7 +42,11 @@ function init_material_model(datamanager::Module)
 
   rotation::Bool, angles = datamanager.rotation_data()
   if rotation
+    #############
+    # extra function
+    #############
     orientations = datamanager.create_constant_node_field("Orientations", Float64, "Vector", 3)
+    #orientations = Geometry.create_orientation(nnodes, angles, orientations)
     for iID in 1:nnodes
       rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
       if dof == 2
@@ -51,6 +55,7 @@ function init_material_model(datamanager::Module)
         orientations[iID, :] = rotation_tensor * [1, 1, 1]
       end
     end
+    #############
   end
 
   return datamanager
