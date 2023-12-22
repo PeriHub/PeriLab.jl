@@ -39,7 +39,8 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
         topo = view(topology, id_el, :)
         le = dof * length(topo)
         nnodes::Int64 = length(topo)
-        for id_int in eachindex(B_matrix[:, 1, 1])
+        num_int = length(B_matrix[:, 1, 1])
+        for id_int in num_int
 
             # epsilon  = BT*u 
             strain_NP1[id_el, id_int, :] = B_matrix[id_int, :, :]' * reshape((displacement[topo, :] * jacobian[id_el, id_int, :, :])', le)
@@ -68,9 +69,10 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
             # if you do not use permutedims you will get some index errors
             stress_temp .+= stress_NP1[id_el, id_int, :]
         end
+        # as long as no elements stresses are written
         temp = permutedims(cauchy_stress[topo, :, :], (2, 3, 1))
         temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
-        cauchy_stress[topo, :, :] = permutedims(temp[:, :, 1:nnodes], (3, 1, 2))
+        cauchy_stress[topo, :, :] = permutedims(temp[:, :, 1:nnodes], (3, 1, 2)) / num_int
         stress_temp .= 0
     end
     return datamanager
