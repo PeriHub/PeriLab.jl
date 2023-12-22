@@ -29,9 +29,11 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
     topology = datamanager.get_field("FE Topology")
     jacobian = datamanager.get_field("Element Jacobi Matrix")
     det_jacobian = datamanager.get_field("Element Jacobi Determinant")
+    # not avveraged Cauchy stresses -> element stresses will be later available in Exodus
+    cauchy_stress = datamanager.get_field("Cauchy Stress", "NP1")
 
     B_matrix = datamanager.get_field("B Matrix")
-
+    stress_temp::Vector{Float64} = zeros(3 * dof - 3)
     le::Int64 = 0
     for id_el in elements
         topo = view(topology, id_el, :)
@@ -63,7 +65,13 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
             end
             #tbd reshape
             force_densities[topo, :] += reshape(B_matrix[id_int, :, :] * stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int], (nnodes, dof)) * jacobian[id_el, id_int, :, :]
+            # if you do not use permutedims you will get some index errors
+            stress_temp .+= stress_NP1[id_el, id_int, :]
         end
+        temp = permutedims(cauchy_stress[topo, :, :], (2, 3, 1))
+        temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
+        cauchy_stress[topo, :, :] = permutedims(temp[:, :, 1:nnodes], (3, 1, 2))
+        stress_temp .= 0
     end
     return datamanager
 end
@@ -195,8 +203,10 @@ function get_polynomial_degree(params::Dict, dof::Int64)
         return nothing
     end
     value = params["Degree"]
+    if typeof(value) == String
+        value = parse.(Float64, split(value))
+    end
     if sum(typeof.(value) .!= Int64) != 0
-        @warn "Degree was defined as Float and set to Int."
         value = Int64.(round.(value))
     end
     if length(value) == 1

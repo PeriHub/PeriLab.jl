@@ -204,7 +204,12 @@ end
     params = Dict("Degree" => [2.1 2])
     @test get_polynomial_degree(params, 2) == [2, 2]
     @test isnothing(get_polynomial_degree(params, 3))
-
+    params = Dict("Degree" => "2")
+    @test get_polynomial_degree(params, 3) == [2, 2, 2]
+    params = Dict("Degree" => "2 2")
+    @test get_polynomial_degree(params, 2) == [2, 2]
+    params = Dict("Degree" => "2 1")
+    @test get_polynomial_degree(params, 2) == [2, 1]
 end
 @testset "ut_get_number_of_integration_points" begin
     @test get_number_of_integration_points(Vector{Int64}([1, 1]), 2) == [2, 2]
@@ -229,7 +234,6 @@ end
     weights, xi = get_weights_and_integration_points(dof, [num_int, num_int])
     integration_point_coordinates = get_multi_dimensional_integration_point_data(dof, [num_int, num_int], xi)
     @test length(integration_point_coordinates[:, 1]) == 4
-    println()
     @test integration_point_coordinates[1, :] == [-0.5773502691896258, -0.5773502691896258]
     @test integration_point_coordinates[2, :] == [0.5773502691896258, -0.5773502691896258]
     @test integration_point_coordinates[3, :] == [-0.5773502691896258, 0.5773502691896258]
