@@ -370,7 +370,6 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             # one step more, because of init step (time = 0)
             if solver_options["Material Models"]
                 vNP1[nodes, :] = (1 - numerical_damping) .* vN[nodes, :] + 0.5 * dt .* a[nodes, :]
-
                 uNP1[nodes, :] = uN[nodes, :] + dt .* vNP1[nodes, :]
             end
             if solver_options["Thermal Models"]
@@ -381,7 +380,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
             deformed_coorNP1[:, :] = coor[:, :] + uNP1[:, :]
-            #end
+
             datamanager.synch_manager(synchronise_field, "upload_to_cores")
             # synch
 
