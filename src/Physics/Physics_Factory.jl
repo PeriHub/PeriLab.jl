@@ -43,13 +43,6 @@ Computes the physics models
 """
 function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
 
-    if options["Additive Models"]
-        for block in eachindex(block_nodes)
-            if datamanager.check_property(block, "Additive Model")
-                @timeit to "compute_additive_model" datamanager = Additive.compute_additive(datamanager, block_nodes[block], datamanager.get_properties(block, "Additive Model"), time, dt)
-            end
-        end
-    end
     active = datamanager.get_field("Active")
     if options["Damage Models"]
         #tbd damage specific pre_calculation-> in damage template
@@ -71,7 +64,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     for block in eachindex(block_nodes)
         nodes = @view block_nodes[block][:]
         active_nodes = @view nodes[find_active(active[nodes])][:]
-        update_nodes = view(nodes, find_active(update_list[active_nodes]))
+        update_nodes = view(nodes, find_updatable(active_nodes, update_list))
 
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt, to)
 
@@ -85,6 +78,13 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             if datamanager.check_property(block, "Material Model")
                 @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt, to)
                 @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, active_nodes)
+            end
+        end
+    end
+    if options["Additive Models"]
+        for block in eachindex(block_nodes)
+            if datamanager.check_property(block, "Additive Model")
+                @timeit to "compute_additive_model" datamanager = Additive.compute_additive(datamanager, block_nodes[block], datamanager.get_properties(block, "Additive Model"), time, dt)
             end
         end
     end
@@ -208,8 +208,10 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
     if anistropic_damage
         datamanager.create_constant_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
     end
-    nlist = datamanager.get_field("Neighborhoodlist")
-    inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
+    if length(datamanager.get_inverse_nlist) == 0
+        nlist = datamanager.get_field("Neighborhoodlist")
+        inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
+    end
     return datamanager
 end
 
@@ -274,7 +276,7 @@ function init_thermal_model_fields(datamanager::Module)
     datamanager.create_node_field("Specific Volume", Float64, 1)
     datamanager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
     # if it is already initialized via mesh file no new field is created here
-    datamanager.create_constant_node_field("Surface_Nodes", Bool, 1)
+    datamanager.create_constant_node_field("Surface_Nodes", Bool, 1, true)
     return datamanager
 end
 
@@ -305,6 +307,8 @@ function init_additive_model_fields(datamanager::Module)
             bond_damageNP1[iID][:] .= 0
         end
     end
+    nlist = datamanager.get_field("Neighborhoodlist")
+    inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     return datamanager
 end
 

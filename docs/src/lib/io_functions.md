@@ -143,6 +143,7 @@ CurrentModule = PeriLab.Solver
 ```@docs
 find_indices
 find_active
+find_updatable
 get_header
 find_files_with_ending
 check_inf_or_nan

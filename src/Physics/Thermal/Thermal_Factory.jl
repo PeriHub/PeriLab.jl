@@ -36,8 +36,8 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
         if isnothing(datamanager)
             @error "No thermal model of name " * model_name * " exists."
         end
-        datamanager = distribute_heat_flows(datamanager, nodes)
     end
+    datamanager = distribute_heat_flows(datamanager, nodes)
     return datamanager
 end
 """
@@ -53,7 +53,6 @@ Note: is included, because also additional heat flow influences can be included 
 - `datamanager::Module`: The datamanager
 """
 function distribute_heat_flows(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
-
     bond_heat_flow = datamanager.get_field("Bond Heat Flow")
     heat_flow = datamanager.get_field("Heat Flow", "NP1")
     volume = datamanager.get_field("Volume")

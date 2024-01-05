@@ -46,7 +46,7 @@ Example:
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
   dof = datamanager.get_dof()
   volume = datamanager.get_field("Volume")
-  kappa = thermal_parameter["Thermal Conductivity"]
+  kappa = thermal_parameter["Heat Transfer Coefficient"]
   Tenv = thermal_parameter["Environmental Temperature"]
   heat_flow = datamanager.get_field("Heat Flow", "NP1")
   temperature = datamanager.get_field("Temperature", "NP1")
@@ -59,7 +59,6 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   area = 1.0
 
   specific_volume = calculate_specific_volume(nodes, nlist, volume, bond_damage, specific_volume, dof, horizon)
-
   for iID in nodes
 
     if dof == 2
@@ -98,15 +97,27 @@ function calculate_specific_volume(nodes, nlist, volume, bond_damage, specific_v
       if bond_damage[iID][jID] == 0.0
         continue
       end
-      neighbor_volume += volume[nlist[iID][jID]]
+      neighbor_volume += volume[neighborID]
     end
     if dof == 2
       horizon_volume = pi * horizon[iID]^2
     elseif dof == 3
       horizon_volume = 4 / 3 * pi * horizon[iID]^3
     end
-    specific_volume[iID] = horizon_volume / neighbor_volume
+    if neighbor_volume != 0.0
+      specific_volume[iID] = horizon_volume / neighbor_volume
+    end
   end
+
+  if dof == 2
+    scaling_factor = 2.0 / maximum(specific_volume)
+  elseif dof == 3
+    scaling_factor = 4.0 / maximum(specific_volume)
+  end
+  if !isinf(scaling_factor)
+    specific_volume .*= scaling_factor
+  end
+
   return specific_volume
 end
 end

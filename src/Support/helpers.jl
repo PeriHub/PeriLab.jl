@@ -35,6 +35,21 @@ function find_active(active::Vector{Bool})
 end
 
 """
+    find_updatable(active::SubArray, update_list::SubArray)
+
+Returns the indices of `active` that are true.
+
+# Arguments
+- `active::SubArray`: The vector to search in.
+- `update_list::SubArray`: The vector to search in.
+# Returns
+- `indices::Vector`: The indices of `active` that are true.
+"""
+function find_updatable(active::SubArray, update_list::SubArray)
+    return [active[i] for i in eachindex(active) if update_list[i] == 1]
+end
+
+"""
     get_header(filename::Union{String,AbstractString})
 
 Returns the header line and the header.
