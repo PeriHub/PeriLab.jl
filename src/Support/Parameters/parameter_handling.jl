@@ -134,6 +134,8 @@ expected_structure = Dict(
                                     "Environmental Temperature" => [Union{Float64,Int64}, false],
                                     "Thermal Conductivity" => [Union{Float64,Int64}, false],
                                     "Thermal Expansion Coefficient" => [Union{Float64,Int64}, false],
+                                    "Thermal Conductivity Print Bed" => [Union{Float64,Int64}, false],
+                                    "Print Bed Temperature" => [Union{Float64,Int64}, false],
                                 ), true],
                         ), false],
                     "Additive Models" => [Dict{Any,Any}(
