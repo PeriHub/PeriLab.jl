@@ -63,8 +63,9 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
 
     for block in eachindex(block_nodes)
         nodes = @view block_nodes[block][:]
-        active_nodes = @view nodes[find_active(active[nodes])][:]
-        update_nodes = view(nodes, find_updatable(active_nodes, update_list))
+        active_index = find_active(active[nodes])
+        active_nodes = @view nodes[active_index][:]
+        update_nodes = view(nodes, find_updatable(active_index, update_list))
 
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt, to)
 
@@ -208,7 +209,7 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
     if anistropic_damage
         datamanager.create_constant_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
     end
-    if length(datamanager.get_inverse_nlist) == 0
+    if length(datamanager.get_inverse_nlist()) == 0
         nlist = datamanager.get_field("Neighborhoodlist")
         inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     end

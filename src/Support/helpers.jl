@@ -45,7 +45,7 @@ Returns the indices of `active` that are true.
 # Returns
 - `indices::Vector`: The indices of `active` that are true.
 """
-function find_updatable(active::SubArray, update_list::SubArray)
+function find_updatable(active::Vector{Int64}, update_list::SubArray)
     return [active[i] for i in eachindex(active) if update_list[i] == 1]
 end
 

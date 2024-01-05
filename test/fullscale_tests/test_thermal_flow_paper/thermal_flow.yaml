@@ -27,7 +27,7 @@ PeriLab:
         Thermal Model: "Thermal Flow"
         Type: "Bond based"
         #Type: "Correspondence"
-        Heat Transfer Coefficient: 2000
+        Thermal Conductivity: 2000
   Blocks:
     block_1:
       Block Names: "block_1"

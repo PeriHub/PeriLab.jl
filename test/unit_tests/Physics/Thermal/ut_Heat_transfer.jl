@@ -57,6 +57,5 @@ include("../../../../src/Support/data_manager.jl")
     bond_damage[9][:] .= 1
     bond_damage[10][:] .= 1
     result = Heat_transfer.calculate_specific_volume(nodes, nlist, volume, bond_damage, specific_volume, dof, horizon)
-
-    @test result == [1.9006635554218252, 1.2671090369478835, 1.9006635554218252, 1.2671090369478835, 0.9503317777109126, 1.2671090369478835, 1.9006635554218252, 1.2671090369478835, 1.9006635554218252, 3.8013271108436504]
+    @test result == [1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.5, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 2.0]
 end

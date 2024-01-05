@@ -18,7 +18,7 @@ PeriLab:
         Thermal Model: "Thermal Flow"
         Type: "Correspondence"
         Thermal Expansion Coefficient: 0.22
-        Heat Transfer Coefficient: 2000.0
+        Thermal Conductivity: 2000.0
   Blocks:
     block_1:
       Block Names: "block_1"
