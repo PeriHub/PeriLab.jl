@@ -1084,12 +1084,12 @@ function switch_NP1_to_N()
             fill!(field_NP1, field_types[NP1](0))
         else # matrix
             value = 0
-            if "Bond DamageNP1" == NP1
-                value = 1
-            end
             for fieldID in eachindex(field_NP1)
                 copyto!(field_N[fieldID], field_NP1[fieldID])
-                fill!(field_NP1[fieldID], field_types[NP1](value))
+                if "Bond DamageNP1" != NP1
+                    # value = 1
+                    fill!(field_NP1[fieldID], field_types[NP1](value))
+                end
             end
         end
     end

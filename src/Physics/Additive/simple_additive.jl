@@ -45,6 +45,8 @@ Example:
 """
 function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float64, dt::Float64)
 
+  nlist = datamanager.get_nlist()
+  inverse_nlist = datamanager.get_inverse_nlist()
   activation_time = datamanager.get_field("Activation_Time")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
   active = datamanager.get_field("Active")
@@ -57,8 +59,16 @@ function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   for iID in nodes
     if time - dt <= activation_time[iID] < time
       active[iID] = true
-      bond_damage[iID][:] .= 1.0
       flux[iID] = -printTemperature * heat_capacity[iID] * density[iID] ./ dt
+
+      for (jID, neighborID) in enumerate(nlist[iID])
+        if activation_time[neighborID] <= time && bond_damage[iID][jID] == 0
+          bond_damage[iID][jID] = 1.0
+          if haskey(inverse_nlist[neighborID], iID)
+            bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 1.0
+          end
+        end
+      end
     end
   end
 
