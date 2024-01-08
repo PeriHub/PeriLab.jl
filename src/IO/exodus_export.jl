@@ -140,13 +140,8 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
     # bloecke checken
     for name in eachindex(nsets)
         id += Int32(1)
-        # if length(block_Id) < length(nsets[name])
-        #     nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name][1:length(block_Id)]))
-        #     @debug convert(Array{Int32}, nsets[name][1:length(block_Id)])
-        # else
-        # existing_nodes = intersect(global_ids, nsets[name])
         nsetExo = NodeSet(id, convert(Array{Int32}, nsets[name]))
-        # end
+
         write_set(exo, nsetExo)
         write_name(exo, nsetExo, name)
     end
