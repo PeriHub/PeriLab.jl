@@ -1013,11 +1013,11 @@ Apply the disk filter to the neighborhood list.
 """
 function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
     if dof == 2
-        center = [filter["Center_X"], filter["Center_Y"]]
-        normal = [filter["Normal_X"], filter["Normal_Y"]]
+        center = [filter["Center X"], filter["Center Y"]]
+        normal = [filter["Normal X"], filter["Normal Y"]]
     else
-        center = [filter["Center_X"], filter["Center_Y"], filter["Center_Z"]]
-        normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
+        center = [filter["Center X"], filter["Center Y"], filter["Center Z"]]
+        normal = [filter["Normal X"], filter["Normal Y"], filter["Normal Z"]]
     end
     #normalize vector
     normal = normal ./ norm(normal)
@@ -1047,19 +1047,19 @@ Apply the rectangular plane filter to the neighborhood list.
 """
 function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
     if dof == 2
-        normal = [filter["Normal_X"], filter["Normal_Y"]]
-        lower_left_corner = [filter["Lower_Left_Corner_X"], filter["Lower_Left_Corner_Y"]]
-        bottom_unit_vector = [filter["Bottom_Unit_Vector_X"], filter["Bottom_Unit_Vector_Y"]]
+        normal = [filter["Normal X"], filter["Normal Y"]]
+        lower_left_corner = [filter["Lower Left Corner X"], filter["Lower Left Corner Y"]]
+        bottom_unit_vector = [filter["Bottom Unit Vector X"], filter["Bottom Unit Vector Y"]]
     else
-        normal = [filter["Normal_X"], filter["Normal_Y"], filter["Normal_Z"]]
-        lower_left_corner = [filter["Lower_Left_Corner_X"], filter["Lower_Left_Corner_Y"], filter["Lower_Left_Corner_Z"]]
-        bottom_unit_vector = [filter["Bottom_Unit_Vector_X"], filter["Bottom_Unit_Vector_Y"], filter["Bottom_Unit_Vector_Z"]]
+        normal = [filter["Normal X"], filter["Normal Y"], filter["Normal Z"]]
+        lower_left_corner = [filter["Lower Left Corner X"], filter["Lower Left Corner Y"], filter["Lower Left Corner Z"]]
+        bottom_unit_vector = [filter["Bottom Unit Vector X"], filter["Bottom Unit Vector Y"], filter["Bottom Unit Vector Z"]]
     end
     #normalize vector
     normal = normal ./ norm(normal)
     bottom_unit_vector = bottom_unit_vector ./ norm(bottom_unit_vector)
-    bottom_length = filter["Bottom_Length"]
-    side_length = filter["Side_Length"]
+    bottom_length = filter["Bottom Length"]
+    side_length = filter["Side Length"]
     for iID in 1:nnodes
         filter_flag = fill(true, length(nlist[iID]))
         for (jID, neighborID) in enumerate(nlist[iID])
