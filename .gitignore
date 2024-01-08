@@ -13,3 +13,4 @@ Manifest.toml
 !**/Reference/*.e*
 
 test/tryout/
+examples/dev/

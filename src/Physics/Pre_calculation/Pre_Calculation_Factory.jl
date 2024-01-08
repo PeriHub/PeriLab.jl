@@ -14,6 +14,7 @@ using .Bond_Deformation_Gradient
 using .Bond_Shape_Tensor
 using .Deformation_Gradient
 using .Shape_Tensor
+using TimerOutputs
 export compute
 export init_pre_calculation
 
@@ -31,7 +32,7 @@ Compute the pre-calculation.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64)
+function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64, to::TimerOutput)
 
     if options["Deformed Bond Geometry"]
         datamanager = Bond_Deformation.compute(datamanager, nodes, time)

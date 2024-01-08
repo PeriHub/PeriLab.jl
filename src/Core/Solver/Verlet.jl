@@ -329,7 +329,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     coor = datamanager.get_field("Coordinates")
     uNP1 = datamanager.get_field("Displacements", "NP1")
 
-    deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
+    deformed_coorNP1 = datamanager.get_field("Deformed Coordidamagedeformed_coorNP1[:, :] = coor[:, :] + uNP1[:, :]nates", "NP1")
     if solver_options["Material Models"]
         forces = datamanager.get_field("Forces", "NP1")
         forces_density = datamanager.get_field("Force Densities", "NP1")
@@ -352,6 +352,9 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     if fem_option
         lumped_mass = datamanager.get_field("Lumped Mass Matrix")
         fe_nodes = datamanager.get_field("FE Nodes")
+    end
+    if solver_options["Damage Models"]
+        damage = datamanager.get_field("Damage", "NP1")
     end
     active = datamanager.get_field("Active")
     update_list = datamanager.get_field("Update List")
@@ -381,7 +384,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
             deformed_coorNP1[:, :] = coor[:, :] + uNP1[:, :]
 
-            datamanager.synch_manager(synchronise_field, "upload_to_cores")
+            @timeit to "upload_to_cores" datamanager.synch_manager(synchronise_field, "upload_to_cores")
             # synch
 
             @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, block_nodes, dt, step_time, solver_options, synchronise_field, to)
@@ -404,7 +407,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             if solver_options["Thermal Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
                 # heat capacity check. if it is zero deltaT = 0
-                deltaT[nodes] = -flowNP1[nodes] .* dt ./ (density[nodes] .* heatCapacity[nodes])
+                deltaT[find_active(active[1:nnodes])] = -flowNP1[find_active(active[1:nnodes])] .* dt ./ (density[find_active(active[1:nnodes])] .* heat_capacity[find_active(active[1:nnodes])])
                 if fem_option && time == 0
                     @warn "Thermal models are not supported for FEM yet."
                 end

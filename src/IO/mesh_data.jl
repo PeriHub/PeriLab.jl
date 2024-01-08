@@ -4,6 +4,7 @@
 
 module Read_Mesh
 using CSV
+using Exodus
 using DataFrames
 using MPI
 using TimerOutputs
@@ -88,6 +89,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
             @info "Set local topology vector"
             datamanager = get_local_element_topology(datamanager, topology[element_distribution[rank]], distribution[rank])
         end
+        mesh = nothing
         @info "Finish init data"
     end
     return datamanager, params
@@ -226,7 +228,6 @@ function get_bond_geometry(datamanager::Module)
     nlist = datamanager.get_field("Neighborhoodlist")
     coor = datamanager.get_field("Coordinates")
     undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
-    bond_damage = datamanager.create_constant_bond_field("Bond Damage", Float64, 1)
     undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
     return datamanager
 end
@@ -391,23 +392,66 @@ function read_external_topology(filename::String)
 end
 
 """
-    read_mesh(filename::String)
+    read_mesh(filename::String, params::Dict)
 
 Read mesh data from a file and return it as a DataFrame.
 
 # Arguments
 - `filename::String`: The path to the mesh file.
+- `params::Dict`: The input parameters.
 # Returns
 - `mesh::DataFrame`: The mesh data as a DataFrame.
 """
-function read_mesh(filename::String)
+function read_mesh(filename::String, params::Dict)
     if !isfile(filename)
         @error "File $filename does not exist"
-        return nothing
     end
+
     @info "Read mesh file $filename"
-    header_line, header = get_header(filename)
-    return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
+
+    if params["Discretization"]["Type"] == "Exodus"
+
+        exo = ExodusDatabase(filename, "r")
+
+        coords = read_coordinates(exo)
+        mesh_df = DataFrame(
+            x=[],
+            y=[],
+            z=[],
+            volume=[],
+            block_id=[],
+        )
+        block_ids = read_ids(exo, Block)
+
+        for (iID, block_id) in enumerate(block_ids)
+            block = read_block(exo, block_id)
+            block_id_map = Exodus.read_block_connectivity(exo, block_id, block.num_nodes_per_elem * block.num_elem)
+            if block.elem_type == "TETRA"
+                for i in 1:block.num_elem
+                    indices = block.num_nodes_per_elem*(i-1)+1:block.num_nodes_per_elem*i
+                    node_ids = block_id_map[indices]
+                    vertices = coords[:, node_ids]
+                    center = (vertices[:, 1] + vertices[:, 2] + vertices[:, 3] + vertices[:, 4]) / 4.0
+                    volume = abs(dot(vertices[:, 1] - vertices[:, 4], cross(vertices[:, 2] - vertices[:, 4], vertices[:, 3] - vertices[:, 4]))) / 6.0
+                    push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=Int64(block_id)))
+                end
+            end
+        end
+
+        close(exo)
+        coords = nothing
+        block_ids = nothing
+
+        return mesh_df
+
+    elseif params["Discretization"]["Type"] == "Text File"
+
+        header_line, header = get_header(filename)
+        return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
+    else
+        @error "Discretization type not supported"
+    end
+
 end
 
 """
@@ -429,7 +473,7 @@ function set_dof(mesh::DataFrame)
 end
 
 """
-    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
+    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
 Load and evaluate the mesh data.
 
@@ -437,6 +481,7 @@ Load and evaluate the mesh data.
 - `params::Dict`: The input parameters.
 - `path::String`: The path to the mesh file.
 - `ranksize::Int64`: The number of ranks.
+- `to::TimerOutput`: The timer output
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the mesh elements.
 - `mesh::DataFrame`: The mesh data as a DataFrame.
@@ -445,9 +490,9 @@ Load and evaluate the mesh data.
 - `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
 - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 """
-function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
+function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
-    mesh = read_mesh(joinpath(path, get_mesh_name(params)))
+    mesh = read_mesh(joinpath(path, get_mesh_name(params)), params)
     duplicates = findall(nonunique(mesh))
     if length(duplicates) > 0
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
@@ -461,15 +506,15 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
         @info "External topology files was read."
     end
     dof::Int64 = set_dof(mesh)
-    nlist = create_neighborhoodlist(mesh, params, dof)
-    nlist = apply_bond_filters(nlist, mesh, params, dof)
+    @timeit to "neighborhoodlist" nlist = create_neighborhoodlist(mesh, params, dof)
+    @timeit to "apply_bond_filters" nlist = apply_bond_filters(nlist, mesh, params, dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
         nlist, topology = create_consistent_neighborhoodlist(external_topology, params["Discretization"]["Input External Topology"], nlist, dof)
     end
     @info "Start distribution"
-    distribution, ptc, ntype = node_distribution(nlist, ranksize)
+    @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize)
     el_distribution = nothing
     if haskey(params, "FEM") && !isnothing(external_topology)
         @info "Start element distribution"
@@ -477,7 +522,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
     end
     @info "Finished distribution"
     @info "Create Overlap"
-    overlap_map = create_overlap_map(distribution, ptc, ranksize)
+    @timeit to "overlap_map" overlap_map = create_overlap_map(distribution, ptc, ranksize)
     @info "Finished Overlap"
     @info "Mesh input overview"
     @info "-------------------"
@@ -636,7 +681,7 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
     if size == 1
         distribution = [collect(1:nnodes)]
         overlap_map = [[[]]]
-        ptc::Vector{Int64} = []
+        ptc = []
         append!(ntype["controllers"], nnodes)
         append!(ntype["responder"], 0)
     else
@@ -752,7 +797,7 @@ function create_base_chunk(nnodes::Int64, size::Int64)
     chunk_size = div(nnodes, size)
     # Split the data into chunks
     distribution = fill(Int64[], size)
-    point_to_core::Vector{Int64} = zeros(Int64, nnodes)
+    point_to_core = zeros(Int64, nnodes)
     for i in 1:size
         start_idx = (i - 1) * chunk_size + 1
         end_idx = min(i * chunk_size, nnodes)

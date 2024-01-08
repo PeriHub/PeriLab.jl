@@ -85,12 +85,13 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     end
     for block in eachindex(block_nodes)
         nodes = block_nodes[block]
-        active_nodes = nodes[find_active(active[nodes])]
-        update_nodes = view(nodes, find_active(update_list[active_nodes]))
+        active_index = find_active(active[nodes])
+        active_nodes = nodes[active_index]
+        update_nodes = view(nodes, find_updatable(active_index, update_list))
         if fem_option
             update_nodes = nodes[find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
-        @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt)
+        @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt, to)
 
         if options["Thermal Models"]
             if datamanager.check_property(block, "Thermal Model")
