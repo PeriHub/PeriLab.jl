@@ -242,8 +242,9 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     end
     if solver_options["Damage Models"]
         @timeit to "damage_model_fields" datamanager = Physics.init_damage_model_fields(datamanager, params)
-        @timeit to "interface_crit_values" datamanager = Damage.init_interface_crit_values(datamanager, params)
-        @timeit to "aniso_crit_values" datamanager = Damage.init_aniso_crit_values(datamanager, params)
+        @timeit to "init damage model" datamanager = Damage.init_damage_model(datamanager, params)
+        #@timeit to "interface_crit_values" datamanager = Damage.init_interface_crit_values(datamanager, params)
+        #@timeit to "aniso_crit_values" datamanager = Damage.init_aniso_crit_values(datamanager, params)
     end
     if solver_options["Material Models"]
         @timeit to "model_fields" datamanager = Physics.init_material_model_fields(datamanager)

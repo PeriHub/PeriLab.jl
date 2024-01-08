@@ -88,6 +88,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     bond_forces = datamanager.get_field("Bond Forces")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     critical_energy = damage_parameter["Critical Value"]
+    quad_horizon = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
     # for anisotropic damage models
     rotation::Bool, angles = datamanager.rotation_data()
@@ -103,21 +104,16 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         bond_norm::Float64 = 0.0
     end
 
-    quad_horizon::Float64 = 0.0
+
     bond_energy::Float64 = 0.0
-    dist::Float64 = 0.0
     norm_displacement::Float64 = 0.0
-    bond_angle::Float64 = 0.0
     x_vector::Vector{Float64} = zeros(Float64, dof)
     x_vector[1] = 1.0
-
-    nneighbors = datamanager.get_field("Number of Neighbors")
 
     neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
     projected_force::Vector{Float64} = zeros(Float64, dof)
 
     for iID in nodes
-        quad_horizon = get_quad_horizon(horizon[iID], dof)
         @views relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
         if aniso_damage
             rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
@@ -145,6 +141,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement_vector[jID, :]))
             if bond_energy < 0
                 @error "Bond energy smaller zero"
+                return nothing
             end
 
             crit_energy = inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
@@ -157,7 +154,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                         continue
                     end
                     @views bond_norm = abs(rotated_bond[i]) / deformed_bond[iID][jID, end]
-                    if bond_energy / quad_horizon * bond_norm > aniso_crit_values[block_ids[iID]][i]
+                    if bond_energy / quad_horizon[iID] * bond_norm > aniso_crit_values[block_ids[iID]][i]
                         @inbounds bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct
                         if bond_damage[iID][jID] < 0
                             bond_damage[iID][jID] = 0
@@ -167,13 +164,14 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                     end
                 end
             else
-                if (bond_energy / quad_horizon) > crit_energy
+                if (bond_energy / quad_horizon[iID]) > crit_energy
                     @inbounds bond_damage[iID][jID] = 0.0
                     @inbounds update_list[iID] = true
                 end
             end
             if 1 < bond_damage[iID][jID] || bond_damage[iID][jID] < 0
                 @error "Bond damage out of bounds"
+                return nothing
             end
         end
     end
@@ -219,5 +217,14 @@ function get_quad_horizon(horizon::Float64, dof::Int64)
         return Float64(3 / (pi * horizon^3 * thickness))
     end
     return Float64(4 / (pi * horizon^4))
+end
+function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
+    quad_horizon = datamanager.create_constant_node_field("Quad Horizon", Float64, 1)
+    horizon = datamanager.get_field("Horizon")
+    dof = datamanager.get_dof()
+    for iID in nodes
+        quad_horizon[iID] = get_quad_horizon(horizon[iID], dof)
+    end
+    return datamanager
 end
 end
