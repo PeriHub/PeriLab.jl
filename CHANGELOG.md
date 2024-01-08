@@ -8,6 +8,12 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 
+
+### Added
+
+- FEM Support
+
 ## [1.0.3] - 2024-01-08
 
 ### Added
