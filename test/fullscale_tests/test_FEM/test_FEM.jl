@@ -10,4 +10,7 @@ cd("fullscale_tests/" * folder_name) do
     run_perilab("FEM_p1_1_2d", 1, true, folder_name)
 	run_perilab("FEM_p2_1_2d", 1, true, folder_name)
 	run_perilab("FEM_p2_2d", 1, true, folder_name)
+	run_perilab("FEM_p1_3d", 1, true, folder_name)
+	run_perilab("FEM_p2_1_1_3d", 1, true, folder_name)
+	run_perilab("FEM_p2_3d", 1, true, folder_name)	
 end
