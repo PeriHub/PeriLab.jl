@@ -332,7 +332,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     coor = datamanager.get_field("Coordinates")
     uNP1 = datamanager.get_field("Displacements", "NP1")
 
-    deformed_coorNP1 = datamanager.get_field("Deformed Coordidamagedeformed_coorNP1[:, :] = coor[:, :] + uNP1[:, :]nates", "NP1")
+    deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     if solver_options["Material Models"]
         forces = datamanager.get_field("Forces", "NP1")
         forces_density = datamanager.get_field("Force Densities", "NP1")

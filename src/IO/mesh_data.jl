@@ -44,7 +44,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
         if rank == 1
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks)
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks, to)
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -362,12 +362,15 @@ function check_mesh_elements(mesh::DataFrame, dof::Int64)
     end
     if !(haskey(meshInfoDict, "Coordinates"))
         @error "No coordinates defined"
+        return nothing
     end
     if !(haskey(meshInfoDict, "Block_Id"))
         @error "No blocks defined"
+        return nothing
     end
     if !(haskey(meshInfoDict, "Volume"))
         @error "No volumes defined"
+        return nothing
     end
     return meshInfoDict
 end
@@ -405,6 +408,7 @@ Read mesh data from a file and return it as a DataFrame.
 function read_mesh(filename::String, params::Dict)
     if !isfile(filename)
         @error "File $filename does not exist"
+        return nothing
     end
 
     @info "Read mesh file $filename"
@@ -681,7 +685,7 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
     if size == 1
         distribution = [collect(1:nnodes)]
         overlap_map = [[[]]]
-        ptc = []
+        ptc = Int64[]
         append!(ntype["controllers"], nnodes)
         append!(ntype["responder"], 0)
     else

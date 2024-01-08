@@ -11,13 +11,14 @@ using .Data_manager
 using DataFrames
 @testset "ut_read_mesh" begin
 
-    @test isnothing(Read_Mesh.read_mesh("./"))
+    params = Dict("Discretization" => Dict("Type" => "Text File"))
+    @test isnothing(Read_Mesh.read_mesh("./", params))
     path = "./unit_tests/IO/"
 
-    data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"))
+    data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"), params)
     if isnothing(data)
         path = "./test/unit_tests/IO/"
-        data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"))
+        data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"), params)
     end
     @test length(data[:, 1]) == 3
     @test data[!, "x"] == [-1.5, -0.5, 0.5]
@@ -278,7 +279,7 @@ end
 @testset "ut_create_overlap_map" begin
     distribution = Vector([Vector{Int64}([1, 2, 3]), Vector{Int64}([2, 3, 4]), Vector{Int64}([4, 1, 3])])
     size::Int64 = 3
-    ptc = Vector{Int64}([1, 2, 2, 3])
+    ptc = [1, 2, 2, 3]
     overlap_map = Read_Mesh.create_overlap_map(distribution, ptc, size)
 
     @test overlap_map[1][2]["Responder"] == overlap_map[2][1]["Controller"]

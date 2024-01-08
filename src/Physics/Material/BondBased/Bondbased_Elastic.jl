@@ -4,6 +4,7 @@
 
 module Bondbased_Elastic
 include("../material_basis.jl")
+using TimerOutputs
 export init_material_model
 export fe_support
 export init_material_model

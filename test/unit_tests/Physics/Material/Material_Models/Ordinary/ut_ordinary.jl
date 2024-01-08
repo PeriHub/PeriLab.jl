@@ -82,6 +82,5 @@ nlist[2][1] = 2
     @test theta[1] == 0.0
     @test theta[2] == 3.0
     theta = Ordinary.compute_dilatation(Int64[], view(nneighbors, :), view(nlist, :), view(undeformed_bond, :), view(deformed_bond, :), view(bond_damage, :), view(volume, :), view(weighted_volume, :), view(omega, :), view(theta, :))
-    @test theta[1] == 0.0
-    @test theta[2] == 3.0
+    @test theta == []
 end

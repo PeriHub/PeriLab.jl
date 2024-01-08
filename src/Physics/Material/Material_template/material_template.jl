@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Material_template
+using TimerOutputs
 export fe_support
 export init_material_model
 export material_name
