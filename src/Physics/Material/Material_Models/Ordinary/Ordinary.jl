@@ -45,7 +45,7 @@ Calculate the dilatation for each node.
 # Returns
 - `theta::Vector{Float64}`: Dilatation.
 """
-function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, omega::SubArray, theta::SubArray)
+function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::Vector{Float64}, omega::SubArray)
     # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
     if length(nodes) == 0
         return Float64[]
