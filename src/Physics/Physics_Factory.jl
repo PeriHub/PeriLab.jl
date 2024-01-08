@@ -10,12 +10,16 @@ include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
+# in future FEM will be outside of the Physics_Factory
+include("../FEM/FEM_Factory.jl")
 
 using .Additive
 using .Damage
 using .Material
 using .Pre_calculation
 using .Thermal
+# in future FEM will be outside of the Physics_Factory
+using .FEM
 using TimerOutputs
 export compute_models
 export init_models
@@ -42,13 +46,27 @@ Computes the physics models
 - `datamanager`: The datamanager
 """
 function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
-
+    fem_option = datamanager.fem_active()
+    if fem_option
+        fe_nodes = datamanager.get_field("FE Nodes")
+    end
+    if options["Additive Models"]
+        for block in eachindex(block_nodes)
+            if datamanager.check_property(block, "Additive Model")
+                @timeit to "compute_additive_model" datamanager = Additive.compute_additive(datamanager, block_nodes[block], datamanager.get_properties(block, "Additive Model"), time, dt)
+            end
+        end
+    end
     active = datamanager.get_field("Active")
     if options["Damage Models"]
         #tbd damage specific pre_calculation-> in damage template
         for block in eachindex(block_nodes)
-            nodes = @view block_nodes[block][:]
-            active_nodes = @view nodes[find_active(active[nodes])][:]
+            nodes = block_nodes[block]
+
+            active_nodes = nodes[find_active(active[nodes])]
+            if fem_option
+                active_nodes = nodes[find_active(.~fe_nodes[active_nodes])]
+            end
             if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
                 datamanager = Damage.set_bond_damage(datamanager, active_nodes)
                 @timeit to "damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, active_nodes, block, synchronise_field, time, dt, to)
@@ -57,16 +75,22 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         end
     end
     update_list = datamanager.get_field("Update List")
-    # nodes::Vector{Int64} = []
-    # active_nodes::Vector{Int64} = []
-    # update_nodes::Vector{Int64} = []
-
+    nodes::Vector{Int64} = []
+    active_nodes::Vector{Int64} = []
+    update_nodes::Vector{Int64} = []
+    if fem_option
+        nelements = datamanager.get_num_elements()
+        # in future the FE analysis can be put into the block loop. Right now it is outside the block.
+        datamanager = FEM.eval(datamanager, Vector{Int64}(1:nelements), datamanager.get_properties(1, "FEM"), time, dt)
+    end
     for block in eachindex(block_nodes)
-        nodes = @view block_nodes[block][:]
+        nodes = block_nodes[block]
         active_index = find_active(active[nodes])
-        active_nodes = @view nodes[active_index][:]
+        active_nodes = nodes[active_index]
         update_nodes = view(nodes, find_updatable(active_index, update_list))
-
+        if fem_option
+            update_nodes = nodes[find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
+        end
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt, to)
 
         if options["Thermal Models"]
@@ -88,6 +112,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
                 @timeit to "compute_additive_model" datamanager = Additive.compute_additive(datamanager, block_nodes[block], datamanager.get_properties(block, "Additive Model"), time, dt)
             end
         end
+
     end
 
     return datamanager
@@ -256,7 +281,6 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heat_capacity = set_heat_capacity(params, allBlockNodes, heat_capacity) # includes the neighbors
     end
-
 
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end

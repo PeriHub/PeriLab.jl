@@ -191,7 +191,7 @@ function eval_bc(field_values::Union{SubArray,Vector{Float64},Vector{Int64}}, bc
     if dof > 2
         global z = coordinates[:, 3]
     else
-        global z = zeros(typeof(x[1]), length(x))
+        global z = zeros(eltype(x), length(x))
     end
 
     value = eval(bc_value)

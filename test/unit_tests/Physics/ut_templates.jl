@@ -30,7 +30,9 @@ end
 end
 
 @testset "ut_material_template" begin
+    test_Data_manager = Data_manager
     @test Material_template.material_name() == "Material Template"
+    @test Material_template.init_material_model(test_Data_manager) == test_Data_manager
     @test Material_template.compute_forces(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0, to) == test_Data_manager
 end
 

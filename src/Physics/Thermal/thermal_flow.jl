@@ -107,18 +107,9 @@ function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int
       H += tempState .* undeformed_bond[iID][jID, 1:dof]
     end
     nablaT = Kinv[iID, :, :] * H
-    """
-if (MATRICES::vectorNorm(angles, 3)!=0){  
-  MATRICES::tensorRotation(angles,lambda,true,rotatedLambda);
-  for (int i=0 ; i<3 ; ++i) {
-    q[i] = 0.0;
-    for (int j=0 ; j<3 ; ++j) {
-      q[i] += rotatedLambda[3*i + j] * nablaT[j];
-    }
-  }
-}"""
+
     q = lambda * nablaT
-    for (jID, neighborID) in enumerate(nlist[iID])
+    for jID in eachindex(nlist[iID])
       temp = Kinv[iID, :, :] * undeformed_bond[iID][jID, 1:dof]
       bond_heat_flow[iID][jID] = dot(temp, q)
     end

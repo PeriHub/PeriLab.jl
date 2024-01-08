@@ -15,6 +15,7 @@ using .Bond_Deformation_Gradient
 using .Bond_Shape_Tensor
 using .Deformation_Gradient
 using .Shape_Tensor
+using TimerOutputs
 export compute
 export init_pre_calculation
 

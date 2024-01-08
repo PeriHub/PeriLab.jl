@@ -12,6 +12,20 @@ using Test
 using Random
 
 
+@testset "ut_get_element_degree" begin
+    @test isnothing(get_element_degree(Dict()))
+    @test isnothing(get_element_degree(Dict("Degree" => "ABC")))
+    @test isnothing(get_element_degree(Dict("Degree" => "1")))
+    @test get_element_degree(Dict("Degree" => 1)) == 1
+    @test get_element_degree(Dict("Degree" => [1, 2, 3])) == [1, 2, 3]
+    @test get_element_degree(Dict("Degree" => [1, 2, 3, 5])) == [1, 2, 3, 5]
+end
+
+@testset "ut_get_element_type" begin
+    @test isnothing(get_element_type(Dict()))
+    @test get_element_type(Dict("Element Type" => "ABC")) == "ABC"
+    @test get_element_type(Dict("Element Type" => 12)) == "12"
+end
 
 @testset "ut_get_output_type" begin
     @test get_output_type(Dict("Output1" => Dict()), "Output1") == "Exodus"
@@ -129,6 +143,15 @@ end
     @test validate_yaml(params) == params["PeriLab"]
 end
 
+@testset "ut_get_external_topology_name" begin
+    params = Dict("Discretization" => Dict())
+    @test isnothing(get_external_topology_name(params))
+    params = Dict("Discretization" => Dict("Input External Topology" => Dict()))
+    @test isnothing(get_external_topology_name(params))
+    name = randstring(12)
+    params = Dict("Discretization" => Dict("Input External Topology" => Dict("File" => name)))
+    @test get_external_topology_name(params) == name
+end
 @testset "ut_get_mesh_name" begin
     params = Dict("Discretization" => Dict())
     @test get_mesh_name(params) === nothing
