@@ -99,6 +99,23 @@ Returns the node sets from the parameters
 """
 function get_node_sets(params::Dict, path::String)
     nsets = Dict{String,Any}()
+    type = get(params["Discretization"], "Type", "Text File")
+    if type == "Exodus"
+        exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
+        nset_names = read_names(exo, NodeSet)
+        conn = collect_element_connectivities(exo)
+        nset_nodes = []
+        for entry in nset_names
+            nset_nodes = Vector{Int64}(read_set(exo, NodeSet, entry).nodes)
+            nsets[entry] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+            # end
+        end
+        conn = nothing
+        nset_nodes = nothing
+        @info "Found $(length(nsets)) node sets"
+        close(exo)
+        return nsets
+    end
     if !haskey(params["Discretization"], "Node Sets")
         return nsets
     end

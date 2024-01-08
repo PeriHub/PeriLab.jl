@@ -7,7 +7,7 @@ export compute_thermal_model
 export thermal_model_name
 
 """
-  thermal_model_name()
+    thermal_model_name()
 
 Gives the flow name. It is needed for comparison with the yaml input deck.
 
@@ -27,7 +27,7 @@ function thermal_model_name()
 end
 
 """
-  compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
 
 Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
@@ -46,15 +46,19 @@ Example:
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
   dof = datamanager.get_dof()
   volume = datamanager.get_field("Volume")
-  kappa = thermal_parameter["Kappa"]
+  kappa = thermal_parameter["Heat Transfer Coefficient"]
   Tenv = thermal_parameter["Environmental Temperature"]
   heat_flow = datamanager.get_field("Heat Flow", "NP1")
   temperature = datamanager.get_field("Temperature", "NP1")
   surface_nodes = datamanager.get_field("Surface_Nodes")
+  specific_volume = datamanager.get_field("Specific Volume", "NP1")
+  bond_damage = datamanager.get_field("Bond Damage", "NP1")
+  horizon = datamanager.get_field("Horizon")
+  nlist = datamanager.get_nlist()
   dx = 1.0
   area = 1.0
 
-
+  specific_volume = calculate_specific_volume(nodes, nlist, volume, bond_damage, specific_volume, dof, horizon)
   for iID in nodes
 
     if dof == 2
@@ -63,8 +67,8 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
       dx = volume[iID]^(1 / 3)
     end
 
-    if surface_nodes[iID]
-      heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx * area
+    if surface_nodes[iID] && specific_volume[iID] > 1.0 # could be more as sometimes specific_volume is sometimes weird
+      heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx * specific_volume[iID]
     end
   end
 
@@ -72,9 +76,9 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
 end
 
 """
-  get_surface_nodes(iID::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
+  calculate_specific_volume(iID::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
 
-Returns the surface nodes.
+Calculates the specific volume.
 
 # Arguments
 - `iID::Int64`: The index of the node.
@@ -83,71 +87,37 @@ Returns the surface nodes.
 - `volume::SubArray`: The volume of the nodes.
 - `surface_nodes::Union{SubArray,Vector{Bool}}`: The surface nodes.
 # Returns
-- `surface_nodes::Union{SubArray,Vector{Bool}}`: The surface nodes.
+- `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function get_surface_nodes(iID::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
-  compare_neighbor = 0
-  neighbor_volume = 0.0
-  right, left, front, back, above, below = false, false, false, false, false, false, false, false
+function calculate_specific_volume(nodes, nlist, volume, bond_damage, specific_volume, dof, horizon)
 
-  for jID in 1:nneighbors[iID]
-    if bond_damage[iID][jID] == 0.0
-      continue
+  for iID in nodes
+    neighbor_volume = 0.0
+    for (jID, neighborID) in enumerate(nlist[iID])
+      if bond_damage[iID][jID] == 0.0
+        continue
+      end
+      neighbor_volume += volume[neighborID]
     end
-
-    if equal_discretized
-      if !right && coordinates[iID, 1] > coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
-        right = true
-        compare_neighbor += 1
-      end
-      if !left && coordinates[iID, 1] < coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
-        left = true
-        compare_neighbor += 1
-      end
-      if !front && coordinates[iID, 2] > coordinates[nlist[iID][jID], 2] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
-        front = true
-        compare_neighbor += 1
-      end
-      if !back && coordinates[iID, 2] < coordinates[nlist[iID][jID], 2] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 3] == coordinates[nlist[iID][jID], 3]
-        back = true
-        compare_neighbor += 1
-      end
-      if !above && coordinates[iID, 3] > coordinates[nlist[iID][jID], 3] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2]
-        above = true
-        compare_neighbor += 1
-      end
-      if !below && coordinates[iID, 3] < coordinates[nlist[iID][jID], 3] && coordinates[iID, 1] == coordinates[nlist[iID][jID], 1] && coordinates[iID, 2] == coordinates[nlist[iID][jID], 2]
-        below = true
-        compare_neighbor += 1
-      end
-
-    else
-      neighbor_volume += volume[nlist[iID][jID]]
-    end
-
-  end
-
-  if equal_discretized
-
-    if dof == 2 && compare_neighbor != 4
-      area = 4 - compare_neighbor
-    elseif dof == 3 && compare_neighbor != 6
-      area = 6 - compare_neighbor
-    end
-
-    specific_volume = compare_neighbor
-
-  else
-
-    specific_volume = neighbor_volume / dx
-
     if dof == 2
-      area = specific_volume / (1 / 4)
+      horizon_volume = pi * horizon[iID]^2
     elseif dof == 3
-      area = specific_volume / (1 / 6)
+      horizon_volume = 4 / 3 * pi * horizon[iID]^3
     end
-
+    if neighbor_volume != 0.0
+      specific_volume[iID] = horizon_volume / neighbor_volume
+    end
   end
-  return area
+
+  if dof == 2
+    scaling_factor = 2.0 / maximum(specific_volume)
+  elseif dof == 3
+    scaling_factor = 4.0 / maximum(specific_volume)
+  end
+  if !isinf(scaling_factor)
+    specific_volume .*= scaling_factor
+  end
+
+  return specific_volume
 end
 end

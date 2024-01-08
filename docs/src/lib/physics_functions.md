@@ -20,7 +20,7 @@ init_thermal_model_fields
 init_additive_model_fields
 init_pre_calculation
 read_properties
-set_heatcapacity
+set_heat_capacity
 ```
 
 ```@meta
@@ -43,7 +43,9 @@ Set_modules.Damage_template.compute_damage_pre_calculation
 damage_index
 set_bond_damage
 init_interface_crit_values
+init_aniso_crit_values
 Set_modules.Critical_Energy_Model.get_quad_horizon
+Set_modules.Critical_Energy_Model.calculate_energy_components
 ```
 
 ```@meta
@@ -65,6 +67,7 @@ voigt_to_matrix
 check_symmetry
 get_symmmetry
 Set_modules.PD_Solid_Elastic.elastic
+Set_modules.PD_Solid_Elastic.calculate_symmetry_params
 Set_modules.PD_Solid_Elastic.Ordinary.compute_weighted_volume
 Set_modules.PD_Solid_Elastic.Ordinary.compute_dilatation
 Set_modules.Correspondence.zero_energy_mode_compensation
@@ -88,7 +91,7 @@ CurrentModule = PeriLab.Solver.Physics.Thermal
 Set_modules.Thermal_template.thermal_model_name
 Set_modules.Thermal_template.compute_thermal_model
 distribute_heat_flows
-Thermal.Set_modules.Heat_transfer.get_surface_nodes
+Thermal.Set_modules.Heat_transfer.calculate_specific_volume
 Thermal.Set_modules.Thermal_expansion.thermal_deformation
 Thermal.Set_modules.Thermal_Flow.compute_heat_flow_state_correspondence
 Thermal.Set_modules.Thermal_Flow.compute_heat_flow_state_bond_based

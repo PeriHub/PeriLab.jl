@@ -7,7 +7,7 @@ export compute_additive
 export additive_name
 
 """
-  additive_name()
+    additive_name()
 
 Gives the additive name. It is needed for comparison with the yaml input deck.
 
@@ -23,11 +23,11 @@ println(additive_name())
 ```
 """
 function additive_name()
-  return "Additive Template"
+    return "Additive Template"
 end
 
 """
-  compute_additive(datamanager, nodes, additive_parameter, time, dt)
+    compute_additive(datamanager, nodes, additive_parameter, time, dt)
 
 Calculates additive model of the material. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -38,18 +38,18 @@ Calculates additive model of the material. This template has to be copied, the f
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-    - - `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_manager`: Datamanager.
 Example:
 ```julia
   ```
 """
 function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float64, dt::Float64)
-  @info "Please write a additive name in additive_name()."
-  @info "You can call your routine within the yaml file."
-  @info "Fill the compute_additive(datamanager, nodes, additive_parameter, time, dt) function."
-  @info "The datamanager and additive_parameter holds all you need to solve your problem on additive level."
-  @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-  return datamanager
+    @info "Please write a additive name in additive_name()."
+    @info "You can call your routine within the yaml file."
+    @info "Fill the compute_additive(datamanager, nodes, additive_parameter, time, dt) function."
+    @info "The datamanager and additive_parameter holds all you need to solve your problem on additive level."
+    @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+    return datamanager
 end
 
 end

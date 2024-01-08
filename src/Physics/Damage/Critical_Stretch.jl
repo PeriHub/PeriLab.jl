@@ -5,13 +5,12 @@
 module Critical_stretch
 include("../Pre_calculation/Pre_Calculation_Factory.jl")
 using .Pre_calculation
-using TimerOutputs
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
 
 """
-   damage_name()
+    damage_name()
 
 Gives the damage name. It is needed for comparison with the yaml input deck.
 
@@ -31,7 +30,7 @@ function damage_name()
 end
 
 """
-   compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
+    compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
 
 Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 
@@ -58,22 +57,16 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     nneighbors = datamanager.get_field("Number of Neighbors")
     block_ids = datamanager.get_field("Block_Id")
     cricital_stretch = damage_parameter["Critical Value"]
-    tension::Bool = true
-    if haskey(damage_parameter, "Only Tension")
-        tension = damage_parameter["Only Tension"]
-    end
-    interBlockDamage::Bool = false
-    if haskey(damage_parameter, "Interblock Damage")
-        interBlockDamage = damage_parameter["Interblock Damage"]
-        if interBlockDamage
-            inter_critical_stretch::Array{Float64,3} = datamanager.get_crit_values_matrix()
-        end
+    tension::Bool = get(damage_parameter, "Only Tension", true)
+    inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
+    if inter_block_damage
+        inter_critical_stretch::Array{Float64,3} = datamanager.get_crit_values_matrix()
     end
     for iID in nodes
         for jID in nneighbors[iID]
             stretch = (deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end]) / undeformed_bond[iID][jID, end]
             crit_stretch = cricital_stretch
-            if interBlockDamage
+            if inter_block_damage
                 crit_stretch = inter_critical_stretch[block_ids[iID], block_ids[nlist[iID][jID]], block]
             end
             if !tension
@@ -89,7 +82,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-   compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+    compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
 Compute the pre calculation for the damage.
 

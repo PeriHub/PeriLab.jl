@@ -6,6 +6,7 @@ module Material
 include("../../Core/Module_inclusion/set_Modules.jl")
 include("material_basis.jl")
 using .Set_modules
+using TimerOutputs
 
 global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
 Set_modules.include_files(module_list)
@@ -33,6 +34,7 @@ function init_material_model(datamanager::Module, block::Int64)
         @error "Block " * string(block) * " has no material model defined."
     end
     material_models = split(model_param["Material Model"], "+")
+    material_models = map(r -> strip(r), material_models)
 
     for material_model in material_models
         datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager,))
@@ -45,7 +47,7 @@ function init_material_model(datamanager::Module, block::Int64)
 end
 
 """
-    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
 Compute the forces.
 
@@ -58,12 +60,12 @@ Compute the forces.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
     specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")
     material_models = split(model_param["Material Model"], "+")
 
     for material_model in material_models
-        datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param, time, dt))
+        datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param, time, dt, to))
         if isnothing(datamanager)
             @error "No material of name " * material_model * " exists."
         end

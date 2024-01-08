@@ -491,3 +491,18 @@ function find_and_set_core_value_avg(comm::MPI.Comm, value::Union{Float64,Int64}
     nnodes = MPI.Allreduce!([nnodes], MPI.SUM, comm)[1]
     return MPI.Allreduce!([value], MPI.SUM, comm)[1] / nnodes
 end
+
+"""
+    gather_values(comm::MPI.Comm, value::Any)
+
+Gather values
+
+# Arguments
+- `comm::MPI.Comm`: The MPI communicator
+- `value::Any`: The value
+# Returns
+- `recv_msg::Any`: The received message
+"""
+function gather_values(comm::MPI.Comm, value::Any)
+    return MPI.gather(value, comm; root=0)
+end

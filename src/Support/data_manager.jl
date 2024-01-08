@@ -15,6 +15,7 @@ export fem_active
 export get_all_field_keys
 export get_block_list
 export get_crit_values_matrix
+export get_aniso_crit_values
 export get_comm
 export get_field
 export get_field_type
@@ -31,10 +32,12 @@ export get_property
 export get_rank
 export get_num_responder
 export get_max_rank
+export get_cancel
 export init_property
 export rotation_data
 export set_block_list
 export set_crit_values_matrix
+export set_aniso_crit_values
 export set_inverse_nlist
 export set_fem
 export set_glob_to_loc
@@ -46,6 +49,7 @@ export set_physics_options
 export set_property
 export set_rank
 export set_max_rank
+export set_cancel
 export switch_NP1_to_N
 export synch_manager
 ##########################
@@ -61,6 +65,7 @@ global fem_option = false
 global block_list::Vector{Int64} = []
 global distribution::Vector{Int64}
 global crit_values_matrix::Array{Float64,3}
+global aniso_crit_values::Dict{Int64,Vector{Float64}}
 global properties::Dict{Int64,Dict{String,Any}} = Dict()
 global glob_to_loc::Dict{Int64,Int64}
 global fields::Dict{DataType,Dict{String,Any}} = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
@@ -77,6 +82,9 @@ global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => tru
     "Bond Associated Deformation Gradient" => false)
 global rank::Int64 = 0
 global commMPi::Any
+global cancel::Bool = false
+global max_rank::Int64 = 0
+##########################
 
 """
     get_comm()
@@ -126,7 +134,7 @@ function check_property(block_id::Int64, property::String)
 end
 
 """
-   create_bond_field(name::String, type::Type, dof::Int64)
+    create_bond_field(name::String, type::Type, dof::Int64)
 
 Creates a bond field with the given name, data type, and degree of freedom.
 
@@ -156,7 +164,7 @@ function create_bond_field(name::String, type::Type, VectorOrArray::String, dof:
 end
 
 """
-   create_constant_bond_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0))
+    create_constant_bond_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0))
 
 Creates a constant bond field with the given name, data type, and degree of freedom.
 
@@ -299,7 +307,7 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
     return get_field(name)
 end
 """
-   create_node_field(name::String, type::Type, dof::Int64)
+    create_node_field(name::String, type::Type, dof::Int64)
 
 Creates a node field with the given name, data type, and degree of freedom.
 
@@ -335,7 +343,7 @@ function fem_active()
 end
 
 """
-   get_all_field_keys()
+    get_all_field_keys()
 
 Returns a list of all field keys.
 """
@@ -345,7 +353,7 @@ function get_all_field_keys()
 end
 
 """
-   get_block_list()
+    get_block_list()
 
 Returns a list of all block IDs.
 """
@@ -362,6 +370,16 @@ Retrieves the critical values matrix.
 function get_crit_values_matrix()
     global crit_values_matrix
     return crit_values_matrix
+end
+
+"""
+    get_aniso_crit_values()
+
+Retrieves the critical values matrix.
+"""
+function get_aniso_crit_values()
+    global aniso_crit_values
+    return aniso_crit_values
 end
 
 """
@@ -383,7 +401,7 @@ function get_dof()
 end
 
 """
-   get_field(name::String, time::String)
+    get_field(name::String, time::String)
 
 Returns the field with the given name and time.
 
@@ -403,7 +421,7 @@ function get_field(name::String, time::String)
 end
 
 """
-   get_field(name::String)
+    get_field(name::String)
 
 Returns the field with the given name.
 
@@ -487,20 +505,6 @@ function get_local_nodes(global_nodes)
 end
 
 """
-    get_material_type(key)
-
-Get the material type.
-
-# Arguments
-- `key` (string): The key of the material type.
-# Returns
-- `get_material_type` (string): returns the material type
-"""
-function get_material_type(key)
-    return material_type[key]
-end
-
-"""
     get_nlist()
 
 Get the neighborhood list.
@@ -543,7 +547,7 @@ function get_NP1_to_N_Dict()
 end
 
 """
-   get_nnsets()
+    get_nnsets()
 
 Get the number of node sets.
 
@@ -729,7 +733,21 @@ This function returns the maximal rank of MPI the `max_rank`.
 rank = get_max_rank()
 """
 function get_max_rank()
+    global max_rank
     return max_rank
+end
+
+"""
+    get_cancel()
+
+This function returns the `cancel` flag.
+
+# Returns
+- `cancel`::Bool: The value of the `cancel` variable.
+"""
+function get_cancel()
+    global cancel
+    return cancel
 end
 
 """
@@ -831,6 +849,18 @@ function set_crit_values_matrix(crit_values::Array{Float64,3})
 end
 
 """
+set_aniso_crit_values(crit_values::Dict{Int64,Any})
+
+Sets the anisotropic critical values globally.
+
+# Arguments
+- `crit_values::Dict{Int64,Any}`: The critical values.
+"""
+function set_aniso_crit_values(crit_values::Dict{Int64,Any})
+    global aniso_crit_values = crit_values
+end
+
+"""
     set_distribution(values::Vector{Int64})
 
 Sets the distribution globally.
@@ -904,23 +934,6 @@ Sets the inverse nlist globally.
 """
 function set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
     global inverse_nlist = inv_nlist
-end
-
-"""
-    set_material_type(key::Union{Int64,AbstractString,String}, value::Union{Int64,AbstractString,String,Float64})
-
-Sets the material type globally.
-
-# Arguments
-- `key::Union{Int64,AbstractString,String}`: The key of the material type.
-- `value::Union{Int64,AbstractString,String,Float64}`: The value of the material type.
-"""
-function set_material_type(key::Union{Int64,AbstractString,String}, value::Union{Int64,AbstractString,String,Float64})
-    if key in keys(material_type)
-        global material_type[key] = value
-    else
-        @warn "Type " * key * " is not defined"
-    end
 end
 
 """
@@ -1133,6 +1146,18 @@ function set_max_rank(value::Int64)
 end
 
 """
+    set_cancel(value::Int64)
+
+Sets the cancel flag.
+
+# Arguments
+- `value::Bool`: The cancel flag.
+"""
+function set_cancel(value::Bool)
+    global cancel = value
+end
+
+"""
     set_synch(name, download_from_cores, upload_to_cores)
 
 Sets the synchronization dictionary globally.
@@ -1153,47 +1178,6 @@ function set_synch(name, download_from_cores, upload_to_cores)
         fields_to_synch[name*"NP1"] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, "dof" => length(field[1, :]))
     end
 
-end
-
-"""
-    set_fields_equal(name::String, NP1::String)
-
-Sets the fields equal.
-
-# Arguments
-- `name::String`: The name of the field.
-- `NP1::String`: The name of the field.
-"""
-function set_fields_equal(name::String, NP1::String)
-    set_fields_equal(name * NP1)
-end
-
-"""
-    set_fields_equal(NP1::String)
-
-Sets the fields equal.
-
-# Arguments
-- `NP1::String`: The name of the field.
-"""
-function set_fields_equal(NP1::String)
-    global field_array_type
-
-    NP1_to_N = get_NP1_to_N_Dict()
-    if field_array_type[NP1]["Type"] == "Matrix"
-        field_array_type[NP1]["Type"] = "Vector"
-        field_NP1 = get_field(NP1)
-        field_array_type[NP1]["Type"] = "Matrix"
-        N = NP1_to_N[NP1]
-        field_array_type[N]["Type"] = "Vector"
-        field_N = get_field(N)
-        field_array_type[N]["Type"] = "Matrix"
-    else
-        field_NP1 = get_field(NP1)
-        N = NP1_to_N[NP1]
-        field_N = get_field(N)
-    end
-    field_N[:] = field_NP1[:]
 end
 
 """
@@ -1220,16 +1204,19 @@ function switch_NP1_to_N()
             N = NP1_to_N[NP1]
             field_N = get_field(N)
         end
-        field_N[:] = field_NP1[:]
-        if size(field_NP1[1]) == ()
-            field_NP1[:] = fill(field_types[NP1](0), size(field_NP1))
-        else
+
+        if size(field_NP1[1]) == () # vector
+
+            copyto!(field_N, field_NP1)
+            fill!(field_NP1, field_types[NP1](0))
+        else # matrix
             value = 0
-            if "Bond DamageNP1" == NP1
-                value = 1
-            end
             for fieldID in eachindex(field_NP1)
-                field_NP1[fieldID] = fill(field_types[NP1](value), size(field_NP1[fieldID]))
+                copyto!(field_N[fieldID], field_NP1[fieldID])
+                if "Bond DamageNP1" != NP1
+                    # value = 1
+                    fill!(field_NP1[fieldID], field_types[NP1](value))
+                end
             end
         end
     end

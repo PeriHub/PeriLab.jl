@@ -19,6 +19,7 @@ get_file_size
 clearNP1
 get_results_mapping
 initialize_data
+init_orientations
 init_write_results
 read_input_file
 write_results
@@ -71,7 +72,7 @@ CurrentModule = PeriLab.IO.Read_Mesh.Geometry
 ```
 ## Geometry
 ```@docs
-undeformed_bond
+bond_geometry
 shape_tensor
 deformation_gradient
 strain
@@ -107,6 +108,7 @@ find_and_set_core_value_min
 find_and_set_core_value_max
 find_and_set_core_value_sum
 find_and_set_core_value_avg
+gather_values
 ```
 
 ```@meta
@@ -141,6 +143,7 @@ CurrentModule = PeriLab.Solver
 ```@docs
 find_indices
 find_active
+find_updatable
 get_header
 find_files_with_ending
 check_inf_or_nan
@@ -169,9 +172,11 @@ CurrentModule = PeriLab.IO
 ```
 ## parameter_handling
 ```@docs
-check_key_elements
+validate_yaml
+validate_structure_recursive
+get_all_keys
 get_density
-get_heatcapacity
+get_heat_capacity
 get_horizon
 get_values
 get_number_of_blocks
@@ -188,6 +193,7 @@ check_for_duplicates
 get_output_filenames
 get_output_type
 get_flush_file
+get_write_after_damage
 get_output_fieldnames
 get_outputs
 get_output_frequency
@@ -199,6 +205,7 @@ get_final_time
 get_safety_factor
 get_fixed_dt
 get_numerical_damping
+get_max_damage
 get_solver_options
 ```
 

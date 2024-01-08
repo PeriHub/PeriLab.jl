@@ -5,6 +5,7 @@
 module Correspondence
 using LinearAlgebra
 using TensorOperations
+using TimerOutputs
 include("Correspondence_Elastic.jl")
 include("./Zero_Energy_Control/global_control.jl")
 include("../material_basis.jl")
@@ -19,7 +20,7 @@ export material_name
 export compute_forces
 
 """
-  init_material_model(datamanager::Module)
+    init_material_model(datamanager::Module)
 
 Initializes the material model.
 
@@ -35,7 +36,6 @@ function init_material_model(datamanager::Module)
   # global angles
 
   dof = datamanager.get_dof()
-  nnodes = datamanager.get_nnodes()
   datamanager.create_node_field("Strain", Float64, "Matrix", dof)
   datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
   datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
@@ -44,7 +44,7 @@ function init_material_model(datamanager::Module)
 end
 
 """
-  material_name()
+    material_name()
 
 Gives the material name. It is needed for comparison with the yaml input deck.
 
@@ -64,7 +64,7 @@ function material_name()
 end
 
 """
-  compute_forces(datamanager, nodes, material_parameter, time, dt)
+    compute_forces(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -80,7 +80,7 @@ Example:
 ```julia
 ```
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
   # global dof
   # global rotation
   # global angles
@@ -129,7 +129,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-  zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 
@@ -155,8 +155,22 @@ function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArra
   return datamanager
 end
 
+"""
+    calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stress_NP1::SubArray, bond_force::SubArray)
 
+Calculate bond forces for specified nodes based on deformation gradients.
 
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `deformation_gradient::SubArray`: Deformation gradient.
+- `undeformed_bond::SubArray`: Undeformed bond geometry.
+- `bond_damage::SubArray`: Bond damage.
+- `inverse_shape_tensor::SubArray`: Inverse shape tensor.
+- `stress_NP1::SubArray`: Stress at time step n+1.
+- `bond_force::SubArray`: Bond force.
+# Returns
+- `bond_force::SubArray`: Bond force.
+"""
 function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stress_NP1::SubArray, bond_force::SubArray)
   for iID in nodes
     jacobian = det(deformation_gradient[iID, :, :])
@@ -175,7 +189,7 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
 end
 
 """
-  rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
+    rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
 
 Rotates the matrix.
 
@@ -196,7 +210,7 @@ function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{
 end
 
 """
-  rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
+    rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
 
 Rotates the second order tensor.
 

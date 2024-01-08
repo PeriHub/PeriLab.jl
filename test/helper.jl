@@ -14,7 +14,7 @@ export push_test!
 
 function run_perilab(filename, cores, compare, folder_name="")
     main_path = dirname(@__FILE__)[1:end-4] * "src/main.jl"
-    command = `$(Base.julia_cmd()) $main_path -s $(filename).yaml`
+    command = `$(Base.julia_cmd()) --math-mode=fast $main_path -s $(filename).yaml`
     if cores == 1
         exit_code = run(command).exitcode
         @test exit_code == 0
@@ -32,7 +32,6 @@ function run_perilab(filename, cores, compare, folder_name="")
         if same
             rm("exodiff.log")
             rm(filename * ".e")
-            # rm(filename * ".log")
         else
             mv("exodiff.log", filename * "_exodiff.log", force=true)
         end

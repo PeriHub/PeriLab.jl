@@ -11,7 +11,7 @@ PeriLab:
   Physics:
     Material Models:
       Test:
-        Material Model: "PD Solid Elastic"    
+        Material Model: "PD Solid Elastic"
         Symmetry: "isotropic plane stress"
         Young's Modulus: 7.0e+10
         Poisson's Ratio: 0.3
@@ -19,7 +19,7 @@ PeriLab:
     Thermal Models:
       Thermal test:
         Thermal Model: "Thermal Expansion"
-        Heat expansion: 2.5e-2
+        Thermal Expansion Coefficient: 2.5e-2
   Blocks:
     block_1:
       Block Names: "block_1"

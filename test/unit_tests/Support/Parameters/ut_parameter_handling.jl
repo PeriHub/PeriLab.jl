@@ -99,25 +99,48 @@ end
     @test !haskey(nsets, "Nset_2")
     rm(filename)
 end
-@testset "ut_check_key_elements" begin
-    params = Dict()
-    @info "Error messages are tested and therefore okay."
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict(), "Blocks" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict("Material Models" => Dict()), "Blocks" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Blocks" => Dict())
-    @test isnothing(check_key_elements(params))
-    params = Dict("Physics" => Dict(), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
-    @test isnothing(check_key_elements(params))
+@testset "ut_node_set" begin
 
-    params = Dict("Physics" => Dict("Material Models" => Dict()), "Discretization" => Dict(), "Blocks" => Dict(), "Solver" => Dict())
-    @test check_key_elements(params) == params
+    filename = "test.txt"
+    numbers = [11, 12, 13, 44, 125]
+    file = open(filename, "w")
+    println(file, "header: global_id")
+    for number in numbers
+        println(file, number)
+    end
+    close(file)
+
+    params = Dict("Discretization" => Dict("Type" => "Text File"))
+    computes = Dict("Node Setas" => 12)
+    @test [] == get_node_set(computes, "", params)
+    computes = Dict("Node Set" => 12)
+    @test [12] == get_node_set(computes, "", params)
+    computes = Dict("Node Set" => filename)
+    @test [11, 12, 13, 44, 125] == get_node_set(computes, "", params)
+    computes = Dict("Node Set" => "13 44 125")
+    @test [13, 44, 125] == get_node_set(computes, "", params)
+    rm(filename)
+end
+@testset "ut_validate_yaml" begin
+    params = Dict{Any,Any}()
+    @info "Error messages are tested and therefore okay."
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()), "Discretization" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()), "Discretization" => Dict{Any,Any}(), "Blocks" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()), "Blocks" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}(), "Discretization" => Dict{Any,Any}(), "Blocks" => Dict{Any,Any}(), "Solver" => Dict{Any,Any}()))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}("mat_1" => Dict{Any,Any}("Material Model" => "a"))), "Discretization" => Dict{Any,Any}("Input Mesh File" => "test", "Type" => "test"), "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,Any}("Block Names" => "Block_1", "Density" => 1.0, "Horizon" => "1.0")), "Solver" => Dict{Any,Any}("Final Time" => 1.0, "Initial Time" => 0.0)))
+    @test isnothing(validate_yaml(params))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}("mat_1" => Dict{Any,Any}("Material Model" => "a"))), "Discretization" => Dict{Any,Any}("Input Mesh File" => "test", "Type" => "test"), "Blocks" => Dict{Any,Any}("Block_1" => Dict{Any,Any}("Block Names" => "Block_1", "Density" => 1.0, "Horizon" => 1.0)), "Solver" => Dict{Any,Any}("Final Time" => 1.0, "Initial Time" => 0.0)))
+    @test validate_yaml(params) == params["PeriLab"]
 end
 
 @testset "ut_get_external_topology_name" begin
@@ -300,7 +323,7 @@ function get_density(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Density")
 end
 
-function get_heatcapacity(params::Dict, block_id::Int64)
+function get_heat_capacity(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Specific Heat Capacity")
 end
 
@@ -324,17 +347,17 @@ end
     params = Dict("Blocks" => Dict())
     @test isnothing(get_horizon(params, 1))
     @test isnothing(get_density(params, 1))
-    @test isnothing(get_heatcapacity(params, 1))
+    @test isnothing(get_heat_capacity(params, 1))
     @test isnothing(get_values(params, 1, "Density"))
     @test isnothing(get_values(params, 1, "not there"))
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
     @test isnothing(get_horizon(params, 1))
     @test isnothing(get_density(params, 1))
-    @test isnothing(get_heatcapacity(params, 1))
+    @test isnothing(get_heat_capacity(params, 1))
     @test isnothing(get_values(params, 1, "Density"))
     @test isnothing(get_horizon(params, 2))
     @test isnothing(get_density(params, 2))
-    @test isnothing(get_heatcapacity(params, 2))
+    @test isnothing(get_heat_capacity(params, 2))
     @test isnothing(get_values(params, 2, "Density"))
     params = Dict("Blocks" => Dict("block_1" => Dict("Density" => 1, "Specific Heat Capacity" => 3), "block_2" => Dict("Density" => 12.3, "Horizon" => 2)))
     @test get_values(params, 1, "Density") == 1
@@ -354,9 +377,9 @@ end
     @test get_values(params, 2, "Horizon") == get_horizon(params, 2)
     @test get_values(params, 3, "Horizon") == get_horizon(params, 3)
 
-    @test get_values(params, 1, "Specific Heat Capacity") == get_heatcapacity(params, 1)
-    @test get_values(params, 2, "Specific Heat Capacity") == get_heatcapacity(params, 2)
-    @test get_values(params, 3, "Specific Heat Capacity") == get_heatcapacity(params, 3)
+    @test get_values(params, 1, "Specific Heat Capacity") == get_heat_capacity(params, 1)
+    @test get_values(params, 2, "Specific Heat Capacity") == get_heat_capacity(params, 2)
+    @test get_values(params, 3, "Specific Heat Capacity") == get_heat_capacity(params, 3)
 end
 
 @testset "ut_solver" begin
@@ -369,7 +392,7 @@ end
     @test get_numerical_damping(params) == params["Solver"]["Numerical Damping"]
     params = Dict("Solver" => Dict("Verlet" => Dict()))
     @test get_safety_factor(params) == 1
-    @test get_fixed_dt(params) == true
+    @test get_fixed_dt(params) == -1.0
     @test get_numerical_damping(params) == 0.0
     @test isnothing(get_initial_time(Dict("Solver" => Dict())))
     @test isnothing(get_final_time(Dict("Solver" => Dict())))
@@ -470,4 +493,9 @@ end
         "Shape Tensor" => false,
         "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
+end
+
+@testset "ut_check_for_duplicates" begin
+    check_for_duplicates(["a", "b", "c"])
+    check_for_duplicates(["a", "b", "c", "a"])
 end

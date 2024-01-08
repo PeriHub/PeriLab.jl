@@ -31,7 +31,7 @@ To run a simulation using PeriLab, you can use the `main()` function, which take
 
 For example:
 ```julia
-main("examples/Dogbone/Dogbone.yaml", dry_run=true, verbose=true, debug=true, silent=true)
+main("examples/Dogbone/Dogbone.yaml", output_dir="", dry_run=false, verbose=false, debug=false, silent=false)
 """
 
 module PeriLab
@@ -42,7 +42,6 @@ include("./Core/Solver/Solver_control.jl")
 include("./Physics/Material/Material_Factory.jl")
 # external packages
 using MPI
-using Pkg
 using TimerOutputs
 using Logging
 using ArgParse
@@ -55,6 +54,8 @@ import .IO
 import .Solver
 # end
 
+PERILAB_VERSION = "1.0.3"
+
 export main
 
 """
@@ -66,7 +67,7 @@ This function prints a banner containing details about the PeriLab application, 
 """
 function print_banner()
     println("""\e[]
-    \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: """ * string(Pkg.project().version) * """ 
+    \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: $PERILAB_VERSION
     \e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |
     \e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse 
     \e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |  Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de
@@ -95,6 +96,7 @@ None.
 ## Command-Line Arguments
 
 - `--dry_run`: If provided, it stores `true` in the dictionary.
+- `--output_dir` or `-o`: If provided, it stores `true` in the dictionary.
 - `--verbose` or `-v`: If provided, it stores `true` in the dictionary.
 - `--debug` or `-d`: If provided, it stores `true` in the dictionary.
 - `--silent` or `-s`: If provided, it stores `true` in the dictionary.
@@ -113,6 +115,10 @@ function parse_commandline()
         "--dry_run"
         help = "dry_run"
         action = :store_true
+        "--output_dir", "-o"
+        help = "output_dir"
+        arg_type = String
+        default = ""
         "--verbose", "-v"
         help = "verbose"
         action = :store_true
@@ -137,19 +143,32 @@ Entry point for the PeriLab application.
 
 This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 """
-function main()
+function main()::Cint
     parsed_args = parse_commandline()
-    if parsed_args["verbose"]
-        @info "Parsed args:"
-        for (arg, val) in parsed_args
-            @info "  $arg  =>  $val"
-        end
+    @debug "Parsed args:"
+    for (arg, val) in parsed_args
+        @debug "  $arg  =>  $val"
     end
-    main(parsed_args["filename"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
+    main(parsed_args["filename"], parsed_args["output_dir"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
+    return 0
 end
 
 """
-    main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
+    get_examples()
+
+Copy the examples folder to the current directory.
+"""
+function get_examples()
+    package_dir = dirname(dirname(pathof(PeriLab)))
+    examples_dir = joinpath(package_dir, "examples")
+    dest_folder = joinpath(pwd(), "examples")
+    if isdir(examples_dir)
+        cp(examples_dir, dest_folder)
+    end
+end
+
+"""
+    main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
 Entry point for the PeriLab application.
 
@@ -157,12 +176,13 @@ This function serves as the entry point for the PeriLab application. It calls th
 
 # Arguments
 - `filename::String`: The filename of the input file.
+- `output_dir::String`: The output directory.
 - `dry_run::Bool=false`: Whether to run in dry-run mode.
 - `verbose::Bool=false`: Whether to run in verbose mode.
 - `debug::Bool=false`: Whether to run in debug mode.
 - `silent::Bool=false`: Whether to run in silent mode.
 """
-function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
+function main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
     @timeit to "PeriLab" begin
 
@@ -173,10 +193,13 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
         size = MPI.Comm_size(comm)
 
         if !silent
-            @timeit to "Logging.init_logging" Logging_module.init_logging(filename, debug, rank, size)
+            Logging_module.init_logging(filename, debug, rank, size)
             if rank == 0
                 print_banner()
-                @info "\n PeriLab version: " * string(Pkg.project().version) * "\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------"
+                @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------"
+                if size > 1
+                    @info "MPI: Running on " * string(size) * " processes"
+                end
             end
         else
             Logging.disable_logging(Logging.Error)
@@ -187,23 +210,33 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
         ################################
         filename = juliaPath * filename
         filedirectory = dirname(filename)
+        if output_dir != ""
+            if !isdir(output_dir)
+                try
+                    mkpath(output_dir)
+                catch
+                    @error "Could not create output directory"
+                end
+            end
+        else
+            output_dir = filedirectory
+        end
         # @info filename
 
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
         @info "Solver init"
-        @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager)
+        @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
         if verbose
-            IO.show_block_summary(solver_options, params, datamanager)
+            IO.show_block_summary(solver_options, params, comm, datamanager)
         end
         @info "Init write results"
-        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, filedirectory, datamanager, solver_options["nsteps"])
+        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, output_dir, filedirectory, datamanager, solver_options["nsteps"], PERILAB_VERSION)
         Logging_module.set_result_files(result_files)
-
         if dry_run
             nsteps = solver_options["nsteps"]
             solver_options["nsteps"] = 10
             elapsed_time = @elapsed begin
-                @timeit to "Solver.solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+                @timeit to "Solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
             end
 
             @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
@@ -216,20 +249,16 @@ function main(filename::String, dry_run::Bool=false, verbose::Bool=false, debug:
 
         IO.close_result_files(result_files, outputs)
 
-        if dry_run
-            IO.delete_files(result_files)
-        end
-
         if size > 1 && rank == 0
-            IO.merge_exodus_files(result_files, filedirectory)
+            IO.merge_exodus_files(result_files, output_dir)
         end
         MPI.Barrier(comm)
-        if size > 1
-            # IO.delete_files(exos)
+        if size > 1 || dry_run
+            IO.delete_files(result_files, output_dir)
         end
         MPI.Finalize()
     end
-
+    @info "Finished simulation"
     if verbose
         @info to
     end

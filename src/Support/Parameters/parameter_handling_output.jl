@@ -24,17 +24,17 @@ function check_for_duplicates(filenames::Vector{String})
 end
 
 """
-    get_output_filenames(params::Dict, filedirectory::String)
+    get_output_filenames(params::Dict, output_dir::String)
 
 Gets the output filenames.
 
 # Arguments
 - `params::Dict`: The parameters
-- `filedirectory::String`: The file directory
+- `output_dir::String`: The file directory
 # Returns
 - `filenames::Vector{String}`: The filenames
 """
-function get_output_filenames(params::Dict, filedirectory::String)
+function get_output_filenames(params::Dict, output_dir::String)
     if haskey(params::Dict, "Outputs")
         filenames::Vector{String} = []
         outputs = params["Outputs"]
@@ -47,7 +47,7 @@ function get_output_filenames(params::Dict, filedirectory::String)
                 else
                     filename = filename * ".e"
                 end
-                push!(filenames, joinpath(filedirectory, filename))
+                push!(filenames, joinpath(output_dir, filename))
             end
         end
         check_for_duplicates(filenames)
@@ -89,11 +89,22 @@ Gets the flush file.
 - `flush_file::Bool`: The flush file
 """
 function get_flush_file(outputs::Dict, output::String)
-    if haskey(outputs[output], "Flush File")
-        return outputs[output]["Flush File"]
-    else
-        return false
-    end
+    get(outputs[output], "Flush File", true)
+end
+
+"""
+    get_write_after_damage(outputs::Dict, output::String)
+
+Get the write after damage.
+
+# Arguments
+- `outputs::Dict`: The outputs
+- `output::String`: The output
+# Returns
+- `write_after_damage::Bool`: The value
+"""
+function get_write_after_damage(outputs::Dict, output::String)
+    get(outputs[output], "Write After Damage", false)
 end
 
 """
@@ -150,6 +161,7 @@ Gets the outputs.
 """
 function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vector{String})
     num = 0
+    outputs = Dict()
     if haskey(params, "Outputs")
         outputs = params["Outputs"]
         for output in keys(outputs)
@@ -178,6 +190,7 @@ Gets the output frequency.
 """
 function get_output_frequency(params::Dict, nsteps::Int64)
 
+    freq = zeros(1)
     if haskey(params::Dict, "Outputs")
         outputs = params["Outputs"]
         freq = zeros(Int64, length(keys(outputs)))

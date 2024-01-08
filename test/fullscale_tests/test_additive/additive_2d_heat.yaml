@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Type: "Text File"
+    Input Mesh File: "test_mesh_2d.txt"
+  Physics:
+    Additive Models:
+      Test:
+        Additive Model: "Simple"
+        Print Temperature: 100
+    Thermal Models:
+      Thermal test:
+        Thermal Model: "Heat Transfer"
+        Type: "Bond based"
+        Thermal Expansion Coefficient: 0.22
+        Specific Heat Capacity: 1
+        Heat Transfer Coefficient: 2000.0
+        Environmental Temperature: 30
+        Thermal Conductivity: 0.12
+  Blocks:
+    block_1:
+      Block Names: "block_1"
+      Additive Model: "Test"
+      Thermal Model: "Thermal test"
+      Density: 2000
+      Horizon: 0.002
+      Specific Heat Capacity: 1e6
+    block_2:
+      Block Names: "block_2"
+      Additive Model: "Test"
+      Thermal Model: "Thermal test"
+      Density: 2000
+      Horizon: 0.002
+      Specific Heat Capacity: 1e6
+  Solver:
+    Additive Models: True
+    Material Models: False
+    Thermal Models: True
+    Verbose: False
+    Initial Time: 0.0
+    Final Time: 0.8
+    Verlet:
+      Safety Factor: 1.00
+      Numerical Damping: 0e-0
+      Fixed dt: 0.045
+  Outputs:
+    Output1:
+      Output Filename: "additive_2d_heat"
+      Output File Type: Exodus
+      Output Frequency: 1
+      Output Variables:
+        Temperature: True
+        Heat Flow: True
+        Active: True
+        Specific Volume: True
+        Number of Neighbors: True

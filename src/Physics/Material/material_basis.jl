@@ -92,6 +92,40 @@ Returns the Hooke matrix of the material.
 function get_Hooke_matrix(parameter, symmetry, dof)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
+    if occursin("anisotropic", symmetry)
+        anisoMatrix = zeros(Float64, 6, 6)
+        for iID in 1:6
+            for jID in iID:6
+                if "C" * string(iID) * string(jID) in keys(parameter)
+                    value = parameter["C"*string(iID)*string(jID)]
+                else
+                    value = 0
+                end
+                anisoMatrix[iID, jID] = value
+                anisoMatrix[jID, iID] = value
+            end
+        end
+        if dof == 3
+            return anisoMatrix
+        elseif occursin("plane strain", symmetry)
+            matrix = zeros(Float64, dof + 1, dof + 1)
+            matrix[1:2, 1:2] = anisoMatrix[1:2, 1:2]
+            matrix[3, 1:2] = anisoMatrix[6, 1:2]
+            matrix[1:2, 3] = anisoMatrix[1:2, 6]
+            matrix[3, 3] = anisoMatrix[6, 6]
+            return matrix
+        elseif occursin("plane stress", symmetry)
+            matrix = zeros(Float64, dof + 1, dof + 1)
+            invAniso = inv(anisoMatrix)
+            matrix[1:2, 1:2] = invAniso[1:2, 1:2]
+            matrix[3, 1:2] = invAniso[6, 1:2]
+            matrix[1:2, 3] = invAniso[1:2, 6]
+            matrix[3, 3] = invAniso[6, 6]
+            return inv(matrix)
+        else
+            @error "2D model defintion is missing; plain stress or plain strain "
+        end
+    end
     if occursin("isotropic", symmetry)
         matrix = zeros(Float64, 2 * dof, 2 * dof)
         nu = parameter["Poisson's Ratio"]
@@ -131,40 +165,6 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             return matrix
         else
             @error "2D model defintion is missing; plain stress or plain strain "
-        end
-        if occursin("anisotropic", symmetry)
-            anisoMatrix = zeros(Float64, 6, 6)
-            for iID in 1:6
-                for jID in iID:6
-                    if "C" * string(iID) * string(jID) in keys(parameter)
-                        value = parameter["C"*string(iID)*string(jID)]
-                    else
-                        value = 0
-                    end
-                    anisoMatrix[iID, jID] = value
-                    anisoMatrix[jID, iID] = value
-                end
-            end
-            if dof == 3
-                return anisoMatrix
-            elseif occursin("plane strain", symmetry)
-                matrix = zeros(Float64, dof + 1, dof + 1)
-                matrix[1:2, 1:2] = anisoMatrix[1:2, 1:2]
-                matrix[3, 1:2] = anisoMatrix[6, 1:2]
-                matrix[1:2, 3] = anisoMatrix[1:2, 6]
-                matrix[3, 3] = anisoMatrix[6, 6]
-                return matrix
-            elseif occursin("plane stress", symmetry)
-                matrix = zeros(Float64, dof + 1, dof + 1)
-                invAniso = inv(anisoMatrix)
-                matrix[1:2, 1:2] = invAniso[1:2, 1:2]
-                matrix[3, 1:2] = invAniso[6, 1:2]
-                matrix[1:2, 3] = invAniso[1:2, 6]
-                matrix[3, 3] = invAniso[6, 6]
-                return inv(matrix)
-            else
-                @error "2D model defintion is missing; plain stress or plain strain "
-            end
         end
     else
         matrix = zeros(Float64, dof + 1, dof + 1)
@@ -208,7 +208,6 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
 
         force_densities[nlist[iID][:], :] .-= bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[iID]
     end
-
     return force_densities
 end
 

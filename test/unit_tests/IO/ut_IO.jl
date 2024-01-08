@@ -27,7 +27,7 @@ test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
 block_Id = test_Data_manager.get_field("Block_Id")
 test_Data_manager.create_node_field("Displacements", Float64, 2)
 test_Data_manager.create_node_field("Forces", Float64, 6)
-params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1, "Output Variables" => Dict("Forces" => true)), "Output2" => Dict("Output Filename" => filename2, "Output Variables" => Dict("Displacements" => true, "Forces" => true))))
+params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1, "Flush File" => false, "Output Variables" => Dict("Forces" => true)), "Output2" => Dict("Output Filename" => filename2, "Flush File" => false, "Output Variables" => Dict("Displacements" => true, "Forces" => true))))
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
@@ -42,7 +42,7 @@ block_Id .+= 1
 block_Id[end] = 2
 
 @testset "ut_get_results_mapping" begin
-    output = IO.get_results_mapping(params, test_Data_manager)
+    output = IO.get_results_mapping(params, "", test_Data_manager)
     @test sort(collect(keys(output[1]["Fields"]))) == ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     @test sort(collect(keys(output[2]["Fields"]))) == ["Displacementsx", "Displacementsy", "Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     for i in 1:2
@@ -67,7 +67,7 @@ block_Id[end] = 2
 end
 
 @testset "ut_init_write_result_and_write_results" begin
-    result_files, outputs = IO.init_write_results(params, "", test_Data_manager, 2)
+    result_files, outputs = IO.init_write_results(params, "", "", test_Data_manager, 2, "1.0.0")
     @test length(result_files) == 2
     @test length(result_files[1]["file"].nodal_var_name_dict) == 6
     entries = collect(keys(result_files[1]["file"].nodal_var_name_dict))
@@ -104,11 +104,11 @@ end
         end
     end
     IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
-    IO.write_results(result_files, 1.5, outputs, test_Data_manager)
+    IO.write_results(result_files, 1.5, 0.0, outputs, test_Data_manager)
 
     @test read_time(result_files[1]["file"], 2) == 1.5
     @test read_time(result_files[2]["file"], 2) == 1.5
-    IO.write_results(result_files, 1.6, outputs, test_Data_manager)
+    IO.write_results(result_files, 1.6, 0.0, outputs, test_Data_manager)
 
     @test read_time(result_files[1]["file"], 3) == 1.6
     @test read_time(result_files[2]["file"], 3) == 1.6
@@ -128,7 +128,24 @@ end
     @test testBool
     IO.close_result_files(result_files)
 
+    IO.merge_exodus_files(result_files, "")
+
     rm(filename1 * ".e")
     rm(filename2 * ".e")
 end
 
+@testset "ut_show_block_summary" begin
+    test_Data_manager.set_block_list([1])
+    solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
+    params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
+    IO.show_block_summary(solver_options, params, comm, test_Data_manager)
+end
+
+@testset "ut_init_orientations" begin
+    angles = test_Data_manager.create_constant_node_field("Angles", Float64, 1, 90)
+    IO.init_orientations(test_Data_manager)
+    orientations = test_Data_manager.get_field("Orientations")
+    @test isapprox(orientations[1, 1], 0; atol=0.00001)
+    @test isapprox(orientations[1, 2], 1; atol=0.00001)
+    @test isapprox(orientations[1, 3], 0; atol=0.00001)
+end

@@ -111,7 +111,7 @@ end
     @test length(progress_bar(0, nsteps, false)) == nsteps + 1
 end
 
-# only interface test, because the called fromVoigt function is tested in "Tensorial"
+# only interface test, because the called fromVoigt function is tested in "Tensors"
 @testset "ut_get_fourth_order" begin
     @test size(get_fourth_order(zeros(Float64, 6, 6), 3)) == (3, 3, 3, 3)
     @test size(get_fourth_order(zeros(Float64, 3, 3), 2)) == (2, 2, 2, 2)

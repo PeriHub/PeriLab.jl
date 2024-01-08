@@ -20,7 +20,7 @@ export init_solver
 export run_solver
 
 """
-   compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Float64, Cv::Float64)
+    compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Float64, Cv::Float64)
 
 Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
 
@@ -170,7 +170,7 @@ function compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int
     criticalTimeStep::Float64 = 1.0e50
     for iblock in eachindex(block_nodes)
         if thermal
-            lambda = datamanager.get_property(iblock, "Thermal Model", "Lambda")
+            lambda = datamanager.get_property(iblock, "Thermal Model", "Heat Transfer Coefficient")
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
             if !isnothing(lambda)
                 t = compute_thermodynamic_critical_time_step(block_nodes[iblock], datamanager, lambda)
@@ -211,6 +211,7 @@ A tuple `(initial_time, dt, nsteps, numerical_damping)` where:
 - `dt::Float64`: The time step for the simulation.
 - `nsteps::Int64`: The number of time integration steps.
 - `numerical_damping::Float64`: The numerical damping factor.
+- `max_damage::Float64`: The maximum damage in the simulation.
 
 # Dependencies
 This function may depend on the following functions:
@@ -230,7 +231,7 @@ function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     dt = get_fixed_dt(params)
     @info "Initial time: " * string(initial_time) * " [s]"
     @info "Final time: " * string(final_time) * " [s]"
-    if dt == true
+    if dt == -1.0
         dt = compute_crititical_time_step(datamanager, block_nodes, mechanical, thermo)
         @info "Minimal time increment: " * string(dt) * " [s]"
     else
@@ -241,12 +242,14 @@ function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     comm = datamanager.get_comm()
     dt = find_and_set_core_value_min(comm, dt)
     nsteps = find_and_set_core_value_max(comm, nsteps)
+    numerical_damping = get_numerical_damping(params)
+    max_damage = get_max_damage(params)
 
     @info "Safety Factor: " * string(safety_factor)
     @info "Time increment: " * string(dt) * " [s]"
     @info "Number of steps: " * string(nsteps)
-    @info "Numerical Damping " * string(get_numerical_damping(params))
-    return initial_time, dt, nsteps, get_numerical_damping(params)
+    @info "Numerical Damping " * string(numerical_damping)
+    return initial_time, dt, nsteps, numerical_damping, max_damage
 end
 
 """
@@ -345,7 +348,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         flowNP1 = datamanager.get_field("Heat Flow", "NP1")
         temperatureN = datamanager.get_field("Temperature", "N")
         temperatureNP1 = datamanager.get_field("Temperature", "NP1")
-        heatCapacity = datamanager.get_field("Specific Heat Capacity")
+        heat_capacity = datamanager.get_field("Specific Heat Capacity")
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
     fem_option = datamanager.fem_active()
@@ -362,8 +365,11 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float64 = solver_options["Initial Time"]
+    max_cancel_damage::Float64 = solver_options["Maximum Damage"]
     step_time::Float64 = 0
     numerical_damping::Float64 = solver_options["Numerical Damping"]
+    max_damage::Float64 = 0
+    damage_init::Bool = false
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     nodes::Vector{Int64} = []
@@ -389,7 +395,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
 
             @timeit to "compute_models" datamanager = Physics.compute_models(datamanager, block_nodes, dt, step_time, solver_options, synchronise_field, to)
 
-            datamanager.synch_manager(synchronise_field, "download_from_cores")
+            @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field, "download_from_cores")
             # synch
             @timeit to "second apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
 
@@ -412,18 +418,32 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                     @warn "Thermal models are not supported for FEM yet."
                 end
             end
-            result_files = write_results(result_files, start_time + step_time, outputs, datamanager)
+            if solver_options["Damage Models"]
+                max_damage = maximum(damage[find_active(active[1:nnodes])])
+                if max_damage > max_cancel_damage
+                    set_multiline_postfix(iter, "Maximum damage reached!")
+                    datamanager.set_cancel(true)
+                end
+                if !damage_init && max_damage > 0
+                    damage_init = true
+                    # set_multiline_postfix(iter, "Bond damage initiated!")
+                end
+            end
+            @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, max_damage, outputs, datamanager)
             # for file in result_files
             #     flush(file)
             # end
-            datamanager.switch_NP1_to_N()
+            if datamanager.get_cancel()
+                set_multiline_postfix(iter, "Simulation canceled!")
+                break
+            end
+            @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
             update_list .= true
             step_time += dt
             if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
                 @info "Step: $idt / $(nsteps+1) [$step_time s]"
             end
             if rank == 0 && !silent
-                # set_multiline_postfix(iter, "Simulation Time: $step_time")
                 set_postfix(iter, t=@sprintf("%.4e", step_time))
             end
 

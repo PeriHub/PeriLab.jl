@@ -52,7 +52,7 @@ Get the final time
 function get_final_time(params::Dict)
 
     if haskey(params["Solver"], "Final Time")
-        return params["Solver"]["Final Time"]
+        return Float64(params["Solver"]["Final Time"])
     end
     @error "No final time defined"
 end
@@ -68,10 +68,7 @@ Get the safety factor
 - `safety_factor::Float64`: The safety factor
 """
 function get_safety_factor(params::Dict)
-    if haskey(params["Solver"]["Verlet"], "Safety Factor")
-        return params["Solver"]["Verlet"]["Safety Factor"]
-    end
-    return 1.0
+    return get(params["Solver"]["Verlet"], "Safety Factor", 1.0)
 end
 
 """
@@ -85,10 +82,7 @@ Get the fixed time step
 - `fixed_dt::Float64`: The fixed time step
 """
 function get_fixed_dt(params::Dict)
-    if haskey(params["Solver"]["Verlet"], "Fixed dt")
-        return params["Solver"]["Verlet"]["Fixed dt"]
-    end
-    return true
+    return get(params["Solver"]["Verlet"], "Fixed dt", -1.0)
 end
 
 """
@@ -102,10 +96,21 @@ Get the numerical damping
 - `numerical_damping::Float64`: The numerical damping
 """
 function get_numerical_damping(params::Dict)
-    if haskey(params["Solver"], "Numerical Damping")
-        return params["Solver"]["Numerical Damping"]
-    end
-    return Float64(0.0)
+    return get(params["Solver"], "Numerical Damping", Float64(0.0))
+end
+
+"""
+get_max_damage(params::Dict)
+
+Get the maximum damage.
+
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `write_after_damage::Bool`: The value
+"""
+function get_max_damage(params::Dict)
+    return get(params["Solver"], "Maximum Damage", Inf64)
 end
 
 """
@@ -119,21 +124,9 @@ Get the solver options
 - `solver_options::Dict`: The solver options
 """
 function get_solver_options(params::Dict)
-    additive::Bool = false
-    damage::Bool = false
-    mechanical::Bool = true
-    thermal::Bool = false
-    if haskey(params["Solver"], "Material Models")
-        mechanical = params["Solver"]["Material Models"]
-    end
-    if haskey(params["Solver"], "Thermal Models")
-        thermal = params["Solver"]["Thermal Models"]
-    end
-    if haskey(params["Solver"], "Additive Models")
-        additive = params["Solver"]["Additive Models"]
-    end
-    if haskey(params["Solver"], "Damage Models")
-        damage = params["Solver"]["Damage Models"]
-    end
+    additive::Bool = get(params["Solver"], "Additive Models", false)
+    damage::Bool = get(params["Solver"], "Damage Models", false)
+    mechanical::Bool = get(params["Solver"], "Material Models", true)
+    thermal::Bool = get(params["Solver"], "Thermal Models", false)
     return Dict{String,Any}("Additive Models" => additive, "Damage Models" => damage, "Material Models" => mechanical, "Thermal Models" => thermal)
 end

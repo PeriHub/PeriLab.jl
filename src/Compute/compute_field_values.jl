@@ -21,17 +21,17 @@ function get_forces_from_force_density(datamanager::Module)
 end
 
 """
-    get_partial_stresses(datamanager::Module, nodes::Vector{Union{Int64,SubArray}})
+    get_partial_stresses(datamanager::Module, nodes::Vector{Int64})
 
 Computes the partial stresses.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Vector{Union{Int64,SubArray}}`: List of block nodes.
+- `nodes::Vector{Int64}`: List of block nodes.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function get_partial_stresses(datamanager::Module, nodes::Vector{Union{Int64,SubArray}})
+function get_partial_stresses(datamanager::Module, nodes::Vector{Int64})
     bond_forces = datamanager.get_field("Bond Forces")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")

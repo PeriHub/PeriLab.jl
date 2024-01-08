@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using ProgressBars
-using Tensorial
+using Tensors
 
 """
     find_indices(vector, what)
@@ -32,6 +32,21 @@ Returns the indices of `active` that are true.
 """
 function find_active(active::Vector{Bool})
     return [i for (i, is_active) in enumerate(active) if is_active]
+end
+
+"""
+    find_updatable(active::SubArray, update_list::SubArray)
+
+Returns the indices of `active` that are true.
+
+# Arguments
+- `active::SubArray`: The vector to search in.
+- `update_list::SubArray`: The vector to search in.
+# Returns
+- `indices::Vector`: The indices of `active` that are true.
+"""
+function find_updatable(active::Vector{Int64}, update_list::SubArray)
+    return [active[i] for i in eachindex(active) if update_list[i] == 1]
 end
 
 """
@@ -138,7 +153,7 @@ end
 """
     get_fourth_order(CVoigt, dof)
 
-Constructs a symmetric fourth-order tensor from a Voigt notation vector. It uses Tensorial.jl package.
+Constructs a symmetric fourth-order tensor from a Voigt notation vector. It uses Tensors.jl package.
 
 This function takes a Voigt notation vector `CVoigt` and the degree of freedom `dof` 
 to create a symmetric fourth-order tensor. The `CVoigt` vector contains components 
@@ -159,7 +174,7 @@ dof = 3
 result = get_fourth_order(CVoigt, dof)
 """
 function get_fourth_order(CVoigt::Matrix{Float64}, dof::Int64)
-    return fromvoigt(SymmetricFourthOrderTensor{dof}, CVoigt)
+    return fromvoigt(SymmetricTensor{4,dof}, CVoigt)
 end
 
 """
@@ -173,14 +188,17 @@ Finds the inverse of the bond id in the nlist.
 - `inverse_nlist::Vector{Dict{Int64,Int64}}`: The inverse nlist.
 """
 function find_inverse_bond_id(nlist::SubArray)
-    inverse_nlist = [Dict{Int64,Int64}() for _ in 1:length(nlist)]
+    inverse_nlist = [Dict{Int64,Int64}() for _ in eachindex(nlist)]
     for iID in eachindex(nlist)
-        for (jID, neighborID) in enumerate(nlist[iID])
+        neighbors = nlist[iID]
+        for (jID, neighborID) in enumerate(neighbors)
             value = findfirst(isequal(iID), nlist[neighborID])
             # Check if neighbor ID is found in nlist, due to different horizons
-            if !isnothing(value)
-                inverse_nlist[neighborID][iID] = value
+            if isnothing(value)
+                continue
             end
+
+            inverse_nlist[neighborID][iID] = value
         end
     end
     return inverse_nlist

@@ -1,7 +1,7 @@
 name = "PeriLab"
 uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
 authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
-version = "1.1.0"
+version = "1.0.3"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
@@ -22,16 +22,35 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 TensorOperations = "6aa20fa7-93e2-5fca-9bc0-fbd0db3c71a2"
-Tensorial = "98f94333-fa9f-48a9-ad80-1c66397b2b38"
+Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
+ZipArchives = "49080126-0e18-4c2a-b176-c102e4b3760c"
+
+[compat]
+ArgParse = "1.1.4"
+CSV = "0.10.11"
+DataFrames = "1.6.1"
+Exodus = "0.11.0"
+JSON3 = "1.13.2"
+LoggingExtras = "1.0.3"
+MPI = "0.20.19"
+NearestNeighbors = "0.4.13"
+ProgressBars = "1.5.1"
+Rotations = "1.6.1"
+TensorOperations = "4.0.7"
+Tensors = "1.16.1"
+TestSetExtensions = "2.0.0"
+TimerOutputs = "0.5.23"
+YAML = "0.4.9"
+ZipArchives = "1.1.1"
+julia = "1"
 
 [extras]
-Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestSetExtensions = "98d24dd4-01ad-11ea-1b02-c9a08f80db04"
 
 [targets]
-test = ["Aqua", "Logging", "MPI", "Test", "TestSetExtensions"]
+test = ["Logging", "MPI", "Test", "TestSetExtensions"]

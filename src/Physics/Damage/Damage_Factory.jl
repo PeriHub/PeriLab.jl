@@ -5,7 +5,6 @@
 module Damage
 include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
-using TimerOutputs
 global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
 Set_modules.include_files(module_list)
 
@@ -41,7 +40,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-   compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+    compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
 
 Compute the pre calculation for the damage.
 
@@ -66,7 +65,7 @@ function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArr
 end
 
 """
-  damage_index(datamananager,::Union{SubArray, Vector{Int64})
+    damage_index(datamananager,::Union{SubArray, Vector{Int64})
 
 Function calculates the damage index related to the neighborhood volume for a set of corresponding nodes. 
 The damage index is defined as damaged volume in relation the neighborhood volume.
@@ -136,15 +135,12 @@ function init_interface_crit_values(datamanager::Module, params::Dict)
         if !haskey(damage_parameter, "Interblock Damage")
             continue
         end
-        if !damage_parameter["Interblock Damage"]
-            continue
-        end
         critical_value = damage_parameter["Critical Value"]
         for block_iId in 1:max_block_id
             for block_jId in 1:max_block_id
                 critValueName = "Interblock Critical Value $(block_iId)_$block_jId"
-                if haskey(damage_parameter, critValueName)
-                    inter_critical_value[block_iId, block_jId, block_id] = damage_parameter[critValueName]
+                if haskey(damage_parameter["Interblock Damage"], critValueName)
+                    inter_critical_value[block_iId, block_jId, block_id] = damage_parameter["Interblock Damage"][critValueName]
                 else
                     inter_critical_value[block_iId, block_jId, block_id] = critical_value
                 end
@@ -152,6 +148,39 @@ function init_interface_crit_values(datamanager::Module, params::Dict)
         end
     end
     datamanager.set_crit_values_matrix(inter_critical_value)
+    return datamanager
+end
+
+"""
+    init_aniso_crit_values(datamanager::Module, params::Dict)
+
+Initialize the anisotropic critical values
+
+# Arguments
+- `datamanager::Module`: The datamanager
+- `params::Dict`: The parameters
+# Returns
+- `datamanager::Module`: The datamanager
+"""
+function init_aniso_crit_values(datamanager::Module, params::Dict)
+    blockList = datamanager.get_block_list()
+    aniso_crit::Dict{Int64,Any} = Dict()
+    for block_id in blockList
+        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
+            continue
+        end
+        damageName = params["Blocks"]["block_$block_id"]["Damage Model"]
+        damage_parameter = params["Physics"]["Damage Models"][damageName]
+        crit_0 = damage_parameter["Critical Value"]
+        crit_90 = damage_parameter["Critical Value"]
+        if !haskey(damage_parameter, "Anisotropic Damage")
+            continue
+        end
+        crit_0 = damage_parameter["Anisotropic Damage"]["Critical Value X"]
+        crit_90 = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
+        aniso_crit[block_id] = [crit_0, crit_90]
+    end
+    datamanager.set_aniso_crit_values(aniso_crit)
     return datamanager
 end
 end

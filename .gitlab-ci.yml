@@ -14,55 +14,47 @@ before_script:
   - apt-get -qq update; apt-get -y install git jq bc
   - julia --project=@. -e "import Pkg; Pkg.build()"
 
+main_test:
+  stage: test
+  except:
+    - tags
+  only:
+    refs:
+      - main
+    changes:
+      - src/**/*
+      - test/**/*
+  script:
+    - julia --project=@. -e 'import Pkg;
+      Pkg.test(; coverage = true)'
+    - CODECOV_TOKEN=$CODECOV_TOKEN julia -e 'import Pkg; Pkg.add("Coverage");
+      using Coverage; cl, tl = get_summary(process_folder());
+      println("(", cl/tl*100, "%) covered");
+      Codecov.submit_local(process_folder())'
+  coverage: '/\(\d+.\d+\%\) covered/'
+  artifacts:
+    paths:
+      - test
+
 test:
   stage: test
+  except:
+    - tags
+    - main
   only:
     changes:
       - src/**/*
       - test/**/*
   script:
-    - julia --project=@. -e "import Pkg; Pkg.test(; coverage = true)"
-    # - julia --project=test/coverage -e 'import Pkg; Pkg.instantiate()'
-    # - julia --project=test/coverage test/coverage/coverage-summary.jl
-
-    - julia -e 'import Pkg; Pkg.add("Coverage");
+    - julia --project=@. -e 'import Pkg;
+      Pkg.test(; coverage = true)'
+    - CODECOV_TOKEN=$CODECOV_TOKEN julia -e 'import Pkg; Pkg.add("Coverage");
       using Coverage; cl, tl = get_summary(process_folder());
       println("(", cl/tl*100, "%) covered")'
   coverage: '/\(\d+.\d+\%\) covered/'
   artifacts:
     paths:
       - test
-
-benchmark:
-  stage: benchmark
-  only:
-    refs:
-      - main
-    changes:
-      - src/**/*
-  variables:
-    DEPLOY_CURL_COMMAND: 'curl -o benchmark_old_results.json --header "PRIVATE-TOKEN: glpat-imAENnk33mhBQycGWMNb" "https://gitlab.com/api/v4/projects/50476615/jobs/artifacts/main/raw/benchmark_results.json?job=benchmark"'
-  script:
-    - julia -e 'import Pkg; Pkg.add(path=".")'
-    - julia --project=. test/benchmarks/benchmark.jl
-    - 'eval "$DEPLOY_CURL_COMMAND"'
-    - value_old_ns=$(jq -r '.total_time_ns' benchmark_old_results.json)
-    - value_new_ns=$(jq -r '.total_time_ns' benchmark_results.json)
-    - value_old_s=$(echo "$value_old_ns / 1000000000" | bc)
-    - value_new_s=$(echo "$value_new_ns / 1000000000" | bc)
-    - diff=$(echo "$value_old_s - $value_new_s" | bc)
-    - if [ "$value_old_s" < "$value_new_s" ]; then
-      echo "Benchmark is $diff [s] slower";
-      exit 1;
-      else
-      echo "Benchmark is $diff [s] faster";
-      fi
-  artifacts:
-    paths:
-      - benchmark_results.json
-  allow_failure:
-    exit_codes:
-      - 1
 
 deploy:
   stage: deploy
@@ -75,6 +67,19 @@ deploy:
   script:
     - docker build -t perihub/perilab .
     - docker push perihub/perilab
+
+release:
+  stage: deploy
+  only:
+    - tags
+  script:
+    - apt-get -y install build-essential
+    - julia --project=@. -e 'import Pkg; Pkg.test(); Pkg.add("PackageCompiler");
+      using PackageCompiler;
+      create_app(".", "build", executables=["main" => "PeriLab", "get_examples" => "get_examples"], incremental=true)'
+  artifacts:
+    paths:
+      - build
 
 pages:
   stage: deploy

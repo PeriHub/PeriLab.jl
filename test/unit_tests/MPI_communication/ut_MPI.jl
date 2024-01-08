@@ -5,10 +5,13 @@
 import MPI
 using Test
 using JSON3
+using TimerOutputs
 include("../../helper.jl")
 include("../../../src/MPI_communication/MPI_communication.jl")
 include("../../../src/Physics/Material/BondBased/Bondbased_Elastic.jl")
 MPI.Init()
+
+const to = TimerOutput()
 
 comm = MPI.COMM_WORLD
 rank = MPI.Comm_rank(comm)
@@ -72,7 +75,9 @@ end
 if ncores == 3
     include("../../../src/IO/mesh_data.jl")
     include("../../../src/Support/data_manager.jl")
+    include("../../../src/IO/IO.jl")
     import .Read_Mesh
+    import .IO
     using .Data_manager
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
     ncores = 3
@@ -83,6 +88,7 @@ if ncores == 3
     overlap_map = Read_Mesh.get_local_overlap_map(overlap_map, distribution, ncores)
 
     test_Data_manager = Data_manager
+    test_Data_manager.set_comm(comm)
 
     if rank == 0
         test_Data_manager.set_num_controller(1)
@@ -229,6 +235,11 @@ if ncores == 3
         push_test!(test, (E[1] == false), @__FILE__, @__LINE__)
         push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
+        test = test_dict["find_global_core_value!_0"] = Dict("tests" => [], "line" => [])
+        push_test!(test, (IO.find_global_core_value!(0, "Sum", 1, test_Data_manager) == 3), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(0, "Maximum", 1, test_Data_manager) == 2), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(0, "Minimum", 1, test_Data_manager) == 0), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(0, "Average", 1, test_Data_manager) == 1), @__FILE__, @__LINE__)
     end
     if rank == 1
         test = test_dict["synch_controller_to_responder_rank_1"] = Dict("tests" => [], "line" => [])
@@ -248,6 +259,11 @@ if ncores == 3
         push_test!(test, (E[1] == true), @__FILE__, @__LINE__)
         push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
+        test = test_dict["find_global_core_value!_1"] = Dict("tests" => [], "line" => [])
+        push_test!(test, (IO.find_global_core_value!(1, "Sum", 1, test_Data_manager) == 3), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(1, "Maximum", 1, test_Data_manager) == 2), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(1, "Minimum", 1, test_Data_manager) == 0), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(1, "Average", 1, test_Data_manager) == 1), @__FILE__, @__LINE__)
     end
     if rank == 2
         test = test_dict["synch_controller_to_responder_rank_2"] = Dict("tests" => [], "line" => [])
@@ -271,6 +287,11 @@ if ncores == 3
         push_test!(test, (E[1] == false), @__FILE__, @__LINE__)
         push_test!(test, (E[2] == false), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
+        test = test_dict["find_global_core_value!_2"] = Dict("tests" => [], "line" => [])
+        push_test!(test, (IO.find_global_core_value!(2, "Sum", 1, test_Data_manager) == 3), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(2, "Maximum", 1, test_Data_manager) == 2), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(2, "Minimum", 1, test_Data_manager) == 0), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(2, "Average", 1, test_Data_manager) == 1), @__FILE__, @__LINE__)
     end
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn .= 2
@@ -288,7 +309,7 @@ if ncores == 3
         dbNP1[iID][:, end] .= 1 + (-1)^iID * 0.1
         dbNP1[iID][:, 1:dof] .= 1
     end
-    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0), 0.0, 0.0)
+    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0), 0.0, 0.0, to)
 
     bf = test_Data_manager.get_field("Bond Forces")
 

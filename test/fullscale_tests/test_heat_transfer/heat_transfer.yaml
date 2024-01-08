@@ -13,11 +13,11 @@ PeriLab:
       Deformed Bond Geometry: false
     Thermal Models:
       Thermal test:
-        Thermal Model: "Thermal Flow+Heat Transfer"
+        Thermal Model: "Thermal Flow + Heat Transfer"
         Type: "Bond based"
-        Lambda: 100
+        Heat Transfer Coefficient: 100
         Environmental Temperature: 0
-        Kappa: 1000
+        Thermal Conductivity: 1000
   Blocks:
     block_1:
       Block Names: "block_1"
@@ -45,7 +45,7 @@ PeriLab:
     Verlet:
       Safety Factor: 1.00
       Fixed dt: 1e-7
-      
+
       Numerical Damping: 0e-00
   Outputs:
     Output1:

@@ -9,50 +9,26 @@ PeriLab:
       Node Set 2: 4 8 12
     Type: "Text File"
     Input Mesh File: "simpleMesh.txt"
-    #Input Mesh File: "biggerMesh.txt"
-    # Bond Filters:
-    #   # bf_1:
-    #   #   Type: "Disk"
-    #   #   Normal_X: 0.0
-    #   #   Normal_Y: 1.0
-    #   #   Normal_Z: 0.0
-    #   #   Center_X: 0.0
-    #   #   Center_Y: 1.5
-    #   #   Center_Z: 0.0
-    #   #   Radius: 5.0
-    #   bf_1:
-    #     Type: "Rectangular_Plane"
-    #     Normal_X: 0.0
-    #     Normal_Y: 1.0
-    #     Normal_Z: 0.0
-    #     Lower_Left_Corner_X: -0.5
-    #     Lower_Left_Corner_Y: 0.5
-    #     Lower_Left_Corner_Z: -1.0
-    #     Bottom_Unit_Vector_X: 1.0
-    #     Bottom_Unit_Vector_Y: 0.0
-    #     Bottom_Unit_Vector_Z: 0.0
-    #     Bottom_Length: 56.75
-    #     Side_Length: 2.0
   Physics:
     Material Models:
       Aluminium:
         Material Model: "Correspondence Elastic"
-        #Material Model: "Test"
         Bulk Modulus: 2.0e5
         Shear Modulus: 1.0e5
         Symmetry: "isotropic plane stress"
         Zero Energy Control: "Global"
     Damage Models:
       Damage:
-        Critical Value: 1.3947001394700143
+        Critical Value: 10.1
         Damage Model: Critical Energy
-        Interblock Critical Value 1_2: 0.1
-        Interblock Damage: true
+        Anisotropic Damage:
+          Critical Value X: 10.1
+          Critical Value Y: 10.1
   Blocks:
     block_1:
       Block Names: "block_1"
       Material Model: "Aluminium"
-      Damage Model: "Damage"
+      Damage Model: Damage
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_2:
@@ -87,11 +63,11 @@ PeriLab:
       Coordinate: "y"
       Value: "20*t"
   Solver:
-    Solve For Displacement: True
-    # Damage Models: True
+    Material Models: True
+    Damage Models: True
     Verbose: False
     Initial Time: 0.0
-    Final Time: 0.00001
+    Final Time: 1.2e-6
     Stop after damage initiation: False
     End step after damage: 3
     Verlet:
@@ -101,17 +77,6 @@ PeriLab:
       Stable Step Difference: 4
       Maximum Bond Difference: 4
       Stable Bond Difference: 1
-  # Compute Class Parameters:
-  #   External_Forces:
-  #     Compute Class: "Block_Data"
-  #     Calculation Type: "Sum"
-  #     Block: "block_1"
-  #     Variable: "Forces"
-  #   External_Displacements:
-  #     Compute Class: "Block_Data"
-  #     Calculation Type: "Maximum"
-  #     Block: "block_1"
-  #     Variable: "Displacements"
   Outputs:
     Output1:
       Flush File: False
@@ -124,13 +89,6 @@ PeriLab:
         Volume: True
         Number of Neighbors: True
         Strain: True
-        # External_Forces: True
-        # External_Displacements: True
-    # Output2:
-    #   Flush File: False
-    #   Output Filename: "test_2"
-    #   Output File Type: "CSV"
-    #   Number of Output Steps: 10
-    #   Output Variables:
-    #     External_Forces: True
-    #     External_Displacements: True
+        Orientations: True
+        Damage: True
+        Angles: True

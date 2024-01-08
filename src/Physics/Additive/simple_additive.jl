@@ -7,7 +7,7 @@ export compute_additive
 export additive_name
 
 """
-  additive_name()
+    additive_name()
 
 Gives the additive name. It is needed for comparison with the yaml input deck.
 
@@ -27,7 +27,7 @@ function additive_name()
 end
 
 """
-  compute_additive(datamanager, nodes, additive_parameter, time, dt)
+    compute_additive(datamanager, nodes, additive_parameter, time, dt)
 
 Calculates the force densities of the additive. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -38,17 +38,19 @@ Calculates the force densities of the additive. This template has to be copied, 
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-    - - `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_manager`: Datamanager.
 Example:
 ```julia
 ```
 """
 function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float64, dt::Float64)
 
+  nlist = datamanager.get_nlist()
+  inverse_nlist = datamanager.get_inverse_nlist()
   activation_time = datamanager.get_field("Activation_Time")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
   active = datamanager.get_field("Active")
-  heatCapacity = datamanager.get_field("Specific Heat Capacity")
+  heat_capacity = datamanager.get_field("Specific Heat Capacity")
   density = datamanager.get_field("Density")
   printTemperature = additive_parameter["Print Temperature"]
   # must be specified, because it might be that no temperature model has been defined
@@ -57,8 +59,16 @@ function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   for iID in nodes
     if time - dt <= activation_time[iID] < time
       active[iID] = true
-      bond_damage[iID][:] .= 1.0
-      flux[iID] = -printTemperature * heatCapacity[iID] * density[iID] ./ dt
+      flux[iID] = -printTemperature * heat_capacity[iID] * density[iID] ./ dt
+
+      for (jID, neighborID) in enumerate(nlist[iID])
+        if activation_time[neighborID] <= time && bond_damage[iID][jID] == 0
+          bond_damage[iID][jID] = 1.0
+          if haskey(inverse_nlist[neighborID], iID)
+            bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 1.0
+          end
+        end
+      end
     end
   end
 

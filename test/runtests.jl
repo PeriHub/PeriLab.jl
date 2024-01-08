@@ -4,7 +4,7 @@
 
 using Test
 using TestSetExtensions
-using Aqua
+# using Aqua
 using Logging
 using MPI
 using PeriLab
@@ -38,13 +38,10 @@ MPI.Init()
             end
         end
         @testset "Support" begin
-
             @testset "Parameters" begin
-
                 @testset "ut_parameter_handling" begin
                     @includetests["unit_tests/Support/Parameters/ut_parameter_handling"]
                 end
-
             end
 
             @testset "ut_data_manager" begin
@@ -59,10 +56,7 @@ MPI.Init()
                 @includetests["unit_tests/Support/ut_geometry"]
             end
         end
-
         @testset "Core" begin
-
-
             @testset "Solver" begin
 
                 # @testset "ut_Solver_control" begin
@@ -81,7 +75,6 @@ MPI.Init()
                 @includetests["unit_tests/Core/ut_BC_manager"]
             end
         end
-
         @testset "IO" begin
 
             @testset "ut_exodus_export" begin
@@ -101,18 +94,16 @@ MPI.Init()
             @testset "ut_bond_filter" begin
                 @includetests["unit_tests/IO/ut_bond_filter"]
             end
+            @testset "ut_logging" begin
+                @includetests["unit_tests/IO/ut_logging"]
+            end
         end
-
-
         @testset "MPI" begin
-
             @testset "ut_MPI" begin
                 @includetests["unit_tests/MPI_communication/ut_MPI_call"]
             end
 
         end
-
-
         @testset "Physics" begin
             @testset "ut_templates" begin
                 @includetests["unit_tests/Physics/ut_templates"]
@@ -126,6 +117,9 @@ MPI.Init()
                 end
                 @testset "ut_Thermal_Expansion" begin
                     @includetests["unit_tests/Physics/Thermal/ut_Thermal_expansion"]
+                end
+                @testset "ut_Heat_transfer" begin
+                    @includetests["unit_tests/Physics/Thermal/ut_Heat_transfer"]
                 end
             end
 
@@ -157,7 +151,6 @@ MPI.Init()
         @testset "test_additive_simple" begin
             @includetests["fullscale_tests/test_additive/test_additive"]
         end
-
         @testset "test_test_bond_based_elastic" begin
             @includetests["fullscale_tests/test_bond_based_elastic/test_bond_based_elastic"]
         end
@@ -169,6 +162,9 @@ MPI.Init()
         end
         @testset "test_PD_Solid_Elastic" begin
             @includetests["fullscale_tests/test_PD_solid_elastic/test_PD_solid_elastic"]
+        end
+        @testset "test_PD_Solid_Elastic_3D" begin
+            @includetests["fullscale_tests/test_PD_solid_elastic_3D/test_PD_solid_elastic_3D"]
         end
         @testset "test_Critical_stretch" begin
             @includetests["fullscale_tests/test_critical_stretch/test_critical_stretch"]

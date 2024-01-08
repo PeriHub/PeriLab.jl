@@ -79,15 +79,16 @@ end
     @test parameter["Poisson's Ratio"] == Float64(0.125)
     @test parameter["Young's Modulus"] == 5
 end
-"""
+
 @testset "get_Hooke_matrix" begin
-    parameter = get_all_elastic_moduli(Dict{String,Float64}("Bulk Modulus" => 5, "Shear Modulus" => 1.25))
+    parameter = Dict{String,Any}("Bulk Modulus" => 5, "Shear Modulus" => 1.25, "Poisson's Ratio" => 0.2)
+    get_all_elastic_moduli(parameter)
 
     symmetry = "isotropic"
     E = parameter["Young's Modulus"]
     nu = parameter["Poisson's Ratio"]
     temp = 1 / ((1 + nu) * (1 - 2 * nu))
-    C = get_Hook_matrix(parameter, symmetry, 3)
+    C = get_Hooke_matrix(parameter, symmetry, 3)
     for iID in 1:3
         @test C[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
         @test C[iID+3, iID+3] == parameter["Shear Modulus"]
@@ -98,7 +99,7 @@ end
         end
     end
 
-    symmetry = "isotropic_plain_strain"
+    symmetry = "isotropic plane strain"
     C2D = get_Hooke_matrix(parameter, symmetry, 2)
     for iID in 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
@@ -109,7 +110,7 @@ end
         end
     end
     @test C2D[3, 3] == parameter["Shear Modulus"]
-    symmetry = "isotropic_plain_stress"
+    symmetry = "isotropic plane stress"
     C2D_test = zeros(3, 3)
     Cinv = inv(C)
     C2D_test[1:2, 1:2] = Cinv[1:2, 1:2]
@@ -124,7 +125,6 @@ end
         end
     end
 
-    parameter = Dict{String,Float64}()
     for iID in 1:6
         for jID in 1:6
             parameter["C"*string(iID)*string(jID)] = iID * jID + jID
@@ -140,8 +140,8 @@ end
             end
         end
     end
-    symmetry = "anisotropic_plain_strain"
-    C = get_Hook_matrix(parameter, symmetry, 2)
+    symmetry = "anisotropic plane strain"
+    C = get_Hooke_matrix(parameter, symmetry, 2)
     for iID in 1:2
         for jID in 1:2
             @test C[iID, jID] == C[jID, iID]
@@ -150,13 +150,29 @@ end
             end
         end
     end
-    @test C[3, 3] == parameter["C55"]
-    @test C[1, 3] == parameter["C15"]
-    @test C[2, 3] == parameter["C25"]
-    @test C[3, 1] == parameter["C15"]
-    @test C[3, 2] == parameter["C25"]
+    @test C[3, 3] == parameter["C66"]
+    @test C[1, 3] == parameter["C16"]
+    @test C[2, 3] == parameter["C26"]
+    @test C[3, 1] == parameter["C16"]
+    @test C[3, 2] == parameter["C26"]
 
-    symmetry = "anisotropic_plain_stress"
+    symmetry = "anisotropic plane stress"
 
 end
-"""
+
+@testset "ut_matrix_to_voigt" begin
+    matrix = [1 2; 3 4]
+    voigt = matrix_to_voigt(matrix)
+    @test voigt[1] == 1
+    @test voigt[2] == 4
+    @test voigt[3] == 2.5
+    matrix = [1 2 3; 4 5 6; 7 8 9]
+    voigt = matrix_to_voigt(matrix)
+    @test voigt[1] == 1
+    @test voigt[2] == 5
+    @test voigt[3] == 9
+    @test voigt[4] == 7
+    @test voigt[5] == 5
+    @test voigt[6] == 3
+
+end

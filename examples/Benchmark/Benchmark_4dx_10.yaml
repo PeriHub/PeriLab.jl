@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1:
+      Block Names: block_1
+      Damage Model: Damage
+      Density: 1.95e-06
+      Horizon: 0.4
+      Material Model: Aluminium
+    block_2:
+      Block Names: block_1
+      Damage Model: Damage
+      Density: 1.95e-06
+      Horizon: 0.4
+      Material Model: Aluminium
+  Boundary Conditions:
+    BC_1:
+      Coordinate: y
+      Node Set: Node Set 1
+      Type: Displacements
+      Value: 0*t
+  Compute Class Parameters:
+    External_Forces:
+      Compute Class: Block_Data
+      Calculation Type: Sum
+      Block: block_2
+      Variable: Forces
+    External_Displacements:
+      Compute Class: Block_Data
+      Calculation Type: Maximum
+      Block: block_2
+      Variable: Displacements
+  Discretization:
+    Input Mesh File: mesh10.txt
+    Node Sets:
+      Node Set 1: ns10.txt
+    Type: Text File
+    Bond Filters:
+      bf_1:
+        Bottom Length: 2.0
+        Bottom Unit Vector X: 1.0
+        Bottom Unit Vector Y: 0.0
+        Bottom Unit Vector Z: 0.0
+        Lower Left Corner X: -0.5
+        Lower Left Corner Y: 0.0
+        Lower Left Corner Z: -1.0
+        Normal X: 0.0
+        Normal Y: 1.0
+        Normal Z: 0.0
+        Side Length: 2.0
+        Type: Rectangular_Plane
+  Physics:
+    Damage Models:
+      Damage:
+        Damage Model: Critical Energy
+        Critical Value: 0.0035714285714285716
+    Material Models:
+      Aluminium:
+        Material Model: "PD Solid Elastic"
+        Zero Energy Control: "Global"
+        Symmetry: isotropic plane stress
+        Young's Modulus: 70000.0
+        Poisson's Ratio: 0.3
+    Pre Calculation:
+      Bond Associated Deformation Gradient: false
+      Bond Associated Shape Tensor: false
+      Deformation Gradient: false
+      Deformed Bond Geometry: true
+      Shape Tensor: false
+  Solver:
+    Final Time: 1.0
+    Initial Time: 0.0
+    Material Models: true
+    Damage Models: true
+    Verbose: false
+    Verlet:
+      Numerical Damping: 5.0e-06
+      Safety Factor: 1.0
+      Fixed dt: 1.0e-3
