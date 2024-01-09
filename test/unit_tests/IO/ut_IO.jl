@@ -126,8 +126,8 @@ end
         testBool = true
     end
     @test testBool
-    IO.close_result_files(result_files)
-
+    @test IO.close_result_files(result_files)
+    @test !(IO.close_result_files(result_files))
     IO.merge_exodus_files(result_files, "")
 
     rm(filename1 * ".e")

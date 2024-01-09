@@ -96,7 +96,17 @@ end
     @test bcs["BC_2"]["Node Set"] == [4, 2, 7, 10]
     @test !("BC_3" in keys(bcs))
 end
+@testset "ut_check_valid_bcs" begin
+    test_Data_manager = Data_manager
+    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "not there", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "0"), "BC_3" => Dict("Type" => "Displacements", "Node Set" => "Nset_3", "Coordinate" => "z", "Value" => "0")))
 
+    test_Data_manager.set_nset("Nset_1", [1, 2, 3])
+    test_Data_manager.set_nset("Nset_2", [3, 4, 7, 10])
+    test_Data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 3, 3 => 4, 4 => 2, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10))
+
+    bcs = Boundary_conditions.boundary_condition(params, test_Data_manager)
+    @test isnothing(Boundary_conditions.check_valid_bcs(bcs, test_Data_manager))
+end
 @testset "ut_init_BCs" begin
 
     test_Data_manager = Data_manager
