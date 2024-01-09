@@ -5,6 +5,29 @@
 # include("../helpers.jl")
 
 """
+    get_external_topology_name(params::Dict)
+
+Returns the name of the mesh file from the parameters
+
+# Arguments
+- `params::Dict`: The parameters
+# Returns
+- `String`: The name of the finite element topology file
+"""
+function get_external_topology_name(params::Dict)
+    check = haskey(params["Discretization"], "Input External Topology")
+    if !check
+        return nothing
+    end
+    check = haskey(params["Discretization"]["Input External Topology"], "File")
+    if !check
+        @error "Input External Topology is defined without a file where to find it."
+        return nothing
+    end
+    return params["Discretization"]["Input External Topology"]["File"]
+end
+
+"""
     get_mesh_name(params::Dict)
 
 Returns the name of the mesh file from the parameters

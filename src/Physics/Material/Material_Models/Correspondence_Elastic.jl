@@ -6,6 +6,45 @@ module Correspondence_Elastic
 include("../material_basis.jl")
 export compute_stresses
 export correspondence_name
+export fe_support
+export init_material_model
+export material_name
+export compute_forces
+
+"""
+  fe_support()
+
+Gives the information if the material supports the FEM part of PeriLab
+
+# Arguments
+
+# Returns
+- bool: true - for FEM support; false - for no FEM support
+
+Example:
+```julia
+println(fe_support())
+false
+```
+"""
+function fe_support()
+   return false
+end
+
+"""
+  init_material_model(datamanager::Module)
+
+Initializes the material model.
+
+# Arguments
+  - `datamanager::Data_manager`: Datamanager.
+
+# Returns
+  - `datamanager::Data_manager`: Datamanager.
+"""
+function init_material_model(datamanager::Module)
+   return datamanager
+end
 """
     correspondence_name()
 
@@ -25,6 +64,7 @@ println(material_name())
 function correspondence_name()
    return "Correspondence Elastic"
 end
+
 """
     compute_stresses(datamanager, nodes, material_parameter, time, dt)
 
@@ -57,8 +97,16 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
 
    return stress_NP1, datamanager
 end
+"""
+for FEM
+"""
 
+function compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Vector{Float64}, stress_N::Vector{Float64}, stress_NP1::Vector{Float64})
 
+   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
+
+   return hookeMatrix * strain_increment + stress_N, datamanager
+end
 
 
 end

@@ -9,6 +9,148 @@ using Test
 using .Read_Mesh
 using .Data_manager
 using DataFrames
+@testset "ut_read_mesh" begin
+
+    params = Dict("Discretization" => Dict("Type" => "Text File"))
+    @test isnothing(Read_Mesh.read_mesh("./", params))
+    path = "./unit_tests/IO/"
+
+    data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"), params)
+    if isnothing(data)
+        path = "./test/unit_tests/IO/"
+        data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"), params)
+    end
+    @test length(data[:, 1]) == 3
+    @test data[!, "x"] == [-1.5, -0.5, 0.5]
+    @test data[!, "y"] == [0.5, 0.2, 0.0]
+    @test data[!, "block_id"] == [1, 1, 2]
+    @test data[!, "volume"] == [0.1, 0.1, 0.1]
+
+    @test isnothing(Read_Mesh.read_external_topology("./"))
+    data = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
+    @test length(data[:, 1]) == 4
+    @test collect(skipmissing(data[1, :])) == [1, 2, 3, 4]
+    @test collect(skipmissing(data[2, :])) == [3, 4, 5, 6]
+    @test collect(skipmissing(data[3, :])) == [2, 3, 4, 5, 6, 7]
+    @test collect(skipmissing(data[4, :])) == [5, 6, 7, 8]
+
+end
+
+@testset "ut_create_consistent_neighborhoodlist" begin
+    path = "./unit_tests/IO/"
+
+    external_topology = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
+    if isnothing(external_topology)
+        path = "./test/unit_tests/IO/"
+        external_topology = Read_Mesh.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
+    end
+    dof::Int64 = 2
+    params = Dict()
+
+    nlist::Vector{Vector{Int64}} = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
+
+    nlist_test, topology, nodes_to_element = Read_Mesh.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+
+    @test topology[1] == [1, 2, 3, 4]
+    @test topology[2] == [3, 4, 5, 6]
+    @test topology[3] == [2, 3, 4, 5, 6, 7]
+    @test topology[4] == [5, 6, 7, 8]
+    @test nodes_to_element == [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
+    @test nlist == [[2, 3, 4], [1, 3, 4, 5, 6, 7], [1, 2, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [3, 4, 6, 2, 7, 8], [3, 4, 5, 2, 7, 8], [2, 3, 4, 5, 6, 8], [5, 6, 7], [10]]
+    params = Dict("Add Neighbor Search" => false)
+    nlist = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
+    nlist, topology, nodes_to_element = Read_Mesh.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+    @test nlist == [[2, 3, 4], [1, 3, 4, 5, 6, 7], [1, 2, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [3, 4, 6, 2, 7, 8], [3, 4, 5, 2, 7, 8], [2, 3, 4, 5, 6, 8], [5, 6, 7], [10]]
+
+    params = Dict("Add Neighbor Search" => true)
+    nlist = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
+    nlist, topology, nodes_to_element = Read_Mesh.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+
+    @test topology[1] == [1, 2, 3, 4]
+    @test topology[2] == [3, 4, 5, 6]
+    @test topology[3] == [2, 3, 4, 5, 6, 7]
+    @test topology[4] == [5, 6, 7, 8]
+    @test nodes_to_element == [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
+    @test nlist == [[2, 3, 4, 11], [1, 3, 4, 5, 6, 7], [1, 2, 22, 23, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [8, 3, 4, 6, 2, 7], [9, 3, 4, 5, 2, 7, 8], [1, 6, 2, 3, 4, 5, 8], [3, 2, 5, 6, 7], [10]]
+end
+@testset "ut_element_distribution" begin
+    nnodes = 8
+    topology = Vector([[1, 2, 3, 4], [2, 4, 5, 6], [7, 8, 5, 6]])
+
+    ptc::Vector{Int64} = zeros(8)
+    ptc[:] .= 1
+    ranksize = 1
+    element_distribution = Read_Mesh.element_distribution(topology, ptc, ranksize)
+    @test length(element_distribution) == 1
+    @test element_distribution[1] == [1, 2, 3]
+    ptc[5:8] .= 2
+    ranksize = 2
+    element_distribution = Read_Mesh.element_distribution(topology, ptc, ranksize)
+    @test length(element_distribution) == 2
+    @test element_distribution[1] == [1]
+    @test element_distribution[2] == [2, 3]
+
+    topology = Vector([[7, 8, 5, 6], [1, 2, 3, 4], [2, 4, 5, 6]])
+    element_distribution = Read_Mesh.element_distribution(topology, ptc, ranksize)
+
+    @test length(element_distribution) == 2
+    @test element_distribution[1] == [2]
+    @test element_distribution[2] == [3, 1]
+
+end
+@testset "ut_get_local_element_topology" begin
+
+    test_Data_manager = Data_manager
+    topology::Vector{Vector{Int64}} = [[1, 2, 3, 4], [3, 4, 2, 1]]
+    distribution::Vector{Vector{Int64}} = [[2, 3, 4, 1], [1, 2, 3, 4], [5, 6, 3, 2, 8, 1, 4]]
+    test_Data_manager = Read_Mesh.get_local_element_topology(test_Data_manager, topology, distribution[1])
+    topo = test_Data_manager.get_field("FE Topology")
+
+    @test topo[1, 1] == 4
+    @test topo[1, 2] == 1
+    @test topo[1, 3] == 2
+    @test topo[1, 4] == 3
+    @test topo[2, 1] == 2
+    @test topo[2, 2] == 3
+    @test topo[2, 3] == 1
+    @test topo[2, 4] == 4
+    test_Data_manager = Read_Mesh.get_local_element_topology(test_Data_manager, topology, distribution[2])
+    topo = test_Data_manager.get_field("FE Topology")
+    @test topo[1, 1] == 1
+    @test topo[1, 2] == 2
+    @test topo[1, 3] == 3
+    @test topo[1, 4] == 4
+    @test topo[2, 1] == 3
+    @test topo[2, 2] == 4
+    @test topo[2, 3] == 2
+    @test topo[2, 4] == 1
+    test_Data_manager = Read_Mesh.get_local_element_topology(test_Data_manager, topology, distribution[3])
+    topo = test_Data_manager.get_field("FE Topology")
+    @test topo[1, 1] == 6
+    @test topo[1, 2] == 4
+    @test topo[1, 3] == 3
+    @test topo[1, 4] == 7
+    @test topo[2, 1] == 3
+    @test topo[2, 2] == 7
+    @test topo[2, 3] == 4
+    @test topo[2, 4] == 6
+
+    test_Data_manager = Read_Mesh.get_local_element_topology(test_Data_manager, Vector([Vector{Int64}([])]), distribution[3])
+    # nothing happens, because no field is initialized
+    topo = test_Data_manager.get_field("FE Topology")
+    @test topo[1, 1] == 6
+    @test topo[1, 2] == 4
+    @test topo[1, 3] == 3
+    @test topo[1, 4] == 7
+    @test topo[2, 1] == 3
+    @test topo[2, 2] == 7
+    @test topo[2, 3] == 4
+    @test topo[2, 4] == 6
+
+    topology = [[1, 2, 3, 4], [3, 4, 2, 1, 3]]
+
+    @test isnothing(Read_Mesh.get_local_element_topology(test_Data_manager, topology, distribution[3]))
+end
 @testset "ut_create_base_chunk" begin
     distribution, point_to_core = Read_Mesh.create_base_chunk(4, 1)
     @test length(distribution) == 1
@@ -101,7 +243,6 @@ end
     )
     df = DataFrame(data)
     meshInfoDict = Read_Mesh.check_mesh_elements(df, 3)
-    println()
     @test meshInfoDict["Coordinates"]["Mesh ID"] == ["x", "y", "z"]
     @test meshInfoDict["Coordinates"]["Type"] == Int64
     @test meshInfoDict["Block_Id"]["Mesh ID"] == ["block_id"]
@@ -136,8 +277,8 @@ end
 end
 
 @testset "ut_create_overlap_map" begin
-    distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
-    size = 3
+    distribution = Vector([Vector{Int64}([1, 2, 3]), Vector{Int64}([2, 3, 4]), Vector{Int64}([4, 1, 3])])
+    size::Int64 = 3
     ptc = [1, 2, 2, 3]
     overlap_map = Read_Mesh.create_overlap_map(distribution, ptc, size)
 
@@ -217,7 +358,9 @@ end
     for i in 1:4
         @test lenNlist[i] == 3 * i * i - 2
     end
+    nlist[1] = []
 
+    @test isnothing(Read_Mesh.get_number_of_neighbornodes(nlist))
 end
 
 @testset "ut_glob_to_loc" begin

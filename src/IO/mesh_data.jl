@@ -41,22 +41,28 @@ Initializes the data for the mesh.
 function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm, to::TimerOutput)
     @timeit to "init_data - mesh_data,jl" begin
         ranks = MPI.Comm_size(comm)
-        if (MPI.Comm_rank(comm)) == 0
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof = load_and_evaluate_mesh(params::Dict, path, ranks, to)
+        rank = MPI.Comm_rank(comm) + 1
+        fem_active::Bool = false
+        if rank == 1
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks, to)
+            if !isnothing(element_distribution)
+                fem_active = true
+            end
         else
             num_controller = 0
             num_responder = 0
             ntype = Dict("controllers" => 0, "responder" => 0)
             nlist = 0
-            dof = 0
+            dof::Int64 = 0
             mesh = []
             overlap_map = nothing
             distribution = nothing
+            element_distribution = nothing
         end
+        fem_active = send_value(comm, 0, fem_active)
         dof = send_value(comm, 0, dof)
         dof = datamanager.set_dof(dof)
         overlap_map = send_value(comm, 0, overlap_map)
-
         distribution = send_value(comm, 0, distribution)
         nlist = send_value(comm, 0, nlist)
         datamanager.set_overlap_map(overlap_map)
@@ -67,19 +73,50 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         @info "Get node sets"
         define_nsets(params, path, datamanager)
         # defines the order of the global nodes to the local core nodes
-        datamanager.set_distribution(distribution[MPI.Comm_rank(comm)+1])
-        datamanager.set_glob_to_loc(glob_to_loc(distribution[MPI.Comm_rank(comm)+1]))
+        datamanager.set_distribution(distribution[rank])
+        datamanager.set_glob_to_loc(glob_to_loc(distribution[rank]))
         @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
         @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
         @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
+        datamanager.set_fem(fem_active)
+        if fem_active
+            @info "Set and synchronize elements"
+            element_distribution = send_value(comm, 0, element_distribution)
+            topology = send_value(comm, 0, topology)
+            datamanager.set_num_elements(length(element_distribution[rank]))
+            @info "Set local topology vector"
+            datamanager = get_local_element_topology(datamanager, topology[element_distribution[rank]], distribution[rank])
+        end
         mesh = nothing
         @info "Finish init data"
     end
     return datamanager, params
 end
 
+function get_local_element_topology(datamanager::Module, topology::Vector{Vector{Int64}}, distribution::Vector{Int64})
+    if length(topology[1]) == 0
+        return datamanager
+    end
+    master_len = length(topology[1][:])
+    for top in topology
+        if length(top) != master_len
+            @error "Only one element type is supported. Please define the same numbers of nodes per element."
+            return nothing
+            """
+            - new field like the bond field has to be defined for elements in the datamanager
+            - can be avoided right now by setting zeros in the topology vector as empty nodes
+            """
+        end
+    end
+    topo = datamanager.create_constant_free_size_field("FE Topology", Int64, (length(topology), master_len))
+    ilocal = glob_to_loc(distribution)
+    for el_id in eachindex(topology)
+        topo[el_id, :] = local_nodes_from_dict(ilocal, topology[el_id])
+    end
+    return datamanager
+end
 """
     get_local_overlap_map()
 
@@ -87,7 +124,7 @@ Changes entries in the overlap map from the global numbering to the local comput
 
 # Arguments
 - `overlap_map::Dict{Int64, Dict{Int64, String}}`: overlap map with global nodes.
-- `distribution Array{Int64}`: global nodes distribution at cores, needed for the gobal to local mapping
+- `distribution::Vector{Vector{Int64}}`: global nodes distribution at cores, needed for the gobal to local mapping
 - `ranks Array{Int64}` : number of used computer cores
 # Returns
 - `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
@@ -97,7 +134,7 @@ Example:
 get_local_overlap_map(overlap_map, distribution, ranks)  # returns local nodes 
 ```
 """
-function get_local_overlap_map(overlap_map, distribution, ranks)
+function get_local_overlap_map(overlap_map, distribution::Vector{Vector{Int64}}, ranks::Int64)
     if ranks == 1
         return overlap_map
     end
@@ -141,7 +178,7 @@ Distributes the neighborhood list to the cores.
 # Returns
 - `datamanager::Module`: data manager
 """
-function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist, distribution)
+function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist::Vector{Vector{Int64}}, distribution::Vector{Vector{Int64}})
     send_msg = 0
     lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
     rank = MPI.Comm_rank(comm)
@@ -226,7 +263,7 @@ Distributes the mesh data to the cores
 # Returns
 - `datamanager::Module`: data manager
 """
-function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh, distribution, dof::Int64)
+function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh::DataFrame, distribution::Vector{Vector{Int64}}, dof::Int64)
     # init block_id field
     rank = MPI.Comm_rank(comm)
     if rank == 0
@@ -276,7 +313,7 @@ mesh_data = DataFrame(x1 = [1.0, 2.0, 3.0], x2 = [4.0, 5.0, 6.0], volume = [10.0
 dof = 3
 result = check_mesh_elements(mesh_data, dof)
 """
-function check_mesh_elements(mesh, dof)
+function check_mesh_elements(mesh::DataFrame, dof::Int64)
     mnames = names(mesh)
     meshInfoDict = Dict{String,Dict{String,Any}}()
 
@@ -339,6 +376,25 @@ function check_mesh_elements(mesh, dof)
 end
 
 """
+    read_external_topology(filename::String)
+
+Read external topoloy data from a file and return it as a DataFrame.
+
+# Arguments
+- `filename::String`: The path to the mesh file.
+# Returns
+- `external_topology::DataFrame`: The external topology data as a DataFrame.
+"""
+function read_external_topology(filename::String)
+    if !isfile(filename)
+        return nothing
+    end
+    @info "Read external topology file $filename"
+    header_line, header = get_header(filename)
+    return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
+end
+
+"""
     read_mesh(filename::String, params::Dict)
 
 Read mesh data from a file and return it as a DataFrame.
@@ -352,6 +408,7 @@ Read mesh data from a file and return it as a DataFrame.
 function read_mesh(filename::String, params::Dict)
     if !isfile(filename)
         @error "File $filename does not exist"
+        return nothing
     end
 
     @info "Read mesh file $filename"
@@ -443,12 +500,30 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
     duplicates = findall(nonunique(mesh))
     if length(duplicates) > 0
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
+        return nothing
+    end
+    external_topology = nothing
+    if !isnothing(get_external_topology_name(params))
+        external_topology = read_external_topology(joinpath(path, get_external_topology_name(params)))
+    end
+    if !isnothing(external_topology)
+        @info "External topology files was read."
     end
     dof::Int64 = set_dof(mesh)
     @timeit to "neighborhoodlist" nlist = create_neighborhoodlist(mesh, params, dof)
     @timeit to "apply_bond_filters" nlist = apply_bond_filters(nlist, mesh, params, dof)
+    topology = nothing
+    if !isnothing(external_topology)
+        @info "Create a consistent neighborhood list with external topology definition."
+        nlist, topology = create_consistent_neighborhoodlist(external_topology, params["Discretization"]["Input External Topology"], nlist, dof)
+    end
     @info "Start distribution"
     @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize)
+    el_distribution = nothing
+    if haskey(params, "FEM") && !isnothing(external_topology)
+        @info "Start element distribution"
+        el_distribution = element_distribution(topology, ptc, ranksize)
+    end
     @info "Finished distribution"
     @info "Create Overlap"
     @timeit to "overlap_map" overlap_map = create_overlap_map(distribution, ptc, ranksize)
@@ -458,7 +533,44 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
     @info "Number of nodes: $(length(mesh[!, "x"]))"
     @info "Geometrical degrees of freedoms: $dof"
     @info "-------------------"
-    return distribution, mesh, ntype, overlap_map, nlist, dof
+    if haskey(params, "FEM") && !isnothing(external_topology)
+        @info "Finite element option active"
+        @info "Number of finite elements: $(length(topology))"
+        @info "-------------------"
+    end
+    return distribution, mesh, ntype, overlap_map, nlist, dof, topology, el_distribution
+end
+
+function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+    pd_neighbors::Bool = false
+    if haskey(params, "Add Neighbor Search")
+        pd_neighbors = params["Add Neighbor Search"]
+    end
+    number_of_elements = length(external_topology[:, 1])
+    topology::Vector{Vector{Int64}} = []
+    for i_el in 1:number_of_elements
+        push!(topology, collect(skipmissing(external_topology[i_el, :])))
+    end
+    nodes_to_element = [Any[] for _ in 1:maximum(maximum(topology))]
+    fe_nodes = Vector{Int64}()
+    for (el_id, topo) in enumerate(topology)
+        for node in topo
+            push!(nodes_to_element[node], el_id)
+            push!(fe_nodes, node)
+        end
+    end
+    fe_nodes = unique(fe_nodes)
+    for fe_node in fe_nodes
+        if !pd_neighbors
+            nlist[fe_node] = Int64[]
+        end
+        for el_id in nodes_to_element[fe_node]
+            append!(nlist[fe_node], topology[el_id])
+        end
+        nlist[fe_node] = unique(nlist[fe_node])
+        nlist[fe_node] = filter(x -> x != fe_node, nlist[fe_node])
+    end
+    return nlist, topology, nodes_to_element
 end
 
 """
@@ -495,11 +607,62 @@ function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
     lenNlist = zeros(Int64, len)
     for id in 1:len
         if length(nlist[id]) == 0
-            @warn "Node $id has no neighbors please check the horizon"
+            @error "Node $id has no neighbors please check the horizon."
+            return nothing
         end
         lenNlist[id] = length(nlist[id])
     end
     return lenNlist
+end
+
+"""
+    element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64}, size::Int64)
+
+Create the distribution of the finite elements. Is needed to avoid multiple element calls. Each element should run only one time at the cores.
+
+# Arguments
+- `topology::Vector{Vector{Int64}}`: The topology list of the mesh elements.
+- `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
+- `size::Int64`: The number of ranks.
+# Returns
+- `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
+- `etc::Vector{Int64}`: The number of nodes in each rank.
+"""
+function element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64}, size::Int64)
+    nelements = length(topology)
+    if size == 1
+        distribution = [collect(1:nelements)]
+        etc::Vector{Int64} = []
+    else
+        distribution, etc = create_base_chunk(nelements, size)
+        # check if at least one node of an element is at the same core
+        temp = []
+        for i_core in 1:size
+            push!(temp, Vector{Int64}([]))
+            #nchunks = length(distribution[i])
+            for el_id in distribution[i_core]
+                if !(i_core in ptc[topology[el_id]])
+                    push!(temp[i_core], el_id)
+                end
+            end
+        end
+        for i_core in 1:size
+            if length(temp[i_core]) > 0
+                for el_id in temp[i_core]
+                    # find core with the lowest number of elements on it
+                    # first find cores where all the nodes are
+                    # check the number of elements at all of these cores
+                    # find the core with the lowest number of elements
+                    # put the element there
+                    min_core = ptc[topology[el_id][argmin(length.(distribution[ptc[topology[el_id]]]))]]
+                    push!(distribution[min_core], el_id)
+                    distribution[etc[el_id]] = filter(x -> x != el_id, distribution[etc[el_id]])
+                    etc[el_id] = min_core
+                end
+            end
+        end
+    end
+    return distribution
 end
 
 """
@@ -511,8 +674,8 @@ Create the distribution of the nodes.
 - `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
 - `size::Int64`: The number of ranks.
 # Returns
-- `distribution::Array{Int64,1}`: The distribution of the nodes.
-- `ptc::Array{Int64,1}`: The number of nodes in each rank.
+- `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
+- `ptc::Vector{Int64}`: Defines at which core / rank each node lies.
 - `ntype::Dict`: The type of the nodes.
 """
 function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
@@ -522,7 +685,7 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
     if size == 1
         distribution = [collect(1:nnodes)]
         overlap_map = [[[]]]
-        ptc = []
+        ptc = Int64[]
         append!(ntype["controllers"], nnodes)
         append!(ntype["responder"], 0)
     else
@@ -596,7 +759,7 @@ Create the overlap map.
 # Returns
 - `overlap_map::Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}`: The overlap map.
 """
-function create_overlap_map(distribution, ptc, size)
+function create_overlap_map(distribution::Vector{Vector{Int64}}, ptc::Vector{Int64}, size::Int64)
 
     overlap_map = _init_overlap_map_(size)
     if size == 1
@@ -652,34 +815,29 @@ function create_base_chunk(nnodes::Int64, size::Int64)
 end
 
 """
-    neighbors(mesh::DataFrame, params::Dict, coor::Vector{String})
+    neighbors(mesh, params::Dict, coor)
 
 Compute the neighbor list for each node in a mesh based on their proximity using a BallTree data structure.
 
 # Arguments
-- `mesh::DataFrame`: A mesh data structure containing the coordinates and other information.
-- `params::Dict`: paramss needed for computing the neighbor list.
-- `coor:;:Vector{String}`: A vector of coordinate names along which to compute the neighbor list.
+- `mesh`: A mesh data structure containing the coordinates and other information.
+- `params`: paramss needed for computing the neighbor list.
+- `coor`: A vector of coordinate names along which to compute the neighbor list.
 
 # Returns
 An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
 """
-function neighbors(mesh::DataFrame, params::Dict, coor::Vector{String})
+function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vector{String}})
     @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
     data = zeros(dof, nnodes)
-    neighborList = Vector{Int64}[]
-    resize!(neighborList, nnodes)
+    neighborList = fill(Vector{Int64}([]), nnodes)
 
-    # data = [mesh[!, coor[i]] for i in 1:dof]
     for i in 1:dof
         data[i, :] = values(mesh[!, coor[i]])
     end
-
-    # balltree = BallTree(hcat(data...))
     balltree = BallTree(data)
-
     for i in 1:nnodes
         neighborList[i] = inrange(balltree, data[:, i], get_horizon(params, mesh[!, "block_id"][i]), true)
         # avoid self reference in neighborhood

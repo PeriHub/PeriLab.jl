@@ -7,9 +7,11 @@ using MPI
 
 export check_properties
 export create_bond_field
+export create_constant_free_size_field
 export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
+export fem_active
 export get_all_field_keys
 export get_block_list
 export get_crit_values_matrix
@@ -23,6 +25,7 @@ export get_nlist
 export get_nnsets
 export get_nsets
 export get_nnodes
+export get_num_elements
 export get_physics_options
 export get_properties
 export get_property
@@ -36,9 +39,11 @@ export set_block_list
 export set_crit_values_matrix
 export set_aniso_crit_values
 export set_inverse_nlist
+export set_fem
 export set_glob_to_loc
 export set_num_controller
 export set_nset
+export set_num_elements
 export set_num_responder
 export set_physics_options
 export set_property
@@ -53,8 +58,10 @@ export synch_manager
 global nnodes::Int64 = 0
 global num_controller::Int64 = 0
 global num_responder::Int64 = 0
+global num_elements::Int64 = 0
 global nnsets::Int64 = 0
 global dof::Int64 = 1
+global fem_option = false
 global block_list::Vector{Int64} = []
 global distribution::Vector{Int64}
 global crit_values_matrix::Array{Float64,3}
@@ -183,6 +190,30 @@ function create_constant_bond_field(name::String, type::Type, VectorOrArray::Str
     return create_field(name, type, "Bond_Field", VectorOrArray, dof, default_value)
 end
 
+function create_constant_free_size_field(name::String, vartype::Type, dof::Tuple)
+    return create_field(name, vartype, dof)
+end
+
+function create_free_size_field(name::String, vartype::Type, dof::Tuple)
+    return create_field(name * "N", vartype, dof), create_field(name * "NP1", vartype, dof)
+end
+
+function create_field(name::String, vartype::Type, dof::Tuple)
+    if !haskey(fields, vartype)
+        fields[vartype] = Dict{String,Any}()
+    end
+    if name in get_all_field_keys()
+        if size(get_field(name)) != dof
+            @warn "Field $name exists already with different size. Predefined field is returned"
+        end
+        return get_field(name)
+    end
+    fields[vartype][name] = Array{vartype}(zeros(dof))
+    field_types[name] = vartype
+    field_array_type[name] = Dict("Type" => "Field", "Dof" => dof)
+    return get_field(name)
+end
+
 """
     create_constant_node_field(name::String, type::Type, dof::Int64)
 
@@ -203,11 +234,9 @@ create_constant_node_field("temperature", Float64, 1)  # creates a temperature c
 ```
 """
 function create_constant_node_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
-
     return create_field(name, type, "Node_Field", dof, default_value)
 end
 function create_constant_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
-
     return create_field(name, type, "Node_Field", VectorOrArray, dof, default_value)
 end
 
@@ -237,10 +266,13 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
     global field_types
 
     field_dof = dof
-    if haskey(fields, vartype) == false
+    if !haskey(fields, vartype)
         fields[vartype] = Dict{String,Any}()
     end
     if name in get_all_field_keys()
+        if size(get_field(name))[1] != nnodes
+            @warn "Field $name exists already with different size. Predefined field is returned"
+        end
         return get_field(name)
     end
     if VectorOrArray == "Matrix"
@@ -300,6 +332,14 @@ end
 
 function create_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64, default_value::Any=0)
     return create_field(name * "N", type, "Node_Field", VectorOrArray, dof, default_value), create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof, default_value)
+end
+"""
+   fem_active()
+
+Returns if FEM is active (true) or not (false).
+"""
+function fem_active()
+    return fem_option
 end
 
 """
@@ -403,7 +443,9 @@ function get_field(name::String)
                 field_dof = field_array_type[name]["Dof"]
                 return view(reshape(fields[field_types[name]][name], (:, field_dof, field_dof)), :, :, :)
             end
-            return view(fields[field_types[name]][name], :, :)
+            code::String = "view(fields[field_types[\"$name\"]][\"$name\"]" * join(repeat(", :", length(size(fields[field_types[name]][name])))) * ")"
+            return eval(Meta.parse(code))
+            #return view(fields[field_types[name]][name], :, :)
         end
         if field_array_type[name]["Type"] == "Matrix"
             field_dof = field_array_type[name]["Dof"]
@@ -528,6 +570,19 @@ Get the node sets
 function get_nsets()
     global nsets
     return nsets
+end
+
+"""
+    get_num_elements()
+
+Get the the number of finite elements
+
+# Returns
+- `get_num_elements::Int64`: The number of finite elements
+"""
+function get_num_elements()
+    global num_elements
+    return num_elements
 end
 
 """
@@ -726,7 +781,7 @@ function init_property()
 
     block_list = get_block_list()
     for iblock in block_list
-        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
+        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}(), "FEM" => Dict{String,Any}())
     end
     return collect(keys(properties[block_list[1]]))
 end
@@ -736,6 +791,9 @@ end
 Check if the "Angles" field is present in the datamanager's field keys.
 If present, return true and retrieve the value of the "Angles" field.
 If not present, return false and nothing.
+
+# Input
+element_or_node::String="Node" :  "Node" or "Element" angles; Node is default
 
 # Returns
 - `Tuple{Bool, Union{Nothing, Any}}`: A tuple containing a Boolean value
@@ -751,10 +809,17 @@ else
     println("Angles field is not present.")
 end
 """
-function rotation_data()
+function rotation_data(element_or_node::String="Node")
     rotation::Bool = false
-    if "Angles" in get_all_field_keys()
+    if element_or_node != "Node" && element_or_node != "Element"
+        @error "Invalid input. Please provide 'Node' or 'Element'."
+        return nothing
+    end
+    if "Angles" in get_all_field_keys() && element_or_node == "Node"
         return true, get_field("Angles")
+    end
+    if "Element Angles" in get_all_field_keys() && element_or_node == "Element"
+        return true, get_field("Element Angles")
     end
     return false, nothing
 end
@@ -822,6 +887,24 @@ set_dof(3)  # sets the degree of freedom to 3
 """
 function set_dof(n::Int64)
     global dof = n
+end
+
+"""
+    set_fem(n::Bool)
+
+Activates and deactivates the FEM option in PeriLab
+
+# Arguments
+- `n::Bool`: The value to set FEM active (true) or not (false).
+
+Example:
+```julia
+set_fem(true)  # sets the fem_option to true
+```
+"""
+function set_fem(n::Bool)
+    @info "FEM option is set to $n"
+    global fem_option = n
 end
 
 """
@@ -908,7 +991,7 @@ Set the nodes associated with a named node set.
 - `name::String`: The name of the node set.
 - `nodes::Vector{Int}`: The node indices associated with the node set.
 """
-function set_nset(name::String, nodes::Vector{Int})
+function set_nset(name::String, nodes::Vector{Int64})
     global nsets
 
     if name in keys(nsets)
@@ -917,6 +1000,28 @@ function set_nset(name::String, nodes::Vector{Int})
     nsets[name] = nodes
     # set the number of node sets
     set_nnsets(length(nsets))
+end
+
+"""
+    set_num_elements(n::Int64)
+
+Sets the number of finite elements globally. 
+
+# Arguments
+- `n::Int64`: The value to set as the number of finite elements.
+
+Example:
+```julia
+set_num_elements(10)  # sets the number of finite elements to 10
+```
+"""
+
+function set_num_elements(n::Int64)
+    if n < 0
+        @error "Number of elements must be positive or zero."
+        return nothing
+    end
+    global num_elements = n
 end
 
 """
@@ -932,7 +1037,7 @@ Example:
 set_num_responder(10)  # sets the number of responder nodes to 10
 ```
 """
-function set_num_responder(n)
+function set_num_responder(n::Int64)
     global num_responder = n
     set_nnodes()
 end
@@ -972,11 +1077,18 @@ Sets the value of a specified `property` for a given `block_id`.
 - `value_name`::String: The name of the value within the specified `property`.
 - `value`::Any: The value to set for the specified `value_name`.
 """
-function set_property(block_id, property, value_name, value)
+function set_property(block_id::Int64, property::String, value_name::String, value)
     global properties
-
     properties[block_id][property][value_name] = value
 end
+
+function set_property(property::String, value_name::String, value)
+    global properties
+    for block_id in eachindex(properties)
+        properties[block_id][property][value_name] = value
+    end
+end
+
 
 """
     set_properties(block_id, property, values)
@@ -990,8 +1102,23 @@ Sets the values of a specified `property` for a given `block_id`.
 """
 function set_properties(block_id, property, values)
     global properties
-
     properties[block_id][property] = values
+end
+
+"""
+    set_properties(property, values)
+
+Sets the values of a specified `property` for a all `blocks`. E.g. for FEM, because it corresponds not to a block yet,
+
+# Arguments
+- `property`::String: The name of the property.
+- `values`::Any: The values to set for the specified `property`.
+"""
+function set_properties(property, values)
+    global properties
+    for id in eachindex(properties)
+        properties[id][property] = values
+    end
 end
 
 """

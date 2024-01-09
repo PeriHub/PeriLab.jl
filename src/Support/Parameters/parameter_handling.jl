@@ -9,6 +9,7 @@ include("./parameter_handling_mesh.jl")
 include("./parameter_handling_output.jl")
 include("./parameter_handling_computes.jl")
 include("./parameter_handling_solver.jl")
+include("./parameter_handling_FEM.jl")
 
 expected_structure = Dict(
     "PeriLab" => [Dict{Any,Any}(

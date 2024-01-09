@@ -26,6 +26,14 @@ using MPI
     @test Verlet.test_timestep(2.0, 2.0) == 2
 end
 
+@testset "ut_get_integration_steps" begin
+    @test isnothing(Verlet.get_integration_steps(0.0, 0.0, -1.0))
+    @test Verlet.get_integration_steps(0.0, 1.0, 1.0) == (1, 1.0)
+    @test Verlet.get_integration_steps(0.0, 2.0, 1.0) == (2, 1.0)
+    @test Verlet.get_integration_steps(0.0, 6.0, 2.0) == (3, 2.0)
+    @test Verlet.get_integration_steps(2.0, 6.0, 2.0) == (2, 2.0)
+end
+
 @testset "ut_get_cs_denominator" begin
     volume = Float64[1, 2, 3]
     undeformed_bond = [1, 2, 3]

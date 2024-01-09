@@ -7,24 +7,41 @@ include("../material_basis.jl")
 include("./Ordinary/Ordinary.jl")
 using TimerOutputs
 import .Ordinary
+export fe_support
 export init_material_model
 export material_name
 export compute_forces
 
-# global dof::Int64
-# global nlist::Vector{Vector{Int64}}
-# global volume::Vector{Float64}
+"""
+  fe_support()
+
+Gives the information if the material supports the FEM part of PeriLab
+
+# Arguments
+
+# Returns
+- bool: true - for FEM support; false - for no FEM support
+
+Example:
+```julia
+println(fe_support())
+false
+```
+"""
+function fe_support()
+    return false
+end
 
 """
-    init_material_model(datamanager::Module)
+  init_material_model(datamanager::Module)
 
 Initializes the material model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_manager`: Datamanager.
 
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module)
     # global dof
@@ -82,8 +99,8 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     # optimizing, because if no damage it has not to be updated
 
-    @timeit to "Weighted Volume" weighted_volume = Ordinary.compute_weighted_volume(nodes, nneighbors, nlist, undeformed_bond, bond_damage, omega, volume, weighted_volume)
-    @timeit to "Dilatation" theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, undeformed_bond, deformed_bond, bond_damage, volume, weighted_volume, omega, theta)
+    @timeit to "Weighted Volume" weighted_volume = Ordinary.compute_weighted_volume(nodes, nlist, undeformed_bond, bond_damage, omega, volume)
+    @timeit to "Dilatation" theta = Ordinary.compute_dilatation(nodes, nneighbors, nlist, undeformed_bond, deformed_bond, bond_damage, volume, weighted_volume, omega)
     @timeit to "Bond Forces" bond_force = elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force)
 
 

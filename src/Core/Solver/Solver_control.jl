@@ -11,10 +11,12 @@ include("Verlet.jl")
 include("../../Support/Parameters/parameter_handling.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
+include("../../FEM/FEM_Factory.jl")
 using .IO
 using .Physics
 using .Boundary_conditions
 using .Verlet
+using .FEM
 using TimerOutputs
 
 """
@@ -55,7 +57,9 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     if get_solver_name(params) == "Verlet"
         @timeit to "init_solver" solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = Verlet.init_solver(params, datamanager, blockNodes, solver_options["Material Models"], solver_options["Thermal Models"])
     end
-
+    if datamanager.fem_active()
+        datamanager = FEM.init_FEM(params, datamanager)
+    end
     if "Active" in datamanager.get_all_field_keys()
         # can be predefined in mesh. Therefore it should be checked if it is there.
         active = datamanager.get_field("Active")

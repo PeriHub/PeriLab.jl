@@ -119,8 +119,27 @@ testfield_keys = test_Data_manager.get_all_field_keys()
     @test "IN" in testfield_keys
     @test "INP1" in testfield_keys
 end
+@testset "ut_set_fem" begin
+    @test test_Data_manager.fem_active() == false
+    test_Data_manager.set_fem(true)
+    @test test_Data_manager.fem_active() == true
+    test_Data_manager.set_fem(false)
+    @test test_Data_manager.fem_active() == false
+end
 
-@testset "create_existing_field" begin
+
+@testset "ut_number_of_elements" begin
+    test_Data_manager.set_num_elements(5)
+    @test test_Data_manager.get_num_elements() == 5
+    test_Data_manager.set_num_elements(10)
+    @test test_Data_manager.get_num_elements() == 10
+    test_Data_manager.set_num_elements(1)
+    @test test_Data_manager.get_num_elements() == 1
+    test_Data_manager.set_num_elements(0)
+    @test test_Data_manager.get_num_elements() == 0
+    @test isnothing(test_Data_manager.set_num_elements(-1))
+end
+@testset "ut_create_existing_field" begin
     field1, field2 = test_Data_manager.create_node_field("D", Int64, 3)
     testfield_keys = test_Data_manager.get_all_field_keys()
     @test "DN" in testfield_keys
@@ -176,13 +195,59 @@ end
 
 end
 
-@testset "get_field_type" begin
+@testset "ut_get_field_type" begin
     @test test_Data_manager.get_field_type("A") == Float64
     @test test_Data_manager.get_field_type("DN") == Int64
     @test test_Data_manager.get_field_type("DNP1") == Int64
     @test test_Data_manager.get_field_type("GN") == Bool
     @test isnothing(test_Data_manager.get_field_type("not there"))
     @test isnothing(test_Data_manager.get_field_type("D"))
+end
+
+@testset "ut_create_free_size_field" begin
+    test = test_Data_manager.create_constant_free_size_field("BMatrix", Float64, (50, 3))
+    @test size(test) == (50, 3)
+    @test test_Data_manager.get_field_type("BMatrix") == Float64
+    test2 = test_Data_manager.get_field("BMatrix")
+    @test test == test2
+    test = test_Data_manager.create_constant_free_size_field("BMatrix", Float64, (2, 3))
+    @test size(test) == (50, 3)
+    test = test_Data_manager.create_constant_free_size_field("GN", Float64, (2, 3))
+    @test size(test) == (5,)
+    test = test_Data_manager.create_constant_node_field("BMatrix", Float64, 3)
+    @test size(test) == (50, 3)
+    test = test_Data_manager.create_constant_free_size_field("Test_size", Float64, (2, 3, 3))
+    @test size(test) == (2, 3, 3)
+    test = test_Data_manager.create_constant_free_size_field("Test_size_2", Float64, (2, 3, 3, 4))
+    @test size(test) == (2, 3, 3, 4)
+    test = test_Data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
+    @test size(test) == (5, 3, 3)
+    test = test_Data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
+    @test size(test) == (5, 3, 3)
+    test, test2 = test_Data_manager.create_free_size_field("Test_size_4", Float64, (3, 3, 1, 3))
+    @test size(test) == (3, 3, 1, 3)
+    @test size(test2) == (3, 3, 1, 3)
+    @test "Test_size_4N" in test_Data_manager.get_all_field_keys()
+    @test "Test_size_4NP1" in test_Data_manager.get_all_field_keys()
+    test, test2 = test_Data_manager.create_node_field("Test_size_4", Float64, "Matrix", 3)
+    @test size(test) == (3, 3, 1, 3)
+    @test size(test2) == (3, 3, 1, 3)
+end
+
+function create_constant_free_size_field(name::String, type::Type, dof::Tuple)
+    if haskey(fields, vartype) == false
+        fields[vartype] = Dict{String,Any}()
+    end
+    if name in get_all_field_keys()
+        if size(get_field(name)) != dof
+            @warn "Field $name exists already with different size. Predefined field is returned"
+        end
+        return get_field(name)
+    end
+    fields[vartype][name] = Array{type}(zeros(dof))
+    field_types[name] = vartype
+    field_array_type[name] = Dict("Type" => "Field", "Dof" => dof)
+    return get_field(name)
 end
 
 @testset "set_get_field" begin
@@ -389,6 +454,10 @@ end
     @test test_Data_manager.get_properties(1, "") == Dict()
     @test !test_Data_manager.check_property(1, "This is not a property")
     @test isnothing(test_Data_manager.get_property(1, "Thermal Model", "This is not a property"))
+    test_Data_manager.set_properties("FEM", Dict("A" => 2, "C" => "Model"))
+    @test test_Data_manager.get_properties(1, "FEM") == Dict("A" => 2, "C" => "Model")
+    @test test_Data_manager.get_properties(2, "FEM") == Dict("A" => 2, "C" => "Model")
+    @test test_Data_manager.get_properties(3, "FEM") == Dict("A" => 2, "C" => "Model")
 end
 
 @testset "get_physics_options" begin
@@ -462,6 +531,18 @@ end
     rotation, angles = test_Data_manager.rotation_data()
     @test rotation
     @test angles == test_angles
+    rotation, angles = test_Data_manager.rotation_data("Node")
+    @test rotation
+    @test angles == test_angles
+    rotation, angles = test_Data_manager.rotation_data("Element")
+    @test !rotation
+    @test isnothing(angles)
+    test_angles = test_Data_manager.create_constant_node_field("Element Angles", Float32, 3)# in code it has length number of elements * element integration points
+    rotation, angles = test_Data_manager.rotation_data("Element")
+    @test rotation
+    @test angles == test_angles
+    @test isnothing(test_Data_manager.rotation_data("Hello"))
+
 end
 
 @testset "ut_cancel" begin
@@ -477,3 +558,4 @@ end
     test_Data_manager.set_crit_values_matrix(crit_values)
     @test test_Data_manager.get_crit_values_matrix() == crit_values
 end
+

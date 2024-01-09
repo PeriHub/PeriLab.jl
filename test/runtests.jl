@@ -17,6 +17,18 @@ MPI.Init()
         @testset "ut_perilab" begin
             @includetests["unit_tests/ut_perilab"]
         end
+        @testset "FEM" begin
+            @testset "ut_FEM_routines" begin
+                @includetests["unit_tests/FEM/ut_FEM_routines"]
+            end
+
+            @testset "ut_FEM_Factory" begin
+                @includetests["unit_tests/FEM/ut_FEM_Factory"]
+            end
+            @testset "ut_lagrange_element" begin
+                @includetests["unit_tests/FEM/Element_formulation/ut_lagrange_element"]
+            end
+        end
         @testset "Compute" begin
             @testset "ut_compute_global_values" begin
                 @includetests["unit_tests/Compute/ut_compute_global_values"]
@@ -175,6 +187,9 @@ MPI.Init()
         end
         @testset "test_DCB" begin
             @includetests["fullscale_tests/test_DCB/test_DCB"]
+        end
+        @testset "test_FEM" begin
+            @includetests["fullscale_tests/test_FEM/test_FEM"]
         end
     end
 
