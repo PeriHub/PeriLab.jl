@@ -78,7 +78,7 @@ Example:
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
     dof::Int64 = datamanager.get_dof()
     nlist = datamanager.get_nlist()
-    blockList = datamanager.get_block_list()
+    block_list = datamanager.get_block_list()
     block_ids = datamanager.get_field("Block_Id")
     update_list = datamanager.get_field("Update List")
     horizon = datamanager.get_field("Horizon")
