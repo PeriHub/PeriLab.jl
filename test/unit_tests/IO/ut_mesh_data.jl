@@ -10,6 +10,8 @@ using .Read_Mesh
 using .Data_manager
 using DataFrames
 @testset "ut_read_mesh" begin
+    params = Dict("Discretization" => Dict("Type" => "not supported"))
+    @test isnothing(Read_Mesh.read_mesh("./", params))
 
     params = Dict("Discretization" => Dict("Type" => "Text File"))
     @test isnothing(Read_Mesh.read_mesh("./", params))
@@ -35,6 +37,24 @@ using DataFrames
     @test collect(skipmissing(data[4, :])) == [5, 6, 7, 8]
 
 end
+
+@testset "ut_check_for_duplicates" begin
+    path = "./unit_tests/IO/"
+    params = Dict("Discretization" => Dict("Type" => "Text File"))
+    data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"), params)
+    if isnothing(data)
+        path = "./test/unit_tests/IO/"
+        data = Read_Mesh.read_mesh(joinpath(path, "example_mesh.txt"), params)
+    end
+    @test !(Read_Mesh.check_for_duplicates(data))
+    data[1, :] = data[2, :]
+    @test Read_Mesh.check_for_duplicates(data)
+    data[1, :] = data[3, :]
+    @test Read_Mesh.check_for_duplicates(data)
+    data[2, :] = data[3, :]
+    @test Read_Mesh.check_for_duplicates(data)
+end
+
 
 @testset "ut_create_consistent_neighborhoodlist" begin
     path = "./unit_tests/IO/"

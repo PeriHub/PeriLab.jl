@@ -449,11 +449,11 @@ function read_mesh(filename::String, params::Dict)
         return mesh_df
 
     elseif params["Discretization"]["Type"] == "Text File"
-
         header_line, header = get_header(filename)
         return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
     else
         @error "Discretization type not supported"
+        return nothing
     end
 
 end
@@ -477,6 +477,26 @@ function set_dof(mesh::DataFrame)
 end
 
 """
+    check_for_duplicates(mesh::DataFrame)
+
+check duplicated entries and throws an error if one is there. If not everything is ok.
+
+# Arguments
+- `mesh::DataFrame`: The input mesh data represented as a DataFrame.
+# Returns
+- `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
+"""
+
+function check_for_duplicates(mesh::DataFrame)
+    duplicates = findall(nonunique(mesh))
+    if length(duplicates) > 0
+        @error "Mesh contains duplicate nodes! Nodes: $duplicates"
+        return true
+    end
+    return false
+end
+
+"""
     load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
 Load and evaluate the mesh data.
@@ -497,11 +517,8 @@ Load and evaluate the mesh data.
 function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
     mesh = read_mesh(joinpath(path, get_mesh_name(params)), params)
-    duplicates = findall(nonunique(mesh))
-    if length(duplicates) > 0
-        @error "Mesh contains duplicate nodes! Nodes: $duplicates"
-        return nothing
-    end
+    check_for_duplicates(mesh)
+
     external_topology = nothing
     if !isnothing(get_external_topology_name(params))
         external_topology = read_external_topology(joinpath(path, get_external_topology_name(params)))
