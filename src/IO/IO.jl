@@ -94,13 +94,18 @@ Closes the result files
 
 # Arguments
 - `result_files::Vector{Dict}`: The result files
+# Returns
+- `true`: File is closed
+- `false`: File was already closed
 """
 function close_result_files(result_files::Vector{Dict})
     for result_file in result_files
         try
             close_result_file(result_file)
+            return true
         catch
             @warn "File already closed"
+            return false
         end
     end
 end
@@ -113,6 +118,7 @@ Closes the result files if the flush_file flag is not set
 # Arguments
 - `result_files::Vector{Dict}`: The result files
 - `outputs::Dict{Int64,Dict{}}`: The output settings
+
 """
 function close_result_files(result_files::Vector{Dict}, outputs::Dict{Int64,Dict{}})
     for (id, result_file) in enumerate(result_files)
