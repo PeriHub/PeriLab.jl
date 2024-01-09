@@ -33,30 +33,6 @@ function damage_name()
 end
 
 """
-    calculate_energy_components(total_energy::Float64, angle_degrees::Float64)
-
-Calculates the horizontal and vertical components of an elastic energy release.
-
-# Arguments
-- `total_energy::Float64`: Total elastic energy.
-- `angle_degrees::Float64`: Angle in degrees.
-
-# Returns
-- `energy_horizontal::Float64`: Horizontal elastic energy.
-- `energy_vertical::Float64`: Vertical elastic energy.
-"""
-function calculate_energy_components(total_energy::Float64, angle_degrees::Float64)
-    # Convert angle from degrees to radians
-    angle_radians = deg2rad(angle_degrees)
-
-    # Calculate horizontal and vertical components
-    energy_horizontal = total_energy * cos(angle_radians)
-    energy_vertical = total_energy * sin(angle_radians)
-
-    return abs(energy_horizontal), abs(energy_vertical)
-end
-
-"""
     compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
 
 Calculates the elastic energy of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
@@ -83,7 +59,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     update_list = datamanager.get_field("Update List")
     horizon = datamanager.get_field("Horizon")
     bond_damage = datamanager.get_field("Bond Damage", "NP1")
-    bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic")
+    if haskey(damage_parameter, "Anisotropic Damage") && damage_parameter["Anisotropic Damage"]
+        bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic")
+    end
     undeformed_bond = datamanager.get_field("Bond Geometry")
     bond_forces = datamanager.get_field("Bond Forces")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")

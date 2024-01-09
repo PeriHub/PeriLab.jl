@@ -242,19 +242,19 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
 end
 
 """
-    init_models(params::Dict, datamanager::Module, allblock_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+    init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
 
 Initialize models
 
 # Arguments
 - `params::Dict`: Parameters.
 - `datamanager::Module`: Datamanager.
-- `allblock_nodes::Dict{Int64,Vector{Int64}}`: All block nodes.
+- `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
 - `solver_options::Dict`: Solver options.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_models(params::Dict, datamanager::Module, allblock_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, to::TimerOutput)
+function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, to::TimerOutput)
     dof = datamanager.get_dof()
     deformed_coorN, deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
     deformed_coorN[:] = copy(datamanager.get_field("Coordinates"))
@@ -263,13 +263,16 @@ function init_models(params::Dict, datamanager::Module, allblock_nodes::Dict{Int
     if solver_options["Additive Models"]
         @timeit to "additive_model_fields" datamanager = Physics.init_additive_model_fields(datamanager)
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
-        heat_capacity = set_heat_capacity(params, allblock_nodes, heat_capacity) # includes the neighbors
+        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
     end
     if solver_options["Damage Models"]
         @timeit to "damage_model_fields" datamanager = Physics.init_damage_model_fields(datamanager, params)
-        @timeit to "init damage model" datamanager = Damage.init_damage_model(datamanager, params)
-        #@timeit to "interface_crit_values" datamanager = Damage.init_interface_crit_values(datamanager, params)
-        #@timeit to "aniso_crit_values" datamanager = Damage.init_aniso_crit_values(datamanager, params)
+        for block in datamanager.get_block_list()
+            if datamanager.check_property(block, "Damage Model")
+                @timeit to "init damage model" datamanager = Damage.init_damage_model(datamanager, block_nodes[block], block)
+            end
+        end
+
     end
     if solver_options["Material Models"]
         @timeit to "model_fields" datamanager = Physics.init_material_model_fields(datamanager)
@@ -280,7 +283,7 @@ function init_models(params::Dict, datamanager::Module, allblock_nodes::Dict{Int
     if solver_options["Thermal Models"]
         datamanager = Physics.init_thermal_model_fields(datamanager)
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
-        heat_capacity = set_heat_capacity(params, allblock_nodes, heat_capacity) # includes the neighbors
+        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
     end
 
     return init_pre_calculation(datamanager, datamanager.get_physics_options())

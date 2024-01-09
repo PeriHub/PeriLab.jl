@@ -37,21 +37,21 @@ Initialize the solver
 function init(params::Dict, datamanager::Module, to::TimerOutput)
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
-    allblock_nodes = get_block_nodes(datamanager.get_field("Block_Id"), nnodes + num_responder)
+    block_nodes_with_neighbors = get_block_nodes(datamanager.get_field("Block_Id"), nnodes + num_responder)
     block_nodes = get_block_nodes(datamanager.get_field("Block_Id"), nnodes)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
 
     datamanager.create_constant_node_field("Update List", Bool, 1, true)
-    density = set_density(params, allblock_nodes, density) # includes the neighbors
-    horizon = set_horizon(params, allblock_nodes, horizon) # includes the neighbors
+    density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
+    horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     solver_options = get_solver_options(params)
 
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
 
     Physics.read_properties(params, datamanager, solver_options["Material Models"])
-    @timeit to "init_models" datamanager = Physics.init_models(params, datamanager, allblock_nodes, solver_options, to)
+    @timeit to "init_models" datamanager = Physics.init_models(params, datamanager, block_nodes, solver_options, to)
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
 
     if get_solver_name(params) == "Verlet"

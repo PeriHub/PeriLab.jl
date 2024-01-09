@@ -112,38 +112,31 @@ function set_bond_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64
 end
 
 """
-    init_interface_crit_values(datamanager::Module, params::Dict)
+    init_interface_crit_values(datamanager::Module, params::Dict, block_id::Int64)
 
 Initialize the critical values
 
 # Arguments
 - `datamanager::Module`: The datamanager
 - `params::Dict`: The parameters
+- `block_id::Int64`: current block
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function init_interface_crit_values(datamanager::Module, params::Dict)
-    blockList = datamanager.get_block_list()
-    max_block_id = maximum(blockList)
+function init_interface_crit_values(datamanager::Module, damage_parameter::Dict, block_id::Int64)
+    max_block_id = maximum(datamanager.get_block_list())
     inter_critical_value = zeros(Float64, (max_block_id, max_block_id, max_block_id))
-    for block_id in blockList
-        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
-            continue
-        end
-        damageName = params["Blocks"]["block_$block_id"]["Damage Model"]
-        damage_parameter = params["Physics"]["Damage Models"][damageName]
-        if !haskey(damage_parameter, "Interblock Damage")
-            continue
-        end
-        critical_value = damage_parameter["Critical Value"]
-        for block_iId in 1:max_block_id
-            for block_jId in 1:max_block_id
-                critValueName = "Interblock Critical Value $(block_iId)_$block_jId"
-                if haskey(damage_parameter["Interblock Damage"], critValueName)
-                    inter_critical_value[block_iId, block_jId, block_id] = damage_parameter["Interblock Damage"][critValueName]
-                else
-                    inter_critical_value[block_iId, block_jId, block_id] = critical_value
-                end
+    if !haskey(damage_parameter, "Interblock Damage")
+        return datamanager
+    end
+    critical_value = damage_parameter["Critical Value"]
+    for block_iId in 1:datamanager.get_block_list()
+        for block_jId in 1:datamanager.get_block_list()
+            critical_value_name = "Interblock Critical Value $(block_iId)_$block_jId"
+            if haskey(damage_parameter["Interblock Damage"], critical_value_name)
+                inter_critical_value[block_iId, block_jId, block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+            else
+                inter_critical_value[block_iId, block_jId, block_id] = critical_value
             end
         end
     end
@@ -152,51 +145,49 @@ function init_interface_crit_values(datamanager::Module, params::Dict)
 end
 
 """
-    init_aniso_crit_values(datamanager::Module, params::Dict)
+    init_aniso_crit_values(datamanager::Module, params::Dict, block_id::Int64)
 
 Initialize the anisotropic critical values
 
 # Arguments
 - `datamanager::Module`: The datamanager
 - `params::Dict`: The parameters
+- `block_id::Int64`: current block
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function init_aniso_crit_values(datamanager::Module, params::Dict)
-    blockList = datamanager.get_block_list()
+function init_aniso_crit_values(datamanager::Module, damage_parameter::Dict, block_id::Int64)
     aniso_crit::Dict{Int64,Any} = Dict()
-    for block_id in blockList
-        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
-            continue
-        end
-        damageName = params["Blocks"]["block_$block_id"]["Damage Model"]
-        damage_parameter = params["Physics"]["Damage Models"][damageName]
-        crit_0 = damage_parameter["Critical Value"]
-        crit_90 = damage_parameter["Critical Value"]
-        if !haskey(damage_parameter, "Anisotropic Damage")
-            continue
-        end
-        crit_0 = damage_parameter["Anisotropic Damage"]["Critical Value X"]
-        crit_90 = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
-        aniso_crit[block_id] = [crit_0, crit_90]
+
+    crit_0 = damage_parameter["Critical Value"]
+    crit_90 = damage_parameter["Critical Value"]
+    if !haskey(damage_parameter, "Anisotropic Damage")
+        return datamanager
     end
+    crit_0 = damage_parameter["Anisotropic Damage"]["Critical Value X"]
+    crit_90 = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
+    aniso_crit[block_id] = [crit_0, crit_90]
+
     datamanager.set_aniso_crit_values(aniso_crit)
     return datamanager
 end
 
-function init_damage_model(datamanager::Module, params::Dict)
+function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+
+    model_param = datamanager.get_properties(block, "Damage Model")
     specifics = Dict{String,String}("Call Function" => "init_damage_model", "Name" => "damage_name")
-    blockList = datamanager.get_block_list()
-    for block_id in blockList
-        model_param = datamanager.get_properties(block_id, "Damage Model")
-        datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, block))
-        if isnothing(datamanager)
-            @error "No damage model of name " * model_param["Damage Model"] * " exists."
-            return nothing
-        end
+    if !haskey(model_param, "Damage Model")
+        return datamanager
     end
-    datamanager = Damage.init_interface_crit_values(datamanager, params)
-    datamanager = Damage.init_aniso_crit_values(datamanager, params)
+
+    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, block))
+    if isnothing(datamanager)
+        @error "No damage model of name " * model_param["Damage Model"] * " exists."
+        return nothing
+    end
+
+    datamanager = Damage.init_interface_crit_values(datamanager, model_param, block)
+    datamanager = Damage.init_aniso_crit_values(datamanager, model_param, block)
     return datamanager
 end
 end
