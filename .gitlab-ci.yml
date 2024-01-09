@@ -60,10 +60,7 @@ deploy:
   stage: deploy
   extends: [.deploy_before_script_template]
   only:
-    refs:
-      - main
-    changes:
-      - src/**/*
+    - tags
   script:
     - docker build -t perihub/perilab .
     - docker push perihub/perilab
@@ -76,7 +73,7 @@ release:
     - apt-get -y install build-essential
     - julia --project=@. -e 'import Pkg; Pkg.test(); Pkg.add("PackageCompiler");
       using PackageCompiler;
-      create_app(".", "build", executables=["main" => "PeriLab", "get_examples" => "get_examples"], incremental=true)'
+      create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], incremental=true)'
   artifacts:
     paths:
       - build
