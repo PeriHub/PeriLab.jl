@@ -81,7 +81,7 @@ function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArr
   return datamanager
 end
 
-function init_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
+function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
   return datamanager
 end
 end
