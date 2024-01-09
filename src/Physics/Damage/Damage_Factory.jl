@@ -183,4 +183,20 @@ function init_aniso_crit_values(datamanager::Module, params::Dict)
     datamanager.set_aniso_crit_values(aniso_crit)
     return datamanager
 end
+
+function init_damage_model(datamanager::Module, params::Dict)
+    specifics = Dict{String,String}("Call Function" => "init_damage_model", "Name" => "damage_name")
+    blockList = datamanager.get_block_list()
+    for block_id in blockList
+        model_param = datamanager.get_properties(block_id, "Damage Model")
+        datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, block))
+        if isnothing(datamanager)
+            @error "No damage model of name " * model_param["Damage Model"] * " exists."
+            return nothing
+        end
+    end
+    datamanager = Damage.init_interface_crit_values(datamanager, params)
+    datamanager = Damage.init_aniso_crit_values(datamanager, params)
+    return datamanager
+end
 end
