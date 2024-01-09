@@ -221,9 +221,9 @@ Initialize damage model fields
 function init_damage_model_fields(datamanager::Module, params::Dict)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Damage", Float64, 1)
-    blockList = datamanager.get_block_list()
+    block_list = datamanager.get_block_list()
     anistropic_damage = false
-    for block_id in blockList
+    for block_id in block_list
         if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
             continue
         end
@@ -242,19 +242,19 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
 end
 
 """
-    init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+    init_models(params::Dict, datamanager::Module, allblock_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
 
 Initialize models
 
 # Arguments
 - `params::Dict`: Parameters.
 - `datamanager::Module`: Datamanager.
-- `allBlockNodes::Dict{Int64,Vector{Int64}}`: All block nodes.
+- `allblock_nodes::Dict{Int64,Vector{Int64}}`: All block nodes.
 - `solver_options::Dict`: Solver options.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, to::TimerOutput)
+function init_models(params::Dict, datamanager::Module, allblock_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, to::TimerOutput)
     dof = datamanager.get_dof()
     deformed_coorN, deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
     deformed_coorN[:] = copy(datamanager.get_field("Coordinates"))
@@ -263,7 +263,7 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     if solver_options["Additive Models"]
         @timeit to "additive_model_fields" datamanager = Physics.init_additive_model_fields(datamanager)
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
-        heat_capacity = set_heat_capacity(params, allBlockNodes, heat_capacity) # includes the neighbors
+        heat_capacity = set_heat_capacity(params, allblock_nodes, heat_capacity) # includes the neighbors
     end
     if solver_options["Damage Models"]
         @timeit to "damage_model_fields" datamanager = Physics.init_damage_model_fields(datamanager, params)
@@ -280,7 +280,7 @@ function init_models(params::Dict, datamanager::Module, allBlockNodes::Dict{Int6
     if solver_options["Thermal Models"]
         datamanager = Physics.init_thermal_model_fields(datamanager)
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
-        heat_capacity = set_heat_capacity(params, allBlockNodes, heat_capacity) # includes the neighbors
+        heat_capacity = set_heat_capacity(params, allblock_nodes, heat_capacity) # includes the neighbors
     end
 
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
@@ -387,20 +387,20 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
 end
 
 """
-    set_heat_capacity(params::Dict, blockNodes::Dict, heat_capacity::SubArray)
+    set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::SubArray)
 
 Sets the heat capacity of the nodes in the dictionary.
 
 # Arguments
 - `params::Dict`: The parameters
-- `blockNodes::Dict`: The block nodes
+- `block_nodes::Dict`: The block nodes
 - `heat_capacity::SubArray`: The heat capacity array
 # Returns
 - `heat_capacity::SubArray`: The heat capacity array
 """
-function set_heat_capacity(params::Dict, blockNodes::Dict, heat_capacity::SubArray)
-    for block in eachindex(blockNodes)
-        heat_capacity[blockNodes[block]] .= get_heat_capacity(params, block)
+function set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::SubArray)
+    for block in eachindex(block_nodes)
+        heat_capacity[block_nodes[block]] .= get_heat_capacity(params, block)
     end
     return heat_capacity
 end

@@ -13,12 +13,12 @@ end
 include("../../../../src/Support/Parameters/parameter_handling.jl")
 import .Solver
 
-@testset "ut_get_blockNodes" begin
+@testset "ut_get_block_nodes" begin
     block_ids = [1, 1, 1, 2, 2, 3, 3, 3, 3, 1, 1, 2, 3, 3, 1, 1, 2]
-    blockNodes = Solver.get_blockNodes(block_ids, length(block_ids))
-    @test blockNodes[1] == [1, 2, 3, 10, 11, 15, 16]
-    @test blockNodes[2] == [4, 5, 12, 17]
-    @test blockNodes[3] == [6, 7, 8, 9, 13, 14]
+    block_nodes = Solver.get_block_nodes(block_ids, length(block_ids))
+    @test block_nodes[1] == [1, 2, 3, 10, 11, 15, 16]
+    @test block_nodes[2] == [4, 5, 12, 17]
+    @test block_nodes[3] == [6, 7, 8, 9, 13, 14]
 
 end
 
@@ -81,7 +81,7 @@ end
     node_list[:] = 1:nnodes
     undeformed_bond = Geometry.bond_geometry(node_list, dof, nlist, coor, undeformed_bond)
     @test !("Active" in test_Data_manager.get_all_field_keys())
-    blockNodes, bcs, datamanager, solver_options = Solver.init(params, test_Data_manager)
+    block_nodes, bcs, datamanager, solver_options = Solver.init(params, test_Data_manager)
 
 
     @test solver_options["Material Models"]
@@ -94,8 +94,8 @@ end
 
     @test bcs["BC1"]["Node Set"] == [2]
     @test bcs["BC2"]["Node Set"] == [2, 3, 4]
-    @test blockNodes[1] == [1, 2, 5]
-    @test blockNodes[2] == [3, 4]
+    @test block_nodes[1] == [1, 2, 5]
+    @test block_nodes[2] == [3, 4]
     @test "TemperatureNP1" in test_Data_manager.get_all_field_keys()
     @test "DisplacementsNP1" in test_Data_manager.get_all_field_keys()
     @test "DamageNP1" in test_Data_manager.get_all_field_keys()
@@ -106,7 +106,7 @@ end
     @test active[1:5] == [true, true, true, true, true]
     active[1:2] .= false
     active[5] = false
-    blockNodes, bcs, datamanager, solver_options = Solver.init(params, test_Data_manager)
+    block_nodes, bcs, datamanager, solver_options = Solver.init(params, test_Data_manager)
     @test active[1:5] == [false, false, true, true, false]
 
 end

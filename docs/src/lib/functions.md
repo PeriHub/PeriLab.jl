@@ -72,7 +72,7 @@ CurrentModule = PeriLab.Solver
 ## Solver
 ```@docs
 init
-get_blockNodes
+get_block_nodes
 set_density
 set_horizon
 solver

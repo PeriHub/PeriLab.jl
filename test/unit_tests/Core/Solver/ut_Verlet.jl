@@ -152,7 +152,7 @@ end
 # density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
 # test_Data_manager.set_nset("Nset_1", [1, 2, 3])
 # test_Data_manager.set_nset("Nset_2", [3, 4, 7, 10])
-# blockNodes = [1, 1, 2, 2, 1]
+# block_nodes = [1, 1, 2, 2, 1]
 # params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "5")))
 
 # bcs = Boundary_conditions.init_BCs(params, test_Data_manager)
@@ -160,12 +160,12 @@ end
 # outputs = Dict()
 # solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
 # test_Data_manager.set_rank(0)
-# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(blockNodes), bcs, test_Data_manager, outputs, result_files, Solver.write_results)
+# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(block_nodes), bcs, test_Data_manager, outputs, result_files, Solver.write_results)
 # test_Data_manager.set_rank(1)
 # # only if routine runs, if progress bar is not active
 # bcs = Boundary_conditions.init_BCs(params, test_Data_manager)
 # result_files = []
 # outputs = Dict()
 # solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
-# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(blockNodes), bcs, test_Data_manager, outputs, result_files, Solver.write_results)
+# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(block_nodes), bcs, test_Data_manager, outputs, result_files, Solver.write_results)
 

@@ -411,17 +411,17 @@ end
     @test nsets["N3"] == [1, 12]
 end
 
-@testset "ut_blocklist" begin
-    blocklist = test_Data_manager.get_block_list()
-    @test length(blocklist) == 0
+@testset "ut_block_list" begin
+    block_list = test_Data_manager.get_block_list()
+    @test length(block_list) == 0
     test_Data_manager.set_block_list([1, 2, 3, 4, 4, 4, 1, 1, 1, 2, 2])
-    blocklist = test_Data_manager.get_block_list()
-    @test length(blocklist) == 4
-    @test blocklist == [1, 2, 3, 4]
+    block_list = test_Data_manager.get_block_list()
+    @test length(block_list) == 4
+    @test block_list == [1, 2, 3, 4]
     test_Data_manager.set_block_list([4, 4, 2, 2, 1, 1])
-    blocklist = test_Data_manager.get_block_list()
-    @test length(blocklist) == 3
-    @test blocklist == [1, 2, 4]
+    block_list = test_Data_manager.get_block_list()
+    @test length(block_list) == 3
+    @test block_list == [1, 2, 4]
 end
 
 @testset "ut_properties" begin
