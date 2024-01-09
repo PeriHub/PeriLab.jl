@@ -8,17 +8,17 @@ export apply_bc
 include("../Support/Parameters/parameter_handling.jl")
 
 """
-    check_valid_bcs(bcs, datamanager)
+    check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module
 
 Check if the boundary conditions are valid
 
 # Arguments
-- `bcs::Dict{Any,Any}`: The boundary conditions
+- `bcs::Dict{String,Any}`: The boundary conditions
 - `datamanager::Module`: The data manager module
 # Returns
-- `working_bcs::Dict{Any,Any}`: The valid boundary conditions
+- `working_bcs::Dict{String,Any}`: The valid boundary conditions
 """
-function check_valid_bcs(bcs, datamanager)
+function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
     # check bc
     working_bcs = Dict()
     for bc in keys(bcs)
@@ -30,19 +30,20 @@ function check_valid_bcs(bcs, datamanager)
             end
         end
         valid = false
-        for dataentry in datamanager.get_all_field_keys()
+        for data_entry in datamanager.get_all_field_keys()
             initial = occursin("Initial", bcs[bc]["Type"])
             bc_type = replace(bcs[bc]["Type"], "Initial " => "")
-            if (occursin(bc_type, dataentry) && occursin("NP1", dataentry)) || bc_type == dataentry
+            if (occursin(bc_type, data_entry) && occursin("NP1", data_entry)) || bc_type == data_entry
                 working_bcs[bc] = bcs[bc]
-                bcs[bc]["Type"] = dataentry
+                bcs[bc]["Type"] = data_entry
                 bcs[bc]["Initial"] = initial
                 valid = true
                 break
             end
         end
         if !valid
-            @warn "Boundary condition $bc is not valid"
+            @error "Boundary condition $bc is not valid."
+            return nothing
         end
     end
     return working_bcs
