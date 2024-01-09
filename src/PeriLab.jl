@@ -204,11 +204,8 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         else
             Logging.disable_logging(Logging.Error)
         end
-        #global juliaPath = Base.Filesystem.pwd() * "/"
-        global juliaPath = "./"
 
         ################################
-        filename = juliaPath * filename
         filedirectory = dirname(filename)
         if output_dir != ""
             if !isdir(output_dir)
