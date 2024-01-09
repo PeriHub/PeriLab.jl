@@ -7,42 +7,43 @@ PeriLab:
     Node Sets:
       Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12
     Input Mesh File: "test_mesh_p1_3d.txt"
+    Type: Text File
     Input External Topology:
-        File: "test_topo_p1_3d.txt"
-        Add Neighbor Search: false
+      File: "test_topo_p1_3d.txt"
+      Add Neighbor Search: false
   FEM:
     Element Type: "Lagrange"
     Degree: 1
     Material Model: "Mat_1"
   Physics:
-    Material Models: 
-        Mat_1: 
-            Material Model: "Correspondence Elastic"
-            Symmetry: "isotropic plane strain"
-            Bulk Modulus: 2.5e+3
-            Shear Modulus: 1.15e3
+    Material Models:
+      Mat_1:
+        Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane strain"
+        Bulk Modulus: 2.5e+3
+        Shear Modulus: 1.15e3
   Blocks:
     block_1:
       Block Names: "block_1"
       Material Model: "Mat_1"
       Density: 2000
       Horizon: 1.1005
-  Boundary Conditions: 
-        BC_1: 
-            Type: "Displacements"
-            Node Set: "Node Set 1"
-            Coordinate: "x"
-            Value: "0.1*x"
-        BC_2: 
-            Type: "Displacements"
-            Node Set: "Node Set 1"
-            Coordinate: "y"
-            Value: "0.0"
-        BC_3: 
-            Type: "Displacements"
-            Node Set: "Node Set 1"
-            Coordinate: "z"
-            Value: "0.0"
+  Boundary Conditions:
+    BC_1:
+      Type: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "0.1*x"
+    BC_2:
+      Type: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "y"
+      Value: "0.0"
+    BC_3:
+      Type: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "z"
+      Value: "0.0"
   Solver:
     Verbose: False
     Initial Time: 0.0
@@ -59,4 +60,3 @@ PeriLab:
       Output Variables:
         Cauchy Stress: True
         Displacements: True
-        
