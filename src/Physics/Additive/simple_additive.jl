@@ -5,7 +5,7 @@
 module simple_additive
 export compute_additive_model
 export additive_name
-
+export init_additive_model
 """
     additive_name()
 

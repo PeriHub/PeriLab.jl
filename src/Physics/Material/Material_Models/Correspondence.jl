@@ -18,6 +18,7 @@ using .Geometry
 export init_material_model
 export material_name
 export compute_forces
+export init_material_model
 datamanager.create_node_field("von Mises Stresses", Float64, "Matrix", 1)
 
 """
