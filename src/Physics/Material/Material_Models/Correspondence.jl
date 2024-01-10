@@ -19,7 +19,6 @@ export init_material_model
 export material_name
 export compute_forces
 export init_material_model
-datamanager.create_node_field("von Mises Stresses", Float64, "Matrix", 1)
 
 """
   init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
