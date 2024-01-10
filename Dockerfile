@@ -6,12 +6,12 @@ FROM julia:latest
 WORKDIR /env
 COPY . . 
 
-# RUN julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate();'
-# RUN julia -e 'import Pkg; Pkg.add(path=".")'
-RUN julia --project=@. -e 'import Pkg; Pkg.build()'
-
 RUN apt-get -yq update
+RUN apt-get -yq install build-essential
 RUN apt-get -yq install openssh-server
+RUN julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler"); using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], incremental=true, force=true)'
+RUN chmod +x /env/build/bin/PeriLab
+ENV PATH="/env/build/bin:${PATH}"
 
 # Allow mpirun as root, should only be used in container
 ENV OMPI_ALLOW_RUN_AS_ROOT 1
