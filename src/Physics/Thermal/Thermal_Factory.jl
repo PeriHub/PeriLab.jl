@@ -8,7 +8,7 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "thermal_model_name")
 Set_modules.include_files(module_list)
-
+export init_thermal_model
 export compute_thermal_model
 
 """
@@ -40,6 +40,36 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     datamanager = distribute_heat_flows(datamanager, nodes)
     return datamanager
 end
+
+"""
+    compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+
+Compute the thermal model
+
+# Arguments
+- `datamanager::Module`: The datamanager
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `model_param::Dict`: The model parameters
+- `time::Float64`: The current time
+- `dt::Float64`: The time step
+# Returns
+- `datamanager::Module`: The datamanager
+"""
+function init_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+    model_param = datamanager.get_properties(block, "Thermal Model")
+    specifics = Dict{String,String}("Call Function" => "init_thermal_model", "Name" => "thermal_model_name")
+
+    thermal_models = split(model_param["Thermal Model"], "+")
+    thermal_models = map(r -> strip(r), thermal_models)
+    for thermal_model in thermal_models
+        datamanager = Set_modules.create_module_specifics(thermal_model, module_list, specifics, (datamanager, nodes, model_param))
+        if isnothing(datamanager)
+            @error "No thermal model of name " * model_name * " exists."
+        end
+    end
+    return datamanager
+end
+
 """
     distribute_heat_flows(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 

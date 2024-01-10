@@ -20,25 +20,28 @@ test_Data_manager.set_num_controller(3)
 
 @testset "ut_additive_template" begin
     @test Additive_template.additive_name() == "Additive Template"
-    @test Additive_template.compute_additive(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
+    @test Additive_template.compute_additive_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
+    @test Additive_template.init_additive_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 1) == test_Data_manager
 end
 
 @testset "ut_damage_template" begin
     @test Damage_template.damage_name() == "Damage Template"
     @test Damage_template.compute_damage(test_Data_manager, Vector{Int64}(1:3), Dict(), 1, 0.0, 0.0) == test_Data_manager
     @test Damage_template.compute_damage_pre_calculation(test_Data_manager, Vector{Int64}(1:3), 1, "dummy for function", 0.0, 0.0) == test_Data_manager
+    @test Damage_template.init_damage(test_Data_manager, Vector{Int64}(1:3), Dict(), 1) == test_Data_manager
 end
 
 @testset "ut_material_template" begin
     test_Data_manager = Data_manager
     @test Material_template.material_name() == "Material Template"
-    @test Material_template.init_material_model(test_Data_manager) == test_Data_manager
+    @test Material_template.init_material_model(test_Data_manager, Vector{Int64}(1:3), Dict()) == test_Data_manager
     @test Material_template.compute_forces(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0, to) == test_Data_manager
 end
 
 @testset "ut_thermal_template" begin
     @test Thermal_template.thermal_model_name() == "Thermal Template"
     @test Thermal_template.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
+    @test Thermal_template.init_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict()) == test_Data_manager
 end
 
 @testset "ut_pre_calculation_template" begin

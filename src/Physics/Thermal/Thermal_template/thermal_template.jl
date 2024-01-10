@@ -4,6 +4,7 @@
 
 module Thermal_template
 export compute_thermal_model
+export init_thermal_model
 export thermal_model_name
 
 """
@@ -49,6 +50,25 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   @info "Fill the compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt) function."
   @info "The datamanager and thermal_parameter holds all you need to solve your problem on thermal flow level."
   @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+  return datamanager
+end
+
+"""
+    init_thermal_model(datamanager, nodes, thermal_parameter)
+
+Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
+- `block::Int64`: The current block.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+
+"""
+function init_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict)
+
   return datamanager
 end
 

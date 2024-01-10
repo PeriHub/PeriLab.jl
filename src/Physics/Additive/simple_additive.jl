@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module simple_additive
-export compute_additive
+export compute_additive_model
 export additive_name
-
+export init_additive_model
 """
     additive_name()
 
@@ -27,7 +27,7 @@ function additive_name()
 end
 
 """
-    compute_additive(datamanager, nodes, additive_parameter, time, dt)
+    compute_additive_model(datamanager, nodes, additive_parameter, time, dt)
 
 Calculates the force densities of the additive. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -43,7 +43,7 @@ Example:
 ```julia
 ```
 """
-function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float64, dt::Float64)
+function compute_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float64, dt::Float64)
 
   nlist = datamanager.get_nlist()
   inverse_nlist = datamanager.get_inverse_nlist()
@@ -75,4 +75,22 @@ function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   return datamanager
 end
 
+"""
+    init_additive_model(datamanager, nodes, additive_parameter)
+
+Inits the simple additive model. 
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `additive parameter::Dict(String, Any)`: Dictionary with additive parameter.
+- `block::Int64`: The current block.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+
+"""
+function init_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, block::Int64)
+
+  return datamanager
+end
 end

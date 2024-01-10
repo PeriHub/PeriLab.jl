@@ -18,19 +18,22 @@ using .Geometry
 export init_material_model
 export material_name
 export compute_forces
+export init_material_model
 
 """
-    init_material_model(datamanager::Module)
+  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
+  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module)
+function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
   # global dof
   # global rotation
   # global angles
@@ -84,7 +87,10 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   # global dof
   # global rotation
   # global angles
-
+  if !haskey(material_parameter, "Symmetry")
+    @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
+    return nothing
+  end
   rotation::Bool, angles = datamanager.rotation_data()
   dof = datamanager.get_dof()
   deformation_gradient = datamanager.get_field("Deformation Gradient")
