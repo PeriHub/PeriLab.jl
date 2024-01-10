@@ -60,7 +60,7 @@ function init_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     model_param = datamanager.get_properties(block, "Additive Model")
     specifics = Dict{String,String}("Call Function" => "init_additive_model", "Name" => "additive_name")
 
-    datamanager = Set_modules.create_module_specifics(model_param["Additive Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
+    datamanager = Set_modules.create_module_specifics(model_param["Additive Model"], module_list, specifics, (datamanager, nodes, model_param))
     if isnothing(datamanager)
         @error "No additive model of name " * model_param["Additive Model"] * " exists."
         return nothing

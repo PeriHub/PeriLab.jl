@@ -62,7 +62,7 @@ function init_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{In
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
-        datamanager = Set_modules.create_module_specifics(thermal_model, module_list, specifics, (datamanager, nodes, model_param, time, dt))
+        datamanager = Set_modules.create_module_specifics(thermal_model, module_list, specifics, (datamanager, nodes, model_param))
         if isnothing(datamanager)
             @error "No thermal model of name " * model_name * " exists."
         end

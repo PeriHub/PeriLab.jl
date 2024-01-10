@@ -266,7 +266,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
         for block in datamanager.get_block_list()
             if datamanager.check_property(block, "Additive Model")
-                @timeit to "init additive model" datamanager = Additive.init_damage_model(datamanager, block_nodes[block], block)
+                @timeit to "init additive model" datamanager = Additive.init_additive_model(datamanager, block_nodes[block], block)
             end
         end
     end
@@ -282,7 +282,9 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     if solver_options["Material Models"]
         @timeit to "material model fields" datamanager = Physics.init_material_model_fields(datamanager)
         for block in datamanager.get_block_list()
-            @timeit to "init material" datamanager = Material.init_material_model(datamanager, block_nodes[block], block)
+            if datamanager.check_property(block, "Material Model")
+                @timeit to "init material" datamanager = Material.init_material_model(datamanager, block_nodes[block], block)
+            end
         end
     end
     if solver_options["Thermal Models"]
@@ -290,7 +292,9 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
         for block in datamanager.get_block_list()
-            @timeit to "init thermal model" datamanager = Thermal.init_thermal_model(datamanager, block_nodes[block], block)
+            if datamanager.check_property(block, "Thermal Model")
+                @timeit to "init thermal model" datamanager = Thermal.init_thermal_model(datamanager, block_nodes[block], block)
+            end
         end
     end
 
