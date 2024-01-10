@@ -12,7 +12,12 @@ Logging.disable_logging(Logging.Error)
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
-
+    @testset "test_PD_Solid_Elastic_3D" begin
+        @includetests["fullscale_tests/test_PD_solid_elastic_3D/test_PD_solid_elastic_3D"]
+    end
+    @testset "test_Correspondence_Elastic_3D" begin
+        @includetests["fullscale_tests/test_correspondence_elastic_3D/test_correspondence_elastic_3D"]
+    end
     @testset "unit_tests" begin
         @testset "ut_perilab" begin
             @includetests["unit_tests/ut_perilab"]
@@ -184,6 +189,9 @@ MPI.Init()
         end
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
             @includetests["fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control"]
+        end
+        @testset "test_Correspondence_Elastic_3D" begin
+            @includetests["fullscale_tests/test_correspondence_elastic_3D/test_correspondence_elastic_3D"]
         end
         @testset "test_DCB" begin
             @includetests["fullscale_tests/test_DCB/test_DCB"]

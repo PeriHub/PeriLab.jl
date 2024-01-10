@@ -127,13 +127,14 @@ function get_Hooke_matrix(parameter, symmetry, dof)
         end
     end
     if occursin("isotropic", symmetry)
-        matrix = zeros(Float64, 2 * dof, 2 * dof)
+
         nu = parameter["Poisson's Ratio"]
         E = parameter["Young's Modulus"]
         G = parameter["Shear Modulus"]
         temp = E / ((1 + nu) * (1 - 2 * nu))
 
         if dof == 3
+            matrix = zeros(Float64, 2 * dof, 2 * dof)
             matrix[1, 1] = (1 - nu) * temp
             matrix[2, 2] = (1 - nu) * temp
             matrix[3, 3] = (1 - nu) * temp

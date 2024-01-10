@@ -84,7 +84,10 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   # global dof
   # global rotation
   # global angles
-
+  if !haskey(material_parameter, "Symmetry")
+    @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
+    return nothing
+  end
   rotation::Bool, angles = datamanager.rotation_data()
   dof = datamanager.get_dof()
   deformation_gradient = datamanager.get_field("Deformation Gradient")
