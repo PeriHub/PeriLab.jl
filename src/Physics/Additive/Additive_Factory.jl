@@ -57,7 +57,7 @@ datamanager = init_additive_model(my_data_manager, [1, 2, 3], 1)
 
 """
 function init_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
-
+    model_param = datamanager.get_properties(block, "Additive Model")
     specifics = Dict{String,String}("Call Function" => "init_additive_model", "Name" => "additive_name")
 
     datamanager = Set_modules.create_module_specifics(model_param["Additive Model"], module_list, specifics, (datamanager, nodes, model_param, time, dt))
