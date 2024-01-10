@@ -65,10 +65,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     for iID in nodes
         for jID in nneighbors[iID]
             stretch = (deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end]) / undeformed_bond[iID][jID, end]
-            crit_stretch = cricital_stretch
-            if inter_block_damage
-                crit_stretch = inter_critical_stretch[block_ids[iID], block_ids[nlist[iID][jID]], block]
-            end
+
+            crit_stretch = inter_block_damage ? inter_critical_stretch[block_ids[iID], block_ids[nlist[iID][jID]], block] : cricital_stretch
+
             if !tension
                 stretch = abs(stretch)
             end
