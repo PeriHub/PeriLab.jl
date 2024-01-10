@@ -282,7 +282,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     if solver_options["Material Models"]
         @timeit to "model_fields" datamanager = Physics.init_material_model_fields(datamanager)
         for block in datamanager.get_block_list()
-            @timeit to "material" datamanager = Material.init_material_model(datamanager, block)
+            @timeit to "material" datamanager = Material.init_material_model(datamanager, block_nodes[block], block)
         end
     end
     if solver_options["Thermal Models"]

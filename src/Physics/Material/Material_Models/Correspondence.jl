@@ -18,19 +18,22 @@ using .Geometry
 export init_material_model
 export material_name
 export compute_forces
+datamanager.create_node_field("von Mises Stresses", Float64, "Matrix", 1)
 
 """
-    init_material_model(datamanager::Module)
+  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
+  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module)
+function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
   # global dof
   # global rotation
   # global angles

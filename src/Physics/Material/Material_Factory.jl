@@ -17,17 +17,18 @@ export determine_isotropic_parameter
 export distribute_force_densities
 
 """
-    init_material_model(datamanager::Module, block::Int64)
+    init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
 
 Initializes the material model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_manager`: Datamanager
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
 - `block::Int64`: Block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module, block::Int64)
+function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Material Model")
     specifics = Dict{String,String}("Call Function" => "init_material_model", "Name" => "material_name")
     if !haskey(model_param, "Material Model")
@@ -37,7 +38,7 @@ function init_material_model(datamanager::Module, block::Int64)
     material_models = map(r -> strip(r), material_models)
 
     for material_model in material_models
-        datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager,))
+        datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param))
         if isnothing(datamanager)
             @error "No material of name " * material_model * " exists."
         end
