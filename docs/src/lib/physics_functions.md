@@ -29,7 +29,7 @@ CurrentModule = PeriLab.Solver.Physics.Additive
 ## Additive
 ```@docs
 Set_modules.Additive_template.additive_name
-Set_modules.Additive_template.compute_additive
+Set_modules.Additive_template.compute_additive_model
 ```
 
 ```@meta

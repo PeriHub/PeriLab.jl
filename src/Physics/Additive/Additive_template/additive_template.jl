@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Additive_template
-export compute_additive
+export compute_additive_model
 export additive_name
+export init_additive_model
 
 """
     additive_name()
@@ -27,9 +28,9 @@ function additive_name()
 end
 
 """
-    compute_additive(datamanager, nodes, additive_parameter, time, dt)
+    compute_additive_model(datamanager, nodes, additive_parameter, time, dt)
 
-Calculates additive model of the material. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the additive model. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
@@ -43,13 +44,38 @@ Example:
 ```julia
   ```
 """
-function compute_additive(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float64, dt::Float64)
+function compute_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float64, dt::Float64)
     @info "Please write a additive name in additive_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_additive(datamanager, nodes, additive_parameter, time, dt) function."
+    @info "Fill the compute_additive_model(datamanager, nodes, additive_parameter, time, dt) function."
     @info "The datamanager and additive_parameter holds all you need to solve your problem on additive level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
 end
+
+
+"""
+    init_additive_model(datamanager, nodes, additive_parameter)
+
+Inits the additive model. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `additive parameter::Dict(String, Any)`: Dictionary with additive parameter.
+- `block::Int64`: The current block.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+
+"""
+function init_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, block::Int64)
+    @info "Please write a additive name in additive_name()."
+    @info "You can call your routine within the yaml file."
+    @info "Fill the compute_additive_model(datamanager, nodes, additive_parameter, time, dt) function."
+    @info "The datamanager and additive_parameter holds all you need to solve your problem on additive level."
+    @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+    return datamanager
+end
+
 
 end
