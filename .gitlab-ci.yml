@@ -64,6 +64,8 @@ deploy:
   script:
     - docker build -t perihub/perilab .
     - docker push perihub/perilab
+    - docker tag perihub/perilab perihub/perilab:${CI_COMMIT_TAG}
+    - docker push perihub/perilab:${CI_COMMIT_TAG}
 
 release:
   stage: deploy
