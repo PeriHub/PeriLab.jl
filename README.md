@@ -46,28 +46,6 @@ Throughout the rest of this tutorial, we will assume that you have installed the
 PeriLab package and have already typed `using PeriLab` to bring all of the
 relevant variables into your current namespace.
 
-### Installing with Docker 🐳
-
- To install PeriLab using the official Perihub/Perilab Docker image, follow these steps:
-
-1. **Install Docker**: Before you begin, ensure that you have Docker installed on your system. You can download and install Docker from the official website (https://www.docker.com/). Make sure your system meets the minimum requirements for running Docker.
-
-2. **Pull the Perihub/Perilab Docker image**: Use the following command in a terminal or command prompt to pull the latest Perihub/Perilab Docker image from the Docker Hub repository:
-
-   ```bash
-   docker pull perihub/perilab
-   ```
-
-3. **Run the Docker container**: Once the image has been downloaded, create a new directory for your PeriLab simulations and navigate to it in the terminal or command prompt. Run the following command to start the Docker container:
-
-   ```bash
-   docker run -it --rm -v <path_to_local_simulations_directory>:/app/simulations perihub/perilab bash
-   ```
-
-   Replace `<path_to_local_simulations_directory>` with the absolute path to a local directory where you want to store your PeriLab simulations. This command will open a new terminal session inside the Docker container.
-
-Now, you've successfully installed PeriLab using the official Perihub/Perilab Docker image. You can start running your own peridynamic simulations within the container.
-
 ## Getting Started with `PeriLab` 
 
 Jumpstart your exploration of the PeriLab simulation core with provided examples. Run the following commands in Julia:
@@ -94,6 +72,28 @@ Run PeriLab with two processors:
 ```sh
 $ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" examples/DCB/DCBmodel.yaml -v
 ```
+
+## Installing with Docker 🐳
+
+ To install PeriLab using the official Perihub/Perilab Docker image, follow these steps:
+
+1. **Install Docker**: Before you begin, ensure that you have Docker installed on your system. You can download and install Docker from the official website (https://www.docker.com/). Make sure your system meets the minimum requirements for running Docker.
+
+2. **Pull the Perihub/Perilab Docker image**: Use the following command in a terminal or command prompt to pull the latest Perihub/Perilab Docker image from the Docker Hub repository:
+
+   ```bash
+   docker pull perihub/perilab
+   ```
+
+3. **Run the Docker container**: Once the image has been downloaded, create a new directory for your PeriLab simulations and navigate to it in the terminal or command prompt. Run the following command to start the Docker container:
+
+   ```bash
+   docker run -it --rm -v <path_to_local_simulations_directory>:/app/simulations perihub/perilab bash
+   ```
+
+   Replace `<path_to_local_simulations_directory>` with the absolute path to a local directory where you want to store your PeriLab simulations. This command will open a new terminal session inside the Docker container.
+
+Now, you've successfully installed PeriLab using the official Perihub/Perilab Docker image. You can start running your own peridynamic simulations within the container.
 
 ## `PeriLab` on `JuliaHub`
 
