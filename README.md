@@ -29,6 +29,8 @@ Explore the comprehensive [documentation](https://dlr-perihub.gitlab.io/PeriLab.
 
 - 📤📥 **Exodus Input/Output**: PeriLab uses the Exodus II data format for input and output, enabling easy transfer of data between simulation tools.
 
+- 🧮 **Abaqus Input**: PeriLab supports Abaqus input files, allowing users to create custom Abaqus models for their simulations.
+
 - ➗ **Bond filter**: The bond filter feature allows users to apply specific conditions to the bonds between particles in a simulation, influencing their behavior and interaction with other particles.
 
 - 🔧 **User specified Input/Output**: PeriLab provides flexible options for users to specify custom input and output files, enabling easy data manipulation and analysis.

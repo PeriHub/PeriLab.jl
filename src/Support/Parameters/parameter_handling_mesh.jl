@@ -116,6 +116,25 @@ function get_node_sets(params::Dict, path::String)
         close(exo)
         return nsets
     end
+    if type == "Abaqus"
+        mesh = abaqus_read_mesh(joinpath(path, get_mesh_name(params)); verbose=false)
+        element_sets = mesh["element_sets"]
+        element_written = []
+        id = 1
+        for (key, values) in element_sets
+            nodes::Vector{Int64} = []
+            for (i, element_id) in enumerate(values)
+                if element_id in element_written
+                    continue
+                end
+                push!(element_written, element_id)
+                push!(nodes, id)
+                id += 1
+            end
+            nsets[key] = nodes
+        end
+        return nsets
+    end
     if !haskey(params["Discretization"], "Node Sets")
         return nsets
     end

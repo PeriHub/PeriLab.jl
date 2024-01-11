@@ -9,6 +9,7 @@ using DataFrames
 using MPI
 using TimerOutputs
 using LinearAlgebra
+using AbaqusReader
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
 include("../Support/Parameters/parameter_handling.jl")
@@ -445,6 +446,51 @@ function read_mesh(filename::String, params::Dict)
         close(exo)
         coords = nothing
         block_ids = nothing
+
+        return mesh_df
+
+    elseif params["Discretization"]["Type"] == "Abaqus"
+
+        mesh = abaqus_read_mesh(filename; verbose=false)
+
+        nodes = mesh["nodes"]
+        elements = mesh["elements"]
+        element_sets = mesh["element_sets"]
+
+        dof = size(nodes[1])[1]
+
+        mesh_df = ifelse(dof == 2,
+            DataFrame(x=[], y=[], volume=[], block_id=[]),
+            DataFrame(x=[], y=[], z=[], volume=[], block_id=[])
+        )
+
+        block_id = 1
+        element_written = []
+
+        for (key, values) in element_sets
+            for (i, element_id) in enumerate(values)
+                if element_id in element_written
+                    continue
+                end
+                node_ids = elements[element_id]
+                vertices = [nodes[node_id] for node_id in node_ids]
+                center = sum(vertices) / size(vertices)[1]
+                if dof == 2
+                    volume = area_of_polygon(vertices)
+                    push!(mesh_df, (x=center[1], y=center[2], volume=volume, block_id=block_id))
+                else
+                    volume = abs(dot(vertices[1] - vertices[4], cross(vertices[2] - vertices[4], vertices[3] - vertices[4]))) / 6.0
+                    push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=block_id))
+                end
+                push!(element_written, element_id)
+            end
+            block_id += 1
+        end
+
+        mesh = nothing
+        nodes = nothing
+        elements = nothing
+        element_sets = nothing
 
         return mesh_df
 

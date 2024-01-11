@@ -8,11 +8,11 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 
+## [1.0.4] - 
 
 ### Added
 
-- FEM Support
+- Abaqus mesh input (.inp)
 
 ## [1.0.3] - 2024-01-08
 
