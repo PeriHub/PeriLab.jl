@@ -41,28 +41,23 @@ PeriLab:
       Value: 0.5*t
   Blocks:
     block_1:
-      Block Names: block_1
       Density: 1.4e-8
       Horizon: 0.301
       Material Model: PMMA
     block_2:
-      Block Names: block_2
       Density: 1.4e-8
       Horizon: 0.301
       Material Model: PMMA
     block_3:
-      Block Names: block_3
       Density: 1.4e-8
       Horizon: 0.301
       Material Model: PMMA
       Damage Model: Damage
     block_4:
-      Block Names: block_4
       Density: 1.4e-8
       Horizon: 0.301
       Material Model: PMMA
     block_5:
-      Block Names: block_5
       Density: 1.4e-8
       Horizon: 0.301
       Material Model: PMMA

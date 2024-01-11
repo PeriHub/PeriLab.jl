@@ -5,44 +5,36 @@
 PeriLab:
   Blocks:
     block_1:
-      Block Names: block_1
       Damage Model: Damage
       Density: 2.81e-09
       Horizon: 0.30846153846153845
       Material Model: Aluminium
     block_2:
-      Block Names: block_2
       Damage Model: Damage
       Density: 2.81e-09
       Horizon: 0.30846153846153845
       Material Model: Aluminium
     block_3:
-      Block Names: block_3
       Density: 2.81e-09
       Horizon: 0.30846153846153845
       Material Model: Aluminium
     block_4:
-      Block Names: block_4
       Density: 2.81e-09
       Horizon: 0.30846153846153845
       Material Model: Aluminium
     block_5:
-      Block Names: block_5
       Density: 2.81e-09
       Horizon: 0.30846153846153845
       Material Model: Aluminium
     block_6:
-      Block Names: block_6
       Density: 2.81e-09
       Horizon: 0.30846153846153845
       Material Model: Aluminium
     block_7:
-      Block Names: block_7
       Density: 2.81e-09
       Horizon: 0.30846153846153845
       Material Model: Aluminium
     block_8:
-      Block Names: block_8
       Density: 2.81e-09
       Horizon: 0.30846153846153845
       Material Model: Aluminium
