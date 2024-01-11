@@ -11,6 +11,28 @@ Welcome to `PeriLab`, a powerful software solution designed for tackling Peridyn
 
 Explore the comprehensive [documentation](https://dlr-perihub.gitlab.io/PeriLab.jl/) for `PeriLab`
 
+## Features ⭐
+
+- 🚀 **Easy Installation**: PeriLab's straightforward installation process makes it accessible for researchers and engineers without extensive computational expertise.
+
+- ✒️ **Modularization**: The software is designed with a modular architecture that allows users to easily integrate their own material and damage models.
+
+- 🔩 **Material models**: PeriLab supports various material models, such as elastic, plastic, viscoelastic, and more, enabling simulation of complex materials and structures.
+
+- 🔨 **Damage models**: Damage models such as critical stretch or an energy based criterium are included to simulate different types of damage, such as crack propagation or delamination, in their peridynamic simulations.
+
+- 🔥 **Additive Manufacturing**: PeriLab supports additive manufacturing, allowing users to create custom additive models for their simulations.
+
+- ⚡ **MPI**: PeriLab supports parallel computing using Message Passing Interface (MPI) technology to improve simulation performance on high-performance clusters.
+
+- 💻 **HPC capabilities**: PeriLab is designed for high-performance computing (HPC) environments, allowing users to run large-scale simulations efficiently.
+
+- 📤📥 **Exodus Input/Output**: PeriLab uses the Exodus II data format for input and output, enabling easy transfer of data between simulation tools.
+
+- ➗ **Bond filter**: The bond filter feature allows users to apply specific conditions to the bonds between particles in a simulation, influencing their behavior and interaction with other particles.
+
+- 🔧 **User specified Input/Output**: PeriLab provides flexible options for users to specify custom input and output files, enabling easy data manipulation and analysis.
+
 ## Installation
 
 The `PeriLab`  package is available through the Julia package system and can be installed using the following commands:
@@ -23,6 +45,28 @@ Pkg.add("PeriLab")
 Throughout the rest of this tutorial, we will assume that you have installed the
 PeriLab package and have already typed `using PeriLab` to bring all of the
 relevant variables into your current namespace.
+
+### Installing with Docker 🐳
+
+ To install PeriLab using the official Perihub/Perilab Docker image, follow these steps:
+
+1. **Install Docker**: Before you begin, ensure that you have Docker installed on your system. You can download and install Docker from the official website (https://www.docker.com/). Make sure your system meets the minimum requirements for running Docker.
+
+2. **Pull the Perihub/Perilab Docker image**: Use the following command in a terminal or command prompt to pull the latest Perihub/Perilab Docker image from the Docker Hub repository:
+
+   ```bash
+   docker pull perihub/perilab
+   ```
+
+3. **Run the Docker container**: Once the image has been downloaded, create a new directory for your PeriLab simulations and navigate to it in the terminal or command prompt. Run the following command to start the Docker container:
+
+   ```bash
+   docker run -it --rm -v <path_to_local_simulations_directory>:/app/simulations perihub/perilab bash
+   ```
+
+   Replace `<path_to_local_simulations_directory>` with the absolute path to a local directory where you want to store your PeriLab simulations. This command will open a new terminal session inside the Docker container.
+
+Now, you've successfully installed PeriLab using the official Perihub/Perilab Docker image. You can start running your own peridynamic simulations within the container.
 
 ## Getting Started with `PeriLab` 
 
@@ -60,6 +104,22 @@ Configure advanced options, such as _filename_, _dryrun_, _verbosity_, _debug_, 
 Hit the __Start__ button and wait for the job to finish, the results will be available in a zipped folder.
 
 >Note: The free tier on `JuliaHub` offers 20 hours of computational time per month.
+
+## What's Next? 🚀
+
+Here are some exciting tasks on our roadmap:
+
+- 🔑 **Quasi-static solver**: A future development for PeriLab is extending its capabilities with a more robust quasi-static solver for larger systems and complex boundary conditions.
+
+- 👊 **Contact**: An upcoming feature in PeriLab is enhancing contact modeling to support advanced features like friction, adhesion, and contact forces based on temperature or other variables.
+
+- ➕ **More material and damage models**: PeriLab's future development plans include adding more sophisticated material models (e.g., viscoelastic-plastic) and damage models, expanding the software's applicability to a wider range of real-world phenomena.
+
+- 👬 **FEM/PD coupling**: A future enhancement for PeriLab is improving its FEM/PD coupling functionality by implementing more advanced techniques, such as a seamless data exchange between FEM and PD domains.
+
+- 🏎️ **Optimizations**: As part of its ongoing development, PeriLab will continue to focus on optimizing the simulation process by incorporating new techniques like parallel optimization algorithms for improved efficiency and reduced computational resources.
+
+Feel free to contribute and help us make PeriLab even better! 🙌
 
 ## Contributing
 
