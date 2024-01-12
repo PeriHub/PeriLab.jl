@@ -5,6 +5,18 @@
 using Test
 include("../../../src/Support/helpers.jl")
 include("../../../src/Support/data_manager.jl")
+
+@testset "ut_interpolation" begin
+    x = [0.0, 1.0, 2.0, 3.0, 4.0]
+    y = [-1.0, 0.0, 7.0, 26.0, 63.0]  # x.^3 - 1.
+    values_dict = Dict()
+    values_dict["value"] = interpolation(x, y)
+    interpol_data([1.5, 2.5], values_dict["value"]) == [2.375, 14.625]
+    interpol_data(1.5, values_dict["value"]) == 2.375
+    interpol_data(-1, values_dict["value"]) == minimum(y)
+    interpol_data([-1, -8], values_dict["value"]) == [minimum(y), minimum(y)]
+    interpol_data(5, values_dict["value"]) == maximum(y)
+end
 @testset "ut_find_indices" begin
     @test find_indices([1, 1, 2, 3, 3, 4, 4, 4, 1], 1) == [1, 2, 9]
     @test find_indices([1, 1, 2, 3, 3, 4, 4, 4, 1], 2) == [3]

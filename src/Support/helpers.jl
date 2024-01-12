@@ -4,7 +4,7 @@
 
 using ProgressBars
 using Tensors
-
+using Dierckx
 """
     find_indices(vector, what)
 
@@ -202,4 +202,18 @@ function find_inverse_bond_id(nlist::SubArray)
         end
     end
     return inverse_nlist
+end
+
+function interpolation(x::Union{Vector{Float64},Vector{Int64}}, y::Union{Vector{Float64},Vector{Int64}})
+    return Dict("spl" => Spline1D(x, y), "min" => minimum(x), "max" => maximum(x))
+end
+
+function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64}, values::Dict{String,Any})
+    if values["min"] > minimum(x)
+        @warn "Interpolation value is below interpolation range. Using minimum value of dataset."
+    end
+    if values["max"] < maximum(x)
+        @warn "Interpolation value is above interpolation range. Using maximum value of dataset."
+    end
+    return evaluate(values["spl"], x)
 end
