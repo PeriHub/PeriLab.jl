@@ -39,13 +39,14 @@ end
 
 
 """
-    init_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+    init_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, block::Int64)
 
 Initialize an additive model within a given data manager.
 
 # Arguments
 - `datamanager::Module`: The data manager module where the additive model will be initialized.
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the additive model.
+- `additive_parameter::Dict`: Additive parameters
 - `block::Int64`: Block identifier for the additive model.
 
 # Returns
@@ -60,7 +61,7 @@ function init_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     model_param = datamanager.get_properties(block, "Additive Model")
     specifics = Dict{String,String}("Call Function" => "init_additive_model", "Name" => "additive_name")
 
-    datamanager = Set_modules.create_module_specifics(model_param["Additive Model"], module_list, specifics, (datamanager, nodes, model_param))
+    datamanager = Set_modules.create_module_specifics(model_param["Additive Model"], module_list, specifics, (datamanager, nodes, model_param, block))
     if isnothing(datamanager)
         @error "No additive model of name " * model_param["Additive Model"] * " exists."
         return nothing
