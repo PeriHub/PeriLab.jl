@@ -52,13 +52,13 @@ end
 function get_model_parameter(params::Dict, model::String, id::String)
     if !haskey(params["Physics"], model * "s")
         @error model * " is defined in blocks, but no " * model * "s definition block exists"
-        return
+        return nothing
     end
     if haskey(params["Physics"][model*"s"], id)
         return params["Physics"][model*"s"][id]
     else
         @error model * " model with name " * id * " is defined in blocks, but missing in the " * model * "s definition."
-        return
+        return nothing
     end
 end
 
