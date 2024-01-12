@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
+include("../helpers.jl")
+
 
 """
     get_model_parameter(params, model, id)
@@ -55,12 +57,29 @@ function get_model_parameter(params::Dict, model::String, id::String)
         return nothing
     end
     if haskey(params["Physics"][model*"s"], id)
+        file_keys = find_data_files(params["Physics"][model*"s"][id])
+        for file_key in file_keys
+            data = csv_reader(params["Physics"][model*"s"][id][file_key])
+            params["Physics"][model*"s"][id][file_key] = interpolation(data[!, 1], data[!, 2])
+        end
         return params["Physics"][model*"s"][id]
     else
         @error model * " model with name " * id * " is defined in blocks, but missing in the " * model * "s definition."
         return nothing
     end
 end
+
+
+function find_data_files(params::Dict)
+    file_keys = []
+    for (key, value) in params
+        if typeof(value) == String && endswith(value, ".txt")
+            push!(file_keys, key)
+        end
+    end
+    return file_keys
+end
+
 
 """
     get_physics_option(params, options)

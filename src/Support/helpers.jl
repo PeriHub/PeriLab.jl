@@ -5,6 +5,23 @@
 using ProgressBars
 using Tensors
 using Dierckx
+
+
+"""
+    csv_reader(filename::String)
+
+Read csv and return it as a DataFrame.
+
+# Arguments
+- `filename::String`: The path to the mesh file.
+# Returns
+- `csvData::DataFrame`: The csv data a DataFrame.
+"""
+function csv_reader(filename::String)
+    header_line, header = get_header(filename)
+    return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
+end
+
 """
     find_indices(vector, what)
 

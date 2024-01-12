@@ -399,9 +399,17 @@ end
     @test isnothing(get_final_time(Dict("Solver" => Dict())))
     @test isnothing(get_solver_name(Dict("Solver" => Dict("Solvername" => Dict()))))
 end
+path = ""
+if !isdir("test_data_file.txt")
+    path = "./test/unit_tests/Support/Parameters/"
+end
+params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, "d" => true, "test_file" => path * "test_data_file.txt", "test_file_2" => path * "test_data_file.txt"), "B" => Dict("sa" => [3.2, 2, 3], "d" => "true", "test_file_B" => path * "test_data_file.txt")), "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1))), "Blocks" => Dict("block_1" => Dict("Material Model" => "A", "Damage Model" => "E"), "block_2" => Dict("Material Model" => "B")))
 
-params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, "d" => true), "B" => Dict("sa" => [3.2, 2, 3], "d" => "true")), "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1))), "Blocks" => Dict("block_1" => Dict("Material Model" => "A", "Damage Model" => "E"), "block_2" => Dict("Material Model" => "B")))
-
+@testset "ut_get_model_parameter" begin
+    @test sort(find_data_files(params["Physics"]["Material Models"]["A"])) == ["test_file", "test_file_2"]
+    @test find_data_files(params["Physics"]["Material Models"]["B"]) == ["test_file_B"]
+    @test find_data_files(params["Physics"]["Damage Models"]["E"]) == []
+end
 @testset "ut_get_model_parameter" begin
     blockModels = Dict{Int32,Dict{String,String}}()
     for id in 1:2
@@ -420,6 +428,10 @@ params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, 
     testData["Material Model"] = get_model_parameter(params, "Material Model", blockModels[2]["Material Model"])
     @test testData["Material Model"]["sa"] == [3.2, 2, 3]
     @test testData["Material Model"]["d"] == "true"
+    test_dict = testData["Material Model"]["test_file_B"]
+    @test test_dict["max"] == 0.5
+    @test test_dict["min"] == -2.5
+    @test typeof(test_dict["spl"]) == Spline1D
     testData["Damage Model"] = get_model_parameter(params, "Damage Model", blockModels[1]["Damage Model"])
     @test testData["Damage Model"]["ss"] == 0
     @test testData["Damage Model"]["d"] == 1.1
