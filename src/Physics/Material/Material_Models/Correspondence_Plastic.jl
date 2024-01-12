@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_Plastic
+
 using LinearAlgebra
 export fe_support
 export init_material_model
@@ -83,7 +84,10 @@ end
    ```julia
      ```
    """
-function compute_force(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+
+
+
 
   """
   dof::Int64 = datamanager.get_dof()
@@ -107,7 +111,7 @@ function compute_force(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}
   end
 
  """
-  return datamanager
+  return stress_NP1, datamanager
 end
 
 
