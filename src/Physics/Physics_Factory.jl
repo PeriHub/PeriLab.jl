@@ -171,7 +171,7 @@ function get_block_model_definition(params::Dict, block_id::Int64, prop_keys::Ve
         block = params["Blocks"]["block_"*string(block_id)]
         for model in prop_keys
             if haskey(block, model)
-                properties(block_id, model, get_model_parameter(params::Dict, model, block[model]))
+                properties(block_id, model, get_model_parameter(params, model, block[model]))
             end
         end
     end
