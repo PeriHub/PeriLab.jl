@@ -18,9 +18,11 @@ function check_for_duplicates(filenames::Vector{String})
             num_same_filenames = length(findall(x -> x == filename, filenames))
             if num_same_filenames > 1
                 @error "Filename $filename is used $num_same_filenames times"
+                return nothing
             end
         end
     end
+    return false
 end
 
 """

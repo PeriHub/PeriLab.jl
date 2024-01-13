@@ -507,8 +507,7 @@ end
         "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
 end
-
 @testset "ut_check_for_duplicates" begin
-    check_for_duplicates(["a", "b", "c"])
-    check_for_duplicates(["a", "b", "c", "a"])
+    @test !(check_for_duplicates(["a", "b", "c"]))
+    @test isnothing(check_for_duplicates(["a", "b", "c", "a"]))
 end
