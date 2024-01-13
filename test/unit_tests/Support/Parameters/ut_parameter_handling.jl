@@ -399,13 +399,14 @@ end
     @test isnothing(get_final_time(Dict("Solver" => Dict())))
     @test isnothing(get_solver_name(Dict("Solver" => Dict("Solvername" => Dict()))))
 end
-path = ""
+
+path = "./unit_tests/Support/Parameters/"
 if !isdir("test_data_file.txt")
     path = "./test/unit_tests/Support/Parameters/"
 end
 params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, "d" => true, "test_file" => path * "test_data_file.txt", "test_file_2" => path * "test_data_file.txt"), "B" => Dict("sa" => [3.2, 2, 3], "d" => "true", "test_file_B" => path * "test_data_file.txt")), "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1))), "Blocks" => Dict("block_1" => Dict("Material Model" => "A", "Damage Model" => "E"), "block_2" => Dict("Material Model" => "B")))
 
-@testset "ut_get_model_parameter" begin
+@testset "ut_find_data_files" begin
     @test sort(find_data_files(params["Physics"]["Material Models"]["A"])) == ["test_file", "test_file_2"]
     @test find_data_files(params["Physics"]["Material Models"]["B"]) == ["test_file_B"]
     @test find_data_files(params["Physics"]["Damage Models"]["E"]) == []
