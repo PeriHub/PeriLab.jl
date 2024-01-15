@@ -22,7 +22,7 @@ function read_input(filename::String)
     try
         return YAML.load_file(filename)
     catch
-        @error "No compatible Yaml file."
+        @error "No compatible Yaml file. " * string(YAML.load_file(filename))
         return nothing
     end
 end
