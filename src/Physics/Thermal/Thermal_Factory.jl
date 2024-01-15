@@ -32,10 +32,8 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
-        datamanager = Set_modules.create_module_specifics(thermal_model, module_list, specifics, (datamanager, nodes, model_param, time, dt))
-        if isnothing(datamanager)
-            @error "No thermal model of name " * model_name * " exists."
-        end
+        mod = datamanager.get_model_module(thermal_model)
+        datamanager = mod.compute_thermal_model(datamanager, nodes, model_param, time, dt)
     end
     datamanager = distribute_heat_flows(datamanager, nodes)
     return datamanager
@@ -57,15 +55,15 @@ Compute the thermal model
 """
 function init_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Thermal Model")
-    specifics = Dict{String,String}("Call Function" => "init_thermal_model", "Name" => "thermal_model_name")
-
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
-        datamanager = Set_modules.create_module_specifics(thermal_model, module_list, specifics, (datamanager, nodes, model_param))
-        if isnothing(datamanager)
-            @error "No thermal model of name " * model_name * " exists."
+        mod = Set_modules.create_module_specifics(thermal_model, module_list, "thermal_model_name")
+        if isnothing(mod)
+            @error "No material of name " * material_model * " exists."
         end
+        datamanager.set_model_module(thermal_model, mod)
+        datamanager = mod.init_thermal_model(thermal_model, nodes, model_param)
     end
     return datamanager
 end

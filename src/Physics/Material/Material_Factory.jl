@@ -38,11 +38,15 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     material_models = map(r -> strip(r), material_models)
 
     for material_model in material_models
-        datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param))
-        if isnothing(datamanager)
+        #datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param))
+        mod = Set_modules.create_module_specifics(material_model, module_list, "material_name")
+        if isnothing(mod)
             @error "No material of name " * material_model * " exists."
         end
+        datamanager.set_model_module(material_model, mod)
+        datamanager = mod.init_material_model(datamanager, nodes, model_param)
 
+        #datamanager.use_material_module(material_model, (datamanager, nodes, model_param))
     end
     return datamanager
 end
@@ -62,11 +66,13 @@ Compute the forces.
 - `datamanager::Data_manager`: Datamanager.
 """
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
-    specifics = Dict{String,String}("Call Function" => "compute_forces", "Name" => "material_name")
     material_models = split(model_param["Material Model"], "+")
 
     for material_model in material_models
-        datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param, time, dt, to))
+        # datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param, time, dt, to))
+
+        mod = datamanager.get_model_module(material_model)
+        datamanager = mod.compute_forces(datamanager, nodes, model_param, time, dt, to)
         if isnothing(datamanager)
             @error "No material of name " * material_model * " exists."
         end

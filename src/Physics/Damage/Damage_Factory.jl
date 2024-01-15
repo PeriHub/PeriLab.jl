@@ -29,12 +29,8 @@ Computes the damage model
 """
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
-    specifics = Dict{String,String}("Call Function" => "compute_damage", "Name" => "damage_name")
-    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, block, time, dt))
-    if isnothing(datamanager)
-        @error "No damage model of name " * model_param["Damage Model"] * " exists."
-        return nothing
-    end
+    mod = datamanager.get_model_module(model_param["Damage Model"])
+    datamanager = mod.compute_damage(datamanager, nodes, model_param, time, dt)
     datamanager = damage_index(datamanager, nodes)
     return datamanager
 end
@@ -55,13 +51,8 @@ Compute the pre calculation for the damage.
 - `datamanager::Data_manager`: Datamanager.
 """
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, model_param::Dict, synchronise_field, time::Float64, dt::Float64)
-    specifics = Dict{String,String}("Call Function" => "compute_damage_pre_calculation", "Name" => "damage_name")
-    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, block, synchronise_field, time, dt))
-    if isnothing(datamanager)
-        @error "No damage model of name " * model_param["Damage Model"] * " exists."
-        return nothing
-    end
-    return datamanager
+    mod = datamanager.get_model_module(model_param["Damage Model"])
+    return mod.compute_damage_pre_calculation(datamanager, nodes, block, synchronise_field, time, dt)
 end
 
 """
@@ -173,19 +164,15 @@ function init_aniso_crit_values(datamanager::Module, damage_parameter::Dict, blo
 end
 
 function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
-
     model_param = datamanager.get_properties(block, "Damage Model")
-    specifics = Dict{String,String}("Call Function" => "init_damage_model", "Name" => "damage_name")
-    if !haskey(model_param, "Damage Model")
-        return datamanager
-    end
+    mod = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, "damage_name")
 
-    datamanager = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, specifics, (datamanager, nodes, model_param, block))
-    if isnothing(datamanager)
+    if isnothing(mod)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
         return nothing
     end
-
+    datamanager.set_model_module(mod)
+    datamanager = mod.init_damage_model(datamanager, nodes, model_param, block)
     datamanager = Damage.init_interface_crit_values(datamanager, model_param, block)
     datamanager = Damage.init_aniso_crit_values(datamanager, model_param, block)
     return datamanager

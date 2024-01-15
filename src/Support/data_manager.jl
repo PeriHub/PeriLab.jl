@@ -41,6 +41,7 @@ export set_aniso_crit_values
 export set_inverse_nlist
 export set_fem
 export set_glob_to_loc
+export set_model_module
 export set_num_controller
 export set_nset
 export set_num_elements
@@ -73,6 +74,7 @@ global field_array_type::Dict{String,Dict{String,Any}} = Dict()
 global field_types::Dict{String,DataType} = Dict()
 global fields_to_synch::Dict{String,Any} = Dict()
 global inverse_nlist::Vector{Dict{Int64,Int64}} = []
+global model_modules::Dict{String,Module} = Dict()
 global nsets::Dict{String,Vector{Int}} = Dict()
 global overlap_map::Dict{Int64,Any}
 global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => true,
@@ -502,6 +504,11 @@ function get_local_nodes(global_nodes)
 
     return [glob_to_loc[global_node] for global_node in global_nodes if global_node in keys(glob_to_loc)]
 
+end
+
+function get_model_module(entry::Union{String,SubString})
+    global model_modules
+    return model_modules[entry]
 end
 
 """
@@ -1131,6 +1138,11 @@ Sets the rank globally.
 """
 function set_rank(value::Int64)
     global rank = value
+end
+
+
+function set_model_module(entry::Union{String,SubString}, mod::Module)
+    global model_modules[entry] = mod
 end
 
 """

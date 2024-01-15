@@ -172,4 +172,18 @@ function create_module_specifics(name::Union{String,SubString}, module_list::Vec
     @error "Functionality $name not found."
     return nothing
 end
+# only module
+function create_module_specifics(name::Union{String,SubString}, module_list::Vector{Any}, get_model_name::String)
+    for m in module_list
+        parse_statement = "module_name=" * m["Module Name"] * "." * get_model_name * "()"
+        if eval(Meta.parse(parse_statement)) == name
+            parse_statement = m["Module Name"]
+            module_call = eval(Meta.parse(parse_statement))
+            return module_call
+        end
+    end
+    @error "Functionality $name not found."
+    return nothing
+end
+
 end
