@@ -2,25 +2,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 using ProgressBars
 using Tensors
 using Dierckx
 
-
-"""
-    csv_reader(filename::String)
-
-Read csv and return it as a DataFrame.
-
-# Arguments
-- `filename::String`: The path to the mesh file.
-# Returns
-- `csvData::DataFrame`: The csv data a DataFrame.
-"""
-function csv_reader(filename::String)
-    header_line, header = get_header(filename)
-    return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
-end
 
 """
     find_indices(vector, what)
@@ -222,7 +208,11 @@ function find_inverse_bond_id(nlist::SubArray)
 end
 
 function interpolation(x::Union{Vector{Float64},Vector{Int64}}, y::Union{Vector{Float64},Vector{Int64}})
-    return Dict("spl" => Spline1D(x, y), "min" => minimum(x), "max" => maximum(x))
+    k = 3
+    if length(x) <= k
+        k = length(x) - 1
+    end
+    return Dict("spl" => Spline1D(x, y, k=k), "min" => minimum(x), "max" => maximum(x))
 end
 
 function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64}, values::Dict{String,Any})
