@@ -7,39 +7,38 @@ include("../../../src/IO/csv_export.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
-import .Write_Exodus_Results
-import .Write_CSV_Results
+
 using Exodus
 @testset "ut_get_block_nodes" begin
     block_Id = [1, 1, 2, 2, 2, 3, 3, 3, 1, 3, 3, 4]
-    test = Write_Exodus_Results.get_block_nodes(block_Id, 1)
+    test = get_block_nodes(block_Id, 1)
     @test test == [1 2 9]
-    test = Write_Exodus_Results.get_block_nodes(block_Id, 2)
+    test = get_block_nodes(block_Id, 2)
     @test test == [3 4 5]
-    test = Write_Exodus_Results.get_block_nodes(block_Id, 3)
+    test = get_block_nodes(block_Id, 3)
     @test test == [6 7 8 10 11]
-    test = Write_Exodus_Results.get_block_nodes(block_Id, 4)
+    test = get_block_nodes(block_Id, 4)
     @test test[1] == 12
 end
 
 @testset "ut_paraview_specifics" begin
-    @test Write_Exodus_Results.paraview_specifics(1) == "x"
-    @test Write_Exodus_Results.paraview_specifics(2) == "y"
-    @test Write_Exodus_Results.paraview_specifics(3) == "z"
+    @test paraview_specifics(1) == "x"
+    @test paraview_specifics(2) == "y"
+    @test paraview_specifics(3) == "z"
 end
 
 @testset "ut_get_paraview_coordinates" begin
     for i in 1:3
-        @test Write_Exodus_Results.get_paraview_coordinates(1, i) == "x"
-        @test Write_Exodus_Results.get_paraview_coordinates(2, i) == "y"
-        @test Write_Exodus_Results.get_paraview_coordinates(3, i) == "z"
+        @test get_paraview_coordinates(1, i) == "x"
+        @test get_paraview_coordinates(2, i) == "y"
+        @test get_paraview_coordinates(3, i) == "z"
     end
-    @test isnothing(Write_Exodus_Results.get_paraview_coordinates(3, 10))
+    @test isnothing(get_paraview_coordinates(3, 10))
 
     for ref = 4:9
         for i in 1:3
             for j in 1:3
-                @test Write_Exodus_Results.get_paraview_coordinates((i - 1) * 3 + j, ref) == Write_Exodus_Results.paraview_specifics(i) * Write_Exodus_Results.paraview_specifics(j)
+                @test get_paraview_coordinates((i - 1) * 3 + j, ref) == paraview_specifics(i) * paraview_specifics(j)
             end
         end
     end
@@ -52,7 +51,7 @@ end
     filename = "./tmp/" * "test.e"
     nnodes = 4
     dof = 3
-    exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 1, 0)
+    exo = create_result_file(filename, nnodes, dof, 1, 0)
     @test isfile(filename)
     @test exo["file"].file_name == filename
     @test exo["file"].init.num_dim == dof
@@ -67,7 +66,7 @@ end
     nnodes = 300
     dof = 2
     @test isfile(filename)
-    exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, 3, 2)
+    exo = create_result_file(filename, nnodes, dof, 3, 2)
     @test isfile(filename)
     @test exo["file"].file_name == filename
     @test exo["file"].init.num_dim == dof
@@ -107,15 +106,15 @@ coords = vcat(transpose(coordinates))
 outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 1, "dof" => 1, "type" => Float64), "Forcesxy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 2, "dof" => 1, "type" => Float64), "Forcesxz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 3, "dof" => 1, "type" => Float64), "Forcesyx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 4, "dof" => 1, "type" => Float64), "Forcesyy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 5, "dof" => 1, "type" => Float64), "Forcesyz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "result_id" => 6, "dof" => 1, "type" => Float64), "Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => false, "result_id" => 1, "dof" => 1, "type" => Float64), "External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "result_id" => 1, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "result_id" => 2, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Node_Set_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
 computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "result_id" => 1, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "result_id" => 2, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Node_Set_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
 
-exo = Write_Exodus_Results.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
-exo["file"] = Write_Exodus_Results.init_results_in_exodus(exo["file"], outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets, [1, 2, 3, 4, 5], "1.0.0")
+exo = create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
+exo["file"] = init_results_in_exodus(exo["file"], outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets, [1, 2, 3, 4, 5], "1.0.0")
 result_files = []
 push!(result_files, exo)
-result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 2, 2.2)
-result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 3, 3.7)
-result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 4, 4.7)
-result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 5, 5.7)
-result_files[1]["file"] = Write_Exodus_Results.write_step_and_time(result_files[1]["file"], 6, 6.7)
+result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 2, 2.2)
+result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 3, 3.7)
+result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 4, 4.7)
+result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 5, 5.7)
+result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 6, 6.7)
 
 @testset "ut_init_results_in_exodus" begin
     @test exo["file"].init.num_dim == dof
@@ -153,7 +152,7 @@ disp[4] = -1.8
 disp[5] = 0
 
 nodal_outputs = Dict(key => value for (key, value) in outputs["Fields"] if (!value["global_var"]))
-exo["file"] = Write_Exodus_Results.write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs, test_Data_manager)
+exo["file"] = write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs, test_Data_manager)
 
 test_disp_step_zero = read_values(exo["file"], NodalVariable, 1, 1, "Displacements")
 
@@ -207,8 +206,8 @@ end
 csvfilename = "./tmp/" * "test_2.csv"
 csv_file = open(csvfilename, "w")
 println(csv_file, "Test")
-csv_file = Write_CSV_Results.create_result_file(csvfilename, computes)
-exo["file"] = Write_Exodus_Results.write_global_results_in_exodus(exo["file"], 2, computes["Fields"], [0.1, 0.2])
+csv_file = create_result_file(csvfilename, computes)
+exo["file"] = write_global_results_in_exodus(exo["file"], 2, computes["Fields"], [0.1, 0.2])
 
 @testset "ut_write_global_results_in_exodus" begin
 
@@ -224,14 +223,14 @@ end
 @testset "ut_merge_exodus_file" begin
     merged = true
     try
-        Write_Exodus_Results.merge_exodus_file(exo["filename"])
+        merge_exodus_file(exo["filename"])
     catch
         merged = false
     end
     @test merged
 end
 
-Write_Exodus_Results.write_global_results_in_csv(csv_file["file"], [0.1, 0.2])
+write_global_results_in_csv(csv_file["file"], [0.1, 0.2])
 
 @testset "ut_write_global_results_in_csv" begin
 

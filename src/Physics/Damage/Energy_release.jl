@@ -68,6 +68,16 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     critical_energy = damage_parameter["Critical Value"]
     quad_horizon = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
+    dependend_value::Bool = false
+    if haskey(damage_parameter, "Temperature dependend")
+        if !(damage_parameter["Temperature dependend"]["Field key"] in datamanager.get_all_field_keys())
+            @error "Critical Value key " * damage_parameter["Temperature dependend"]["Field key"] * " does not exist for value interpolation in damage model."
+            return nothing
+        end
+        field = datamanager.get_field(damage_parameter["Critical Value"]["Field key"])
+        dependend_value = true
+    end
+
     # for anisotropic damage models
     rotation::Bool, angles = datamanager.rotation_data()
 
@@ -121,7 +131,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 @error "Bond energy smaller zero"
                 return nothing
             end
-
+            if dependend_value
+                critical_energy = interpol_data(field[iID], damage_parameter["Temperature dependend"])
+            end
             crit_energy = inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
 
 
@@ -197,6 +209,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64)
     return Float64(4 / (pi * horizon^4))
 end
 function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
+
     quad_horizon = datamanager.create_constant_node_field("Quad Horizon", Float64, 1)
     horizon = datamanager.get_field("Horizon")
     dof = datamanager.get_dof()

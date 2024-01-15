@@ -3,6 +3,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module IO
+using TimerOutputs
+using MPI
+using DataFrames
+
+include("../Support/geometry.jl")
+
+using .Geometry
+
 include("read_inputdeck.jl")
 include("mesh_data.jl")
 include("exodus_export.jl")
@@ -10,17 +18,7 @@ include("csv_export.jl")
 include("../Compute/compute_global_values.jl")
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_communication.jl")
-include("../Support/geometry.jl")
-using .Read_Input_Deck
-using .Read_Mesh
-using .Write_Exodus_Results
-using .Write_CSV_Results
-using .Geometry
-using MPI
-using CSV
-using Exodus
-using TimerOutputs
-using DataFrames
+
 export close_result_files
 export initialize_data
 export init_write_results
@@ -46,7 +44,7 @@ function merge_exodus_files(result_files::Vector{Dict}, output_dir::String)
         if result_file["type"] == "Exodus"
             filename = result_file["filename"]
             @info "Merge output file " * filename
-            Write_Exodus_Results.merge_exodus_file(filename)
+            merge_exodus_file(filename)
             filename = split(basename(filename), ".")[1] * ".e"
             new_path = joinpath(output_dir, filename)
             if abspath(filename) != abspath(new_path)
@@ -250,9 +248,9 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                 i_ref_dof = sizedatafield[2]
                 for dof in 1:i_ref_dof
                     if global_var
-                        output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
+                        output_mapping[id]["Fields"][compute_name*get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
                     else
-                        output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]))
+                        output_mapping[id]["Fields"][clearNP1(fieldname)*get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]))
                     end
                 end
             elseif length(sizedatafield) == 3
@@ -261,9 +259,9 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                 for i_dof in 1:i_ref_dof
                     for j_dof in 1:j_ref_dof
                         if global_var
-                            output_mapping[id]["Fields"][compute_name*Write_Exodus_Results.get_paraview_coordinates(i_dof, i_ref_dof)*Write_Exodus_Results.get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
+                            output_mapping[id]["Fields"][compute_name*get_paraview_coordinates(i_dof, i_ref_dof)*get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
                         else
-                            output_mapping[id]["Fields"][clearNP1(fieldname)*Write_Exodus_Results.get_paraview_coordinates(i_dof, i_ref_dof)*Write_Exodus_Results.get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]))
+                            output_mapping[id]["Fields"][clearNP1(fieldname)*get_paraview_coordinates(i_dof, i_ref_dof)*get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]))
                         end
                     end
                 end
@@ -295,7 +293,7 @@ function initialize_data(filename::String, filedirectory::String, datamanager::M
         datamanager.set_comm(comm)
     end
     datamanager = init_orientations(datamanager)
-    return Read_Mesh.init_data(read_input_file(filename), filedirectory, datamanager, comm, to)
+    return init_data(read_input_file(filename), filedirectory, datamanager, comm, to)
 
 end
 
@@ -371,10 +369,10 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
                 filename = filename * "." * string(max_rank) * "." * get_mpi_rank_string(rank, max_rank)
             end
             outputs[id]["Output File Type"] = "Exodus"
-            push!(result_files, Write_Exodus_Results.create_result_file(filename, nnodes, dof, max_block_id, nnsets))
+            push!(result_files, create_result_file(filename, nnodes, dof, max_block_id, nnsets))
         elseif ".csv" == filename[end-3:end]
             if rank == 0
-                push!(result_files, Write_CSV_Results.create_result_file(filename, outputs[id]))
+                push!(result_files, create_result_file(filename, outputs[id]))
             else
                 push!(result_files, Dict("filename" => filename, "file" => nothing, "type" => "CSV"))
             end
@@ -387,7 +385,7 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
     for id in eachindex(result_files)
 
         if result_files[id]["type"] == "Exodus"
-            result_files[id]["file"] = Write_Exodus_Results.init_results_in_exodus(result_files[id]["file"], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids, PERILAB_VERSION)
+            result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids, PERILAB_VERSION)
         end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 
@@ -444,17 +442,17 @@ function write_results(result_files::Vector{Dict}, time::Float64, max_damage::Fl
                 open_result_file(result_files[id])
             end
             if output_type == "Exodus" && length(nodal_outputs) > 0 && result_files[id]["type"] == "Exodus"
-                result_files[id]["file"] = Write_Exodus_Results.write_step_and_time(result_files[id]["file"], output_frequency[id]["Step"], time)
-                result_files[id]["file"] = Write_Exodus_Results.write_nodal_results_in_exodus(result_files[id]["file"], output_frequency[id]["Step"], nodal_outputs, datamanager)
+                result_files[id]["file"] = write_step_and_time(result_files[id]["file"], output_frequency[id]["Step"], time)
+                result_files[id]["file"] = write_nodal_results_in_exodus(result_files[id]["file"], output_frequency[id]["Step"], nodal_outputs, datamanager)
             end
             if length(global_outputs) > 0
                 global_values = get_global_values(global_outputs, datamanager)
                 if output_type == "Exodus"
-                    result_files[id]["file"] = Write_Exodus_Results.write_global_results_in_exodus(result_files[id]["file"], output_frequency[id]["Step"], global_outputs, global_values)
+                    result_files[id]["file"] = write_global_results_in_exodus(result_files[id]["file"], output_frequency[id]["Step"], global_outputs, global_values)
                 end
                 if datamanager.get_rank() == 0
                     if output_type == "CSV"
-                        Write_Exodus_Results.write_global_results_in_csv(result_files[id]["file"], global_values)
+                        write_global_results_in_csv(result_files[id]["file"], global_values)
                     end
                 end
             end

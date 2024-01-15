@@ -2,22 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Read_Mesh
-using CSV
-using Exodus
-using DataFrames
-using MPI
-using TimerOutputs
 using LinearAlgebra
 using AbaqusReader
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
-include("../Support/Parameters/parameter_handling.jl")
-include("../MPI_communication/MPI_init.jl")
-include("../Support/geometry.jl")
-include("../Support/helpers.jl")
-
-using .Geometry
 
 #export read_mesh
 #export load_mesh_and_distribute
@@ -1169,6 +1157,4 @@ function glob_to_loc(distribution)
         glob_to_loc[distribution[id]] = id
     end
     return glob_to_loc
-end
-
 end

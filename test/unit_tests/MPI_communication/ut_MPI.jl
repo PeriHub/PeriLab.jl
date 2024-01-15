@@ -83,9 +83,9 @@ if ncores == 3
     ncores = 3
     dof = 2
     ptc = [1, 2, 2, 3]
-    overlap_map = Read_Mesh.create_overlap_map(distribution, ptc, ncores)
+    overlap_map = create_overlap_map(distribution, ptc, ncores)
 
-    overlap_map = Read_Mesh.get_local_overlap_map(overlap_map, distribution, ncores)
+    overlap_map = get_local_overlap_map(overlap_map, distribution, ncores)
 
     test_Data_manager = Data_manager
     test_Data_manager.set_comm(comm)

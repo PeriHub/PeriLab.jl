@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Write_Exodus_Results
-include("csv_export.jl")
-include("../Support/Parameters/parameter_handling.jl")
 using Exodus
-using .Write_CSV_Results
 export get_paraview_coordinates
 export create_result_file
 export init_results_in_exodus
@@ -264,5 +260,4 @@ Merges the exodus file
 """
 function merge_exodus_file(file_name::Union{AbstractString,String})
     epu(file_name)
-end
 end

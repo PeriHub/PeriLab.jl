@@ -68,7 +68,7 @@ glob_to_loc
 ```
 
 ```@meta
-CurrentModule = PeriLab.IO.Read_Mesh.Geometry
+CurrentModule = PeriLab.IO.Geometry
 ```
 ## Geometry
 ```@docs
@@ -112,7 +112,7 @@ gather_values
 ```
 
 ```@meta
-CurrentModule = PeriLab.IO.Write_Exodus_Results
+CurrentModule = PeriLab.IO
 ```
 ## Write_Exodus_Results
 ```@docs
@@ -128,7 +128,7 @@ merge_exodus_file
 ```
 
 ```@meta
-CurrentModule = PeriLab.IO.Write_CSV_Results
+CurrentModule = PeriLab.IO
 ```
 ## Write_CSV_Results
 ```@docs
