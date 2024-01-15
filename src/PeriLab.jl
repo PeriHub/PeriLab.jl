@@ -39,16 +39,17 @@ include("./Support/data_manager.jl")
 include("./IO/logging.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
-include("./Physics/Material/Material_Factory.jl")
+
 # external packages
 using MPI
 using TimerOutputs
 using Logging
 using ArgParse
+
 const to = TimerOutput()
 # internal packages
 using .Data_manager
-using .Material
+
 import .Logging_module
 import .IO
 import .Solver
