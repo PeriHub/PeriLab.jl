@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# include("../helpers.jl")
-
-
 function get_element_type(params::Dict)
     if !haskey(params, "Element Type")
         @error "Element Type is not defined."
