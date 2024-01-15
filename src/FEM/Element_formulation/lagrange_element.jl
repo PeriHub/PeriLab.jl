@@ -24,7 +24,7 @@ Init the Lagrange element of a given polynomial degree. This degree can be diffe
 - `p::Vector{Int64}`: A vector containing the polynomial degrees for each degree of freedom.
 
 # Returns
-- `Datamager::Module`: Datamager containing additional fields needed for the Lagrange element.
+- `Datamanager::Module`: Datamanager containing additional fields needed for the Lagrange element.
 """
 
 function init_element(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, element_params::Dict, p::Vector{Int64})
