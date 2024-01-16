@@ -403,7 +403,7 @@ end
 end
 
 path = "./unit_tests/Support/Parameters/"
-if !isdir("test_data_file.txt")
+if !isdir("./unit_tests/Support/Parameters/test_data_file.txt")
     path = "./test/unit_tests/Support/Parameters/"
 end
 params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, "d" => true, "test_file" => path * "test_data_file.txt", "test_file_2" => path * "test_data_file.txt"), "B" => Dict("sa" => [3.2, 2, 3], "d" => "true", "test_file_B" => path * "test_data_file.txt")), "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1))), "Blocks" => Dict("block_1" => Dict("Material Model" => "A", "Damage Model" => "E"), "block_2" => Dict("Material Model" => "B")))
