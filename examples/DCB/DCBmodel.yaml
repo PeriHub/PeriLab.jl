@@ -6,22 +6,30 @@ PeriLab:
   Blocks:
     block_1:
       Damage Model: Damage
-      Density: 1.95e-06
-      Horizon: 0.82
+      Density: 1.95e-05
+      Horizon: 0.42999999999999994
       Material Model: Aluminium
+      Thermal Model: Thermal
+      Specific Heat Capacity: 18000.0
     block_2:
       Damage Model: Damage
-      Density: 1.95e-06
-      Horizon: 0.82
+      Density: 1.95e-05
+      Horizon: 0.42999999999999994
       Material Model: Aluminium
+      Thermal Model: Thermal
+      Specific Heat Capacity: 18000.0
     block_3:
-      Density: 1.95e-06
-      Horizon: 0.82
+      Density: 1.95e-05
+      Horizon: 0.42999999999999994
       Material Model: Aluminium
+      Thermal Model: Thermal
+      Specific Heat Capacity: 18000.0
     block_4:
-      Density: 1.95e-06
-      Horizon: 0.82
+      Density: 1.95e-05
+      Horizon: 0.42999999999999994
       Material Model: Aluminium
+      Thermal Model: Thermal
+      Specific Heat Capacity: 18000.0
   Boundary Conditions:
     BC_1:
       Coordinate: y
@@ -33,23 +41,24 @@ PeriLab:
       Node Set: Node Set 2
       Type: Displacements
       Value: -4.4*t
+    # BC_3:
+    #   Node Set: Node Set 1 + Node Set 2 + Node Set 3 + Node Set 4
+    #   Type: Temperature
+    #   Value: "200"
   Compute Class Parameters:
-    External_Forces:
-      Compute Class: Block_Data
-      Calculation Type: Sum
+    External_Displacement:
       Block: block_2
-      Variable: Forces
-    External_Displacements:
-      Compute Class: Block_Data
       Calculation Type: Maximum
-      Block: block_2
+      Compute Class: Block_Data
+      # Output Label: External_Displacement
       Variable: Displacements
+    External_Force:
+      Block: block_2
+      Calculation Type: Sum
+      Compute Class: Block_Data
+      # Output Label: External_Force
+      Variable: Forces
   Discretization:
-    Input Mesh File: DCBmodel.txt
-    Node Sets:
-      Node Set 1: ns_DCBmodel_1.txt
-      Node Set 2: ns_DCBmodel_2.txt
-    Type: Text File
     Bond Filters:
       bf_1:
         Bottom Length: 2.0
@@ -64,40 +73,46 @@ PeriLab:
         Normal Z: 0.0
         Side Length: 2.0
         Type: Rectangular_Plane
+    Input Mesh File: DCBmodel.txt
+    Node Sets:
+      Node Set 1: ns_DCBmodel_1.txt
+      Node Set 2: ns_DCBmodel_2.txt
+      Node Set 3: ns_DCBmodel_3.txt
+      Node Set 4: ns_DCBmodel_4.txt
+    Type: Text File
   Outputs:
     Output1:
       Number of Output Steps: 100
-      Output Filename: DCBmodel_Output1
       Output File Type: Exodus
+      Output Filename: DCBmodel_Output1_red
       Output Variables:
+        Temperature: True
         Damage: true
         Displacements: true
         Forces: true
         Number of Neighbors: true
-        External_Forces: True
-        External_Displacements: True
-        Strain: True
-        Cauchy Stress: True
-    Output2:
-      Number of Output Steps: 200
-      Output Filename: DCBmodel_Output2
-      Output File Type: Exodus
-      Output Variables:
-        Damage: true
-      Write After Damage: true
+        External_Displacement: true
+        External_Force: true
   Physics:
+    Thermal Models:
+      Thermal:
+        Thermal Model: "Thermal Flow"
+        Type: "Bond based"
+        Thermal Expansion Coefficient: 0.22
+        Thermal Conductivity: 2000.0
     Damage Models:
       Damage:
         Damage Model: Critical Energy
-        Critical Value: 0.0035714285714285716
+        Critical Value: 0.002
+        # Interblock Damage:
+        #   Interblock Critical Value 1_2: 0.0015
+        #   Interblock Critical Value 2_1: 0.0015
     Material Models:
       Aluminium:
-        #Material Model: "Correspondence Elastic"
-        Material Model: "PD Solid Elastic"
-        Zero Energy Control: "Global"
-        Symmetry: isotropic plane stress
-        Young's Modulus: 70000.0
+        Material Model: PD Solid Elastic
         Poisson's Ratio: 0.3
+        Symmetry: isotropic plane stress
+        Young's Modulus: 40000.0
     Pre Calculation:
       Bond Associated Deformation Gradient: false
       Bond Associated Shape Tensor: false
@@ -105,11 +120,11 @@ PeriLab:
       Deformed Bond Geometry: true
       Shape Tensor: false
   Solver:
+    Damage Models: true
     Final Time: 0.0004
     Initial Time: 0.0
     Material Models: true
-    Damage Models: true
-    Verbose: false
+    # Thermal Models: true
     Verlet:
       Numerical Damping: 5.0e-06
-      Safety Factor: 0.9
+      Safety Factor: 0.95
