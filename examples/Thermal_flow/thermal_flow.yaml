@@ -29,14 +29,12 @@ PeriLab:
         Heat Transfer Coefficient: 2000
   Blocks:
     block_1:
-      Block Names: "block_1"
       Material Model: "Test"
       Thermal Model: "Thermal test"
       Density: 2000
       Horizon: 0.00151
       Specific Heat Capacity: 0.33
     block_2:
-      Block Names: "block_2"
       Material Model: "Test"
       Thermal Model: "Thermal test"
       Density: 2000

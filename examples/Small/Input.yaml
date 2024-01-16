@@ -26,28 +26,23 @@ PeriLab:
           Critical Value Y: 10.1
   Blocks:
     block_1:
-      Block Names: "block_1"
       Material Model: "Aluminium"
       Damage Model: Damage
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_2:
-      Block Names: "block_2"
       Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_3:
-      Block Names: "block_3"
       Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_4:
-      Block Names: "block_4"
       Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_5:
-      Block Names: "block_5"
       Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347
