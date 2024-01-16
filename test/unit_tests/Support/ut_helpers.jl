@@ -12,7 +12,7 @@ using ProgressBars
     x = [0.0, 1.0, 2.0, 3.0, 4.0]
     y = [-1.0, 0.0, 7.0, 26.0, 63.0]  # x.^3 - 1.
     values_dict = Dict()
-    values_dict["value"] = interpolation(x, y)
+    values_dict["value"] = Helpers.interpolation(x, y)
     @test isapprox(Helpers.interpol_data([1.5, 2.5], values_dict["value"])[1], 2.375)
     @test isapprox(Helpers.interpol_data([1.5, 2.5], values_dict["value"])[2], 14.625)
     @test isapprox(Helpers.interpol_data(1.5, values_dict["value"]), 2.375)
