@@ -7,8 +7,10 @@ include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Reexport
 @reexport using .Parameter_Handling
+@reexport using .Boundary_conditions
+
 using Test
-using .Boundary_conditions
+
 
 @testset "ut_clean_up" begin
     @test Boundary_conditions.clean_up("") == ""
@@ -84,9 +86,15 @@ end
     test_Data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 3, 3 => 4, 4 => 2, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10))
 
     bcs = Boundary_conditions.boundary_condition(params, test_Data_manager)
+    @test isnothing(bcs)
+    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "0")))
+
+    bcs = Boundary_conditions.boundary_condition(params, test_Data_manager)
+
     @test length(bcs) == 2
     @test "BC_1" in keys(bcs)
     @test "BC_2" in keys(bcs)
+
     # params representation
     @test bcs["BC_1"]["Type"] == "Forces"
     @test bcs["BC_1"]["Coordinate"] == "x"
@@ -100,7 +108,7 @@ end
 end
 @testset "ut_check_valid_bcs" begin
     test_Data_manager = Data_manager
-    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "not there", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "0"), "BC_3" => Dict("Type" => "Displacements", "Node Set" => "Nset_3", "Coordinate" => "z", "Value" => "0")))
+    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "not there", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "0")))
 
     test_Data_manager.set_nset("Nset_1", [1, 2, 3])
     test_Data_manager.set_nset("Nset_2", [3, 4, 7, 10])

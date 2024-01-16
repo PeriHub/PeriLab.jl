@@ -86,10 +86,10 @@ function boundary_condition(params::Dict, datamanager)
     for bc in keys(bcs_in)
         node_set_names = split(bcs_in[bc]["Node Set"], "+")
         node_set_names = map(r -> strip(r), node_set_names)
-        bcs_out[bc] = Dict{String,Any}("Node Sets" => [])
+        bcs_out[bc] = Dict{String,Any}("Node Set" => [])
         for node_set_name in node_set_names
             if haskey(nsets, node_set_name)
-                append!(bcs_out[bc]["Node Sets"], datamanager.get_local_nodes(nsets[node_set_name]))
+                append!(bcs_out[bc]["Node Set"], datamanager.get_local_nodes(nsets[node_set_name]))
                 for entry in keys(bcs_in[bc])
                     if entry != "Node Set"
                         bcs_out[bc][entry] = bcs_in[bc][entry]
@@ -97,6 +97,7 @@ function boundary_condition(params::Dict, datamanager)
                 end
             else
                 @error "Node Set '$node_set_name' is missing"
+                return nothing
             end
         end
     end
@@ -128,13 +129,13 @@ function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
 
         if ndims(field_to_apply_bc) > 1
             if haskey(dof_mapping, bc["Coordinate"])
-                field_to_apply_bc[bc["Node Sets"], dof_mapping[bc["Coordinate"]]] = eval_bc(field_to_apply_bc[bc["Node Sets"], dof_mapping[bc["Coordinate"]]], bc["Value"], coordinates[bc["Node Sets"], :], time, dof, bc["Initial"], name)
+                field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] = eval_bc(field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]], bc["Value"], coordinates[bc["Node Set"], :], time, dof, bc["Initial"], name)
             else
                 @error "Coordinate in boundary condition must be x,y or z."
                 return nothing
             end
         else
-            field_to_apply_bc[bc["Node Sets"]] = eval_bc(field_to_apply_bc[bc["Node Sets"]], bc["Value"], coordinates[bc["Node Sets"], :], time, dof, bc["Initial"], name)
+            field_to_apply_bc[bc["Node Set"]] = eval_bc(field_to_apply_bc[bc["Node Set"]], bc["Value"], coordinates[bc["Node Set"], :], time, dof, bc["Initial"], name)
         end
 
     end
