@@ -6,16 +6,17 @@ using Test
 include("../../../src/Support/helpers.jl")
 include("../../../src/Support/data_manager.jl")
 using .Helpers
+using ProgressBars
 @testset "ut_interpolation" begin
     x = [0.0, 1.0, 2.0, 3.0, 4.0]
     y = [-1.0, 0.0, 7.0, 26.0, 63.0]  # x.^3 - 1.
     values_dict = Dict()
     values_dict["value"] = interpolation(x, y)
-    interpol_data([1.5, 2.5], values_dict["value"]) == [2.375, 14.625]
-    interpol_data(1.5, values_dict["value"]) == 2.375
-    interpol_data(-1, values_dict["value"]) == minimum(y)
-    interpol_data([-1, -8], values_dict["value"]) == [minimum(y), minimum(y)]
-    interpol_data(5, values_dict["value"]) == maximum(y)
+    @test interpol_data([1.5, 2.5], values_dict["value"]) == [2.375, 14.625]
+    @test interpol_data(1.5, values_dict["value"]) == 2.375
+    @test interpol_data(-1, values_dict["value"]) == minimum(y)
+    @test interpol_data([-1, -8], values_dict["value"]) == [minimum(y), minimum(y)]
+    @test interpol_data(5, values_dict["value"]) == maximum(y)
 end
 @testset "ut_find_indices" begin
     @test find_indices([1, 1, 2, 3, 3, 4, 4, 4, 1], 1) == [1, 2, 9]
@@ -119,3 +120,11 @@ end
     @test size(get_fourth_order(zeros(Float64, 3, 3), 2)) == (2, 2, 2, 2)
 end
 
+@testset "ut_progress_bar" begin
+    nsteps::Int64 = rand(1:100)
+    @test progress_bar(rand(1:100), nsteps, true) == 1:nsteps+1
+    @test progress_bar(rand(1:100), nsteps, false) == 1:nsteps+1
+    @test progress_bar(0, nsteps, true) == 1:nsteps+1
+    @test typeof(progress_bar(0, nsteps, false)) == ProgressBar
+    @test length(progress_bar(0, nsteps, false)) == nsteps + 1
+end
