@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+export get_computes_names
+export get_output_variables
+export get_computes
+export get_node_set
+
 """
     get_computes_names(params::Dict)
 

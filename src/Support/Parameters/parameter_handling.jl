@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-include("../helpers.jl")
+module Parameter_Handling
+
 include("./parameter_handling_bc.jl")
 include("./parameter_handling_blocks.jl")
 include("./parameter_handling_physics.jl")
@@ -11,7 +12,11 @@ include("./parameter_handling_computes.jl")
 include("./parameter_handling_solver.jl")
 include("./parameter_handling_FEM.jl")
 
-expected_structure = Dict(
+export validate_yaml
+export validate_structure_recursive
+export get_all_keys
+
+global expected_structure = Dict(
     "PeriLab" => [Dict{Any,Any}(
             "Blocks" => [Dict{Any,Any}(
                     "Any" => [Dict{Any,Any}(
@@ -279,4 +284,5 @@ function validate_yaml(params::Dict)
     end
 
     return params["PeriLab"]
+end
 end

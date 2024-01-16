@@ -1,9 +1,12 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
-include("../helpers.jl")
-
+export get_mesh_name
+export get_external_topology_name
+export get_topology_name
+export get_bond_filters
+export get_node_sets
+export get_header
 """
     get_external_topology_name(params::Dict)
 
@@ -86,6 +89,30 @@ function get_bond_filters(params::Dict)
     return check, bfList
 end
 
+"""
+    get_header(filename::Union{String,AbstractString})
+
+Returns the header line and the header.
+
+# Arguments
+- `filename::Union{String,AbstractString}`: The filename of the file.
+# Returns
+- `header_line::Int`: The header line.
+- `header::Vector{String}`: The header.
+"""
+function get_header(filename::Union{String,AbstractString})
+    file = open(filename, "r")
+    header_line = 0
+    for line in eachline(file)#
+        header_line += 1
+        if contains(line, "header:")
+            close(file)
+            return header_line, convert(Vector{String}, split(line)[2:end])
+        end
+    end
+    @error "No header exists in $filename. Please insert 'header: global_id' above the first node"
+    return
+end
 """
     get_node_sets(params::Dict, path::String)
 

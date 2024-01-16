@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+export get_initial_time
+export get_solver_options
+export get_solver_name
+export get_safety_factor
+export get_final_time
+export get_fixed_dt
+export get_max_damage
+export get_numerical_damping
 """
     get_solver_name(params::Dict)
 

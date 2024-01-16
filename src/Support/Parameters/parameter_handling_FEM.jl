@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+export get_element_degree
+export get_element_type
+
 function get_element_type(params::Dict)
     if !haskey(params, "Element Type")
         @error "Element Type is not defined."

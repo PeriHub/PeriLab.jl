@@ -2,6 +2,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+export get_flush_file
+export get_write_after_damage
+export get_outputs
+export get_output_fieldnames
+export get_output_frequency
+export check_for_duplicates
+export get_output_type
+export get_output_filenames
+
+
 """
     check_for_duplicates(filenames)
 

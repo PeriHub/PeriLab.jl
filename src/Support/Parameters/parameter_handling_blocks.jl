@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+export get_density
+export get_heat_capacity
+export get_horizon
+export get_values
+export get_number_of_blocks
+export get_block_models
+
 """
     get_density(params::Dict, block_id::Int64)
 
