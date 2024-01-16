@@ -222,7 +222,7 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         # @info filename
 
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
-        @info "Solver init"
+        @info "Init solver"
         @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
         if verbose
             IO.show_block_summary(solver_options, params, comm, datamanager)
