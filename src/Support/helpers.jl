@@ -132,28 +132,6 @@ function matrix_style(A)
 end
 
 """
-    progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
-
-Create a progress bar if the rank is 0. The progress bar ranges from 1 to nsteps + 1.
-
-# Arguments
-- rank::Int64: An integer to determine if the progress bar should be created.
-- nsteps::Int64: The total number of steps in the progress bar.
-- silent::Bool: de/activates the progress bar
-# Returns
-- ProgressBar or UnitRange: If rank is 0, a ProgressBar object is returned. Otherwise, a range from 1 to nsteps + 1 is returned.
-"""
-function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
-    # Check if rank is equal to 0.
-    if rank == 0 && !silent
-        # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
-        return ProgressBar(1:nsteps+1)
-    end
-    # If rank is not 0, return a range from 1 to nsteps + 1.
-    return 1:nsteps+1
-end
-
-"""
     get_fourth_order(CVoigt, dof)
 
 Constructs a symmetric fourth-order tensor from a Voigt notation vector. It uses Tensors.jl package.

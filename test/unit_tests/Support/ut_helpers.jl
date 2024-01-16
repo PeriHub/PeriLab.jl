@@ -113,16 +113,6 @@ end
     rm(tmpdir; recursive=true)
 end
 
-
-@testset "ut_progress_bar" begin
-    nsteps::Int64 = rand(1:100)
-    @test progress_bar(rand(1:100), nsteps, true) == 1:nsteps+1
-    @test progress_bar(rand(1:100), nsteps, false) == 1:nsteps+1
-    @test progress_bar(0, nsteps, true) == 1:nsteps+1
-    @test typeof(progress_bar(0, nsteps, false)) == ProgressBar
-    @test length(progress_bar(0, nsteps, false)) == nsteps + 1
-end
-
 # only interface test, because the called fromVoigt function is tested in "Tensors"
 @testset "ut_get_fourth_order" begin
     @test size(get_fourth_order(zeros(Float64, 6, 6), 3)) == (3, 3, 3, 3)
