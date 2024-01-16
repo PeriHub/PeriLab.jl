@@ -5,7 +5,8 @@
 using Test
 include("../../../src/Support/helpers.jl")
 include("../../../src/Support/data_manager.jl")
-using .Helpers
+using Reexport
+@reexport using .Helpers
 using ProgressBars
 @testset "ut_interpolation" begin
     x = [0.0, 1.0, 2.0, 3.0, 4.0]

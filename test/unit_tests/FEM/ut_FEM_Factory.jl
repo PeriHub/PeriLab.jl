@@ -5,7 +5,8 @@ include("../../../src/FEM/FEM_Factory.jl")
 
 using Test
 include("../../../src/Support/data_manager.jl")
-
+using Reexport
+@reexport using .Data_manager
 
 @testset "ut_valid_models" begin
     @test isnothing(FEM.valid_models(Dict()))
