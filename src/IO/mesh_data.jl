@@ -526,7 +526,7 @@ function set_dof(mesh::DataFrame)
 end
 
 """
-    check_for_duplicates(mesh::DataFrame)
+    check_for_duplicate_in_dataframe(mesh::DataFrame)
 
 check duplicated entries and throws an error if one is there. If not everything is ok.
 
@@ -536,7 +536,7 @@ check duplicated entries and throws an error if one is there. If not everything 
 - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 """
 
-function check_for_duplicates(mesh::DataFrame)
+function check_for_duplicate_in_dataframe(mesh::DataFrame)
     duplicates = findall(nonunique(mesh))
     if length(duplicates) > 0
         @error "Mesh contains duplicate nodes! Nodes: $duplicates"
@@ -565,8 +565,8 @@ Load and evaluate the mesh data.
 """
 function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
-    mesh = read_mesh(joinpath(path, get_mesh_name(params)), params)
-    check_for_duplicates(mesh)
+    mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+    check_for_duplicate_in_dataframe(mesh)
 
     external_topology = nothing
     if !isnothing(get_external_topology_name(params))
