@@ -38,10 +38,8 @@ function create_result_file(filename::Union{AbstractString,String}, num_nodes::I
         Int32(num_elem_blks), Int32(num_node_sets), Int32(num_side_sets)
     )
     @info "Create output " * filename
-    exo_db = ExodusDatabase(
-        filename, "w", init,
-        maps_int_type, ids_int_type, bulk_int_type, float_type
-    )
+    exo_db = ExodusDatabase{maps_int_type,ids_int_type,bulk_int_type,float_type}(
+        filename, "w", init)
     return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
 end
 
