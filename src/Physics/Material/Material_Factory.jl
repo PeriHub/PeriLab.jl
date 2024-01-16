@@ -36,12 +36,18 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     end
     material_models = split(model_param["Material Model"], "+")
     material_models = map(r -> strip(r), material_models)
-
+    #occursin("Correspondence", material_name)
     for material_model in material_models
         #datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param))
         mod = Set_modules.create_module_specifics(material_model, module_list, "material_name")
+
         if isnothing(mod)
             @error "No material of name " * material_model * " exists."
+        end
+        if occursin("Correspondence", string(mod))
+            mod = Correspondence
+            #datamanager.set_class_material_models("Correspondence", material_model)
+            material_model = "Correspondence"
         end
         datamanager.set_model_module(material_model, mod)
         datamanager = mod.init_material_model(datamanager, nodes, model_param)
@@ -69,7 +75,6 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     material_models = split(model_param["Material Model"], "+")
 
     for material_model in material_models
-        # datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param, time, dt, to))
 
         mod = datamanager.get_model_module(material_model)
         datamanager = mod.compute_forces(datamanager, nodes, model_param, time, dt, to)

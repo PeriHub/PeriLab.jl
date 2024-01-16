@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# include("../helpers.jl")
+include("../helpers.jl")
 
 """
     get_external_topology_name(params::Dict)

@@ -63,7 +63,9 @@ println(material_name())
 ```
 """
 function material_name()
-  return Correspondence_Elastic.correspondence_name()
+  # corresponcence,  elastic correspondences
+
+  return "Correspondence"
 end
 
 """
@@ -115,8 +117,8 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   end
 
   # in future this part must be changed -> using set Modules
-
-  stress_NP1, datamanager = Correspondence_Elastic.compute_stresses(datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1)
+  mod = datamanager.get_model_module(material_name)
+  stress_NP1, datamanager = mod.compute_stresses(datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1)
 
   #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
   # material_model is missing

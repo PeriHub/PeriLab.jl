@@ -30,7 +30,7 @@ Computes the damage model
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
     mod = datamanager.get_model_module(model_param["Damage Model"])
-    datamanager = mod.compute_damage(datamanager, nodes, model_param, time, dt)
+    datamanager = mod.compute_damage(datamanager, nodes, model_param, block, time, dt)
     datamanager = damage_index(datamanager, nodes)
     return datamanager
 end
@@ -171,7 +171,7 @@ function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
         return nothing
     end
-    datamanager.set_model_module(mod)
+    datamanager.set_model_module(model_param["Damage Model"], mod)
     datamanager = mod.init_damage_model(datamanager, nodes, model_param, block)
     datamanager = Damage.init_interface_crit_values(datamanager, model_param, block)
     datamanager = Damage.init_aniso_crit_values(datamanager, model_param, block)

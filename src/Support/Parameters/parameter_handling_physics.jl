@@ -59,7 +59,7 @@ function get_model_parameter(params::Dict, model::String, id::String)
     if haskey(params["Physics"][model*"s"], id)
         file_keys = find_data_files(params["Physics"][model*"s"][id])
         for file_key in file_keys
-            data = csv_reader(params["Physics"][model*"s"][id][file_key])
+            data = csv_reader_temporary(params["Physics"][model*"s"][id][file_key])
             params["Physics"][model*"s"][id][file_key] = interpolation(data[!, 1], data[!, 2])
         end
         return params["Physics"][model*"s"][id]
@@ -67,6 +67,10 @@ function get_model_parameter(params::Dict, model::String, id::String)
         @error model * " model with name " * id * " is defined in blocks, but missing in the " * model * "s definition."
         return nothing
     end
+end
+function csv_reader_temporary(filename::String)
+    header_line, header = get_header(filename)
+    return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
 end
 
 
