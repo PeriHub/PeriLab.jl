@@ -5,6 +5,8 @@
 include("../../../src/Core/BC_manager.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
+using Reexport
+@reexport using .Parameter_Handling
 using Test
 using .Boundary_conditions
 

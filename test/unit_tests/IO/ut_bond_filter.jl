@@ -6,7 +6,8 @@ include("../../../src/IO/mesh_data.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
-
+using Reexport
+@reexport using .Parameter_Handling
 using .Data_manager
 using DataFrames
 

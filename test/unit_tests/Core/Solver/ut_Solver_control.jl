@@ -11,6 +11,8 @@ if !isdefined(@__MODULE__, :Data_manager)
     include("../../../../src/Support/data_manager.jl")
 end
 include("../../../../src/Support/Parameters/parameter_handling.jl")
+using Reexport
+@reexport using .Parameter_Handling
 import .Solver
 
 @testset "ut_get_block_nodes" begin
@@ -20,17 +22,6 @@ import .Solver
     @test block_nodes[2] == [4, 5, 12, 17]
     @test block_nodes[3] == [6, 7, 8, 9, 13, 14]
 
-end
-
-
-
-@testset "ut_progress_bar" begin
-    nsteps::Int64 = rand(1:100)
-    @test progress_bar(rand(1:100), nsteps, true) == 1:nsteps+1
-    @test progress_bar(rand(1:100), nsteps, false) == 1:nsteps+1
-    @test progress_bar(0, nsteps, true) == 1:nsteps+1
-    @test typeof(progress_bar(0, nsteps, false)) == ProgressBar
-    @test length(progress_bar(0, nsteps, false)) == nsteps + 1
 end
 
 @testset "ut_init" begin

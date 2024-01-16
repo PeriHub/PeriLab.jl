@@ -6,8 +6,9 @@ include("../../../src/IO/mesh_data.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
-
-using .Data_manager
+using Reexport
+@reexport using .Parameter_Handling
+@reexport using .Data_manager
 using DataFrames
 @testset "ut_read_mesh" begin
     params = Dict("Discretization" => Dict("Type" => "not supported"))

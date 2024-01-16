@@ -5,11 +5,13 @@
 include("../../../src/IO/IO.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
+using TimerOutputs
+using Reexport
+@reexport using .Parameter_Handling
 using Test
 import .IO
-using Exodus
-using MPI
-
+@reexport using Exodus
+@reexport using MPI
 test_Data_manager = Data_manager
 filename1 = "test1"
 filename2 = "test2"
@@ -46,20 +48,20 @@ block_Id[end] = 2
     @test sort(collect(keys(output[1]["Fields"]))) == ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     @test sort(collect(keys(output[2]["Fields"]))) == ["Displacementsx", "Displacementsy", "Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     for i in 1:2
-        dofForce = 0
-        dofDisp = 0
+        dof_force = 0
+        dof_disp::Int64 = 0
         for entry in keys(sort(output[i]["Fields"]))
             if occursin("Forces", entry)
-                dofForce += 1
+                dof_force += 1
                 @test output[i]["Fields"][entry]["fieldname"] == "ForcesNP1"
                 @test output[i]["Fields"][entry]["result_id"] == i
-                @test output[i]["Fields"][entry]["dof"] == dofForce
+                @test output[i]["Fields"][entry]["dof"] == dof_force
                 @test output[i]["Fields"][entry]["type"] == Float64
             else
-                dofDisp += 1
+                dof_disp += 1
                 @test output[i]["Fields"][entry]["fieldname"] == "DisplacementsNP1"
                 @test output[i]["Fields"][entry]["result_id"] == 1
-                @test output[i]["Fields"][entry]["dof"] == dofDisp
+                @test output[i]["Fields"][entry]["dof"] == dof_disp
                 @test output[i]["Fields"][entry]["type"] == Float64
             end
         end

@@ -7,7 +7,9 @@ include("../../../src/IO/csv_export.jl")
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
-
+using TimerOutputs
+using Reexport
+@reexport using .Parameter_Handling
 using Exodus
 @testset "ut_get_block_nodes" begin
     block_Id = [1, 1, 2, 2, 2, 3, 3, 3, 1, 3, 3, 4]

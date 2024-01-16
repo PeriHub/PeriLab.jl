@@ -14,6 +14,8 @@ if !isdefined(@__MODULE__, :Data_manager)
     include("../../../../src/Support/data_manager.jl")
 end
 include("../../../../src/Support/Parameters/parameter_handling.jl")
+using Reexport
+@reexport using .Parameter_Handling
 using .Data_manager
 using .Geometry
 using .Boundary_conditions

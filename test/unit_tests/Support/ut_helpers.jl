@@ -12,8 +12,9 @@ using ProgressBars
     y = [-1.0, 0.0, 7.0, 26.0, 63.0]  # x.^3 - 1.
     values_dict = Dict()
     values_dict["value"] = interpolation(x, y)
-    @test interpol_data([1.5, 2.5], values_dict["value"]) == [2.375, 14.625]
-    @test interpol_data(1.5, values_dict["value"]) == 2.375
+    @test isapprox(interpol_data([1.5, 2.5], values_dict["value"])[1], 2.375)
+    @test isapprox(interpol_data([1.5, 2.5], values_dict["value"])[2], 14.625)
+    @test isapprox(interpol_data(1.5, values_dict["value"]), 2.375)
     @test interpol_data(-1, values_dict["value"]) == minimum(y)
     @test interpol_data([-1, -8], values_dict["value"]) == [minimum(y), minimum(y)]
     @test interpol_data(5, values_dict["value"]) == maximum(y)

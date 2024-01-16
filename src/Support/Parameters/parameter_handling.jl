@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 module Parameter_Handling
-
+using Reexport
 include("./parameter_handling_bc.jl")
 include("./parameter_handling_blocks.jl")
 include("./parameter_handling_physics.jl")

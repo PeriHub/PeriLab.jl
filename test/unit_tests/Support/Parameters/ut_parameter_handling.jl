@@ -7,10 +7,12 @@ if !isdefined(@__MODULE__, :Data_manager)
 end
 include("../../../../src/Support/Parameters/parameter_handling.jl")
 include("../../../../src/Support/helpers.jl")
-using .Helpers
 using Test
 using Random
-
+using Dierckx
+using Reexport
+@reexport using .Helpers
+@reexport using .Parameter_Handling
 
 @testset "ut_get_element_degree" begin
     @test isnothing(get_element_degree(Dict()))
@@ -432,7 +434,8 @@ end
     test_dict = testData["Material Model"]["test_file_B"]
     @test test_dict["max"] == 0.5
     @test test_dict["min"] == -2.5
-    @test typeof(test_dict["spl"]) == Spline1D
+
+    @test typeof(test_dict["spl"]) == Dierckx.Spline1D
     testData["Damage Model"] = get_model_parameter(params, "Damage Model", blockModels[1]["Damage Model"])
     @test testData["Damage Model"]["ss"] == 0
     @test testData["Damage Model"]["d"] == 1.1
@@ -448,7 +451,7 @@ end
         "Shape Tensor" => false,
         "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
-    optionTest = get_physics_option(params, options)
+    optionTest = Parameter_Handling.get_physics_option(params, options)
     # no material models included
     @test optionTest == params["Physics"]["Pre Calculation"]
 
@@ -458,22 +461,22 @@ end
             "Bond Associated Shape Tensor" => false,
             "Bond Associated Deformation Gradient" => true),
         "Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1))))
-    optionTest = get_physics_option(params, options)
+    optionTest = Parameter_Handling.get_physics_option(params, options)
 
     @test isnothing(optionTest)
 
     params = Dict("Physics" => Dict(
         "Material Models" => Dict("a" => Dict("Material Model" => "adaCoB", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1))))
-    optionTest = get_physics_option(params, options)
+    optionTest = Parameter_Handling.get_physics_option(params, options)
     @test isnothing(optionTest)
     params = Dict("Physics" => Dict(
         "Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
-    optionTest = get_physics_option(params, options)
+    optionTest = Parameter_Handling.get_physics_option(params, options)
     @test isnothing(optionTest)
 
     params = Dict("Physics" => Dict(
         "Material Models" => Dict("a" => Dict("value" => 1, "Material Model" => "adaCoB"), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
-    optionTest = get_physics_option(params, options)
+    optionTest = Parameter_Handling.get_physics_option(params, options)
     @test optionTest == options
 
     params = Dict("Physics" => Dict(
@@ -483,7 +486,7 @@ end
         "Shape Tensor" => false,
         "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
-    optionTest = get_physics_option(params, options)
+    optionTest = Parameter_Handling.get_physics_option(params, options)
     @test optionTest["Shape Tensor"]
     @test !optionTest["Bond Associated Shape Tensor"]
     @test !optionTest["Bond Associated Deformation Gradient"]
@@ -492,7 +495,7 @@ end
 
     params = Dict("Physics" => Dict(
         "Material Models" => Dict("aBond Associated" => Dict("Material Model" => "adaCoBond Associated", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
-    optionTest = get_physics_option(params, options)
+    optionTest = Parameter_Handling.get_physics_option(params, options)
 
     @test optionTest["Shape Tensor"]
     @test optionTest["Bond Associated Shape Tensor"]
