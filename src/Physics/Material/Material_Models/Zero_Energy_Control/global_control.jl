@@ -4,6 +4,8 @@
 
 module global_zero_energy_control
 include("../../../../Support/helpers.jl")
+using Reexport
+@reexport using .Helpers
 include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
 using TensorOperations

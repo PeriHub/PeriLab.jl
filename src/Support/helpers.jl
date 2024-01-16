@@ -2,11 +2,22 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+module Helpers
 
-using ProgressBars
 using Tensors
 using Dierckx
-
+using ProgressBars
+export check_inf_or_nan
+export find_active
+export find_indices
+export find_inverse_bond_id
+export find_updatable
+export find_files_with_ending
+export matrix_style
+export get_fourth_order
+export interpolation
+export interpol_data
+export progress_bar
 
 """
     find_indices(vector, what)
@@ -52,30 +63,6 @@ function find_updatable(active::Vector{Int64}, update_list::SubArray)
     return [active[i] for i in eachindex(active) if update_list[i] == 1]
 end
 
-"""
-    get_header(filename::Union{String,AbstractString})
-
-Returns the header line and the header.
-
-# Arguments
-- `filename::Union{String,AbstractString}`: The filename of the file.
-# Returns
-- `header_line::Int`: The header line.
-- `header::Vector{String}`: The header.
-"""
-function get_header(filename::Union{String,AbstractString})
-    file = open(filename, "r")
-    header_line = 0
-    for line in eachline(file)#
-        header_line += 1
-        if contains(line, "header:")
-            close(file)
-            return header_line, convert(Vector{String}, split(line)[2:end])
-        end
-    end
-    @error "No header exists in $filename. Please insert 'header: global_id' above the first node"
-    return
-end
 
 """
     find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
@@ -201,4 +188,28 @@ function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64}, va
         @warn "Interpolation value is above interpolation range. Using maximum value of dataset."
     end
     return evaluate(values["spl"], x)
+end
+
+
+"""
+    progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
+
+Create a progress bar if the rank is 0. The progress bar ranges from 1 to nsteps + 1.
+
+# Arguments
+- rank::Int64: An integer to determine if the progress bar should be created.
+- nsteps::Int64: The total number of steps in the progress bar.
+- silent::Bool: de/activates the progress bar
+# Returns
+- ProgressBar or UnitRange: If rank is 0, a ProgressBar object is returned. Otherwise, a range from 1 to nsteps + 1 is returned.
+"""
+function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
+    # Check if rank is equal to 0.
+    if rank == 0 && !silent
+        # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
+        return ProgressBar(1:nsteps+1)
+    end
+    # If rank is not 0, return a range from 1 to nsteps + 1.
+    return 1:nsteps+1
+end
 end

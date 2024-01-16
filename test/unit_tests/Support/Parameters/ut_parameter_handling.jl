@@ -7,7 +7,7 @@ if !isdefined(@__MODULE__, :Data_manager)
 end
 include("../../../../src/Support/Parameters/parameter_handling.jl")
 include("../../../../src/Support/helpers.jl")
-
+using .Helpers
 using Test
 using Random
 

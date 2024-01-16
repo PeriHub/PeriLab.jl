@@ -18,7 +18,8 @@ include("csv_export.jl")
 include("../Compute/compute_global_values.jl")
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_communication.jl")
-
+using Reexport
+@reexport using .Parameter_Handling
 export close_result_files
 export initialize_data
 export init_write_results
@@ -395,20 +396,6 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
     end
 
     return result_files, outputs
-end
-
-"""
-    read_input_file(filename::String)
-
-Read input file.
-
-# Arguments
-- `filename::String`: The filename
-# Returns
-- `data::Dict`: The data
-"""
-function read_input_file(filename::String)
-    return Read_Input_Deck.read_input_file(filename)
 end
 
 """

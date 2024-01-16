@@ -5,7 +5,7 @@
 using Test
 include("../../../src/Support/helpers.jl")
 include("../../../src/Support/data_manager.jl")
-
+using .Helpers
 @testset "ut_interpolation" begin
     x = [0.0, 1.0, 2.0, 3.0, 4.0]
     y = [-1.0, 0.0, 7.0, 26.0, 63.0]  # x.^3 - 1.

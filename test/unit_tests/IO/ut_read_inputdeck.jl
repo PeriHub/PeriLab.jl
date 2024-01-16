@@ -12,25 +12,25 @@ using Test
     println(fid, "PeriLab:")
     println(fid, " data: 1")
     close(fid)
-    dict = Read_Input_Deck.read_input(filename)
+    dict = read_input(filename)
     @test haskey(dict["PeriLab"], "data")
     @test dict["PeriLab"]["data"] == 1
     rm(filename)
     fid = open(filename, "w")
     close(fid)
-    @test isnothing(Read_Input_Deck.read_input(filename))
+    @test isnothing(read_input(filename))
     rm(filename)
 end
 
 @testset "ut_read_input_file" begin
-    dict = Read_Input_Deck.read_input_file("filename")
+    dict = read_input_file("filename")
     @test isnothing(dict)
     filename = "test.xml"
     fid = open(filename, "w")
     println(fid, "PeriLab:")
     println(fid, " data: 1")
     close(fid)
-    dict = Read_Input_Deck.read_input_file(filename)
+    dict = read_input_file(filename)
     @test isnothing(dict)
     rm(filename)
     filename = "test.yaml"
@@ -38,7 +38,7 @@ end
     println(fid, "PeriLab:")
     println(fid, " data: 1")
     close(fid)
-    dict = Read_Input_Deck.read_input_file(filename)
+    dict = read_input_file(filename)
     @test isnothing(dict)
     rm(filename)
     filename = "test.yaml"
@@ -56,7 +56,7 @@ end
     println(fid, "  Initial Time: 0.0")
     println(fid, "  Final Time: 1.0")
     close(fid)
-    dict = Read_Input_Deck.read_input_file(filename)
+    dict = read_input_file(filename)
     @test dict["Physics"]["d"] == 3
     @test dict["Physics"]["a"] == 1
     @test dict["Discretization"]["Input Mesh File"] == "test"

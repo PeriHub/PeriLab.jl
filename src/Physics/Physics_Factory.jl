@@ -4,12 +4,15 @@
 
 module Physics
 include("../Support/helpers.jl")
+using Reexport
+@reexport using .Helpers: check_inf_or_nan, find_active, find_inverse_bond_id, find_updatable
 include("./Additive/Additive_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
+@reexport using .Parameter_Handling: get_physics_option, get_model_parameter
 # in future FEM will be outside of the Physics_Factory
 include("../FEM/FEM_Factory.jl")
 

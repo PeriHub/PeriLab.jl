@@ -2,19 +2,23 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-
 module Verlet
 using LinearAlgebra
 using TimerOutputs
+using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
-include("../../Support/helpers.jl")
-include("../../MPI_communication/MPI_communication.jl")
-include("../../Support/Parameters/parameter_handling.jl")
-include("../BC_manager.jl")
+using Reexport
 
+include("../../Support/helpers.jl")
+@reexport using .Helpers: check_inf_or_nan, find_active, progress_bar
+include("../../Support/Parameters/parameter_handling.jl")
+@reexport using .Parameter_Handling: get_initial_time, get_fixed_dt, get_final_time, get_numerical_damping, get_safety_factor, get_max_damage
+
+include("../../MPI_communication/MPI_communication.jl")
+include("../BC_manager.jl")
 include("../../Physics/Physics_Factory.jl")
 using .Physics
-using .Boundary_conditions
+using .Boundary_conditions: apply_bc
 
 export init_solver
 export run_solver

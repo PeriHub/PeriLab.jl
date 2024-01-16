@@ -6,7 +6,8 @@ module Boundary_conditions
 export init_BCs
 export apply_bc
 include("../Support/Parameters/parameter_handling.jl")
-
+using Reexport
+@reexport using .Parameter_Handling: get_bc_definitions
 """
     check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module
 

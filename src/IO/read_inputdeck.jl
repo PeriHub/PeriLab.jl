@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Read_Input_Deck
+
 using YAML
 using DataFrames
-include("../Support/Parameters/parameter_handling.jl")
+
 export read_input_file
 
 """
@@ -51,7 +51,5 @@ function read_input_file(filename::String)
         return nothing
     end
     return validate_yaml(params)
-
-end
 
 end

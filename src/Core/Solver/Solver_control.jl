@@ -3,18 +3,22 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Solver
+
+using Reexport
+
+include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
+@reexport using .Parameter_Handling: get_density, get_horizon, get_solver_name, get_solver_options
+@reexport using .Helpers: find_indices
 include("../../Physics/Physics_Factory.jl")
 include("../../Physics/Damage/Damage_Factory.jl")
-include("../../IO/IO.jl")
 include("Verlet.jl")
-include("../../Support/Parameters/parameter_handling.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../../FEM/FEM_Factory.jl")
-using .IO
+
 using .Physics
-using .Boundary_conditions
+using .Boundary_conditions: init_BCs
 using .Verlet
 using .FEM
 using TimerOutputs
@@ -49,12 +53,15 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
 
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
-
+    @info "Read properties"
     Physics.read_properties(params, datamanager, solver_options["Material Models"])
+    @info "Init models"
     @timeit to "init_models" datamanager = Physics.init_models(params, datamanager, block_nodes, solver_options, to)
+    @info "Init Boundary Conditions"
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
 
     if get_solver_name(params) == "Verlet"
+        @info "Init " * get_solver_name(params)
         @timeit to "init_solver" solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = Verlet.init_solver(params, datamanager, block_nodes, solver_options["Material Models"], solver_options["Thermal Models"])
     end
     if datamanager.fem_active()
@@ -192,46 +199,6 @@ function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, syn
     end
     @error "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
     return nothing
-end
-
-"""
-    write_results(result_files, dt, outputs, datamanager)
-
-Writes simulation results.
-
-# Arguments
-- `result_files`: A vector of result files
-- `dt`: The time step
-- `outputs`: A dictionary for output settings
-- `datamanager`: The data manager module
-# Returns
-- `result_files`: A vector of updated result files
-"""
-function write_results(result_files, dt, outputs, datamanager)
-    return IO.write_results(result_files, dt, outputs, datamanager)
-end
-
-
-"""
-    progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
-
-Create a progress bar if the rank is 0. The progress bar ranges from 1 to nsteps + 1.
-
-# Arguments
-- rank::Int64: An integer to determine if the progress bar should be created.
-- nsteps::Int64: The total number of steps in the progress bar.
-- silent::Bool: de/activates the progress bar
-# Returns
-- ProgressBar or UnitRange: If rank is 0, a ProgressBar object is returned. Otherwise, a range from 1 to nsteps + 1 is returned.
-"""
-function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
-    # Check if rank is equal to 0.
-    if rank == 0 && !silent
-        # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
-        return ProgressBar(1:nsteps+1)
-    end
-    # If rank is not 0, return a range from 1 to nsteps + 1.
-    return 1:nsteps+1
 end
 
 end
