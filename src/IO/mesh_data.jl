@@ -4,6 +4,7 @@
 
 using LinearAlgebra
 using AbaqusReader
+using DataFrames
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
 
