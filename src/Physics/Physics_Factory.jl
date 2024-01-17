@@ -264,6 +264,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     deformed_coorNP1[:] = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
     if solver_options["Additive Models"]
+        @info "Init additive models"
         @timeit to "additive_model_fields" datamanager = Physics.init_additive_model_fields(datamanager)
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
@@ -274,6 +275,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
         end
     end
     if solver_options["Damage Models"]
+        @info "Init damage models"
         @timeit to "damage_model_fields" datamanager = Physics.init_damage_model_fields(datamanager, params)
         for block in datamanager.get_block_list()
             if datamanager.check_property(block, "Damage Model")
@@ -283,6 +285,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
 
     end
     if solver_options["Material Models"]
+        @info "Init material models"
         @timeit to "material model fields" datamanager = Physics.init_material_model_fields(datamanager)
         for block in datamanager.get_block_list()
             if datamanager.check_property(block, "Material Model")
@@ -291,6 +294,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
         end
     end
     if solver_options["Thermal Models"]
+        @info "Init thermal models"
         @timeit to "thermal model fields" datamanager = Physics.init_thermal_model_fields(datamanager)
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
@@ -300,7 +304,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
             end
         end
     end
-
+    @info "Init pre calculation models"
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
 
