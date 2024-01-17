@@ -2,15 +2,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Correspondence_Elastic
-include("../material_basis.jl")
-export compute_stresses
-export correspondence_name
+module Material_template
+using TimerOutputs
 export fe_support
 export init_material_model
-export material_name
+export correspondence_name
 export compute_forces
-export init_material_model
+
 """
   fe_support()
 
@@ -28,9 +26,8 @@ false
 ```
 """
 function fe_support()
-   return false
+  return false
 end
-
 
 """
   init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
@@ -46,10 +43,11 @@ Initializes the material model.
   - `datamanager::Data_manager`: Datamanager.
 """
 function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
-   return datamanager
+  return datamanager
 end
+
 """
-    correspondence_name()
+    material_name()
 
 Gives the material name. It is needed for comparison with the yaml input deck.
 
@@ -65,7 +63,7 @@ println(material_name())
 ```
 """
 function correspondence_name()
-   return "Correspondence Elastic"
+  return "Correspondence Template"
 end
 
 """
@@ -91,15 +89,14 @@ Example:
 ```
 """
 function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
-
-   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
-
-   for iID in nodes
-      stress_NP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) + stress_N[iID, :, :]
-   end
-
-   return stress_NP1, datamanager
+  @info "Please write a material name in material_name()."
+  @info "You can call your routine within the yaml file."
+  @info "Fill the compute_forces() and init_material_model() function."
+  @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
+  @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+  return datamanager, stress_NP1
 end
+
 """
     compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
@@ -121,12 +118,12 @@ Example:
 ```julia
 ```
 """
+
 function compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Vector{Float64}, stress_N::Vector{Float64}, stress_NP1::Vector{Float64})
 
-   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
+  hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
-   return hookeMatrix * strain_increment + stress_N, datamanager
+  return hookeMatrix * strain_increment + stress_N, datamanager
 end
-
 
 end
