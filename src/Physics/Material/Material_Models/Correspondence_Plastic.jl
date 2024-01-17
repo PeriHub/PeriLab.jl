@@ -49,7 +49,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
 end
 
 """
-   material_name()
+   correspondence_name()
 
    Gives the material name. It is needed for comparison with the yaml input deck.
 
@@ -64,8 +64,8 @@ end
    "Material Template"
    ```
    """
-function material_name()
-  return "Plastic"
+function correspondence_name()
+  return "Correspondence Plastic"
 end
 """
    compute_force(datamanager, nodes, material_parameter, time, dt)

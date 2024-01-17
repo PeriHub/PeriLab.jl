@@ -47,9 +47,9 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
 end
 
 """
-    material_name()
+    correspondence_name()
 
-Gives the material name. It is needed for comparison with the yaml input deck.
+Gives the correspondence material name. It is needed for comparison with the yaml input deck.
 
 # Arguments
 
@@ -58,7 +58,7 @@ Gives the material name. It is needed for comparison with the yaml input deck.
 
 Example:
 ```julia
-println(material_name())
+println(correspondence_name())
 "Material Template"
 ```
 """

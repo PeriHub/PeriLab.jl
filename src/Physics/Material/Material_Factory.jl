@@ -10,7 +10,9 @@ using TimerOutputs
 
 global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
 Set_modules.include_files(module_list)
-
+include("./Material_Models/Correspondence.jl")
+using Reexport
+@reexport using .Correspondence
 export init_material_model
 export compute_forces
 export determine_isotropic_parameter
@@ -30,29 +32,27 @@ Initializes the material model.
 """
 function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Material Model")
-    specifics = Dict{String,String}("Call Function" => "init_material_model", "Name" => "material_name")
     if !haskey(model_param, "Material Model")
         @error "Block " * string(block) * " has no material model defined."
+        return nothing
     end
+
+    if occursin("Correspondence", model_param["Material Model"])
+        datamanager.set_model_module("Correspondence", Correspondence)
+        datamanager = Correspondence.init_material_model(datamanager, nodes, model_param)
+        return datamanager
+    end
+
     material_models = split(model_param["Material Model"], "+")
     material_models = map(r -> strip(r), material_models)
-    #occursin("Correspondence", material_name)
-    for material_model in material_models
-        #datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, model_param))
-        mod = Set_modules.create_module_specifics(material_model, module_list, "material_name")
 
+    for material_model in material_models
+        mod = Set_modules.create_module_specifics(material_model, module_list, "material_name")
         if isnothing(mod)
             @error "No material of name " * material_model * " exists."
         end
-        if occursin("Correspondence", string(mod))
-            mod = Correspondence
-            #datamanager.set_class_material_models("Correspondence", material_model)
-            material_model = "Correspondence"
-        end
         datamanager.set_model_module(material_model, mod)
         datamanager = mod.init_material_model(datamanager, nodes, model_param)
-
-        #datamanager.use_material_module(material_model, (datamanager, nodes, model_param))
     end
     return datamanager
 end
@@ -73,15 +73,14 @@ Compute the forces.
 """
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
     material_models = split(model_param["Material Model"], "+")
-
+    if occursin("Correspondence", model_param["Material Model"])
+        mod = datamanager.get_model_module("Correspondence")
+        datamanager = mod.compute_forces(datamanager, nodes, model_param, time, dt, to)
+        return datamanager
+    end
     for material_model in material_models
-
         mod = datamanager.get_model_module(material_model)
         datamanager = mod.compute_forces(datamanager, nodes, model_param, time, dt, to)
-        if isnothing(datamanager)
-            @error "No material of name " * material_model * " exists."
-        end
-
     end
     return datamanager
 end

@@ -12,8 +12,12 @@ include("../material_basis.jl")
 include("../../../Support/geometry.jl")
 using .global_zero_energy_control
 using .Correspondence_Elastic
-#global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
-#Set_modules.include_files(module_list)
+
+
+include("../../../Core/Module_inclusion/set_Modules.jl")
+using .Set_modules
+global module_list = Set_modules.find_module_files(@__DIR__, "correspondence_name")
+Set_modules.include_files(module_list)
 using .Geometry
 export init_material_model
 export material_name
@@ -43,6 +47,20 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
   datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
 
+  material_models = split(material_parameter["Material Model"], "+")
+  material_models = map(r -> strip(r), material_models)
+  #occursin("Correspondence", material_name)
+  for material_model in material_models
+
+    mod = Set_modules.create_module_specifics(material_model, module_list, "correspondence_name")
+    if isnothing(mod)
+      @error "No correspondence material of name " * material_model * " exists."
+      return nothing
+    end
+    datamanager.set_model_module(material_model, mod)
+    datamanager = mod.init_material_model(datamanager, nodes, material_parameter)
+
+  end
   return datamanager
 end
 
@@ -63,8 +81,6 @@ println(material_name())
 ```
 """
 function material_name()
-  # corresponcence,  elastic correspondences
-
   return "Correspondence"
 end
 
@@ -116,16 +132,12 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     strain_increment = rotate(nodes, dof, strain_increment, angles, false)
   end
 
-  # in future this part must be changed -> using set Modules
-  mod = datamanager.get_model_module(material_name)
-  stress_NP1, datamanager = mod.compute_stresses(datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1)
-
-  #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
-  # material_model is missing
-  #stress_NP1, datamanager = Set_modules.create_module_specifics(material_model, module_list, specifics, (datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1))
-
-
-
+  material_models = split(material_parameter["Material Model"], "+")
+  material_models = map(r -> strip(r), material_models)
+  for material_model in material_models
+    mod = datamanager.get_model_module(material_model)
+    stress_NP1, datamanager = mod.compute_stresses(datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1)
+  end
   if rotation
     stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
   end
@@ -134,6 +146,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
 
   return datamanager
+
 end
 
 """
