@@ -5,7 +5,6 @@
 using Test
 include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/geometry.jl")
-import .Geometry
 
 @testset "ut_undeformed_bond" begin
     nnodes = 4
