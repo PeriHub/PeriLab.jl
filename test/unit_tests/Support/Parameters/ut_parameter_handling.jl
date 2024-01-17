@@ -319,32 +319,6 @@ end
     @test get_number_of_blocks(params) == 4
 end
 
-
-
-function get_density(params::Dict, block_id::Int64)
-    return get_values(params, block_id, "Density")
-end
-
-function get_heat_capacity(params::Dict, block_id::Int64)
-    return get_values(params, block_id, "Specific Heat Capacity")
-end
-
-function get_horizon(params::Dict, block_id::Int64)
-    return get_values(params, block_id, "Horizon")
-end
-
-function get_values(params::Dict, block_id::Int64, valueName::String)
-    if haskey(params["Blocks"], "block_" * string(block_id))
-        if haskey(params["Blocks"]["block_"*string(block_id)], valueName)
-            return params["Blocks"]["block_"*string(block_id)][valueName]
-        end
-        @error "$valueName of Block $block_id is not defined"
-        return
-    end
-    @error "Block $block_id is not defined"
-    return
-end
-
 @testset "ut_block_values" begin
     params = Dict("Blocks" => Dict())
     @test isnothing(get_horizon(params, 1))
@@ -402,9 +376,9 @@ end
     @test isnothing(get_solver_name(Dict("Solver" => Dict("Solvername" => Dict()))))
 end
 
-path = "./unit_tests/Support/Parameters/"
-if !isdir("./unit_tests/Support/Parameters/test_data_file.txt")
-    path = "./test/unit_tests/Support/Parameters/"
+path = "./test/unit_tests/Support/Parameters/"
+if !isfile(path * "test_data_file.txt")
+    path = "./unit_tests/Support/Parameters/"
 end
 params = Dict("Physics" => Dict("Material Models" => Dict("A" => Dict("s" => 0, "d" => true, "test_file" => path * "test_data_file.txt", "test_file_2" => path * "test_data_file.txt"), "B" => Dict("sa" => [3.2, 2, 3], "d" => "true", "test_file_B" => path * "test_data_file.txt")), "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1))), "Blocks" => Dict("block_1" => Dict("Material Model" => "A", "Damage Model" => "E"), "block_2" => Dict("Material Model" => "B")))
 
