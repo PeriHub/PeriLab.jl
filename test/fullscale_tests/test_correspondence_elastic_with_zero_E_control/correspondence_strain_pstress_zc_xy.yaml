@@ -23,12 +23,12 @@ PeriLab:
                 Shear Modulus: 2.15e3
                 Zero Energy Control: "Global"
     Blocks: 
-        block_1: 
-                  Material Model: "Mat_1"
+        block_1:
+            Material Model: "Mat_1"
             Density: 2.7e-9
             Horizon: 2.1
-        block_2: 
-                  Material Model: "Mat_2"
+        block_2:
+            Material Model: "Mat_2"
             Density: 2.7e-9
             Horizon: 2.1
     Boundary Conditions: 
