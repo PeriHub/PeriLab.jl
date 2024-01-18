@@ -407,25 +407,16 @@ end
 
 @testset "ut_define_nsets" begin
 
-    numbers = [11, 12, 13, 44, 125]
-    lenNumbers = length(numbers)
-    filename = "test.txt"
-    file = open(filename, "w")
-    println(file, "header: global_id")
-    for number in numbers
-        println(file, number)
-    end
-    close(file)
-    params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename)))
+    nsets_predef = Dict("Nset_2" => [11, 12, 13, 44, 125], "Nset_1" => [1, 2, 3, 4, 5, 6, 7])
+
     test_Data_manager = Data_manager
     @test test_Data_manager.get_nnsets() == 0
-    IO.define_nsets(params, "", test_Data_manager)
+    IO.define_nsets(nsets_predef, test_Data_manager)
     @test test_Data_manager.get_nnsets() == 2
     nsets = test_Data_manager.get_nsets()
     @test nsets["Nset_1"] == [1, 2, 3, 4, 5, 6, 7]
     @test nsets["Nset_2"] == [11, 12, 13, 44, 125]
 
-    rm(filename)
 end
 
 @testset "get_bond_geometry" begin
