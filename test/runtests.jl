@@ -59,9 +59,9 @@ MPI.Init()
         @testset "Core" begin
             @testset "Solver" begin
 
-                # @testset "ut_Solver_control" begin
-                #     @includetests["unit_tests/Core/Solver/ut_Solver_control"]
-                # end
+                @testset "ut_Solver_control" begin
+                    @includetests["unit_tests/Core/Solver/ut_Solver_control"]
+                end
 
                 @testset "ut_Verlet" begin
                     @includetests["unit_tests/Core/Solver/ut_Verlet"]
