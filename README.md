@@ -8,6 +8,7 @@ SPDX-License-Identifier: BSD-3-Clause
 Welcome to `PeriLab`, a powerful software solution designed for tackling Peridynamic problems. 
 
 ![](assets/PeriLab_crack.gif)
+![](assets/PeriLab_additive.gif)
 
 ## Documentation
 
