@@ -43,7 +43,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
             dof::Int64 = 0
             distribution = nothing
             element_distribution = nothing
-            mesh = []
+            mesh = DataFrame()
             nlist = nothing
             nsets = nothing
             ntype = Dict("controllers" => 0, "responder" => 0)
@@ -56,6 +56,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         overlap_map = send_value(comm, 0, overlap_map)
         distribution = send_value(comm, 0, distribution)
         nsets = send_value(comm, 0, nsets)
+        nlist = send_value(comm, 0, nlist)
         distribution = send_value(comm, 0, distribution)
         datamanager.set_overlap_map(overlap_map)
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
@@ -572,6 +573,9 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
     mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
     check_for_duplicate_in_dataframe(mesh)
 
+    @info "Read node sets"
+    nsets = get_node_sets(params, path)
+
     external_topology = nothing
     if !isnothing(get_external_topology_name(params))
         external_topology = read_external_topology(joinpath(path, get_external_topology_name(params)))
@@ -608,8 +612,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
         @info "Number of finite elements: $(length(topology))"
         @info "-------------------"
     end
-    @info "Read node sets"
-    nsets = get_node_sets(params, path)
+
     return distribution, mesh, ntype, overlap_map, nlist, dof, nsets, topology, el_distribution
 end
 

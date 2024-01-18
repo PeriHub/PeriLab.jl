@@ -841,6 +841,7 @@ Sets the block list globally.
 """
 function set_block_list(blocks::Union{SubArray,Vector{Int64}})
     global block_list = sort(unique(blocks))
+    @debug "Block list: $(block_list)"
 end
 
 """
