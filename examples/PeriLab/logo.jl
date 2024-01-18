@@ -5,16 +5,26 @@
 using Images
 
 function write_mesh()
+
+    d_x = 10
+    d_y = 10
+    scale = 0.01
+    additive = true
+
     # Create or open the file for writing
     filename = "PeriLab.txt"
     file = open(filename, "w")
-    node_set_file1 = open("ns_PeriLab_1.txt", "w")
-    node_set_file2 = open("ns_PeriLab_2.txt", "w")
+    if !additive
+        node_set_file1 = open("ns_PeriLab_1.txt", "w")
+        node_set_file2 = open("ns_PeriLab_2.txt", "w")
+    end
 
     # Write the header to the file
-    println(file, "header: x y block_id volume")
-    println(node_set_file1, "header: global_id")
-    println(node_set_file2, "header: global_id")
+    if !additive
+        println(node_set_file1, "header: global_id")
+        println(node_set_file2, "header: global_id")
+    end
+    println(file, "header: x y block_id volume Activation_Time")
 
     # Text to be converted to pixels
     # text = "PeriLab"
@@ -23,34 +33,37 @@ function write_mesh()
     img = load("logo.png")
     @info size(img)
     id = 1
-    d_x = 10
-    d_y = 10
-    scale = 0.01
     node_set = []
     # Write the coordinates and parameters to the file
-    for x in 1:d_x:size(img, 2)
-        for y in 1:d_y:size(img, 1)
+    for y in size(img, 1):-d_y:1
+        for x in 1:d_x:size(img, 2)
             # @info img[y, x]
             volume = d_x * scale * d_y * scale
             y_inv = (size(img, 1) - y) * scale
             x_new = x * scale
-            if x_new < 0.5
-                println(node_set_file1, "$id")
-            elseif x_new > 17.34
-                println(node_set_file2, "$id")
-            end
-            if img[y, x] != RGBA{N0f8}(1.0, 1.0, 1.0, 1.0)  # Check if pixel is part of the text
-                block_id = 1
-                println(file, "$x_new $y_inv $block_id $volume")
-            elseif x_new <= 0.7
-                block_id = 3
-                println(file, "$x_new $y_inv $block_id $volume")
-            elseif x_new >= 17
-                block_id = 4
-                println(file, "$x_new $y_inv $block_id $volume")
+            if !additive
+                if x_new < 0.5
+                    println(node_set_file1, "$id")
+                elseif x_new > 17.34
+                    println(node_set_file2, "$id")
+                end
+                if img[y, x] != RGBA{N0f8}(1.0, 1.0, 1.0, 1.0)  # Check if pixel is part of the text
+                    block_id = 1
+                elseif x_new <= 0.7
+                    block_id = 3
+                elseif x_new >= 17
+                    block_id = 4
+                else
+                    block_id = 2
+                end
+                time = id * scale
+                println(file, "$x_new $y_inv $block_id $volume $time")
             else
-                block_id = 2
-                println(file, "$x_new $y_inv $block_id $volume")
+                if img[y, x] != RGBA{N0f8}(1.0, 1.0, 1.0, 1.0)  # Check if pixel is part of the text
+                    block_id = 1
+                    time = id * scale
+                    println(file, "$x_new $y_inv $block_id $volume $time")
+                end
             end
             id += 1
         end
@@ -58,8 +71,10 @@ function write_mesh()
 
     # Close the file
     close(file)
-    close(node_set_file1)
-    close(node_set_file2)
+    if !additive
+        close(node_set_file1)
+        close(node_set_file2)
+    end
 
     println("File '$filename' created successfully.")
 end

@@ -77,6 +77,9 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   t_bed = 0.0
   lambda_bed = 0.0
   if haskey(thermal_parameter, "Print Bed Temperature")
+    if dof < 3
+      @error "Print bed temperature can only be defined for 3D problems"
+    end
     apply_print_bed = true
     t_bed = thermal_parameter["Print Bed Temperature"]
     lambda_bed = thermal_parameter["Thermal Conductivity Print Bed"]
