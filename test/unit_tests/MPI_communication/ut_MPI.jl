@@ -75,7 +75,6 @@ end
 if ncores == 3
     include("../../../src/Support/data_manager.jl")
     include("../../../src/IO/IO.jl")
-
     import .IO
     using .Data_manager
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]

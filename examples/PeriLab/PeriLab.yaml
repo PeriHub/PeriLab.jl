@@ -7,42 +7,72 @@ PeriLab:
     Input Mesh File: PeriLab.txt
     Type: Text File
     Node Sets:
-      Node Set 1: ns_PeriLab.txt
+      Node Set 1: ns_PeriLab_1.txt
+      Node Set 2: ns_PeriLab_2.txt
   Physics:
     Material Models:
       Material:
-        Material Model: "PD Solid Elastic"
+        Material Model: "Bond-based Elastic"
         Symmetry: "isotropic plane stress"
         Young's Modulus: 7.0e+5
-        Poisson's Ratio: 0.33
+        Poisson's Ratio: 0.34
+    Damage Models:
+      Damage:
+        Critical Value: 1e-5
+        Damage Model: Critical Energy
+      Damage_Logo:
+        Critical Value: 1e-6
+        Damage Model: Critical Energy
   Boundary Conditions:
     BC_1:
-      Coordinate: y
+      Coordinate: x
       Node Set: Node Set 1
       Type: Displacements
-      Value: -100*t
+      Value: 0
+    BC_2:
+      Coordinate: x
+      Node Set: Node Set 2
+      Type: Displacements
+      Value: 10*t
+    BC_3:
+      Coordinate: y
+      Node Set: Node Set 2
+      Type: Displacements
+      Value: 10*t
   Blocks:
     block_1:
       Density: 1.4e-8
-      Horizon: 35.0
+      Horizon: 0.35
       Material Model: Material
+      Damage Model: Damage
     block_2:
       Density: 1.4e-8
-      Horizon: 35.0
+      Horizon: 0.35
+      Material Model: Material
+      Damage Model: Damage
+    block_3:
+      Density: 1.4e-8
+      Horizon: 0.35
+      Material Model: Material
+    block_4:
+      Density: 1.4e-8
+      Horizon: 0.35
       Material Model: Material
   Outputs:
     Output:
-      Number of Output Steps: 100
+      Number of Output Steps: 1000
       Output File Type: Exodus
       Output Filename: PeriLab
       Flush File: true
       Output Variables:
+        Damage: true
         Displacements: true
         Forces: true
         Number of Neighbors: true
   Solver:
     Material Models: true
-    Final Time: 1e-2
+    Damage Models: true
+    Final Time: 1e-4
     Initial Time: 0.0
     Verbose: false
     Verlet:

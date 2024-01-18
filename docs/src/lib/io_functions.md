@@ -21,7 +21,6 @@ get_results_mapping
 initialize_data
 init_orientations
 init_write_results
-read_input_file
 write_results
 get_global_values
 find_global_core_value!
@@ -35,7 +34,7 @@ global_value_avg
 ```
 
 ```@meta
-CurrentModule = PeriLab.IO.Read_Mesh
+CurrentModule = PeriLab.IO
 ```
 ## Read_Mesh
 ```@docs
@@ -80,7 +79,7 @@ rotation_tensor
 ```
 
 ```@meta
-CurrentModule = PeriLab.IO.Read_Input_Deck
+CurrentModule = PeriLab.IO
 ```
 ## Read_Input_Deck
 ```@docs
@@ -132,19 +131,17 @@ CurrentModule = PeriLab.IO
 ```
 ## Write_CSV_Results
 ```@docs
-create_result_file
 write_global_results_in_csv
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver
+CurrentModule = PeriLab.Solver.Helpers
 ```
 ## Helpers
 ```@docs
 find_indices
 find_active
 find_updatable
-get_header
 find_files_with_ending
 check_inf_or_nan
 matrix_style
@@ -168,7 +165,7 @@ Shape_Tensor.compute
 ```
 
 ```@meta
-CurrentModule = PeriLab.IO
+CurrentModule = PeriLab.IO.Parameter_Handling
 ```
 ## parameter_handling
 ```@docs
@@ -207,6 +204,7 @@ get_fixed_dt
 get_numerical_damping
 get_max_damage
 get_solver_options
+get_header
 ```
 
 ```@meta

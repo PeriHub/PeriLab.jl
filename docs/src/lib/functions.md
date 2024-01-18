@@ -77,7 +77,6 @@ set_density
 set_horizon
 solver
 synchronise_field
-write_results
 ```
 
 ```@meta
