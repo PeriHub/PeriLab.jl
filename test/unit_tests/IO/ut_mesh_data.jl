@@ -407,7 +407,7 @@ end
 
 @testset "ut_define_nsets" begin
 
-    nsets_predef = Dict("Nset_2" => [11, 12, 13, 44, 125], "Nset_1" => [1, 2, 3, 4, 5, 6, 7])
+    nsets_predef = Dict{String,Any}("Nset_2" => [11, 12, 13, 44, 125], "Nset_1" => [1, 2, 3, 4, 5, 6, 7])
 
     test_Data_manager = Data_manager
     @test test_Data_manager.get_nnsets() == 0
