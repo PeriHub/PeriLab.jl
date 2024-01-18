@@ -35,34 +35,35 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
         if rank == 1
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks, to)
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof, nsets, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks, to)
             if !isnothing(element_distribution)
                 fem_active = true
             end
         else
-            num_controller = 0
-            num_responder = 0
-            ntype = Dict("controllers" => 0, "responder" => 0)
-            nlist = 0
             dof::Int64 = 0
-            mesh = []
-            overlap_map = nothing
             distribution = nothing
             element_distribution = nothing
+            mesh = []
+            nlist = nothing
+            nsets = nothing
+            ntype = Dict("controllers" => 0, "responder" => 0)
+            overlap_map = nothing
         end
+        @info "Synchronize data over cores"
         fem_active = send_value(comm, 0, fem_active)
         dof = send_value(comm, 0, dof)
         dof = datamanager.set_dof(dof)
         overlap_map = send_value(comm, 0, overlap_map)
         distribution = send_value(comm, 0, distribution)
-        nlist = send_value(comm, 0, nlist)
+        nsets = send_value(comm, 0, nsets)
+        distribution = send_value(comm, 0, distribution)
         datamanager.set_overlap_map(overlap_map)
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
         num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"], Int64)
         datamanager.set_num_controller(num_controller)
         datamanager.set_num_responder(num_responder)
         @info "Get node sets"
-        define_nsets(params, path, datamanager)
+        datamanager = define_nsets(nsets, datamanager)
         # defines the order of the global nodes to the local core nodes
         datamanager.set_distribution(distribution[rank])
         datamanager.set_glob_to_loc(glob_to_loc(distribution[rank]))
@@ -224,20 +225,19 @@ function get_bond_geometry(datamanager::Module)
 end
 
 """
-    define_nsets(params::Dict, path::String, datamanager::Module)
+    define_nsets(nsets::Dict{String,Vector{Any,Int64}}, datamanager::Module)
 
 Defines the node sets
 
 # Arguments
-- `params::Dict`: Parameters
-- `path::String`: Path
+- `nsets::Dict{String,Vector{Any,Int64}}`: Node sets read from files
 - `datamanager::Module`: Data manager
 """
-function define_nsets(params::Dict, path::String, datamanager::Module)
-    nsets = get_node_sets(params, path)
+function define_nsets(nsets::Dict{String,Union{Any,Vector{Int64}}}, datamanager::Module)
     for nset in keys(nsets)
         datamanager.set_nset(nset, nsets[nset])
     end
+    return datamanager
 end
 
 """
@@ -563,6 +563,9 @@ Load and evaluate the mesh data.
 - `overlap_map::Array{Array{Int64,1},1}`: The overlap map of the mesh elements.
 - `nlist::Array{Array{Int64,1},1}`: The neighborhood list of the mesh elements.
 - `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
+- `nsets::Dict`: The node sets
+- `topology::Int64`::Array{Int64,nelement:nodes}`: The topology of elements.
+- `el_distribution::Array{Int64,1}`: The distribution of the finite elements.
 """
 function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
@@ -605,7 +608,9 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
         @info "Number of finite elements: $(length(topology))"
         @info "-------------------"
     end
-    return distribution, mesh, ntype, overlap_map, nlist, dof, topology, el_distribution
+    @info "Read node sets"
+    nsets = get_node_sets(params, path)
+    return distribution, mesh, ntype, overlap_map, nlist, dof, nsets, topology, el_distribution
 end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
