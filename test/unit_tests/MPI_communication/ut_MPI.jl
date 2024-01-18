@@ -75,16 +75,15 @@ end
 if ncores == 3
     include("../../../src/Support/data_manager.jl")
     include("../../../src/IO/IO.jl")
-    # import .Read_Mesh
     import .IO
     using .Data_manager
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
     ncores = 3
     dof = 2
     ptc = [1, 2, 2, 3]
-    overlap_map = create_overlap_map(distribution, ptc, ncores)
+    overlap_map = IO.create_overlap_map(distribution, ptc, ncores)
 
-    overlap_map = get_local_overlap_map(overlap_map, distribution, ncores)
+    overlap_map = IO.get_local_overlap_map(overlap_map, distribution, ncores)
 
     test_Data_manager = Data_manager
     test_Data_manager.set_comm(comm)

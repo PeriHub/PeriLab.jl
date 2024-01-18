@@ -234,7 +234,7 @@ Defines the node sets
 - `nsets::Dict{String,Vector{Any,Int64}}`: Node sets read from files
 - `datamanager::Module`: Data manager
 """
-function define_nsets(nsets::Dict{String,Union{Any,Vector{Int64}}}, datamanager::Module)
+function define_nsets(nsets::Dict{String,Any}, datamanager::Module)
     for nset in keys(nsets)
         datamanager.set_nset(nset, nsets[nset])
     end
