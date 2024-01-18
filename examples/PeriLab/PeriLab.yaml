@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Input Mesh File: PeriLab.txt
+    Type: Text File
+    Node Sets:
+      Node Set 1: ns_PeriLab.txt
+  Physics:
+    Material Models:
+      Material:
+        Material Model: "PD Solid Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 7.0e+5
+        Poisson's Ratio: 0.33
+  Boundary Conditions:
+    BC_1:
+      Coordinate: y
+      Node Set: Node Set 1
+      Type: Displacements
+      Value: -100*t
+  Blocks:
+    block_1:
+      Density: 1.4e-8
+      Horizon: 35.0
+      Material Model: Material
+    block_2:
+      Density: 1.4e-8
+      Horizon: 35.0
+      Material Model: Material
+  Outputs:
+    Output:
+      Number of Output Steps: 100
+      Output File Type: Exodus
+      Output Filename: PeriLab
+      Flush File: true
+      Output Variables:
+        Displacements: true
+        Forces: true
+        Number of Neighbors: true
+  Solver:
+    Material Models: true
+    Final Time: 1e-2
+    Initial Time: 0.0
+    Verbose: false
+    Verlet:
+      Numerical Damping: 0.0005
+      Safety Factor: 1.0

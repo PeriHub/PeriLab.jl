@@ -33,6 +33,7 @@ main_test:
       Codecov.submit_local(process_folder())'
   coverage: '/\(\d+.\d+\%\) covered/'
   artifacts:
+    when: on_failure
     paths:
       - test
 
@@ -53,6 +54,7 @@ test:
       println("(", cl/tl*100, "%) covered")'
   coverage: '/\(\d+.\d+\%\) covered/'
   artifacts:
+    when: on_failure
     paths:
       - test
 
