@@ -7,6 +7,7 @@ include("../../../src/Support/data_manager.jl")
 include("../../../src/Physics/Additive/Additive_template/additive_template.jl")
 include("../../../src/Physics/Damage/Damage_template/damage_template.jl")
 include("../../../src/Physics/Material/Material_template/material_template.jl")
+include("../../../src/Physics/Material/Material_template/correspondence_template.jl")
 include("../../../src/Physics/Thermal/Thermal_template/thermal_template.jl")
 include("../../../src/Physics/Pre_calculation/Pre_calculation_template/pre_calculation_template.jl")
 
@@ -33,9 +34,22 @@ end
 
 @testset "ut_material_template" begin
     test_Data_manager = Data_manager
+    @test !(Material_template.fe_support())
     @test Material_template.material_name() == "Material Template"
     @test Material_template.init_material_model(test_Data_manager, Vector{Int64}(1:3), Dict()) == test_Data_manager
     @test Material_template.compute_forces(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0, to) == test_Data_manager
+end
+
+@testset "ut_correspondence_template" begin
+    test_Data_manager = Data_manager
+    @test !(Correspondence_template.fe_support())
+    @test Correspondence_template.correspondence_name() == "Correspondence Template"
+    @test Correspondence_template.init_material_model(test_Data_manager, Vector{Int64}(1:3), Dict()) == test_Data_manager
+
+    dat, vec = Correspondence_template.compute_stresses(test_Data_manager, Vector{Int64}(1:3), 2, Dict(), 0.0, 0.0, view([1, 2], :, :, :), view([1, 0], :, :, :), view([-1, 2.2], :, :, :))
+    @test dat == test_Data_manager
+    @test vec[1] == -1
+    @test vec[2] == 2.2
 end
 
 @testset "ut_thermal_template" begin

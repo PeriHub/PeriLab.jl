@@ -22,6 +22,7 @@ function send_single_value_from_vector(comm::MPI.Comm, controller::Int64, values
     rank = MPI.Comm_rank(comm)
     if type == String
         @error "Wrong type - String in function send_single_value_from_vector"
+        return nothing
     end
     recv_msg = zeros(type, 1, 1)
     if rank == controller
