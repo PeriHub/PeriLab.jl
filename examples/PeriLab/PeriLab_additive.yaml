@@ -54,7 +54,7 @@ PeriLab:
     Additive Models: True
     Material Models: False
     Thermal Models: True
-    Final Time: 100
+    Final Time: 120
     Initial Time: 0.0
     Verbose: false
     Verlet:
