@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1 32 63
+      Node Set 2: 31 62 93
+    Input Mesh File: "mesh_data.txt"
+    Type: Text File
+    Input External Topology:
+      File: "topo_data.txt"
+      Add Neighbor Search: false
+  FEM:
+    Element Type: "Lagrange"
+    Degree: 1
+    Material Model: "Mat_1"
+  Physics:
+    Material Models:
+      Mat_1:
+        Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane strain"
+        Bulk Modulus: 2.5e+6
+        Shear Modulus: 1.15e6
+  Blocks:
+    block_1:
+      Material Model: "Mat_1"
+      Density: 2000
+      Horizon: 1.1005
+  Boundary Conditions:
+    BC_1:
+      Type: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "0.1*sin(50000*t)"
+    BC_2:
+      Type: "Displacements"
+      Node Set: "Node Set 2"
+      Coordinate: "x"
+      Value: "0.0"
+  Solver:
+    Verbose: False
+    Initial Time: 0.0
+    Final Time: 1e-05
+    Verlet:
+      Safety Factor: 1.00
+      Numerical Damping: 1e-05
+      Fixed dt: 1e-8
+  Outputs:
+    Output1:
+      Output Filename: "FEM_p1_2d"
+      Output File Type: Exodus
+      Output Frequency: 10
+      Output Variables:
+        Cauchy Stress: True
+        Displacements: True
