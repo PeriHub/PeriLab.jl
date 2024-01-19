@@ -268,7 +268,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
         @timeit to "additive_model_fields" datamanager = Physics.init_additive_model_fields(datamanager)
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
-        for block in datamanager.get_block_list()
+        for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Additive Model")
                 @timeit to "init additive model" datamanager = Additive.init_additive_model(datamanager, block_nodes[block], block)
             end
@@ -277,7 +277,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     if solver_options["Damage Models"]
         @info "Init damage models"
         @timeit to "damage_model_fields" datamanager = Physics.init_damage_model_fields(datamanager, params)
-        for block in datamanager.get_block_list()
+        for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Damage Model")
                 @timeit to "init damage model" datamanager = Damage.init_damage_model(datamanager, block_nodes[block], block)
             end
@@ -287,7 +287,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     if solver_options["Material Models"]
         @info "Init material models"
         @timeit to "material model fields" datamanager = Physics.init_material_model_fields(datamanager)
-        for block in datamanager.get_block_list()
+        for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Material Model")
                 @timeit to "init material" datamanager = Material.init_material_model(datamanager, block_nodes[block], block)
             end
@@ -298,7 +298,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
         @timeit to "thermal model fields" datamanager = Physics.init_thermal_model_fields(datamanager)
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
-        for block in datamanager.get_block_list()
+        for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Thermal Model")
                 @timeit to "init thermal model" datamanager = Thermal.init_thermal_model(datamanager, block_nodes[block], block)
             end
