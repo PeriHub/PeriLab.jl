@@ -229,11 +229,12 @@ function matrix_to_voigt(matrix)
         return [matrix[1, 1]; matrix[2, 2]; matrix[3, 3]; 0.5 * (matrix[2, 3] + matrix[3, 2]); 0.5 * (matrix[1, 3] + matrix[3, 1]); 0.5 * (matrix[1, 2] + matrix[2, 1])]
     else
         @error "Unsupported matrix size for matrix_to_voigt"
+        return nothing
     end
 end
 
 """
-    voigt_to_matrix(voigt)
+    voigt_to_matrix(voigt::Union{Vector{Float64},Vector{Int64}})
 
 Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
 
@@ -242,7 +243,7 @@ Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
 # Returns
 - `matrix::Matrix{Float64}`: The matrix.
 """
-function voigt_to_matrix(voigt)
+function voigt_to_matrix(voigt::Union{Vector{Float64},Vector{Int64}})
     if length(voigt) == 3
         return [voigt[1] voigt[3]; voigt[3] voigt[2]]
     elseif length(voigt) == 6
@@ -251,6 +252,7 @@ function voigt_to_matrix(voigt)
             voigt[5] voigt[4] voigt[3]]
     else
         @error "Unsupported matrix size for voigt_to_matrix"
+        return nothing
     end
 end
 
