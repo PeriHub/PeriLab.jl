@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Input Mesh File: PeriLab.txt
+    Type: Text File
+  Physics:
+    Material Models:
+      Material:
+        Material Model: "Bond-based Elastic"
+        Zero Energy Control: Global
+        Young's Modulus: 7.0e+5
+        Poisson's Ratio: 0.34
+    Additive Models:
+      Additive:
+        Additive Model: Simple
+        Print Temperature: 200
+    Thermal Models:
+      Thermal:
+        Thermal Model: Heat Transfer + Thermal Flow + Thermal Expansion
+        Heat Transfer Coefficient: 15.0e-3
+        Environmental Temperature: 30
+        Type: Bond based
+        Thermal Conductivity: 0.12
+        # Thermal Conductivity Print Bed: 1.2
+        # Print Bed Temperature: 60.0
+        Thermal Expansion Coefficient: 7.0e-5
+  Blocks:
+    block_1:
+      Density: 1.4e-8
+      Specific Heat Capacity: 1800.0e+6
+      Horizon: 0.35
+      Material Model: Material
+      Additive Model: Additive
+      Thermal Model: Thermal
+  Outputs:
+    Output:
+      Output Frequency: 1
+      Output File Type: Exodus
+      Output Filename: PeriLab_additive
+      Flush File: true
+      Output Variables:
+        Displacements: true
+        Forces: true
+        Activation_Time: true
+        Number of Neighbors: true
+        Temperature: True
+        Heat Flow: True
+        Active: True
+        Specific Volume: True
+  Solver:
+    Additive Models: True
+    Material Models: False
+    Thermal Models: True
+    Final Time: 100
+    Initial Time: 0.0
+    Verbose: false
+    Verlet:
+      Fixed dt: 0.1
+      Numerical Damping: 0.0005
+      Safety Factor: 1.0
