@@ -9,6 +9,7 @@ using TimerOutputs
 include("../../helper.jl")
 include("../../../src/MPI_communication/MPI_communication.jl")
 include("../../../src/Physics/Material/BondBased/Bondbased_Elastic.jl")
+
 MPI.Init()
 
 const to = TimerOutput()
@@ -72,6 +73,7 @@ if rank != 0
     push_test!(test, (recv_msg[3] == 2), @__FILE__, @__LINE__)
 end
 
+push_test!(test, (isnothing(send_single_value_from_vector(comm, 0, [1], String))), @__FILE__, @__LINE__)
 if ncores == 3
     include("../../../src/Support/data_manager.jl")
     include("../../../src/IO/IO.jl")

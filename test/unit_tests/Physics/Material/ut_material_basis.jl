@@ -174,5 +174,9 @@ end
     @test voigt[4] == 7
     @test voigt[5] == 5
     @test voigt[6] == 3
-
+    matrix = [1 2 3 3; 4 5 6 3; 7 8 9 3]
+    @test isnothing(matrix_to_voigt(matrix))
+end
+@testset "ut_voigt_to_matrix" begin
+    @test isnothing(voigt_to_matrix([1, 2.2]))
 end
