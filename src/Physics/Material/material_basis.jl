@@ -287,11 +287,11 @@ function flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}},
         return stress
     end
     if !haskey(params["Flaw Function"], "Active")
-        @error "Flaw Function needs an entry Active."
+        @error "Flaw Function needs an entry ''Active''."
         return nothing
     end
     if !haskey(params["Flaw Function"], "Function")
-        @error "Flaw Function needs an entry Function."
+        @error "Flaw Function needs an entry ''Function''."
         return nothing
     end
     if !params["Flaw Function"]["Active"]
