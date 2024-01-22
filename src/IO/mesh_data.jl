@@ -57,7 +57,6 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         distribution = send_value(comm, 0, distribution)
         nsets = send_value(comm, 0, nsets)
         nlist = send_value(comm, 0, nlist)
-        distribution = send_value(comm, 0, distribution)
         datamanager.set_overlap_map(overlap_map)
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
         num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"], Int64)

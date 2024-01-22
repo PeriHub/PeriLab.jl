@@ -9,7 +9,7 @@ function write_mesh()
     d_x = 10
     d_y = 10
     scale = 0.01
-    additive = true
+    additive = false
 
     # Create or open the file for writing
     filename = "PeriLab.txt"

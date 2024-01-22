@@ -8,6 +8,7 @@ export get_bond_filters
 export get_node_sets
 export get_header
 using AbaqusReader
+using Exodus
 """
     get_external_topology_name(params::Dict)
 
