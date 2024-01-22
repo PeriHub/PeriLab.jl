@@ -193,12 +193,11 @@ function eval_bc(field_values::Union{SubArray,Vector{Float64},Vector{Int64}}, bc
 
     global x = coordinates[:, 1]
     global y = coordinates[:, 2]
+    global z = zeros(eltype(x), length(x))
     global t = time
 
     if dof > 2
-        global z = coordinates[:, 3]
-    else
-        global z = zeros(eltype(x), length(x))
+        z = coordinates[:, 3]
     end
 
     value = eval(bc_value)

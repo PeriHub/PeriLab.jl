@@ -124,6 +124,8 @@ Here are some exciting tasks on our roadmap:
 
 - 👬 **FEM/PD coupling**: A future enhancement for PeriLab is improving its FEM/PD coupling functionality by implementing more advanced techniques, such as a seamless data exchange between FEM and PD domains.
 
+- ✂️ **Distribution logic**: As part of its ongoing development, PeriLab will continue to incorporate new distribution logic for improved performance and reduced computational resources.
+
 - 🏎️ **Optimizations**: As part of its ongoing development, PeriLab will continue to focus on optimizing the simulation process by incorporating new techniques like parallel optimization algorithms for improved efficiency and reduced computational resources.
 
 Feel free to contribute and help us make PeriLab even better! 🙌

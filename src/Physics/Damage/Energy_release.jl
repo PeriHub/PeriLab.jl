@@ -13,7 +13,7 @@ using LinearAlgebra
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
-export init_damage
+export init_damage_model
 """
     damage_name()
 

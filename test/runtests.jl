@@ -4,11 +4,14 @@
 
 using Test
 using TestSetExtensions
-# using Aqua
+using Aqua
 using Logging
 using MPI
 using PeriLab
 Logging.disable_logging(Logging.Error)
+
+Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
+
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
@@ -200,4 +203,3 @@ MPI.Init()
 end
 
 MPI.Finalize()
-# Aqua.test_all(PeriLab)

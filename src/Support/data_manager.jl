@@ -5,7 +5,6 @@
 module Data_manager
 using MPI
 
-export check_properties
 export create_bond_field
 export create_constant_free_size_field
 export create_constant_bond_field

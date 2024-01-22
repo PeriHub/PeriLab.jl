@@ -7,8 +7,6 @@ module Correspondence_Plastic
 using LinearAlgebra
 export fe_support
 export init_material_model
-export material_name
-export compute_forces
 export init_material_model
 """
   fe_support()

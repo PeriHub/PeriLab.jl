@@ -11,7 +11,7 @@ Set_modules.include_files(module_list)
 export compute_damage
 export compute_damage_pre_calculation
 export init_interface_crit_values
-export init_damage
+export init_damage_model
 """
     compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
