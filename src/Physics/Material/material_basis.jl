@@ -282,6 +282,19 @@ function check_symmetry(prop::Dict, dof::Int64)
     end
 end
 
+"""
+    flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
+
+Allows the modification of the yield stress at a specific position. This is typically used as starting point for plastic deformation.
+
+# Arguments
+- `params::Dict`: A dictionary containing material information.
+- `coor::Union{Vector{Int64},Vector{Float64}}`: Coordinate of the current point.
+- `stress::Float64`: stresses to be modified.
+
+# Returns
+- `stress`::Float64: the modified stresses.
+"""
 function flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
     if !haskey(params, "Flaw Function")
         return stress
