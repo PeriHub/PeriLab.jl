@@ -23,8 +23,10 @@ function write_mesh()
     if !additive
         println(node_set_file1, "header: global_id")
         println(node_set_file2, "header: global_id")
+        println(file, "header: x y block_id volume")
+    else
+        println(file, "header: x y block_id volume Activation_Time")
     end
-    println(file, "header: x y block_id volume Activation_Time")
 
     # Text to be converted to pixels
     # text = "PeriLab"
@@ -35,13 +37,13 @@ function write_mesh()
     id = 1
     node_set = []
     # Write the coordinates and parameters to the file
-    for y in size(img, 1):-d_y:1
+    if !additive
         for x in 1:d_x:size(img, 2)
-            # @info img[y, x]
-            volume = d_x * scale * d_y * scale
-            y_inv = (size(img, 1) - y) * scale
-            x_new = x * scale
-            if !additive
+            for y in size(img, 1):-d_y:1
+                # @info img[y, x]
+                volume = d_x * scale * d_y * scale
+                y_inv = (size(img, 1) - y) * scale
+                x_new = x * scale
                 if x_new < 0.5
                     println(node_set_file1, "$id")
                 elseif x_new > 17.34
@@ -51,24 +53,31 @@ function write_mesh()
                     block_id = 1
                 elseif x_new <= 0.7
                     block_id = 3
-                elseif x_new >= 17
+                elseif x_new >= 17.1
                     block_id = 4
                 else
                     block_id = 2
                 end
-                time = id * scale
-                println(file, "$x_new $y_inv $block_id $volume $time")
-            else
+                println(file, "$x_new $y_inv $block_id $volume")
+                id += 1
+            end
+        end
+    else
+        for y in size(img, 1):-d_y:1
+            for x in 1:d_x:size(img, 2)
+                # @info img[y, x]
+                volume = d_x * scale * d_y * scale
+                y_inv = (size(img, 1) - y) * scale
+                x_new = x * scale
                 if img[y, x] != RGBA{N0f8}(1.0, 1.0, 1.0, 1.0)  # Check if pixel is part of the text
                     block_id = 1
                     time = id * scale
                     println(file, "$x_new $y_inv $block_id $volume $time")
                 end
+                id += 1
             end
-            id += 1
         end
     end
-
     # Close the file
     close(file)
     if !additive
