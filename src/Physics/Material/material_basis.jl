@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
+using LinearAlgebra
 """
     get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
 
@@ -281,6 +281,47 @@ function check_symmetry(prop::Dict, dof::Int64)
         return true
     end
 end
+
+function flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
+    if !haskey(params, "Flaw Function")
+        return stress
+    end
+    if !haskey(params["Flaw Function"], "Active")
+        @error "Flaw Function needs an entry Active."
+        return nothing
+    end
+    if !haskey(params["Flaw Function"], "Function")
+        @error "Flaw Function needs an entry Function."
+        return nothing
+    end
+    if !params["Flaw Function"]["Active"]
+        return stress
+    end
+    flaw_location::Vector{Float64} = zeros(length(coor))
+    if params["Flaw Function"]["Function"] == "Pre-defined"
+        flaw_size = params["Flaw Function"]["Flaw Size"]
+        flaw_magnitude = params["Flaw Function"]["Flaw Magnitude"]
+        if (1 < flaw_magnitude) || (flaw_magnitude < 0)
+            @error "Flaw Magnitude should be between 0 and 1"
+            return nothing
+        end
+        flaw_location[1] = params["Flaw Function"]["Flaw Location X"]
+        flaw_location[2] = params["Flaw Function"]["Flaw Location Y"]
+        if haskey(params["Flaw Function"], "Flaw location Z") && length(coor) == 3
+            flaw_location[3] = params["Flaw Function"]["Flaw Location Z"]
+        end
+        modified_stress = stress * (1 - flaw_magnitude * exp(-norm(coor - flaw_location) * norm(coor - flaw_location) / flaw_size / flaw_size))
+
+    else
+        @warn "Not very user friendly right now"
+        #global x = coor[1]
+        #global y = coor[2]
+        #
+        #modified_stress = stress * (1 - eval(Meta.parse(params["Flaw Function"]["Function"])))
+    end
+    return modified_stress
+end
+
 
 """
     get_symmmetry(material::Dict)

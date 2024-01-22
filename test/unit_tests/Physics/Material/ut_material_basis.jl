@@ -5,6 +5,24 @@
 using Test
 include("../../../../src/Physics/Material/material_basis.jl")
 
+@testset "ut_flaw_function" begin
+
+    stress::Float64 = 5.3
+    @test flaw_function(Dict(), Vector{Float64}([1, 2]), stress) == stress
+
+    @test isnothing(flaw_function(Dict("Flaw Function" => Dict()), Vector{Float64}([1, 2]), stress))
+    @test isnothing(flaw_function(Dict("Flaw Function" => Dict("Active" => false)), Vector{Float64}([1, 2]), stress))
+    @test flaw_function(Dict("Flaw Function" => Dict("Active" => false, "Function" => "Pre-defined")), Vector{Float64}([1, 2]), stress) == stress
+    @test isnothing(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Magnitude" => 1.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2]), stress))
+    @test isnothing(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Magnitude" => -1.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2]), stress))
+
+    @test isapprox(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Magnitude" => 0.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2]), stress), 5.29999999)
+
+    @test isapprox(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Location Z" => 2.1, "Flaw Magnitude" => 0.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2]), stress), 5.29999999)
+
+
+    #  @test flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "x*x")), Vector{Float64}([1, 2]), stress) == 1
+end
 @testset "check_symmetry" begin
     @test isnothing(check_symmetry(Dict(), 2))
     @test isnothing(check_symmetry(Dict(), 3))
