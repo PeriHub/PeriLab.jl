@@ -22,7 +22,7 @@ Explore the comprehensive [documentation](https://dlr-perihub.gitlab.io/PeriLab.
 
 - ✒️ **Modularization**: The software is designed with a modular architecture that allows users to easily integrate their own material and damage models.
 
-- 🔩 **Material models**: PeriLab supports various material models, such as elastic, plastic, viscoelastic, and more, enabling simulation of complex materials and structures.
+- 🔩 **Material models**: PeriLab supports various material models, such as elastic, plastic, and more, enabling simulation of complex materials and structures.
 
 - 🔨 **Damage models**: Damage models such as critical stretch or an energy based criterium are included to simulate different types of damage, such as crack propagation or delamination, in their peridynamic simulations.
 
@@ -123,6 +123,8 @@ Here are some exciting tasks on our roadmap:
 - ➕ **More material and damage models**: PeriLab's future development plans include adding more sophisticated material models (e.g., viscoelastic-plastic) and damage models, expanding the software's applicability to a wider range of real-world phenomena.
 
 - 👬 **FEM/PD coupling**: A future enhancement for PeriLab is improving its FEM/PD coupling functionality by implementing more advanced techniques, such as a seamless data exchange between FEM and PD domains.
+
+- ✂️ **Distribution logic**: As part of its ongoing development, PeriLab will continue to incorporate new distribution logic for improved performance and reduced computational resources.
 
 - 🏎️ **Optimizations**: As part of its ongoing development, PeriLab will continue to focus on optimizing the simulation process by incorporating new techniques like parallel optimization algorithms for improved efficiency and reduced computational resources.
 

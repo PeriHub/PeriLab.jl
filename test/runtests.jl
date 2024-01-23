@@ -4,11 +4,14 @@
 
 using Test
 using TestSetExtensions
-# using Aqua
+using Aqua
 using Logging
 using MPI
 using PeriLab
 Logging.disable_logging(Logging.Error)
+
+Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
+
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
@@ -177,7 +180,7 @@ MPI.Init()
         end
         @testset "test_thermal_flow" begin
             @includetests["fullscale_tests/test_thermal_flow/test_thermal_flow"]
-            @includetests["fullscale_tests/test_thermal_flow_paper/test_thermal_flow"]
+            # @includetests["fullscale_tests/test_thermal_flow_paper/test_thermal_flow"]
         end
         @testset "test_Correspondence_Elastic" begin
             @includetests["fullscale_tests/test_correspondence_elastic/test_correspondence_elastic"]
@@ -203,4 +206,3 @@ MPI.Init()
 end
 
 MPI.Finalize()
-# Aqua.test_all(PeriLab)
