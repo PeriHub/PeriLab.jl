@@ -156,12 +156,11 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 
 This project has benefited from funding by the [Deutsche
 Forschungsgemeinschaft](https://www.dfg.de/) (DFG, German Research Foundation)
-through the following grant "Gekoppelte Peridynamik-Finite-Elemente-Simulationen zur Schädigungsanalyse von
-Faserverbundstrukturen" WI 4835/5-1
+through the following grant ''Gekoppelte Peridynamik-Finite-Elemente-Simulationen zur Schädigungsanalyse von Faserverbundstrukturen''. Grant number: WI 4835/5-1
 
-M-ERA.NET funded project Exploring Multi-Method Analysis of composite structures and joints
-under consideration of uncertainties engineering and processing (EMMA)
+[M-ERA.NET](https://www.m-era.net/) funded project ''Exploring Multi-Method Analysis of composite structures and joints under consideration of uncertainties engineering and processing (EMMA)''
 
-This measure is co-financed with tax funds on the basis of the budget passed by the Saxon state parlament. Grant number: 3028223.
+This measure is co-financed with tax funds on the basis of the budget passed by the [Saxon state parlament](https://www.landtag.sachsen.de/de). Grant number: 3028223.
 
-Virtuelle Kennwertermittlung, Schadensprädiktion und Simulationsmethoden für geklebte Fügestellen eines LH2-Tanks in Faserverbundbauweise für die kommerzielle Luftfahrt. Grant number: 20W2214G.
+[Federal Ministry for Economic Affairs and Climate Action](https://www.bmwk.de/Navigation/DE/Home/home.html) funded project 
+''Virtuelle Kennwertermittlung, Schadensprädiktion und Simulationsmethoden für geklebte Fügestellen eines LH2-Tanks in Faserverbundbauweise für die kommerzielle Luftfahrt''. Grant number: 20W2214G.
