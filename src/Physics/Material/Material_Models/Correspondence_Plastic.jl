@@ -48,8 +48,13 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     @error "Shear Modulus must be defined to be able to run this plastic material"
     return nothing
   end
-  datamanager.create_node_field("von Mises Stresses", Float64, "Matrix", 1)
-  datamanager.create_node_field("Plastic Strain", Float64, "Matrix", 1)
+  if !haskey(material_parameter, "Yield Stress")
+    @error "No ''Yield Stress'' is defined."
+    return nothing
+  end
+
+  datamanager.create_node_field("von Mises Stress", Float64, 1)
+  datamanager.create_node_field("Plastic Strain", Float64, 1)
 
   return datamanager
 end
@@ -92,7 +97,7 @@ end
    """
 function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
-  von_Mises_stress = datamanager.get_field("von Mises Stresses", "NP1")
+  von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
   plastic_strain_N = datamanager.get_field("Plastic Strain", "N")
   plastic_strain_NP1 = datamanager.get_field("Plastic Strain", "NP1")
   coordinates = datamanager.get_field("Coordinates")
@@ -106,7 +111,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   temp_A::Matrix{Float64} = zeros(dof, dof)
   temp_B::Matrix{Float64} = zeros(dof, dof)
 
-
+  sqrt23::Float64 = sqrt(2 / 3)
   for iID in nodes
     spherical_stress_NP1 = sum(stress_NP1[iID, i, i] for i in 1:dof) / 3
     deviatoric_stress_NP1 = stress_NP1[iID, :, :] - spherical_stress_NP1 .* I(dof)
@@ -116,17 +121,16 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
 
     reduced_yield_stress = flaw_function(material_parameter, coordinates[iID, :], yield_stress)
     if von_Mises_stress[iID] < reduced_yield_stress
-      # material is elastic
+      # material is elastic and nothing happens
       plastic_strain_NP1[iID] = plastic_strain_N[iID]
-      return datamanager, stress_NP1
+      continue
     end
-    deviatoric_stress_magnitude_NP1 = maximum(1.0e-20, sqrt(von_Mises_stress[iID]))
-    deviatoric_stress_NP1 .*= sqrt(2.0 / 3.0) * reduced_yield_stress / deviatoric_stress_magnitude_NP1
-    stress_plastic_NP1[iID, :, :] = stress_NP1[iID, :, :] - deviatoric_stress_NP1
+    deviatoric_stress_magnitude_NP1 = maximum([1.0e-20, von_Mises_stress[iID] / sqrt23])
+    deviatoric_stress_NP1 .*= sqrt23 * reduced_yield_stress / deviatoric_stress_magnitude_NP1
     stress_NP1[iID, :, :] = deviatoric_stress_NP1 + spherical_stress_NP1 .* I(dof)
-    von_Mises_stress[iID] = sqrt(3.0 / 2.0 * sum(deviatoric_stress_NP1[:, :]))#line 170
+    von_Mises_stress[iID] = sqrt(3.0 / 2.0 * sum(deviatoric_stress_NP1[:, :]))
     #############################
-    # comment taken from Peridigm
+    # comment taken from Peridigm elastic_plastic_correspondence.cxx
     #############################
     # Update the equivalent plastic strain
     #
@@ -143,14 +147,14 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
     spherical_stress_N = sum(stress_N[iID, i, i] for i in 1:dof) / 3
     deviatoric_stress_N = stress_N[iID, :, :] - spherical_stress_N .* I(dof)
 
-    deviatoric_stress_magnitude_N = maximum(1.0e-20, sqrt(sum(deviatoric_stress_N .* sum(deviatoric_stress_N))))
+    deviatoric_stress_magnitude_N = maximum([1.0e-20, sqrt(sum(deviatoric_stress_N .* deviatoric_stress_N))])
     # Contract the two tensors. This represents a projection of the plastic
     # strain increment tensor onto the "direction" of deviatoric stress
     # increment
     temp_A = (deviatoric_stress_NP1 - deviatoric_stress_N) ./ 2 / material_parameter["Shear Modulus"]
     temp_B = (deviatoric_stress_NP1 ./ deviatoric_stress_magnitude_NP1 + deviatoric_stress_N ./ deviatoric_stress_magnitude_N) ./ 2
     temp_scalar = sum(temp_A .* temp_B)
-    plastic_strain_NP1[iID] = plastic_strain[iID] + maximum(0, sqrt(2 / 3 * temp_scalar))
+    plastic_strain_NP1[iID] = plastic_strain_N[iID] + maximum([0, sqrt23 * temp_scalar])
   end
 
   return stress_NP1, datamanager

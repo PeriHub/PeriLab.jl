@@ -144,9 +144,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   bond_force = calculate_bond_force(nodes, deformation_gradient, undeformed_bond, bond_damage, inverse_shape_tensor, stress_NP1, bond_force)
   # general interface, because it might be a flexbile Set_modules interface in future
   datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
-
   return datamanager
-
 end
 
 """

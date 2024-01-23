@@ -182,6 +182,9 @@ MPI.Init()
         @testset "test_Correspondence_Elastic" begin
             @includetests["fullscale_tests/test_correspondence_elastic/test_correspondence_elastic"]
         end
+        @testset "test_Correspondence_Elastic_Plastic" begin
+            @includetests["fullscale_tests/test_correspondence_elastic_plastic/test_correspondence_elastic_plastic"]
+        end
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
             @includetests["fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control"]
         end
