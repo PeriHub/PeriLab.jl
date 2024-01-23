@@ -29,6 +29,11 @@ global expected_structure = Dict(
                             "Additive Model" => [String, false],
                         ), true],
                 ), true],
+            "FEM" => [Dict{Any,Any}(
+                    "Element Type" => [String, true],
+                    "Degree" => [Int64, true],
+                    "Material Model" => [String, true],
+                ), false],
             "Boundary Conditions" => [Dict{Any,Any}(
                     "Any" => [Dict{Any,Any}(
                             "Coordinate" => [String, false],
@@ -48,6 +53,10 @@ global expected_structure = Dict(
                 ), false],
             "Discretization" => [Dict{Any,Any}(
                     "Input Mesh File" => [String, true],
+                    "Input External Topology" => [Dict{Any,Any}(
+                            "File" => [String, true],
+                            "Add Neighbor Search" => [Bool, false],
+                        ), false],
                     "Node Sets" => [Dict{Any,Any}(
                             "Any" => [String, true],
                         ), false],

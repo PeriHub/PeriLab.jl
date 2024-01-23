@@ -118,7 +118,7 @@ PeriLab:
         Number of Blocks: 3
         Only Tension: false
         Plane Stress: true
-        Zero Energy Mode Control: Global
+        Zero Energy Control: Global
         Thickness: 10.0
     Material Models:
       Aluminium:
@@ -128,7 +128,7 @@ PeriLab:
         Material Model: Correspondence Elastic
         Plane Stress: true
         Poisson's Ratio: 0.33
-        Zero Energy Mode Control: Global
+        Zero Energy Control: Global
         Tension Separation: true
         Thermal Bond Based: true
         Thickness: 1.0
