@@ -22,7 +22,7 @@ Explore the comprehensive [documentation](https://dlr-perihub.gitlab.io/PeriLab.
 
 - ✒️ **Modularization**: The software is designed with a modular architecture that allows users to easily integrate their own material and damage models.
 
-- 🔩 **Material models**: PeriLab supports various material models, such as elastic, plastic, viscoelastic, and more, enabling simulation of complex materials and structures.
+- 🔩 **Material models**: PeriLab supports various material models, such as elastic, plastic, and more, enabling simulation of complex materials and structures.
 
 - 🔨 **Damage models**: Damage models such as critical stretch or an energy based criterium are included to simulate different types of damage, such as crack propagation or delamination, in their peridynamic simulations.
 

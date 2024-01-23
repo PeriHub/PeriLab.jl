@@ -8,7 +8,25 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.4] - 
+## [1.0.5] - 2024-
+
+### Added
+
+- Basic FEM support (#137, #136, #135, #134, #132, #129, #128, #124, #123, #122)
+- Aqua test
+- Variable datafield input (#139)
+- Correspondence flexible material (#138)
+- Plasticity (#120)
+
+### Fixed
+
+- Reimport warnings
+
+### Changed
+
+- Read nodeset moved to core 1 (#140)
+
+## [1.0.4] - 2024-01-11
 
 ### Added
 
