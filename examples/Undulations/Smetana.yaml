@@ -119,21 +119,21 @@ PeriLab:
       dam_1:
         Critical Value: 2.5e-2
         Damage Model: Critical Energy
-        Interblock Critical Value 1_2: 2.5e-4
-        Interblock Critical Value 2_3: 2.5e-4
-        Interblock Critical Value 3_4: 2.5e-4
-        Interblock Critical Value 4_5: 2.5e-4
-        Interblock Critical Value 5_6: 2.5e-4
-        Interblock Critical Value 6_7: 2.5e-4
-        Interblock Critical Value 7_8: 2.5e-4
-        Interblock Critical Value 2_1: 2.5e-4
-        Interblock Critical Value 3_2: 2.5e-4
-        Interblock Critical Value 4_3: 2.5e-4
-        Interblock Critical Value 5_4: 2.5e-4
-        Interblock Critical Value 6_5: 2.5e-4
-        Interblock Critical Value 7_6: 2.5e-4
-        Interblock Critical Value 8_7: 2.5e-4
-        Interblock Damage: False
+        Interblock Damage:
+          Interblock Critical Value 1_2: 2.5e-4
+          Interblock Critical Value 2_3: 2.5e-4
+          Interblock Critical Value 3_4: 2.5e-4
+          Interblock Critical Value 4_5: 2.5e-4
+          Interblock Critical Value 5_6: 2.5e-4
+          Interblock Critical Value 6_7: 2.5e-4
+          Interblock Critical Value 7_8: 2.5e-4
+          Interblock Critical Value 2_1: 2.5e-4
+          Interblock Critical Value 3_2: 2.5e-4
+          Interblock Critical Value 4_3: 2.5e-4
+          Interblock Critical Value 5_4: 2.5e-4
+          Interblock Critical Value 6_5: 2.5e-4
+          Interblock Critical Value 7_6: 2.5e-4
+          Interblock Critical Value 8_7: 2.5e-4
     Material Models:
       mat_1:
         C11: 53619.92831989742
@@ -539,7 +539,7 @@ PeriLab:
       Shape Tensor: true
   Solver:
     Material Models: True
-    Damage Models: False
+    Damage Models: True
     Final Time: 2.0e-05
     Initial Time: 0.0
     Verbose: false

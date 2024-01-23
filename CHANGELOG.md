@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - Variable datafield input (#139)
 - Correspondence flexible material (#138)
 - Plasticity (#120)
+- Git info to logging
 
 ### Fixed
 

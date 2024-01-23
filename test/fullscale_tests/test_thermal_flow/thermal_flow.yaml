@@ -16,7 +16,7 @@ PeriLab:
         Symmetry: "isotropic plane stress"
         Young's Modulus: 3.45e+09
         Poisson's Ratio: 0.33
-        Zero Energy Mode Control: "Global"
+        Zero Energy Control: "Global"
     Thermal Models:
       Thermal test:
         Thermal Model: "Thermal Flow"
