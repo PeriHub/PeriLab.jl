@@ -7,9 +7,11 @@ using Logging
 using LoggingExtras
 using TimerOutputs
 using DataFrames
+using LibGit2
 include("./IO.jl")
 export init_logging
 export set_result_files
+export get_current_git_info
 
 result_files::Vector{Dict} = []
 
@@ -106,5 +108,34 @@ function init_logging(filename::String, debug::Bool, rank::Int64, size::Int64)
             Logging.disable_logging(Logging.Error)
         end
     end
+end
+
+function get_current_git_info(repo_path::AbstractString=".")
+    repo = LibGit2.GitRepo(repo_path)
+    head_name = LibGit2.headname(repo)
+    head_oid = LibGit2.head_oid(repo)
+    dirty = LibGit2.isdirty(repo)
+    tag_list = LibGit2.tag_list(repo)
+
+    info = ""
+
+    if head_name == "main"
+        info *= "Commit: $head_oid"
+    else
+        info *= "Branch: $head_name, Commit: $head_oid"
+    end
+
+    for tag in tag_list
+        tag_hash = LibGit2.target(LibGit2.GitObject(repo, tag))
+        if tag_hash == head_oid
+            info *= ", Tag: $tag"
+            break
+        end
+    end
+
+    if dirty
+        info *= ", Local changes detected"
+    end
+    return dirty, info
 end
 end
