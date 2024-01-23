@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+    Discretization: 
+        Node Sets:
+            Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12
+        Type: "Text File"
+        Input Mesh File: "test_mesh.txt"
+    Physics:
+        Pre Calculation:
+            Deformed Bond Geometry: true
+            Deformation Gradient: true
+            Shape Tensor: true
+            Bond Associated Shape Tensor: false
+            Bond Associated Deformation Gradient: false
+        Material Models: 
+            Mat_1: 
+                Material Model: "Correspondence Elastic+Correspondence Plastic"
+                Symmetry: "isotropic plane strain"
+                Bulk Modulus: 2.5e+3
+                Shear Modulus: 1.15e3
+                Yield Stress: 20
+            Mat_2: 
+                Material Model: "Correspondence Elastic+Correspondence Plastic"
+                Symmetry: "isotropic plane strain"
+                Bulk Modulus: 3.5e+3
+                Shear Modulus: 2.15e3
+                Yield Stress: 200
+                Flaw Function:
+                    Active: True
+                    Function: "Pre-defined"
+                    Flaw Magnitude: 0.2
+                    Flaw Size: 0.3
+                    Flaw Location X: 0.0
+                    Flaw Location Y: 1.0
+    Blocks: 
+        block_1:
+            Material Model: "Mat_1"
+            Density: 2.7e-9
+            Horizon: 2.1
+        block_2:
+            Material Model: "Mat_2"
+            Density: 2.7e-9
+            Horizon: 2.1
+    Boundary Conditions: 
+        BC_1: 
+            Type: "Displacements"
+            Node Set: "Node Set 1"
+            Coordinate: "x"
+            Value: "0.1*x*t/5.0e-6"
+        BC_2: 
+            Type: "Displacements"
+            Node Set: "Node Set 1"
+            Coordinate: "y"
+            Value: "0.0"
+    Solver: 
+        Solve For Displacement: True
+        Initial Time: 0.0
+        Final Time: 5.0e-6
+        End step after damage: 3
+        Verlet: 
+            Safety Factor: 1.0
+    Outputs: 
+        Output1:
+            Output Filename: "correspondence_elastic_plastic"
+            Output Frequency: 1
+            Output Variables: 
+                Displacements: True
+                Forces: True
+                Volume: True
+                Cauchy Stress: True
+                von Mises Stress: True
+            
+
