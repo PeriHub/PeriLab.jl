@@ -864,12 +864,13 @@ end
 
 
 """
-    create_base_chunk(nnodes::Int64, size::Int64)
+    create_base_chunk(nnodes::Int64,nlist::Vector{Vector{Int64}}, size::Int64)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
 # Arguments
 - `nnodes::Int64`: The number of nodes.
+- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
 - `size::Int64`: The number of cores.
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
