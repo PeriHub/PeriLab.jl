@@ -465,8 +465,8 @@ function read_mesh(filename::String, params::Dict)
         dof = size(nodes[1])[1]
 
         mesh_df = ifelse(dof == 2,
-            DataFrame(x=[], y=[], volume=[], block_id=[]),
-            DataFrame(x=[], y=[], z=[], volume=[], block_id=[])
+            DataFrame(x=[], y=[], volume=[], block_id=Int[]),
+            DataFrame(x=[], y=[], z=[], volume=[], block_id=Int[])
         )
 
         block_id = 1
@@ -555,7 +555,7 @@ check if block_id in mesh contains only int.
 function check_types_in_dataframe(mesh::DataFrame)
     # check if block_id in mesh contains only int
     if !(eltype(mesh.block_id) <: Integer)
-        @error "block_id in mesh is not an integer"
+        @error "block_id in mesh is $(eltype(mesh.block_id)), but it should be an Integer!"
         return false
     end
     return true
