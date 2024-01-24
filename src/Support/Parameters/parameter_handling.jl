@@ -61,7 +61,7 @@ global expected_structure = Dict(
                             "Any" => [Union{Int64,String}, true],
                         ), false],
                     "Type" => [String, true],
-                    "Neighborhood Distribution" => [Bool, true],
+                    "Neighborhood Distribution" => [Bool, false],
                     "Bond Filters" => [Dict{Any,Any}(
                             "Any" => [Dict{Any,Any}(
                                     "Type" => [String, true],
