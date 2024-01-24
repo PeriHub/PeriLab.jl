@@ -591,7 +591,12 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
         nlist, topology = create_consistent_neighborhoodlist(external_topology, params["Discretization"]["Input External Topology"], nlist, dof)
     end
     @info "Start distribution"
-    @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize)
+    if haskey(params["Discretization"], "Neighborhood Distribution")
+        @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize, params["Discretization"]["Neighborhood Distribution"])
+    else
+        @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize)
+    end
+
     el_distribution = nothing
     if haskey(params, "FEM") && !isnothing(external_topology)
         @info "Start element distribution"
@@ -752,7 +757,7 @@ Create the distribution of the nodes.
 - `ptc::Vector{Int64}`: Defines at which core / rank each node lies.
 - `ntype::Dict`: The type of the nodes.
 """
-function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
+function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, neighbor_distribution::Bool=false)
 
     nnodes = length(nlist)
     ntype = Dict("controllers" => Int64[], "responder" => Int64[])
@@ -763,9 +768,11 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64)
         append!(ntype["controllers"], nnodes)
         append!(ntype["responder"], 0)
     else
-
-        distribution, ptc = create_base_chunk(nnodes, size)
-
+        if neighbor_distribution
+            distribution, ptc = create_base_chunk(nnodes, nlist, size)
+        else
+            distribution, ptc = create_base_chunk(nnodes, size)
+        end
         # check neighborhood & overlap -> all nodes after chunk are overlap
         for i in 1:size
             nchunks = length(distribution[i])
@@ -854,6 +861,73 @@ function create_overlap_map(distribution::Vector{Vector{Int64}}, ptc::Vector{Int
     end
     return overlap_map
 end
+
+
+"""
+    create_base_chunk(nnodes::Int64, size::Int64)
+
+Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
+
+# Arguments
+- `nnodes::Int64`: The number of nodes.
+- `size::Int64`: The number of cores.
+# Returns
+- `distribution::Array{Int64,1}`: The distribution of the nodes.
+- `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
+"""
+function create_base_chunk(nnodes::Int64, nlist::Vector{Vector{Int64}}, size::Int64)
+    if size > nnodes
+        @error "Number of cores $size exceeds number of nodes $nnodes."
+        return nothing, nothing
+    end
+    chunk_size = div(nnodes, size)
+    if size == 1
+        return create_base_chunk(nnodes, size)
+    end
+    # Split the data into chunks
+    distribution = Vector{Vector{Int64}}(undef, size - 1)
+    for i in 1:size-1
+        distribution[i] = zeros(Int64, chunk_size)
+    end
+    # this leads to a coupling of elements
+    #distribution::Vector{Vector{Int64}} = fill(Vector{Int64}(zeros(Int64, chunk_size)), size - 1)
+    push!(distribution, zeros(Int64, chunk_size + nnodes - size * chunk_size))
+
+    point_to_core::Vector{Int64} = zeros(Int64, nnodes)
+    not_included_nodes::Vector{Bool} = fill(true, nnodes)
+    isize::Int64 = 1
+
+    for iID in 1:nnodes
+        if not_included_nodes[iID]
+            idx = findfirst(isequal(0), distribution[isize])
+            if isnothing(idx)
+                isize += 1
+                idx = 1
+            end
+            distribution[isize][idx] = iID
+            not_included_nodes[iID] = false
+        end # muss das hinter die nächste schleife? -> test über die bool liste
+        for jID in nlist[iID]
+            if not_included_nodes[jID]
+                idx = findfirst(isequal(0), distribution[isize])
+                if isnothing(idx)
+                    isize += 1
+                    idx = 1
+                end
+                distribution[isize][idx] = jID
+                not_included_nodes[jID] = false
+            end
+        end
+    end
+    if sum(not_included_nodes) > 0
+        @error "code must be improved"
+    end
+    for i in 1:size
+        point_to_core[distribution[i]] .= i
+    end
+    return distribution, point_to_core
+end
+
 
 """
     create_base_chunk(nnodes::Int64, size::Int64)

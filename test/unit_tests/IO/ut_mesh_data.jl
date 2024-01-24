@@ -201,6 +201,28 @@ end
     @test isnothing(distribution)
     @test isnothing(point_to_core)
 
+    nlist = fill(Vector{Int64}([]), 4)
+    nlist[1] = [2, 3]
+    nlist[2] = [1, 3, 4]
+    nlist[3] = [1, 2]
+    nlist[4] = [2]
+    @test IO.create_base_chunk(4, nlist, 1) == IO.create_base_chunk(4, 1)
+    distribution, point_to_core = IO.create_base_chunk(4, nlist, 2)
+    @test distribution[1] == Int64[1, 2]
+    @test distribution[2] == Int64[3, 4]
+    distribution, point_to_core = IO.create_base_chunk(4, nlist, 3)
+    @test distribution[1] == Int64[1]
+    @test distribution[2] == Int64[2]
+    @test distribution[3] == Int64[3, 4]
+
+    nlist[1] = [4]
+    nlist[2] = [3, 4]
+    nlist[3] = [2]
+    nlist[4] = [1, 2]
+    distribution, point_to_core = IO.create_base_chunk(4, nlist, 2)
+    @test distribution[1] == Int64[1, 4]
+    @test distribution[2] == Int64[2, 3]
+    @test point_to_core == Int64[1, 2, 2, 1]
 end
 
 @testset "ut_local_nodes_from_dict" begin
