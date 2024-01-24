@@ -534,7 +534,6 @@ check duplicated entries and throws an error if one is there. If not everything 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
 """
-
 function check_for_duplicate_in_dataframe(mesh::DataFrame)
     duplicates = findall(nonunique(mesh))
     if length(duplicates) > 0
