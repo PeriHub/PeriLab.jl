@@ -41,14 +41,18 @@ using DataFrames
 
 end
 
-@testset "ut_check_for_duplicate_in_dataframe" begin
+@testset "ut_check_dataframe" begin
     path = "./unit_tests/IO/"
     params = Dict("Discretization" => Dict("Type" => "Text File"))
     data = IO.read_mesh(joinpath(path, "example_mesh.txt"), params)
+    data_wrong = IO.read_mesh(joinpath(path, "example_wrong_mesh.txt"), params)
     if isnothing(data)
         path = "./test/unit_tests/IO/"
         data = IO.read_mesh(joinpath(path, "example_mesh.txt"), params)
+        data_wrong = IO.read_mesh(joinpath(path, "example_wrong_mesh.txt"), params)
     end
+    @test IO.check_types_in_dataframe(data)
+    @test !IO.check_types_in_dataframe(data_wrong)
     @test !(IO.check_for_duplicate_in_dataframe(data))
     data[1, :] = data[2, :]
     @test IO.check_for_duplicate_in_dataframe(data)

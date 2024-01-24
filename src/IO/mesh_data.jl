@@ -533,8 +533,6 @@ check duplicated entries and throws an error if one is there. If not everything 
 
 # Arguments
 - `mesh::DataFrame`: The input mesh data represented as a DataFrame.
-# Returns
-- `dof::Int64`: The degrees of freedom (DOF) for the mesh elements.
 """
 
 function check_for_duplicate_in_dataframe(mesh::DataFrame)
@@ -544,6 +542,23 @@ function check_for_duplicate_in_dataframe(mesh::DataFrame)
         return true
     end
     return false
+end
+
+"""
+    check_types_in_dataframe(mesh::DataFrame)
+
+check if block_id in mesh contains only int.
+
+# Arguments
+- `mesh::DataFrame`: The input mesh data represented as a DataFrame.
+"""
+function check_types_in_dataframe(mesh::DataFrame)
+    # check if block_id in mesh contains only int
+    if !(eltype(mesh.block_id) <: Integer)
+        @error "block_id in mesh is not an integer"
+        return false
+    end
+    return true
 end
 
 """
@@ -571,6 +586,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
 
     mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
     check_for_duplicate_in_dataframe(mesh)
+    check_types_in_dataframe(mesh)
 
     @info "Read node sets"
     nsets = get_node_sets(params, path)

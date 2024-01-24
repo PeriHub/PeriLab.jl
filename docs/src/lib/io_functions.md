@@ -64,6 +64,8 @@ apply_bond_filters
 disk_filter
 rectangular_plane_filter
 glob_to_loc
+check_for_duplicate_in_dataframe
+check_types_in_dataframe
 ```
 
 ```@meta
