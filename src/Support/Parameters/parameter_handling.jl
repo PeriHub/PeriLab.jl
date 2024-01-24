@@ -31,7 +31,7 @@ global expected_structure = Dict(
                 ), true],
             "FEM" => [Dict{Any,Any}(
                     "Element Type" => [String, true],
-                    "Degree" => [Int64, true],
+                    "Degree" => [Union{String,Int64}, true],
                     "Material Model" => [String, true],
                 ), false],
             "Boundary Conditions" => [Dict{Any,Any}(
@@ -58,7 +58,7 @@ global expected_structure = Dict(
                             "Add Neighbor Search" => [Bool, false],
                         ), false],
                     "Node Sets" => [Dict{Any,Any}(
-                            "Any" => [String, true],
+                            "Any" => [Union{Int64,String}, true],
                         ), false],
                     "Type" => [String, true],
                     "Neighborhood Distribution" => [Bool, true],
