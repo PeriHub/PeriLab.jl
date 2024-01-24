@@ -1,0 +1,329 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Input Mesh File: INPUTFILE.inp
+    Type: Abaqus
+    Neighborhood Distribution: True
+  Physics:
+    Material Models:
+      BC:
+        Material Model: PD Solid Elastic
+        Density: 2.7E-9
+        Young's Modulus: 200000.0
+        Poisson's Ratio: 0.34
+      Resin:
+        Material Model: PD Solid Elastic
+        Density: 2.7E-9
+        Young's Modulus: 3200.0
+        Poisson's Ratio: 0.34
+      Fibre:
+        Material Model: PD Solid Elastic
+        Density: 2.7E-9
+        Young's Modulus: 70000.0
+        Poisson's Ratio: 0.34
+      Interface:
+        Material Model: PD Solid Elastic
+        Density: 2.7E-9
+        Young's Modulus: 3200.0
+        Poisson's Ratio: 0.34
+    Damage Models:
+      Damage:
+        Critical Value: 0.01
+        Damage Model: Critical Stretch
+  Blocks:
+    block_1:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_2:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_3:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_4:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_5:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_6:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_7:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_8:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_9:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_10:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_11:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_12:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_13:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_14:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_15:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_16:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_17:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_18:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_19:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_20:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_21:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_22:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_23:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_24:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_25:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_26:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_27:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_28:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_29:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_30:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_31:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_32:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_33:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_34:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_35:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_36:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_37:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_38:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_39:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_40:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_41:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_42:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_43:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_44:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_45:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_46:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_47:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_48:
+      Material Model: Fibre
+      Horizon: 1.5
+      Density: 2.7e-9
+    block_49:
+      Material Model: Resin
+      Damage Model: Damage
+      Horizon: 1.5
+      Density: 2.7e-9
+    block_50:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_51:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_52:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_53:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_54:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_55:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_56:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+    block_57:
+      Material Model: Interface
+      Horizon: 0.7
+      Density: 2.7e-9
+  Boundary Conditions:
+    Displacement-1:
+      Type: Displacements
+      Node Set: _G995
+      Coordinate: x
+      Value: -1000.0*t
+    # Displacement-2:
+    #   Type: Displacements
+    #   Node Set: nset_Edge_yrot2
+    #   Coordinate: x
+    #   Value: -1000.0*t
+    # Displacement-3:
+    #   Type: Displacements
+    #   Node Set: nset_Edge_yrot3
+    #   Coordinate: x
+    #   Value: 1000.0*t
+    # Displacement-4:
+    #   Type: Displacements
+    #   Node Set: nset_Edge_yrot4
+    #   Coordinate: x
+    #   Value: 1000.0*t
+  #   Displacement-2-D-Y:
+  #     Type: Displacements
+  #     Node Set: nset_nset_NSET-BC_BOT
+  #     Coordinate: y
+  #     Value: 0.0
+  #   Displacement-3-D-Z:
+  #     Type: Displacements
+  #     Node Set: nset_nset_NSET-BC_BOT
+  #     Coordinate: z
+  #     Value: 0.0
+  #   Displacement-4-D-X:
+  #     Type: Displacements
+  #     Node Set: nset_nset_NSET-BC_TOP_SIDE
+  #     Coordinate: x
+  #     Value: 0.0
+  #   Displacement-5-D-Z:
+  #     Type: Displacements
+  #     Node Set: nset_nset_NSET-BC_TOP
+  #     Coordinate: z
+  #     Value: 0.0
+  #   Displacement-1-V-Y:
+  #     Type: Displacements
+  #     Node Set: nset_nset_NSET-BC_TOP
+  #     Coordinate: y
+  #     Value: 0.00833333*t
+  Outputs:
+    Output1:
+      Output File Type: Exodus
+      Output Filename: model
+      Number of Output Steps: 100
+      Output Variables:
+        Damage: True
+        Angles: True
+        Displacements: True
+        Number of Neighbors: True
+        Forces: True
+  Solver:
+    Initial Time: 0.0
+    Final Time: 1.0e-4
+    Material Models: True
+    Damage Models: True
+    Verlet:
+      Safety Factor: 1.0
