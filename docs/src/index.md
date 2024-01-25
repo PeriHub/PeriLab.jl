@@ -27,8 +27,6 @@ To implement the simplest material law you have to edit at least five files. If 
 
 Moreover, the program is only partially maintained. This results in valuable research findings being underutilized, and Peridynamics, as a result, finds limited application outside of specific niche problems. There is a significant need for software that combines functionality, easy installation, and seamless integration. 
 
-This paper introduces PeriLab software, which is based on Julia. It incorporates MPI to handle a large number of degrees of freedom.
-
 ## Questions?
 
 If there is something you expect PeriLab to be capable of, but
