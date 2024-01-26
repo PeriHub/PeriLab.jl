@@ -109,14 +109,6 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             end
         end
     end
-    if options["Additive Models"]
-        for block in eachindex(block_nodes)
-            if datamanager.check_property(block, "Additive Model")
-                @timeit to "compute_additive_model_model" datamanager = Additive.compute_additive_model(datamanager, block_nodes[block], datamanager.get_properties(block, "Additive Model"), time, dt)
-            end
-        end
-
-    end
 
     return datamanager
 
