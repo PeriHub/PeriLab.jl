@@ -19,7 +19,7 @@ include("../BC_manager.jl")
 include("../../Physics/Physics_Factory.jl")
 using .Physics
 using .Boundary_conditions: apply_bc
-
+using .Helpers: matrix_style
 export init_solver
 export run_solver
 
