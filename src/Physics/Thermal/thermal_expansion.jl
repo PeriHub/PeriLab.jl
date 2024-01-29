@@ -75,10 +75,9 @@ Example:
 ```
 """
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
-    temperature_N = datamanager.get_field("Temperature", "N")
     temperature_NP1 = datamanager.get_field("Temperature", "NP1")
-    nneighbors = datamanager.get_field("Number of Neighbors")
     dof = datamanager.get_dof()
+
     alpha = thermal_parameter["Thermal Expansion Coefficient"]
 
     alpha_mat::Matrix{Float64} = zeros(Float64, dof, dof)
@@ -98,7 +97,9 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
         for j in 1:dof
             deformed_bond[iID][:, j] -= temperature_NP1[iID] * alpha_mat[j, j] .* undeformed_bond[iID][:, j]
         end
-        deformed_bond[iID][:, end] -= sum(alpha_mat) / dof * temperature_NP1[iID] * undeformed_bond[iID][:, end]
+        deformed_bond[iID][:, end] -= sum(alpha_mat) / dof * temperature_NP1[iID] .* undeformed_bond[iID][:, end]
+        if iID == 93
+        end
     end
 
     if "Deformation Gradient" in datamanager.get_all_field_keys()
