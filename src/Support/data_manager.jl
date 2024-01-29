@@ -64,7 +64,7 @@ global dof::Int64 = 1
 global fem_option = false
 global block_list::Vector{Int64} = []
 global distribution::Vector{Int64}
-global crit_values_matrix::Array{Float64,3}
+global crit_values_matrix::Array{Float64,3} = fill(-1, (1, 1, 1))
 global aniso_crit_values::Dict{Int64,Vector{Float64}}
 global properties::Dict{Int64,Dict{String,Any}} = Dict()
 global glob_to_loc::Dict{Int64,Int64}
