@@ -72,6 +72,10 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   undeformed_bond = datamanager.get_field("Bond Geometry")
   volume = datamanager.get_field("Volume")
   temperature = datamanager.get_field("Temperature", "NP1")
+  if !haskey(thermal_parameter, "Thermal Conductivity")
+    @error "Thermal Conductivity not defined."
+    return nothing
+  end
   lambda = thermal_parameter["Thermal Conductivity"]
   apply_print_bed = false
   t_bed = 0.0
@@ -134,7 +138,7 @@ function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int
     q = lambda * nablaT
     for jID in eachindex(nlist[iID])
       temp = Kinv[iID, :, :] * undeformed_bond[iID][jID, 1:dof]
-      bond_heat_flow[iID][jID] = dot(temp, q)
+      bond_heat_flow[iID][jID] += dot(temp, q)
     end
   end
   return bond_heat_flow
