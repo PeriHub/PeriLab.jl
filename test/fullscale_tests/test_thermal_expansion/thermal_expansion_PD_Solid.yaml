@@ -44,10 +44,12 @@ PeriLab:
     Verbose: False
     Initial Time: 0.0
     Final Time: 2.01e-8
+    # larger numerical damping leads to the correct solution
+    # the vibrations are to large for such small deformations
+    Numerical Damping: 0
     Verlet:
-      #Fixed dt: 1e-9
       Safety Factor: 1.00
-      Numerical Damping: 0
+      
   Outputs:
     Output1:
       Output Filename: "thermal_expansion_PD_Solid"
