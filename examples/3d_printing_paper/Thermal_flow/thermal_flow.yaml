@@ -7,7 +7,6 @@ PeriLab:
     Node Sets:
       Node Set 1: "BCleft.txt"
       Node Set 2: "BCright.txt"
-      Node Set 3: "BCall.txt"
     Type: "Text File"
     Input Mesh File: "mesh.txt"
   Physics:
@@ -25,21 +24,21 @@ PeriLab:
     Thermal Models:
       Thermal test:
         Thermal Model: "Thermal Flow"
-        Type: "Bond based"
-        #Type: "Correspondence"
+        #Type: "Bond based"
+        Type: "Correspondence"
         Thermal Conductivity: 2000
   Blocks:
     block_1:
       Material Model: "Test"
       Thermal Model: "Thermal test"
       Density: 2000
-      Horizon: 0.00151
+      Horizon: 0.00101
       Specific Heat Capacity: 0.33
     block_2:
       Material Model: "Test"
       Thermal Model: "Thermal test"
       Density: 2000
-      Horizon: 0.00151
+      Horizon: 0.00101
       Specific Heat Capacity: 0.33
   Boundary Conditions:
     BC_1:
@@ -55,16 +54,16 @@ PeriLab:
     Thermal Models: True
     Verbose: False
     Initial Time: 0.0
-    Final Time: 2e-5
-    Numerical Damping: 0e-00
+    Final Time: 10e-5
     Verlet:
       Safety Factor: 1.00
-      Fixed dt: 1e-7
+      Fixed dt: 0.3e-7
 
+      Numerical Damping: 0e-00
   Outputs:
     Output1:
       Output Filename: "thermal_flow"
       Output File Type: Exodus
-      Number of Output Steps: 20
+      Number of Output Steps: 5
       Output Variables:
         Temperature: True

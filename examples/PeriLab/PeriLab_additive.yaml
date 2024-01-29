@@ -57,7 +57,7 @@ PeriLab:
     Final Time: 120
     Initial Time: 0.0
     Verbose: false
+    Numerical Damping: 0.0005
     Verlet:
       Fixed dt: 0.1
-      Numerical Damping: 0.0005
       Safety Factor: 1.0

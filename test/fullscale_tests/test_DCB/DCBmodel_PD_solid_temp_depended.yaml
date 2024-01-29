@@ -123,6 +123,6 @@ PeriLab:
     Damage Models: true
     Thermal Models: true
     Verbose: false
+    Numerical Damping: 5.0e-06
     Verlet:
-      Numerical Damping: 5.0e-06
       Safety Factor: 0.9

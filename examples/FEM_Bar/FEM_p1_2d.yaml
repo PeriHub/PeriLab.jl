@@ -21,19 +21,19 @@ PeriLab:
       Mat_1:
         Material Model: "Correspondence Elastic"
         Symmetry: "isotropic plane strain"
-        Bulk Modulus: 2.5e+6
-        Shear Modulus: 1.15e6
+        Young's Modulus: 7e10
+        Poisson's Ratio: 0.33
   Blocks:
     block_1:
       Material Model: "Mat_1"
-      Density: 2000
+      Density: 2700
       Horizon: 1.1005
   Boundary Conditions:
     BC_1:
       Type: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
-      Value: "0.1*sin(50000*t)"
+      Value: "0.00001*sin(200000*t)"
     BC_2:
       Type: "Displacements"
       Node Set: "Node Set 2"
@@ -42,16 +42,16 @@ PeriLab:
   Solver:
     Verbose: False
     Initial Time: 0.0
-    Final Time: 1e-05
+    Final Time: 1e-04
     Verlet:
       Safety Factor: 1.00
       Numerical Damping: 1e-05
-      Fixed dt: 1e-8
+      Fixed dt: 5e-9
   Outputs:
     Output1:
       Output Filename: "FEM_p1_2d"
       Output File Type: Exodus
-      Output Frequency: 10
+      Output Frequency: 100
       Output Variables:
         Cauchy Stress: True
         Displacements: True

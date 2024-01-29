@@ -178,8 +178,8 @@ global expected_structure = Dict(
                     "Final Time" => [Union{Float64,Int64}, true],
                     "Initial Time" => [Union{Float64,Int64}, true],
                     "Verbose" => [Bool, false],
+                    "Numerical Damping" => [Union{Float64,Int64}, false],
                     "Verlet" => [Dict{Any,Any}(
-                            "Numerical Damping" => [Union{Float64,Int64}, false],
                             "Safety Factor" => [Union{Float64,Int64}, false],
                             "Fixed dt" => [Union{Float64,Int64}, false]
                         ), false]
