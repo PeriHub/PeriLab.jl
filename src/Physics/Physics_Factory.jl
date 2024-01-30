@@ -313,7 +313,7 @@ Initialize thermal model fields
 function init_thermal_model_fields(datamanager::Module)
     datamanager.create_node_field("Temperature", Float64, 1)
     datamanager.create_node_field("Heat Flow", Float64, 1)
-    datamanager.create_node_field("Specific Volume", Float64, 1)
+    datamanager.create_constant_node_field("Specific Volume", Float64, 1)
     datamanager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
     # if it is already initialized via mesh file no new field is created here
     datamanager.create_constant_node_field("Surface_Nodes", Bool, 1, true)
