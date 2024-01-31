@@ -7,51 +7,37 @@ PeriLab:
     block_1:
       Damage Model: Damage
       Density: 2.81e-09
-      Horizon: 0.30846153846153845
+      Horizon: 0.09709677419354838
       Material Model: Aluminium
     block_2:
       Damage Model: Damage
       Density: 2.81e-09
-      Horizon: 0.30846153846153845
+      Horizon: 0.09709677419354838
       Material Model: Aluminium
     block_3:
       Density: 2.81e-09
-      Horizon: 0.30846153846153845
+      Horizon: 0.09709677419354838
       Material Model: Aluminium
     block_4:
       Density: 2.81e-09
-      Horizon: 0.30846153846153845
+      Horizon: 0.09709677419354838
       Material Model: Aluminium
     block_5:
       Density: 2.81e-09
-      Horizon: 0.30846153846153845
+      Horizon: 0.09709677419354838
       Material Model: Aluminium
     block_6:
       Density: 2.81e-09
-      Horizon: 0.30846153846153845
+      Horizon: 0.09709677419354838
       Material Model: Aluminium
     block_7:
       Density: 2.81e-09
-      Horizon: 0.30846153846153845
+      Horizon: 0.09709677419354838
       Material Model: Aluminium
     block_8:
       Density: 2.81e-09
-      Horizon: 0.30846153846153845
+      Horizon: 0.09709677419354838
       Material Model: Aluminium
-  Bond Filters:
-    bf_1:
-      Bottom Length: 6.5
-      Bottom Unit Vector X: 1.0
-      Bottom Unit Vector Y: 0.0
-      Bottom Unit Vector Z: 0.0
-      Lower Left Corner X: -0.5
-      Lower Left Corner Y: 0.5
-      Lower Left Corner Z: -0.5
-      Normal X: 0.0
-      Normal Y: 1.0
-      Normal Z: 0.0
-      Side Length: 1.0
-      Type: Rectangular_Plane
   Boundary Conditions:
     BC_1:
       Coordinate: y
@@ -59,13 +45,13 @@ PeriLab:
       Type: Force Densities
       Value: -5000000*t
     BC_2:
-      Coordinate: y
+      Coordinate: x
       Node Set: Node Set 2
       Type: Displacements
       Value: "0"
     BC_3:
-      Coordinate: x
-      Node Set: Node Set 3
+      Coordinate: y
+      Node Set: Node Set 2
       Type: Displacements
       Value: "0"
     BC_4:
@@ -73,29 +59,37 @@ PeriLab:
       Node Set: Node Set 3
       Type: Displacements
       Value: "0"
-    BC_5:
-      Coordinate: y
-      Node Set: Node Set 4
-      Type: Displacements
-      Value: "0"
-  Compute Class Parameters:
-    External_Displacements:
-      Block: block_5
-      Calculation Type: Maximum
-      Compute Class: Block_Data
-      Variable: Displacements
-    External_Forces:
-      Block: block_5
-      Calculation Type: Sum
-      Compute Class: Block_Data
-      Variable: Forces
+  # Compute Class Parameters:
+  #   External_Displacements:
+  #     Block: block_3
+  #     Calculation Type: Maximum
+  #     Compute Class: Block_Data
+  #     Variable: Displacements
+  #   External_Forces:
+  #     Block: block_3
+  #     Calculation Type: Sum
+  #     Compute Class: Block_Data
+  #     Variable: Forces
   Discretization:
+    Bond Filters:
+      bf_1:
+        Bottom Length: 6.5
+        Bottom Unit Vector X: 1.0
+        Bottom Unit Vector Y: 0.0
+        Bottom Unit Vector Z: 0.0
+        Lower Left Corner X: -0.5
+        Lower Left Corner Y: 0.5
+        Lower Left Corner Z: -0.5
+        Normal X: 0.0
+        Normal Y: 1.0
+        Normal Z: 0.0
+        Side Length: 1.0
+        Type: Rectangular_Plane
     Input Mesh File: ENFmodel.txt
     Node Sets:
       Node Set 1: ns_ENFmodel_1.txt
       Node Set 2: ns_ENFmodel_2.txt
       Node Set 3: ns_ENFmodel_3.txt
-      Node Set 4: ns_ENFmodel_4.txt
     Type: Text File
   Outputs:
     Output1:
@@ -103,42 +97,32 @@ PeriLab:
       Output File Type: Exodus
       Output Filename: ENFmodel_Output1
       Output Variables:
-        Displacements: true
-        Forces: true
         Damage: true
+        Displacements: true
+        # External_Displacements: true
+        # External_Forces: true
+        Forces: true
+        Number of Neighbors: true
   Physics:
     Damage Models:
       Damage:
         Critical Value: 1.3947001394700143
         Damage Model: Critical Energy
-        Detached Nodes Check: true
-        Hourglass Coefficient: 1.0
         Interblock Damage:
           Interblock Critical Value 1_2: 0.1
-        Number of Blocks: 3
-        Only Tension: false
-        Plane Stress: true
-        Zero Energy Control: Global
-        Thickness: 10.0
+          Interblock Critical Value 2_1: 0.1
     Material Models:
       Aluminium:
-        Symmetry: "isotropic plane stress"
-        Density: 2.81e-09
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Plane Stress: true
         Poisson's Ratio: 0.33
-        Zero Energy Control: Global
-        Tension Separation: true
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Yield Stress: 99.3
         Young's Modulus: 71700.0
+        Symmetry: isotropic plane stress
+        Zero Energy Control: Global
   Solver:
-    Final Time: 1e-08
-    Initial Time: 0.0
     Damage Models: true
-    Verbose: false
+    Final Time: 1.0e-05
+    Initial Time: 0.0
+    Material Models: true
     Numerical Damping: 5.0e-06
     Verlet:
       Safety Factor: 0.95
