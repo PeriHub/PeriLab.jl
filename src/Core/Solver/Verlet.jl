@@ -176,12 +176,15 @@ function compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int
         if thermal
             lambda = datamanager.get_property(iblock, "Thermal Model", "Thermal Conductivity")
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
-            if isnothing(lambda) & !mechanical
-                @error "No time step can be calculated, because the heat conduction is not defined."
-                return nothing
+            if isnothing(lambda)
+                if !mechanical
+                    @error "No time step can be calculated, because the heat conduction is not defined."
+                    return nothing
+                end
+            else
+                t = compute_thermodynamic_critical_time_step(block_nodes[iblock], datamanager, lambda)
+                critical_time_step = test_timestep(t, critical_time_step)
             end
-            t = compute_thermodynamic_critical_time_step(block_nodes[iblock], datamanager, lambda)
-            critical_time_step = test_timestep(t, critical_time_step)
         end
         if mechanical
             bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
