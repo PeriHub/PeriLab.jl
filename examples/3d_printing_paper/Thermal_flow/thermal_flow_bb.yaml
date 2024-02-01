@@ -5,7 +5,8 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 1: "BCall.txt"
+      Node Set 1: "BCleft.txt"
+      Node Set 2: "BCright.txt"
     Type: "Text File"
     Input Mesh File: "mesh.txt"
   Physics:
@@ -62,6 +63,6 @@ PeriLab:
     Output1:
       Output Filename: "thermal_flow_bond_based"
       Output File Type: Exodus
-      Number of Output Steps: 50
+      Number of Output Steps: 150
       Output Variables:
         Temperature: True
