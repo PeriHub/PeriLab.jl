@@ -374,6 +374,8 @@ end
     @test isnothing(get_final_time(Dict("Solver" => Dict())))
     @test isnothing(get_final_time(Dict("Solver" => Dict())))
     @test isnothing(get_solver_name(Dict("Solver" => Dict("Solvername" => Dict()))))
+    params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Static" => Dict("Safety Factor" => 0.95, "Fixed dt" => 1e-3), "Numerical Damping" => 5e-6))
+    @test get_solver_name(params) == "Static"
 end
 
 path = "./test/unit_tests/Support/Parameters/"
