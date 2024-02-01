@@ -95,6 +95,21 @@ function get_fixed_dt(params::Dict)
     return get(params["Solver"][get_solver_name(params)], "Fixed dt", -1.0)
 end
 
+
+"""
+    get_nsteps(params::Dict)
+
+Get the fixed time step
+
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `nsteps::Int64`: The fixed time step
+"""
+function get_nsteps(params::Dict)
+    return get(params["Solver"][get_solver_name(params)], "Number of Steps", 1)
+end
+
 """
     get_numerical_damping(params::Dict)
 

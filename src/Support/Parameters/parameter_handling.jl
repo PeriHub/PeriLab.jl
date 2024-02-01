@@ -181,7 +181,8 @@ global expected_structure = Dict(
                     "Numerical Damping" => [Union{Float64,Int64}, false],
                     "Verlet" => [Dict{Any,Any}(
                             "Safety Factor" => [Union{Float64,Int64}, false],
-                            "Fixed dt" => [Union{Float64,Int64}, false]
+                            "Fixed dt" => [Union{Float64,Int64}, false],
+                            "Number of Steps" => [Int64, false]
                         ), false]
                 ), true],
         ), true]
