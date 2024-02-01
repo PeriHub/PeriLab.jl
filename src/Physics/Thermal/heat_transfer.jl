@@ -66,7 +66,7 @@ Example:
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
   dof = datamanager.get_dof()
   volume = datamanager.get_field("Volume")
-  alpha = thermal_parameter["Heat Transfer Coefficient"]
+  kappa = thermal_parameter["Heat Transfer Coefficient"]
   Tenv = thermal_parameter["Environmental Temperature"]
   heat_flow = datamanager.get_field("Heat Flow", "NP1")
   temperature = datamanager.get_field("Temperature", "NP1")
@@ -86,9 +86,9 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     elseif dof == 3
       dx = volume[iID]^(1 / 3)
     end
-
+    # tbd optimize logic @hess_jt
     if surface_nodes[iID] && specific_volume[iID] > 1.0 # could be more as sometimes specific_volume is sometimes weird
-      heat_flow[iID] += (alpha * (temperature[iID] - Tenv)) / dx * specific_volume[iID]
+      heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx * specific_volume[iID]
     end
   end
 
