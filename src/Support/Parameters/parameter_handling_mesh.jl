@@ -126,7 +126,7 @@ Returns the node sets from the parameters
 # Returns
 - `nsets::Dict{String,Any}`: The node sets
 """
-function get_node_sets(params::Dict, path::String)
+function get_node_sets(params::Dict, path::String, surface_ns::Union{Nothing,Dict})
     nsets = Dict{String,Any}()
     type = get(params["Discretization"], "Type", "Text File")
     if type == "Exodus"
@@ -161,6 +161,11 @@ function get_node_sets(params::Dict, path::String)
                 id += 1
             end
             nsets[key] = nodes
+        end
+        if surface_ns != nothing
+            for (key, values) in surface_ns
+                nsets[key] = Vector{Int64}(values .+ id)
+            end
         end
         return nsets
     end
