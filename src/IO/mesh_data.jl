@@ -35,7 +35,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
         if rank == 1
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, dof, nsets, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks, to)
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, nlist_filtered, bond_norm, dof, nsets, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks, to)
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -45,6 +45,8 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
             element_distribution = nothing
             mesh = DataFrame()
             nlist = nothing
+            nlist_filtered = nothing
+            bond_norm = nothing
             nsets = nothing
             ntype = Dict("controllers" => 0, "responder" => 0)
             overlap_map = nothing
@@ -57,6 +59,8 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         distribution = send_value(comm, 0, distribution)
         nsets = send_value(comm, 0, nsets)
         nlist = send_value(comm, 0, nlist)
+        nlist_filtered = send_value(comm, 0, nlist_filtered)
+        bond_norm = send_value(comm, 0, bond_norm)
         datamanager.set_overlap_map(overlap_map)
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
         num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"], Int64)
@@ -69,7 +73,12 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         datamanager.set_glob_to_loc(glob_to_loc(distribution[rank]))
         @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
         @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
-        @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution)
+        @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution, false)
+        if nlist_filtered != nothing
+            @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered, distribution, true)
+        end
+        bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
+        bond_norm_field = bond_norm
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
         datamanager.set_fem(fem_active)
@@ -170,15 +179,23 @@ Distributes the neighborhood list to the cores.
 # Returns
 - `datamanager::Module`: data manager
 """
-function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist::Vector{Vector{Int64}}, distribution::Vector{Vector{Int64}})
+function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist::Vector{Vector{Int64}}, distribution::Vector{Vector{Int64}}, filtered::Bool)
     send_msg = 0
-    lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    if filtered
+        lenNlist = datamanager.create_constant_node_field("Number of Filtered Neighbors", Int64, 1)
+    else
+        lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    end
     rank = MPI.Comm_rank(comm)
     if rank == 0
-        send_msg = get_number_of_neighbornodes(nlist)
+        send_msg = get_number_of_neighbornodes(nlist, filtered)
     end
     lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
-    nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    if filtered
+        nlistCore = datamanager.create_constant_bond_field("FilteredNeighborhoodlist", Int64, 1)
+    else
+        nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    end
 
     nlistCore[:] = nlist[distribution[rank+1][:]]
     nlistCore[:] = get_local_neighbors(datamanager.get_local_nodes, nlistCore)
@@ -561,6 +578,71 @@ function check_types_in_dataframe(mesh::DataFrame)
 end
 
 """
+    extrude_surface_mesh(mesh::DataFrame)
+
+extrude the mesh at the surface of the block
+
+# Arguments
+- `mesh::DataFrame`: The input mesh data represented as a DataFrame.
+- `params::Dict`: The input parameters.
+"""
+function extrude_surface_mesh(mesh::DataFrame, params::Dict)
+    if !("Surface Extrusion" in keys(params["Discretization"]))
+        return mesh, nothing
+    end
+    direction = params["Discretization"]["Surface Extrusion"]["Direction"]
+    step = params["Discretization"]["Surface Extrusion"]["Step"]
+    number = params["Discretization"]["Surface Extrusion"]["Number"]
+
+    # Finding min and max values for each dimension
+    min_x, max_x = extrema(mesh.x)
+    min_y, max_y = extrema(mesh.y)
+    min_z = 0.0
+    max_z = 0.0
+    if "z" in names(mesh)
+        min_z, max_z = extrema(z_values)
+    end
+
+    if direction == "X"
+        coord_min = min_x
+        coord_max = max_x
+    elseif direction == "Y"
+        coord_min = min_y
+        coord_max = max_y
+    end
+
+    block_id = maximum(mesh.block_id) + 1
+    volume = step * step
+
+    id = 1
+
+    node_sets = Dict("Extruded_1" => [], "Extruded_2" => [])
+
+    for i in coord_max+step:step:coord_max+step*number, j in row_min:step:row_max+step, k in z_min:step:z_max+step
+        if direction == "X"
+            push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
+        elseif direction == "Y"
+            push!(mesh, (x=j, y=i, z=k, volume=volume, block_id=block_id))
+        end
+        append!(node_sets["Extruded_1"], [Int64(id)])
+        id += 1
+    end
+
+    block_id += 1
+
+    for i in coord_min-step:-step:coord_min-step*number, j in row_min:step:row_max+step, k in z_min:step:z_max
+        if direction == "X"
+            push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
+        elseif direction == "Y"
+            push!(mesh, (x=j, y=i, z=k, volume=volume, block_id=block_id))
+        end
+        append!(node_sets["Extruded_2"], [Int64(id)])
+        id += 1
+    end
+    return mesh, node_sets
+end
+
+"""
     load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
 Load and evaluate the mesh data.
@@ -584,11 +666,12 @@ Load and evaluate the mesh data.
 function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
     mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+    mesh, surface_ns = extrude_surface_mesh(mesh, params)
     check_for_duplicate_in_dataframe(mesh)
     check_types_in_dataframe(mesh)
 
     @info "Read node sets"
-    nsets = get_node_sets(params, path)
+    nsets = get_node_sets(params, path, surface_ns)
 
     external_topology = nothing
     if !isnothing(get_external_topology_name(params))
@@ -599,7 +682,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
     end
     dof::Int64 = set_dof(mesh)
     @timeit to "neighborhoodlist" nlist = create_neighborhoodlist(mesh, params, dof)
-    @timeit to "apply_bond_filters" nlist = apply_bond_filters(nlist, mesh, params, dof)
+    @timeit to "apply_bond_filters" nlist, nlist_filtered, bond_norm = apply_bond_filters(nlist, mesh, params, dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
@@ -632,7 +715,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
         @info "-------------------"
     end
 
-    return distribution, mesh, ntype, overlap_map, nlist, dof, nsets, topology, el_distribution
+    return distribution, mesh, ntype, overlap_map, nlist, nlist_filtered, bond_norm, dof, nsets, topology, el_distribution
 end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
@@ -696,11 +779,11 @@ Get the number of neighbors for each node.
 # Returns
 - `lenNlist::Vector{Int64}`: The number of neighbors for each node.
 """
-function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}})
+function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}}, filtered::Bool)
     len = length(nlist)
     lenNlist = zeros(Int64, len)
     for id in 1:len
-        if length(nlist[id]) == 0
+        if !filtered && length(nlist[id]) == 0
             @error "Node $id has no neighbors please check the horizon."
             return nothing
         end
@@ -1137,9 +1220,12 @@ Apply the bond filters to the neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
 - `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
+- `nlist_filtered::Vector{Vector{Int64}}`: The filtered neighborhood list.
 """
 function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, params::Dict, dof::Int64)
     bond_filters = get_bond_filters(params)
+    nlist_filtered = nothing
+    bond_norm = nothing
     if bond_filters[1]
         @info "Apply bond filters"
         coor = names(mesh)[1:dof]
@@ -1149,16 +1235,42 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
             data[i, :] = values(mesh[!, coor[i]])
         end
 
+        contact_enabled = false
+        for (name, filter) in bond_filters[2]
+            contact_enabled = get(filter, "Allow Contact", false)
+            if contact_enabled
+                break
+            end
+        end
+        if contact_enabled
+            nlist_filtered = fill(Vector{Int64}([]), nnodes)
+            bond_norm = fill([], nnodes)
+            for iID in 1:nnodes
+                bond_norm[iID] = fill(fill(1, dof), length(nlist[iID]))
+            end
+        end
+
         for (name, filter) in bond_filters[2]
             if filter["Type"] == "Disk"
-                nlist = disk_filter(nnodes, data, filter, nlist, dof)
+                filter_flag, normal = disk_filter(nnodes, data, filter, nlist, dof)
             elseif filter["Type"] == "Rectangular_Plane"
-                nlist = rectangular_plane_filter(nnodes, data, filter, nlist, dof)
+                filter_flag, normal = rectangular_plane_filter(nnodes, data, filter, nlist, dof)
+            end
+            for iID in 1:nnodes
+                if contact_enabled && any(x -> x == false, filter_flag[iID])
+                    nlist_filtered[iID] = setdiff(nlist[iID], nlist[iID][filter_flag[iID]])
+                    indices = findall(x -> x in nlist_filtered[iID], nlist[iID])
+                    for jID in indices
+                        bond_norm[iID][jID] = normal
+                    end
+                else
+                    nlist[iID] = nlist[iID][filter_flag[iID]]
+                end
             end
         end
         @info "Finished applying bond filters"
     end
-    return nlist
+    return nlist, nlist_filtered, bond_norm
 end
 
 """
@@ -1173,9 +1285,12 @@ Apply the disk filter to the neighborhood list.
 - `nlist::Vector{Vector{Int64}}`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
-- `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
+- `filter_flag::Vector{Bool}`: The filter flag.
+- `normal::Vector{Float64}`: The normal vector of the disk.
 """
 function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+
+
     if dof == 2
         center = [filter["Center X"], filter["Center Y"]]
         normal = [filter["Normal X"], filter["Normal Y"]]
@@ -1185,14 +1300,14 @@ function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::
     end
     #normalize vector
     normal = normal ./ norm(normal)
-    for i in 1:nnodes
-        filter_flag = fill(true, length(nlist[i]))
-        for (jId, neighbor) in enumerate(nlist[i])
-            filter_flag[jId] = !bondIntersectsDisk(data[:, i], data[:, neighbor], center, normal, filter["Radius"])
+    filter_flag = fill(Vector{Bool}[], nnodes)
+    for iID in 1:nnodes
+        filter_flag[iID] = fill(true, length(nlist[iID]))
+        for (jId, neighbor) in enumerate(nlist[iID])
+            filter_flag[iID][jId] = !bondIntersectsDisk(data[:, iID], data[:, neighbor], center, normal, filter["Radius"])
         end
-        nlist[i] = nlist[i][filter_flag]
     end
-    return nlist
+    return filter_flag, normal
 end
 
 """
@@ -1207,9 +1322,11 @@ Apply the rectangular plane filter to the neighborhood list.
 - `nlist::Vector{Vector{Int64}}`: The neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
-- `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
+- `filter_flag::Vector{Bool}`: The filter flag.
+- `normal::Vector{Float64}`: The normal vector of the disk.
 """
 function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+
     if dof == 2
         normal = [filter["Normal X"], filter["Normal Y"]]
         lower_left_corner = [filter["Lower Left Corner X"], filter["Lower Left Corner Y"]]
@@ -1224,19 +1341,19 @@ function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::
     bottom_unit_vector = bottom_unit_vector ./ norm(bottom_unit_vector)
     bottom_length = filter["Bottom Length"]
     side_length = filter["Side Length"]
+    filter_flag::Vector{Vector{Bool}} = fill([], nnodes)
     for iID in 1:nnodes
-        filter_flag = fill(true, length(nlist[iID]))
+        filter_flag[iID] = fill(true, length(nlist[iID]))
         for (jID, neighborID) in enumerate(nlist[iID])
             intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, iID], data[:, neighborID], lower_left_corner, normal)
             bond_intersect = false
             if intersect_inf_plane
                 bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
             end
-            filter_flag[jID] = !(intersect_inf_plane && bond_intersect)
+            filter_flag[iID][jID] = !(intersect_inf_plane && bond_intersect)
         end
-        nlist[iID] = nlist[iID][filter_flag]
     end
-    return nlist
+    return filter_flag, normal
 end
 
 """

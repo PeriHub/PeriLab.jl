@@ -62,7 +62,7 @@ end
     lenNumbers = length(numbers)
     params = Dict("Discretization" => Dict())
 
-    @test get_node_sets(params, "") == Dict{String,Any}()
+    @test get_node_sets(params, "", nothing) == Dict{String,Any}()
     params = Dict("Discretization" => Dict("Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename)))
 
     file = open(filename, "w")
@@ -72,7 +72,7 @@ end
     end
     close(file)
 
-    nsets = get_node_sets(params, "")
+    nsets = get_node_sets(params, "", nothing)
     @test "Nset_1" in keys(nsets)
     @test "Nset_2" in keys(nsets)
     @test length(nsets["Nset_1"]) == 7
@@ -89,14 +89,14 @@ end
     file = open(filename, "w")
     println(file, "header: global_id")
     close(file)
-    nsets = get_node_sets(params, "")
+    nsets = get_node_sets(params, "", nothing)
     @test haskey(nsets, "Nset_1")
     @test !haskey(nsets, "Nset_2")
     rm(filename)
     filename = "test.txt"
     file = open(filename, "w")
     close(file)
-    nsets = get_node_sets(params, "")
+    nsets = get_node_sets(params, "", nothing)
     @test haskey(nsets, "Nset_1")
     @test !haskey(nsets, "Nset_2")
     rm(filename)

@@ -203,11 +203,26 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::SubArray`: The force densities.
 """
-function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
-    for iID in nodes
-        force_densities[iID, :] += transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[nlist[iID][:]], dims=1))
+function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, nlist_filtered, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, deformed_bond_n::SubArray, deformed_bond_np1::SubArray, bond_norm::SubArray, force_densities::SubArray)
 
-        force_densities[nlist[iID][:], :] .-= bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[iID]
+    for iID in nodes
+
+        bond_mod = copy(bond_norm[iID])
+
+        if length(nlist_filtered[iID]) != 0
+            indices = findall(x -> x in nlist_filtered[iID], nlist[iID])
+            for neighborID in indices
+                if dot((deformed_bond_np1[iID][neighborID, 1:end-1] - deformed_bond_n[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]) < 0
+                    bond_mod[neighborID, :] .= 0
+                else
+                    bond_mod[neighborID, :] = bond_norm[iID][neighborID, :]
+                end
+            end
+        end
+
+        force_densities[iID, :] += transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* bond_mod .* volume[nlist[iID][:]], dims=1))
+
+        force_densities[nlist[iID][:], :] .-= bond_damage[iID][:] .* bond_force[iID][:, :] .* bond_mod .* volume[iID]
     end
     return force_densities
 end

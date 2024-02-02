@@ -520,6 +520,15 @@ function get_nlist()
 end
 
 """
+    get_filtered_nlist()
+
+Get the neighborhood list.
+"""
+function get_filtered_nlist()
+    return get_field("FilteredNeighborhoodlist")
+end
+
+"""
     get_nnodes()
 
 Retrieves the number of nodes.
