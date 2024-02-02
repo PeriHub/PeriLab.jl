@@ -35,7 +35,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
         mod = datamanager.get_model_module(thermal_model)
         datamanager = mod.compute_thermal_model(datamanager, nodes, model_param, time, dt)
     end
-    datamanager = distribute_heat_flows(datamanager, nodes)
+    #datamanager = distribute_heat_flows(datamanager, nodes)
     return datamanager
 end
 

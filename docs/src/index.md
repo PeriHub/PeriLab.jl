@@ -4,11 +4,6 @@ Welcome to the PeriLab documentation!
 
 This resource aims to teach you everything you need to know to get up and
 running with tabular data manipulation using the PeriLab.jl package.
-
-For more illustrations of PeriLab.jl usage, in particular in conjunction with
-other packages you can check-out the following resources
-(they are kept up to date with the released version of PeriLab.jl):
-* [JuliaCon 2019](https://github.com/bkamins/JuliaCon2019-PeriLab-Tutorial),
  
 ## What is PeriLab.jl?
 

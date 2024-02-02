@@ -71,7 +71,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   heat_flow = datamanager.get_field("Heat Flow", "NP1")
   temperature = datamanager.get_field("Temperature", "NP1")
   surface_nodes = datamanager.get_field("Surface_Nodes")
-  specific_volume = datamanager.get_field("Specific Volume", "NP1")
+  specific_volume = datamanager.get_field("Specific Volume")
   bond_damage = datamanager.get_field("Bond Damage", "NP1")
   horizon = datamanager.get_field("Horizon")
   nlist = datamanager.get_nlist()
@@ -86,7 +86,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     elseif dof == 3
       dx = volume[iID]^(1 / 3)
     end
-
+    # tbd optimize logic @hess_jt
     if surface_nodes[iID] && specific_volume[iID] > 1.0 # could be more as sometimes specific_volume is sometimes weird
       heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx * specific_volume[iID]
     end

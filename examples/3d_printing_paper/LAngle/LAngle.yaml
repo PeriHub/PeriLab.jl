@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+    Discretization: 
+        Type: "Text File"
+        Input Mesh File: "mesh.txt"
+    Physics:
+      Pre Calculation:
+        Deformed Bond Geometry: false
+        Shape Tensor: false
+      Thermal Models:
+        Thermal Test:
+          Thermal Model: "Thermal Flow+Heat Transfer"
+          Type: "Bond based"
+          Thermal Conductivity: 100.12
+          Environmental Temperature: 293.15
+          Heat Transfer Coefficient: 1500000.
+      Additive Models:
+        Additive Test:
+          Additive Model: "Simple"
+          Print Temperature: 463.15
+    Blocks: 
+        block_1: 
+            Thermal Model: "Thermal Test"
+            Horizon: 0.000151
+            Additive Model: "Additive Test"
+            Specific Heat Capacity: 1800.0
+            Density: 1.24e+03
+    Solver:
+        Additive Models: True
+        Material Models: False
+        Thermal Models: True
+        Initial Time: 0.0
+        Final Time: 5.e-4
+        Verlet: 
+            Safety Factor: 1.0
+            Fixed dt: 4e-8
+    Outputs:
+      Output1: 
+        Output Filename: "Lshape"
+        Output File Type: Exodus
+        Number of Output Steps: 150
+        Output Variables:
+            Temperature: True
+            Specific Volume: True
+            Heat Flow: True
+            Activation_Time: True
+

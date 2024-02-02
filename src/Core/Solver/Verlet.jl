@@ -19,7 +19,7 @@ include("../BC_manager.jl")
 include("../../Physics/Physics_Factory.jl")
 using .Physics
 using .Boundary_conditions: apply_bc
-
+using .Helpers: matrix_style
 export init_solver
 export run_solver
 
@@ -50,7 +50,7 @@ This function depends on the following data fields from the `datamanager` module
 """
 function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Union{Float64,Int64})
 
-    criticalTimeStep::Float64 = 1.0e50
+    critical_time_step::Float64 = 1.0e50
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
@@ -64,9 +64,9 @@ function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{I
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond[iID][:, dof+1])
         t = density[iID] * Cv[iID] / (eigLam * denominator)
-        criticalTimeStep = test_timestep(t, criticalTimeStep)
+        critical_time_step = test_timestep(t, critical_time_step)
     end
-    return sqrt(criticalTimeStep)
+    return sqrt(critical_time_step)
 end
 
 """
@@ -108,7 +108,7 @@ This function depends on the following data fields from the `datamanager` module
 - `get_field("Horizon")`: Returns the horizon field.
 """
 function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulkModulus::Union{Float64,Int64})
-    criticalTimeStep::Float64 = 1.0e50
+    critical_time_step::Float64 = 1.0e50
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
     undeformed_bond = datamanager.get_field("Bond Geometry")
@@ -121,28 +121,28 @@ function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int6
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 
         t = density[iID] / (denominator * springConstant)
-        criticalTimeStep = test_timestep(t, criticalTimeStep)
+        critical_time_step = test_timestep(t, critical_time_step)
     end
-    return sqrt(2 * criticalTimeStep)
+    return sqrt(2 * critical_time_step)
 end
 
 """
-    test_timestep(t::Float64, criticalTimeStep::Float64)
+    test_timestep(t::Float64, critical_time_step::Float64)
 
-Compare a time step `t` with a critical time step `criticalTimeStep` and update `criticalTimeStep` if `t` is smaller.
+Compare a time step `t` with a critical time step `critical_time_step` and update `critical_time_step` if `t` is smaller.
 
 # Arguments
-- `t::Float64`: The time step to compare with `criticalTimeStep`.
-- `criticalTimeStep::Float64`: The current critical time step.
+- `t::Float64`: The time step to compare with `critical_time_step`.
+- `critical_time_step::Float64`: The current critical time step.
 
 # Returns
-- `criticalTimeStep::Float64`: The updated critical time step, which is either the original `criticalTimeStep` or `t`, whichever is smaller.
+- `critical_time_step::Float64`: The updated critical time step, which is either the original `critical_time_step` or `t`, whichever is smaller.
 """
-function test_timestep(t::Float64, criticalTimeStep::Float64)
-    if t < criticalTimeStep
-        criticalTimeStep = t
+function test_timestep(t::Float64, critical_time_step::Float64)
+    if t < critical_time_step
+        critical_time_step = t
     end
-    return criticalTimeStep
+    return critical_time_step
 end
 
 """
@@ -171,28 +171,33 @@ This function may depend on the following functions:
 - If required properties are not available in the data manager, it may raise an error message.
 """
 function compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermal::Bool)
-    criticalTimeStep::Float64 = 1.0e50
+    critical_time_step::Float64 = 1.0e50
     for iblock in eachindex(block_nodes)
         if thermal
-            lambda = datamanager.get_property(iblock, "Thermal Model", "Heat Transfer Coefficient")
+            lambda = datamanager.get_property(iblock, "Thermal Model", "Thermal Conductivity")
             # if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
-            if !isnothing(lambda)
+            if isnothing(lambda)
+                if !mechanical
+                    @error "No time step can be calculated, because the heat conduction is not defined."
+                    return nothing
+                end
+            else
                 t = compute_thermodynamic_critical_time_step(block_nodes[iblock], datamanager, lambda)
-                criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
+                critical_time_step = test_timestep(t, critical_time_step)
             end
         end
         if mechanical
             bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
             if !isnothing(bulkModulus)
                 t = compute_mechanical_critical_time_step(block_nodes[iblock], datamanager, bulkModulus)
-                criticalTimeStep = criticalTimeStep = test_timestep(t, criticalTimeStep)
+                critical_time_step = test_timestep(t, critical_time_step)
             else
                 @error "No time step for material is determined because of missing properties."
             end
 
         end
     end
-    return criticalTimeStep
+    return critical_time_step
 end
 
 """
