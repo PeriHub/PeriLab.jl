@@ -209,7 +209,7 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
 
         bond_mod = copy(bond_norm[iID])
 
-        if length(nlist_filtered[iID]) != 0
+        if !isnothing(nlist_filtered) && length(nlist_filtered[iID]) != 0
             indices = findall(x -> x in nlist_filtered[iID], nlist[iID])
             for neighborID in indices
                 if dot((deformed_bond_np1[iID][neighborID, 1:end-1] - deformed_bond_n[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]) < 0
