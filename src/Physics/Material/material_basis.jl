@@ -203,16 +203,18 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::SubArray`: The force densities.
 """
-function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, nlist_filtered, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, deformed_bond_n::SubArray, deformed_bond_np1::SubArray, bond_norm::SubArray, force_densities::SubArray)
+function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, nlist_filtered, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, bond_geometry::SubArray, deformed_bond_np1::SubArray, bond_norm::SubArray, force_densities::SubArray)
 
     for iID in nodes
 
         bond_mod = copy(bond_norm[iID])
-
+        #TODO indices do not have to be calculated in each step
         if !isnothing(nlist_filtered) && length(nlist_filtered[iID]) != 0
             indices = findall(x -> x in nlist_filtered[iID], nlist[iID])
             for neighborID in indices
-                if dot((deformed_bond_np1[iID][neighborID, 1:end-1] - deformed_bond_n[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]) < 0
+                #TODO calculation is not correct -> norm is equal for bond 12 and bond 21
+                # therefore it does not work;
+                if dot((deformed_bond_np1[iID][neighborID, 1:end-1] - bond_geometry[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]) < 0
                     bond_mod[neighborID, :] .= 0
                 else
                     bond_mod[neighborID, :] = bond_norm[iID][neighborID, :]

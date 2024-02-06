@@ -54,6 +54,20 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
         datamanager.set_model_module(material_model, mod)
         datamanager = mod.init_material_model(datamanager, nodes, model_param)
     end
+    #TODO in extra function
+    nlist = datamanager.get_nlist()
+    nlist_filtered = datamanager.get_filtered_nlist()
+    bond_norm = datamanager.get_field("Bond Norm")
+    bond_geometry = datamanager.get_field("Bond Geometry")
+    for iID in nodes
+        if !isnothing(nlist_filtered) && length(nlist_filtered[iID]) != 0
+            indices = findall(x -> x in nlist_filtered[iID], nlist[iID])
+            for neighborID in indices
+                bond_norm[iID][neighborID, :] .*= sign(dot((bond_geometry[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]))
+            end
+        end
+    end
+
     return datamanager
 end
 
@@ -133,9 +147,9 @@ function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,V
     force_densities = datamanager.get_field("Force Densities", "NP1")
     volume = datamanager.get_field("Volume")
     bond_damage = datamanager.get_bond_damage("NP1")
-    deformed_bond_n = datamanager.get_field("Deformed Bond Geometry", "N")
+    bond_geometry = datamanager.get_field("Bond Geometry")
     deformed_bond_np1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    force_densities = distribute_forces(nodes, nlist, nlist_filtered, bond_force, volume, bond_damage, deformed_bond_n, deformed_bond_np1, bond_norm, force_densities)
+    force_densities = distribute_forces(nodes, nlist, nlist_filtered, bond_force, volume, bond_damage, bond_geometry, deformed_bond_np1, bond_norm, force_densities)
     return datamanager
 end
 
