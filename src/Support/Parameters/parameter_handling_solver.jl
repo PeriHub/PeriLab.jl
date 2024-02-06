@@ -23,9 +23,11 @@ Get the name of the solver
 function get_solver_name(params::Dict)
     if haskey(params["Solver"], "Verlet")
         return "Verlet"
+    elseif haskey(params["Solver"], "Static")
+        return "Static"
     end
-    @error "Wrong or missing solvername. Verlet is the only option yet."
-    return
+    @error "Wrong or missing solvername. Verlet and Static are the options."
+    return nothing
 end
 
 """
@@ -76,7 +78,7 @@ Get the safety factor
 - `safety_factor::Float64`: The safety factor
 """
 function get_safety_factor(params::Dict)
-    return get(params["Solver"]["Verlet"], "Safety Factor", 1.0)
+    return get(params["Solver"][get_solver_name(params)], "Safety Factor", 1.0)
 end
 
 """
@@ -90,7 +92,22 @@ Get the fixed time step
 - `fixed_dt::Float64`: The fixed time step
 """
 function get_fixed_dt(params::Dict)
-    return get(params["Solver"]["Verlet"], "Fixed dt", -1.0)
+    return get(params["Solver"][get_solver_name(params)], "Fixed dt", -1.0)
+end
+
+
+"""
+    get_nsteps(params::Dict)
+
+Get the fixed time step
+
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `nsteps::Int64`: The fixed time step
+"""
+function get_nsteps(params::Dict)
+    return get(params["Solver"][get_solver_name(params)], "Number of Steps", 1)
 end
 
 """

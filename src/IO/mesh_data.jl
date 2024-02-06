@@ -74,6 +74,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
         @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
         @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution, false)
+        #TODO: move this
         bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
         if !isnothing(nlist_filtered)
             @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered, distribution, true)
