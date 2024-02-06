@@ -52,7 +52,7 @@ PeriLab:
     Output1:
       Output Filename: "thermal_expansion_correspondence"
       Output File Type: Exodus
-      Number of Output Steps: 10
+      Number of Output Steps: 40
       Output Variables:
         Strain: True
         Cauchy Stress: True
