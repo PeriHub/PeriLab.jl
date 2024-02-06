@@ -162,7 +162,7 @@ function get_node_sets(params::Dict, path::String, surface_ns::Union{Nothing,Dic
             end
             nsets[key] = nodes
         end
-        if surface_ns != nothing
+        if !isnothing(surface_ns)
             for (key, values) in surface_ns
                 nsets[key] = Vector{Int64}(values .+ id)
             end

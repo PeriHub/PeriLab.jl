@@ -72,7 +72,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   temperature = datamanager.get_field("Temperature", "NP1")
   surface_nodes = datamanager.get_field("Surface_Nodes")
   specific_volume = datamanager.get_field("Specific Volume")
-  bond_damage = datamanager.get_field("Bond Damage", "NP1")
+  bond_damage = datamanager.get_bond_damage("NP1")
   horizon = datamanager.get_field("Horizon")
   nlist = datamanager.get_nlist()
   dx = 1.0

@@ -58,7 +58,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     block_ids = datamanager.get_field("Block_Id")
     update_list = datamanager.get_field("Update List")
     horizon = datamanager.get_field("Horizon")
-    bond_damage = datamanager.get_field("Bond Damage", "NP1")
+    bond_damage = datamanager.get_bond_damage("NP1")
     if haskey(damage_parameter, "Anisotropic Damage")
         bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic")
     end

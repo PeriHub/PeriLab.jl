@@ -8,6 +8,7 @@ export get_solver_name
 export get_safety_factor
 export get_final_time
 export get_fixed_dt
+export get_nsteps
 export get_max_damage
 export get_numerical_damping
 """

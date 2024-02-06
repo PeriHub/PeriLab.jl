@@ -113,7 +113,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   dof = datamanager.get_dof()
   deformation_gradient = datamanager.get_field("Deformation Gradient")
   bond_force = datamanager.get_field("Bond Forces")
-  bond_damage = datamanager.get_field("Bond Damage", "NP1")
+  bond_damage = datamanager.get_bond_damage("NP1")
 
   undeformed_bond = datamanager.get_field("Bond Geometry")
   inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")

@@ -67,7 +67,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   dof = datamanager.get_dof()
   nlist = datamanager.get_nlist()
   coordinates = datamanager.get_field("Coordinates")
-  bond_damage = datamanager.get_field("Bond Damage", "NP1")
+  bond_damage = datamanager.get_bond_damage("NP1")
   heat_flow = datamanager.get_field("Heat Flow", "NP1")
   undeformed_bond = datamanager.get_field("Bond Geometry")
   volume = datamanager.get_field("Volume")

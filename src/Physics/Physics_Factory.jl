@@ -225,9 +225,13 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
         damageName = params["Blocks"]["block_$block_id"]["Damage Model"]
         damage_parameter = params["Physics"]["Damage Models"][damageName]
         anistropic_damage = haskey(damage_parameter, "Anisotropic Damage")
+        if anistropic_damage
+            break
+        end
     end
     if anistropic_damage
-        datamanager.create_constant_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
+        datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
+        datamanager.create_node_field("Damage Anisotropic", Float64, dof)
     end
     if length(datamanager.get_inverse_nlist()) == 0
         nlist = datamanager.get_field("Neighborhoodlist")
@@ -337,8 +341,8 @@ function init_additive_model_fields(datamanager::Module)
     # must be specified, because it might be that no temperature model has been defined
     datamanager.create_node_field("Temperature", Float64, 1)
     datamanager.create_node_field("Heat Flow", Float64, 1)
-    bond_damageN = datamanager.get_field("Bond Damage", "N")
-    bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")
+    bond_damageN = datamanager.get_bond_damage("N")
+    bond_damageNP1 = datamanager.get_bond_damage("NP1")
     nnodes = datamanager.get_nnodes()
     if !("Active" in datamanager.get_all_field_keys())
         active = datamanager.create_constant_node_field("Active", Bool, 1, false)
