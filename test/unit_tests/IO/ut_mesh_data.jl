@@ -402,14 +402,14 @@ end
         nlist[i] = Vector{Int64}(collect(1:3*i*i-2))
     end
 
-    lenNlist = IO.get_number_of_neighbornodes(nlist)
+    lenNlist = IO.get_number_of_neighbornodes(nlist, false)
 
     for i in 1:4
         @test lenNlist[i] == 3 * i * i - 2
     end
     nlist[1] = []
 
-    @test isnothing(IO.get_number_of_neighbornodes(nlist))
+    @test isnothing(IO.get_number_of_neighbornodes(nlist, false))
 end
 
 @testset "ut_glob_to_loc" begin

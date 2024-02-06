@@ -68,12 +68,18 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 """
 function damage_index(datamananager::Module, nodes::Union{SubArray,Vector{Int64}})
     nlist = datamananager.get_nlist()
+    nlist_filtered = datamananager.get_filtered_nlist()
+    if !isnothing(nlist_filtered)
+        nlist_mod = setdiff(nlist, nlist_filtered)
+    else
+        nlist_mod = nlist
+    end
     volume = datamananager.get_field("Volume")
     bond_damageNP1 = datamananager.get_field("Bond Damage", "NP1")
     damage = datamananager.get_field("Damage", "NP1")
     for iID in nodes
-        undamaged_volume = sum(volume[nlist[iID][:]])
-        totalDamage = sum((1 .- bond_damageNP1[iID][:]) .* volume[nlist[iID][:]])
+        undamaged_volume = sum(volume[nlist_mod[iID][:]])
+        totalDamage = sum((1 .- bond_damageNP1[iID][:]) .* volume[nlist_mod[iID][:]])
         if damage[iID] < totalDamage / undamaged_volume
             damage[iID] = totalDamage / undamaged_volume
         end

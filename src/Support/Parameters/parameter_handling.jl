@@ -62,6 +62,11 @@ global expected_structure = Dict(
                         ), false],
                     "Type" => [String, true],
                     "Neighborhood Distribution" => [Bool, false],
+                    "Surface Extrusion" => [Dict{Any,Any}(
+                            "Direction" => [String, true],
+                            "Step" => [Union{Float64,Int64}, true],
+                            "Number" => [Union{Float64,Int64}, true],
+                        ), false],
                     "Bond Filters" => [Dict{Any,Any}(
                             "Any" => [Dict{Any,Any}(
                                     "Type" => [String, true],
@@ -80,6 +85,7 @@ global expected_structure = Dict(
                                     "Radius" => [Union{Float64,Int64}, false],
                                     "Bottom Length" => [Union{Float64,Int64}, false],
                                     "Side Length" => [Union{Float64,Int64}, false],
+                                    "Allow Contact" => [Bool, false],
                                 ), true],
                         ), false],
                 ), true],

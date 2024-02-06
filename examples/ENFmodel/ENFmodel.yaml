@@ -85,6 +85,7 @@ PeriLab:
         Normal Z: 0.0
         Side Length: 1.0
         Type: Rectangular_Plane
+        Allow Contact: True
     Input Mesh File: ENFmodel.txt
     Node Sets:
       Node Set 1: ns_ENFmodel_1.txt
@@ -95,7 +96,7 @@ PeriLab:
     Output1:
       Number of Output Steps: 100
       Output File Type: Exodus
-      Output Filename: ENFmodel_Output1
+      Output Filename: ENFmodel_Output1_Fixed2
       Output Variables:
         Damage: true
         Displacements: true
@@ -103,6 +104,7 @@ PeriLab:
         # External_Forces: true
         Forces: true
         Number of Neighbors: true
+        Number of Filtered Neighbors: True
   Physics:
     Damage Models:
       Damage:
@@ -113,10 +115,11 @@ PeriLab:
           Interblock Critical Value 2_1: 0.1
     Material Models:
       Aluminium:
-        Material Model: Correspondence Elastic
+        # Material Model: Correspondence Elastic
+        Material Model: "Bond-based Elastic"
         Poisson's Ratio: 0.33
         Young's Modulus: 71700.0
-        Symmetry: isotropic plane stress
+        # Symmetry: isotropic plane stress
         Zero Energy Control: Global
   Solver:
     Damage Models: true

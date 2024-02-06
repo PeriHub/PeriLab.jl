@@ -422,16 +422,17 @@ function get_field(name::String, time::String)
 end
 
 """
-    get_field(name::String)
+    get_field(name::String, throw_error::Bool=true)
 
 Returns the field with the given name.
 
 # Arguments
 - `name::String`: The name of the field.
+- `throw_error::Bool=true`: Whether to throw an error if the field does not exist.
 # Returns
 - `field::Field`: The field with the given name.
 """
-function get_field(name::String)
+function get_field(name::String, throw_error::Bool=true)
     global fields
     global field_array_type
     global field_types
@@ -454,7 +455,9 @@ function get_field(name::String)
         end
         return view(fields[field_types[name]][name], :,)
     end
-    @error "Field ''" * name * "'' does not exist. Check if it is initialized as constant."
+    if throw_error
+        @error "Field ''" * name * "'' does not exist. Check if it is initialized as constant."
+    end
     return nothing
 end
 
@@ -517,6 +520,15 @@ Get the neighborhood list.
 """
 function get_nlist()
     return get_field("Neighborhoodlist")
+end
+
+"""
+    get_filtered_nlist()
+
+Get the neighborhood list.
+"""
+function get_filtered_nlist()
+    return get_field("FilteredNeighborhoodlist", false)
 end
 
 """

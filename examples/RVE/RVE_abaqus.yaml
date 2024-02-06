@@ -7,6 +7,10 @@ PeriLab:
     Input Mesh File: INPUTFILE.inp
     Type: Abaqus
     Neighborhood Distribution: True
+    Surface Extrusion:
+      Direction: X
+      Step: 0.5
+      Number: 4
   Physics:
     Material Models:
       BC:
@@ -36,239 +40,252 @@ PeriLab:
   Blocks:
     block_1:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_2:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_3:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_4:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_5:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_6:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_7:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_8:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_9:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_10:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_11:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_12:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_13:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_14:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_15:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_16:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_17:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_18:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_19:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_20:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_21:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_22:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_23:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_24:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_25:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_26:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_27:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_28:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_29:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_30:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_31:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_32:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_33:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_34:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_35:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_36:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_37:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_38:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_39:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_40:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_41:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_42:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_43:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_44:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_45:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_46:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_47:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_48:
       Material Model: Fibre
-      Horizon: 1.5
+      Horizon: 2.5
       Density: 2.7e-9
     block_49:
       Material Model: Resin
       Damage Model: Damage
-      Horizon: 1.5
+      Horizon: 2.5
       Density: 2.7e-9
     block_50:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_51:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_52:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_53:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_54:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_55:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_56:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
       Density: 2.7e-9
     block_57:
       Material Model: Interface
-      Horizon: 0.7
+      Horizon: 1.8
+      Density: 2.7e-9
+    block_58:
+      Material Model: Resin
+      Horizon: 2.5
+      Density: 2.7e-9
+    block_59:
+      Material Model: Resin
+      Horizon: 2.5
       Density: 2.7e-9
   Boundary Conditions:
     Displacement-1:
       Type: Displacements
-      Node Set: _G995
+      Node Set: Extruded_1
       Coordinate: x
-      Value: -1000.0*t
+      Value: 0.000833333*t
+    Displacement-2:
+      Type: Displacements
+      Node Set: Extruded_2
+      Coordinate: x
+      Value: 0.0
     # Displacement-2:
     #   Type: Displacements
     #   Node Set: nset_Edge_yrot2
@@ -324,6 +341,6 @@ PeriLab:
     Initial Time: 0.0
     Final Time: 1.0e-4
     Material Models: True
-    Damage Models: True
+    # Damage Models: True
     Verlet:
       Safety Factor: 1.0
