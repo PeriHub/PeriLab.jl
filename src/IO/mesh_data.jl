@@ -78,7 +78,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
             @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered, distribution, true)
         end
         bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
-        bond_norm_field = bond_norm
+        bond_norm_field .= bond_norm
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
         datamanager.set_fem(fem_active)
@@ -1244,9 +1244,11 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
         end
         if contact_enabled
             nlist_filtered = fill(Vector{Int64}([]), nnodes)
-            bond_norm = fill([], nnodes)
+            bond_norm = Matrix{Float64}[]
             for iID in 1:nnodes
-                bond_norm[iID] = fill(fill(1, dof), length(nlist[iID]))
+                # bond_norm[iID] = fill(fill(1, dof), length(nlist[iID])) 
+                append!(bond_norm, [Matrix{Float64}(undef, length(nlist[iID]), dof)])
+                fill!(bond_norm[end], Float64(1))
             end
         end
 
@@ -1261,7 +1263,7 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
                     nlist_filtered[iID] = setdiff(nlist[iID], nlist[iID][filter_flag[iID]])
                     indices = findall(x -> x in nlist_filtered[iID], nlist[iID])
                     for jID in indices
-                        bond_norm[iID][jID] = normal
+                        bond_norm[iID][jID, :] = normal
                     end
                 else
                     nlist[iID] = nlist[iID][filter_flag[iID]]
