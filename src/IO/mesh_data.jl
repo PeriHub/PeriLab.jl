@@ -601,15 +601,19 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     min_z = 0.0
     max_z = 0.0
     if "z" in names(mesh)
-        min_z, max_z = extrema(z_values)
+        min_z, max_z = extrema(mesh.z)
     end
 
     if direction == "X"
         coord_min = min_x
         coord_max = max_x
+        row_min = min_y
+        row_max = max_y
     elseif direction == "Y"
         coord_min = min_y
         coord_max = max_y
+        row_min = min_x
+        row_max = max_x
     end
 
     block_id = maximum(mesh.block_id) + 1
@@ -619,7 +623,7 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
 
     node_sets = Dict("Extruded_1" => [], "Extruded_2" => [])
 
-    for i in coord_max+step:step:coord_max+step*number, j in row_min:step:row_max+step, k in z_min:step:z_max+step
+    for i in coord_max+step:step:coord_max+step*number, j in row_min:step:row_max+step, k in min_z:step:max_z+step
         if direction == "X"
             push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
         elseif direction == "Y"
@@ -631,7 +635,7 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
 
     block_id += 1
 
-    for i in coord_min-step:-step:coord_min-step*number, j in row_min:step:row_max+step, k in z_min:step:z_max
+    for i in coord_min-step:-step:coord_min-step*number, j in row_min:step:row_max+step, k in min_z:step:max_z+step
         if direction == "X"
             push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
         elseif direction == "Y"
