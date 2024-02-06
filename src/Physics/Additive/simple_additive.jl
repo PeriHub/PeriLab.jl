@@ -48,7 +48,7 @@ function compute_additive_model(datamanager::Module, nodes::Union{SubArray,Vecto
   nlist = datamanager.get_nlist()
   inverse_nlist = datamanager.get_inverse_nlist()
   activation_time = datamanager.get_field("Activation_Time")
-  bond_damage = datamanager.get_field("Bond Damage", "NP1")
+  bond_damage = datamanager.get_bond_damage("NP1")
   active = datamanager.get_field("Active")
   heat_capacity = datamanager.get_field("Specific Heat Capacity")
   density = datamanager.get_field("Density")
@@ -62,8 +62,8 @@ function compute_additive_model(datamanager::Module, nodes::Union{SubArray,Vecto
       flux[iID] = -printTemperature * heat_capacity[iID] * density[iID] ./ dt
 
       for (jID, neighborID) in enumerate(nlist[iID])
-        if activation_time[neighborID] <= time && bond_damage[iID][jID] == 0
-          bond_damage[iID][jID] = 1.0
+        if activation_time[neighborID] <= time && all(bond_damage[iID][jID, :] .== 0)
+          bond_damage[iID][jID, :] .= 1.0
           if haskey(inverse_nlist[neighborID], iID)
             bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 1.0
           end

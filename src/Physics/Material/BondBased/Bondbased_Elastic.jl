@@ -80,7 +80,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     symmetry::String = get_symmmetry(material_parameter)
     undeformed_bond = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    bond_damage = datamanager.get_field("Bond Damage", "NP1")
+    bond_damage = datamanager.get_bond_damage("NP1")
     bond_force = datamanager.get_field("Bond Forces")
 
     K = material_parameter["Bulk Modulus"]

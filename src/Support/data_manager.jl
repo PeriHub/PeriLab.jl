@@ -412,12 +412,12 @@ Returns the field with the given name and time.
 # Returns
 - `field::Field`: The field with the given name and time.
 """
-function get_field(name::String, time::String)
+function get_field(name::String, time::String, throw_error::Bool=true)
 
     if time == "Constant" || time == "CONSTANT"
         return get_field(name)
     end
-    return get_field(name * time)
+    return get_field(name * time, throw_error)
 
 end
 
@@ -459,6 +459,36 @@ function get_field(name::String, throw_error::Bool=true)
         @error "Field ''" * name * "'' does not exist. Check if it is initialized as constant."
     end
     return nothing
+end
+
+"""
+    get_bond_damage(time::String)
+Get the bond damage
+
+# Arguments
+- `time::String`: The time of the field.
+# Returns
+- `damage::Field`: The bond damage field.
+"""
+function get_bond_damage(time::String)
+    bond_damage = get_field("Bond Damage", time)
+    bond_damage_aniso = get_field("Bond Damage Anisotropic", time, false)
+    return isnothing(bond_damage_aniso) ? bond_damage : bond_damage_aniso
+end
+
+"""
+    get_damage(time::String)
+Get the damage
+
+# Arguments
+- `time::String`: The time of the field.
+# Returns
+- `damage::Field`: The damage field.
+"""
+function get_damage(time::String)
+    damage = get_field("Damage", time)
+    damage_aniso = get_field("Damage Anisotropic", time, false)
+    return isnothing(damage_aniso) ? damage : damage_aniso
 end
 
 """

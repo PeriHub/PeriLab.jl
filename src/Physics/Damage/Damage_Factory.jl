@@ -56,7 +56,7 @@ function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArr
 end
 
 """
-    damage_index(datamananager,::Union{SubArray, Vector{Int64})
+    damage_index(datamanager,::Union{SubArray, Vector{Int64})
 
 Function calculates the damage index related to the neighborhood volume for a set of corresponding nodes. 
 The damage index is defined as damaged volume in relation the neighborhood volume.
@@ -66,17 +66,17 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 - `datamanager::Data_manager`: all model data
 - `nodes::Union{SubArray, Vector{Int64}}`: corresponding nodes to this model
 """
-function damage_index(datamananager::Module, nodes::Union{SubArray,Vector{Int64}})
-    nlist = datamananager.get_nlist()
-    nlist_filtered = datamananager.get_filtered_nlist()
+function damage_index(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+    nlist = datamanager.get_nlist()
+    nlist_filtered = datamanager.get_filtered_nlist()
     if !isnothing(nlist_filtered)
         nlist_mod = setdiff(nlist, nlist_filtered)
     else
         nlist_mod = nlist
     end
-    volume = datamananager.get_field("Volume")
-    bond_damageNP1 = datamananager.get_field("Bond Damage", "NP1")
-    damage = datamananager.get_field("Damage", "NP1")
+    volume = datamanager.get_field("Volume")
+    bond_damageNP1 = datamanager.get_bond_damage("NP1")
+    damage = datamanager.get_damage("NP1")
     for iID in nodes
         undamaged_volume = sum(volume[nlist_mod[iID][:]])
         totalDamage = sum((1 .- bond_damageNP1[iID][:]) .* volume[nlist_mod[iID][:]])
@@ -84,7 +84,7 @@ function damage_index(datamananager::Module, nodes::Union{SubArray,Vector{Int64}
             damage[iID] = totalDamage / undamaged_volume
         end
     end
-    return datamananager
+    return datamanager
 
 end
 
@@ -100,8 +100,8 @@ Set the bond damage field to the bond damage field
 - `datamanager::Module`: The datamanager
 """
 function set_bond_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
-    bond_damageN = datamanager.get_field("Bond Damage", "N")
-    bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")
+    bond_damageN = datamanager.get_bond_damage("N")
+    bond_damageNP1 = datamanager.get_bond_damage("NP1")
     for iID in nodes
         bond_damageNP1[iID][:] = bond_damageN[iID][:]
     end

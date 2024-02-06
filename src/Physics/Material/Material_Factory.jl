@@ -132,7 +132,7 @@ function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,V
     bond_norm = datamanager.get_field("Bond Norm")
     force_densities = datamanager.get_field("Force Densities", "NP1")
     volume = datamanager.get_field("Volume")
-    bond_damage = datamanager.get_field("Bond Damage", "NP1")
+    bond_damage = datamanager.get_bond_damage("NP1")
     deformed_bond_n = datamanager.get_field("Deformed Bond Geometry", "N")
     deformed_bond_np1 = datamanager.get_field("Deformed Bond Geometry", "NP1")
     force_densities = distribute_forces(nodes, nlist, nlist_filtered, bond_force, volume, bond_damage, deformed_bond_n, deformed_bond_np1, bond_norm, force_densities)

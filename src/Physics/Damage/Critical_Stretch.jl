@@ -50,7 +50,7 @@ Example:
 function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
 
     nlist = datamanager.get_nlist()
-    bond_damageNP1 = datamanager.get_field("Bond Damage", "NP1")
+    bond_damageNP1 = datamanager.get_bond_damage("NP1")
     update_list = datamanager.get_field("Update List")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
@@ -72,7 +72,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 stretch = abs(stretch)
             end
             if stretch > crit_stretch
-                bond_damageNP1[iID][jID] = 0.0
+                bond_damageNP1[iID][jID, :] .= 0.0
                 update_list[iID] = true
             end
         end

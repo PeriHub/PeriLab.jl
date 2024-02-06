@@ -366,7 +366,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         fe_nodes = datamanager.get_field("FE Nodes")
     end
     if solver_options["Damage Models"]
-        damage = datamanager.get_field("Damage", "NP1")
+        damage = datamanager.get_damage("NP1")
     end
     active = datamanager.get_field("Active")
     update_list = datamanager.get_field("Update List")

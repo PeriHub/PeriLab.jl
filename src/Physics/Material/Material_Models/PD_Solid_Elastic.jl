@@ -92,7 +92,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     nneighbors = datamanager.get_field("Number of Neighbors")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    bond_damage = datamanager.get_field("Bond Damage", "NP1")
+    bond_damage = datamanager.get_bond_damage("NP1")
     omega = datamanager.get_field("Influence Function")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     bond_force = datamanager.get_field("Bond Forces")
@@ -157,7 +157,7 @@ function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta,
         if any(deformed_bond[iID][:, end] .== 0)
             @error "Length of bond is zero due to its deformation."
         else
-            @inbounds bond_force[iID][:, 1:dof] .= t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
+            @inbounds bond_force[iID][:, 1:dof] = t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end][:]
         end
         # Calculate bond force
         #Ordinary.project_bond_forces()
