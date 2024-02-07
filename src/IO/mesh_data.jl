@@ -35,7 +35,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
         if rank == 1
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, nlist_filtered, bond_norm, dof, nsets, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks, to)
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, nlist_filtered_ids, bond_norm, dof, nsets, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks, to)
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -45,7 +45,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
             element_distribution = nothing
             mesh = DataFrame()
             nlist = nothing
-            nlist_filtered = nothing
+            nlist_filtered_ids = nothing
             bond_norm = nothing
             nsets = nothing
             ntype = Dict("controllers" => 0, "responder" => 0)
@@ -59,7 +59,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         distribution = send_value(comm, 0, distribution)
         nsets = send_value(comm, 0, nsets)
         nlist = send_value(comm, 0, nlist)
-        nlist_filtered = send_value(comm, 0, nlist_filtered)
+        nlist_filtered_ids = send_value(comm, 0, nlist_filtered_ids)
         bond_norm = send_value(comm, 0, bond_norm)
         datamanager.set_overlap_map(overlap_map)
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
@@ -77,8 +77,8 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
 
         # TODO in extra function
         bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
-        if !isnothing(nlist_filtered)
-            @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered, distribution, true)
+        if !isnothing(nlist_filtered_ids)
+            @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered_ids, distribution, true)
             bond_norm_field .= bond_norm
         end
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
@@ -688,7 +688,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
     end
     dof::Int64 = set_dof(mesh)
     @timeit to "neighborhoodlist" nlist = create_neighborhoodlist(mesh, params, dof)
-    @timeit to "apply_bond_filters" nlist, nlist_filtered, bond_norm = apply_bond_filters(nlist, mesh, params, dof)
+    @timeit to "apply_bond_filters" nlist, nlist_filtered_ids, bond_norm = apply_bond_filters(nlist, mesh, params, dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
@@ -721,7 +721,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
         @info "-------------------"
     end
 
-    return distribution, mesh, ntype, overlap_map, nlist, nlist_filtered, bond_norm, dof, nsets, topology, el_distribution
+    return distribution, mesh, ntype, overlap_map, nlist, nlist_filtered_ids, bond_norm, dof, nsets, topology, el_distribution
 end
 
 function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
@@ -1226,11 +1226,11 @@ Apply the bond filters to the neighborhood list.
 - `dof::Int64`: The degrees of freedom.
 # Returns
 - `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
-- `nlist_filtered::Vector{Vector{Int64}}`: The filtered neighborhood list.
+- `nlist_filtered_ids::Vector{Vector{Int64}}`: The filtered neighborhood list.
 """
 function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, params::Dict, dof::Int64)
     bond_filters = get_bond_filters(params)
-    nlist_filtered = nothing
+    nlist_filtered_ids = nothing
     bond_norm = nothing
     if bond_filters[1]
         @info "Apply bond filters"
@@ -1240,7 +1240,7 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
         for i in 1:dof
             data[i, :] = values(mesh[!, coor[i]])
         end
-
+        #TODO to the bottom, because right now all filters have contact if true
         contact_enabled = false
         for (name, filter) in bond_filters[2]
             contact_enabled = get(filter, "Allow Contact", false)
@@ -1249,7 +1249,7 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
             end
         end
         if contact_enabled
-            nlist_filtered = fill(Vector{Int64}([]), nnodes)
+            nlist_filtered_ids = fill(Vector{Int64}([]), nnodes)
             bond_norm = Matrix{Float64}[]
             for iID in 1:nnodes
                 # bond_norm[iID] = fill(fill(1, dof), length(nlist[iID])) 
@@ -1266,10 +1266,10 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
             end
             for iID in 1:nnodes
                 if contact_enabled && any(x -> x == false, filter_flag[iID])
-                    nlist_filtered[iID] = setdiff(nlist[iID], nlist[iID][filter_flag[iID]])
-                    indices = findall(x -> x in nlist_filtered[iID], nlist[iID])
+                    indices = findall(x -> x in setdiff(nlist[iID], nlist[iID][filter_flag[iID]]), nlist[iID])
+                    nlist_filtered_ids[iID] = indices
                     for jID in indices
-                        bond_norm[iID][jID, :] = normal
+                        bond_norm[iID][jID, :] .= normal
                     end
                 else
                     nlist[iID] = nlist[iID][filter_flag[iID]]
@@ -1278,7 +1278,7 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
         end
         @info "Finished applying bond filters"
     end
-    return nlist, nlist_filtered, bond_norm
+    return nlist, nlist_filtered_ids, bond_norm
 end
 
 """

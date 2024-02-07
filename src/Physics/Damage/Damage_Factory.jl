@@ -31,8 +31,12 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     mod = datamanager.get_model_module(model_param["Damage Model"])
     datamanager = mod.compute_damage(datamanager, nodes, model_param, block, time, dt)
-    datamanager = damage_index(datamanager, nodes)
-    return datamanager
+
+    if isnothing(datamanager.get_filtered_nlist())
+        return damage_index(datamanager, nodes)
+    end
+
+    return damage_index(datamanager, nodes, datamanager.get_filtered_nlist())
 end
 
 """
@@ -66,20 +70,33 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 - `datamanager::Data_manager`: all model data
 - `nodes::Union{SubArray, Vector{Int64}}`: corresponding nodes to this model
 """
+function damage_index(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, nlist_filtered_ids::SubArray)
+    nlist = datamanager.get_nlist()
+    volume = datamanager.get_field("Volume")
+    bond_damageNP1 = datamanager.get_bond_damage("NP1")
+    damage = datamanager.get_damage("NP1")
+
+    for iID in nodes
+        undamaged_volume = sum(volume[nlist[iID][:]])
+        bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 1
+        totalDamage = sum((1 .- bond_damageNP1[iID][:]) .* volume[nlist[iID]])
+        if damage[iID] < totalDamage / undamaged_volume
+            damage[iID] = totalDamage / undamaged_volume
+        end
+    end
+
+    return datamanager
+
+end
+
 function damage_index(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     nlist = datamanager.get_nlist()
-    nlist_filtered = datamanager.get_filtered_nlist()
-    if !isnothing(nlist_filtered)
-        nlist_mod = setdiff(nlist, nlist_filtered)
-    else
-        nlist_mod = nlist
-    end
     volume = datamanager.get_field("Volume")
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
     damage = datamanager.get_damage("NP1")
     for iID in nodes
-        undamaged_volume = sum(volume[nlist_mod[iID][:]])
-        totalDamage = sum((1 .- bond_damageNP1[iID][:]) .* volume[nlist_mod[iID][:]])
+        undamaged_volume = sum(volume[nlist[iID][:]])
+        totalDamage = sum((1 .- bond_damageNP1[iID][:]) .* volume[nlist[iID][:]])
         if damage[iID] < totalDamage / undamaged_volume
             damage[iID] = totalDamage / undamaged_volume
         end

@@ -56,13 +56,12 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     end
     #TODO in extra function
     nlist = datamanager.get_nlist()
-    nlist_filtered = datamanager.get_filtered_nlist()
+    nlist_filtered_ids = datamanager.get_filtered_nlist()
     bond_norm = datamanager.get_field("Bond Norm")
     bond_geometry = datamanager.get_field("Bond Geometry")
     for iID in nodes
-        if !isnothing(nlist_filtered) && length(nlist_filtered[iID]) != 0
-            indices = findall(x -> x in nlist_filtered[iID], nlist[iID])
-            for neighborID in indices
+        if !isnothing(nlist_filtered_ids) && length(nlist_filtered_ids[iID]) != 0
+            for neighborID in nlist_filtered_ids[iID]
                 bond_norm[iID][neighborID, :] .*= sign(dot((bond_geometry[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]))
             end
         end
@@ -141,16 +140,16 @@ Distribute the force densities.
 """
 function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     nlist = datamanager.get_nlist()
-    nlist_filtered = datamanager.get_filtered_nlist()
+    nlist_filtered_ids = datamanager.get_filtered_nlist()
     bond_force = datamanager.get_field("Bond Forces")
     force_densities = datamanager.get_field("Force Densities", "NP1")
     volume = datamanager.get_field("Volume")
     bond_damage = datamanager.get_bond_damage("NP1")
 
-    if !isnothing(nlist_filtered)
+    if !isnothing(nlist_filtered_ids)
         bond_norm = datamanager.get_field("Bond Norm")
         displacements = datamanager.get_field("Displacements", "NP1")
-        force_densities = distribute_forces(nodes, nlist, nlist_filtered, bond_force, volume, bond_damage, displacements, bond_norm, force_densities)
+        force_densities = distribute_forces(nodes, nlist, nlist_filtered_ids, bond_force, volume, bond_damage, displacements, bond_norm, force_densities)
     else
         force_densities = distribute_forces(nodes, nlist, bond_force, volume, bond_damage, force_densities)
     end
