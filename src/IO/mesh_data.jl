@@ -482,6 +482,7 @@ function read_mesh(filename::String, params::Dict)
         element_sets = mesh["element_sets"]
 
         dof = size(nodes[1])[1]
+        dof = 2
 
         mesh_df = ifelse(dof == 2,
             DataFrame(x=[], y=[], volume=[], block_id=Int[]),
@@ -525,6 +526,18 @@ function read_mesh(filename::String, params::Dict)
         return nothing
     end
 
+end
+
+function area_of_polygon(vertices)
+    n = length(vertices)
+    area = 0.0
+
+    for i in 1:n
+        j = mod(i, n) + 1
+        area += (vertices[i][1] + vertices[j][1]) * (vertices[i][2] - vertices[j][2])
+    end
+
+    return abs(area) / 2.0
 end
 
 """
@@ -620,15 +633,15 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     block_id = maximum(mesh.block_id) + 1
     volume = step * step
 
-    id = 1
+    id = 0
 
     node_sets = Dict("Extruded_1" => [], "Extruded_2" => [])
 
-    for i in coord_max+step:step:coord_max+step*number, j in row_min:step:row_max+step, k in min_z:step:max_z+step
+    for i in coord_max+step:step:coord_max+step*number, j in row_min:step:row_max+step#, k in min_z:step:max_z+step
         if direction == "X"
-            push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
+            push!(mesh, (x=i, y=j, volume=volume, block_id=block_id))
         elseif direction == "Y"
-            push!(mesh, (x=j, y=i, z=k, volume=volume, block_id=block_id))
+            push!(mesh, (x=j, y=i, volume=volume, block_id=block_id))
         end
         append!(node_sets["Extruded_1"], [Int64(id)])
         id += 1
@@ -636,11 +649,11 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
 
     block_id += 1
 
-    for i in coord_min-step:-step:coord_min-step*number, j in row_min:step:row_max+step, k in min_z:step:max_z+step
+    for i in coord_min-step:-step:coord_min-step*number, j in row_min:step:row_max+step#, k in min_z:step:max_z+step
         if direction == "X"
-            push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
+            push!(mesh, (x=i, y=j, volume=volume, block_id=block_id))
         elseif direction == "Y"
-            push!(mesh, (x=j, y=i, z=k, volume=volume, block_id=block_id))
+            push!(mesh, (x=j, y=i, volume=volume, block_id=block_id))
         end
         append!(node_sets["Extruded_2"], [Int64(id)])
         id += 1
