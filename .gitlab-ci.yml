@@ -64,10 +64,10 @@ deploy:
   only:
     - tags
   script:
-    - docker build -t perihub/perilab .
-    - docker push perihub/perilab
-    - docker tag perihub/perilab perihub/perilab:${CI_COMMIT_TAG}
+    - docker build -t perihub/perilab:${CI_COMMIT_TAG} .
     - docker push perihub/perilab:${CI_COMMIT_TAG}
+    - docker tag perihub/perilab:${CI_COMMIT_TAG} perihub/perilab:latest
+    - docker push perihub/perilab:latest
 
 release:
   stage: deploy
