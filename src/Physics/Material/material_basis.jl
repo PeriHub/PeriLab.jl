@@ -206,7 +206,6 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::SubArray`: The force densities.
 """
-
 function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, nlist_filtered_ids::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, displacements::SubArray, bond_norm::SubArray, force_densities::SubArray)
 
     for iID in nodes
@@ -229,7 +228,21 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
     return force_densities
 end
 
+"""
+    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
 
+Distribute the forces on the nodes
+
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nlist::SubArray`: The neighbor list.
+- `bond_force::SubArray`: The bond forces.
+- `volume::SubArray`: The volumes.
+- `bond_damage::SubArray`: The bond damage.
+- `force_densities::SubArray`: The force densities.
+# Returns
+- `force_densities::SubArray`: The force densities.
+"""
 function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
     for iID in nodes
         force_densities[iID, :] += transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[nlist[iID][:]], dims=1))

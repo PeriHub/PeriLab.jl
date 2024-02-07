@@ -528,6 +528,16 @@ function read_mesh(filename::String, params::Dict)
 
 end
 
+"""
+    area_of_polygon(vertices)
+
+Calculate the area of a polygon.
+
+# Arguments
+- `vertices`: The vertices of the polygon.
+# Returns
+- `area`: The area of the polygon.
+"""
 function area_of_polygon(vertices)
     n = length(vertices)
     area = 0.0

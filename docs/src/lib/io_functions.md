@@ -48,6 +48,7 @@ define_nsets
 distribution_to_cores
 check_mesh_elements
 read_mesh
+area_of_polygon
 set_dof
 load_and_evaluate_mesh
 create_neighborhoodlist
