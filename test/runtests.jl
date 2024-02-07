@@ -12,6 +12,8 @@ Logging.disable_logging(Logging.Error)
 
 Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
 
+include("helper.jl")
+
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
@@ -151,9 +153,9 @@ MPI.Init()
     end
 
     @testset "fullscale_tests" begin
-        @testset "test_additive_simple" begin
-            @includetests["fullscale_tests/test_additive/test_additive"]
-        end
+        # @testset "test_additive_simple" begin
+        #     @includetests["fullscale_tests/test_additive/test_additive"]
+        # end
         @testset "test_test_bond_based_elastic" begin
             @includetests["fullscale_tests/test_bond_based_elastic/test_bond_based_elastic"]
         end

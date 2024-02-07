@@ -6,7 +6,7 @@ import MPI
 using Test
 using JSON3
 using TimerOutputs
-include("../../helper.jl")
+
 include("../../../src/MPI_communication/MPI_communication.jl")
 include("../../../src/Physics/Material/BondBased/Bondbased_Elastic.jl")
 
