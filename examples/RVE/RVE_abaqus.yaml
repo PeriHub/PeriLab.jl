@@ -31,7 +31,7 @@ PeriLab:
         Poisson's Ratio: 0.34
     Damage Models:
       Damage:
-        Critical Value: 0.01
+        Critical Value: 0.001
         Damage Model: Critical Stretch
   Blocks:
     block_1:
@@ -276,52 +276,12 @@ PeriLab:
       Type: Displacements
       Node Set: Extruded_1
       Coordinate: x
-      Value: 0.000833333*t
+      Value: 833.333*t
     Displacement-2:
       Type: Displacements
       Node Set: Extruded_2
       Coordinate: x
       Value: 0.0
-    # Displacement-2:
-    #   Type: Displacements
-    #   Node Set: nset_Edge_yrot2
-    #   Coordinate: x
-    #   Value: -1000.0*t
-    # Displacement-3:
-    #   Type: Displacements
-    #   Node Set: nset_Edge_yrot3
-    #   Coordinate: x
-    #   Value: 1000.0*t
-    # Displacement-4:
-    #   Type: Displacements
-    #   Node Set: nset_Edge_yrot4
-    #   Coordinate: x
-    #   Value: 1000.0*t
-  #   Displacement-2-D-Y:
-  #     Type: Displacements
-  #     Node Set: nset_nset_NSET-BC_BOT
-  #     Coordinate: y
-  #     Value: 0.0
-  #   Displacement-3-D-Z:
-  #     Type: Displacements
-  #     Node Set: nset_nset_NSET-BC_BOT
-  #     Coordinate: z
-  #     Value: 0.0
-  #   Displacement-4-D-X:
-  #     Type: Displacements
-  #     Node Set: nset_nset_NSET-BC_TOP_SIDE
-  #     Coordinate: x
-  #     Value: 0.0
-  #   Displacement-5-D-Z:
-  #     Type: Displacements
-  #     Node Set: nset_nset_NSET-BC_TOP
-  #     Coordinate: z
-  #     Value: 0.0
-  #   Displacement-1-V-Y:
-  #     Type: Displacements
-  #     Node Set: nset_nset_NSET-BC_TOP
-  #     Coordinate: y
-  #     Value: 0.00833333*t
   Outputs:
     Output1:
       Output File Type: Exodus
@@ -337,6 +297,6 @@ PeriLab:
     Initial Time: 0.0
     Final Time: 1.0e-4
     Material Models: True
-    # Damage Models: True
+    Damage Models: True
     Verlet:
       Safety Factor: 1.0
