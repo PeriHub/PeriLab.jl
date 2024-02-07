@@ -408,18 +408,18 @@ function get_symmmetry(material::Dict)
 end
 
 """
-    get_von_mises_stress(stress::SubArray, dof::Int64)
+    get_von_mises_stress(stress::Matrix{Float64}, dof::Int64)
 
 # Arguments
-- `stress::SubArray`: Stress.
+- `stress::Matrix{Float64}`: Stress.
 - `dof::Int64`: Degree of freedom.
 # Returns
 - `von_Mises_stress::SubArray`: Von Mises stress.
 """
-function get_von_mises_stress(stress::SubArray, dof::Int64)
+function get_von_mises_stress(stress::Matrix{Float64}, dof::Int64)
 
-    spherical_stress = sum(stress[iID, i, i] for i in 1:dof) / 3
-    deviatoric_stress = stress[iID, :, :] - spherical_stress .* I(dof)
+    spherical_stress = sum(stress[i, i] for i in 1:dof) / 3
+    deviatoric_stress = stress[:, :] - spherical_stress .* I(dof)
 
     return sqrt(3.0 / 2.0 * sum(deviatoric_stress[:, :] .* deviatoric_stress[:, :]))
 end

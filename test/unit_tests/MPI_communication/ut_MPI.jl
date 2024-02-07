@@ -10,6 +10,12 @@ using TimerOutputs
 include("../../../src/MPI_communication/MPI_communication.jl")
 include("../../../src/Physics/Material/BondBased/Bondbased_Elastic.jl")
 
+
+function push_test!(dict::Dict, test::Bool, file::String, line::Int)
+    push!(dict["tests"], test)
+    push!(dict["line"], "$file:$line")
+end
+
 MPI.Init()
 
 const to = TimerOutput()

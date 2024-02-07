@@ -78,8 +78,3 @@ function check_test_json(cores)
         end
     end
 end
-
-function push_test!(dict::Dict, test::Bool, file::String, line::Int)
-    push!(dict["tests"], test)
-    push!(dict["line"], "$file:$line")
-end
