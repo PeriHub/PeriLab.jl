@@ -8,10 +8,13 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.5] - 2024-
+## [1.0.5] - 2024-02-07
 
 ### Added
 
+- Bond Filter Contact
+- Surface Extension
+- Von Mises Calculation
 - Basic FEM support (#137, #136, #135, #134, #132, #129, #128, #124, #123, #122)
 - Aqua test
 - Variable datafield input (#139)
@@ -21,6 +24,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Memory Leaks
 - Reimport warnings
 
 ### Changed
