@@ -111,11 +111,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
 
   sqrt23::Float64 = sqrt(2 / 3)
   for iID in nodes
-    #TODO: Move to material_basis
-    spherical_stress_NP1 = sum(stress_NP1[iID, i, i] for i in 1:dof) / 3
-    deviatoric_stress_NP1 = stress_NP1[iID, :, :] - spherical_stress_NP1 .* I(dof)
-
-    von_Mises_stress[iID] = sqrt(3.0 / 2.0 * sum(deviatoric_stress_NP1[:, :] .* deviatoric_stress_NP1[:, :]))
+    von_Mises_stress[iID] = get_von_mises_stress(stress_NP1, dof)
     reduced_yield_stress = yield_stress
 
     reduced_yield_stress = flaw_function(material_parameter, coordinates[iID, :], yield_stress)

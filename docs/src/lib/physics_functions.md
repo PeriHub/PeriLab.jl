@@ -58,6 +58,7 @@ Set_modules.Material_template.compute_forces
 determine_isotropic_parameter
 check_material_symmetry
 distribute_force_densities
+calculate_von_mises_stress
 get_all_elastic_moduli
 get_Hooke_matrix
 distribute_forces
@@ -65,6 +66,7 @@ matrix_to_voigt
 voigt_to_matrix
 check_symmetry
 get_symmmetry
+get_von_mises_stress
 Set_modules.PD_Solid_Elastic.elastic
 Set_modules.PD_Solid_Elastic.calculate_symmetry_params
 Set_modules.PD_Solid_Elastic.Ordinary.compute_weighted_volume

@@ -156,4 +156,25 @@ function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,V
     return datamanager
 end
 
+"""
+    calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+
+Calculate the von Mises stress.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
+function calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+    dof = datamanager.get_dof()
+    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
+    von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
+
+    for iID in nodes
+        von_Mises_stress[iID] = get_von_mises_stress(stress_NP1, dof)
+    end
+end
+
 end
