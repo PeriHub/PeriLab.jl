@@ -189,21 +189,25 @@ function get_Hooke_matrix(parameter, symmetry, dof)
 end
 
 """
-    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
+    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, nlist_filtered::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, displacements::SubArray, bond_norm::SubArray, force_densities::SubArray)
 
 Distribute the forces on the nodes
 
 # Arguments
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
 - `nlist::SubArray`: The neighbor list.
+- `nlist_filtered::SubArray`:  The filtered neighbor list.
 - `bond_force::SubArray`: The bond forces.
 - `volume::SubArray`: The volumes.
 - `bond_damage::SubArray`: The bond damage.
+- `displacements::SubArray`: The displacements.
+- `bond_norm::SubArray`: The pre defined bond normal.
 - `force_densities::SubArray`: The force densities.
 # Returns
 - `force_densities::SubArray`: The force densities.
 """
-function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, nlist_filtered, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, bond_geometry::SubArray, deformed_bond_np1::SubArray, bond_norm::SubArray, force_densities::SubArray)
+
+function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, nlist_filtered::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, displacements::SubArray, bond_norm::SubArray, force_densities::SubArray)
 
     for iID in nodes
 
@@ -214,7 +218,7 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
             for neighborID in indices
                 #TODO calculation is not correct -> norm is equal for bond 12 and bond 21
                 # therefore it does not work;
-                if dot((deformed_bond_np1[iID][neighborID, 1:end-1] - bond_geometry[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]) < 0
+                if dot((displacements[iID, :] - displacements[neighborID, :]), bond_norm[iID][neighborID, :]) < 0
                     bond_mod[neighborID, :] .= 0
                 else
                     bond_mod[neighborID, :] = bond_norm[iID][neighborID, :]
@@ -229,6 +233,17 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
     end
     return force_densities
 end
+
+
+function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
+    for iID in nodes
+        force_densities[iID, :] += transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[nlist[iID][:]], dims=1))
+
+        force_densities[nlist[iID][:], :] .-= bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[iID]
+    end
+    return force_densities
+end
+
 
 """
     matrix_to_voigt(matrix)
