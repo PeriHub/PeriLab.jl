@@ -60,7 +60,6 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         nsets = send_value(comm, 0, nsets)
         nlist = send_value(comm, 0, nlist)
         nlist_filtered_ids = send_value(comm, 0, nlist_filtered_ids)
-        bond_norm = send_value(comm, 0, bond_norm)
         datamanager.set_overlap_map(overlap_map)
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
         num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"], Int64)
@@ -75,12 +74,8 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
         @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution, false)
 
-        # TODO in extra function
-        bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
-        if !isnothing(nlist_filtered_ids)
-            @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered_ids, distribution, true)
-            bond_norm_field .= bond_norm
-        end
+        create_and_distribute_bond_norm(comm, datamanager, nlist_filtered_ids, distribution, bond_norm, dof)
+
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
         datamanager.set_fem(fem_active)
@@ -98,6 +93,40 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
     return datamanager, params
 end
 
+"""
+    create_and_distribute_bond_norm(comm::MPI.Comm, datamanager::Module, nlist_filtered_ids::Vector{Vector{Int64}}, distribution::Vector{Int64}, bond_norm::Vector{Float64}, dof::Int64)
+
+Create and distribute the bond norm
+
+# Arguments
+- `comm::MPI.Comm`: MPI communicator
+- `datamanager::Module`: Data manager
+- `nlist_filtered_ids::Vector{Vector{Int64}}`: The filtered neighborhood list
+- `distribution::Vector{Int64}`: The distribution
+- `bond_norm::Vector{Float64}`: The bond norm
+- `dof::Int64`: The degree of freedom
+"""
+function create_and_distribute_bond_norm(comm::MPI.Comm, datamanager::Module, nlist_filtered_ids::Vector{Vector{Int64}}, distribution::Vector{Int64}, bond_norm::Vector{Float64}, dof::Int64)
+    bond_norm = send_value(comm, 0, bond_norm)
+    bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
+    if !isnothing(nlist_filtered_ids)
+        @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered_ids, distribution, true)
+        bond_norm_field .= bond_norm
+    end
+end
+
+"""
+    get_local_element_topology(datamanager::Module, topology::Vector{Vector{Int64}}, distribution::Vector{Int64})
+
+Get the local element topology
+
+# Arguments
+- `datamanager::Module`: The datamanager
+- `topology::Vector{Vector{Int64}}`: The topology
+- `distribution::Vector{Int64}`: The distribution
+# Returns
+- `datamanager::Module`: The datamanager
+"""
 function get_local_element_topology(datamanager::Module, topology::Vector{Vector{Int64}}, distribution::Vector{Int64})
     if length(topology[1]) == 0
         return datamanager
@@ -120,6 +149,7 @@ function get_local_element_topology(datamanager::Module, topology::Vector{Vector
     end
     return datamanager
 end
+
 """
     get_local_overlap_map()
 

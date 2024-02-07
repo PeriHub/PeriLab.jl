@@ -39,6 +39,8 @@ CurrentModule = PeriLab.IO
 ## Read_Mesh
 ```@docs
 init_data
+create_and_distribute_bond_norm
+get_local_element_topology
 get_local_overlap_map
 local_nodes_from_dict
 distribute_neighborhoodlist_to_cores
