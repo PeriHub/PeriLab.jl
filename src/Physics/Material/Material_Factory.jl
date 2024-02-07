@@ -57,12 +57,14 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     #TODO in extra function
     nlist = datamanager.get_nlist()
     nlist_filtered_ids = datamanager.get_filtered_nlist()
-    bond_norm = datamanager.get_field("Bond Norm")
-    bond_geometry = datamanager.get_field("Bond Geometry")
-    for iID in nodes
-        if !isnothing(nlist_filtered_ids) && length(nlist_filtered_ids[iID]) != 0
-            for neighborID in nlist_filtered_ids[iID]
-                bond_norm[iID][neighborID, :] .*= sign(dot((bond_geometry[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]))
+    if !isnothing(nlist_filtered_ids)
+        bond_norm = datamanager.get_field("Bond Norm")
+        bond_geometry = datamanager.get_field("Bond Geometry")
+        for iID in nodes
+            if length(nlist_filtered_ids[iID]) != 0
+                for neighborID in nlist_filtered_ids[iID]
+                    bond_norm[iID][neighborID, :] .*= sign(dot((bond_geometry[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]))
+                end
             end
         end
     end
@@ -170,11 +172,15 @@ Calculate the von Mises stress.
 function calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     dof = datamanager.get_dof()
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
+    if isnothing(stress_NP1)
+        return datamanager
+    end
     von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
 
     for iID in nodes
         von_Mises_stress[iID] = get_von_mises_stress(stress_NP1, dof)
     end
+    return datamanager
 end
 
 end
