@@ -95,9 +95,9 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
 
     for iID in nodes
         for j in 1:dof
-            deformed_bond[iID][:, j] -= temperature_NP1[iID] * alpha_mat[j, j] .* undeformed_bond[iID][:, j]
+            deformed_bond[iID][:, j] .-= temperature_NP1[iID] * alpha_mat[j, j] .* undeformed_bond[iID][:, j]
         end
-        deformed_bond[iID][:, end] -= sum(alpha_mat) / dof * temperature_NP1[iID] .* undeformed_bond[iID][:, end]
+        deformed_bond[iID][:, end] .-= sum(alpha_mat) / dof * temperature_NP1[iID] .* undeformed_bond[iID][:, end]
         if iID == 93
         end
     end
