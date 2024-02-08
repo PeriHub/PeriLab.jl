@@ -408,18 +408,22 @@ function get_symmmetry(material::Dict)
 end
 
 """
-    get_von_mises_stress(stress::Matrix{Float64}, dof::Int64)
+    get_von_mises_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
 
 # Arguments
-- `stress::Matrix{Float64}`: Stress.
+- `von_Mises_stress::Float64`: Von Mises stress
 - `dof::Int64`: Degree of freedom.
-# Returns
-- `von_Mises_stress::SubArray`: Von Mises stress.
+- `stress_NP1::Matrix{Float64}`: Stress.
+# returns
+- `spherical_stress_NP1::Float64`: Spherical stress
+- `deviatoric_stress_NP1::Matrix{Float64}`: Deviatoric stress
 """
-function get_von_mises_stress(stress::Matrix{Float64}, dof::Int64)
+function get_von_mises_stress!(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
 
-    spherical_stress = sum(stress[i, i] for i in 1:dof) / 3
-    deviatoric_stress = stress[:, :] - spherical_stress .* I(dof)
+    spherical_stress_NP1 = sum(stress_NP1[i, i] for i in 1:dof) / 3
+    deviatoric_stress_NP1 = stress_NP1[:, :] - spherical_stress_NP1 .* I(dof)
 
-    return sqrt(3.0 / 2.0 * sum(deviatoric_stress[:, :] .* deviatoric_stress[:, :]))
+    von_Mises_stress = sqrt(3.0 / 2.0 * sum(deviatoric_stress_NP1[:, :] .* deviatoric_stress_NP1[:, :]))
+
+    return von_Mises_stress, spherical_stress_NP1, deviatoric_stress_NP1
 end
