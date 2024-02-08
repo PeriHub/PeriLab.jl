@@ -171,7 +171,7 @@ Calculate the von Mises stress.
 """
 function calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     dof = datamanager.get_dof()
-    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
+    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1", false)
     if isnothing(stress_NP1)
         return datamanager
     end
