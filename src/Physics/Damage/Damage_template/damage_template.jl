@@ -79,4 +79,27 @@ function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArr
   @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
   return datamanager
 end
+
+
+"""
+    init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
+
+Inits the damage model. Should be used to init damage specific fields, etc.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `block::Int64`: Block number
+- `damage_parameter::Dict`: Damage parameter.
+- `block::Float64`: The current block.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+Example:
+```julia
+```
+"""
+function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
+
+  return datamanager
+end
 end
