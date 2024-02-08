@@ -418,7 +418,7 @@ end
 - `spherical_stress_NP1::Float64`: Spherical stress
 - `deviatoric_stress_NP1::Matrix{Float64}`: Deviatoric stress
 """
-function get_von_mises_stress!(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
+function get_von_mises_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
 
     spherical_stress_NP1 = sum(stress_NP1[i, i] for i in 1:dof) / 3
     deviatoric_stress_NP1 = stress_NP1[:, :] - spherical_stress_NP1 .* I(dof)

@@ -112,7 +112,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   sqrt23::Float64 = sqrt(2 / 3)
 
   for iID in nodes
-    von_Mises_stress[iID], spherical_stress_NP1, deviatoric_stress_NP1 = get_von_mises_stress!(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
+    von_Mises_stress[iID], spherical_stress_NP1, deviatoric_stress_NP1 = get_von_mises_stress(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
 
     reduced_yield_stress = yield_stress
 

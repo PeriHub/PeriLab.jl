@@ -177,7 +177,7 @@ function calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,V
     end
     von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
     for iID in nodes
-        get_von_mises_stress!(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
+        get_von_mises_stress(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
     end
     return datamanager
 end
