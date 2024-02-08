@@ -104,7 +104,13 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
 
         if options["Material Models"]
             if datamanager.check_property(block, "Material Model")
-                @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt, to)
+                model_param = datamanager.get_properties(block, "Material Model")
+                @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, model_param, time, dt, to)
+                #TODO: I think this needs to stay here as we need the active_nodes not the update_nodes
+                @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, active_nodes)
+                if haskey(model_param, "von Mises stresses") && model_param["von Mises stresses"]
+                    datamanager = Material.calculate_von_mises_stress(datamanager, active_nodes)
+                end
             end
         end
     end

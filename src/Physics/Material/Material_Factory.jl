@@ -97,10 +97,6 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         mod = datamanager.get_model_module(material_model)
         datamanager = mod.compute_forces(datamanager, nodes, model_param, time, dt, to)
     end
-    @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, nodes)
-    if haskey(model_param, "von Mises stresses") && model["von Mises stresses"]
-        datamanager = Material.calculate_von_mises_stress(datamanager, nodes)
-    end
     return datamanager
 end
 
