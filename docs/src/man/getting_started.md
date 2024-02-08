@@ -43,6 +43,10 @@ Run PeriLab with two processors:
 $ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" Dogbone.yaml -v
 ```
 
+## Training
+
+The training input is given under the examples folder. The documentation and a video will follow.
+
 ## Index
 ```@index
 Pages = ["gettin_started.md"]
