@@ -144,6 +144,7 @@ Entry point for the PeriLab application.
 This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 """
 function main()::Cint
+    atexit(() -> @warn "Cancelled PeriLab")
     parsed_args = parse_commandline()
     @debug "Parsed args:"
     for (arg, val) in parsed_args
