@@ -114,10 +114,11 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
             if recv_msg[1, 1] isa Bool
                 continue
             end
+            #TODO add dot operator, memory leak?
             if dof == 1
-                vector[overlapnodes[rank+1][jcore]["Controller"]] += recv_msg
+                vector[overlapnodes[rank+1][jcore]["Controller"]] .+= recv_msg
             else
-                vector[overlapnodes[rank+1][jcore]["Controller"], :] += recv_msg
+                vector[overlapnodes[rank+1][jcore]["Controller"], :] .+= recv_msg
             end
         end
     end

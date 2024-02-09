@@ -157,7 +157,7 @@ function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta,
         if any(deformed_bond[iID][:, end] .== 0)
             @error "Length of bond is zero due to its deformation."
         else
-            @inbounds bond_force[iID][:, 1:dof] = t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end][:]
+            @inbounds bond_force[iID][:, 1:dof] .= t .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end][:]
         end
         # Calculate bond force
         #Ordinary.project_bond_forces()

@@ -440,20 +440,22 @@ function get_field(name::String, throw_error::Bool=true)
     # view() to get SubArray references
     # https://docs.julialang.org/en/v1/base/arrays/#Views-(SubArrays-and-other-view-types)
     if name in get_all_field_keys()
-        if length(size(fields[field_types[name]][name])) > 1
+        field = fields[field_types[name]][name]
+
+        if length(size(field)) > 1
             if field_array_type[name]["Type"] == "Matrix"
                 field_dof = field_array_type[name]["Dof"]
-                return view(reshape(fields[field_types[name]][name], (:, field_dof, field_dof)), :, :, :)
+                return view(reshape(field, (:, field_dof, field_dof)), :, :, :)
             end
-            code::String = "view(fields[field_types[\"$name\"]][\"$name\"]" * join(repeat(", :", length(size(fields[field_types[name]][name])))) * ")"
+            code::String = "view(fields[field_types[\"$name\"]][\"$name\"]" * join(repeat(", :", length(size(field)))) * ")"
             return eval(Meta.parse(code))
-            #return view(fields[field_types[name]][name], :, :)
+            #return view(field, :, :)
         end
         if field_array_type[name]["Type"] == "Matrix"
             field_dof = field_array_type[name]["Dof"]
-            return view([reshape(field, (:, field_dof, field_dof)) for field in fields[field_types[name]][name]], :,)
+            return view([reshape(field, (:, field_dof, field_dof)) for field in field], :,)
         end
-        return view(fields[field_types[name]][name], :,)
+        return view(field, :,)
     end
     if throw_error
         @error "Field ''" * name * "'' does not exist. Check if it is initialized as constant."
