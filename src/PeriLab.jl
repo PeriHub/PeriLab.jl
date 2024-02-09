@@ -55,7 +55,7 @@ import .IO
 import .Solver
 # end
 
-PERILAB_VERSION = "1.0.5"
+PERILAB_VERSION = "1.0.6"
 
 export main
 
@@ -144,7 +144,7 @@ Entry point for the PeriLab application.
 This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 """
 function main()::Cint
-    atexit(() -> @warn "Cancelled PeriLab")
+    atexit(() -> @info "Finished PeriLab")
     parsed_args = parse_commandline()
     @debug "Parsed args:"
     for (arg, val) in parsed_args
@@ -266,7 +266,6 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         end
         MPI.Finalize()
     end
-    @info "Finished simulation"
     if verbose
         @info to
     end
