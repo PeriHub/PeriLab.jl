@@ -193,27 +193,25 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         rank = MPI.Comm_rank(comm)
         size = MPI.Comm_size(comm)
 
-        if !silent
-            Logging_module.init_logging(filename, debug, rank, size)
-            if rank == 0
+        Logging_module.init_logging(filename, debug, silent, rank, size)
+        if rank == 0
+            if !silent
                 print_banner()
-                @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
-                try
-                    dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))
-                    if dirty
-                        @warn git_info
-                    else
-                        @info git_info
-                    end
-                catch
-                    @warn "No current git info."
-                end
-                if size > 1
-                    @info "MPI: Running on " * string(size) * " processes"
-                end
             end
-        else
-            Logging.disable_logging(Logging.Error)
+            @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
+            try
+                dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))
+                if dirty
+                    @warn git_info
+                else
+                    @info git_info
+                end
+            catch
+                @warn "No current git info."
+            end
+            if size > 1
+                @info "MPI: Running on " * string(size) * " processes"
+            end
         end
 
         ################################
