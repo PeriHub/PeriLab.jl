@@ -14,6 +14,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Silent mode allows log file
+
+### Changed
+
+- get_field uses an initialized function, performance improvements
+- Allow older dependencies
+- Dockerfile
+
 ## [1.0.5] - 2024-02-07
 
 ### Added
