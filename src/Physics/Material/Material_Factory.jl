@@ -97,10 +97,6 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         mod = datamanager.get_model_module(material_model)
         datamanager = mod.compute_forces(datamanager, nodes, model_param, time, dt, to)
     end
-    @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, nodes)
-    if haskey(model_param, "von Mises stresses") && model["von Mises stresses"]
-        datamanager = Material.calculate_von_mises_stress(datamanager, nodes)
-    end
     return datamanager
 end
 
@@ -175,13 +171,13 @@ Calculate the von Mises stress.
 """
 function calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     dof = datamanager.get_dof()
-    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
+    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1", false)
     if isnothing(stress_NP1)
         return datamanager
     end
     von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
     for iID in nodes
-        get_von_mises_stress!(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
+        get_von_mises_stress(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
     end
     return datamanager
 end

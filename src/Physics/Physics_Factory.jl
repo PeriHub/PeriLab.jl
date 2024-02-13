@@ -66,9 +66,9 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         for block in eachindex(block_nodes)
             nodes = block_nodes[block]
 
-            active_nodes = nodes[find_active(active[nodes])]
+            active_nodes = view(nodes, find_active(active[nodes]))
             if fem_option
-                active_nodes = nodes[find_active(.~fe_nodes[active_nodes])]
+                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
             end
             if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
                 datamanager = Damage.set_bond_damage(datamanager, active_nodes)
@@ -78,21 +78,21 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         end
     end
     update_list = datamanager.get_field("Update List")
-    nodes::Vector{Int64} = []
-    active_nodes::Vector{Int64} = []
-    update_nodes::Vector{Int64} = []
+    # nodes::Vector{Int64} = []
+    # active_nodes::Vector{Int64} = []
+    # update_nodes::Vector{Int64} = []
     if fem_option
         nelements = datamanager.get_num_elements()
         # in future the FE analysis can be put into the block loop. Right now it is outside the block.
         datamanager = FEM.eval(datamanager, Vector{Int64}(1:nelements), datamanager.get_properties(1, "FEM"), time, dt)
     end
     for block in eachindex(block_nodes)
-        nodes = block_nodes[block]
-        active_index = find_active(active[nodes])
-        active_nodes = nodes[active_index]
-        update_nodes = view(nodes, find_updatable(active_index, update_list))
+        # nodes = block_nodes[block]
+        active_index = find_active(active[block_nodes[block]])
+        active_nodes = view(block_nodes[block], active_index)
+        update_nodes = view(block_nodes[block], find_updatable(active_index, update_list))
         if fem_option
-            update_nodes = nodes[find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
+            update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt, to)
 
@@ -104,7 +104,13 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
 
         if options["Material Models"]
             if datamanager.check_property(block, "Material Model")
-                @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, datamanager.get_properties(block, "Material Model"), time, dt, to)
+                model_param = datamanager.get_properties(block, "Material Model")
+                @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, model_param, time, dt, to)
+                #TODO: I think this needs to stay here as we need the active_nodes not the update_nodes
+                @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, active_nodes)
+                if haskey(model_param, "von Mises stresses") && model_param["von Mises stresses"]
+                    datamanager = Material.calculate_von_mises_stress(datamanager, active_nodes)
+                end
             end
         end
     end

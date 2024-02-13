@@ -54,17 +54,18 @@ function progress_filter(log_args)
 end
 
 """
-    init_logging(filename::String, debug::Bool, rank::Int64, size::Int64)
+    init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, size::Int64)
 
 Initialize the logging.
 
 # Arguments
 - `filename::String`: The filename.
 - `debug::Bool`: If debug is true.
+- `silent::Bool`: If silent is true.
 - `rank::Int64`: The rank.
 - `size::Int64`: The size.
 """
-function init_logging(filename::String, debug::Bool, rank::Int64, size::Int64)
+function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, size::Int64)
 
     logfilename = split(filename, ".")[1] * ".log"
 
@@ -83,6 +84,28 @@ function init_logging(filename::String, debug::Bool, rank::Int64, size::Int64)
             MinLevelLogger(file_logger, Logging.Debug),
         )
         global_logger(demux_logger)
+    elseif silent
+        file_logger = FormatLogger(logfilename; append=false) do io, args
+            if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
+                println(io, "[", args.level, "] ", args.message)
+            end
+        end
+        error_logger = FormatLogger(logfilename; append=false) do io, args
+            if args.level == Logging.Error
+                IO.close_result_files(result_files)
+                exit()
+            end
+        end
+        demux_logger = TeeLogger(
+            MinLevelLogger(file_logger, Logging.Info),
+            MinLevelLogger(error_logger, Logging.Info),
+        )
+
+        if rank == 0
+            global_logger(demux_logger)
+        else
+            Logging.disable_logging(Logging.Error)
+        end
     else
         file_logger = FormatLogger(logfilename; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]

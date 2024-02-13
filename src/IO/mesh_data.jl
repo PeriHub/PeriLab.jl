@@ -108,10 +108,10 @@ Create and distribute the bond norm
 - `bond_norm::Vector{Float64}`: The bond norm
 - `dof::Int64`: The degree of freedom
 """
-function create_and_distribute_bond_norm(comm::MPI.Comm, datamanager::Module, nlist_filtered_ids::Vector{Vector{Int64}}, distribution::Vector{Int64}, bond_norm::Vector{Float64}, dof::Int64)
+function create_and_distribute_bond_norm(comm::MPI.Comm, datamanager::Module, nlist_filtered_ids::Vector{Vector{Int64}}, distribution::Vector{Vector{Int64}}, bond_norm::Vector{Matrix{Float64}}, dof::Int64)
     bond_norm = send_value(comm, 0, bond_norm)
     bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
-    @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered_ids, distribution, true)
+    datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered_ids, distribution, true)
     bond_norm_field .= bond_norm
 end
 

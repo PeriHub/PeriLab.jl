@@ -211,7 +211,9 @@ function create_field(name::String, vartype::Type, dof::Tuple)
     end
     fields[vartype][name] = Array{vartype}(zeros(dof))
     field_types[name] = vartype
-    field_array_type[name] = Dict("Type" => "Field", "Dof" => dof)
+    code::String = "view(fields[$vartype][\"$name\"]" * join(repeat(", :", length(size(fields[vartype][name])))) * ")"
+    get_function() = eval(Meta.parse(code))
+    field_array_type[name] = Dict("Type" => "Field", "Dof" => dof, "get_function" => get_function())
     return get_field(name)
 end
 
@@ -267,6 +269,8 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
     global field_types
 
     field_dof = dof
+    get_function = nothing
+
     if !haskey(fields, vartype)
         fields[vartype] = Dict{String,Any}()
     end
@@ -282,8 +286,14 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
     if bondOrNode == "Node_Field"
         if dof == 1
             fields[vartype][name] = fill(vartype(default_value), nnodes)
+            get_function = () -> view(fields[vartype][name], :)
         else
             fields[vartype][name] = fill(vartype(default_value), nnodes, field_dof)
+            if VectorOrArray == "Matrix"
+                get_function = () -> view(reshape(fields[vartype][name], (:, dof, dof)), :, :, :)
+            else
+                get_function = () -> view(fields[vartype][name], :, :)
+            end
         end
     elseif bondOrNode == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
@@ -296,15 +306,20 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
             if dof == 1
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
                 fill!(fields[vartype][name][end], vartype(default_value))
+                get_function = () -> view(fields[vartype][name], :,)
             else
                 append!(fields[vartype][name], [Matrix{vartype}(undef, nBonds[i], field_dof)])
                 fill!(fields[vartype][name][end], vartype(default_value))
+                if VectorOrArray == "Matrix"
+                    get_function = () -> view([reshape(field, (:, dof, dof)) for field in fields[vartype][name]], :,)
+                else
+                    get_function = () -> view(fields[vartype][name], :, :)
+                end
             end
         end
     end
     field_types[name] = vartype
-    field_array_type[name] = Dict("Type" => VectorOrArray, "Dof" => dof)
-
+    field_array_type[name] = Dict("Type" => VectorOrArray, "Dof" => dof, "get_function" => get_function())
     return get_field(name)
 end
 """
@@ -433,27 +448,10 @@ Returns the field with the given name.
 - `field::Field`: The field with the given name.
 """
 function get_field(name::String, throw_error::Bool=true)
-    global fields
     global field_array_type
-    global field_types
 
-    # view() to get SubArray references
-    # https://docs.julialang.org/en/v1/base/arrays/#Views-(SubArrays-and-other-view-types)
     if name in get_all_field_keys()
-        if length(size(fields[field_types[name]][name])) > 1
-            if field_array_type[name]["Type"] == "Matrix"
-                field_dof = field_array_type[name]["Dof"]
-                return view(reshape(fields[field_types[name]][name], (:, field_dof, field_dof)), :, :, :)
-            end
-            code::String = "view(fields[field_types[\"$name\"]][\"$name\"]" * join(repeat(", :", length(size(fields[field_types[name]][name])))) * ")"
-            return eval(Meta.parse(code))
-            #return view(fields[field_types[name]][name], :, :)
-        end
-        if field_array_type[name]["Type"] == "Matrix"
-            field_dof = field_array_type[name]["Dof"]
-            return view([reshape(field, (:, field_dof, field_dof)) for field in fields[field_types[name]][name]], :,)
-        end
-        return view(fields[field_types[name]][name], :,)
+        return field_array_type[name]["get_function"]
     end
     if throw_error
         @error "Field ''" * name * "'' does not exist. Check if it is initialized as constant."

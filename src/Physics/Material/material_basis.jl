@@ -220,7 +220,7 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
             end
         end
 
-        force_densities[iID, :] += transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* bond_mod .* volume[nlist[iID][:]], dims=1))
+        force_densities[iID, :] .+= transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* bond_mod .* volume[nlist[iID][:]], dims=1))
 
         # force_densities[nlist[iID][:], :][:] .-= bond_damage[iID][:] .* bond_force[iID][:] .* bond_mod[:] .* volume[iID]
         force_densities[nlist[iID][:], :] .-= bond_damage[iID][:] .* bond_force[iID][:, :] .* bond_mod[:, :] .* volume[iID]
@@ -245,7 +245,7 @@ Distribute the forces on the nodes
 """
 function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
     for iID in nodes
-        force_densities[iID, :] += transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[nlist[iID][:]], dims=1))
+        force_densities[iID, :] .+= transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[nlist[iID][:]], dims=1))
 
         force_densities[nlist[iID][:], :] .-= bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[iID]
     end
@@ -418,7 +418,7 @@ end
 - `spherical_stress_NP1::Float64`: Spherical stress
 - `deviatoric_stress_NP1::Matrix{Float64}`: Deviatoric stress
 """
-function get_von_mises_stress!(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
+function get_von_mises_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
 
     spherical_stress_NP1 = sum(stress_NP1[i, i] for i in 1:dof) / 3
     deviatoric_stress_NP1 = stress_NP1[:, :] - spherical_stress_NP1 .* I(dof)

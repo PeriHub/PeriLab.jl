@@ -131,7 +131,7 @@ function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int
     H .= 0
     for (jID, neighborID) in enumerate(nlist[iID])
       temp_state = (temperature[neighborID] - temperature[iID]) * volume[neighborID] * bond_damage[iID][jID]
-      H += temp_state .* undeformed_bond[iID][jID, 1:dof]
+      H .+= temp_state .* undeformed_bond[iID][jID, 1:dof]
     end
     nablaT = Kinv[iID, :, :] * H
     # -> rotation must be included sometime #144

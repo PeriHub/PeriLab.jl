@@ -213,6 +213,7 @@ end
     test = test_Data_manager.create_constant_free_size_field("BMatrix", Float64, (2, 3))
     @test size(test) == (50, 3)
     test = test_Data_manager.create_constant_free_size_field("GN", Float64, (2, 3))
+    @info test
     @test size(test) == (5,)
     test = test_Data_manager.create_constant_node_field("BMatrix", Float64, 3)
     @test size(test) == (50, 3)
