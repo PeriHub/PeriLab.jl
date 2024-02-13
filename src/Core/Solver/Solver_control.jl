@@ -13,6 +13,7 @@ include("../../Support/helpers.jl")
 include("../../Physics/Physics_Factory.jl")
 include("../../Physics/Damage/Damage_Factory.jl")
 include("Verlet.jl")
+include("External_solver.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../../FEM/FEM_Factory.jl")
@@ -21,7 +22,11 @@ using .Physics
 using .Boundary_conditions: init_BCs
 using .Verlet
 using .FEM
+using .External_solver
 using TimerOutputs
+
+export init
+export solver
 
 """
     init(params::Dict, datamanager::Module)
@@ -59,11 +64,18 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     @timeit to "init_models" datamanager = Physics.init_models(params, datamanager, block_nodes, solver_options, to)
     @info "Init Boundary Conditions"
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
-
+    solver_options["Solver"] = get_solver_name(params)
     if get_solver_name(params) == "Verlet"
         @info "Init " * get_solver_name(params)
         @timeit to "init_solver" solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = Verlet.init_solver(params, datamanager, block_nodes, solver_options["Material Models"], solver_options["Thermal Models"])
+    elseif get_solver_name(params) == "External"
+        @info "Init " * get_solver_name(params)
+        @timeit to "init_solver" solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = External_solver.init_solver(params, datamanager, block_nodes, solver_options["Material Models"], solver_options["Thermal Models"])
+    else
+        @error get_solver_name(params) * " is no valid solver."
+        return nothing
     end
+
     if datamanager.fem_active()
         datamanager = FEM.init_FEM(params, datamanager)
     end
@@ -154,7 +166,11 @@ Runs the solver.
 """
 function solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Dict}, write_results, to, silent::Bool)
 
-    return Verlet.run_solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)
+    if solver_options["Solver"] == "External"
+        return External_solver.run_solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)
+    elseif solver_options["Solver"] == "Verlet"
+        return Verlet.run_solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)
+    end
 
 end
 
