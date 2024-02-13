@@ -4,15 +4,15 @@
 
 image: julia:latest
 
-stages:
-  - test
-  - benchmark
-  - deploy
-
 before_script:
   # workaround for https://github.com/JuliaDocs/Documenter.jl/issues/686
   - apt-get -qq update; apt-get -y install git jq bc
   - julia --project=@. -e "import Pkg; Pkg.build()"
+
+stages:
+  - test
+  - benchmark
+  - deploy
 
 main_test:
   stage: test
