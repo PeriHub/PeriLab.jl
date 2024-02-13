@@ -102,7 +102,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     projected_force::Vector{Float64} = zeros(Float64, dof)
 
     for iID in nodes
-        @views relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
+        relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
         if aniso_damage
             rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
         end
