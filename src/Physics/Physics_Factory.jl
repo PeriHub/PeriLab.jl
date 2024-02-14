@@ -114,7 +114,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             end
         end
     end
-
+    update_list .= true
     return datamanager
 
 end
