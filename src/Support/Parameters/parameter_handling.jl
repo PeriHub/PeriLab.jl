@@ -189,6 +189,9 @@ global expected_structure = Dict(
                             "Safety Factor" => [Union{Float64,Int64}, false],
                             "Fixed dt" => [Union{Float64,Int64}, false],
                             "Number of Steps" => [Int64, false]
+                        ), false],
+                    "External" => [Dict{Any,Any}(
+                            "Number of Steps" => [Int64, false]
                         ), false]
                 ), true],
         ), true]
