@@ -13,7 +13,6 @@ include("../../Support/helpers.jl")
 include("../../Physics/Physics_Factory.jl")
 include("../../Physics/Damage/Damage_Factory.jl")
 include("Verlet.jl")
-include("External_solver.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../../FEM/FEM_Factory.jl")
@@ -22,7 +21,6 @@ using .Physics
 using .Boundary_conditions: init_BCs
 using .Verlet
 using .FEM
-using .External_solver
 using TimerOutputs
 
 export init
@@ -68,9 +66,6 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     if get_solver_name(params) == "Verlet"
         @info "Init " * get_solver_name(params)
         @timeit to "init_solver" solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = Verlet.init_solver(params, datamanager, block_nodes, solver_options["Material Models"], solver_options["Thermal Models"])
-    elseif get_solver_name(params) == "External"
-        @info "Init " * get_solver_name(params)
-        @timeit to "init_solver" solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = External_solver.init_solver(params, datamanager, block_nodes, solver_options["Material Models"], solver_options["Thermal Models"])
     else
         @error get_solver_name(params) * " is no valid solver."
         return nothing
