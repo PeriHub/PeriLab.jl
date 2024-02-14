@@ -40,6 +40,8 @@ Explore the comprehensive [documentation](https://dlr-perihub.gitlab.io/PeriLab.
 
 - 🔧 **User specified Input/Output**: PeriLab provides flexible options for users to specify custom input and output files, enabling easy data manipulation and analysis.
 
+- 🧪 **Test Pipeline**: The PeriLab Source Code will be tested in a test pipeline to ensure its correctness and performance.
+
 ## Installation
 
 The `PeriLab`  package is available through the Julia package system and can be installed using the following commands:
