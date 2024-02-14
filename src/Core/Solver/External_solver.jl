@@ -156,7 +156,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     damage_init::Bool = false
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
-    nodes::Vector{Int64} = []
+    #nodes::Vector{Int64} = []
 
     for idt in iter
         # synch
@@ -166,15 +166,23 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         p = (datamanager, block_nodes, dt, step_time, solver_options, bcs, synchronise_field, to)
         tspan = (step_time, step_time + dt)
         #datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time + dt)
-        uNP1 = datamanager.get_field("Displacements", "NP1")
+
         vNP1 = datamanager.get_field("Velocity", "NP1")
         #TODO tolerance in solver options
-        prob = SecondOrderODEProblem(ode_interface, vN, uNP1, tspan, p)
-        res = DifferentialEquations.solve(prob, save_everystep=false)
-
+        datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time + dt)
+        uNP1 = datamanager.get_field("Displacements", "NP1")
+        prob = SecondOrderODEProblem(ode_interface, vNP1, uNP1, tspan, p)
+        # res = solve(prob, save_everystep=false)
+        #prob = BVProblem(ode_interface, compute_residual, uNP1, tspan, p)#, reltol=1e-2)
+        #Tsit5(), Vern7(), QNDF(), Rodas5(), TRBDF2(), KenCarp4()
+        res = solve(prob, DPRKN6(), save_everystep=false)
+        datamanager.switch_NP1_to_N()
+        #uNP1 .= res.u[end]
+        println()
         # the switch N to NP1 already happend in solve process
-        vNP1, uNP1 .= res.u[end]
 
+        #vNP1 = reshape(sol.u[end][1:nnodes*dof], (nnodes, dof))
+        uNP1 = reshape(sol.u[end][nnodes*dof+1:2*nnodes*dof], (nnodes, dof))
         @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, max_damage, outputs, datamanager)
 
         if datamanager.get_cancel()
@@ -203,8 +211,8 @@ function ode_interface(ddu, u, p, t)
     update_list = datamanager.get_field("Update List")
     uNP1 = datamanager.get_field("Displacements", "NP1")
     uNP1[:, :] = copy(u[:, :])
-    datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time + dt)
-    uNP1 = datamanager.get_field("Displacements", "NP1")
+    #datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time + dt)
+    #uNP1 = datamanager.get_field("Displacements", "NP1")
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     coor = datamanager.get_field("Coordinates")
     density = datamanager.get_field("Density")
@@ -218,10 +226,10 @@ function ode_interface(ddu, u, p, t)
     datamanager = Physics.compute_models(datamanager, block_nodes, dt, step_time, solver_options, synchronise_field, to)
     datamanager.synch_manager(synchronise_field, "download_from_cores")
     forces_density = datamanager.get_field("Force Densities", "NP1")
-    ddu .= forces_density[:, :] ./ density[:] # element wise
+    ddu .= copy(forces_density[:, :] ./ density[:]) # element wise
     # to avoid that forces accumulate during iteration
     #    forces_density .= 0
-    @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
+    #datamanager.switch_NP1_to_N()
     update_list .= true
 
     #println(t)
