@@ -54,9 +54,9 @@ This function may depend on the following functions:
 - `find_and_set_core_value_min` and `find_and_set_core_value_max`: Used to set core values in a distributed computing environment.
 """
 function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
-    @info "======================="
-    @info "==== Static Solver ===="
-    @info "======================="
+    @info "========================="
+    @info "==== External Solver ===="
+    @info "========================="
     initial_time = get_initial_time(params)
     final_time = get_final_time(params)
 
@@ -123,7 +123,7 @@ This function depends on various data fields and properties from the `datamanage
 5. Return the updated `result_files` vector.
 """
 function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Dict}, synchronise_field, write_results, to::TimerOutputs.TimerOutput, silent::Bool)
-    @info "Run Static Solver"
+    @info "Run External Solver"
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     volume = datamanager.get_field("Volume")
@@ -144,20 +144,19 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     end
 
     active = datamanager.get_field("Active")
-    update_list = datamanager.get_field("Update List")
-
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float64 = solver_options["Initial Time"]
     max_cancel_damage::Float64 = solver_options["Maximum Damage"]
     step_time::Float64 = 0
     numerical_damping::Float64 = solver_options["Numerical Damping"]
+    #solver_type = solver_options["Solver Type"]
     max_damage::Float64 = 0
     damage_init::Bool = false
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     #nodes::Vector{Int64} = []
-
+    @info "Step width dt: $dt"
     for idt in iter
         # synch
         #einfaches Beispiel bauen;
@@ -165,32 +164,27 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         # -> weniger Punkte
         p = (datamanager, block_nodes, dt, step_time, solver_options, bcs, synchronise_field, to)
         tspan = (step_time, step_time + dt)
-        #datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time + dt)
 
-        vNP1 = datamanager.get_field("Velocity", "NP1")
-        #TODO tolerance in solver options
         datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time + dt)
-        uNP1 = datamanager.get_field("Displacements", "NP1")
-        prob = SecondOrderODEProblem(ode_interface, vNP1, uNP1, tspan, p)
-        # res = solve(prob, save_everystep=false)
-        #prob = BVProblem(ode_interface, compute_residual, uNP1, tspan, p)#, reltol=1e-2)
-        #Tsit5(), Vern7(), QNDF(), Rodas5(), TRBDF2(), KenCarp4()
-        res = solve(prob, DPRKN6(), save_everystep=false)
-        datamanager.switch_NP1_to_N()
+        prob = ODEProblem(ode_interface, uNP1, tspan, p)
+
+        sol = solve(prob, save_everystep=false)
+        #datamanager.switch_NP1_to_N()
         #uNP1 .= res.u[end]
-        println()
+
         # the switch N to NP1 already happend in solve process
 
-        #vNP1 = reshape(sol.u[end][1:nnodes*dof], (nnodes, dof))
-        uNP1 = reshape(sol.u[end][nnodes*dof+1:2*nnodes*dof], (nnodes, dof))
+        #uNP1[:, :] .= reshape(sol.u[end][1:nnodes*dof], (nnodes, dof))
+        uNP1[:, :] .= sol.u[end]
+
         @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, max_damage, outputs, datamanager)
 
         if datamanager.get_cancel()
             set_multiline_postfix(iter, "Simulation canceled!")
             break
         end
-        #@timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
-        #update_list .= true
+        @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
+
         step_time += dt
         if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
             @info "Step: $idt / $(nsteps+1) [$step_time s]"
@@ -205,34 +199,29 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
 end
 
 
-function ode_interface(ddu, u, p, t)
+function ode_interface(ddu::Union{SubArray,Matrix{Float64}}, u::Union{SubArray,Matrix{Float64}}, p::Tuple, t::Float64)
     datamanager, block_nodes, dt, step_time, solver_options, bcs, synchronise_field, to = p
-    println(t)
-    update_list = datamanager.get_field("Update List")
+    #println(t)
+
     uNP1 = datamanager.get_field("Displacements", "NP1")
-    uNP1[:, :] = copy(u[:, :])
+    uNP1[:, :] .= u[:, :]
     #datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time + dt)
-    #uNP1 = datamanager.get_field("Displacements", "NP1")
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     coor = datamanager.get_field("Coordinates")
     density = datamanager.get_field("Density")
 
-    uNP1 = datamanager.get_field("Displacements", "NP1")
-
     deformed_coorNP1[:, :] = coor[:, :] + uNP1[:, :]
-
     datamanager.synch_manager(synchronise_field, "upload_to_cores")
-
     datamanager = Physics.compute_models(datamanager, block_nodes, dt, step_time, solver_options, synchronise_field, to)
     datamanager.synch_manager(synchronise_field, "download_from_cores")
     forces_density = datamanager.get_field("Force Densities", "NP1")
-    ddu .= copy(forces_density[:, :] ./ density[:]) # element wise
-    # to avoid that forces accumulate during iteration
-    #    forces_density .= 0
-    #datamanager.switch_NP1_to_N()
-    update_list .= true
 
-    #println(t)
+    ddu .= forces_density[:, :] ./ density[:] # element wise
+    check_inf_or_nan(forces_density, "Forces")
+    # to avoid that forces accumulate during iteration
+    forces_density .= 0
+    #datamanager.switch_NP1_to_N()
+
 end
 
 function compute_residual(residual, sol, po, t)
