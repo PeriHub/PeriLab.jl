@@ -15,19 +15,24 @@ RUN apt-get update \
     && apt-get install -yq build-essential openssh-server \
     && julia --project=@. -e 'import Pkg; Pkg.add(url="https://github.com/JTHesse/AbaqusReader.jl"); Pkg.add("PackageCompiler"); using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], incremental=true, force=true)'
 
-FROM alpine:latest as main
+#TODO: use alpine
+FROM julia:latest as main 
 
 WORKDIR /app
 
 # Create the destination directory
 RUN mkdir PeriLab
-COPY --from=build /env/build/* /app/PeriLab
+COPY --from=build /env/build /app/PeriLab
 
 # Move the build folder, set permissions, and delete the rest
 RUN chmod +x /app/PeriLab/bin/PeriLab \
     && chmod +x /app/PeriLab/bin/get_examples
 
 ENV PATH="/app/PeriLab/bin:${PATH}"
+
+# RUN apk update && apk add bash && apk add openssh
+RUN apt-get update && apt-get install -yq openssh-server
+
 # Allow mpirun as root, should only be used in container
 ENV OMPI_ALLOW_RUN_AS_ROOT 1
 ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM 1

@@ -40,6 +40,8 @@ Explore the comprehensive [documentation](https://dlr-perihub.gitlab.io/PeriLab.
 
 - 🔧 **User specified Input/Output**: PeriLab provides flexible options for users to specify custom input and output files, enabling easy data manipulation and analysis.
 
+- 🧪 **Test Pipeline**: The PeriLab Source Code will be tested in a test pipeline to ensure its correctness and performance.
+
 ## Installation
 
 The `PeriLab`  package is available through the Julia package system and can be installed using the following commands:
@@ -132,7 +134,25 @@ Feel free to contribute and help us make PeriLab even better! 🙌
 
 ## Contributing
 
-We welcome contributions in various forms, including bug reports, documentation improvements, feature suggestions, and more.
+We welcome contributions in various forms, including bug reports, documentation improvements, feature suggestions, and more. To get started, follow these steps and have a look at the [Contribution Guidelines](CONTRIBUTING.md):
+
+### Development
+1. **Clone the repository:**
+```sh
+git clone https://gitlab.com/dlr-perihub/PeriLab.jl
+cd PeriLab.jl
+```
+2. **Activate the environment and install dependencies:**
+```sh
+$ julia
+julia> ]
+pkg> activate .
+pkg> up
+```
+3. **Run the script:**
+```sh
+$ julia --project=. src/main.jl examples/DCB/DCBmodel.yaml
+```
 
 ## Questions
 For any questions or inquiries about PeriLab.jl, feel free to reach out to the authors via email.

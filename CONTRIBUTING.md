@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan
 SPDX-License-Identifier: BSD-3-Clause
 -->
 
-## Contributing
+# Contributing
 > If it is the first time that you contribute, please add yourself to the list
 > of contributors below.
 
@@ -16,6 +16,31 @@ If you want to provide a code change, please:
 * Develop the feature/patch.
 * Provide a merge request.
 
-## Authors
+## Contributors
+* Christian Willberg
+* Jan-Timo Hesse
+
+## Code conventions
+
+### Code style
+
+* Variables should be snake_case, f.e. `my_variable`.
+* Variables should clearly describe their purpose and function, f.e. `bond_forces` and not `b_f`.
+
+### Code quality
+
+* Add tests for new features.
+
+### Documentation
+
+* Add documentation for new features.
+
+## Code Review
+
+The following reviewers will review your pull request. The duration may vary depending on the size of the pull request.
+
+We are trying to keep the review process as short as possible.
+
+### Reviewers
 * Christian Willberg
 * Jan-Timo Hesse
