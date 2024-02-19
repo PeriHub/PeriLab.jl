@@ -11,7 +11,7 @@ using Reexport
 using .Data_manager
 using DataFrames
 
-@testset "ut_bondIntersectInfinitePlane_2d" begin
+@testset "ut_bond_intersect_infinite_plane_2d" begin
     data = zeros(Float64, 2, 6)
     data[1, 1] = 0
     data[2, 1] = -0.5
@@ -37,12 +37,12 @@ using DataFrames
     test_coor = [undef, [0.0, 0.0], undef, undef, [0.5, 0.0]]
     #first value not important
     for i in 2:5
-        intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, 1], data[:, i], lower_left_corner, normal)
+        intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, 1], data[:, i], lower_left_corner, normal)
         @test intersect_inf_plane == test_vals[i]
         @test x == test_coor[i]
     end
 
-    intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, 6], data[:, 5], lower_left_corner, normal)
+    intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, 6], data[:, 5], lower_left_corner, normal)
     @test intersect_inf_plane == false
     @test x == undef
 
@@ -52,7 +52,7 @@ using DataFrames
 
 
     for i in 2:5
-        intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, 1], data[:, i], lower_left_corner, normal)
+        intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, 1], data[:, i], lower_left_corner, normal)
         @test intersect_inf_plane == test_vals[i]
         @test x == test_coor[i]
     end
@@ -60,13 +60,13 @@ using DataFrames
     normal = [0.0, 1.0]
     #first value not important
     for i in 2:5
-        intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, 1], data[:, i], lower_left_corner, normal)
+        intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, 1], data[:, i], lower_left_corner, normal)
         @test intersect_inf_plane == test_vals[i]
         @test x == test_coor[i]
     end
 end
 
-@testset "ut_bondIntersectInfinitePlane_3d" begin
+@testset "ut_bond_intersect_infinite_plane_3d" begin
     data = zeros(Float64, 3, 6)
     data[1, 1] = 0
     data[2, 1] = -0.5
@@ -92,12 +92,12 @@ end
     test_coor = [undef, [0.0, 0.0, 0.0], undef, undef, [0.5, 0.0, 0.0]]
     #first value not important
     for i in 2:5
-        intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, 1], data[:, i], lower_left_corner, normal)
+        intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, 1], data[:, i], lower_left_corner, normal)
         @test intersect_inf_plane == test_vals[i]
         @test x == test_coor[i]
     end
 
-    intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, 6], data[:, 5], lower_left_corner, normal)
+    intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, 6], data[:, 5], lower_left_corner, normal)
     @test intersect_inf_plane == false
     @test x == undef
 
@@ -105,7 +105,7 @@ end
     normal = [0.0, -1.0, 0.0]
     #first value not important
     for i in 2:5
-        intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, 1], data[:, i], lower_left_corner, normal)
+        intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, 1], data[:, i], lower_left_corner, normal)
         @test intersect_inf_plane == test_vals[i]
         @test x == test_coor[i]
     end
@@ -113,7 +113,7 @@ end
     normal = [0.0, 1.0, 0.0]
     #first value not important
     for i in 2:5
-        intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, 1], data[:, i], lower_left_corner, normal)
+        intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, 1], data[:, i], lower_left_corner, normal)
         @test intersect_inf_plane == test_vals[i]
         @test x == test_coor[i]
     end
@@ -126,25 +126,25 @@ end
     side_length = 1.0
     bottom_length = 1.0
     x = [0.0, 1.0, 0.0]
-    bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+    bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
     @test bond_intersect == true
     x = [0.0, 0.0, 0.0]
-    bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+    bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
     @test bond_intersect == true
     x = [10.0, 0.0, 0.0]
-    bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+    bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
     @test bond_intersect == false
     x = [0.0, 0.0, 5.0]
-    bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+    bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
     @test bond_intersect == false
     x = [-0.2, 0.0, 0.0]
-    bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+    bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
     @test bond_intersect == false
     normal = [0.0, -1.0, 0.0]
-    bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+    bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
     @test bond_intersect == false
     normal = [0.0, -1.0, 0.0]
     bottom_unit_vector = [-1.0, 0.0, 0.0]
-    bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+    bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
     @test bond_intersect == true
 end
