@@ -1154,7 +1154,7 @@ function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vect
 end
 
 """
-    bondIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
+    bond_intersects_disc(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
 
 Check if a line segment intersects a disk.
 
@@ -1167,7 +1167,7 @@ Check if a line segment intersects a disk.
 # Returns
 - `Bool`: True if the line segment intersects the disk, False otherwise.
 """
-function bondIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
+function bond_intersects_disc(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
     numerator = dot((lower_left_corner - p0), normal)
     denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
@@ -1198,7 +1198,7 @@ function bondIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Ve
 end
 
 """
-    bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
+    bond_intersect_infinite_plane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
 
 Check if a line segment intersects an infinite plane.
 
@@ -1210,8 +1210,7 @@ Check if a line segment intersects an infinite plane.
 # Returns
 - `Bool`: True if the line segment intersects the plane, False otherwise.
 """
-function bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
-    numerator = dot((lower_left_corner - p0), normal)
+function bond_intersect_infinite_plane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
     denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane
@@ -1221,7 +1220,8 @@ function bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lo
         return false, undef
     end
     # The line intersects the plane
-    t = numerator / denominator
+
+    t = dot((lower_left_corner - p0), normal) / denominator
 
     # Determine if the line segment intersects the plane
     if 0.0 <= t <= 1.0
@@ -1232,7 +1232,7 @@ function bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lo
 end
 
 """
-    bondIntersectRectanglePlane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
+    bond_intersect_rectangle_plane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
 
 Check if a bond intersects a rectangle plane.
 
@@ -1246,24 +1246,19 @@ Check if a bond intersects a rectangle plane.
 # Returns
 - `Bool`: True if the point is inside the rectangle, False otherwise.
 """
-function bondIntersectRectanglePlane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
-    zero = TOLERANCE
-    one = 1.0 + zero
-
-    dr = x - lower_left_corner
-    bb = dot(dr, bottom_unit_vector)
-    if -zero < bb && bb / bottom_length < one
+function bond_intersect_rectangle_plane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
+    dr::Vector{Float64} = x - lower_left_corner
+    bb::Float64 = dot(dr, bottom_unit_vector)
+    if 0.0 <= bb && bb / bottom_length <= 1.0
         if length(normal) == 2
             return true
         end
         ua = cross(bottom_unit_vector, normal)
         aa = dot(dr, ua)
-
-        if -zero < aa && aa / side_length < one
+        if 0.0 <= aa && aa / side_length <= 1.0
             return true
         end
     end
-
     return false
 end
 
@@ -1365,7 +1360,7 @@ function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::
     for iID in 1:nnodes
         filter_flag[iID] = fill(true, length(nlist[iID]))
         for (jId, neighbor) in enumerate(nlist[iID])
-            filter_flag[iID][jId] = !bondIntersectsDisk(data[:, iID], data[:, neighbor], center, normal, filter["Radius"])
+            filter_flag[iID][jId] = !bond_intersects_disc(data[:, iID], data[:, neighbor], center, normal, filter["Radius"])
         end
     end
     return filter_flag, normal
@@ -1406,10 +1401,10 @@ function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::
     for iID in 1:nnodes
         filter_flag[iID] = fill(true, length(nlist[iID]))
         for (jID, neighborID) in enumerate(nlist[iID])
-            intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, iID], data[:, neighborID], lower_left_corner, normal)
+            intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, iID], data[:, neighborID], lower_left_corner, normal)
             bond_intersect = false
             if intersect_inf_plane
-                bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+                bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
             end
             filter_flag[iID][jID] = !(intersect_inf_plane && bond_intersect)
         end

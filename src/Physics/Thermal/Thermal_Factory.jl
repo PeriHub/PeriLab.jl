@@ -27,8 +27,6 @@ Compute the thermal model
 """
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
 
-    specifics = Dict{String,String}("Call Function" => "compute_thermal_model", "Name" => "thermal_model_name")
-
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models

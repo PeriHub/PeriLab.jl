@@ -330,7 +330,6 @@ This function depends on various data fields and properties from the `datamanage
 2. Perform Verlet integration over a specified number of time steps.
 3. Update data fields and properties based on the solver options.
 4. Write simulation results using the `write_results` function.
-5. Return the updated `result_files` vector.
 """
 function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Dict}, synchronise_field, write_results, to::TimerOutputs.TimerOutput, silent::Bool)
 
@@ -372,7 +371,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         damage = datamanager.get_damage("NP1")
     end
     active = datamanager.get_field("Active")
-    update_list = datamanager.get_field("Update List")
+
 
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
@@ -450,7 +449,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 break
             end
             @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
-            update_list .= true
+
             step_time += dt
             if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
                 @info "Step: $idt / $(nsteps+1) [$step_time s]"

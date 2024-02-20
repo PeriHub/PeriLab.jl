@@ -49,17 +49,17 @@ function find_active(active::Vector{Bool})
 end
 
 """
-    find_updatable(active::SubArray, update_list::SubArray)
+    find_updatable(active::Union{Vector{Int64},SubArray{Int64}, update_list::SubArray)
 
 Returns the indices of `active` that are true.
 
 # Arguments
-- `active::SubArray`: The vector to search in.
+- `active::Union{Vector{Int64},SubArray{Int64}`: The vector to search in.
 - `update_list::SubArray`: The vector to search in.
 # Returns
 - `indices::Vector`: The indices of `active` that are true.
 """
-function find_updatable(active::Vector{Int64}, update_list::SubArray)
+function find_updatable(active::Union{Vector{Int64},SubArray{Int64}}, update_list::SubArray)
     return [active[i] for i in eachindex(active) if update_list[i] == 1]
 end
 
