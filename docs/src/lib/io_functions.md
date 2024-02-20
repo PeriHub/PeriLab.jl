@@ -60,9 +60,9 @@ _init_overlap_map_
 create_overlap_map
 create_base_chunk
 neighbors
-bondIntersectsDisk
-bondIntersectInfinitePlane
-bondIntersectRectanglePlane
+bond_intersects_disc
+bond_intersect_infinite_plane
+bond_intersect_rectangle_plane
 apply_bond_filters
 disk_filter
 rectangular_plane_filter
