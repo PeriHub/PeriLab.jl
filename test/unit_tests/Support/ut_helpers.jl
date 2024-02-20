@@ -38,6 +38,9 @@ end
     @test isempty(Helpers.find_active([false, false, false]))
     # Test case 4: Mix of active and inactive elements
     @test Helpers.find_active([false, true, false, true, true]) == [2, 4, 5]
+    # Test case 5: SubList of active and inactive elements
+    list = [false, true, false, true, true]
+    @test Helpers.find_active(list[[2, 3, 5]]) == [1, 3]
 end
 
 @testset "ut_find_inverse_bond_id" begin
