@@ -72,14 +72,13 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   undeformed_bond = datamanager.get_field("Bond Geometry")
   volume = datamanager.get_field("Volume")
   temperature = datamanager.get_field("Temperature", "NP1")
-  if !haskey(thermal_parameter, "Thermal Conductivity")
-    @error "Thermal Conductivity not defined."
-    return nothing
-  end
   lambda = thermal_parameter["Thermal Conductivity"]
   apply_print_bed = false
+
   t_bed = 0.0
   lambda_bed = 0.0
+  print_bed = nothing
+
   if haskey(thermal_parameter, "Print Bed Temperature")
     if dof < 3
       @error "Print bed temperature can only be defined for 3D problems"
@@ -87,14 +86,21 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     apply_print_bed = true
     t_bed = thermal_parameter["Print Bed Temperature"]
     lambda_bed = thermal_parameter["Thermal Conductivity Print Bed"]
+    print_bed = datamanager.get_field("Print_bed")
   end
+
+  if !haskey(thermal_parameter, "Thermal Conductivity")
+    @error "Thermal Conductivity not defined."
+    return nothing
+  end
+  lambda = thermal_parameter["Thermal Conductivity"]
 
   if thermal_parameter["Type"] == "Bond based"
     horizon = datamanager.get_field("Horizon")
     if length(lambda) > 1
       lambda = lambda[1]
     end
-    heat_flow = compute_heat_flow_state_bond_based(nodes, dof, nlist, lambda, apply_print_bed, t_bed, lambda_bed, coordinates, bond_damage, undeformed_bond, horizon, temperature, volume, heat_flow)
+    heat_flow = compute_heat_flow_state_bond_based(nodes, dof, nlist, lambda, apply_print_bed, t_bed, lambda_bed, print_bed, coordinates, bond_damage, undeformed_bond, horizon, temperature, volume, heat_flow)
     return datamanager
 
   elseif thermal_parameter["Type"] == "Correspondence"
@@ -174,30 +180,20 @@ Calculate heat flow based on a bond-based model for thermal analysis.
 This function calculates the heat flow between neighboring nodes based on a bond-based model for thermal analysis [OterkusS2014b](@cite). It considers various parameters, including thermal conductivity, damage state of bonds, geometry of bonds, horizons, temperature, and volume. The calculated bond heat flow values are stored in the `heat_flow` array.
 
 """
-function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Float64,Int64}, apply_print_bed::Bool, t_bed::Float64, lambda_bed::Float64, coordinates::SubArray, bond_damage::SubArray, undeformed_bond::SubArray, horizon::SubArray, temperature::SubArray, volume::SubArray, heat_flow::SubArray)
+function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Float64,Int64}, apply_print_bed::Bool, t_bed::Float64, lambda_bed::Float64, print_bed, coordinates::SubArray, bond_damage::SubArray, undeformed_bond::SubArray, horizon::SubArray, temperature::SubArray, volume::SubArray, heat_flow::SubArray)
   kernel::Float64 = 0.0
   for iID in nodes
     if dof == 2
-      kernel = 6.0 / (pi * horizon[iID] * horizon[iID] * horizon[iID])
+      kernel = 6.0 / (pi * horizon[iID]^3)
     else
-      kernel = 6.0 / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
+      kernel = 6.0 / (pi * horizon[iID]^4)
     end
 
+    if apply_print_bed && print_bed[iID] != 0
+      temp_state = t_bed - temperature[iID]
+      heat_flow[iID] -= lambda_bed * temp_state * 3
+    end
     for (jID, neighborID) in enumerate(nlist[iID])
-      if apply_print_bed
-        # check if node is near print bed and if the mirror neighbor is in a higher layer
-        if coordinates[iID, 3] < horizon[iID] && undeformed_bond[iID][jID, 3] > 0
-          # check if mirrored neighbor would be lower z=0
-          if coordinates[iID, 3] - undeformed_bond[iID][jID, 3] <= 0
-            temp_state = t_bed - temperature[iID]
-            if coordinates[iID, 3] == 0.0
-              heat_flow[iID] += lambda_bed * kernel * temp_state / undeformed_bond[iID][jID, end]
-            else
-              heat_flow[iID] += lambda_bed * kernel * temp_state / coordinates[iID, 3]
-            end
-          end
-        end
-      end
       if bond_damage[iID][jID] == 0
         continue
       end

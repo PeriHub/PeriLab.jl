@@ -86,7 +86,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     elseif dof == 3
       dx = volume[iID]^(1 / 3)
     end
-    # tbd optimize logic @hess_jt
+    #TODO: optimize logic @hess_jt
     if surface_nodes[iID] && specific_volume[iID] > 1.0 # could be more as sometimes specific_volume is sometimes weird
       heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx * specific_volume[iID]
     end
