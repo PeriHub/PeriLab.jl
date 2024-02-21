@@ -165,6 +165,9 @@ MPI.Init()
         @testset "test_BCs" begin
             @includetests["fullscale_tests/test_BCs/test_BCs"]
         end
+        @testset "test_contact" begin
+            @includetests["fullscale_tests/test_contact/test_contact"]
+        end
         @testset "test_PD_Solid_Elastic" begin
             @includetests["fullscale_tests/test_PD_solid_elastic/test_PD_solid_elastic"]
         end
