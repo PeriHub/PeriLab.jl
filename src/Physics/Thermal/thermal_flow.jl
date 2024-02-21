@@ -4,6 +4,7 @@
 
 module Thermal_Flow
 using LinearAlgebra
+using StaticArrays
 export compute_thermal_model
 export thermal_model_name
 export init_thermal_model
@@ -105,7 +106,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
 
   elseif thermal_parameter["Type"] == "Correspondence"
 
-    lambda_matrix = zeros(Float64, dof, dof)
+    lambda_matrix = @SMatrix zeros(Float64, dof, dof)
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     if length(lambda) == 1
       for i in 1:dof
@@ -131,8 +132,8 @@ is a prototype with some errors
 """
 function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Matrix{Float64}, bond_damage::SubArray, undeformed_bond::SubArray, Kinv::SubArray, temperature::SubArray, volume::SubArray, heat_flow::SubArray)
 
-  nablaT = zeros(Float64, dof)
-  H = zeros(Float64, dof)
+  nablaT = @SVector zeros(Float64, dof)
+  H = @SVector zeros(Float64, dof)
   for iID in nodes
     H .= 0
     for (jID, neighborID) in enumerate(nlist[iID])
