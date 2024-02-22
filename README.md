@@ -186,5 +186,5 @@ through the following grant ''Gekoppelte Peridynamik-Finite-Elemente-Simulatione
 This measure is co-financed with tax funds on the basis of the budget passed by the [Saxon state parlament](https://www.landtag.sachsen.de/de). <br/><br/>Grant number: [3028223](https://www.m-era.net/materipedia/2020/emma).
 
 [Federal Ministry for Economic Affairs and Climate Action](https://www.bmwk.de/Navigation/DE/Home/home.html) funded project 
-''Virtuelle Kennwertermittlung, Schadensprädiktion und Simulationsmethoden für geklebte Fügestellen eines LH2-Tanks in Faserverbundbauweise für die kommerzielle Luftfahrt''.<br/><br/>
+''Virtuelle Kennwertermittlung, Schadensprädiktion und Simulationsmethoden für geklebte Fügestellen eines LH2-Tanks in Faserverbundbauweise für die kommerzielle Luftfahrt (HYTANK)''.<br/><br/>
 Grant number: 20W2214G.
