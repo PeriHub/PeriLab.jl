@@ -35,12 +35,12 @@ PeriLab:
       Coordinate: y
       Node Set: Node Set 1
       Type: Displacements
-      Value: 4.4*t
+      Value: -4.4*t
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
       Type: Displacements
-      Value: -4.4*t
+      Value: 4.4*t
     BC_3:
       Type: "Temperature"
       Node Set: "Node Set 3"
@@ -77,6 +77,7 @@ PeriLab:
         Normal Z: 0.0
         Side Length: 2.0
         Type: Rectangular_Plane
+        Allow Contact: True
   Outputs:
     Output1:
       Number of Output Steps: 100
@@ -96,7 +97,7 @@ PeriLab:
       Damage:
         Damage Model: Critical Energy
         Critical Value: 0.0035714285714285716
-        Temperature dependend: "crictical_energy_temperature_depended.txt"
+        #Temperature dependend: "crictical_energy_temperature_depended.txt"
     Thermal Models:
       Temp:
         Thermal Model: "Thermal Flow"
