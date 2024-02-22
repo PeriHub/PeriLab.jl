@@ -6,6 +6,7 @@ module PD_Solid_Elastic
 include("../material_basis.jl")
 include("./Ordinary/Ordinary.jl")
 using TimerOutputs
+using StaticArrays
 import .Ordinary
 export fe_support
 export init_material_model
@@ -142,7 +143,7 @@ function elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta,
     kappa::Float64 = 0
     gamma::Float64 = 0
     alpha::Float64 = 0
-    deviatoric_deformation = zeros(Float64, dof)
+    deviatoric_deformation = @SVector zeros(Float64, dof)
 
     alpha, gamma, kappa = calculate_symmetry_params(symmetry, shear_modulus, bulk_modulus)
 

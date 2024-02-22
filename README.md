@@ -82,6 +82,8 @@ Run PeriLab with two processors:
 $ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" examples/DCB/DCBmodel.yaml -v
 ```
 
+>Note: For HPC configurations please refer to [here](https://juliaparallel.org/MPI.jl/stable/configuration/#configure_jll_binarys).
+
 ## Installing with Docker 🐳
 
  To install PeriLab using the official Perihub/Perilab Docker image, follow these steps:

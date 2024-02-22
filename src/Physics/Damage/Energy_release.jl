@@ -10,6 +10,7 @@ using .Material
 using .Geometry
 using .Pre_calculation
 using LinearAlgebra
+using StaticArrays
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
@@ -95,11 +96,11 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     bond_energy::Float64 = 0.0
     norm_displacement::Float64 = 0.0
-    x_vector::Vector{Float64} = zeros(Float64, dof)
+    x_vector::Vector{Float64} = @SVector zeros(Float64, dof)
     x_vector[1] = 1.0
 
-    neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
-    projected_force::Vector{Float64} = zeros(Float64, dof)
+    neighbor_bond_force::Vector{Float64} = @SVector zeros(Float64, dof)
+    projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
     for iID in nodes
         relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 using LinearAlgebra
+using StaticArrays
 using FastGaussQuadrature
 using Statistics
 include("../Physics/Material/material_basis.jl")
@@ -33,7 +34,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
     cauchy_stress = datamanager.get_field("Cauchy Stress", "NP1")
 
     B_matrix = datamanager.get_field("B Matrix")
-    stress_temp::Vector{Float64} = zeros(3 * dof - 3)
+    stress_temp = @MVector zeros(3 * dof - 3)
     le::Int64 = 0
     for id_el in elements
         topo = view(topology, id_el, :)

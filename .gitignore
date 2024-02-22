@@ -13,6 +13,7 @@ Manifest.toml
 *.out
 *.sbatch
 !**/Reference/*.e*
+LocalPreferences.toml
 
 test/tryout/
 examples/dev/

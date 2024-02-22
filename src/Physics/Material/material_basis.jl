@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 using LinearAlgebra
+using StaticArrays
+
 """
     get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
 
@@ -93,7 +95,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
     if occursin("anisotropic", symmetry)
-        anisoMatrix = zeros(Float64, 6, 6)
+        anisoMatrix = @MMatrix zeros(Float64, 6, 6)
         for iID in 1:6
             for jID in iID:6
                 if "C" * string(iID) * string(jID) in keys(parameter)
@@ -108,14 +110,14 @@ function get_Hooke_matrix(parameter, symmetry, dof)
         if dof == 3
             return anisoMatrix
         elseif occursin("plane strain", symmetry)
-            matrix = zeros(Float64, dof + 1, dof + 1)
+            matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
             matrix[1:2, 1:2] = anisoMatrix[1:2, 1:2]
             matrix[3, 1:2] = anisoMatrix[6, 1:2]
             matrix[1:2, 3] = anisoMatrix[1:2, 6]
             matrix[3, 3] = anisoMatrix[6, 6]
             return matrix
         elseif occursin("plane stress", symmetry)
-            matrix = zeros(Float64, dof + 1, dof + 1)
+            matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
             invAniso = inv(anisoMatrix)
             matrix[1:2, 1:2] = invAniso[1:2, 1:2]
             matrix[3, 1:2] = invAniso[6, 1:2]
@@ -134,7 +136,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
         temp = E / ((1 + nu) * (1 - 2 * nu))
 
         if dof == 3
-            matrix = zeros(Float64, 2 * dof, 2 * dof)
+            matrix = @MMatrix zeros(Float64, 2 * dof, 2 * dof)
             matrix[1, 1] = (1 - nu) * temp
             matrix[2, 2] = (1 - nu) * temp
             matrix[3, 3] = (1 - nu) * temp
@@ -149,7 +151,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[6, 6] = G
             return matrix
         elseif occursin("plane strain", symmetry)
-            matrix = zeros(Float64, dof + 1, dof + 1)
+            matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
             matrix[1, 1] = (1 - nu) * temp
             matrix[2, 2] = (1 - nu) * temp
             matrix[3, 3] = G
@@ -157,7 +159,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[2, 1] = nu * temp
             return matrix
         elseif occursin("plane stress", symmetry)
-            matrix = zeros(Float64, dof + 1, dof + 1)
+            matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
             matrix[1, 1] = E / (1 - nu * nu)
             matrix[1, 2] = E * nu / (1 - nu * nu)
             matrix[2, 1] = E * nu / (1 - nu * nu)
@@ -168,7 +170,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             @error "2D model defintion is missing; plain stress or plain strain "
         end
     else
-        matrix = zeros(Float64, dof + 1, dof + 1)
+        matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
         if haskey(parameter, "Poisson's Ratio") && haskey(parameter, "Young's Modulus")
             @warn "material model defintion is missing; assuming isotropic plain stress "
             nu = parameter["Poisson's Ratio"]
@@ -284,7 +286,7 @@ Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
 # Returns
 - `matrix::Matrix{Float64}`: The matrix.
 """
-function voigt_to_matrix(voigt::Union{Vector{Float64},Vector{Int64}})
+function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
     if length(voigt) == 3
         return [voigt[1] voigt[3]; voigt[3] voigt[2]]
     elseif length(voigt) == 6
