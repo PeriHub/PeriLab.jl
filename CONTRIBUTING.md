@@ -20,6 +20,18 @@ If you want to provide a code change, please:
 * Christian Willberg
 * Jan-Timo Hesse
 
+## What can I contribute?
+
+We are looking for different kind of contributions:
+
+* Requirements (e.g. system requirements, installation instructions, etc.)
+* Material models
+* Solver implementations
+* Performance improvements
+* Documentation
+* Testing (e.g. unit tests, integration tests, etc.)
+* Mesh wrapping
+
 ## Code conventions
 
 ### Code style

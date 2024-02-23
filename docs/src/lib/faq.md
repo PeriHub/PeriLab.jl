@@ -47,3 +47,7 @@ If you encounter technical issues, please create an issue and describe it in det
 ## Additional Assistance
 
 If your question is not addressed here, please feel free to [contact us](mailto:christian.willberg@dlr.de) or create an issue for further assistance.
+
+## Contributions
+
+Contributions are always welcomed, take a look at the [Contributing Guidelines](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/CONTRIBUTING.md)
