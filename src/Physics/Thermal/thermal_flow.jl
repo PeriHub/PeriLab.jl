@@ -132,8 +132,8 @@ is a prototype with some errors
 """
 function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Matrix{Float64},StaticArraysCore.MMatrix}, bond_damage::SubArray, undeformed_bond::SubArray, Kinv::SubArray, temperature::SubArray, volume::SubArray, heat_flow::SubArray)
 
-  nablaT = @SVector zeros(Float64, dof)
-  H = @SVector zeros(Float64, dof)
+  nablaT = @MVector zeros(Float64, dof)
+  H = @MVector zeros(Float64, dof)
   for iID in nodes
     H .= 0
     for (jID, neighborID) in enumerate(nlist[iID])
