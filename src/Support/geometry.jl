@@ -99,7 +99,7 @@ inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
 """
 function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
-    zero(shapeTensor)
+    shapeTensor .= 0
     for iID in nodes
         for i in 1:dof
             for j in 1:dof
@@ -159,7 +159,7 @@ deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 """
 function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, undeformed_bond::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
-    zero(deformation_gradient)
+    deformation_gradient .= 0
     for iID in nodes
         for i in 1:dof
             for j in 1:dof
