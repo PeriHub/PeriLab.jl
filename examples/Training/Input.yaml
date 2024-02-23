@@ -8,13 +8,14 @@ PeriLab:
       Node Set 1: 1 5 9
       Node Set 2: 4 8 12
     Type: "Text File"
-    Input Mesh File: "simpleMesh.txt"
+    Input Mesh File: "simpleMesh_add_2D_var.txt"
   Physics:
     Material Models:
       Aluminium:
-        Material Model: "Bond-based Elastic"
+        Material Model: annas model
         Bulk Modulus: 2.0e5
         Shear Modulus: 1.0e5
+        my new parameter: 20
         Symmetry: "isotropic plane stress"
         Zero Energy Control: "Global"
     Damage Models:
@@ -62,5 +63,6 @@ PeriLab:
         Volume: True
         Number of Neighbors: True
         Damage: True
-        Testvalues: True
+        Material field: True
+        myName: True
 

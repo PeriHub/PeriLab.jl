@@ -28,28 +28,56 @@ end
 
 @testset "ut_get_partial_stresses" begin
     test_Data_manager = Data_manager
-    test_Data_manager.set_dof(2)
+    test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(5)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 1
+    nn[2] = 2
+    nn[3] = 1
+    nn[4] = 2
+    nn[5] = 3
+
+    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist[1] = [2]
+    nlist[2] = [1, 3]
+    nlist[3] = [1]
+    nlist[4] = [1, 5]
+    nlist[5] = [1, 2, 4]
 
     test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    f = test_Data_manager.create_constant_bond_field("Bond Forces", Float64, 3)
-    bg = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 4)
+    bond_forcesN, bond_forcesNP1 = test_Data_manager.create_bond_field("Bond Forces", Float64, 3)
+    bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 4)
     test_Data_manager.create_node_field("Cauchy Stress", Float64, "Matrix", 3)
     volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
 
     volume[1:5] = 1:5
-    bg = ones(5, 4)
-    f = ones(5, 3)
-    nodes = Vector{Int64}(1:5)
+    for iID in 1:5
+        bond_geometry[iID][:, 1:end] .= 1
+        bond_geometry[iID][:, end] .= sqrt(3)
+        bond_forcesNP1[iID][:, :] .= 1
+    end
 
-    test_Data_manager = get_partial_stresses(test_Data_manager, nodes)
-    csNP1 = test_Data_manager.get_field("Cauchy Stress", "NP1")
-    # for iID in 1:5
-    #     for i in 1:2
-    #         for j in 1:2
-    #             @test csNP1[iID, i, j] == f[iID, i]
-    #         end
-    #     end
-    # end
-    # @test csNP1[1, 1, 1] == 1
+    test_Data_manager = get_partial_stresses(test_Data_manager)
+    stresses = test_Data_manager.get_field("Cauchy Stress", "NP1")
+
+
+    testval = zeros(5, 3, 3)
+    for iID in 1:5
+        for jID in eachindex(bond_forcesNP1[iID][:, 1])
+            for i in 1:3
+                for j in 1:3
+                    testval[iID, i, j] += bond_forcesNP1[iID][jID, i] * bond_geometry[iID][jID, j] * volume[iID]
+                end
+            end
+        end
+    end
+
+    for iID in 1:5
+        for i in 1:3
+            for j in 1:3
+                @test testval[iID, i, j] == stresses[iID, i, j]
+            end
+        end
+
+    end
 end
