@@ -1,0 +1,49 @@
+# PeriLab - Frequently Asked Questions (FAQ)
+
+## General Questions
+
+### What is PeriLab?
+
+PeriLab is a peridynamic simulation software designed for different kind of mechanical problems.
+
+## Installation and Setup
+
+### What are the system requirements for installing PeriLab?
+
+In order to install PeriLab, you will need to have a recent version of Julia or Docker installed on your system.
+
+### How do I update my PeriLab software?
+
+To update PeriLab you just need to run `julia -e "using Pkg; Pkg.update()"` or pull the latest version of the PeriLab Docker image.
+
+## Simulation and Analysis
+
+### How can I generate my own input mesh?
+
+There are multiple options to generate your own input mesh:
+
+1. Use the [Perihub](https://gitlab.com/dlr-perihub/Perihub.jl) to generate your own input mesh.
+
+2. Use an existing Abaqus Inputfile (.inp).
+
+3. Transfer your mesh using [meshio](https://github.com/nschloe/meshio)
+
+4. Create a feature issue and let us know what you need.
+
+### What to do with my results?
+
+First of all congratulations 🎉 on the success of your simulation. Now, you can take a look at your results. To do that, you can use [ParaView](https://www.paraview.org/) it's free and very powerful.
+
+### Can I customize parameters for my simulations in PeriLab?
+
+Yes, PeriLab allows users to customize various parameters to tailor simulations based on their specific requirements.
+
+## Troubleshooting
+
+### I'm experiencing technical issues with PeriLab. What should I do?
+
+If you encounter technical issues, please create an issue and describe it in detail.
+
+## Additional Assistance
+
+If your question is not addressed here, please feel free to [contact us](mailto:christian.willberg@dlr.de) or create an issue for further assistance.

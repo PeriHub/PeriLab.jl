@@ -38,5 +38,6 @@ makedocs(
         ],
         "References"=>"lib/references.md",
         "Dev Log"=>"devLog.md",
+        "FAQ"=>"lib/faq.md",
     ]
 )
