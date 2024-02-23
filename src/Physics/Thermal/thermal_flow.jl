@@ -106,7 +106,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
 
   elseif thermal_parameter["Type"] == "Correspondence"
 
-    lambda_matrix = @SMatrix zeros(Float64, dof, dof)
+    lambda_matrix = @MMatrix zeros(Float64, dof, dof)
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     if length(lambda) == 1
       for i in 1:dof

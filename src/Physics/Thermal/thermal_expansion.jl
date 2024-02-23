@@ -81,7 +81,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
 
     alpha = thermal_parameter["Thermal Expansion Coefficient"]
 
-    alpha_mat::Matrix{Float64} = @SMatrix zeros(Float64, dof, dof)
+    alpha_mat::Matrix{Float64} = @MMatrix zeros(Float64, dof, dof)
     if length(alpha) == 1
         alpha_mat = alpha .* I(dof)
     elseif length(alpha) == dof || length(alpha) == 3
