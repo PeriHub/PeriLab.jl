@@ -130,7 +130,7 @@ end
 [BrighentiR2021](@cite)
 is a prototype with some errors
 """
-function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Matrix{Float64}, bond_damage::SubArray, undeformed_bond::SubArray, Kinv::SubArray, temperature::SubArray, volume::SubArray, heat_flow::SubArray)
+function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Matrix{Float64},StaticArraysCore.MMatrix}, bond_damage::SubArray, undeformed_bond::SubArray, Kinv::SubArray, temperature::SubArray, volume::SubArray, heat_flow::SubArray)
 
   nablaT = @SVector zeros(Float64, dof)
   H = @SVector zeros(Float64, dof)
