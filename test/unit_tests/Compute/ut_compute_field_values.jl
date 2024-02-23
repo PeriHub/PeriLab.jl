@@ -11,17 +11,17 @@ include("../../../src/Compute/compute_field_values.jl")
 
     test_Data_manager.create_node_field("Forces", Float64, 3)
 
-    fdN, fdNP1 = test_Data_manager.create_node_field("Force Densities", Float64, 3)
+    force_densityN, force_densityNP1 = test_Data_manager.create_node_field("Force Densities", Float64, 3)
     volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
 
     volume[1:5] = 1:5
-    fdNP1 = rand(5, 3)
+    force_densityNP1 = rand(5, 3)
 
     test_Data_manager = get_forces_from_force_density(test_Data_manager)
     forces = test_Data_manager.get_field("Forces", "NP1")
     for i in 1:5
         for j in 1:3
-            @test forces[i, j] / (fdNP1[i, j] * volume[i]) - 1 < 1e-8
+            @test forces[i, j] / (force_densityNP1[i, j] * volume[i]) - 1 < 1e-8
         end
     end
 end

@@ -166,8 +166,9 @@ function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, 
                 deformation_gradient[iID, i, j] = sum(bond_damage[iID][:] .* deformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
             end
         end
+        deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]
     end
-    deformation_gradient *= inverse_shape_tensor
+
     return deformation_gradient
 end
 
