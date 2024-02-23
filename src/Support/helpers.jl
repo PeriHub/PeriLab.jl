@@ -141,7 +141,7 @@ CVoigt = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 dof = 3
 result = get_fourth_order(CVoigt, dof)
 """
-function get_fourth_order(CVoigt::Matrix{Float64}, dof::Int64)
+function get_fourth_order(CVoigt, dof::Int64)
     return fromvoigt(SymmetricTensor{4,dof}, CVoigt)
 end
 
