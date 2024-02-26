@@ -27,6 +27,33 @@ end
 
 
 """
+    calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
+
+Calculate the shear modulus, bulk modulus and three bulk modulus for the given symmetry.
+
+# Arguments
+- symmetry: symmetry of the material
+- shear_modulus: shear modulus
+- bulk_modulus: bulk modulus
+
+# Returns
+- alpha: alpha
+- gamma: gamma
+- kappa: kappa
+"""
+function calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
+    three_bulk_modulus = 3 * bulk_modulus
+    # from Peridigm damage model. to be checked with literature
+    if symmetry == "plane stress"
+        return 8 * shear_modulus, 4.0 * shear_modulus / (three_bulk_modulus + 4.0 * shear_modulus), 4.0 * bulk_modulus * shear_modulus / (three_bulk_modulus + 4.0 * shear_modulus)
+    elseif symmetry == "plane strain"
+        return 8 * shear_modulus, 2 / 3, (12.0 * bulk_modulus - 4.0 * shear_modulus) / 9
+    else
+        return 15 * shear_modulus, 1, 3 * bulk_modulus
+    end
+end
+
+"""
     compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::Vector{Float64}, omega::SubArray, theta::SubArray)
 
 Calculate the dilatation for each node.
