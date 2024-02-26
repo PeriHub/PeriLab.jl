@@ -124,7 +124,7 @@ end
 
 
 
-function compute_deviatoric_force_state_norm(nodes::nodes::Union{SubArray,Vector{Int64}}, nlist, alpha::Float64, bond_force_deviatoric::SubArray, bond_damage::SubArray, omega::SubArray, volume::SubArray, deviatoric_plastic_extension_state)
+function compute_deviatoric_force_state_norm(nodes::Union{SubArray,Vector{Int64}}, nlist, alpha::Float64, bond_force_deviatoric::SubArray, bond_damage::SubArray, omega::SubArray, volume::SubArray, deviatoric_plastic_extension_state)
   # not optimal allocation of memory, but not check of indices is needed
   norm = @MMatrix zeros(Float64, maximum(nodes))
   for iID in nodes
