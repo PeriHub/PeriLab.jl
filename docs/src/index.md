@@ -57,9 +57,4 @@ loading the PeriLab.jl package with `using PeriLab`) types and functions
 are considered a part of the public API of the PeriLab.jl package. In general
 all such objects are documented in this manual (in case some documentation is
 missing please kindly report an issue
-[here](https://github.com/JuliaData/PeriLab.jl/issues/new)).
-
-!!! note
-
-    Breaking changes to public and documented API are avoided in
-    PeriLab.jl where possible.
+[here](https://gitlab.com/dlr-perihub/PeriLab.jl/-/issues/new)).
