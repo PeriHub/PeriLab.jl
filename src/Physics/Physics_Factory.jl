@@ -233,19 +233,32 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Damage", Float64, 1)
     block_list = datamanager.get_block_list()
-    anistropic_damage = false
+    anisotropic_damage = false
+    correspondence = false
+    for block_id in block_list
+        if haskey(params["Blocks"]["block_$block_id"], "Material Model") && occursin("Correspondence", params["Blocks"]["block_$block_id"]["Material Model"])
+            correspondence = true
+        else
+            correspondence = false
+            break
+        end
+    end
     for block_id in block_list
         if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
             continue
         end
-        damageName = params["Blocks"]["block_$block_id"]["Damage Model"]
-        damage_parameter = params["Physics"]["Damage Models"][damageName]
-        anistropic_damage = haskey(damage_parameter, "Anisotropic Damage")
-        if anistropic_damage
+        damage_name = params["Blocks"]["block_$block_id"]["Damage Model"]
+        damage_parameter = params["Physics"]["Damage Models"][damage_name]
+        anisotropic_damage = haskey(damage_parameter, "Anisotropic Damage")
+        if anisotropic_damage
+            if !correspondence
+                @warn "Not all material models are of type correspondence. Bond based and PD solid are not supported by anisotropic damage"
+                anisotropic_damage = false
+            end
             break
         end
     end
-    if anistropic_damage
+    if anisotropic_damage
         datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
         datamanager.create_node_field("Damage Anisotropic", Float64, dof)
     end
