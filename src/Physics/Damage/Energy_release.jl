@@ -60,8 +60,13 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     update_list = datamanager.get_field("Update List")
     horizon = datamanager.get_field("Horizon")
     bond_damage = datamanager.get_bond_damage("NP1")
-    if haskey(damage_parameter, "Anisotropic Damage")
-        bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic")
+    aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
+    if aniso_damage
+        if "Bond Damage Anisotropic" in datamanager.get_all_field_keys()
+            bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic")
+        else
+            aniso_damage = false
+        end
     end
     undeformed_bond = datamanager.get_field("Bond Geometry")
     bond_forces = datamanager.get_field("Bond Forces")
@@ -87,7 +92,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     if inter_block_damage
         inter_critical_energy::Array{Float64,3} = datamanager.get_crit_values_matrix()
     end
-    aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
+
     if aniso_damage
         aniso_crit_values = datamanager.get_aniso_crit_values()
         bond_norm::Float64 = 0.0
