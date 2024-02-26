@@ -146,18 +146,18 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                     end
                     @views bond_norm = abs(rotated_bond[i]) / deformed_bond[iID][jID, end]
                     if bond_energy / quad_horizon[iID] * bond_norm > aniso_crit_values[block_ids[iID]][i]
-                        @inbounds bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct
+                        bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct
                         if bond_damage[iID][jID] < 0
                             bond_damage[iID][jID] = 0
                         end
                         bond_damage_aniso[iID][jID, i] = 0
-                        @inbounds update_list[iID] = true
+                        update_list[iID] = true
                     end
                 end
             else
                 if (bond_energy / quad_horizon[iID]) > crit_energy
-                    @inbounds bond_damage[iID][jID] = 0.0
-                    @inbounds update_list[iID] = true
+                    bond_damage[iID][jID] = 0.0
+                    update_list[iID] = true
                 end
             end
             if 1 < bond_damage[iID][jID] || bond_damage[iID][jID] < 0
