@@ -88,11 +88,14 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     end
     for block in eachindex(block_nodes)
         # nodes = block_nodes[block]
+        ##TODO as a function and unit testing!
         active_index::Vector{Int64} = []
         update_index::Vector{Int64} = []
         update_nodes::Vector{Int64} = []
         # find subarray index of the active nodes in block nodes
+
         active_index = find_active(active[block_nodes[block]])
+
         if active_index == []
             continue
         end
