@@ -6,8 +6,29 @@ module Ordinary
 
 export compute_dilatation
 export compute_weighted_volume
+export get_bond_forces
+export calculate_symmetry_params
 """
-taken from Peridigm -> but adding the bond_damage; this is missing in Peridigm, but should be there
+    compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, 
+                            nlist::SubArray, 
+                            undeformed_bond::SubArray, 
+                            bond_damage::SubArray, 
+                            omega::SubArray, 
+                            volume::SubArray)
+
+Compute the weighted volume for each node, [SillingSA2007](@cite). Taken from Peridigm -> but adding the bond_damage; this is missing in Peridigm, but should be there.
+
+
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: Vector of node indices or a subarray representing the indices of the nodes.
+- `nlist::SubArray`: Subarray representing the neighbor list for each node.
+- `undeformed_bond::SubArray`: Subarray representing the undeformed bonds.
+- `bond_damage::SubArray`: Subarray representing the bond damage.
+- `omega::SubArray`: Subarray representing the weights for each bond.
+- `volume::SubArray`: Subarray representing the volume for each node.
+
+# Returns
+- `weighted_volume::Vector{Float64}`: Vector containing the computed weighted volume for each node.
 """
 function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, omega::SubArray, volume::SubArray)
 
@@ -25,22 +46,52 @@ function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Su
     return weighted_volume
 end
 
+"""
+    get_bond_forces(nodes::Union{SubArray,Vector{Int64}}, 
+                    bond_force_length::Union{SubArray,Vector{Vector{Float64}}}, 
+                    deformed_bond::SubArray, 
+                    bond_force::SubArray)
+
+Calculate the forces on the bonds in a peridynamic material.
+
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: Vector of node indices or a subarray representing the indices of the nodes.
+- `bond_force_length::Union{SubArray,Vector{Vector{Float64}}}`: Vector of vectors or a subarray representing the desired lengths of the bonds for each node.
+- `deformed_bond::SubArray`: Subarray representing the deformed bonds.
+- `bond_force::SubArray`: Subarray representing the resulting forces on the bonds.
+
+# Returns
+- `bond_force::SubArray`: Subarray containing the resulting forces on the bonds.
+"""
+
+
+function get_bond_forces(nodes::Union{SubArray,Vector{Int64}}, bond_force_length::Union{SubArray,Vector{Vector{Float64}}}, deformed_bond::SubArray, bond_force::SubArray)
+    for iID in nodes
+        if any(deformed_bond[iID][:, end] .== 0)
+            @error "Length of bond is zero due to its deformation."
+        else
+            bond_force[iID][:, 1:end] .= bond_force_length[iID] .* deformed_bond[iID][:, 1:end-1] ./ deformed_bond[iID][:, end][:]
+        end
+    end
+    return bond_force
+end
 
 """
     calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
 
-Calculate the shear modulus, bulk modulus and three bulk modulus for the given symmetry.
+Calculate the symmetry parameters based on the given material symmetry. These parameters are defined in [BobaruF2016](@cite) Section 6.3, 6.3.1.1 and 6.3.1.2.
 
 # Arguments
-- symmetry: symmetry of the material
-- shear_modulus: shear modulus
-- bulk_modulus: bulk modulus
+- `symmetry::String`: Symmetry of the material.
+- `shear_modulus::Float64`: Shear modulus.
+- `bulk_modulus::Float64`: Bulk modulus.
 
 # Returns
-- alpha: alpha
-- gamma: gamma
-- kappa: kappa
+- `alpha::Float64`: Alpha parameter.
+- `gamma::Float64`: Gamma parameter.
+- `kappa::Float64`: Kappa parameter.
 """
+
 function calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
     three_bulk_modulus = 3 * bulk_modulus
     # from Peridigm damage model. to be checked with literature
@@ -56,7 +107,7 @@ end
 """
     compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::Vector{Float64}, omega::SubArray, theta::SubArray)
 
-Calculate the dilatation for each node.
+Calculate the dilatation for each node, [SillingSA2007](@cite).
 
 # Arguments
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
@@ -92,19 +143,4 @@ function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::Su
     end
     return theta
 end
-# function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::SubArray, nlist::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, omega::SubArray, theta::SubArray)
-#     # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
-#     @. begin
-#         if weighted_volume[nodes] == 0
-#             @warn "Weighted volume is zero for local point ID: $nodes"
-#             theta[nodes] = 0
-#         else
-#             theta[nodes] = 3.0 * sum(omega[nodes, :] .* bond_damage[nodes, :] .* undeformed_bond[nodes, :, end] .* (deformed_bond[nodes, :, end] - undeformed_bond[nodes, :, end]) .* volume[nlist[nodes, :]] / weighted_volume[nodes], dims=2)
-#         end
-#     end
-#     return theta
-# end
-
-
-
 end
