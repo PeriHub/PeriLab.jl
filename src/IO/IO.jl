@@ -332,7 +332,7 @@ Initialize write results.
 
 # Arguments
 - `params::Dict`: The parameters
-- `output_dir::String`: The directory of the input file.
+- `output_dir::String`: The output directory.
 - `path::String`: The path
 - `datamanager::Module`: The datamanager
 - `nsteps::Int64`: The number of steps
