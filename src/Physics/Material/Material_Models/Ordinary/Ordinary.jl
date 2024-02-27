@@ -39,7 +39,7 @@ function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Su
 
     for iID in nodes
         # in Peridigm the weighted volume is for some reason independend from damages
-        @inbounds weighted_volume[iID] = sum(omega[iID][:] .* bond_damage[iID][:] .* undeformed_bond[iID][:, end] .* undeformed_bond[iID][:, end] .* volume[nlist[iID][:]])
+        weighted_volume[iID] = sum(omega[iID][:] .* bond_damage[iID][:] .* undeformed_bond[iID][:, end] .* undeformed_bond[iID][:, end] .* volume[nlist[iID][:]])
 
     end
     # @. weighted_volume[nodes] = sum(omega[nodes][:] .* bond_damage[nodes][:] .* undeformed_bond[nodes][:, end] .* bond_damage[nodes][:] .* undeformed_bond[nodes][:, end] .* volume[nlist[nodes][:]], dims=2)
@@ -135,11 +135,11 @@ function compute_dilatation(nodes::Union{SubArray,Vector{Int64}}, nneighbors::Su
             theta[iID] = 0
             continue
         end
-        @inbounds theta[iID] = 3.0 * sum(omega[iID][jID] *
-                                         bond_damage[iID][jID] * undeformed_bond[iID][jID, end] *
-                                         (deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end]) *
-                                         volume[nlist[iID][jID]] / weighted_volume[iID]
-                                         for jID in 1:nneighbors[iID])
+        theta[iID] = 3.0 * sum(omega[iID][jID] *
+                               bond_damage[iID][jID] * undeformed_bond[iID][jID, end] *
+                               (deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end]) *
+                               volume[nlist[iID][jID]] / weighted_volume[iID]
+                               for jID in 1:nneighbors[iID])
     end
     return theta
 end
