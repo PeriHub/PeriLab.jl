@@ -49,7 +49,7 @@ function calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bul
     elseif symmetry == "plane strain"
         return 8 * shear_modulus, 2 / 3, (12.0 * bulk_modulus - 4.0 * shear_modulus) / 9
     else
-        return 15 * shear_modulus, 1, 3 * bulk_modulus
+        return 15 * shear_modulus, 1, three_bulk_modulus
     end
 end
 
