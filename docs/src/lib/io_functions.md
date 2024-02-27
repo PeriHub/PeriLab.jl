@@ -146,7 +146,6 @@ CurrentModule = PeriLab.Solver.Helpers
 ```@docs
 find_indices
 find_active
-find_updatable
 find_files_with_ending
 check_inf_or_nan
 matrix_style

@@ -189,14 +189,28 @@ function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}
     else
       kernel = 6.0 / (pi * horizon[iID]^4)
     end
-
-    if apply_print_bed && print_bed[iID] != 0
-      temp_state = t_bed - temperature[iID]
-      heat_flow[iID] -= lambda_bed * temp_state * 3
-    end
+    # if apply_print_bed && print_bed[iID] != 0
+    #   temp_state = t_bed - temperature[iID]
+    #   # heat_flow[iID] -= lambda_bed * temp_state * 3 * print_bed[iID]
+    #   heat_flow[iID] -= lambda_bed * temp_state * 3 / print_bed[iID]
+    # end
     for (jID, neighborID) in enumerate(nlist[iID])
       if bond_damage[iID][jID] == 0
         continue
+      end
+      if apply_print_bed
+        # check if node is near print bed and if the mirror neighbor is in a higher layer
+        if coordinates[iID, 3] < horizon[iID] && undeformed_bond[iID][jID, 3] > 0
+          # check if mirrored neighbor would be lower z=0
+          if coordinates[iID, 3] - undeformed_bond[iID][jID, 3] <= 0
+            temp_state = t_bed - temperature[iID]
+            if coordinates[iID, 3] == 0.0
+              heat_flow[iID] -= lambda_bed * kernel * temp_state / undeformed_bond[iID][jID, end] * volume[neighborID]
+            else
+              heat_flow[iID] -= lambda_bed * kernel * temp_state / coordinates[iID, 3] * volume[neighborID]
+            end
+          end
+        end
       end
       temp_state = bond_damage[iID][jID] * (temperature[neighborID] - temperature[iID])
       heat_flow[iID] -= lambda * kernel * temp_state / undeformed_bond[iID][jID, end] * volume[neighborID]
