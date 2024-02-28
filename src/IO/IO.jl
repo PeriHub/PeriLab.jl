@@ -472,13 +472,19 @@ function get_global_values(output::Dict, datamanager::Module)
         calculation_type = output[varname]["compute_params"]["Calculation Type"]
         fieldname = output[varname]["compute_params"]["Variable"]
         global_value = 0
+        dof = 1
+        if haskey(output[varname], "dof")
+            dof = output[varname]["dof"]
+        else
+            dof = [output[varname]["i_dof"], output[varname]["j_dof"]]
+        end
         if compute_class == "Block_Data"
             block = output[varname]["compute_params"]["Block"]
             block_id = parse(Int, block[7:end])
-            global_value, nnodes = calculate_block(datamanager, fieldname, output[varname]["dof"], calculation_type, block_id)
+            global_value, nnodes = calculate_block(datamanager, fieldname, dof, calculation_type, block_id)
         elseif compute_class == "Node_Set_Data"
             node_set = output[varname]["nodeset"]
-            global_value, nnodes = calculate_nodelist(datamanager, fieldname, output[varname]["dof"], calculation_type, node_set)
+            global_value, nnodes = calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_set)
         end
 
         if datamanager.get_max_rank() > 1

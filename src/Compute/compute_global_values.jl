@@ -3,20 +3,21 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-    calculate_nodelist(datamanager::Module, fieldKey::String, calculation_type::String, node_set::Vector{Int64})
+    calculate_nodelist(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, node_set::Vector{Int64})
 
 Calculate the global value of a field for a given set of nodes.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `fieldKey::String`: Field key.
+- `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `calculation_type::String`: Calculation type.
 - `node_set::Vector{Int64}`: Node set.
 # Returns
 - `value::Vector`: Global value.
 - `nnodes::Int64`: Number of nodes.
 """
-function calculate_nodelist(datamanager::Module, fieldKey::String, dof::Int64, calculation_type::String, node_set::Vector{Int64})
+function calculate_nodelist(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, node_set::Vector{Int64})
     # get block_nodes
     # check NP1
     if fieldKey * "NP1" in datamanager.get_all_field_keys()
@@ -58,20 +59,21 @@ function calculate_nodelist(datamanager::Module, fieldKey::String, dof::Int64, c
 end
 
 """
-    calculate_block(datamanager::Module, fieldKey::String, calculation_type::String, block::Int64)
+    calculate_block(datamanager::Module, fieldKey::String, dof::Int64, calculation_type::String, block::Int64)
 
 Calculate the global value of a field for a given block.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `fieldKey::String`: Field key.
+- `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `calculation_type::String`: Calculation type.
 - `block::Int64`: Block number.
 # Returns
 - `value::Vector`: Global value.
 - `nnodes::Int64`: Number of nodes.
 """
-function calculate_block(datamanager::Module, fieldKey::String, dof::Int64, calculation_type::String, block::Int64)
+function calculate_block(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, block::Int64)
     # get block_nodes
     # check NP1
     if fieldKey * "NP1" in datamanager.get_all_field_keys()
@@ -119,38 +121,44 @@ function calculate_block(datamanager::Module, fieldKey::String, dof::Int64, calc
 end
 
 """
-    global_value_sum(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
+    global_value_sum(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
 Calculate the global sum of a field for given nodes.
 
 # Arguments
 - `field::SubArray`: Field.
+- `dof::Union{Int64,Vector{Int64}`: Degree of freedom
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
-function global_value_sum(field::SubArray, dof::Int64, nodes::Union{SubArray,Vector{Int64}})
+function global_value_sum(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
     # returnValue = zeros(length(field[1, :]))
     # for iID in eachindex(field[1, :])
     #     returnValue[iID] = sum(field[nodes, iID])
     # end
     # return returnValue
-    return sum(field[nodes, dof])
+    if typeof(dof) == Int64
+        return sum(field[nodes, dof])
+    else
+        return sum(field[nodes, dof[1], dof[2]])
+    end
 end
 
 """
-    global_value_max(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
+    global_value_max(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
 Calculate the global maximum of a field for given nodes.
 
 # Arguments
 - `field::SubArray`: Field.
+- `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
-function global_value_max(field::SubArray, dof::Int64, nodes::Union{SubArray,Vector{Int64}})
+function global_value_max(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
     # returnValue = zeros(length(field[1, :]))
     # for iID in eachindex(field[1, :])
     #     returnValue[iID] = maximum(field[nodes, iID])
@@ -160,17 +168,18 @@ function global_value_max(field::SubArray, dof::Int64, nodes::Union{SubArray,Vec
 end
 
 """
-    global_value_min(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
+    global_value_min(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
 Calculate the global minimum of a field for given nodes.
 
 # Arguments
 - `field::SubArray`: Field.
+- `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
-function global_value_min(field::SubArray, dof::Int64, nodes::Union{SubArray,Vector{Int64}})
+function global_value_min(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
     # returnValue = zeros(length(field[1, :]))
     # for iID in eachindex(field[1, :])
@@ -181,17 +190,18 @@ function global_value_min(field::SubArray, dof::Int64, nodes::Union{SubArray,Vec
 end
 
 """
-    global_value_avg(field::SubArray, nodes::Union{SubArray,Vector{Int64}})
+    global_value_avg(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
 Calculate the global average of a field for given nodes.
 
 # Arguments
 - `field::SubArray`: Field.
+- `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
-function global_value_avg(field::SubArray, dof::Int64, nodes::Union{SubArray,Vector{Int64}})
+function global_value_avg(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
     # returnValue = zeros(length(field[1, :]))
     # for iID in eachindex(field[1, :])

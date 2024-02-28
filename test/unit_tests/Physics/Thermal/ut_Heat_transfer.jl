@@ -45,17 +45,8 @@ include("../../../../src/Support/data_manager.jl")
     specific_volume = test_Data_manager.create_constant_node_field("specific_volume", Float64, 1)
     horizon = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
     horizon[:] .= 0.55
-    bond_damage = test_Data_manager.create_constant_bond_field("Bond Damage", Float64, 1)
-    bond_damage[1][:] .= 1
-    bond_damage[2][:] .= 1
-    bond_damage[3][:] .= 1
-    bond_damage[4][:] .= 1
-    bond_damage[5][:] .= 1
-    bond_damage[6][:] .= 1
-    bond_damage[7][:] .= 1
-    bond_damage[8][:] .= 1
-    bond_damage[9][:] .= 1
-    bond_damage[10][:] .= 1
-    result = Heat_transfer.calculate_specific_volume(nodes, nlist, volume, bond_damage, specific_volume, dof, horizon)
+    active = Vector{Bool}(1:nnodes)
+    acitve = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    result = Heat_transfer.calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
     @test result == [1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.5, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 2.0]
 end
