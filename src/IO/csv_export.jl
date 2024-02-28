@@ -24,7 +24,7 @@ function create_result_file(filename::String, outputs::Dict)
     @info "Create output " * filename
     csv_file = open(filename, "w")
 
-    header = ""
+    header = "Time,"
     for key in keys(outputs["Fields"])
         header = string(header, key, ",")
     end
@@ -34,7 +34,7 @@ function create_result_file(filename::String, outputs::Dict)
 end
 
 """
-    write_global_results_in_csv(csv_file::IOStream, global_values)
+    write_global_results_in_csv(csv_file::IOStream, time::Float64, global_values)
 
 Writes the global results to the csv file
 
@@ -42,8 +42,8 @@ Writes the global results to the csv file
 - `csv_file::IOStream`: The csv file
 - `global_values`: The global values
 """
-function write_global_results_in_csv(csv_file::IOStream, global_values)
-    value_string = ""
+function write_global_results_in_csv(csv_file::IOStream, time::Float64, global_values)
+    value_string = string(time) * ","
     for value in global_values
         value_string = string(value_string, value, ",")
     end
