@@ -22,13 +22,15 @@ To update PeriLab you just need to run `julia -e "using Pkg; Pkg.update()"` or p
 
 There are multiple options to generate your own input mesh:
 
-1. Use the [Perihub](https://gitlab.com/dlr-perihub/Perihub.jl) to generate your own input mesh.
+- Use the [Perihub](https://gitlab.com/dlr-perihub/Perihub.jl) framework to generate your own input mesh.
 
-2. Use an existing Abaqus Inputfile (.inp).
+- Generate your own input mesh with julia, [here](https://gitlab.com/dlr-perihub/PeriLab.jl/-/tree/main/examples/Training/meshing/mesh.jl?ref_type=heads) is an example.
 
-3. Transfer your mesh using [meshio](https://github.com/nschloe/meshio)
+- Use an existing Abaqus Inputfile (.inp).
 
-4. Create a feature issue and let us know what you need.
+- Transfer your mesh using [meshio](https://github.com/nschloe/meshio)
+
+- Create a feature issue and let us know what you need.
 
 ### What to do with my results?
 
