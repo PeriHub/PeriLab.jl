@@ -150,6 +150,8 @@ function get_node_sets(params::Dict, path::String, surface_ns::Union{Nothing,Dic
         element_sets = mesh["element_sets"]
         element_written = []
         id = 1
+        @info "Found $(length(element_sets)) node sets"
+        @info "Node sets: $(keys(element_sets))"
         for (key, values) in element_sets
             nodes::Vector{Int64} = []
             for (i, element_id) in enumerate(values)
