@@ -9,6 +9,7 @@ using Dierckx
 using ProgressBars
 export check_inf_or_nan
 export find_active
+export get_active_update_nodes
 export find_indices
 export find_inverse_bond_id
 export find_files_with_ending
@@ -45,6 +46,36 @@ Returns the indices of `active` that are true.
 """
 function find_active(active::Vector{Bool})
     return [i for (i, is_active) in enumerate(active) if is_active]
+end
+
+"""
+    get_active_update_nodes(active::SubArray, update_list::SubArray, block_nodes::Dict{Int64,Vector{Int64}}, block::Int64)
+
+Returns the active nodes and the update nodes.
+
+# Arguments
+- `active::SubArray`: The active vector.
+- `update_list::SubArray`: The update vector.
+- `block_nodes::Dict{Int64,Vector{Int64}}`: The vector to search in.
+- `block::Int64`: The block_id.
+# Returns
+- `active_nodes::Vector{Int64}`: The nodes of `active` that are true.
+- `update_nodes::Vector{Int64}`: The nodes of `update` that are true.
+"""
+function get_active_update_nodes(active::SubArray, update_list::SubArray, block_nodes::Dict{Int64,Vector{Int64}}, block::Int64)
+    active_nodes::Vector{Int64} = []
+    update_nodes::Vector{Int64} = []
+    active_index = find_active(active[block_nodes[block]])
+
+    if isempty(active_index)
+        return active_nodes, update_nodes
+    end
+    active_nodes = view(block_nodes[block], active_index)
+    update_index = find_active(update_list[active_nodes])
+    if !isempty(update_index)
+        update_nodes = active_nodes[update_index]
+    end
+    return active_nodes, update_nodes
 end
 
 """

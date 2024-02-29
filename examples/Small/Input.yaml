@@ -12,7 +12,7 @@ PeriLab:
   Physics:
     Material Models:
       Aluminium:
-        Material Model: "Correspondence Elastic"
+        Material Model: "PD Solid Elastic"
         Bulk Modulus: 2.0e5
         Shear Modulus: 1.0e5
         Symmetry: "isotropic plane stress"
@@ -34,18 +34,6 @@ PeriLab:
       Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347
-    block_3:
-      Material Model: "Aluminium"
-      Density: 2.7e-9
-      Horizon: 2.7221534653465347
-    block_4:
-      Material Model: "Aluminium"
-      Density: 2.7e-9
-      Horizon: 2.7221534653465347
-    block_5:
-      Material Model: "Aluminium"
-      Density: 2.7e-9
-      Horizon: 2.7221534653465347
   Boundary Conditions:
     BC_1:
       Type: "Displacements"
@@ -63,18 +51,23 @@ PeriLab:
     Verbose: False
     Initial Time: 0.0
     Final Time: 1.2e-6
-    Stop after damage initiation: False
     End step after damage: 3
     Verlet:
       Safety Factor: 1.00
-      Numerical Damping: 5e-06
-      Adapt dt: True
-      Stable Step Difference: 4
-      Maximum Bond Difference: 4
-      Stable Bond Difference: 1
+  Compute Class Parameters:
+    External_Forces:
+      Compute Class: "Block_Data"
+      Calculation Type: "Sum"
+      Block: "block_2"
+      Variable: "Forces"
+    External_Displacements:
+      Compute Class: "Block_Data"
+      Calculation Type: "Maximum"
+      Block: "block_2"
+      Variable: "Displacements"
   Outputs:
     Output1:
-      Flush File: False
+      Flush File: True
       Output Filename: "test_1"
       Output File Type: "Exodus"
       Number of Output Steps: 10
@@ -84,6 +77,15 @@ PeriLab:
         Volume: True
         Number of Neighbors: True
         Strain: True
-        Orientations: True
         Damage: True
         Angles: True
+        External_Displacements: True
+        External_Forces: True
+    Output2:
+      Flush File: False
+      Output Filename: "test_1"
+      Output File Type: "CSV"
+      Number of Output Steps: 10
+      Output Variables:
+        External_Displacements: True
+        External_Forces: True

@@ -5,7 +5,7 @@
 module Physics
 include("../Support/helpers.jl")
 using Reexport
-@reexport using .Helpers: check_inf_or_nan, find_active, find_inverse_bond_id
+@reexport using .Helpers: check_inf_or_nan, find_active, find_inverse_bond_id, get_active_update_nodes
 include("./Additive/Additive_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
@@ -87,23 +87,9 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         datamanager = FEM.eval(datamanager, Vector{Int64}(1:nelements), datamanager.get_properties(1, "FEM"), time, dt)
     end
     for block in eachindex(block_nodes)
-        # nodes = block_nodes[block]
-        ##TODO as a function and unit testing!
-        active_index::Vector{Int64} = []
-        update_index::Vector{Int64} = []
-        update_nodes::Vector{Int64} = []
-        # find subarray index of the active nodes in block nodes
 
-        active_index = find_active(active[block_nodes[block]])
+        active_nodes, update_nodes = get_active_update_nodes(active, update_list, block_nodes, block)
 
-        if active_index == []
-            continue
-        end
-        active_nodes = view(block_nodes[block], active_index)
-        update_index = find_active(update_list[active_index])
-        if !(update_index == [])
-            update_nodes = active_nodes[update_index]
-        end
         if fem_option
             update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
