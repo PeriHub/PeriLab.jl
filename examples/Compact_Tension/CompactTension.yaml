@@ -80,6 +80,17 @@ PeriLab:
       Damage:
         Critical Value: 19.550259414225938
         Damage Model: Critical Energy
+  Compute Class Parameters:
+    External_Forces:
+      Compute Class: Block_Data
+      Calculation Type: Sum
+      Block: block_2
+      Variable: Forces
+    External_Displacements:
+      Compute Class: Block_Data
+      Calculation Type: Maximum
+      Block: block_2
+      Variable: Displacements
   Outputs:
     Output1:
       Number of Output Steps: 100
@@ -96,13 +107,12 @@ PeriLab:
         # Strain: True
         # Cauchy Stress: True
     Output2:
-      Output File Type: Exodus
+      Output File Type: CSV
       Output Filename: CompactTension_Output2
-      Output Frequency: 10
+      Number of Output Steps: 100
       Output Variables:
-        Damage: true
-        Displacements: true
-      Write After Damage: true
+        External_Forces: true
+        External_Displacements: true
   Solver:
     Final Time: 0.0001
     Initial Time: 0.0
