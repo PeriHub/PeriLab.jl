@@ -45,8 +45,7 @@ include("../../../../src/Support/data_manager.jl")
     specific_volume = test_Data_manager.create_constant_node_field("specific_volume", Float64, 1)
     horizon = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
     horizon[:] .= 0.55
-    active = Vector{Bool}(1:nnodes)
-    acitve = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    active = fill(true, nnodes)
     result = Heat_transfer.calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
     @test result == [1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.5, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 2.0]
 end
