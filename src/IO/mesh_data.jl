@@ -519,14 +519,21 @@ function read_mesh(filename::String, params::Dict)
             DataFrame(x=[], y=[], z=[], volume=[], block_id=Int[])
         )
 
+        id = 1
         block_id = 1
         element_written = []
+        nsets = Dict{String,Any}()
 
-        for (key, values) in element_sets
-            for (i, element_id) in enumerate(values)
+        # sort element_sets by length
+        element_sets_keys = sort(collect(keys(element_sets)), by=x -> length(element_sets[x]), rev=true)
+        for key in element_sets_keys
+            ns_nodes = Int64[]
+            for (i, element_id) in enumerate(element_sets[key])
                 if element_id in element_written
+                    push!(ns_nodes, findfirst(x -> x == element_id, element_written))
                     continue
                 end
+                push!(ns_nodes, id)
                 node_ids = elements[element_id]
                 vertices = [nodes[node_id] for node_id in node_ids]
                 center = sum(vertices) / size(vertices)[1]
@@ -538,16 +545,21 @@ function read_mesh(filename::String, params::Dict)
                     push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=block_id))
                 end
                 push!(element_written, element_id)
+                id += 1
             end
+            nsets[key] = ns_nodes
             block_id += 1
         end
+        @info "Found $(maximum(mesh_df.block_id)) block(s)"
+        @info "Found $(length(nsets)) node sets"
+        @info "NodeSets: $element_sets_keys"
 
         mesh = nothing
         nodes = nothing
         elements = nothing
         element_sets = nothing
 
-        return mesh_df
+        return mesh_df, nsets
 
     elseif params["Discretization"]["Type"] == "Text File"
         return csv_reader(filename)
@@ -724,13 +736,21 @@ Load and evaluate the mesh data.
 """
 function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
-    mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
-    mesh, surface_ns = extrude_surface_mesh(mesh, params)
+    if params["Discretization"]["Type"] == "Abaqus"
+        mesh, nsets = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        mesh, surface_ns = extrude_surface_mesh(mesh, params)
+        if !isnothing(surface_ns)
+            for (key, values) in surface_ns
+                nsets[key] = Vector{Int64}(values .+ id)
+            end
+        end
+    else
+        @info "Read node sets"
+        mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        nsets = get_node_sets(params, path)
+    end
     check_for_duplicate_in_dataframe(mesh)
     check_types_in_dataframe(mesh)
-
-    @info "Read node sets"
-    nsets = get_node_sets(params, path, surface_ns)
 
     external_topology = nothing
     if !isnothing(get_external_topology_name(params))

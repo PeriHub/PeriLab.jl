@@ -126,7 +126,7 @@ Returns the node sets from the parameters
 # Returns
 - `nsets::Dict{String,Any}`: The node sets
 """
-function get_node_sets(params::Dict, path::String, surface_ns::Union{Nothing,Dict})
+function get_node_sets(params::Dict, path::String)
     nsets = Dict{String,Any}()
     type = get(params["Discretization"], "Type", "Text File")
     if type == "Exodus"
@@ -143,32 +143,6 @@ function get_node_sets(params::Dict, path::String, surface_ns::Union{Nothing,Dic
         nset_nodes = nothing
         @info "Found $(length(nsets)) node sets"
         close(exo)
-        return nsets
-    end
-    if type == "Abaqus"
-        mesh = abaqus_read_mesh(joinpath(path, get_mesh_name(params)); verbose=false)
-        element_sets = mesh["element_sets"]
-        element_written = []
-        id = 1
-        @info "Found $(length(element_sets)) node sets"
-        @info "Node sets: $(keys(element_sets))"
-        for (key, values) in element_sets
-            nodes::Vector{Int64} = []
-            for (i, element_id) in enumerate(values)
-                if element_id in element_written
-                    continue
-                end
-                push!(element_written, element_id)
-                push!(nodes, id)
-                id += 1
-            end
-            nsets[key] = nodes
-        end
-        if !isnothing(surface_ns)
-            for (key, values) in surface_ns
-                nsets[key] = Vector{Int64}(values .+ id)
-            end
-        end
         return nsets
     end
     if !haskey(params["Discretization"], "Node Sets")
