@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Exodus
+using Dates
 export get_paraview_coordinates
 export create_result_file
 export init_results_in_exodus
@@ -119,8 +120,14 @@ Initializes the results in exodus
 - `result_file::Dict{String,Any}`: The result file
 """
 function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String)
-    info = ["PeriLab Version $PERILAB_VERSION, under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
+    qa = Matrix{String}(undef, 1, 4)
+    qa[1] = "PeriLab"
+    qa[2] = "$PERILAB_VERSION"
+    qa[3] = Dates.format(Dates.now(), "mm/dd/yyyy")
+    qa[4] = Dates.format(Dates.now(), "HH:MM:SS")
+    write_qa(exo, qa)
 
+    info = ["PeriLab Version $PERILAB_VERSION, under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
     write_info(exo, info)
 
     # check if type of coords is int or Float64
