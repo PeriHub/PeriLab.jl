@@ -85,7 +85,7 @@ println(material_name())
 ```
 """
 function material_name()
-  return "PD Plastic"
+  return "PD Solid Plastic"
 end
 
 """
