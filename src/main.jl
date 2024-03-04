@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Pkg
+using MPI
 if isfile("Project.toml") && isfile("Manifest.toml")
     Pkg.activate(".")
 
     Pkg.instantiate()
 end
 
+MPI.Init()
 import PeriLab
-
 PeriLab.main()
+MPI.Finalize()
