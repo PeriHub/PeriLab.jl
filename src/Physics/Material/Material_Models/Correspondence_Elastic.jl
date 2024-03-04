@@ -9,6 +9,7 @@ export correspondence_name
 export fe_support
 export init_material_model
 export init_material_model
+
 """
   fe_support()
 
@@ -98,6 +99,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
 
    return stress_NP1, datamanager
 end
+
 """
     compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 

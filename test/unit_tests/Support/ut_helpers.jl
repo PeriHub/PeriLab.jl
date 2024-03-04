@@ -38,6 +38,9 @@ end
     @test isempty(Helpers.find_active([false, false, false]))
     # Test case 4: Mix of active and inactive elements
     @test Helpers.find_active([false, true, false, true, true]) == [2, 4, 5]
+    # Test case 5: SubList of active and inactive elements
+    list = [false, true, false, true, true]
+    @test Helpers.find_active(list[[2, 3, 5]]) == [1, 3]
 end
 
 @testset "ut_find_inverse_bond_id" begin
@@ -129,4 +132,29 @@ end
     @test Helpers.progress_bar(0, nsteps, true) == 1:nsteps+1
     @test typeof(Helpers.progress_bar(0, nsteps, false)) == ProgressBar
     @test length(Helpers.progress_bar(0, nsteps, false)) == nsteps + 1
+end
+
+@testset "get_active_update_nodes" begin
+    nnodes = 4
+    test_Data_manager = Data_manager
+    test_Data_manager.set_num_controller(nnodes)
+    update_list = test_Data_manager.create_constant_node_field("Update List", Bool, 1, true)
+    active = test_Data_manager.create_constant_node_field("Active List", Bool, 1, true)
+    block_nodes = Dict(1 => [1, 2], 2 => [3, 4])
+    block = 1
+    @test Helpers.get_active_update_nodes(active, update_list, block_nodes, block) == ([1, 2], [1, 2],)
+    block = 2
+    @test Helpers.get_active_update_nodes(active, update_list, block_nodes, block) == ([3, 4], [3, 4])
+    update_list[3] = false
+    @test Helpers.get_active_update_nodes(active, update_list, block_nodes, block) == ([3, 4], [4])
+    active[3] = false
+    @test Helpers.get_active_update_nodes(active, update_list, block_nodes, block) == ([4], [4])
+    update_list[3] = true
+    @test Helpers.get_active_update_nodes(active, update_list, block_nodes, block) == ([4], [4])
+    update_list[3] = false
+    update_list[4] = false
+    @test Helpers.get_active_update_nodes(active, update_list, block_nodes, block) == ([4], [])
+    active[3] = false
+    active[4] = false
+    @test Helpers.get_active_update_nodes(active, update_list, block_nodes, block) == ([], [])
 end

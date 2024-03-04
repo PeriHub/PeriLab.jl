@@ -7,6 +7,10 @@ function coupling_name()
     return "Arlequin"
 end
 
+function init_coupling_model(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}}, complete_params::Dict)
+
+    return datamanager
+end
 
 function compute_coupling(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 

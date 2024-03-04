@@ -113,6 +113,11 @@ MPI.Init()
             @testset "ut_templates" begin
                 @includetests["unit_tests/Physics/ut_templates"]
             end
+            @testset "Additive" begin
+                @testset "ut_Additive_Factory" begin
+                    @includetests["unit_tests/Physics/Additive/ut_Additive_Factory"]
+                end
+            end
             @testset "Thermal" begin
                 @testset "ut_Thermal_Factory" begin
                     @includetests["unit_tests/Physics/Thermal/ut_Thermal_Factory"]
@@ -147,6 +152,7 @@ MPI.Init()
                 end
                 @testset "ut_ordinary" begin
                     @includetests["unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary"]
+                    @includetests["unit_tests/Physics/Material/Material_Models/ut_PD_Solid_Plastic"]
                 end
             end
         end
@@ -164,6 +170,9 @@ MPI.Init()
         end
         @testset "test_BCs" begin
             @includetests["fullscale_tests/test_BCs/test_BCs"]
+        end
+        @testset "test_contact" begin
+            @includetests["fullscale_tests/test_contact/test_contact"]
         end
         @testset "test_PD_Solid_Elastic" begin
             @includetests["fullscale_tests/test_PD_solid_elastic/test_PD_solid_elastic"]

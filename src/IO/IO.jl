@@ -332,7 +332,7 @@ Initialize write results.
 
 # Arguments
 - `params::Dict`: The parameters
-- `output_dir::String`: The directory of the input file.
+- `output_dir::String`: The output directory.
 - `path::String`: The path
 - `datamanager::Module`: The datamanager
 - `nsteps::Int64`: The number of steps
@@ -439,7 +439,7 @@ function write_results(result_files::Vector{Dict}, time::Float64, max_damage::Fl
                 end
                 if datamanager.get_rank() == 0
                     if output_type == "CSV"
-                        write_global_results_in_csv(result_files[id]["file"], global_values)
+                        write_global_results_in_csv(result_files[id]["file"], time, global_values)
                     end
                 end
             end
@@ -472,13 +472,19 @@ function get_global_values(output::Dict, datamanager::Module)
         calculation_type = output[varname]["compute_params"]["Calculation Type"]
         fieldname = output[varname]["compute_params"]["Variable"]
         global_value = 0
+        dof = 1
+        if haskey(output[varname], "dof")
+            dof = output[varname]["dof"]
+        else
+            dof = [output[varname]["i_dof"], output[varname]["j_dof"]]
+        end
         if compute_class == "Block_Data"
             block = output[varname]["compute_params"]["Block"]
             block_id = parse(Int, block[7:end])
-            global_value, nnodes = calculate_block(datamanager, fieldname, calculation_type, block_id)
+            global_value, nnodes = calculate_block(datamanager, fieldname, dof, calculation_type, block_id)
         elseif compute_class == "Node_Set_Data"
             node_set = output[varname]["nodeset"]
-            global_value, nnodes = calculate_nodelist(datamanager, fieldname, calculation_type, node_set)
+            global_value, nnodes = calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_set)
         end
 
         if datamanager.get_max_rank() > 1

@@ -5,6 +5,7 @@
 module Correspondence_Plastic
 include("../material_basis.jl")
 using LinearAlgebra
+using StaticArrays
 export fe_support
 export init_material_model
 export init_material_model
@@ -101,13 +102,13 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   coordinates = datamanager.get_field("Coordinates")
   yield_stress::Float64 = material_parameter["Yield Stress"]
   spherical_stress_N::Float64 = 0
-  deviatoric_stress_N::Matrix{Float64} = zeros(dof, dof)
+  deviatoric_stress_N = @MMatrix zeros(dof, dof)
 
   spherical_stress_NP1::Float64 = 0
-  deviatoric_stress_NP1::Matrix{Float64} = zeros(dof, dof)
+  deviatoric_stress_NP1 = @MMatrix zeros(dof, dof)
 
-  temp_A::Matrix{Float64} = zeros(dof, dof)
-  temp_B::Matrix{Float64} = zeros(dof, dof)
+  temp_A = @MMatrix zeros(dof, dof)
+  temp_B = @MMatrix zeros(dof, dof)
 
   sqrt23::Float64 = sqrt(2 / 3)
 

@@ -232,8 +232,8 @@ end
     @test merged
 end
 
-write_global_results_in_csv(csv_file["file"], [0.1, 0.2])
-
+write_global_results_in_csv(csv_file["file"], 1.0, [0.1, 0.2])
+#TODO: check if the csv file is correct
 @testset "ut_write_global_results_in_csv" begin
 
     @test isfile(csv_file["filename"])

@@ -10,6 +10,7 @@ using .Material
 using .Geometry
 using .Pre_calculation
 using LinearAlgebra
+using StaticArrays
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
@@ -59,8 +60,13 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     update_list = datamanager.get_field("Update List")
     horizon = datamanager.get_field("Horizon")
     bond_damage = datamanager.get_bond_damage("NP1")
-    if haskey(damage_parameter, "Anisotropic Damage")
-        bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic")
+    aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
+    if aniso_damage
+        if "Bond Damage Anisotropic" in datamanager.get_all_field_keys()
+            bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic")
+        else
+            aniso_damage = false
+        end
     end
     undeformed_bond = datamanager.get_field("Bond Geometry")
     bond_forces = datamanager.get_field("Bond Forces")
@@ -86,7 +92,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     if inter_block_damage
         inter_critical_energy::Array{Float64,3} = datamanager.get_crit_values_matrix()
     end
-    aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
+
     if aniso_damage
         aniso_crit_values = datamanager.get_aniso_crit_values()
         bond_norm::Float64 = 0.0
@@ -95,11 +101,11 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     bond_energy::Float64 = 0.0
     norm_displacement::Float64 = 0.0
-    x_vector::Vector{Float64} = zeros(Float64, dof)
+    x_vector::Vector{Float64} = @SVector zeros(Float64, dof)
     x_vector[1] = 1.0
 
-    neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
-    projected_force::Vector{Float64} = zeros(Float64, dof)
+    neighbor_bond_force::Vector{Float64} = @SVector zeros(Float64, dof)
+    projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
     for iID in nodes
         relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
@@ -145,18 +151,18 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                     end
                     @views bond_norm = abs(rotated_bond[i]) / deformed_bond[iID][jID, end]
                     if bond_energy / quad_horizon[iID] * bond_norm > aniso_crit_values[block_ids[iID]][i]
-                        @inbounds bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct
+                        bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct
                         if bond_damage[iID][jID] < 0
                             bond_damage[iID][jID] = 0
                         end
                         bond_damage_aniso[iID][jID, i] = 0
-                        @inbounds update_list[iID] = true
+                        update_list[iID] = true
                     end
                 end
             else
                 if (bond_energy / quad_horizon[iID]) > crit_energy
-                    @inbounds bond_damage[iID][jID] = 0.0
-                    @inbounds update_list[iID] = true
+                    bond_damage[iID][jID] = 0.0
+                    update_list[iID] = true
                 end
             end
             if 1 < bond_damage[iID][jID] || bond_damage[iID][jID] < 0

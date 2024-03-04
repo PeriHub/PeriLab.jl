@@ -84,9 +84,8 @@ PeriLab:
     Output1:
       Number of Output Steps: 100
       Output File Type: Exodus
-      Output Filename: DCBmodel_Output1_red
+      Output Filename: DCBmodel_Output1
       Output Variables:
-        Temperature: True
         Damage: true
         Displacements: true
         Forces: true

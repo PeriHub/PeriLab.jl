@@ -5,7 +5,7 @@
 module Physics
 include("../Support/helpers.jl")
 using Reexport
-@reexport using .Helpers: check_inf_or_nan, find_active, find_inverse_bond_id, find_updatable
+@reexport using .Helpers: check_inf_or_nan, find_active, find_inverse_bond_id, get_active_update_nodes
 include("./Additive/Additive_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
@@ -87,10 +87,9 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         datamanager = FEM.eval(datamanager, Vector{Int64}(1:nelements), datamanager.get_properties(1, "FEM"), time, dt)
     end
     for block in eachindex(block_nodes)
-        # nodes = block_nodes[block]
-        active_index = find_active(active[block_nodes[block]])
-        active_nodes = view(block_nodes[block], active_index)
-        update_nodes = view(block_nodes[block], find_updatable(active_index, update_list))
+
+        active_nodes, update_nodes = get_active_update_nodes(active, update_list, block_nodes, block)
+
         if fem_option
             update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
@@ -222,19 +221,32 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Damage", Float64, 1)
     block_list = datamanager.get_block_list()
-    anistropic_damage = false
+    anisotropic_damage = false
+    correspondence = false
+    for block_id in block_list
+        if haskey(params["Blocks"]["block_$block_id"], "Material Model") && occursin("Correspondence", params["Blocks"]["block_$block_id"]["Material Model"])
+            correspondence = true
+        else
+            correspondence = false
+            break
+        end
+    end
     for block_id in block_list
         if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
             continue
         end
-        damageName = params["Blocks"]["block_$block_id"]["Damage Model"]
-        damage_parameter = params["Physics"]["Damage Models"][damageName]
-        anistropic_damage = haskey(damage_parameter, "Anisotropic Damage")
-        if anistropic_damage
+        damage_name = params["Blocks"]["block_$block_id"]["Damage Model"]
+        damage_parameter = params["Physics"]["Damage Models"][damage_name]
+        anisotropic_damage = haskey(damage_parameter, "Anisotropic Damage")
+        if anisotropic_damage
+            if !correspondence
+                @warn "Not all material models are of type correspondence. Bond based and PD solid are not supported by anisotropic damage"
+                anisotropic_damage = false
+            end
             break
         end
     end
-    if anistropic_damage
+    if anisotropic_damage
         datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
         datamanager.create_node_field("Damage Anisotropic", Float64, dof)
     end

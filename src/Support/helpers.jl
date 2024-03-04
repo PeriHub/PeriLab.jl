@@ -9,9 +9,9 @@ using Dierckx
 using ProgressBars
 export check_inf_or_nan
 export find_active
+export get_active_update_nodes
 export find_indices
 export find_inverse_bond_id
-export find_updatable
 export find_files_with_ending
 export matrix_style
 export get_fourth_order
@@ -49,20 +49,34 @@ function find_active(active::Vector{Bool})
 end
 
 """
-    find_updatable(active::SubArray, update_list::SubArray)
+    get_active_update_nodes(active::SubArray, update_list::SubArray, block_nodes::Dict{Int64,Vector{Int64}}, block::Int64)
 
-Returns the indices of `active` that are true.
+Returns the active nodes and the update nodes.
 
 # Arguments
-- `active::SubArray`: The vector to search in.
-- `update_list::SubArray`: The vector to search in.
+- `active::SubArray`: The active vector.
+- `update_list::SubArray`: The update vector.
+- `block_nodes::Dict{Int64,Vector{Int64}}`: The vector to search in.
+- `block::Int64`: The block_id.
 # Returns
-- `indices::Vector`: The indices of `active` that are true.
+- `active_nodes::Vector{Int64}`: The nodes of `active` that are true.
+- `update_nodes::Vector{Int64}`: The nodes of `update` that are true.
 """
-function find_updatable(active::Vector{Int64}, update_list::SubArray)
-    return [active[i] for i in eachindex(active) if update_list[i] == 1]
-end
+function get_active_update_nodes(active::SubArray, update_list::SubArray, block_nodes::Dict{Int64,Vector{Int64}}, block::Int64)
+    active_nodes::Vector{Int64} = []
+    update_nodes::Vector{Int64} = []
+    active_index = find_active(active[block_nodes[block]])
 
+    if isempty(active_index)
+        return active_nodes, update_nodes
+    end
+    active_nodes = view(block_nodes[block], active_index)
+    update_index = find_active(update_list[active_nodes])
+    if !isempty(update_index)
+        update_nodes = active_nodes[update_index]
+    end
+    return active_nodes, update_nodes
+end
 
 """
     find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
@@ -141,7 +155,7 @@ CVoigt = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 dof = 3
 result = get_fourth_order(CVoigt, dof)
 """
-function get_fourth_order(CVoigt::Matrix{Float64}, dof::Int64)
+function get_fourth_order(CVoigt, dof::Int64)
     return fromvoigt(SymmetricTensor{4,dof}, CVoigt)
 end
 

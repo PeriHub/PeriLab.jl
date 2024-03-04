@@ -1,120 +1,117 @@
 # PeriLab Configuration File
 
-The PeriLab configuration file is a YAML file used to specify the parameters for running simulations in the PeriLab software. Below is the expected structure of the configuration file:
+The PeriLab configuration file is a YAML file used to specify the parameters for running simulations in the PeriLab software. This structure represents the global configuration for PeriLab.
 
-```yaml
-PeriLab:
-  - Blocks:
-    - Any:
-        - Density: [Union{Float64,Int64}, true]
-        - Horizon: [Union{Float64,Int64}, true]
-        - Specific Heat Capacity: [Union{Float64,Int64}, false]
-        - Material Model: [String, false]
-        - Damage Model: [String, false]
-        - Thermal Model: [String, false]
-        - Additive Model: [String, false]
+## `PeriLab`
 
-  - Boundary Conditions:
-    - Any:
-        - Coordinate: [String, false]
-        - Node Set: [String, true]
-        - Type: [String, true]
-        - Value: [Union{Float64,Int64,String}, true]
+- **Blocks**: List of block configurations.
+  - **_block_id_**: Block-specific parameters.
+    - Density: Numeric value representing density. (Float64 or Int64)
+    - Horizon: Numeric value representing horizon. (Float64 or Int64)
+    - Specific Heat Capacity: Numeric value representing specific heat capacity. (Float64 or Int64, optional)
+    - Material Model: String representing the material model. (optional)
+    - Damage Model: String representing the damage model. (optional)
+    - Thermal Model: String representing the thermal model. (optional)
+    - Additive Model: String representing the additive model. (optional)
 
-  - Compute Class Parameters:
-    - Any:
-        - Block: [String, true]
-        - Calculation Type: [String, true]
-        - Compute Class: [String, true]
-        - Variable: [String, true]
+## `FEM (optional)`
 
-  - Discretization:
-    - Input Mesh File: [String, true]
-    - Node Sets:
-      - Any: [String, true]
-    - Type: [String, true]
-    - Bond Filters:
-      - Any:
-          - Type: [String, true]
-          - Normal X: [Union{Float64,Int64}, true]
-          - Normal Y: [Union{Float64,Int64}, true]
-          - Normal Z: [Union{Float64,Int64}, true]
-          - Lower Left Corner X: [Union{Float64,Int64}, false]
-          - Lower Left Corner Y: [Union{Float64,Int64}, false]
-          - Lower Left Corner Z: [Union{Float64,Int64}, false]
-          - Bottom Unit Vector X: [Union{Float64,Int64}, false]
-          - Bottom Unit Vector Y: [Union{Float64,Int64}, false]
-          - Bottom Unit Vector Z: [Union{Float64,Int64}, false]
-          - Center X: [Union{Float64,Int64}, false]
-          - Center Y: [Union{Float64,Int64}, false]
-          - Center Z: [Union{Float64,Int64}, false]
-          - Radius: [Union{Float64,Int64}, false]
-          - Bottom Length: [Union{Float64,Int64}, false]
-          - Side Length: [Union{Float64,Int64}, false]
+- **Element Type**: String representing the type of finite element.
+- **Degree**: Numeric value representing the degree. (String or Int64)
+- **Material Model**: String representing the material model.
 
-  - Outputs:
-    - Any:
-        - Flush File: [Bool, false]
-        - Output Frequency: [Int64, false]
-        - Number of Output Steps: [Int64, false]
-        - Output File Type: [String, false]
-        - Output Filename: [String, true]
-        - Write After Damage: [Bool, false]
-        - Output Variables:
-          - Any: [Bool, true]
+## `Boundary Conditions (optional)`
 
-  - Physics:
-    - Damage Models:
-      - Any:
-          - Critical Value: [Union{Float64,Int64}, true]
-          - Damage Model: [String, true]
-          - Interblock Damage:
-            - Any: [Union{Float64,Int64}, true]
+- **_Own_Name_**: List of boundary condition configurations.
+  - **Coordinate**: String representing the coordinate.
+  - **Node Set**: String representing the node set.
+  - **Type**: String representing the type of boundary condition.
+  - **Value**: Numeric value, string, or a combination representing the boundary condition value. (Float64, Int64, String)
 
-    - Material Models:
-      - Any:
-          - Material Model: [String, true]
-          - Symmetry: [String, false]
-          - Poisson's Ratio: [Union{Float64,Int64}, false]
-          - Young's Modulus: [Union{Float64,Int64}, false]
-          - Bulk Modulus: [Union{Float64,Int64}, false]
-          - Shear Modulus: [Union{Float64,Int64}, false]
-          - Zero Energy Control: [String, false]
-          - C11: [Union{Float64,Int64}, false]
-          - C12: [Union{Float64,Int64}, false]
-          - ... (other material properties)
+## `Compute Class Parameters (optional)`
 
-    - Thermal Models:
-      - Any:
-          - Thermal Model: [String, true]
-          - Type: [String, false]
-          - Heat Transfer Coefficient: [Union{Float64,Int64}, false]
-          - Environmental Temperature: [Union{Float64,Int64}, false]
-          - Thermal Conductivity: [Union{Float64,Int64}, false]
-          - Thermal Expansion Coefficient: [Union{Float64,Int64}, false]
+- **_Own_Name_**: List of compute class parameters.
+  - **Block**: String representing the block.
+  - **Node Set**: String representing the node set.
+  - **Calculation Type**: String representing the calculation type.
+  - **Compute Class**: String representing the compute class.
+  - **Variable**: String representing the variable.
 
-    - Additive Models:
-      - Any:
-          - Additive Model: [String, true]
-          - Print Temperature: [Union{Float64,Int64}, false]
+## `Discretization`
 
-    - Pre Calculation:
-      - Bond Associated Deformation Gradient: [Bool, false]
-      - Bond Associated Shape Tensor: [Bool, false]
-      - Deformation Gradient: [Bool, false]
-      - Deformed Bond Geometry: [Bool, false]
-      - Shape Tensor: [Bool, false]
+- **Input Mesh File**: String representing the input mesh file.
+- **Input External Topology**: External topology parameters. (optional)
+  - **File**: String representing the external topology file.
+  - **Add Neighbor Search**: Boolean indicating whether to add neighbor search. (optional)
+- **Node Sets**: Dictionary of node sets. (optional)
+  - **_Own_Name_**: Numeric value or string representing the node set. (Int64 or String)
+- **Type**: String representing the type of discretization.
+- **Neighborhood Distribution**: Boolean indicating whether to use neighborhood distribution. (optional)
+- **Surface Extrusion**: Extrusion parameters. (optional)
+  - **Direction**: String representing the extrusion direction.
+  - **Step**: Numeric value representing the extrusion step. (Float64 or Int64)
+  - **Number**: Numeric value representing the extrusion number. (Float64 or Int64)
+- **Bond Filters**: List of bond filter configurations. (optional)
+  - **_Own_Name_**: Bond filter parameters.
+    - **Type**: String representing the bond filter type.
+    - **Normal X/Y/Z**: Numeric values representing normal components. (Float64 or Int64)
+    - **Lower Left Corner X/Y/Z**: Numeric values representing lower-left corner components. (Float64 or Int64)
+    - **Bottom Unit Vector X/Y/Z**: Numeric values representing bottom unit vector components. (Float64 or Int64)
+    - **Center X/Y/Z**: Numeric values representing center components. (Float64 or Int64)
+    - **Radius**: Numeric value representing the radius. (Float64 or Int64)
+    - **Bottom Length**: Numeric value representing the bottom length. (Float64 or Int64)
+    - **Side Length**: Numeric value representing the side length. (Float64 or Int64)
+    - **Allow Contact**: Boolean indicating whether to allow contact. (optional)
 
-  - Solver:
-    - Solve For Displacement: [Bool, false]
-    - Material Models: [Bool, false]
-    - Damage Models: [Bool, false]
-    - Thermal Models: [Bool, false]
-    - Additive Models: [Bool, false]
-    - Final Time: [Union{Float64,Int64}, true]
-    - Initial Time: [Union{Float64,Int64}, true]
-    - Verbose: [Bool, false]
-    - Verlet:
-        - Numerical Damping: [Union{Float64,Int64}, false]
-        - Safety Factor: [Union{Float64,Int64}, false]
-        - Fixed dt: [Union{Float64,Int64}, false]
+## `Outputs (optional)`
+
+- **_Own_Name_**: List of output configurations.
+  - **Flush File**: Boolean indicating whether to flush the output file. (optional)
+  - **Output Frequency**: Integer representing the output frequency.
+  - **Number of Output Steps**: Integer representing the number of output steps.
+  - **Output File Type**: String representing the output file type. (optional)
+  - **Output Filename**: String representing the output filename.
+  - **Write After Damage**: Boolean indicating whether to write after damage. (optional)
+  - **Output Variables**: Dictionary of output variables.
+    - **_Own_Name_**: Boolean indicating whether to output the variable.
+
+## `Physics (optional)`
+
+- **Damage Models**: Dictionary of damage models. (optional)
+  - **_Own_Name_**: List of damage model configurations.
+    - **Critical Value**: Numeric value representing the critical value. (Float64 or Int64)
+    - **Damage Model**: String representing the damage model.
+    - **Interblock Damage**: Dictionary of interblock damage parameters.
+      - **_Own_Name_**: Numeric value representing interblock damage. (Float64 or Int64, required)
+    - **Anisotropic Damage**: Dictionary of anisotropic damage parameters.
+      - **Critical Value X/Y**: Numeric values representing critical values in X and Y directions. (Float64 or Int64, required)
+- **Material Models**: Dictionary of material models. (optional)
+  - **_Own_Name_**: List of material model configurations.
+    - **Material Model**: String representing the material model.
+    - **Symmetry**: String representing the symmetry. (optional)
+    - **Poisson's Ratio/Young's Modulus/Bulk Modulus/Shear Modulus**: Numeric values representing material properties. (Float64 or Int64, optional)
+    - **Zero Energy Control**: String representing zero energy control. (optional)
+    - **C11/C12/.../C66**: Numeric values representing material constants. (Float64 or Int64, optional)
+- **Thermal Models**: Dictionary of thermal models. (optional)
+  - **_Own_Name_**: List of thermal model configurations.
+    - **Thermal Model**: String representing the thermal model.
+    - **Type**: String representing the type of thermal model. (optional)
+    - **Heat Transfer Coefficient/Environmental Temperature/Thermal Conductivity/Thermal Expansion Coefficient/Thermal Conductivity Print Bed/Print Bed Temperature**: Numeric values representing thermal parameters. (Float64 or Int64, optional)
+- **Additive Models**: Dictionary of additive models. (optional)
+  - **_Own_Name_**: List of additive model configurations.
+    - **Additive Model**: String representing the additive model.
+    - **Print Temperature**: Numeric value representing the print temperature. (Float64 or Int64, optional)
+- **Pre Calculation**: Dictionary of pre-calculation parameters.
+  - **Bond Associated Deformation Gradient/Bond Associated Shape Tensor/Deformation Gradient/Deformed Bond Geometry/Shape Tensor**: Boolean values indicating whether to calculate the respective parameter. (optional)
+
+## `Solver`
+
+- **Solve For Displacement/Material Models/Damage Models/Thermal Models/Additive Models**: Boolean values indicating whether to solve for the respective components. (optional)
+- **Maximum Damage**: Numeric value representing the maximum damage. (Float64, optional)
+- **Final Time/Initial Time**: Numeric values representing the final and initial time. (Float64 or Int64, required)
+- **Numerical Damping**: Numeric value representing numerical damping. (Float64 or Int64, optional)
+- **Verlet**: Dictionary of Verlet solver parameters.
+  - **Safety Factor/Fixed dt/Number of Steps**: Numeric values representing Verlet solver parameters. (Float64 or Int64, optional)
+- **External**: Dictionary of external solver parameters.
+  - **Number of Steps**: Numeric value representing the number of steps. (Int64, optional)
+

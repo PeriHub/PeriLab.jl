@@ -84,3 +84,12 @@ nlist[2][1] = 2
     theta = Ordinary.compute_dilatation(Int64[], view(nneighbors, :), view(nlist, :), view(undeformed_bond, :), view(deformed_bond, :), view(bond_damage, :), view(volume, :), weighted_volume, view(omega, :))
     @test theta == []
 end
+
+@testset "calculate_symmetry_params" begin
+    @test Ordinary.calculate_symmetry_params("3D", 1.0, 1.0) == (15, 1, 3)
+    test_val = Ordinary.calculate_symmetry_params("plane stress", 1.0, 1.0)
+    @test test_val[1] == 8
+    @test isapprox(test_val[2], 0.5714285714285714)
+    @test isapprox(test_val[3], 0.5714285714285714)
+    @test Ordinary.calculate_symmetry_params("plane strain", 1.0, 1.0) == (8, 2 / 3, 8 / 9)
+end

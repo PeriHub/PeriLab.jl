@@ -73,12 +73,13 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   surface_nodes = datamanager.get_field("Surface_Nodes")
   specific_volume = datamanager.get_field("Specific Volume")
   bond_damage = datamanager.get_bond_damage("NP1")
+  active = datamanager.get_field("Active")
   horizon = datamanager.get_field("Horizon")
   nlist = datamanager.get_nlist()
   dx = 1.0
   area = 1.0
 
-  specific_volume = calculate_specific_volume(nodes, nlist, volume, bond_damage, specific_volume, dof, horizon)
+  specific_volume = calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
   for iID in nodes
 
     if dof == 2
@@ -86,7 +87,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     elseif dof == 3
       dx = volume[iID]^(1 / 3)
     end
-    # tbd optimize logic @hess_jt
+    #TODO: optimize logic @hess_jt
     if surface_nodes[iID] && specific_volume[iID] > 1.0 # could be more as sometimes specific_volume is sometimes weird
       heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx * specific_volume[iID]
     end
@@ -109,15 +110,14 @@ Calculates the specific volume.
 # Returns
 - `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function calculate_specific_volume(nodes, nlist, volume, bond_damage, specific_volume, dof, horizon)
+function calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
 
   for iID in nodes
     neighbor_volume = 0.0
     for (jID, neighborID) in enumerate(nlist[iID])
-      if bond_damage[iID][jID] == 0.0
-        continue
+      if active[neighborID]
+        neighbor_volume += volume[neighborID]
       end
-      neighbor_volume += volume[neighborID]
     end
     if dof == 2
       horizon_volume = pi * horizon[iID]^2

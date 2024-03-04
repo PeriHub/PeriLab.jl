@@ -82,6 +82,8 @@ Run PeriLab with two processors:
 $ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" examples/DCB/DCBmodel.yaml -v
 ```
 
+>Note: For HPC configurations please refer to [here](https://juliaparallel.org/MPI.jl/stable/configuration/#configure_jll_binarys).
+
 ## Installing with Docker 🐳
 
  To install PeriLab using the official Perihub/Perilab Docker image, follow these steps:
@@ -158,30 +160,41 @@ $ julia --project=. src/main.jl examples/DCB/DCBmodel.yaml
 For any questions or inquiries about PeriLab.jl, feel free to reach out to the authors via email.
 
 ## Authors and acknowledgment
-[Dr.-Ing. Christian Willberg](mailto::christian.willberg@dlr.de)
 
-[M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
+<a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Dr.-Ing. Christian Willberg](mailto::christian.willberg@dlr.de)
+
+<a href="https://orcid.org/0000-0002-3006-1520"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
 
 ## Project status
 `PeriLab` is currently in development.
 
 ## Acknowledgments
 <p align="center" style="font-size:0;"><!--
-  DLR      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dlr.jpg" height="120"><!--
-  DFG      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dfg.jpg" height="120"><!--
-  SACHSEN  --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/sachsen.jpg" height="120"><!--
-  HyTank  --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/hytank.jpg" height="120"><!--
-  -->
+  DLR      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dlr.jpg" height="120">
+</p>
+
+
+<p align="center" style="font-size:0;"><!--
+  <!--
+  DFG      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dfg.jpg" height="120">
 </p>
 
 This project has benefited from funding by the [Deutsche
 Forschungsgemeinschaft](https://www.dfg.de/) (DFG, German Research Foundation)
 through the following grant ''Gekoppelte Peridynamik-Finite-Elemente-Simulationen zur Schädigungsanalyse von Faserverbundstrukturen''. <br/><br/>Grant number: [WI 4835/5-1](https://gepris.dfg.de/gepris/projekt/456427423)
+<p align="center" style="font-size:0;"><!--
+  SACHSEN  --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/sachsen.jpg" height="120">
+</p>
 
 [M-ERA.NET](https://www.m-era.net/) funded project ''Exploring Multi-Method Analysis of composite structures and joints under consideration of uncertainties engineering and processing (EMMA)''
 
 This measure is co-financed with tax funds on the basis of the budget passed by the [Saxon state parlament](https://www.landtag.sachsen.de/de). <br/><br/>Grant number: [3028223](https://www.m-era.net/materipedia/2020/emma).
 
+<p align="center" style="font-size:0;"><!--
+  HyTank  --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/hytank.jpg" height="120"><!--
+  -->
+</p>
+
 [Federal Ministry for Economic Affairs and Climate Action](https://www.bmwk.de/Navigation/DE/Home/home.html) funded project 
-''Virtuelle Kennwertermittlung, Schadensprädiktion und Simulationsmethoden für geklebte Fügestellen eines LH2-Tanks in Faserverbundbauweise für die kommerzielle Luftfahrt''.<br/><br/>
+''Virtuelle Kennwertermittlung, Schadensprädiktion und Simulationsmethoden für geklebte Fügestellen eines LH2-Tanks in Faserverbundbauweise für die kommerzielle Luftfahrt (HYTANK)''.<br/><br/>
 Grant number: 20W2214G.

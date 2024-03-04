@@ -519,14 +519,21 @@ function read_mesh(filename::String, params::Dict)
             DataFrame(x=[], y=[], z=[], volume=[], block_id=Int[])
         )
 
+        id = 1
         block_id = 1
         element_written = []
+        nsets = Dict{String,Any}()
 
-        for (key, values) in element_sets
-            for (i, element_id) in enumerate(values)
+        # sort element_sets by length
+        element_sets_keys = sort(collect(keys(element_sets)), by=x -> length(element_sets[x]), rev=true)
+        for key in element_sets_keys
+            ns_nodes = Int64[]
+            for (i, element_id) in enumerate(element_sets[key])
                 if element_id in element_written
+                    push!(ns_nodes, findfirst(x -> x == element_id, element_written))
                     continue
                 end
+                push!(ns_nodes, id)
                 node_ids = elements[element_id]
                 vertices = [nodes[node_id] for node_id in node_ids]
                 center = sum(vertices) / size(vertices)[1]
@@ -538,16 +545,21 @@ function read_mesh(filename::String, params::Dict)
                     push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=block_id))
                 end
                 push!(element_written, element_id)
+                id += 1
             end
+            nsets[key] = ns_nodes
             block_id += 1
         end
+        @info "Found $(maximum(mesh_df.block_id)) block(s)"
+        @info "Found $(length(nsets)) node sets"
+        @info "NodeSets: $element_sets_keys"
 
         mesh = nothing
         nodes = nothing
         elements = nothing
         element_sets = nothing
 
-        return mesh_df
+        return mesh_df, nsets
 
     elseif params["Discretization"]["Type"] == "Text File"
         return csv_reader(filename)
@@ -724,13 +736,21 @@ Load and evaluate the mesh data.
 """
 function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
 
-    mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
-    mesh, surface_ns = extrude_surface_mesh(mesh, params)
+    if params["Discretization"]["Type"] == "Abaqus"
+        mesh, nsets = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        mesh, surface_ns = extrude_surface_mesh(mesh, params)
+        if !isnothing(surface_ns)
+            for (key, values) in surface_ns
+                nsets[key] = Vector{Int64}(values .+ id)
+            end
+        end
+    else
+        @info "Read node sets"
+        mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        nsets = get_node_sets(params, path)
+    end
     check_for_duplicate_in_dataframe(mesh)
     check_types_in_dataframe(mesh)
-
-    @info "Read node sets"
-    nsets = get_node_sets(params, path, surface_ns)
 
     external_topology = nothing
     if !isnothing(get_external_topology_name(params))
@@ -1154,7 +1174,7 @@ function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vect
 end
 
 """
-    bondIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
+    bond_intersects_disc(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
 
 Check if a line segment intersects a disk.
 
@@ -1167,7 +1187,7 @@ Check if a line segment intersects a disk.
 # Returns
 - `Bool`: True if the line segment intersects the disk, False otherwise.
 """
-function bondIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
+function bond_intersects_disc(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
     numerator = dot((lower_left_corner - p0), normal)
     denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
@@ -1198,7 +1218,7 @@ function bondIntersectsDisk(p0::Vector{Float64}, p1::Vector{Float64}, center::Ve
 end
 
 """
-    bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
+    bond_intersect_infinite_plane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
 
 Check if a line segment intersects an infinite plane.
 
@@ -1210,8 +1230,7 @@ Check if a line segment intersects an infinite plane.
 # Returns
 - `Bool`: True if the line segment intersects the plane, False otherwise.
 """
-function bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
-    numerator = dot((lower_left_corner - p0), normal)
+function bond_intersect_infinite_plane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
     denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane
@@ -1221,7 +1240,8 @@ function bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lo
         return false, undef
     end
     # The line intersects the plane
-    t = numerator / denominator
+
+    t = dot((lower_left_corner - p0), normal) / denominator
 
     # Determine if the line segment intersects the plane
     if 0.0 <= t <= 1.0
@@ -1232,7 +1252,7 @@ function bondIntersectInfinitePlane(p0::Vector{Float64}, p1::Vector{Float64}, lo
 end
 
 """
-    bondIntersectRectanglePlane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
+    bond_intersect_rectangle_plane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
 
 Check if a bond intersects a rectangle plane.
 
@@ -1246,24 +1266,19 @@ Check if a bond intersects a rectangle plane.
 # Returns
 - `Bool`: True if the point is inside the rectangle, False otherwise.
 """
-function bondIntersectRectanglePlane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
-    zero = TOLERANCE
-    one = 1.0 + zero
-
-    dr = x - lower_left_corner
-    bb = dot(dr, bottom_unit_vector)
-    if -zero < bb && bb / bottom_length < one
+function bond_intersect_rectangle_plane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
+    dr::Vector{Float64} = x - lower_left_corner
+    bb::Float64 = dot(dr, bottom_unit_vector)
+    if 0.0 <= bb && bb / bottom_length <= 1.0
         if length(normal) == 2
             return true
         end
         ua = cross(bottom_unit_vector, normal)
         aa = dot(dr, ua)
-
-        if -zero < aa && aa / side_length < one
+        if 0.0 <= aa && aa / side_length <= 1.0
             return true
         end
     end
-
     return false
 end
 
@@ -1365,7 +1380,7 @@ function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::
     for iID in 1:nnodes
         filter_flag[iID] = fill(true, length(nlist[iID]))
         for (jId, neighbor) in enumerate(nlist[iID])
-            filter_flag[iID][jId] = !bondIntersectsDisk(data[:, iID], data[:, neighbor], center, normal, filter["Radius"])
+            filter_flag[iID][jId] = !bond_intersects_disc(data[:, iID], data[:, neighbor], center, normal, filter["Radius"])
         end
     end
     return filter_flag, normal
@@ -1406,10 +1421,10 @@ function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::
     for iID in 1:nnodes
         filter_flag[iID] = fill(true, length(nlist[iID]))
         for (jID, neighborID) in enumerate(nlist[iID])
-            intersect_inf_plane, x = bondIntersectInfinitePlane(data[:, iID], data[:, neighborID], lower_left_corner, normal)
+            intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, iID], data[:, neighborID], lower_left_corner, normal)
             bond_intersect = false
             if intersect_inf_plane
-                bond_intersect = bondIntersectRectanglePlane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+                bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
             end
             filter_flag[iID][jID] = !(intersect_inf_plane && bond_intersect)
         end

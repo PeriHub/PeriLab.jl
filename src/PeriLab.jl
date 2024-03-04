@@ -45,17 +45,18 @@ using MPI
 using TimerOutputs
 using Logging
 using ArgParse
+using Dates
 
 const to = TimerOutput()
 # internal packages
 using .Data_manager
 
 import .Logging_module
-import .IO
+# import .IO
 import .Solver
 # end
 
-PERILAB_VERSION = "1.0.6"
+PERILAB_VERSION = "1.0.7"
 
 export main
 
@@ -70,9 +71,9 @@ function print_banner()
     println("""\e[]
     \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: $PERILAB_VERSION
     \e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |
-    \e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse 
-    \e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |  Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de
-    \e[1;36m8888888P"\e[0m \e[1;36md8P  Y8b\e[0m \e[1;36m888P"   888 888          \e[1;36m"88b\e[0m \e[1;36m888 "88b\e[0m  |  
+    \e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Copyright: Dr.-Ing. Christian Willberg (https://orcid.org/0000-0003-2433-9183)
+    \e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |  M.Sc. Jan-Timo Hesse (https://orcid.org/0000-0002-3006-1520)
+    \e[1;36m8888888P"\e[0m \e[1;36md8P  Y8b\e[0m \e[1;36m888P"   888 888          \e[1;36m"88b\e[0m \e[1;36m888 "88b\e[0m  |  Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de
     \e[1;36m888\e[0m       \e[1;36m88888888\e[0m \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m.d888888\e[0m \e[1;36m888  888\e[0m  |  License: BSD-3-Clause
     \e[1;36m888\e[0m       \e[1;36mY8b.\e[0m     \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m888  888\e[0m \e[1;36m888 d88P\e[0m  |  
     \e[1;36m888\e[0m        \e[1;36m"Y8888\e[0m  \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m88888888\e[0m \e[1;36m"Y888888\e[0m \e[1;36m88888P"\e[0m   |  Gitlab: https://gitlab.com/dlr-perihub/PeriLab.jl\n""")
@@ -199,6 +200,7 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
                 print_banner()
             end
             @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
+            @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
             try
                 dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))
                 if dirty
@@ -206,8 +208,10 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
                 else
                     @info git_info
                 end
-            catch
-                @warn "No current git info."
+            catch e
+                if !isa(e, LibGit2.GitError)
+                    @warn "No current git info."
+                end
             end
             if size > 1
                 @info "MPI: Running on " * string(size) * " processes"
