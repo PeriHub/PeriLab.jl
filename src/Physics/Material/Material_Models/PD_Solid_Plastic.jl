@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module PD_Solid_Elastic_Plastic
+module PD_Solid_Plastic
 using TimerOutputs
 using StaticArrays
 include("./Ordinary/Ordinary.jl")
@@ -85,7 +85,7 @@ println(material_name())
 ```
 """
 function material_name()
-  return "PD Solid Elastic Plastic"
+  return "PD Solid Plastic"
 end
 
 """

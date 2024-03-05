@@ -36,6 +36,7 @@ PeriLab:
     Node Sets:
       Node Set 1: ns1000.txt
     Type: Text File
+    Neighborhood Distribution: True
     Bond Filters:
       bf_1:
         Bottom Length: 2.0
