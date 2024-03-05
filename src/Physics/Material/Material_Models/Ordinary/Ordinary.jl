@@ -8,6 +8,7 @@ export compute_dilatation
 export compute_weighted_volume
 export get_bond_forces
 export calculate_symmetry_params
+
 """
     compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, 
                             nlist::SubArray, 
@@ -91,7 +92,6 @@ Calculate the symmetry parameters based on the given material symmetry. These pa
 - `gamma::Float64`: Gamma parameter.
 - `kappa::Float64`: Kappa parameter.
 """
-
 function calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
     three_bulk_modulus = 3 * bulk_modulus
     # from Peridigm damage model. to be checked with literature
