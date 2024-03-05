@@ -26,6 +26,7 @@ makedocs(
             "Getting Started"=>"man/getting_started.md",
             "Input File"=>"man/input_yaml.md",
             "Mesh and Nodesets"=>"man/mesh_input.md",
+            "Bond-Filter"=>"man/bond_filter.md",
         ],
         "API"=>Any[
             # "Types" => "lib/types.md",
