@@ -14,10 +14,7 @@ For a recangular plane following parameters needs to be defined:
 
 - **Side Length**: Numeric value representing the side length. (Float64 or Int64)
 
-<p align="center" style="font-size:0;"><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/docs/src/assets/tikz/Discretization_BondFilters_RectangularPlane.pdf"height="200">
-</p>
-
-
+![Discretization_BondFilters_RectangularPlane](assets/Discretization_BondFilters_RectangularPlane.png)
 
 ## Disk
 
