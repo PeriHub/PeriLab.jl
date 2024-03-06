@@ -31,11 +31,11 @@ Initializes the data for the mesh.
 """
 function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm, to::TimerOutput)
     @timeit to "init_data - mesh_data,jl" begin
-        ranks = MPI.Comm_size(comm)
+        size = MPI.Comm_size(comm)
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
         if rank == 1
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, nlist_filtered_ids, bond_norm, dof, nsets, topology, element_distribution = load_and_evaluate_mesh(params, path, ranks, to)
+            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, nlist_filtered_ids, bond_norm, dof, nsets, topology, element_distribution = load_and_evaluate_mesh(params, path, size, to)
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -51,18 +51,20 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
             ntype = Dict("controllers" => 0, "responder" => 0)
             overlap_map = nothing
         end
-        @info "Synchronize data over cores"
-        fem_active = send_value(comm, 0, fem_active)
-        dof = send_value(comm, 0, dof)
-        dof = datamanager.set_dof(dof)
-        overlap_map = send_value(comm, 0, overlap_map)
-        distribution = send_value(comm, 0, distribution)
-        nsets = send_value(comm, 0, nsets)
-        nlist = send_value(comm, 0, nlist)
-        nlist_filtered_ids = send_value(comm, 0, nlist_filtered_ids)
-        datamanager.set_overlap_map(overlap_map)
+        if size > 1
+            @info "Synchronize data over cores"
+            fem_active = send_value(comm, 0, fem_active)
+            dof = send_value(comm, 0, dof)
+            overlap_map = send_value(comm, 0, overlap_map)
+            distribution = send_value(comm, 0, distribution)
+            nsets = send_value(comm, 0, nsets)
+            nlist = send_value(comm, 0, nlist)
+            nlist_filtered_ids = send_value(comm, 0, nlist_filtered_ids)
+        end
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
         num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"], Int64)
+        dof = datamanager.set_dof(dof)
+        datamanager.set_overlap_map(overlap_map)
         datamanager.set_num_controller(num_controller)
         datamanager.set_num_responder(num_responder)
         @info "Get node sets"
@@ -70,7 +72,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         # defines the order of the global nodes to the local core nodes
         datamanager.set_distribution(distribution[rank])
         datamanager.set_glob_to_loc(glob_to_loc(distribution[rank]))
-        @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, ranks)
+        @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, size)
         @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
         @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution, false)
 
@@ -761,6 +763,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
     end
     dof::Int64 = set_dof(mesh)
     @timeit to "neighborhoodlist" nlist = create_neighborhoodlist(mesh, params, dof)
+    @info "Finished init Neighborhoodlist"
     @timeit to "apply_bond_filters" nlist, nlist_filtered_ids, bond_norm = apply_bond_filters(nlist, mesh, params, dof)
     topology = nothing
     if !isnothing(external_topology)
@@ -843,9 +846,7 @@ Create the neighborhood list of the mesh elements.
 """
 function create_neighborhoodlist(mesh::DataFrame, params::Dict, dof::Int64)
     coor = names(mesh)
-    nlist::Vector{Vector{Int64}} = neighbors(mesh, params, coor[1:dof])
-    @info "Finished init Neighborhoodlist"
-    return nlist
+    return neighbors(mesh, params, coor[1:dof])
 end
 
 """
