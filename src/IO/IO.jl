@@ -20,7 +20,6 @@ include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_communication.jl")
 using Reexport
 @reexport using .Parameter_Handling
-export close_result_files
 export initialize_data
 export init_write_results
 export write_results

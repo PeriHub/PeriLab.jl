@@ -13,8 +13,6 @@ include("./parameter_handling_solver.jl")
 include("./parameter_handling_FEM.jl")
 
 export validate_yaml
-export validate_structure_recursive
-export get_all_keys
 
 global expected_structure = Dict(
     "PeriLab" => [Dict{Any,Any}(
