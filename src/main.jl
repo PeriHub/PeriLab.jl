@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+using Revise
 using Pkg
 using MPI
 if isfile("Project.toml") && isfile("Manifest.toml")
