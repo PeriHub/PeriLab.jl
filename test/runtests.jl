@@ -118,6 +118,12 @@ MPI.Init()
                     @includetests["unit_tests/Physics/Additive/ut_Additive_Factory"]
                 end
             end
+
+            @testset "Corrosion" begin
+                @testset "ut_Corrosion_Factory" begin
+                    @includetests["unit_tests/Physics/Corrosion/ut_Corrosion_Factory"]
+                end
+            end
             @testset "Thermal" begin
                 @testset "ut_Thermal_Factory" begin
                     @includetests["unit_tests/Physics/Thermal/ut_Thermal_Factory"]

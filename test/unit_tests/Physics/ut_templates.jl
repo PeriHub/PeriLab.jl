@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../src/Support/data_manager.jl")
+include("../../../src/Physics/Corrosion/Corrosion_template/corrosion_template.jl")
 include("../../../src/Physics/Additive/Additive_template/additive_template.jl")
 include("../../../src/Physics/Damage/Damage_template/damage_template.jl")
 include("../../../src/Physics/Material/Material_template/material_template.jl")
@@ -23,6 +24,12 @@ test_Data_manager.set_num_controller(3)
     @test Additive_template.additive_name() == "Additive Template"
     @test Additive_template.compute_additive_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
     @test Additive_template.init_additive_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 1) == test_Data_manager
+end
+
+@testset "ut_additive_template" begin
+    @test Corrosion_template.corrosion_name() == "Corrosion Template"
+    @test Corrosion_template.compute_corrosion_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 0.0, 0.0) == test_Data_manager
+    @test Corrosion_template.init_corrosion_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 1) == test_Data_manager
 end
 
 @testset "ut_damage_template" begin
