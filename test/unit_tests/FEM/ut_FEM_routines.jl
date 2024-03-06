@@ -84,7 +84,10 @@ using Test
 
     for i in 1:4
         @test isapprox(determinant_jacobian[1, i], 0.25)
-        @test jacobian[1, i, :, :] == [2.0000000000000004 -1.0; 0.0 2.0]
+        @test isapprox(jacobian[1, i, 1, 1], 2.0)
+        @test isapprox(jacobian[1, i, 1, 2], -1.0)
+        @test isapprox(jacobian[1, i, 2, 1], 0.0)
+        @test isapprox(jacobian[1, i, 2, 2], 2)
     end
 
     coordinates[1, 1] = 0
@@ -99,7 +102,11 @@ using Test
     jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
     for i in 1:4
         @test isapprox(determinant_jacobian[1, i], 0.25)
-        @test jacobian[1, i, :, :] == [2.0 0.0; -1.0 2.0000000000000004]
+
+        @test isapprox(jacobian[1, i, 1, 1], 2.0)
+        @test isapprox(jacobian[1, i, 1, 2], 0.0)
+        @test isapprox(jacobian[1, i, 2, 1], -1.0)
+        @test isapprox(jacobian[1, i, 2, 2], 2)
     end
 end
 
