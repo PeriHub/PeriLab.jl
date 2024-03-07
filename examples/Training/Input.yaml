@@ -12,7 +12,7 @@ PeriLab:
   Physics:
     Material Models:
       Aluminium:
-        Material Model: annas model
+        Material Model: Bond-based Elastic
         Bulk Modulus: 2.0e5
         Shear Modulus: 1.0e5
         my new parameter: 20
@@ -65,4 +65,3 @@ PeriLab:
         Damage: True
         Material field: True
         myName: True
-
