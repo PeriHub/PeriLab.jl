@@ -936,21 +936,23 @@ function set_dof(n::Int64)
 end
 
 """
-    set_fem(n::Bool)
+    set_fem(value::Bool)
 
 Activates and deactivates the FEM option in PeriLab
 
 # Arguments
-- `n::Bool`: The value to set FEM active (true) or not (false).
+- `value::Bool`: The value to set FEM active (true) or not (false).
 
 Example:
 ```julia
 set_fem(true)  # sets the fem_option to true
 ```
 """
-function set_fem(n::Bool)
-    @info "FEM option is set to $n"
-    global fem_option = n
+function set_fem(value::Bool)
+    if value
+        @info "FEM is enabled"
+    end
+    global fem_option = value
 end
 
 """
