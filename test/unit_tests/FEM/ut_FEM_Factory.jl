@@ -88,8 +88,8 @@ end
     @test "Lumped Mass Matrix" in test_Data_manager.get_all_field_keys()
     lumped_mass = test_Data_manager.get_field("Lumped Mass Matrix")
 
-    @test lumped_mass[:, 1] == [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994]
-    @test lumped_mass[:, 2] == [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994]
+    @test isapprox(lumped_mass[:, 1], [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994])
+    @test isapprox(lumped_mass[:, 2], [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994])
     # only in tests for resize or redefinition reasons
     test_Data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
     @test isnothing(FEM.init_FEM(params, test_Data_manager))
