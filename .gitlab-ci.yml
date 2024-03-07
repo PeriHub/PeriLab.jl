@@ -25,7 +25,7 @@ main_test:
       - src/**/*
       - test/**/*
   script:
-    - julia --project=@. -e 'import Pkg; Pkg.add("Revise");
+    - julia --project=@. -e 'import Pkg;
       Pkg.test(; coverage = true)'
     - CODECOV_TOKEN=$CODECOV_TOKEN julia -e 'import Pkg; Pkg.add("Coverage");
       using Coverage; cl, tl = get_summary(process_folder());
@@ -47,7 +47,7 @@ test:
       - src/**/*
       - test/**/*
   script:
-    - julia --project=@. -e 'import Pkg; Pkg.add("Revise");
+    - julia --project=@. -e 'import Pkg;
       Pkg.test(; coverage = true)'
     - CODECOV_TOKEN=$CODECOV_TOKEN julia -e 'import Pkg; Pkg.add("Coverage");
       using Coverage; cl, tl = get_summary(process_folder());

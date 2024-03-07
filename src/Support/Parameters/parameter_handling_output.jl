@@ -7,6 +7,8 @@ export get_write_after_damage
 export get_outputs
 export get_output_frequency
 export get_output_filenames
+export get_output_type
+export check_for_duplicates
 
 
 """
