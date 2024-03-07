@@ -187,9 +187,6 @@ This function serves as the entry point for the PeriLab application. It calls th
 function main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
     @timeit to "PeriLab" begin
-
-        # init MPI as always ...
-        # MPI.Init()
         comm = MPI.COMM_WORLD
         rank = MPI.Comm_rank(comm)
         size = MPI.Comm_size(comm)
@@ -266,7 +263,6 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         if size > 1 || dry_run
             IO.delete_files(result_files, output_dir)
         end
-        # MPI.Finalize()
     end
     if verbose
         TimerOutputs.complement!(to)
