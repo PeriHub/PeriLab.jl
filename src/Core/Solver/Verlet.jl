@@ -395,6 +395,9 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             if solver_options["Thermal Models"]
                 temperatureNP1[nodes] = temperatureN[nodes] + deltaT[nodes]
             end
+            if solver_options["Corrosion Models"]
+                @warn "Time integration is not included yet, please define the relevant parameters and formula."
+            end
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
             #if solver_options["Material Models"]
             #needed because of optional deformation_gradient, Deformed bonds, etc.
@@ -428,6 +431,9 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 if fem_option && time == 0
                     @warn "Thermal models are not supported for FEM yet."
                 end
+            end
+            if solver_options["Corrosion Models"]
+                @warn "Time integration is not included yet, please define the relevant parameters and formula."
             end
             if solver_options["Damage Models"]
                 max_damage = maximum(damage[find_active(active[1:nnodes])])
