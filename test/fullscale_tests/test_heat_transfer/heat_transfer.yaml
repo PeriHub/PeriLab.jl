@@ -37,7 +37,6 @@ PeriLab:
   Solver:
     Material Models: False
     Thermal Models: True
-    Verbose: False
     Initial Time: 0.0
     Final Time: 2e-5
     Numerical Damping: 0e-00

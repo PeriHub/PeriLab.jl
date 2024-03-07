@@ -40,7 +40,6 @@ PeriLab:
       Coordinate: "x"
       Value: "0.0"
   Solver:
-    Verbose: False
     Initial Time: 0.0
     Final Time: 1e-04
     Verlet:

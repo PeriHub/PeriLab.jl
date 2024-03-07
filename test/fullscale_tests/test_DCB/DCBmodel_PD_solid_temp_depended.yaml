@@ -44,7 +44,7 @@ PeriLab:
     BC_3:
       Type: "Temperature"
       Node Set: "Node Set 3"
-      Value: "0"      
+      Value: "0"
   Compute Class Parameters:
     External_Forces:
       Compute Class: Block_Data
@@ -123,7 +123,6 @@ PeriLab:
     Material Models: true
     Damage Models: true
     Thermal Models: true
-    Verbose: false
     Numerical Damping: 5.0e-06
     Verlet:
       Safety Factor: 0.9

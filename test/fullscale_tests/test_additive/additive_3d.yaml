@@ -26,7 +26,6 @@ PeriLab:
     Additive Models: True
     Material Models: False
     Thermal Models: False
-    Verbose: False
     Initial Time: 0.0
     Final Time: 0.8
     Numerical Damping: 0e-0

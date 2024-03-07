@@ -41,13 +41,12 @@ PeriLab:
     Material Models: True
     Thermal Models: True
     Damage Models: False
-    Verbose: False
     Initial Time: 0.0
     Final Time: 2.01e-6
     Numerical Damping: 0.01
     Verlet:
       Safety Factor: 1.00
-      
+
   Outputs:
     Output1:
       Output Filename: "thermal_expansion_correspondence"
