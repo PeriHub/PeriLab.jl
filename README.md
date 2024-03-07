@@ -168,6 +168,22 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 ## Project status
 `PeriLab` is currently in development.
 
+
+## How to cite
+
+```s
+@software{PeriLab2023,
+  author       = {Willberg, Christian and Hesse, Jan-Timo},
+  title        = {PeriLab - Peridynamic Laboratory v1.0},
+  month        = nov,
+  year         = 2023,
+  publisher    = {Zenodo},
+  version      = {1.0},
+  doi          = {10.5281/zenodo.10229386},
+  url          = {https://doi.org/10.5281/zenodo.10229386}
+}
+```
+
 ## Acknowledgments
 <p align="center" style="font-size:0;"><!--
   DLR      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dlr.jpg" height="120">
