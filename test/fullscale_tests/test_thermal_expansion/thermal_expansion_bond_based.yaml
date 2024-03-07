@@ -41,7 +41,6 @@ PeriLab:
   Solver:
     Material Models: True
     Thermal Models: True
-    Verbose: False
     Initial Time: 0.0
     Final Time: 2.01e-8
     # larger numerical damping leads to the correct solution

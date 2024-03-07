@@ -39,7 +39,6 @@ PeriLab:
       Coordinate: "y"
       Value: "0.0"
   Solver:
-    Verbose: False
     Initial Time: 0.0
     Final Time: 0.8
     Numerical Damping: 0e-0

@@ -48,10 +48,8 @@ PeriLab:
   Solver:
     Material Models: True
     Damage Models: True
-    Verbose: False
     Initial Time: 0.0
     Final Time: 1.2e-6
-    End step after damage: 3
     Verlet:
       Safety Factor: 1.00
   Compute Class Parameters:
@@ -76,7 +74,6 @@ PeriLab:
         Displacements: True
         Volume: True
         Number of Neighbors: True
-        Strain: True
         Damage: True
         Angles: True
         External_Displacements: True

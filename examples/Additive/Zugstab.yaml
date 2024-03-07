@@ -58,7 +58,6 @@ PeriLab:
     Additive Models: True
     Material Models: False
     Thermal Models: True
-    Verbose: False
     Initial Time: 0.0
     Final Time: 2700
     # Final Time: 500

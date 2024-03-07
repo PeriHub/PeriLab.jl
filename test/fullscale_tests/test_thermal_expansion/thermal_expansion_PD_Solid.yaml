@@ -41,7 +41,6 @@ PeriLab:
   Solver:
     Material Models: True
     Thermal Models: True
-    Verbose: False
     Initial Time: 0.0
     Final Time: 2.01e-8
     # larger numerical damping leads to the correct solution
@@ -49,7 +48,7 @@ PeriLab:
     Numerical Damping: 0
     Verlet:
       Safety Factor: 1.00
-      
+
   Outputs:
     Output1:
       Output Filename: "thermal_expansion_PD_Solid"

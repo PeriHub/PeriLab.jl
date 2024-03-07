@@ -5,7 +5,6 @@ include("../helpers.jl")
 @reexport using .Helpers: interpolation, interpol_data
 export get_model_parameter
 export find_data_files
-export csv_reader_temporary
 
 """
     get_model_parameter(params, model, id)
