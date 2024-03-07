@@ -151,8 +151,9 @@ Get the solver options
 """
 function get_solver_options(params::Dict)
     additive::Bool = get(params["Solver"], "Additive Models", false)
+    corrosion::Bool = get(params["Solver"], "Corrosion Models", false)
     damage::Bool = get(params["Solver"], "Damage Models", false)
     mechanical::Bool = get(params["Solver"], "Material Models", true)
     thermal::Bool = get(params["Solver"], "Thermal Models", false)
-    return Dict{String,Any}("Additive Models" => additive, "Damage Models" => damage, "Material Models" => mechanical, "Thermal Models" => thermal)
+    return Dict{String,Any}("Additive Models" => additive,"Corrosion Models" => corrosion, "Damage Models" => damage, "Material Models" => mechanical, "Thermal Models" => thermal)
 end

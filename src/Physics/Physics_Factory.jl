@@ -7,6 +7,7 @@ include("../Support/helpers.jl")
 using Reexport
 @reexport using .Helpers: check_inf_or_nan, find_active, find_inverse_bond_id, get_active_update_nodes
 include("./Additive/Additive_Factory.jl")
+include("./Corrosion/Corrosion_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
@@ -17,6 +18,7 @@ include("../Support/Parameters/parameter_handling.jl")
 include("../FEM/FEM_Factory.jl")
 
 using .Additive
+using .Corrosion
 using .Damage
 using .Material
 using .Pre_calculation
@@ -28,6 +30,7 @@ export compute_models
 export init_models
 export read_properties
 export init_additive_model_fields
+export init_corrosion_model_fields
 export init_damage_model_fields
 export init_material_model_fields
 export init_thermal_model_fields
@@ -287,6 +290,16 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
             end
         end
     end
+    if solver_options["Corrosion Models"]
+        @info "Init corrosion models"
+        @timeit to "corrosion_model_fields" datamanager = Physics.init_corrosion_model_fields(datamanager)
+
+        for block in eachindex(block_nodes)
+            if datamanager.check_property(block, "Corrosion Model")
+                @timeit to "init corrosion model" datamanager = Corrosion.init_corrosion_model(datamanager, block_nodes[block], block)
+            end
+        end
+    end
     if solver_options["Damage Models"]
         @info "Init damage models"
         @timeit to "damage_model_fields" datamanager = Physics.init_damage_model_fields(datamanager, params)
@@ -370,6 +383,22 @@ function init_additive_model_fields(datamanager::Module)
     end
     nlist = datamanager.get_field("Neighborhoodlist")
     inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
+    return datamanager
+end
+
+
+"""
+init_corrosion_model_fields(datamanager::Module)
+
+Initialize concentration model fields
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
+function init_corrosion_model_fields(datamanager::Module)
+    datamanager.create_node_field("Concentration", Float64, 1)
     return datamanager
 end
 
