@@ -70,7 +70,7 @@ Calculate the global value of a field for a given block.
 - `calculation_type::String`: Calculation type.
 - `block::Int64`: Block number.
 # Returns
-- `value::Vector`: Global value.
+- `value::Float64`: Global value.
 - `nnodes::Int64`: Number of nodes.
 """
 function calculate_block(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, block::Int64)
@@ -91,25 +91,25 @@ function calculate_block(datamanager::Module, fieldKey::String, dof::Union{Int64
 
     if calculation_type == "Sum"
         if length(block_nodes) == 0
-            value = fill(field_type(0), length(field[1, :]))
+            value = field_type(0)
         else
             value = global_value_sum(field, dof, block_nodes)
         end
     elseif calculation_type == "Maximum"
         if length(block_nodes) == 0
-            value = fill(typemin(field_type), length(field[1, :]))
+            value = typemin(field_type)
         else
             value = global_value_max(field, dof, block_nodes)
         end
     elseif calculation_type == "Minimum"
         if length(block_nodes) == 0
-            value = fill(typemax(field_type), length(field[1, :]))
+            value = typemax(field_type)
         else
             value = global_value_min(field, dof, block_nodes)
         end
     elseif calculation_type == "Average"
         if length(block_nodes) == 0
-            value = fill(field_type(0), length(field[1, :]))
+            value = field_type(0)
         else
             value = global_value_avg(field, dof, block_nodes)
         end
