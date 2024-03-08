@@ -488,10 +488,7 @@ function get_global_values(output::Dict, datamanager::Module)
         end
         @info global_value
         if datamanager.get_max_rank() > 1
-            for iID in eachindex(global_value)
-                @info global_value[iID]
-                global_value[iID] = find_global_core_value!(global_value[iID], calculation_type, nnodes, datamanager)
-            end
+            global_value = find_global_core_value!(global_value, calculation_type, nnodes, datamanager)
         end
         append!(global_values, global_value)
     end
