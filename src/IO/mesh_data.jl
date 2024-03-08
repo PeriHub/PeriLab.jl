@@ -949,7 +949,7 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, distributi
     else
         if distribution_type == "Neighbor based"
             distribution, ptc = create_distribution_neighbor_based(nnodes, nlist, size)
-        else if distribution_type == "Node based"
+        elseif distribution_type == "Node based"
             distribution, ptc = create_distribution_node_based(nnodes, nlist, size)
         else
             distribution, ptc = create_distribution(nnodes, size)
