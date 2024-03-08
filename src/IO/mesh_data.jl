@@ -1150,24 +1150,24 @@ function create_distribution_neighbor_based(nnodes::Int64, nlist::Vector{Vector{
 
         if not_included_nodes[iID]
             number_neighbors += length(nlist[iID])
-            if number_neighbors >= number_neighbors_per_core
+            push!(distr_sub_vector, iID)
+            not_included_nodes[iID] = false
+            if number_neighbors > number_neighbors_per_core
                 push!(distribution, distr_sub_vector)
                 distr_sub_vector = []
                 number_neighbors = 0
             end
-            push!(distr_sub_vector, iID)
-            not_included_nodes[iID] = false
         end # muss das hinter die nächste schleife? -> test über die bool liste
         for jID in nlist[iID]
             if not_included_nodes[jID]
                 number_neighbors += length(nlist[jID])
-                if number_neighbors >= number_neighbors_per_core
+                push!(distr_sub_vector, jID)
+                not_included_nodes[jID] = false
+                if number_neighbors > number_neighbors_per_core
                     push!(distribution, distr_sub_vector)
                     distr_sub_vector = []
                     number_neighbors = 0
                 end
-                push!(distr_sub_vector, jID)
-                not_included_nodes[jID] = false
             end
         end
     end
