@@ -59,7 +59,7 @@ global expected_structure = Dict(
                             "Any" => [Union{Int64,String}, true],
                         ), false],
                     "Type" => [String, true],
-                    "Neighborhood Distribution" => [Bool, false],
+                    "Distribution Type" => [String, false],
                     "Surface Extrusion" => [Dict{Any,Any}(
                             "Direction" => [String, true],
                             "Step" => [Union{Float64,Int64}, true],

@@ -178,30 +178,30 @@ end
 
     @test isnothing(IO.get_local_element_topology(test_Data_manager, topology, distribution[3]))
 end
-@testset "ut_create_base_chunk" begin
-    distribution, point_to_core = IO.create_base_chunk(4, 1)
+@testset "ut_create_distribution" begin
+    distribution, point_to_core = IO.create_distribution(4, 1)
     @test length(distribution) == 1
     @test distribution[1] == Int64[1, 2, 3, 4]
     @test point_to_core == Int64[1, 1, 1, 1]
-    distribution, point_to_core = IO.create_base_chunk(4, 2)
+    distribution, point_to_core = IO.create_distribution(4, 2)
     @test length(distribution) == 2
     @test distribution[1] == Int64[1, 2]
     @test distribution[2] == Int64[3, 4]
     @test point_to_core == Int64[1, 1, 2, 2]
-    distribution, point_to_core = IO.create_base_chunk(4, 3)
+    distribution, point_to_core = IO.create_distribution(4, 3)
     @test length(distribution) == 3
     @test distribution[1] == Int64[1]
     @test distribution[2] == Int64[2]
     @test distribution[3] == Int64[3, 4]
     @test point_to_core == Int64[1, 2, 3, 3]
-    distribution, point_to_core = IO.create_base_chunk(4, 4)
+    distribution, point_to_core = IO.create_distribution(4, 4)
     @test length(distribution) == 4
     @test distribution[1] == Int64[1]
     @test distribution[2] == Int64[2]
     @test distribution[3] == Int64[3]
     @test distribution[4] == Int64[4]
     @test point_to_core == Int64[1, 2, 3, 4]
-    distribution, point_to_core = IO.create_base_chunk(4, 5)
+    distribution, point_to_core = IO.create_distribution(4, 5)
     @test isnothing(distribution)
     @test isnothing(point_to_core)
 
@@ -210,11 +210,11 @@ end
     nlist[2] = [1, 3, 4]
     nlist[3] = [1, 2]
     nlist[4] = [2]
-    @test IO.create_base_chunk(4, nlist, 1) == IO.create_base_chunk(4, 1)
-    distribution, point_to_core = IO.create_base_chunk(4, nlist, 2)
+    @test IO.create_distribution(4, nlist, 1) == IO.create_distribution(4, 1)
+    distribution, point_to_core = IO.create_distribution(4, nlist, 2)
     @test distribution[1] == Int64[1, 2]
     @test distribution[2] == Int64[3, 4]
-    distribution, point_to_core = IO.create_base_chunk(4, nlist, 3)
+    distribution, point_to_core = IO.create_distribution(4, nlist, 3)
     @test distribution[1] == Int64[1]
     @test distribution[2] == Int64[2]
     @test distribution[3] == Int64[3, 4]
@@ -223,7 +223,7 @@ end
     nlist[2] = [3, 4]
     nlist[3] = [2]
     nlist[4] = [1, 2]
-    distribution, point_to_core = IO.create_base_chunk(4, nlist, 2)
+    distribution, point_to_core = IO.create_distribution(4, nlist, 2)
     @test distribution[1] == Int64[1, 4]
     @test distribution[2] == Int64[2, 3]
     @test point_to_core == Int64[1, 2, 2, 1]

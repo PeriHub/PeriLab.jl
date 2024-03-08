@@ -771,8 +771,8 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
         nlist, topology = create_consistent_neighborhoodlist(external_topology, params["Discretization"]["Input External Topology"], nlist, dof)
     end
     @info "Start distribution"
-    if haskey(params["Discretization"], "Neighborhood Distribution")
-        @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize, params["Discretization"]["Neighborhood Distribution"])
+    if haskey(params["Discretization"], "Distribution Type")
+        @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize, params["Discretization"]["Distribution Type"])
     else
         @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize)
     end
@@ -891,7 +891,7 @@ function element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64
         distribution = [collect(1:nelements)]
         etc::Vector{Int64} = []
     else
-        distribution, etc = create_base_chunk(nelements, size)
+        distribution, etc = create_distribution(nelements, size)
         # check if at least one node of an element is at the same core
         temp = []
         for i_core in 1:size
@@ -930,12 +930,13 @@ Create the distribution of the nodes.
 # Arguments
 - `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
 - `size::Int64`: The number of ranks.
+- `distribution_type::String`: The distribution type.
 # Returns
 - `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
 - `ptc::Vector{Int64}`: Defines at which core / rank each node lies.
 - `ntype::Dict`: The type of the nodes.
 """
-function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, neighbor_distribution::Bool=false)
+function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, distribution_type::String="Neighbor based")
 
     nnodes = length(nlist)
     ntype = Dict("controllers" => Int64[], "responder" => Int64[])
@@ -946,10 +947,12 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, neighbor_d
         append!(ntype["controllers"], nnodes)
         append!(ntype["responder"], 0)
     else
-        if neighbor_distribution
-            distribution, ptc = create_base_chunk(nnodes, nlist, size)
+        if distribution_type == "Neighbor based"
+            distribution, ptc = create_distribution_neighbor_based(nnodes, nlist, size)
+        else if distribution_type == "Node based"
+            distribution, ptc = create_distribution_node_based(nnodes, nlist, size)
         else
-            distribution, ptc = create_base_chunk(nnodes, size)
+            distribution, ptc = create_distribution(nnodes, size)
         end
         # check neighborhood & overlap -> all nodes after chunk are overlap
         for i in 1:size
@@ -1042,7 +1045,7 @@ end
 
 
 """
-    create_base_chunk(nnodes::Int64,nlist::Vector{Vector{Int64}}, size::Int64)
+    create_distribution_node_based(nnodes::Int64,nlist::Vector{Vector{Int64}}, size::Int64)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
@@ -1054,14 +1057,14 @@ Calculate the initial size of each chunk for a nearly equal number of nodes vs. 
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
-function create_base_chunk(nnodes::Int64, nlist::Vector{Vector{Int64}}, size::Int64)
+function create_distribution_node_based(nnodes::Int64, nlist::Vector{Vector{Int64}}, size::Int64)
     if size > nnodes
         @error "Number of cores $size exceeds number of nodes $nnodes."
         return nothing, nothing
     end
     chunk_size = div(nnodes, size)
     if size == 1
-        return create_base_chunk(nnodes, size)
+        return create_distribution(nnodes, size)
     end
     # Split the data into chunks
     distribution = Vector{Vector{Int64}}(undef, size - 1)
@@ -1107,9 +1110,79 @@ function create_base_chunk(nnodes::Int64, nlist::Vector{Vector{Int64}}, size::In
     return distribution, point_to_core
 end
 
+"""
+    create_distribution_neighbor_based(nnodes::Int64,nlist::Vector{Vector{Int64}}, size::Int64)
+
+Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
+
+# Arguments
+- `nnodes::Int64`: The number of nodes.
+- `nlist::Vector{Vector{Int64}}`: The neighborhood list.
+- `size::Int64`: The number of cores.
+# Returns
+- `distribution::Array{Int64,1}`: The distribution of the nodes.
+- `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
+"""
+function create_distribution_neighbor_based(nnodes::Int64, nlist::Vector{Vector{Int64}}, size::Int64)
+    if size > nnodes
+        @error "Number of cores $size exceeds number of nodes $nnodes."
+        return nothing, nothing
+    end
+
+    number_neighbors_sum = sum(length.(nlist))
+    number_neighbors_per_core = div(number_neighbors_sum, size)
+
+    if size == 1
+        return create_distribution(nnodes, size)
+    end
+    # chunk_size = div(nnodes, size)
+    # Split the data into chunks
+    distribution = Vector{Vector{Int64}}()
+    distr_sub_vector = Vector{Int64}()
+    # for i in 1:size-1
+    #     distribution[i] = zeros(Int64, chunk_size)
+    # end
+    point_to_core::Vector{Int64} = zeros(Int64, nnodes)
+    not_included_nodes::Vector{Bool} = fill(true, nnodes)
+    number_neighbors::Int64 = 0
+
+    for iID in 1:nnodes
+
+        if not_included_nodes[iID]
+            number_neighbors += length(nlist[iID])
+            if number_neighbors >= number_neighbors_per_core
+                push!(distribution, distr_sub_vector)
+                distr_sub_vector = []
+                number_neighbors = 0
+            end
+            push!(distr_sub_vector, iID)
+            not_included_nodes[iID] = false
+        end # muss das hinter die nächste schleife? -> test über die bool liste
+        for jID in nlist[iID]
+            if not_included_nodes[jID]
+                number_neighbors += length(nlist[jID])
+                if number_neighbors >= number_neighbors_per_core
+                    push!(distribution, distr_sub_vector)
+                    distr_sub_vector = []
+                    number_neighbors = 0
+                end
+                push!(distr_sub_vector, jID)
+                not_included_nodes[jID] = false
+            end
+        end
+    end
+    push!(distribution, distr_sub_vector)
+    if sum(not_included_nodes) > 0 || length(distribution) != size
+        @error "code must be improved"
+    end
+    for i in 1:size
+        point_to_core[distribution[i]] .= i
+    end
+    return distribution, point_to_core
+end
 
 """
-    create_base_chunk(nnodes::Int64, size::Int64)
+    create_distribution(nnodes::Int64, size::Int64)
 
 Calculate the initial size of each chunk for a nearly equal number of nodes vs. cores this algorithm might lead to the problem, that the last core is not equally loaded
 
@@ -1120,7 +1193,7 @@ Calculate the initial size of each chunk for a nearly equal number of nodes vs. 
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
-function create_base_chunk(nnodes::Int64, size::Int64)
+function create_distribution(nnodes::Int64, size::Int64)
     if size > nnodes
         @error "Number of cores $size exceeds number of nodes $nnodes."
         return nothing, nothing

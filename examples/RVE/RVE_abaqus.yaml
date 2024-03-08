@@ -6,7 +6,7 @@ PeriLab:
   Discretization:
     Input Mesh File: INPUTFILE.inp
     Type: Abaqus
-    Neighborhood Distribution: True
+    Distribution Type: Neighbor based
     Surface Extrusion:
       Direction: X
       Step: 0.5

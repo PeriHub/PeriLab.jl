@@ -35,7 +35,7 @@ PeriLab:
     Input Mesh File: mesh1000.txt
     Node Sets:
       Node Set 1: ns1000.txt
-    Neighborhood Distribution: True
+    Distribution Type: Neighbor based
     Type: Text File
     Bond Filters:
       bf_1:

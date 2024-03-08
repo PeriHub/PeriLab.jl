@@ -46,7 +46,7 @@ The PeriLab configuration file is a YAML file used to specify the parameters for
 - **Node Sets**: Dictionary of node sets. (optional)
   - **_Own_Name_**: Numeric value or string representing the node set. (Int64 or String)
 - **Type**: String representing the type of discretization.
-- **Neighborhood Distribution**: Boolean indicating whether to use neighborhood distribution. (optional)
+- **Distribution Type**: String representing the distribution type. (optional)
 - **Surface Extrusion**: Extrusion parameters. (optional)
   - **Direction**: String representing the extrusion direction.
   - **Step**: Numeric value representing the extrusion step. (Float64 or Int64)

@@ -58,7 +58,9 @@ get_number_of_neighbornodes
 node_distribution
 _init_overlap_map_
 create_overlap_map
-create_base_chunk
+create_distribution
+create_distribution_node_based
+create_distribution_neighbor_based
 neighbors
 bond_intersects_disc
 bond_intersect_infinite_plane
