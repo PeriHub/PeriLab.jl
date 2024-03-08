@@ -25,6 +25,7 @@ export init_write_results
 export write_results
 export merge_exodus_files
 export show_block_summary
+export show_mpi_summary
 output_frequency = []
 global_values = []
 
@@ -485,9 +486,10 @@ function get_global_values(output::Dict, datamanager::Module)
             node_set = output[varname]["nodeset"]
             global_value, nnodes = calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_set)
         end
-
+        @info global_value
         if datamanager.get_max_rank() > 1
             for iID in eachindex(global_value)
+                @info global_value[iID]
                 global_value[iID] = find_global_core_value!(global_value[iID], calculation_type, nnodes, datamanager)
             end
         end
@@ -553,7 +555,14 @@ Show block summary.
 - `datamanager::Module`: The datamanager
 """
 function show_block_summary(solver_options::Dict, params::Dict, comm::MPI.Comm, datamanager::Module)
-    headers = ["Block", "Material", "Damage", "Thermal", "Additive", "Density", "Horizon", "Number of Nodes"]
+    rank = MPI.Comm_rank(comm)
+    size = MPI.Comm_size(comm)
+
+    if size == 1
+        headers = ["Block", "Material", "Damage", "Thermal", "Additive", "Density", "Horizon", "Number of Nodes"]
+    else
+        headers = ["Block", "Material", "Damage", "Thermal", "Additive", "Density", "Horizon"]
+    end
     df = DataFrame([header => [] for header in headers])
     # tbd
     #types = [Int64, String, String, String, String, Float64, Float64, Int64]
@@ -563,12 +572,9 @@ function show_block_summary(solver_options::Dict, params::Dict, comm::MPI.Comm, 
     block_list = datamanager.get_block_list()
     block_list = ["block_" * string(block) for block in block_list]
 
-    rank = MPI.Comm_rank(comm)
-    size = MPI.Comm_size(comm)
-
     for id in eachindex(block_list)
         row = [block_list[id]]
-        for name in headers[2:end-3]
+        for name in headers[2:5]
             if !solver_options[name*" Models"]
                 push!(row, "")
             elseif haskey(params["Blocks"][block_list[id]], name * " Model")
@@ -577,18 +583,17 @@ function show_block_summary(solver_options::Dict, params::Dict, comm::MPI.Comm, 
                 push!(row, "")
             end
         end
-        for name in headers[end-2:end-1]
+
+        for name in headers[6:7]
             if haskey(params["Blocks"][block_list[id]], name)
                 push!(row, string(params["Blocks"][block_list[id]][name]))
             else
                 push!(row, "")
             end
         end
-        # get number of nodes
-        num_nodes = string(length(findall(x -> x == id, block_Id)))
-        if size > 1
-            push!(row, num_nodes * "($rank)")
-        else
+        if size == 1
+            # get number of nodes
+            num_nodes = string(length(findall(x -> x == id, block_Id)))
             push!(row, num_nodes)
         end
         push!(df, row)
@@ -604,14 +609,55 @@ function show_block_summary(solver_options::Dict, params::Dict, comm::MPI.Comm, 
         for block in blocks
             block_rows = filter(row -> row.Block == block, merged_df)
             new_row = block_rows[1, :]
-            for row in eachrow(block_rows[2:end, :])
-                if row["Number of Nodes"][1] != "0"
-                    new_row["Number of Nodes"] = new_row["Number of Nodes"] * ", " * row["Number of Nodes"]
-                end
-            end
             push!(full_df, new_row)
         end
         @info full_df
+    else
+        @info df
+    end
+
+end
+
+"""
+    show_mpi_summary(datamanager::Module)
+
+Show MPI summary.
+
+# Arguments
+- `datamanager::Module`: The datamanager
+"""
+function show_mpi_summary(comm::MPI.Comm, datamanager::Module)
+
+    size = MPI.Comm_size(comm)
+
+    if size == 1
+        return
+    end
+
+    rank = MPI.Comm_rank(comm)
+
+    block_Id = datamanager.get_field("Block_Id")
+    block_list = datamanager.get_block_list()
+    nlist = datamanager.get_nlist()
+    headers = ["Rank"]
+    append!(headers, ["block_" * string(block) for block in block_list])
+
+    df = DataFrame([header => [] for header in headers])
+
+    row = [string(rank)]
+    for id in eachindex(block_list)
+        # get number of nodes
+        # num_nodes = string(length(findall(x -> x == id, block_Id)))
+        num_nodes = string(sum(length.(nlist[findall(x -> x == id, block_Id)])))
+        push!(row, num_nodes)
+    end
+    push!(df, row)
+    # Gather all DataFrames to the root process (rank 0)
+    all_dfs = gather_values(comm, df)
+
+    if rank == 0
+        merged_df = vcat(all_dfs...)
+        @info sort!(merged_df)
     else
         @info df
     end
