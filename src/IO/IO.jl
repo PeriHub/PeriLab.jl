@@ -637,17 +637,22 @@ function show_mpi_summary(comm::MPI.Comm, datamanager::Module)
     rank = MPI.Comm_rank(comm)
 
     block_Id = datamanager.get_field("Block_Id")
-    block_list = datamanager.get_block_list()
+    max_block_id = maximum(datamanager.get_block_list())
+    max_block_id = find_and_set_core_value_max(comm, max_block_id)
     nlist = datamanager.get_nlist()
     headers = ["Rank"]
-    append!(headers, ["block_" * string(block) for block in block_list])
+    append!(headers, ["block_" * string(block) for block in range(1, max_block_id)])
 
     df = DataFrame([header => [] for header in headers])
 
     row = [string(rank)]
-    for id in eachindex(block_list)
+    for id in range(1, max_block_id)
         # get number of nodes
         # num_nodes = string(length(findall(x -> x == id, block_Id)))
+        if findall(x -> x == id, block_Id) == []
+            push!(row, "")
+            continue
+        end
         num_nodes = string(sum(length.(nlist[findall(x -> x == id, block_Id)])))
         push!(row, num_nodes)
     end
@@ -657,7 +662,7 @@ function show_mpi_summary(comm::MPI.Comm, datamanager::Module)
 
     if rank == 0
         merged_df = vcat(all_dfs...)
-        @info sort!(merged_df)
+        @info sort!(merged_df, [:Rank])
     else
         @info df
     end
