@@ -8,6 +8,8 @@ using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
 using Reexport
+using PrettyTables
+using Logging
 
 include("../../Support/helpers.jl")
 @reexport using .Helpers: check_inf_or_nan, find_active, progress_bar
@@ -230,21 +232,21 @@ This function may depend on the following functions:
 - `find_and_set_core_value_min` and `find_and_set_core_value_max`: Used to set core values in a distributed computing environment.
 """
 function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
-    @info "======================="
-    @info "==== Verlet Solver ===="
-    @info "======================="
+    # @info "======================="
+    # @info "==== Verlet Solver ===="
+    # @info "======================="
 
     initial_time = get_initial_time(params)
     final_time = get_final_time(params)
     safety_factor = get_safety_factor(params)
     dt = get_fixed_dt(params)
-    @info "Initial time: " * string(initial_time) * " [s]"
-    @info "Final time: " * string(final_time) * " [s]"
+    # @info "Initial time: " * string(initial_time) * " [s]"
+    # @info "Final time: " * string(final_time) * " [s]"
     if dt == -1.0
         dt = compute_crititical_time_step(datamanager, block_nodes, mechanical, thermo)
-        @info "Minimal time increment: " * string(dt) * " [s]"
+        # @info "Minimal time increment: " * string(dt) * " [s]"
     else
-        @info "Fixed time increment: " * string(dt) * " [s]"
+        # @info "Fixed time increment: " * string(dt) * " [s]"
     end
 
     nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * dt)
@@ -254,10 +256,50 @@ function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     numerical_damping = get_numerical_damping(params)
     max_damage = get_max_damage(params)
 
-    @info "Safety Factor: " * string(safety_factor)
-    @info "Time increment: " * string(dt) * " [s]"
-    @info "Number of steps: " * string(nsteps)
-    @info "Numerical Damping " * string(numerical_damping)
+    # @info "Safety Factor: " * string(safety_factor)
+    # @info "Time increment: " * string(dt) * " [s]"
+    # @info "Number of steps: " * string(nsteps)
+    # @info "Numerical Damping " * string(numerical_damping)
+    data = [
+        "Verlet Solver" "" "" "";
+        "Initial time" "."^10 initial_time "s";
+        "Final time" "."^10 final_time "s";
+        "Minimal time increment" "."^10 dt "s";
+        "Fixed time increment" "."^10 dt "s";
+        "Safety factor" "."^10 safety_factor "";
+        "Time increment" "."^10 dt "s";
+        "Number of steps" "."^10 nsteps "";
+        "Numerical Damping" "."^10 numerical_damping "";
+    ]
+    if datamanager.get_rank() == 0
+        pretty_table(
+            data;
+            body_hlines        = [1,9],
+            body_hlines_format = Tuple('─' for _ = 1:4),
+            cell_alignment     = Dict((1, 1) => :l),
+            formatters         = ft_printf("%10.1f", 2),
+            highlighters       = (
+                hl_cell([(1, 1)], crayon"bold"),
+                hl_col(2, crayon"dark_gray")
+            ),
+            show_header        = false,
+            tf                 = tf_borderless
+        )
+        pretty_table(
+            current_logger().loggers[2].logger.stream,
+            data;
+            body_hlines        = [1,9],
+            body_hlines_format = Tuple('─' for _ = 1:4),
+            cell_alignment     = Dict((1, 1) => :l),
+            formatters         = ft_printf("%10.1f", 2),
+            highlighters       = (
+                hl_cell([(1, 1)], crayon"bold"),
+                hl_col(2, crayon"dark_gray")
+            ),
+            show_header        = false,
+            tf                 = tf_borderless
+        )
+    end
     return initial_time, dt, nsteps, numerical_damping, max_damage
 end
 

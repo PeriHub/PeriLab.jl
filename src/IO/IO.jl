@@ -6,6 +6,8 @@ module IO
 using TimerOutputs
 using MPI
 using DataFrames
+using PrettyTables
+using Logging
 
 include("../Support/geometry.jl")
 
@@ -486,7 +488,6 @@ function get_global_values(output::Dict, datamanager::Module)
             node_set = output[varname]["nodeset"]
             global_value, nnodes = calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_set)
         end
-        @info global_value
         if datamanager.get_max_rank() > 1
             global_value = find_global_core_value!(global_value, calculation_type, nnodes, datamanager)
         end
@@ -542,16 +543,18 @@ function get_mpi_rank_string(rank::Int64, max_rank::Int64)
 end
 
 """
-    show_block_summary(solver_options::Dict, params::Dict, datamanager::Module)
+    show_block_summary(solver_options::Dict, params::Dict, log_file::String, comm::MPI.Comm, datamanager::Module)
 
 Show block summary.
 
 # Arguments
 - `solver_options::Dict`: The solver options
 - `params::Dict`: The params
+- `log_file::String`: The log file
+- `comm::MPI.Comm`: The comm
 - `datamanager::Module`: The datamanager
 """
-function show_block_summary(solver_options::Dict, params::Dict, comm::MPI.Comm, datamanager::Module)
+function show_block_summary(solver_options::Dict, params::Dict, log_file::String, comm::MPI.Comm, datamanager::Module)
     rank = MPI.Comm_rank(comm)
     size = MPI.Comm_size(comm)
 
@@ -608,22 +611,32 @@ function show_block_summary(solver_options::Dict, params::Dict, comm::MPI.Comm, 
             new_row = block_rows[1, :]
             push!(full_df, new_row)
         end
-        @info full_df
+        pretty_table(full_df)
+        pretty_table(current_logger().loggers[2].logger.stream, full_df; show_subheader=false)
+        open(log_file, "a") do file
+        end
     else
-        @info df
+        if log_file != ""
+            pretty_table(df)
+            pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
+            open(log_file, "a") do file
+            end
+        end
     end
 
 end
 
 """
-    show_mpi_summary(datamanager::Module)
+    show_mpi_summary(log_file::String, comm::MPI.Comm, datamanager::Module)
 
 Show MPI summary.
 
 # Arguments
+- `log_file::String`: The log file
+- `comm::MPI.Comm`: The comm
 - `datamanager::Module`: The datamanager
 """
-function show_mpi_summary(comm::MPI.Comm, datamanager::Module)
+function show_mpi_summary(log_file::String, comm::MPI.Comm, datamanager::Module)
 
     size = MPI.Comm_size(comm)
 
@@ -659,9 +672,13 @@ function show_mpi_summary(comm::MPI.Comm, datamanager::Module)
 
     if rank == 0
         merged_df = vcat(all_dfs...)
-        @info sort!(merged_df, [:Rank])
+        pretty_table(merged_df; show_subheader=false)
+        pretty_table(current_logger().loggers[2].logger.stream, merged_df; show_subheader=false)
     else
-        @info df
+        if log_file != ""
+            pretty_table(df; show_subheader=false)
+            pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
+        end
     end
 
 end

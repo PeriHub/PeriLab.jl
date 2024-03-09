@@ -8,12 +8,52 @@ using LoggingExtras
 using TimerOutputs
 using DataFrames
 using LibGit2
+# using ProgressMeter
 include("./IO.jl")
 export init_logging
 export set_result_files
 export get_current_git_info
 
 result_files::Vector{Dict} = []
+log_file::String = ""
+
+"""
+    set_log_file(filename::String)
+
+Set the log file.
+
+# Arguments
+- `filename::String`: The filename.
+# Returns
+- `log_file::String`: The log file.
+"""
+function set_log_file(filename::String, debug::Bool, rank::Int64, size::Int64)
+
+    if size > 1
+        if debug
+            return split(filename, ".")[1] * "_$size.$rank.log"
+        elseif rank == 0
+            return split(filename, ".")[1] * ".log"
+        else
+            return ""
+        end
+    end
+    return split(filename, ".")[1] * ".log"
+    
+end
+
+"""
+    get_log_file()
+
+Get the log file.
+
+# Returns
+- `log_file::String`: The log file.
+"""
+function get_log_file()
+    global log_file
+    return log_file
+end
 
 """
     set_result_files(result_files_temp::Vector{Dict})
@@ -26,6 +66,21 @@ Set the result files.
 function set_result_files(result_files_temp::Vector{Dict})
     global result_files = result_files_temp
 end
+
+# function progress_wrap(f::Function, desc::String)
+#     p = ProgressUnknown(desc=desc, spinner=true, color=:blue)
+#     channel = Channel() do ch
+#         while !isready(ch)
+#             next!(p)
+#         end
+#         finish!(p)
+#         take!(ch)
+#     end
+    
+#     f()
+    
+#     put!(channel, 1)
+# end
 
 """
     progress_filter(log_args)
@@ -67,13 +122,16 @@ Initialize the logging.
 """
 function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, size::Int64)
 
-    logfilename = split(filename, ".")[1] * ".log"
+    global log_file
+    
+    log_file = set_log_file(filename, debug, rank, size)
 
+    if log_file == ""
+        Logging.disable_logging(Logging.Error)
+        return
+    end
     if debug
-        if size > 1
-            logfilename = split(filename, ".")[1] * "_$size.$rank.log"
-        end
-        file_logger = FormatLogger(logfilename; append=false) do io, args
+        file_logger = FormatLogger(log_file; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
                 println(io, "[", args.level, "] ", args._module, ", ", args.line, " | ", args.message)
             end
@@ -83,14 +141,13 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             MinLevelLogger(filtered_logger, Logging.Debug),
             MinLevelLogger(file_logger, Logging.Debug),
         )
-        global_logger(demux_logger)
     elseif silent
-        file_logger = FormatLogger(logfilename; append=false) do io, args
+        file_logger = FormatLogger(log_file; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
                 println(io, "[", args.level, "] ", args.message)
             end
         end
-        error_logger = FormatLogger(logfilename; append=false) do io, args
+        error_logger = FormatLogger(log_file; append=false) do io, args
             if args.level == Logging.Error
                 IO.close_result_files(result_files)
                 exit()
@@ -100,19 +157,13 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             MinLevelLogger(file_logger, Logging.Info),
             MinLevelLogger(error_logger, Logging.Info),
         )
-
-        if rank == 0
-            global_logger(demux_logger)
-        else
-            Logging.disable_logging(Logging.Error)
-        end
     else
-        file_logger = FormatLogger(logfilename; append=false) do io, args
+        file_logger = FormatLogger(log_file; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
                 println(io, "[", args.level, "] ", args.message)
             end
         end
-        error_logger = FormatLogger(logfilename; append=false) do io, args
+        error_logger = FormatLogger(log_file; append=false) do io, args
             if args.level == Logging.Error
                 IO.close_result_files(result_files)
                 exit()
@@ -124,13 +175,8 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             MinLevelLogger(file_logger, Logging.Info),
             MinLevelLogger(error_logger, Logging.Info),
         )
-
-        if rank == 0
-            global_logger(demux_logger)
-        else
-            Logging.disable_logging(Logging.Error)
-        end
     end
+    global_logger(demux_logger)
 end
 
 function get_current_git_info(repo_path::AbstractString=".")

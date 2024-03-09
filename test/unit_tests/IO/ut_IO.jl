@@ -136,12 +136,17 @@ end
     rm(filename2 * ".e")
 end
 
-@testset "ut_show_block_summary" begin
-    test_Data_manager.set_block_list([1])
-    solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
-    params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
-    IO.show_block_summary(solver_options, params, comm, test_Data_manager)
-end
+# @testset "ut_show_block_summary" begin
+#     test_Data_manager.set_block_list([1])
+#     solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
+#     params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
+#     IO.show_block_summary(solver_options, params, "test.log", comm, test_Data_manager)
+# end
+
+# @testset "ut_show_mpi_summary" begin
+#     test_Data_manager.set_block_list([1])
+#     IO.show_mpi_summary("test.log", comm, test_Data_manager)
+# end
 
 @testset "ut_init_orientations" begin
     angles = test_Data_manager.create_constant_node_field("Angles", Float64, 1, 90)

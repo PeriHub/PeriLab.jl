@@ -234,8 +234,8 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         @info "Init solver"
         @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
         if verbose
-            IO.show_block_summary(solver_options, params, comm, datamanager)
-            IO.show_mpi_summary(comm, datamanager)
+            IO.show_block_summary(solver_options, params, Logging_module.get_log_file(), comm, datamanager)
+            IO.show_mpi_summary(Logging_module.get_log_file(), comm, datamanager)
         end
         @info "Init write results"
         @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, output_dir, filedirectory, datamanager, solver_options["nsteps"], PERILAB_VERSION)
