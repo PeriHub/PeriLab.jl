@@ -7,6 +7,27 @@ include("../../../../src/Physics/Thermal/Thermal_Factory.jl")
 using .Thermal
 include("../../../../src/Support/data_manager.jl")
 
+
+@testset "init_thermal_model_fields" begin
+    test_Data_manager = Data_manager
+    test_Data_manager.set_dof(3)
+    test_Data_manager.set_num_controller(4)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 2
+    nn[2] = 3
+    nn[3] = 1
+    nn[4] = 2
+
+    Thermal.init_thermal_model_fields(test_Data_manager)
+    fieldkeys = test_Data_manager.get_all_field_keys()
+    @test "TemperatureN" in fieldkeys
+    @test "TemperatureNP1" in fieldkeys
+    @test "Heat FlowN" in fieldkeys
+    @test "Heat FlowNP1" in fieldkeys
+    @test "Bond Heat Flow" in fieldkeys
+
+end
+
 @testset "ut_distribute_heat_flows" begin
 
     nnodes = 2

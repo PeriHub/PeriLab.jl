@@ -7,8 +7,45 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "additive_name")
 Set_modules.include_files(module_list)
+include("../../Support/helpers.jl")
+using Reexport
+@reexport using .Helpers: find_inverse_bond_id
 export compute_additive_model
 export init_additive_model
+export init_additive_model_fields
+
+
+"""
+    init_additive_model_fields(datamanager::Module)
+
+Initialize additive model fields
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
+function init_additive_model_fields(datamanager::Module)
+    if !("Activation_Time" in datamanager.get_all_field_keys())
+        @error "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file."
+    end
+    # must be specified, because it might be that no temperature model has been defined
+    datamanager.create_node_field("Temperature", Float64, 1)
+    datamanager.create_node_field("Heat Flow", Float64, 1)
+    bond_damageN = datamanager.get_bond_damage("N")
+    bond_damageNP1 = datamanager.get_bond_damage("NP1")
+    nnodes = datamanager.get_nnodes()
+    if !("Active" in datamanager.get_all_field_keys())
+        active = datamanager.create_constant_node_field("Active", Bool, 1, false)
+        for iID in 1:nnodes
+            bond_damageN[iID][:] .= 0
+            bond_damageNP1[iID][:] .= 0
+        end
+    end
+    nlist = datamanager.get_field("Neighborhoodlist")
+    inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
+    return datamanager
+end
 
 """
     compute_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)

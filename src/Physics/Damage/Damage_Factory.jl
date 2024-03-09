@@ -7,11 +7,68 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
 Set_modules.include_files(module_list)
-
+include("../../Support/helpers.jl")
+using Reexport
+@reexport using .Helpers: find_inverse_bond_id
 export compute_damage
 export compute_damage_pre_calculation
 export init_interface_crit_values
 export init_damage_model
+export init_damage_model_fields
+
+"""
+    init_damage_model_fields(datamanager::Module)
+
+Initialize damage model fields
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `params::Dict`: Parameters.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
+function init_damage_model_fields(datamanager::Module, params::Dict)
+    dof = datamanager.get_dof()
+    datamanager.create_node_field("Damage", Float64, 1)
+    block_list = datamanager.get_block_list()
+    anisotropic_damage = false
+    correspondence = false
+    for block_id in block_list
+        if haskey(params["Blocks"]["block_$block_id"], "Material Model") && occursin("Correspondence", params["Blocks"]["block_$block_id"]["Material Model"])
+            correspondence = true
+        else
+            correspondence = false
+            break
+        end
+    end
+    for block_id in block_list
+        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
+            continue
+        end
+        damage_name = params["Blocks"]["block_$block_id"]["Damage Model"]
+        damage_parameter = params["Physics"]["Damage Models"][damage_name]
+        anisotropic_damage = haskey(damage_parameter, "Anisotropic Damage")
+        if anisotropic_damage
+            if !correspondence
+                @warn "Not all material models are of type correspondence. Bond based and PD solid are not supported by anisotropic damage"
+                anisotropic_damage = false
+            end
+            break
+        end
+    end
+    if anisotropic_damage
+        datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
+        datamanager.create_node_field("Damage Anisotropic", Float64, dof)
+    end
+    if length(datamanager.get_inverse_nlist()) == 0
+        nlist = datamanager.get_field("Neighborhoodlist")
+        inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
+    end
+    return datamanager
+end
+
+
+
 """
     compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 

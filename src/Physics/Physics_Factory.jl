@@ -5,7 +5,7 @@
 module Physics
 include("../Support/helpers.jl")
 using Reexport
-@reexport using .Helpers: check_inf_or_nan, find_active, find_inverse_bond_id, get_active_update_nodes
+@reexport using .Helpers: check_inf_or_nan, find_active, get_active_update_nodes
 include("./Additive/Additive_Factory.jl")
 include("./Corrosion/Corrosion_Factory.jl")
 include("./Damage/Damage_Factory.jl")
@@ -181,86 +181,6 @@ function get_block_model_definition(params::Dict, block_id::Int64, prop_keys::Ve
 end
 
 """
-    init_material_model_fields(datamanager::Module)
-
-Initialize material model fields
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-"""
-function init_material_model_fields(datamanager::Module)
-    dof = datamanager.get_dof()
-    datamanager.create_node_field("Forces", Float64, dof) #-> only if it is an output
-    # tbd later in the compute class
-    datamanager.create_node_field("Forces", Float64, dof)
-    datamanager.create_node_field("Force Densities", Float64, dof)
-    datamanager.create_constant_node_field("Acceleration", Float64, dof)
-    datamanager.create_node_field("Velocity", Float64, dof)
-    datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
-    datamanager.set_synch("Bond Forces", false, false)
-    datamanager.set_synch("Force Densities", true, false)
-    datamanager.set_synch("Velocity", false, true)
-    datamanager.set_synch("Displacements", false, true)
-    datamanager.set_synch("Acceleration", false, true)
-    datamanager.set_synch("Deformed Coordinates", false, true)
-
-    return datamanager
-end
-
-"""
-    init_damage_model_fields(datamanager::Module)
-
-Initialize damage model fields
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `params::Dict`: Parameters.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-"""
-function init_damage_model_fields(datamanager::Module, params::Dict)
-    dof = datamanager.get_dof()
-    datamanager.create_node_field("Damage", Float64, 1)
-    block_list = datamanager.get_block_list()
-    anisotropic_damage = false
-    correspondence = false
-    for block_id in block_list
-        if haskey(params["Blocks"]["block_$block_id"], "Material Model") && occursin("Correspondence", params["Blocks"]["block_$block_id"]["Material Model"])
-            correspondence = true
-        else
-            correspondence = false
-            break
-        end
-    end
-    for block_id in block_list
-        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
-            continue
-        end
-        damage_name = params["Blocks"]["block_$block_id"]["Damage Model"]
-        damage_parameter = params["Physics"]["Damage Models"][damage_name]
-        anisotropic_damage = haskey(damage_parameter, "Anisotropic Damage")
-        if anisotropic_damage
-            if !correspondence
-                @warn "Not all material models are of type correspondence. Bond based and PD solid are not supported by anisotropic damage"
-                anisotropic_damage = false
-            end
-            break
-        end
-    end
-    if anisotropic_damage
-        datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
-        datamanager.create_node_field("Damage Anisotropic", Float64, dof)
-    end
-    if length(datamanager.get_inverse_nlist()) == 0
-        nlist = datamanager.get_field("Neighborhoodlist")
-        inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
-    end
-    return datamanager
-end
-
-"""
     init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
 
 Initialize models
@@ -292,7 +212,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     end
     if solver_options["Corrosion Models"]
         @info "Init corrosion models"
-        @timeit to "corrosion_model_fields" datamanager = Physics.init_corrosion_model_fields(datamanager)
+        @timeit to "corrosion_model_fields" datamanager = Corrosion.init_corrosion_model_fields(datamanager)
 
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Corrosion Model")
@@ -302,7 +222,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     end
     if solver_options["Damage Models"]
         @info "Init damage models"
-        @timeit to "damage_model_fields" datamanager = Physics.init_damage_model_fields(datamanager, params)
+        @timeit to "damage_model_fields" datamanager = Damage.init_damage_model_fields(datamanager, params)
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Damage Model")
                 @timeit to "init damage model" datamanager = Damage.init_damage_model(datamanager, block_nodes[block], block)
@@ -312,7 +232,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     end
     if solver_options["Material Models"]
         @info "Init material models"
-        @timeit to "material model fields" datamanager = Physics.init_material_model_fields(datamanager)
+        @timeit to "material model fields" datamanager = Material.init_material_model_fields(datamanager)
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Material Model")
                 @timeit to "init material" datamanager = Material.init_material_model(datamanager, block_nodes[block], block)
@@ -321,7 +241,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     end
     if solver_options["Thermal Models"]
         @info "Init thermal models"
-        @timeit to "thermal model fields" datamanager = Physics.init_thermal_model_fields(datamanager)
+        @timeit to "thermal model fields" datamanager = Thermal.init_thermal_model_fields(datamanager)
         heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
         for block in eachindex(block_nodes)
@@ -334,73 +254,6 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
 
-"""
-    init_thermal_model_fields(datamanager::Module)
-
-Initialize thermal model fields
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-"""
-function init_thermal_model_fields(datamanager::Module)
-    datamanager.create_node_field("Temperature", Float64, 1)
-    datamanager.create_node_field("Heat Flow", Float64, 1)
-    datamanager.create_constant_node_field("Specific Volume", Float64, 1)
-    datamanager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
-    # if it is already initialized via mesh file no new field is created here
-    datamanager.create_constant_node_field("Surface_Nodes", Bool, 1, true)
-    return datamanager
-end
-
-"""
-    init_additive_model_fields(datamanager::Module)
-
-Initialize additive model fields
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-"""
-function init_additive_model_fields(datamanager::Module)
-    if !("Activation_Time" in datamanager.get_all_field_keys())
-        @error "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file."
-    end
-    # must be specified, because it might be that no temperature model has been defined
-    datamanager.create_node_field("Temperature", Float64, 1)
-    datamanager.create_node_field("Heat Flow", Float64, 1)
-    bond_damageN = datamanager.get_bond_damage("N")
-    bond_damageNP1 = datamanager.get_bond_damage("NP1")
-    nnodes = datamanager.get_nnodes()
-    if !("Active" in datamanager.get_all_field_keys())
-        active = datamanager.create_constant_node_field("Active", Bool, 1, false)
-        for iID in 1:nnodes
-            bond_damageN[iID][:] .= 0
-            bond_damageNP1[iID][:] .= 0
-        end
-    end
-    nlist = datamanager.get_field("Neighborhoodlist")
-    inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
-    return datamanager
-end
-
-
-"""
-init_corrosion_model_fields(datamanager::Module)
-
-Initialize concentration model fields
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-"""
-function init_corrosion_model_fields(datamanager::Module)
-    datamanager.create_node_field("Concentration", Float64, 1)
-    return datamanager
-end
 
 """
     init_pre_calculation(datamanager::Module, options)

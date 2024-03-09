@@ -9,6 +9,24 @@ global module_list = Set_modules.find_module_files(@__DIR__, "corrosion_name")
 Set_modules.include_files(module_list)
 export compute_corrosion_model
 export init_corrosion_model
+export init_corrosion_model_fields
+
+
+
+"""
+init_corrosion_model_fields(datamanager::Module)
+
+Initialize concentration model fields
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
+function init_corrosion_model_fields(datamanager::Module)
+    datamanager.create_node_field("Concentration", Float64, 1)
+    return datamanager
+end
 
 """
     compute_corrosion_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)

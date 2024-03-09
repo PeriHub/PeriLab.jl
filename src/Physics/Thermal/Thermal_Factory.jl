@@ -10,6 +10,28 @@ global module_list = Set_modules.find_module_files(@__DIR__, "thermal_model_name
 Set_modules.include_files(module_list)
 export init_thermal_model
 export compute_thermal_model
+export init_thermal_model_fields
+
+"""
+    init_thermal_model_fields(datamanager::Module)
+
+Initialize thermal model fields
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
+function init_thermal_model_fields(datamanager::Module)
+    datamanager.create_node_field("Temperature", Float64, 1)
+    datamanager.create_node_field("Heat Flow", Float64, 1)
+    datamanager.create_constant_node_field("Specific Volume", Float64, 1)
+    datamanager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
+    # if it is already initialized via mesh file no new field is created here
+    datamanager.create_constant_node_field("Surface_Nodes", Bool, 1, true)
+    return datamanager
+end
+
 
 """
     compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)

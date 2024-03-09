@@ -6,6 +6,27 @@ include("../../../../src/Physics/Damage/Damage_Factory.jl")
 include("../../../../src/Support/data_manager.jl")
 using Test
 using .Damage
+
+@testset "init_damage_model_fields" begin
+    test_Data_manager = Data_manager
+    test_Data_manager.set_dof(3)
+    test_Data_manager.set_num_controller(4)
+    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 1
+    nn[2] = 2
+    nn[3] = 1
+    nn[4] = 2
+    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist[1] = [2]
+    nlist[2] = [1, 3]
+    nlist[3] = [1]
+    nlist[4] = [1, 3]
+    Damage.init_damage_model_fields(test_Data_manager, Dict("Blocks" => Dict("block_1" => Dict("Damage Model" => "a"), "block_2" => Dict("Damage Model" => "a"), "block_3" => Dict("Damage Model" => "a")), "Physics" => Dict("Damage Models" => Dict("a" => Dict("value" => "b")))))
+    fieldkeys = test_Data_manager.get_all_field_keys()
+    @test "DamageN" in fieldkeys
+    @test "DamageNP1" in fieldkeys
+end
+
 @testset "damage_index" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_num_controller(3)

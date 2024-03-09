@@ -55,44 +55,7 @@ end
     @test test_Data_manager_read_properties.get_property(3, "Thermal Model", "bool") == params["Physics"]["Thermal Models"]["therm"]["bool"]
 end
 
-@testset "ut_init_material_model_fields" begin
-    test_Data_manager = Data_manager
-    test_Data_manager.set_dof(3)
-    test_Data_manager.set_num_controller(4)
-    test_Data_manager.create_constant_node_field("Coordinates", Float64, 3)
-    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn[1:4] = 1:4
-    Physics.init_material_model_fields(test_Data_manager)
-    fieldkeys = test_Data_manager.get_all_field_keys()
-    @test "ForcesN" in fieldkeys
-    @test "ForcesNP1" in fieldkeys
-    @test "Acceleration" in fieldkeys
-    @test "VelocityN" in fieldkeys
-    @test "VelocityNP1" in fieldkeys
-    @test "Bond Forces" in fieldkeys
-end
-
-@testset "init_damage_model_fields" begin
-    test_Data_manager = Data_manager
-    test_Data_manager.set_dof(3)
-    test_Data_manager.set_num_controller(4)
-    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn[1] = 1
-    nn[2] = 2
-    nn[3] = 1
-    nn[4] = 2
-    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    nlist[1] = [2]
-    nlist[2] = [1, 3]
-    nlist[3] = [1]
-    nlist[4] = [1, 3]
-    Physics.init_damage_model_fields(test_Data_manager, Dict("Blocks" => Dict("block_1" => Dict("Damage Model" => "a"), "block_2" => Dict("Damage Model" => "a"), "block_3" => Dict("Damage Model" => "a")), "Physics" => Dict("Damage Models" => Dict("a" => Dict("value" => "b")))))
-    fieldkeys = test_Data_manager.get_all_field_keys()
-    @test "DamageN" in fieldkeys
-    @test "DamageNP1" in fieldkeys
-end
-
-@testset "init_thermal_model_fields" begin
+@testset "init_pre_calculation" begin
     test_Data_manager = Data_manager
     test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(4)
@@ -101,35 +64,6 @@ end
     nn[2] = 3
     nn[3] = 1
     nn[4] = 2
-
-    Physics.init_thermal_model_fields(test_Data_manager)
-    fieldkeys = test_Data_manager.get_all_field_keys()
-    @test "TemperatureN" in fieldkeys
-    @test "TemperatureNP1" in fieldkeys
-    @test "Heat FlowN" in fieldkeys
-    @test "Heat FlowNP1" in fieldkeys
-    @test "Bond Heat Flow" in fieldkeys
-
-end
-
-@testset "init_additive_model_fields" begin
-    test_Data_manager = Data_manager
-    test_Data_manager.set_dof(3)
-    test_Data_manager.set_num_controller(4)
-    test_Data_manager.create_bond_field("Bond Damage", Float64, 1)
-    test_Data_manager = Physics.init_additive_model_fields(test_Data_manager)
-    fieldkeys = test_Data_manager.get_all_field_keys()
-    @test "Active" in fieldkeys
-    active = test_Data_manager.get_field("Active")
-    for iID in 1:4
-        @test active[iID] == false
-    end
-end
-@testset "init_pre_calculation" begin
-    test_Data_manager = Data_manager
-    test_Data_manager.set_dof(3)
-    test_Data_manager.set_num_controller(4)
-
     options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => false, "Deformation Gradient" => false, "Bond Associated Shape Tensor" => false, "Bond Associated Deformation Gradient" => false)
     test_Data_manager = Physics.init_pre_calculation(test_Data_manager, options)
 

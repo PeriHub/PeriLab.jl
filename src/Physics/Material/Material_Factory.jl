@@ -17,6 +17,38 @@ export init_material_model
 export compute_forces
 export determine_isotropic_parameter
 export distribute_force_densities
+export init_material_model_fields
+
+
+"""
+    init_material_model_fields(datamanager::Module)
+
+Initialize material model fields
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
+function init_material_model_fields(datamanager::Module)
+    dof = datamanager.get_dof()
+    datamanager.create_node_field("Forces", Float64, dof) #-> only if it is an output
+    # tbd later in the compute class
+    datamanager.create_node_field("Forces", Float64, dof)
+    datamanager.create_node_field("Force Densities", Float64, dof)
+    datamanager.create_constant_node_field("Acceleration", Float64, dof)
+    datamanager.create_node_field("Velocity", Float64, dof)
+    datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
+    datamanager.set_synch("Bond Forces", false, false)
+    datamanager.set_synch("Force Densities", true, false)
+    datamanager.set_synch("Velocity", false, true)
+    datamanager.set_synch("Displacements", false, true)
+    datamanager.set_synch("Acceleration", false, true)
+    datamanager.set_synch("Deformed Coordinates", false, true)
+
+    return datamanager
+end
+
 
 """
     init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
