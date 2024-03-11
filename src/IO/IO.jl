@@ -543,7 +543,7 @@ function get_mpi_rank_string(rank::Int64, max_rank::Int64)
 end
 
 """
-    show_block_summary(solver_options::Dict, params::Dict, log_file::String, comm::MPI.Comm, datamanager::Module)
+    show_block_summary(solver_options::Dict, params::Dict, log_file::String, silent::Bool, comm::MPI.Comm, datamanager::Module)
 
 Show block summary.
 
@@ -551,17 +551,18 @@ Show block summary.
 - `solver_options::Dict`: The solver options
 - `params::Dict`: The params
 - `log_file::String`: The log file
+- `silent::Bool`: The silent flag
 - `comm::MPI.Comm`: The comm
 - `datamanager::Module`: The datamanager
 """
-function show_block_summary(solver_options::Dict, params::Dict, log_file::String, comm::MPI.Comm, datamanager::Module)
+function show_block_summary(solver_options::Dict, params::Dict, log_file::String, silent::Bool, comm::MPI.Comm, datamanager::Module)
     rank = MPI.Comm_rank(comm)
     size = MPI.Comm_size(comm)
 
     if size == 1
-        headers = ["Block", "Material", "Damage", "Thermal", "Additive", "Density", "Horizon", "Number of Nodes"]
+        headers = ["Block", "Material", "Damage", "Thermal", "Corrosion", "Additive", "Density", "Horizon", "Number of Nodes"]
     else
-        headers = ["Block", "Material", "Damage", "Thermal", "Additive", "Density", "Horizon"]
+        headers = ["Block", "Material", "Damage", "Thermal", "Corrosion", "Additive", "Density", "Horizon"]
     end
     df = DataFrame([header => [] for header in headers])
     # tbd
@@ -574,7 +575,7 @@ function show_block_summary(solver_options::Dict, params::Dict, log_file::String
 
     for id in eachindex(block_list)
         row = [block_list[id]]
-        for name in headers[2:5]
+        for name in headers[2:6]
             if !solver_options[name*" Models"]
                 push!(row, "")
             elseif haskey(params["Blocks"][block_list[id]], name * " Model")
@@ -584,7 +585,7 @@ function show_block_summary(solver_options::Dict, params::Dict, log_file::String
             end
         end
 
-        for name in headers[6:7]
+        for name in headers[7:8]
             if haskey(params["Blocks"][block_list[id]], name)
                 push!(row, string(params["Blocks"][block_list[id]][name]))
             else
@@ -611,13 +612,17 @@ function show_block_summary(solver_options::Dict, params::Dict, log_file::String
             new_row = block_rows[1, :]
             push!(full_df, new_row)
         end
-        pretty_table(full_df)
+        if !silent
+            pretty_table(full_df; show_subheader=false)
+        end
         pretty_table(current_logger().loggers[2].logger.stream, full_df; show_subheader=false)
         open(log_file, "a") do file
         end
     else
         if log_file != ""
-            pretty_table(df)
+            if !silent
+                pretty_table(df; show_subheader=false)
+            end
             pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
             open(log_file, "a") do file
             end
@@ -627,16 +632,17 @@ function show_block_summary(solver_options::Dict, params::Dict, log_file::String
 end
 
 """
-    show_mpi_summary(log_file::String, comm::MPI.Comm, datamanager::Module)
+    show_mpi_summary(log_file::String, silent::Bool, comm::MPI.Comm, datamanager::Module)
 
 Show MPI summary.
 
 # Arguments
 - `log_file::String`: The log file
+- `silent::Bool`: The silent flag
 - `comm::MPI.Comm`: The comm
 - `datamanager::Module`: The datamanager
 """
-function show_mpi_summary(log_file::String, comm::MPI.Comm, datamanager::Module)
+function show_mpi_summary(log_file::String, silent::Bool, comm::MPI.Comm, datamanager::Module)
 
     size = MPI.Comm_size(comm)
 
@@ -672,11 +678,15 @@ function show_mpi_summary(log_file::String, comm::MPI.Comm, datamanager::Module)
 
     if rank == 0
         merged_df = vcat(all_dfs...)
-        pretty_table(merged_df; show_subheader=false)
+        if !silent
+            pretty_table(merged_df; show_subheader=false)
+        end
         pretty_table(current_logger().loggers[2].logger.stream, merged_df; show_subheader=false)
     else
         if log_file != ""
-            pretty_table(df; show_subheader=false)
+            if !silent
+                pretty_table(df; show_subheader=false)
+            end
             pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
         end
     end

@@ -39,7 +39,7 @@ function set_log_file(filename::String, debug::Bool, rank::Int64, size::Int64)
         end
     end
     return split(filename, ".")[1] * ".log"
-    
+
 end
 
 """
@@ -76,9 +76,9 @@ end
 #         finish!(p)
 #         take!(ch)
 #     end
-    
+
 #     f()
-    
+
 #     put!(channel, 1)
 # end
 
@@ -123,7 +123,7 @@ Initialize the logging.
 function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, size::Int64)
 
     global log_file
-    
+
     log_file = set_log_file(filename, debug, rank, size)
 
     if log_file == ""
@@ -154,7 +154,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             end
         end
         demux_logger = TeeLogger(
-            MinLevelLogger(file_logger, Logging.Info),
+            MinLevelLogger(file_logger, Logging.Debug),
             MinLevelLogger(error_logger, Logging.Info),
         )
     else
@@ -172,7 +172,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
         demux_logger = TeeLogger(
             MinLevelLogger(filtered_logger, Logging.Info),
-            MinLevelLogger(file_logger, Logging.Info),
+            MinLevelLogger(file_logger, Logging.Debug),
             MinLevelLogger(error_logger, Logging.Info),
         )
     end

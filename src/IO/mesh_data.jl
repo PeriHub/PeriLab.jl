@@ -7,6 +7,7 @@ using AbaqusReader
 using DataFrames
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
+using PrettyTables
 
 #export read_mesh
 #export load_mesh_and_distribute
@@ -39,6 +40,47 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
             if !isnothing(element_distribution)
                 fem_active = true
             end
+
+            data = [
+                "Mesh input overview" "" "";
+                "Number of nodes" "."^10 length(mesh[!, "x"]);
+                "Geometrical degrees of freedoms" "."^10 dof
+            ]
+            if fem_active
+                data.push!(
+                    ["Number of finite elements", "."^10, length(topology)]
+                )
+            end
+
+            if !datamanager.get_silent()
+                pretty_table(
+                    data;
+                    body_hlines=[1],
+                    body_hlines_format=Tuple('─' for _ = 1:4),
+                    cell_alignment=Dict((1, 1) => :l),
+                    formatters=ft_printf("%10.1f", 2),
+                    highlighters=(
+                        hl_cell([(1, 1)], crayon"bold"),
+                        hl_col(2, crayon"dark_gray")
+                    ),
+                    show_header=false,
+                    tf=tf_borderless
+                )
+            end
+            pretty_table(
+                current_logger().loggers[2].logger.stream,
+                data;
+                body_hlines=[1],
+                body_hlines_format=Tuple('─' for _ = 1:4),
+                cell_alignment=Dict((1, 1) => :l),
+                formatters=ft_printf("%10.1f", 2),
+                highlighters=(
+                    hl_cell([(1, 1)], crayon"bold"),
+                    hl_col(2, crayon"dark_gray")
+                ),
+                show_header=false,
+                tf=tf_borderless
+            )
         else
             dof::Int64 = 0
             distribution = nothing
@@ -67,7 +109,7 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         datamanager.set_overlap_map(overlap_map)
         datamanager.set_num_controller(num_controller)
         datamanager.set_num_responder(num_responder)
-        @info "Get node sets"
+        @debug "Get node sets"
         datamanager = define_nsets(nsets, datamanager)
         # defines the order of the global nodes to the local core nodes
         datamanager.set_distribution(distribution[rank])
@@ -84,15 +126,15 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
         datamanager.set_fem(fem_active)
         if fem_active
-            @info "Set and synchronize elements"
+            @debug "Set and synchronize elements"
             element_distribution = send_value(comm, 0, element_distribution)
             topology = send_value(comm, 0, topology)
             datamanager.set_num_elements(length(element_distribution[rank]))
-            @info "Set local topology vector"
+            @debug "Set local topology vector"
             datamanager = get_local_element_topology(datamanager, topology[element_distribution[rank]], distribution[rank])
         end
         mesh = nothing
-        @info "Finish init data"
+        @debug "Finish init data"
     end
     return datamanager, params
 end
@@ -747,7 +789,7 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
             end
         end
     else
-        @info "Read node sets"
+        @debug "Read node sets"
         mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
         nsets = get_node_sets(params, path)
     end
@@ -763,14 +805,14 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
     end
     dof::Int64 = set_dof(mesh)
     @timeit to "neighborhoodlist" nlist = create_neighborhoodlist(mesh, params, dof)
-    @info "Finished init Neighborhoodlist"
+    @debug "Finished init Neighborhoodlist"
     @timeit to "apply_bond_filters" nlist, nlist_filtered_ids, bond_norm = apply_bond_filters(nlist, mesh, params, dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
         nlist, topology = create_consistent_neighborhoodlist(external_topology, params["Discretization"]["Input External Topology"], nlist, dof)
     end
-    @info "Start distribution"
+    @debug "Start distribution"
     if haskey(params["Discretization"], "Distribution Type")
         @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize, params["Discretization"]["Distribution Type"])
     else
@@ -779,24 +821,13 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
 
     el_distribution = nothing
     if haskey(params, "FEM") && !isnothing(external_topology)
-        @info "Start element distribution"
+        @debug "Start element distribution"
         el_distribution = element_distribution(topology, ptc, ranksize)
     end
-    @info "Finished distribution"
-    @info "Create Overlap"
+    @debug "Finished distribution"
+    @debug "Create Overlap"
     @timeit to "overlap_map" overlap_map = create_overlap_map(distribution, ptc, ranksize)
-    @info "Finished Overlap"
-    @info "Mesh input overview"
-    @info "-------------------"
-    @info "Number of nodes: $(length(mesh[!, "x"]))"
-    @info "Geometrical degrees of freedoms: $dof"
-    @info "-------------------"
-    if haskey(params, "FEM") && !isnothing(external_topology)
-        @info "Finite element option active"
-        @info "Number of finite elements: $(length(topology))"
-        @info "-------------------"
-    end
-
+    @debug "Finished Overlap"
     return distribution, mesh, ntype, overlap_map, nlist, nlist_filtered_ids, bond_norm, dof, nsets, topology, el_distribution
 end
 
@@ -1228,7 +1259,7 @@ Compute the neighbor list for each node in a mesh based on their proximity using
 An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
 """
 function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vector{String}})
-    @info "Init Neighborhoodlist"
+    @debug "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
     data = zeros(dof, nnodes)
@@ -1375,7 +1406,7 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
     nlist_filtered_ids = nothing
     bond_norm = nothing
     if bond_filters[1]
-        @info "Apply bond filters"
+        @debug "Apply bond filters"
         coor = names(mesh)[1:dof]
         nnodes = length(mesh[!, coor[1]])
         data = zeros(dof, nnodes)
@@ -1418,7 +1449,7 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
                 end
             end
         end
-        @info "Finished applying bond filters"
+        @debug "Finished applying bond filters"
     end
     return nlist, nlist_filtered_ids, bond_norm
 end
