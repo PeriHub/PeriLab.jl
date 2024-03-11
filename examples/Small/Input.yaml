@@ -21,9 +21,6 @@ PeriLab:
       Damage:
         Critical Value: 10.1
         Damage Model: Critical Energy
-        Anisotropic Damage:
-          Critical Value X: 10.1
-          Critical Value Y: 10.1
   Blocks:
     block_1:
       Material Model: "Aluminium"

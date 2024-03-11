@@ -18,11 +18,11 @@ PeriLab:
       Bond Associated Deformation Gradient: false
     Material Models:
       PMMA:
-        Material Model: "PD Solid Elastic"
-        #Material Model: "Correspondence Elastic"
+        Material Model: "Correspondence Elastic+Correspondence Plastic"
         Symmetry: "isotropic plane stress"
         Young's Modulus: 7.0e+5
         Poisson's Ratio: 0.33
+        Yield Stress: 20
         Zero Energy Control: "Global"
     Damage Models:
       Damage:
@@ -74,20 +74,20 @@ PeriLab:
       Variable: "Displacements"
   Outputs:
     Output:
-      Number of Output Steps: 10
+      Number of Output Steps: 100
       Output File Type: Exodus
       Output Filename: Dogbone_Output
-      Flush File: true
       Output Variables:
         Damage: true
         Displacements: true
         Forces: true
+        Cauchy Stress: True
+        von Mises Stress: True
         Number of Neighbors: true
         External_Forces: True
         External_Displacements: True
     Output2:
-      Number of Output Steps: 10
-      Flush File: False
+      Number of Output Steps: 100
       Output File Type: CSV
       Output Filename: Dogbone_Output
       Output Variables:
@@ -96,7 +96,7 @@ PeriLab:
   Solver:
     Material Models: true
     Damage Models: true
-    Final Time: 1e-7
+    Final Time: 1e-5
     Initial Time: 0.0
     Numerical Damping: 0.0005
     Verlet:
