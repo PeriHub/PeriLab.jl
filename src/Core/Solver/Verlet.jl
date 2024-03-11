@@ -406,6 +406,14 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         heat_capacity = datamanager.get_field("Specific Heat Capacity")
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
+    if solver_options["Corrosion Models"]
+        concentrationN = datamanager.get_field("Concentration", "N")
+        concentrationNP1 = datamanager.get_field("Concentration", "NP1")
+        concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
+        concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
+        delta_concentration = datamanager.create_constant_node_field("Delta Concentration", Float64, 1)
+    end
+
     fem_option = datamanager.fem_active()
     if fem_option
         lumped_mass = datamanager.get_field("Lumped Mass Matrix")
@@ -440,7 +448,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 temperatureNP1[nodes] = temperatureN[nodes] + deltaT[nodes]
             end
             if solver_options["Corrosion Models"]
-                @warn "Time integration is not included yet, please define the relevant parameters and formula."
+                concentrationNP1[nodes] = concentrationN[nodes] + delta_concentration[nodes]
             end
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
             #if solver_options["Material Models"]
@@ -477,7 +485,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 end
             end
             if solver_options["Corrosion Models"]
-                @warn "Time integration is not included yet, please define the relevant parameters and formula."
+                delta_concentration[find_active(active[1:nnodes])] = -concentration_fluxNP1[find_active(active[1:nnodes])] .* dt 
             end
             if solver_options["Damage Models"]
                 max_damage = maximum(damage[find_active(active[1:nnodes])])

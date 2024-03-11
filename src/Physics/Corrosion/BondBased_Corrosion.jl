@@ -47,6 +47,9 @@ Example:
 function compute_corrosion_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, corrosion_parameter::Dict, time::Float64, dt::Float64)
     concentrationN = datamanager.get_field("Concentration", "N")
     concentrationNP1 = datamanager.get_field("Concentration", "NP1")
+    concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
+    concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
+
 
     return datamanager
 end

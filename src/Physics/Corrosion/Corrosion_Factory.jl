@@ -25,6 +25,7 @@ Initialize concentration model fields
 """
 function init_corrosion_model_fields(datamanager::Module)
     datamanager.create_node_field("Concentration", Float64, 1)
+    datamanager.create_node_field("Concentration Flux", Float64, 1)
     return datamanager
 end
 
