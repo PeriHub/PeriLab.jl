@@ -56,11 +56,11 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
 
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
-    @info "Read properties"
+    @debug "Read properties"
     Physics.read_properties(params, datamanager, solver_options["Material Models"])
-    @info "Init models"
+    @debug "Init models"
     @timeit to "init_models" datamanager = Physics.init_models(params, datamanager, block_nodes, solver_options, to)
-    @info "Init Boundary Conditions"
+    @debug "Init Boundary Conditions"
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
     solver_options["Solver"] = get_solver_name(params)
     if get_solver_name(params) == "Verlet"

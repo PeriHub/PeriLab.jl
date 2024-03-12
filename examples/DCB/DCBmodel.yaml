@@ -9,27 +9,19 @@ PeriLab:
       Density: 1.95e-05
       Horizon: 0.42999999999999994
       Material Model: Aluminium
-      Thermal Model: Thermal
-      Specific Heat Capacity: 18000.0
     block_2:
       Damage Model: Damage
       Density: 1.95e-05
       Horizon: 0.42999999999999994
       Material Model: Aluminium
-      Thermal Model: Thermal
-      Specific Heat Capacity: 18000.0
     block_3:
       Density: 1.95e-05
       Horizon: 0.42999999999999994
       Material Model: Aluminium
-      Thermal Model: Thermal
-      Specific Heat Capacity: 18000.0
     block_4:
       Density: 1.95e-05
       Horizon: 0.42999999999999994
       Material Model: Aluminium
-      Thermal Model: Thermal
-      Specific Heat Capacity: 18000.0
   Boundary Conditions:
     BC_1:
       Coordinate: y
@@ -47,13 +39,13 @@ PeriLab:
     #   Value: "200"
   Compute Class Parameters:
     External_Displacement:
-      Block: block_2
+      Block: block_3
       Calculation Type: Maximum
       Compute Class: Block_Data
       # Output Label: External_Displacement
       Variable: Displacements
     External_Force:
-      Block: block_2
+      Block: block_3
       Calculation Type: Sum
       Compute Class: Block_Data
       # Output Label: External_Force
@@ -65,7 +57,7 @@ PeriLab:
         Bottom Unit Vector X: 1.0
         Bottom Unit Vector Y: 0.0
         Bottom Unit Vector Z: 0.0
-        Lower Left Corner X: -0.5
+        Lower Left Corner X: -0.4
         Lower Left Corner Y: 0.0
         Lower Left Corner Z: -1.0
         Normal X: 0.0
@@ -92,20 +84,18 @@ PeriLab:
         Number of Neighbors: true
         External_Displacement: true
         External_Force: true
+    Output2:
+      Number of Output Steps: 100
+      Output File Type: CSV
+      Output Filename: DCBmodel_Output1
+      Output Variables:
+        External_Displacement: true
+        External_Force: true
   Physics:
-    Thermal Models:
-      Thermal:
-        Thermal Model: "Thermal Flow"
-        Type: "Bond based"
-        Thermal Expansion Coefficient: 0.22
-        Thermal Conductivity: 2000.0
     Damage Models:
       Damage:
         Damage Model: Critical Energy
         Critical Value: 0.002
-        # Interblock Damage:
-        #   Interblock Critical Value 1_2: 0.0015
-        #   Interblock Critical Value 2_1: 0.0015
     Material Models:
       Aluminium:
         Material Model: PD Solid Elastic
@@ -120,7 +110,7 @@ PeriLab:
       Shape Tensor: false
   Solver:
     Damage Models: true
-    Final Time: 0.0004
+    Final Time: 0.00043
     Initial Time: 0.0
     Material Models: true
     Numerical Damping: 5.0e-06

@@ -90,6 +90,7 @@ The PeriLab configuration file is a YAML file used to specify the parameters for
     - **Material Model**: String representing the material model.
     - **Symmetry**: String representing the symmetry. (optional)
     - **Poisson's Ratio/Young's Modulus/Bulk Modulus/Shear Modulus**: Numeric values representing material properties. (Float64 or Int64, optional)
+    - **Yield Stress**: Numeric value representing the yield stress. (Float64 or Int64, optional)
     - **Zero Energy Control**: String representing zero energy control. (optional)
     - **C11/C12/.../C66**: Numeric values representing material constants. (Float64 or Int64, optional)
 - **Thermal Models**: Dictionary of thermal models. (optional)

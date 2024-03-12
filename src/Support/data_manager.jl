@@ -85,6 +85,7 @@ global rank::Int64 = 0
 global commMPi::Any
 global cancel::Bool = false
 global max_rank::Int64 = 0
+global silent::Bool = false
 ##########################
 
 """
@@ -797,6 +798,19 @@ function get_cancel()
 end
 
 """
+    get_silent()
+
+This function returns the `silent` flag.
+
+# Returns
+- `silent`::Bool: The value of the `silent` variable.
+"""
+function get_silent()
+    global silent
+    return silent
+end
+
+"""
     loc_to_glob(range::UnitRange{Int64})
 
 Converts the local index to the global index.
@@ -1208,6 +1222,18 @@ Sets the cancel flag.
 """
 function set_cancel(value::Bool)
     global cancel = value
+end
+
+"""
+    set_silent(value::Int64)
+
+Sets the silent flag.
+
+# Arguments
+- `value::Bool`: The silent flag.
+"""
+function set_silent(value::Bool)
+    global silent = value
 end
 
 """

@@ -272,19 +272,21 @@ function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
         "Numerical Damping" "."^10 numerical_damping "";
     ]
     if datamanager.get_rank() == 0
-        pretty_table(
-            data;
-            body_hlines        = [1,9],
-            body_hlines_format = Tuple('─' for _ = 1:4),
-            cell_alignment     = Dict((1, 1) => :l),
-            formatters         = ft_printf("%10.1f", 2),
-            highlighters       = (
-                hl_cell([(1, 1)], crayon"bold"),
-                hl_col(2, crayon"dark_gray")
-            ),
-            show_header        = false,
-            tf                 = tf_borderless
-        )
+        if !datamanager.get_silent()
+            pretty_table(
+                data;
+                body_hlines        = [1,9],
+                body_hlines_format = Tuple('─' for _ = 1:4),
+                cell_alignment     = Dict((1, 1) => :l),
+                formatters         = ft_printf("%10.1f", 2),
+                highlighters       = (
+                    hl_cell([(1, 1)], crayon"bold"),
+                    hl_col(2, crayon"dark_gray")
+                ),
+                show_header        = false,
+                tf                 = tf_borderless
+            )
+        end
         pretty_table(
             current_logger().loggers[2].logger.stream,
             data;

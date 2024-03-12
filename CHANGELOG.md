@@ -12,12 +12,22 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Corrosion
+- PrettyTables logging
 - Logging Datetime
+- MPI summary
 - StaticArrays for performance
+
+### Fixed
+
+- Global export in MPI
+- CSV export
 
 ### Changed
 
+- Neighborhood Distribution
 - CompactTension Example
+- Docs
 
 ## [1.0.6] - 2024-02-14
 

@@ -28,6 +28,8 @@ Explore the comprehensive [documentation](https://dlr-perihub.gitlab.io/PeriLab.
 
 - 🔥 **Additive Manufacturing**: PeriLab supports additive manufacturing, allowing users to create custom additive models for their simulations.
 
+- 🧲 **Multiphysics**: PeriLab supports multiphysics simulations, combining different types of peridynamics and damage models to create a comprehensive simulation environment.
+
 - ⚡ **MPI**: PeriLab supports parallel computing using Message Passing Interface (MPI) technology to improve simulation performance on high-performance clusters.
 
 - 💻 **HPC capabilities**: PeriLab is designed for high-performance computing (HPC) environments, allowing users to run large-scale simulations efficiently.
@@ -131,6 +133,8 @@ Here are some exciting tasks on our roadmap:
 - ✂️ **Distribution logic**: As part of its ongoing development, PeriLab will continue to incorporate new distribution logic for improved performance and reduced computational resources.
 
 - 🏎️ **Optimizations**: As part of its ongoing development, PeriLab will continue to focus on optimizing the simulation process by incorporating new techniques like parallel optimization algorithms for improved efficiency and reduced computational resources.
+
+- 🦿 **CUDA support**: We are planning to support GPU acceleration for improved performance and reduced computational resources.
 
 Feel free to contribute and help us make PeriLab even better! 🙌
 

@@ -250,7 +250,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
             end
         end
     end
-    @info "Init pre calculation models"
+    @debug "Init pre calculation models"
     return init_pre_calculation(datamanager, datamanager.get_physics_options())
 end
 

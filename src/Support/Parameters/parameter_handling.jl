@@ -122,6 +122,7 @@ global expected_structure = Dict(
                                     "Young's Modulus" => [Union{Float64,Int64}, false],
                                     "Bulk Modulus" => [Union{Float64,Int64}, false],
                                     "Shear Modulus" => [Union{Float64,Int64}, false],
+                                    "Yield Stress" => [Union{Float64,Int64}, false],
                                     "Zero Energy Control" => [String, false],
                                     "C11" => [Union{Float64,Int64}, false],
                                     "C12" => [Union{Float64,Int64}, false],
