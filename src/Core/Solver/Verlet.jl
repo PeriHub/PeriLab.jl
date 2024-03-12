@@ -19,9 +19,11 @@ include("../../Support/Parameters/parameter_handling.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../BC_manager.jl")
 include("../../Physics/Physics_Factory.jl")
+include("../../IO/logging.jl")
 using .Physics
 using .Boundary_conditions: apply_bc
 using .Helpers: matrix_style
+using .Logging_module: print_table
 export init_solver
 export run_solver
 
@@ -260,47 +262,19 @@ function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     # @info "Time increment: " * string(dt) * " [s]"
     # @info "Number of steps: " * string(nsteps)
     # @info "Numerical Damping " * string(numerical_damping)
-    data = [
-        "Verlet Solver" "" "" "";
-        "Initial time" "."^10 initial_time "s";
-        "Final time" "."^10 final_time "s";
-        "Minimal time increment" "."^10 dt "s";
-        "Fixed time increment" "."^10 dt "s";
-        "Safety factor" "."^10 safety_factor "";
-        "Time increment" "."^10 dt "s";
-        "Number of steps" "."^10 nsteps "";
-        "Numerical Damping" "."^10 numerical_damping "";
-    ]
     if datamanager.get_rank() == 0
-        if !datamanager.get_silent()
-            pretty_table(
-                data;
-                body_hlines        = [1,9],
-                body_hlines_format = Tuple('─' for _ = 1:4),
-                cell_alignment     = Dict((1, 1) => :l),
-                formatters         = ft_printf("%10.1f", 2),
-                highlighters       = (
-                    hl_cell([(1, 1)], crayon"bold"),
-                    hl_col(2, crayon"dark_gray")
-                ),
-                show_header        = false,
-                tf                 = tf_borderless
-            )
-        end
-        pretty_table(
-            current_logger().loggers[2].logger.stream,
-            data;
-            body_hlines        = [1,9],
-            body_hlines_format = Tuple('─' for _ = 1:4),
-            cell_alignment     = Dict((1, 1) => :l),
-            formatters         = ft_printf("%10.1f", 2),
-            highlighters       = (
-                hl_cell([(1, 1)], crayon"bold"),
-                hl_col(2, crayon"dark_gray")
-            ),
-            show_header        = false,
-            tf                 = tf_borderless
-        )
+        data = [
+            "Verlet Solver" "" "" "";
+            "Initial time" "."^10 initial_time "s";
+            "Final time" "."^10 final_time "s";
+            "Minimal time increment" "."^10 dt "s";
+            "Fixed time increment" "."^10 dt "s";
+            "Safety factor" "."^10 safety_factor "";
+            "Time increment" "."^10 dt "s";
+            "Number of steps" "."^10 nsteps "";
+            "Numerical Damping" "."^10 numerical_damping ""
+        ]
+        print_table(data, datamanager)
     end
     return initial_time, dt, nsteps, numerical_damping, max_damage
 end
@@ -485,7 +459,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 end
             end
             if solver_options["Corrosion Models"]
-                delta_concentration[find_active(active[1:nnodes])] = -concentration_fluxNP1[find_active(active[1:nnodes])] .* dt 
+                delta_concentration[find_active(active[1:nnodes])] = -concentration_fluxNP1[find_active(active[1:nnodes])] .* dt
             end
             if solver_options["Damage Models"]
                 max_damage = maximum(damage[find_active(active[1:nnodes])])

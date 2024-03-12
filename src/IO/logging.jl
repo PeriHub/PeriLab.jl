@@ -8,8 +8,9 @@ using LoggingExtras
 using TimerOutputs
 using DataFrames
 using LibGit2
+using PrettyTables
 # using ProgressMeter
-include("./IO.jl")
+# include("./IO.jl")
 export init_logging
 export set_result_files
 export get_current_git_info
@@ -81,6 +82,47 @@ end
 
 #     put!(channel, 1)
 # end
+
+"""
+    print_table(data::Matrix, datamanager::Module)
+
+Print the table.
+
+# Arguments
+- `data::Matrix`: The data.
+- `datamanager::Module`: The data manager.
+"""
+function print_table(data::Matrix, datamanager::Module)
+    if !datamanager.get_silent()
+        pretty_table(
+            data;
+            body_hlines=[1],
+            body_hlines_format=Tuple('─' for _ = 1:4),
+            cell_alignment=Dict((1, 1) => :l),
+            formatters=ft_printf("%10.1f", 2),
+            highlighters=(
+                hl_cell([(1, 1)], crayon"bold"),
+                hl_col(2, crayon"dark_gray")
+            ),
+            show_header=false,
+            tf=tf_borderless
+        )
+    end
+    pretty_table(
+        current_logger().loggers[2].logger.stream,
+        data;
+        body_hlines=[1],
+        body_hlines_format=Tuple('─' for _ = 1:4),
+        cell_alignment=Dict((1, 1) => :l),
+        formatters=ft_printf("%10.1f", 2),
+        highlighters=(
+            hl_cell([(1, 1)], crayon"bold"),
+            hl_col(2, crayon"dark_gray")
+        ),
+        show_header=false,
+        tf=tf_borderless
+    )
+end
 
 """
     progress_filter(log_args)

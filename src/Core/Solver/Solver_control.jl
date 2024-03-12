@@ -64,7 +64,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
     solver_options["Solver"] = get_solver_name(params)
     if get_solver_name(params) == "Verlet"
-        @info "Init " * get_solver_name(params)
+        @debug "Init " * get_solver_name(params)
         @timeit to "init_solver" solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = Verlet.init_solver(params, datamanager, block_nodes, solver_options["Material Models"], solver_options["Thermal Models"])
     else
         @error get_solver_name(params) * " is no valid solver."
@@ -80,7 +80,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     else
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)
     end
-    @info "Finished Init Solver"
+    @debug "Finished Init Solver"
     return block_nodes, bcs, datamanager, solver_options
 end
 

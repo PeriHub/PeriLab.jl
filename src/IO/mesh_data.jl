@@ -8,6 +8,8 @@ using DataFrames
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
 using PrettyTables
+include("./logging.jl")
+using .Logging_module: print_table
 
 #export read_mesh
 #export load_mesh_and_distribute
@@ -47,40 +49,9 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
                 "Geometrical degrees of freedoms" "."^10 dof
             ]
             if fem_active
-                data.push!(
-                    ["Number of finite elements", "."^10, length(topology)]
-                )
+                data = vcat(data, ["Number of finite elements" "."^10 length(topology)])
             end
-
-            if !datamanager.get_silent()
-                pretty_table(
-                    data;
-                    body_hlines=[1],
-                    body_hlines_format=Tuple('─' for _ = 1:4),
-                    cell_alignment=Dict((1, 1) => :l),
-                    formatters=ft_printf("%10.1f", 2),
-                    highlighters=(
-                        hl_cell([(1, 1)], crayon"bold"),
-                        hl_col(2, crayon"dark_gray")
-                    ),
-                    show_header=false,
-                    tf=tf_borderless
-                )
-            end
-            pretty_table(
-                current_logger().loggers[2].logger.stream,
-                data;
-                body_hlines=[1],
-                body_hlines_format=Tuple('─' for _ = 1:4),
-                cell_alignment=Dict((1, 1) => :l),
-                formatters=ft_printf("%10.1f", 2),
-                highlighters=(
-                    hl_cell([(1, 1)], crayon"bold"),
-                    hl_col(2, crayon"dark_gray")
-                ),
-                show_header=false,
-                tf=tf_borderless
-            )
+            print_table(data, datamanager)
         else
             dof::Int64 = 0
             distribution = nothing
