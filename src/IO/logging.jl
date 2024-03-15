@@ -10,7 +10,6 @@ using DataFrames
 using LibGit2
 using PrettyTables
 # using ProgressMeter
-# include("./IO.jl")
 export init_logging
 export set_result_files
 export get_current_git_info
@@ -82,6 +81,24 @@ end
 
 #     put!(channel, 1)
 # end
+
+function close_result_file(result_file::Dict)
+    if !isnothing(result_file["file"])
+        close(result_file["file"])
+    end
+end
+
+function close_result_files(result_files::Vector{Dict})
+    for result_file in result_files
+        try
+            close_result_file(result_file)
+            return true
+        catch
+            @warn "File already closed"
+            return false
+        end
+    end
+end
 
 """
     print_table(data::Matrix, datamanager::Module)
@@ -191,7 +208,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         end
         error_logger = FormatLogger(log_file; append=false) do io, args
             if args.level == Logging.Error
-                IO.close_result_files(result_files)
+                close_result_files(result_files)
                 exit()
             end
         end
@@ -207,7 +224,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         end
         error_logger = FormatLogger(log_file; append=false) do io, args
             if args.level == Logging.Error
-                IO.close_result_files(result_files)
+                close_result_files(result_files)
                 exit()
             end
         end
