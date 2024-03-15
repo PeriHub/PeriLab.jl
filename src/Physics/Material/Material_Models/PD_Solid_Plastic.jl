@@ -55,7 +55,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   yield_stress = material_parameter["Yield Stress"]
   yield = datamanager.create_constant_node_field("Yield Value", Float64, 1)
   datamanager.create_constant_bond_field("Deviatoric Plastic Extension State", Float64, 1)
-  datamanger.create_node_field("Lambda Plastic", Float64, 1)
+  datamanager.create_node_field("Lambda Plastic", Float64, 1)
   if get_symmmetry(material_parameter) == "3D"
     yield = 25 * yield_stress * yield_stress ./ (8 * pi .* horizon .^ 5)
   else
