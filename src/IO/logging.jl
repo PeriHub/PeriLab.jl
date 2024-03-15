@@ -196,8 +196,8 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             end
         end
         demux_logger = TeeLogger(
-            MinLevelLogger(file_logger, Logging.Debug),
             MinLevelLogger(error_logger, Logging.Info),
+            MinLevelLogger(file_logger, Logging.Debug),
         )
     else
         file_logger = FormatLogger(log_file; append=false) do io, args

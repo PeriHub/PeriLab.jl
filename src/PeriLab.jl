@@ -46,6 +46,7 @@ using TimerOutputs
 using Logging
 using ArgParse
 using Dates
+using LibGit2
 
 const to = TimerOutput()
 # internal packages
@@ -56,7 +57,7 @@ import .IO
 import .Solver
 # end
 
-PERILAB_VERSION = "1.0.7"
+PERILAB_VERSION = "1.1.0"
 
 export main
 
@@ -151,7 +152,9 @@ function main()::Cint
     for (arg, val) in parsed_args
         @debug "  $arg  =>  $val"
     end
+    MPI.Init()
     main(parsed_args["filename"], parsed_args["output_dir"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
+    MPI.Finalize()
     return 0
 end
 
@@ -230,8 +233,8 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         end
         # @info filename
 
+        Data_manager.set_silent(silent)
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
-        datamanager.set_silent(silent)
         @info "Init solver"
         @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
         IO.show_block_summary(solver_options, params, Logging_module.get_log_file(), silent, comm, datamanager)

@@ -13,7 +13,9 @@ COPY Project.toml ./Project.toml
 # Install build dependencies
 RUN apt-get update \
     && apt-get install -yq build-essential openssh-server \
-    && julia --project=@. -e 'import Pkg; Pkg.add(url="https://github.com/JTHesse/AbaqusReader.jl"); Pkg.add("PackageCompiler"); using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], incremental=true, force=true)'
+    && julia --project=@. -e 'import Pkg; Pkg.add(url="https://github.com/JTHesse/AbaqusReader.jl"); Pkg.add("PackageCompiler")'
+
+RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], incremental=true, force=true)'
 
 #TODO: use alpine
 FROM julia:latest as main 

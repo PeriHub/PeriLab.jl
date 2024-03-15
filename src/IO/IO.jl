@@ -616,16 +616,12 @@ function show_block_summary(solver_options::Dict, params::Dict, log_file::String
             pretty_table(full_df; show_subheader=false)
         end
         pretty_table(current_logger().loggers[2].logger.stream, full_df; show_subheader=false)
-        open(log_file, "a") do file
-        end
     else
         if log_file != ""
             if !silent
                 pretty_table(df; show_subheader=false)
             end
             pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
-            open(log_file, "a") do file
-            end
         end
     end
 
