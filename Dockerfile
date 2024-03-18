@@ -12,18 +12,20 @@ COPY Project.toml ./Project.toml
 
 # Install build dependencies
 RUN apt-get update \
-    && apt-get install -yq build-essential openssh-server \
+    && apt-get install -yq build-essential\
     && julia --project=@. -e 'import Pkg; Pkg.add(url="https://github.com/JTHesse/AbaqusReader.jl"); Pkg.add("PackageCompiler")'
 
-RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], incremental=true, force=true)'
+RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], force=true)'
 
 #TODO: use alpine
-FROM julia:latest as main 
+FROM debian:bookworm-slim as main 
 
 WORKDIR /app
 
 # Create the destination directory
 RUN mkdir PeriLab
+
+# Assuming /env/build is the build directory from previous stages
 COPY --from=build /env/build /app/PeriLab
 
 # Move the build folder, set permissions, and delete the rest
@@ -32,12 +34,8 @@ RUN chmod +x /app/PeriLab/bin/PeriLab \
 
 ENV PATH="/app/PeriLab/bin:${PATH}"
 
-# RUN apk update && apk add bash && apk add openssh
+# Install SSH server and other dependencies
 RUN apt-get update && apt-get install -yq openssh-server
-
-# Allow mpirun as root, should only be used in container
-ENV OMPI_ALLOW_RUN_AS_ROOT 1
-ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM 1
 
 # Configure SSH server
 RUN mkdir /var/run/sshd \
@@ -48,8 +46,8 @@ RUN mkdir /var/run/sshd \
     && sed -i'' -e's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config
 
 # Start SSH service
-RUN service ssh start
-
-EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
+
+# Expose SSH port
+EXPOSE 22
 

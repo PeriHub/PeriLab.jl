@@ -124,21 +124,36 @@ function print_table(data::Matrix, datamanager::Module)
             show_header=false,
             tf=tf_borderless
         )
+        pretty_table(
+            current_logger().loggers[2].logger.stream,
+            data;
+            body_hlines=[1],
+            body_hlines_format=Tuple('─' for _ = 1:4),
+            cell_alignment=Dict((1, 1) => :l),
+            formatters=ft_printf("%10.1f", 2),
+            highlighters=(
+                hl_cell([(1, 1)], crayon"bold"),
+                hl_col(2, crayon"dark_gray")
+            ),
+            show_header=false,
+            tf=tf_borderless
+        )
+    else
+        pretty_table(
+            current_logger().loggers[1].logger.stream,
+            data;
+            body_hlines=[1],
+            body_hlines_format=Tuple('─' for _ = 1:4),
+            cell_alignment=Dict((1, 1) => :l),
+            formatters=ft_printf("%10.1f", 2),
+            highlighters=(
+                hl_cell([(1, 1)], crayon"bold"),
+                hl_col(2, crayon"dark_gray")
+            ),
+            show_header=false,
+            tf=tf_borderless
+        )
     end
-    pretty_table(
-        current_logger().loggers[2].logger.stream,
-        data;
-        body_hlines=[1],
-        body_hlines_format=Tuple('─' for _ = 1:4),
-        cell_alignment=Dict((1, 1) => :l),
-        formatters=ft_printf("%10.1f", 2),
-        highlighters=(
-            hl_cell([(1, 1)], crayon"bold"),
-            hl_col(2, crayon"dark_gray")
-        ),
-        show_header=false,
-        tf=tf_borderless
-    )
 end
 
 """
@@ -213,8 +228,8 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             end
         end
         demux_logger = TeeLogger(
-            MinLevelLogger(error_logger, Logging.Info),
             MinLevelLogger(file_logger, Logging.Debug),
+            MinLevelLogger(error_logger, Logging.Info),
         )
     else
         file_logger = FormatLogger(log_file; append=false) do io, args
