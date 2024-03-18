@@ -204,6 +204,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         Logging.disable_logging(Logging.Error)
         return
     end
+
     if debug
         file_logger = FormatLogger(log_file; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
@@ -216,6 +217,8 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             MinLevelLogger(file_logger, Logging.Debug),
         )
     elseif silent
+        io = open(log_file, "a")
+        redirect_stderr(io)
         file_logger = FormatLogger(log_file; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
                 println(io, "[", args.level, "] ", args.message)

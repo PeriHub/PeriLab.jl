@@ -77,7 +77,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     # global horizon
     dof = datamanager.get_dof()
     horizon = datamanager.get_field("Horizon")
-    symmetry::String = get_symmmetry(material_parameter)
+    symmetry::String = get_symmetry(material_parameter)
     undeformed_bond = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     bond_damage = datamanager.get_bond_damage("NP1")

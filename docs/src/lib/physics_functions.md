@@ -65,7 +65,7 @@ distribute_forces
 matrix_to_voigt
 voigt_to_matrix
 check_symmetry
-get_symmmetry
+get_symmetry
 get_von_mises_stress
 Set_modules.PD_Solid_Elastic.elastic
 Set_modules.PD_Solid_Elastic.Ordinary.calculate_symmetry_params
