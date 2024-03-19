@@ -192,7 +192,6 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         if !MPI.Initialized()
             MPI.Init()
         end
-        @info "Bla"
         comm = MPI.COMM_WORLD
         rank = MPI.Comm_rank(comm)
         size = MPI.Comm_size(comm)

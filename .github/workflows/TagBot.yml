@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+name: TagBot
+on:
+  issue_comment:
+    types:
+      - created
+  workflow_dispatch:
+    inputs:
+      lookback:
+        default: 3
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  deployments: read
+  issues: read
+  discussions: read
+  packages: read
+  pages: read
+  pull-requests: read
+  repository-projects: read
+  security-events: read
+  statuses: read
+jobs:
+  TagBot:
+    if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: JuliaRegistries/TagBot@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Edit the following line to reflect the actual name of the GitHub Secret containing your private key
+          ssh: ${{ secrets.DOCUMENTER_KEY }}
+          # ssh: ${{ secrets.NAME_OF_MY_SSH_PRIVATE_KEY_SECRET }}
+  DockerHub:
+    if: github.event_name == 'workflow_dispatch' || github.actor == 'JuliaTagBot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Get version from Project.toml
+        id: get_version
+        run: echo "::set-output name=version::$(awk -F'"' '/version/{print $2}' Project.toml)"
+      - name: Build Docker image
+        run: docker build -t perihub/perilab:${{ steps.get_version.outputs.version }} .
+      - name: Publish to Registry
+        run: docker push perihub/perilab${{ steps.get_version.outputs.version }}
+      - name: Retag latest
+        run: docker tag perihub/perilab${{ steps.get_version.outputs.version }} perihub/perilab:latest
+      - name: Publish to Registry
+        run: docker push perihub/perilab:latest

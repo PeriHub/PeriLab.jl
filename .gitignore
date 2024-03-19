@@ -18,3 +18,4 @@ LocalPreferences.toml
 test/tryout/
 examples/dev/
 LocalPreferences.toml
+.env
