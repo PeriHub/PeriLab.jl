@@ -13,4 +13,3 @@ end
 MPI.Init()
 import PeriLab
 PeriLab.main()
-MPI.Finalize()

@@ -154,7 +154,6 @@ function main()::Cint
     end
     MPI.Init()
     main(parsed_args["filename"], parsed_args["output_dir"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
-    MPI.Finalize()
     return 0
 end
 
@@ -190,6 +189,10 @@ This function serves as the entry point for the PeriLab application. It calls th
 function main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
     @timeit to "PeriLab" begin
+        if !MPI.Initialized()
+            MPI.Init()
+        end
+        @info "Bla"
         comm = MPI.COMM_WORLD
         rank = MPI.Comm_rank(comm)
         size = MPI.Comm_size(comm)
@@ -271,6 +274,7 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         TimerOutputs.complement!(to)
         @info to
     end
+    MPI.Finalize()
 end
 
 end # module
