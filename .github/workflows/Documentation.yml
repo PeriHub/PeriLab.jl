@@ -6,6 +6,9 @@ name: Documentation
 
 on:
   push:
+    paths:
+      - "src/**"
+      - "docs/**"
     branches:
       - main
     tags: "*"
