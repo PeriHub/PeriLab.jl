@@ -233,7 +233,6 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         else
             output_dir = filedirectory
         end
-        # @info filename
 
         Data_manager.set_silent(silent)
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)

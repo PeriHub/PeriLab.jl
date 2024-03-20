@@ -6,8 +6,8 @@ SPDX-License-Identifier: BSD-3-Clause
 
 # `PeriLab` - Peridynamic Laboratory
 
-[![Pipeline Status](https://img.shields.io/github/actions/workflow/status/PeriHub/PeriLab.jl/Test
-)](https://github.com/PeriHub/PeriLab.jl/actions?query=workflow%3ACI+branch%3Amaster)
+[![Pipeline Status](https://img.shields.io/github/actions/workflow/status/PeriHub/PeriLab.jl/CI.yml?branch=main
+)](https://github.com/PeriHub/PeriLab.jl/actions)
 [![Coverage Report](https://codecov.io/gl/dlr-perihub/PeriLab.jl/graph/badge.svg?token=MYAGI49HE5)](https://codecov.io/gl/dlr-perihub/PeriLab.jl)
 [![Latest Release](https://img.shields.io/github/v/release/PeriHub/PeriLab.jl
 )](https://github.com/PeriHub/PeriLab.jl/releases)
