@@ -231,6 +231,7 @@ CurrentModule = PeriLab.Logging_module
 ## Logging_module
 ```@docs
 set_result_files
+print_table
 progress_filter
 init_logging
 ```

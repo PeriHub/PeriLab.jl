@@ -46,6 +46,7 @@ using TimerOutputs
 using Logging
 using ArgParse
 using Dates
+using LibGit2
 
 const to = TimerOutput()
 # internal packages
@@ -56,7 +57,7 @@ import .IO
 import .Solver
 # end
 
-PERILAB_VERSION = "1.0.7"
+PERILAB_VERSION = "1.1.1"
 
 export main
 
@@ -151,6 +152,7 @@ function main()::Cint
     for (arg, val) in parsed_args
         @debug "  $arg  =>  $val"
     end
+    MPI.Init()
     main(parsed_args["filename"], parsed_args["output_dir"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
     return 0
 end
@@ -187,6 +189,9 @@ This function serves as the entry point for the PeriLab application. It calls th
 function main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
     @timeit to "PeriLab" begin
+        if !MPI.Initialized()
+            MPI.Init()
+        end
         comm = MPI.COMM_WORLD
         rank = MPI.Comm_rank(comm)
         size = MPI.Comm_size(comm)
@@ -228,10 +233,9 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         else
             output_dir = filedirectory
         end
-        # @info filename
 
+        Data_manager.set_silent(silent)
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
-        datamanager.set_silent(silent)
         @info "Init solver"
         @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
         IO.show_block_summary(solver_options, params, Logging_module.get_log_file(), silent, comm, datamanager)
@@ -268,6 +272,7 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         TimerOutputs.complement!(to)
         @info to
     end
+    MPI.Finalize()
 end
 
 end # module

@@ -42,3 +42,6 @@ makedocs(
         "FAQ"=>"lib/faq.md",
     ]
 )
+deploydocs(
+    repo="github.com/PeriHub/PeriLab.jl.git",
+)

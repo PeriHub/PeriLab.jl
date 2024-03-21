@@ -35,16 +35,16 @@ end
     check_symmetry(Dict("Symmetry" => "3D"), 3)
 end
 
-@testset "get_symmmetry" begin
-    @test get_symmmetry(Dict()) == "3D"
-    @test get_symmmetry(Dict("Symmetry" => "iso plane stress")) == "plane stress"
-    @test get_symmmetry(Dict("Symmetry" => "iso plane stress")) == "plane stress"
-    @test get_symmmetry(Dict("Symmetry" => "iso Plane Stress")) == "plane stress"
+@testset "get_symmetry" begin
+    @test get_symmetry(Dict()) == "3D"
+    @test get_symmetry(Dict("Symmetry" => "iso plane stress")) == "plane stress"
+    @test get_symmetry(Dict("Symmetry" => "iso plane stress")) == "plane stress"
+    @test get_symmetry(Dict("Symmetry" => "iso Plane Stress")) == "plane stress"
 
-    @test get_symmmetry(Dict("Symmetry" => "plane strain")) == "plane strain"
-    @test get_symmmetry(Dict("Symmetry" => "plane Strain")) == "plane strain"
-    @test get_symmmetry(Dict("Symmetry" => "PLANE strain")) == "plane strain"
-    @test get_symmmetry(Dict("Symmetry" => "plan strain")) == "3D"
+    @test get_symmetry(Dict("Symmetry" => "plane strain")) == "plane strain"
+    @test get_symmetry(Dict("Symmetry" => "plane Strain")) == "plane strain"
+    @test get_symmetry(Dict("Symmetry" => "PLANE strain")) == "plane strain"
+    @test get_symmetry(Dict("Symmetry" => "plan strain")) == "3D"
 end
 
 @testset "get_all_elastic_moduli" begin

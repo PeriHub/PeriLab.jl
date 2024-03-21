@@ -8,7 +8,23 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.7] - 2024-
+## [1.1.1] - 2024-
+
+### Changed
+
+## [1.1.0] - 2024-03-19
+
+### Changed
+
+- Julia version
+
+### Fixed
+
+- MPI Issue
+- Logging
+
+
+## [1.0.7] - 2024-03-12
 
 ### Added
 

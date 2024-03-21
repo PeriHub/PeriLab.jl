@@ -141,7 +141,7 @@ function elastic(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, undeformed_bo
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
 
-    symmetry::String = get_symmmetry(material)
+    symmetry::String = get_symmetry(material)
     kappa::Float64 = 0
     gamma::Float64 = 0
     alpha::Float64 = 0

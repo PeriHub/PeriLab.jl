@@ -5,6 +5,7 @@
 module PD_Solid_Plastic
 using TimerOutputs
 using StaticArrays
+include("../material_basis.jl")
 include("./Ordinary/Ordinary.jl")
 using .Ordinary: calculate_symmetry_params, get_bond_forces
 
@@ -48,6 +49,8 @@ Initializes the material model.
 """
 function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
+  horizon = datamanager.get_field("Horizon")
+
   if !haskey(material_parameter, "Yield Stress")
     @error "Yield Stress is not defined in input deck"
     return nothing
@@ -55,10 +58,11 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   yield_stress = material_parameter["Yield Stress"]
   yield = datamanager.create_constant_node_field("Yield Value", Float64, 1)
   datamanager.create_constant_bond_field("Deviatoric Plastic Extension State", Float64, 1)
-  datamanger.create_node_field("Lambda Plastic", Float64, 1)
-  if get_symmmetry(material_parameter) == "3D"
+  datamanager.create_node_field("Lambda Plastic", Float64, 1)
+  if get_symmetry(material_parameter) == "3D"
     yield = 25 * yield_stress * yield_stress ./ (8 * pi .* horizon .^ 5)
   else
+    thickness::Float64 = 1 # is a placeholder
     yield = 225 * yield_stress * yield_stress ./ (24 * thickness * pi ./ horizon .^ 4)
   end
 
@@ -107,7 +111,8 @@ Example:
 """
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
   volume = datamanager.get_field("Volume")
-  symmetry::String = get_symmmetry(material_parameter)
+  nlist = datamanager.get_nlist()
+  symmetry::String = get_symmetry(material_parameter)
   deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
   omega = datamanager.get_field("Influence Function")
   bond_damage = datamanager.get_bond_damage("NP1")

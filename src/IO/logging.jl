@@ -8,8 +8,8 @@ using LoggingExtras
 using TimerOutputs
 using DataFrames
 using LibGit2
+using PrettyTables
 # using ProgressMeter
-include("./IO.jl")
 export init_logging
 export set_result_files
 export get_current_git_info
@@ -82,6 +82,80 @@ end
 #     put!(channel, 1)
 # end
 
+function close_result_file(result_file::Dict)
+    if !isnothing(result_file["file"])
+        close(result_file["file"])
+    end
+end
+
+function close_result_files(result_files::Vector{Dict})
+    for result_file in result_files
+        try
+            close_result_file(result_file)
+            return true
+        catch
+            @warn "File already closed"
+            return false
+        end
+    end
+end
+
+"""
+    print_table(data::Matrix, datamanager::Module)
+
+Print the table.
+
+# Arguments
+- `data::Matrix`: The data.
+- `datamanager::Module`: The data manager.
+"""
+function print_table(data::Matrix, datamanager::Module)
+    if !datamanager.get_silent()
+        pretty_table(
+            data;
+            body_hlines=[1],
+            body_hlines_format=Tuple('─' for _ = 1:4),
+            cell_alignment=Dict((1, 1) => :l),
+            formatters=ft_printf("%10.1f", 2),
+            highlighters=(
+                hl_cell([(1, 1)], crayon"bold"),
+                hl_col(2, crayon"dark_gray")
+            ),
+            show_header=false,
+            tf=tf_borderless
+        )
+        pretty_table(
+            current_logger().loggers[2].logger.stream,
+            data;
+            body_hlines=[1],
+            body_hlines_format=Tuple('─' for _ = 1:4),
+            cell_alignment=Dict((1, 1) => :l),
+            formatters=ft_printf("%10.1f", 2),
+            highlighters=(
+                hl_cell([(1, 1)], crayon"bold"),
+                hl_col(2, crayon"dark_gray")
+            ),
+            show_header=false,
+            tf=tf_borderless
+        )
+    else
+        pretty_table(
+            current_logger().loggers[1].logger.stream,
+            data;
+            body_hlines=[1],
+            body_hlines_format=Tuple('─' for _ = 1:4),
+            cell_alignment=Dict((1, 1) => :l),
+            formatters=ft_printf("%10.1f", 2),
+            highlighters=(
+                hl_cell([(1, 1)], crayon"bold"),
+                hl_col(2, crayon"dark_gray")
+            ),
+            show_header=false,
+            tf=tf_borderless
+        )
+    end
+end
+
 """
     progress_filter(log_args)
 
@@ -130,6 +204,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         Logging.disable_logging(Logging.Error)
         return
     end
+
     if debug
         file_logger = FormatLogger(log_file; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
@@ -142,6 +217,8 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             MinLevelLogger(file_logger, Logging.Debug),
         )
     elseif silent
+        io = open(log_file, "a")
+        redirect_stderr(io)
         file_logger = FormatLogger(log_file; append=false) do io, args
             if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
                 println(io, "[", args.level, "] ", args.message)
@@ -149,7 +226,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         end
         error_logger = FormatLogger(log_file; append=false) do io, args
             if args.level == Logging.Error
-                IO.close_result_files(result_files)
+                close_result_files(result_files)
                 exit()
             end
         end
@@ -165,7 +242,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         end
         error_logger = FormatLogger(log_file; append=false) do io, args
             if args.level == Logging.Error
-                IO.close_result_files(result_files)
+                close_result_files(result_files)
                 exit()
             end
         end

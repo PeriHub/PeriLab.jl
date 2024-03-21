@@ -614,17 +614,17 @@ function show_block_summary(solver_options::Dict, params::Dict, log_file::String
         end
         if !silent
             pretty_table(full_df; show_subheader=false)
-        end
-        pretty_table(current_logger().loggers[2].logger.stream, full_df; show_subheader=false)
-        open(log_file, "a") do file
+            pretty_table(current_logger().loggers[2].logger.stream, full_df; show_subheader=false)
+        else
+            pretty_table(current_logger().loggers[1].logger.stream, full_df; show_subheader=false)
         end
     else
         if log_file != ""
             if !silent
                 pretty_table(df; show_subheader=false)
-            end
-            pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
-            open(log_file, "a") do file
+                pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
+            else
+                pretty_table(current_logger().loggers[1].logger.stream, df; show_subheader=false)
             end
         end
     end
@@ -680,14 +680,18 @@ function show_mpi_summary(log_file::String, silent::Bool, comm::MPI.Comm, datama
         merged_df = vcat(all_dfs...)
         if !silent
             pretty_table(merged_df; show_subheader=false)
+            pretty_table(current_logger().loggers[2].logger.stream, merged_df; show_subheader=false)
+        else
+            pretty_table(current_logger().loggers[1].logger.stream, merged_df; show_subheader=false)
         end
-        pretty_table(current_logger().loggers[2].logger.stream, merged_df; show_subheader=false)
     else
         if log_file != ""
             if !silent
                 pretty_table(df; show_subheader=false)
+                pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
+            else
+                pretty_table(current_logger().loggers[1].logger.stream, df; show_subheader=false)
             end
-            pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
         end
     end
 

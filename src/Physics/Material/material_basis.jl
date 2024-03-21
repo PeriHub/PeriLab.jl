@@ -380,7 +380,7 @@ end
 
 
 """
-    get_symmmetry(material::Dict)
+    get_symmetry(material::Dict)
 
 Return the symmetry information from the given material dictionary.
 
@@ -396,7 +396,7 @@ Return the symmetry information from the given material dictionary.
 material_dict = Dict("Symmetry" => "Cubic", "Color" => "Red")
 symmetry = get_sym(material_dict)
 """
-function get_symmmetry(material::Dict)
+function get_symmetry(material::Dict)
     if !haskey(material, "Symmetry")
         return "3D"
     end
