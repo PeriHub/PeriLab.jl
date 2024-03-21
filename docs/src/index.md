@@ -1,5 +1,7 @@
 # PeriLab
 
+- [Theory Manual](theory.md)
+
 Welcome to the PeriLab documentation!
 
 This resource aims to teach you everything you need to know to get up and
@@ -7,7 +9,7 @@ running with tabular data manipulation using the PeriLab.jl package.
  
 ## What is PeriLab.jl?
 
-PeriLab.jl provides a Peridynamics [BobaruF2016](@cite) simulation core
+PeriLab.jl provides a Peridynamics [BobaruF2016](@cite) simulation core.
 
 Its design and functionality are similar to those of Peridigm  [LittlewoodDJ2023](@cite) and several extenions [WillbergC2019](@cite), [WillbergC2023](@cite), [HesseJA2023](@cite). 
 
