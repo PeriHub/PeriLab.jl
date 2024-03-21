@@ -11,9 +11,9 @@ The parameters are:
 | $\mathbf{x}$| Position of point [$m$]|
 | $\mathbf{x}'$| Position of neighbor [$m$]|
 | $t$| Time [$s$] |
-| $\mathbf{b}$| External force densities [$N/m^3$] |
+| $\mathbf{b}$| Body force densities [$N/m^3$] |
 | $\mathbf{u}$| Displacements [$m$] |
-| $\ddot{\mathbf{u}}$| Accelerations [$m/s$] |
+| $\ddot{\mathbf{u}}$| Accelerations [$m/s^2$] |
 | $\underline{\mathbf{T}}$| Force density state [$N/m^6$] |
 | $\rho$| Mass density [$kg/m^3$]|
 

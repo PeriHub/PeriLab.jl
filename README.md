@@ -200,11 +200,18 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 }
 ```
 
-## Acknowledgments
-<p align="center" style="font-size:0;"><!--
-  DLR      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dlr.jpg" height="120">
-</p>
+## Partner
 
+       
+| <img src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dlr.jpg" height="200" title="German Aerospace Center"> | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Logo_h2.svg/1280px-Logo_h2.svg.png" height="200" title="Magdeburg-Stendal University of Applied Science"> |
+|:------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------:|
+| [German Aerospace Center](http://www.dlr.de/sy)                                                                               | [Magdeburg-Stendal University of Applied Science](http://www.h2.de)                                                                  |
+
+
+
+
+
+## Acknowledgments
 
 <p align="center" style="font-size:0;"><!--
   <!--
