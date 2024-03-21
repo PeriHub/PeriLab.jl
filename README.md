@@ -203,7 +203,7 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 ## Partner
 
        
-| <img src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dlr.jpg" height="200" title="German Aerospace Center"> | <img src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/logo_hs_RGB.jpg" height="200" title="Magdeburg-Stendal University of Applied Science"> |
+| <img src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dlr.jpg" height="200" title="German Aerospace Center"> | <img src="https://de.wikipedia.org/wiki/Hochschule_Magdeburg-Stendal#/media/Datei:Logo_h2.svg" height="200" title="Magdeburg-Stendal University of Applied Science"> |
 |:------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------:|
 | [German Aerospace Center](http://www.dlr.de/sy)                                                                               | [Magdeburg-Stendal University of Applied Science](http://www.h2.de)                                                                  |
 
