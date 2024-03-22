@@ -13,7 +13,8 @@ makedocs(
     doctest=true,
     checkdocs=:none, # :all, :exports, :none
     sitename="PeriLab",
-    repo=Documenter.Remotes.GitLab("dlr-PeriHub", "PeriLab"),
+    repo=Documenter.Remotes.GitHub("PeriHub", "PeriLab.jl"),
+
     format=Documenter.HTML(
         canonical="https://github.com/PeriHub/PeriLab.jl",
         assets=["assets/favicon.ico"],
