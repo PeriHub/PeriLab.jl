@@ -175,7 +175,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   PREDEF =  datamanager.get_field("Predefined Fields")
   DPRED =  datamanager.get_field("Predefined Fields Increment")
   # only 80 charakters are supported
-  CMNAME::String = material_parameter["UMAT Material Name"]
+  CMNAME::Cstring = malloc_cstring(material_parameter["UMAT Material Name"])
   coords = datamanager.get_field("Coordinates")
   rot_N = datamanager.get_field("Rotation","N")
   rot_NP1 = datamanager.get_field("Rotation","NP1")
@@ -238,6 +238,16 @@ function compute_stresses(datamanager::Module, dof::Int64, material_parameter::D
   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
   return hookeMatrix * strain_increment + stress_N, datamanager
+end
+"""
+
+  function is taken from here
+    https://discourse.julialang.org/t/how-to-create-a-cstring-from-a-string/98566
+"""
+function malloc_cstring(s::String)
+  n = sizeof(s)+1 # size in bytes + NUL terminator
+  return GC.@preserve s @ccall memcpy(Libc.malloc(n)::Cstring,
+                                      s::Cstring, n::Csize_t)::Cstring
 end
 
 end
