@@ -48,12 +48,12 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Get version from Project.toml
         id: get_version
-        run: echo "::set-output name=version::$(awk -F'"' '/version/{print $2}' Project.toml)"
+        run: echo "PERILAB_VERSION=$(awk -F'"' '/version/{print $2}' Project.toml)" >> $GITHUB_OUTPUT
       - name: Build Docker image
-        run: docker build -t perihub/perilab:${{ steps.get_version.outputs.version }} .
+        run: docker build -t perihub/perilab:$PERILAB_VERSION .
       - name: Publish to Registry
-        run: docker push perihub/perilab${{ steps.get_version.outputs.version }}
+        run: docker push perihub/perilab:$PERILAB_VERSION
       - name: Retag latest
-        run: docker tag perihub/perilab${{ steps.get_version.outputs.version }} perihub/perilab:latest
+        run: docker tag perihub/perilab:$PERILAB_VERSION perihub/perilab:latest
       - name: Publish to Registry
         run: docker push perihub/perilab:latest
