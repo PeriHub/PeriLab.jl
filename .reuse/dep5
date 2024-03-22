@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: PeriLab
 Upstream-Contact: Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
-Source: https://gitlab.com/dlr-perihub/perilab
+Source: https://github.com/PeriHub/PeriLab.jl
 
 # Sample paragraph, commented out:
 #

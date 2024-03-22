@@ -15,7 +15,7 @@ makedocs(
     sitename="PeriLab",
     repo=Documenter.Remotes.GitLab("dlr-PeriHub", "PeriLab"),
     format=Documenter.HTML(
-        canonical="https://gitlab.com/dlr-perihub/perilab",
+        canonical="https://github.com/PeriHub/PeriLab.jl",
         assets=["assets/favicon.ico"],
         edit_link="main"
     ),

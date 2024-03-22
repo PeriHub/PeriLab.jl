@@ -31,7 +31,7 @@ To run a simulation using PeriLab, you can use the `main()` function, which take
 
 For example:
 ```julia
-main("examples/Dogbone/Dogbone.yaml", output_dir="", dry_run=false, verbose=false, debug=false, silent=false)
+main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=false, debug=false, silent=false, reload=false)
 """
 
 module PeriLab
@@ -102,6 +102,7 @@ None.
 - `--verbose` or `-v`: If provided, it stores `true` in the dictionary.
 - `--debug` or `-d`: If provided, it stores `true` in the dictionary.
 - `--silent` or `-s`: If provided, it stores `true` in the dictionary.
+- `--reload` or `-r`: If provided, it stores `true` in the dictionary.
 - `filename`: A required argument that stores the provided filename in the dictionary.
 
 ## Usage
@@ -130,6 +131,9 @@ function parse_commandline()
         "--silent", "-s"
         help = "silent"
         action = :store_true
+        "--reload", "-r"
+        help = "reload"
+        action = :store_true
         "filename"
         help = "filename"
         required = true
@@ -153,7 +157,7 @@ function main()::Cint
         @debug "  $arg  =>  $val"
     end
     MPI.Init()
-    main(parsed_args["filename"]; output_dir=parsed_args["output_dir"], dry_run=parsed_args["dry_run"], verbose=parsed_args["verbose"], debug=parsed_args["debug"], silent=parsed_args["silent"])
+    main(parsed_args["filename"]; output_dir=parsed_args["output_dir"], dry_run=parsed_args["dry_run"], verbose=parsed_args["verbose"], debug=parsed_args["debug"], silent=parsed_args["silent"], reload=parsed_args["reload"])
     return 0
 end
 
@@ -172,7 +176,7 @@ function get_examples()
 end
 
 """
-    main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
+    main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false, reload::Bool=false)
 
 Entry point for the PeriLab application.
 
@@ -185,8 +189,9 @@ This function serves as the entry point for the PeriLab application. It calls th
 - `verbose::Bool=false`: Whether to run in verbose mode.
 - `debug::Bool=false`: Whether to run in debug mode.
 - `silent::Bool=false`: Whether to run in silent mode.
+- `reload::Bool=false`: Whether to reload the input file.
 """
-function main(filename::String; output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
+function main(filename::String; output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false, reload::Bool=false)
 
     @timeit to "PeriLab" begin
         if !MPI.Initialized()
@@ -201,7 +206,7 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
             if !silent
                 print_banner()
             end
-            @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n Gitlab: https://gitlab.com/dlr-perihub/perilab\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
+            @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
             @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
             try
                 dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))
@@ -235,7 +240,11 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
         end
 
         Data_manager.set_silent(silent)
-        Data_manager.clear_all_field_keys()
+        if !reload
+            Data_manager.clear_data_manager()
+        else
+            @info "PeriLab started in the reload mode"
+        end
         @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
         @info "Init solver"
         @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
