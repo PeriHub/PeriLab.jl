@@ -120,9 +120,9 @@ Example:
 
 function compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Vector{Float64}, stress_N::Vector{Float64}, stress_NP1::Vector{Float64})
 
-  hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
-  return hookeMatrix * strain_increment + stress_N, datamanager
+
+  return stress_NP1, datamanager
 end
 
 end
