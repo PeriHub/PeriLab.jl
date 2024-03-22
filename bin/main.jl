@@ -29,7 +29,7 @@ verbose = get(ENV, "verbose", "false") == "true"
 debug = get(ENV, "debug", "false") == "true"
 silent = get(ENV, "silent", "false") == "true"
 
-PeriLab.main(filename, "./results", dryrun, verbose, debug, silent)
+PeriLab.main(filename; output_dir="./results", dryrun=dryrun, verbose=verbose, debug=debug, silent=silent)
 
 zip_filename = "results.zip"
 zip_folder(output_dir, zip_filename)

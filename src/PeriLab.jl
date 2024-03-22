@@ -153,7 +153,7 @@ function main()::Cint
         @debug "  $arg  =>  $val"
     end
     MPI.Init()
-    main(parsed_args["filename"], parsed_args["output_dir"], parsed_args["dry_run"], parsed_args["verbose"], parsed_args["debug"], parsed_args["silent"])
+    main(parsed_args["filename"]; output_dir=parsed_args["output_dir"], dry_run=parsed_args["dry_run"], verbose=parsed_args["verbose"], debug=parsed_args["debug"], silent=parsed_args["silent"])
     return 0
 end
 
@@ -186,7 +186,7 @@ This function serves as the entry point for the PeriLab application. It calls th
 - `debug::Bool=false`: Whether to run in debug mode.
 - `silent::Bool=false`: Whether to run in silent mode.
 """
-function main(filename::String, output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
+function main(filename::String; output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false)
 
     @timeit to "PeriLab" begin
         if !MPI.Initialized()

@@ -60,10 +60,8 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
         datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
         datamanager.create_node_field("Damage Anisotropic", Float64, dof)
     end
-    if length(datamanager.get_inverse_nlist()) == 0
-        nlist = datamanager.get_field("Neighborhoodlist")
-        inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
-    end
+    nlist = datamanager.get_field("Neighborhoodlist")
+    inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     return datamanager
 end
 
