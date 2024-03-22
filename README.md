@@ -20,8 +20,8 @@ SPDX-License-Identifier: BSD-3-Clause
 Welcome to `PeriLab`, a powerful software solution designed for tackling Peridynamic problems. 
 
 <p align="center" style="font-size:0;"><!--
-  PeriLab_crack      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/PeriLab_crack.gif" width="50%"><!--
-  PeriLab_additive      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/PeriLab_additive.gif" width="50%">
+  PeriLab_crack      --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/PeriLab_crack.gif" width="50%"><!--
+  PeriLab_additive      --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/PeriLab_additive.gif" width="50%">
 </p>
 
 ## Documentation
@@ -79,7 +79,7 @@ using PeriLab
 PeriLab.get_examples()
 PeriLab.main("examples/DCB/DCBmodel.yaml")
 ```
->Note: More details about the main functionalities in the yaml input deck [here](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Support/Parameters/parameter_handling.jl?ref_type=heads).
+>Note: More details about the main functionalities in the yaml input deck [here](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Support/Parameters/parameter_handling.jl).
 
 ## Parallel Processing with `PeriLab` (MPI)
 
@@ -122,7 +122,7 @@ Now, you've successfully installed PeriLab using the official Perihub/Perilab Do
 
 ## `PeriLab` on `JuliaHub`
 
-Experience the convenience of using PeriLab as a ready-to-use application on JuliaHub. Simply create an [account](https://juliahub.com), navigate to the [applications page](https://juliahub.com/ui/Applications), and add the repository URL: https://gitlab.com/dlr-perihub/PeriLab.jl.
+Experience the convenience of using PeriLab as a ready-to-use application on JuliaHub. Simply create an [account](https://juliahub.com), navigate to the [applications page](https://juliahub.com/ui/Applications), and add the repository URL: https://github.com/PeriHub/PeriLab.jl.
 
 Configure advanced options, such as _filename_, _dryrun_, _verbosity_, _debug_, and _silence_. Click __Start__ and monitor the job progress. Results will be available in a zipped folder.
 
@@ -157,7 +157,7 @@ We welcome contributions in various forms, including bug reports, documentation 
 ### Development
 1. **Clone the repository:**
 ```sh
-git clone https://gitlab.com/dlr-perihub/PeriLab.jl
+git clone https://github.com/PeriHub/PeriLab.jl
 cd PeriLab.jl
 ```
 2. **Activate the environment and install dependencies:**
@@ -203,7 +203,7 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 ## Partner
 
        
-| <img src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dlr.jpg" height="200" title="German Aerospace Center"> | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Logo_h2.svg/1280px-Logo_h2.svg.png" height="200" title="Magdeburg-Stendal University of Applied Science"> |
+| <img src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/dlr.jpg" height="200" title="German Aerospace Center"> | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Logo_h2.svg/1280px-Logo_h2.svg.png" height="200" title="Magdeburg-Stendal University of Applied Science"> |
 |:------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------:|
 | [German Aerospace Center](http://www.dlr.de/sy)                                                                               | [Magdeburg-Stendal University of Applied Science](http://www.h2.de)                                                                  |
 
@@ -215,14 +215,14 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 
 <p align="center" style="font-size:0;"><!--
   <!--
-  DFG      --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/dfg.jpg" height="120">
+  DFG      --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/dfg.jpg" height="120">
 </p>
 
 This project has benefited from funding by the [Deutsche
 Forschungsgemeinschaft](https://www.dfg.de/) (DFG, German Research Foundation)
 through the following grant ''Gekoppelte Peridynamik-Finite-Elemente-Simulationen zur Schädigungsanalyse von Faserverbundstrukturen''. <br/><br/>Grant number: [WI 4835/5-1](https://gepris.dfg.de/gepris/projekt/456427423)
 <p align="center" style="font-size:0;"><!--
-  SACHSEN  --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/sachsen.jpg" height="120">
+  SACHSEN  --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/sachsen.jpg" height="120">
 </p>
 
 [M-ERA.NET](https://www.m-era.net/) funded project ''Exploring Multi-Method Analysis of composite structures and joints under consideration of uncertainties engineering and processing (EMMA)''
@@ -230,7 +230,7 @@ through the following grant ''Gekoppelte Peridynamik-Finite-Elemente-Simulatione
 This measure is co-financed with tax funds on the basis of the budget passed by the [Saxon state parlament](https://www.landtag.sachsen.de/de). <br/><br/>Grant number: [3028223](https://www.m-era.net/materipedia/2020/emma).
 
 <p align="center" style="font-size:0;"><!--
-  HyTank  --><img align="middle" src="https://gitlab.com/dlr-perihub/PeriLab.jl/-/raw/main/assets/hytank.jpg" height="120"><!--
+  HyTank  --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/hytank.jpg" height="120"><!--
   -->
 </p>
 

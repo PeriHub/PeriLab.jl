@@ -137,6 +137,6 @@ All notable changes to this project will be documented in this file.
 
 - First full PeriLab release
 
-[1.0.2]: https://gitlab.com/dlr-perihub/PeriLab.jl/-/compare/v1.0.1...v1.0.2
-[1.0.1]: https://gitlab.com/dlr-perihub/PeriLab.jl/-/compare/v1.0.0...v1.0.1
-[1.0.0]: https://gitlab.com/dlr-perihub/PeriLab.jl/-/tags/v1.0.0
+[1.0.2]: https://github.com/PeriHub/PeriLab.jl/-/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/PeriHub/PeriLab.jl/-/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/PeriHub/PeriLab.jl/-/tags/v1.0.0
