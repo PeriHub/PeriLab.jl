@@ -11,6 +11,7 @@ export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
 export fem_active
+export clear_all_field_keys
 export get_all_field_keys
 export get_block_list
 export get_crit_values_matrix
@@ -367,6 +368,16 @@ Returns a list of all field keys.
 function get_all_field_keys()
     global field_types
     return collect(keys(field_types))
+end
+
+"""
+    clear_all_field_keys()
+
+Returns a list of all field keys.
+"""
+function clear_all_field_keys()
+    global field_types
+    field_types = Dict()
 end
 
 """
