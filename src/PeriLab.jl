@@ -272,7 +272,6 @@ function main(filename::String, output_dir::String="", dry_run::Bool=false, verb
         TimerOutputs.complement!(to)
         @info to
     end
-    MPI.Finalize()
 end
 
 end # module
