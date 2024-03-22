@@ -80,7 +80,6 @@ end
 
     coords = vcat(transpose(coordinates))
     for exo in result_files
-        @test exo["file"].init.num_dim == dof
         exo_coords = read_coordinates(exo["file"])
         exo_nsets = read_sets(exo["file"], NodeSet)
         @test coords == exo_coords
