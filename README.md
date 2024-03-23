@@ -83,13 +83,14 @@ PeriLab.main("examples/DCB/DCBmodel.yaml")
 
 ## Parallel Processing with `PeriLab` (MPI)
 
-To handle large-scale problems efficiently, install [MPI](https://juliaparallel.org/MPI.jl/stable/usage/). Run PeriLab with two processors using the following commands:
+To handle large-scale problems efficiently, install [MPI](https://juliaparallel.org/MPI.jl/stable/usage/). Run PeriLab with two processors on a Linux system using the following commands:
 
 ```sh
 $ julia
 julia> using MPI
 julia> MPI.install_mpiexecjl()
 ```
+>Note: If you work with Windows 10 or higher you can use the [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) environment.
 
 Run PeriLab with two processors:
 ```sh
