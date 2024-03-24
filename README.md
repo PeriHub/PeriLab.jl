@@ -83,13 +83,14 @@ PeriLab.main("examples/DCB/DCBmodel.yaml")
 
 ## Parallel Processing with `PeriLab` (MPI)
 
-To handle large-scale problems efficiently, install [MPI](https://juliaparallel.org/MPI.jl/stable/usage/). Run PeriLab with two processors using the following commands:
+To handle large-scale problems efficiently, install [MPI](https://juliaparallel.org/MPI.jl/stable/usage/). Run PeriLab with two processors on a **Linux** system using the following commands:
 
 ```sh
 $ julia
 julia> using MPI
 julia> MPI.install_mpiexecjl()
 ```
+>Note: If you work with **Windows 10 or higher** you can use the [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) environment.
 
 Run PeriLab with two processors:
 ```sh
@@ -177,7 +178,7 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 
 ## Authors and acknowledgment
 
-<a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Dr.-Ing. Christian Willberg](mailto::christian.willberg@dlr.de)
+<a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
 
 <a href="https://orcid.org/0000-0002-3006-1520"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
 

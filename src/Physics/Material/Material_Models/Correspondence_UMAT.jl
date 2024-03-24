@@ -59,13 +59,14 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   end
   # properties include the material properties, etc. 
   num_props = material_parameter["Number of Properties"]
-  properties = datamanager.create_constant_free_size_field("Properties", Float64, num_props, 1)
+  properties = datamanager.create_constant_free_size_field("Properties", Float64, (num_props, 1))
+
   for iID in 1:num_props
     if !haskey(material_parameter, "Property_$iID")
       @error "Property_$iID is missing. Number of properties is $num_props and properties have to be in order without a missing number."
       return nothing
     end
-    props[iID] = material_parameter["Property_$iID"]
+    properties[iID] = material_parameter["Property_$iID"]
   end
 
   if !haskey(material_parameter, "UMAT Material Name")
