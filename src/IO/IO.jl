@@ -24,6 +24,8 @@ using Reexport
 @reexport using .Parameter_Handling
 export initialize_data
 export init_write_results
+export get_results_mapping
+export init_orientations
 export write_results
 export merge_exodus_files
 export show_block_summary

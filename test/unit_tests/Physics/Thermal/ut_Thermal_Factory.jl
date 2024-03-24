@@ -5,11 +5,12 @@ using Test
 
 include("../../../../src/Physics/Thermal/Thermal_Factory.jl")
 using .Thermal
-include("../../../../src/Support/data_manager.jl")
+# include("../../../../src/Support/data_manager.jl")
 
 
 @testset "init_thermal_model_fields" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(4)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
@@ -33,7 +34,7 @@ end
     nnodes = 2
     nodes = Vector{Int64}(1:nnodes)
     dof = 2
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(2)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)

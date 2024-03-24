@@ -6,7 +6,7 @@ using Test
 
 include("../../../../src/Physics/Thermal/heat_transfer.jl")
 using .Heat_transfer
-include("../../../../src/Support/data_manager.jl")
+# include("../../../../src/Support/data_manager.jl")
 
 @test Heat_transfer.thermal_model_name() == "Heat Transfer"
 
@@ -14,7 +14,8 @@ include("../../../../src/Support/data_manager.jl")
     nnodes = 10
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     test_Data_manager.set_num_controller(nnodes)
     test_Data_manager.set_dof(dof)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)

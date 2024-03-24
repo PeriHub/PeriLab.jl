@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 using Test
 include("../../../../../src/Physics/Material/Material_Models/PD_Solid_Plastic.jl")
-include("../../../../../src/Support/data_manager.jl")
 
 
 @testset "get_name&fe_support" begin
