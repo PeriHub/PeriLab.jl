@@ -46,7 +46,15 @@ Initializes the material model.
 function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict{String,Any})
   # set to 1 to avoid a later check if the state variable field exists or not
   num_state_vars::Int64 = 1
+  if !haskey(material_parameter, "File")
+    @error "UMAT file is not defined."
+    return nothing
+  end
 
+  if !isfile(material_parameter["File"])
+    @error "File $(material_parameter["File"]) not there, please check name and directory."
+    return nothing
+  end
   if haskey(material_parameter, "Number of State Variables")
     num_state_vars = material_parameter["Number of State Variables"]
   end
@@ -195,7 +203,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   for iID in nodes
     stress_NP1[iID, :, :] = UMAT_interface
     rotNP1[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
-    UMAT_interface(stress_temp, statev[iID, :], DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, time + dt, dt, temperature_N[iID], temperature_increment[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0, DFGRD1, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
+    UMAT_interface(material_parameter["file"], stress_temp, statev[iID, :], DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, time + dt, dt, temperature_N[iID], temperature_increment[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0, DFGRD1, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
     stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
   end
   # CORRESPONDENCE::UMATINT(sigmaNP1LocVoigt, statev, DDSDDE, &SSE, &SPD, &SCD, &RPL,
@@ -228,7 +236,9 @@ Example:
 ```julia
 ```
 """
-function UMAT_interface()
+function UMAT_interface(filename::String)
+  #ccall((:__simplemodule_MOD_foo, "./simplemodule.so"), Int32, (Ptr{Int32},), a)
+  #ccall((:__simplemodule_MOD_foo, filename), Int32, (Ptr{Int32},), a)
 
 end
 
