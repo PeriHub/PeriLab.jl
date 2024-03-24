@@ -16,15 +16,13 @@ end
     dof = 3
     test_Data_manager.set_dof(dof)
 
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict()))
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict("Number of Properties" => 3, "Property_1" => 2, "Property_3" => 2)))
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict("Number of Properties" => 3, "Property_1" => 2, "Property_3" => 2, "Property_4" => 2)))
+    @test !isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Property_4" => 2)))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}()))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("Number of Properties" => 3, "Property_1" => 2, "Property_3" => 2.4)))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("Number of Properties" => 3, "Property_1" => 2, "Property_3" => 2.4, "Property_4" => 2)))
 
-
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict("Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "UMAT Material Name" => "a"^81)))
-    @test !isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict("Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "UMAT Material Name" => "a"^80)))
-
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict("Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Property_4" => 2.4, "Predefined Field Names" => "s")))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2.4, "Property_3" => 2.4, "UMAT Material Name" => "a"^81)))
+    @test !isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "UMAT Material Name" => "a"^80)))
 
     properties = test_Data_manager.get_field("Properties")
     @test length(properties) == 3
@@ -32,7 +30,19 @@ end
     @test properties[2] == 2
     @test properties[3] == 2.4
 
-    test_Data_manager.create_constant_node_field("test_field", Float64, 2)
-    Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict("Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field"))
-    @test ("test_field" in test_Data_manager.get_all_field_keys())
+    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3")))
+
+    test_1 = test_Data_manager.create_constant_node_field("test_field_2", Float64, 1)
+    test_1[1] = 7.3
+    test_2 = test_Data_manager.create_constant_node_field("test_field_3", Float64, 1)
+    test_2 .= 3
+    Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3"))
+    fields = test_Data_manager.get_field("Predefined Fields")
+    inc = test_Data_manager.get_field("Predefined Fields Increment")
+    @test size(fields) == (2, 2)
+    @test size(inc) == (2, 2)
+    @test fields[1, 1] == test_1[1]
+    @test fields[2, 1] == test_1[2]
+    @test fields[1, 2] == test_2[1]
+    @test fields[2, 2] == test_2[2]
 end

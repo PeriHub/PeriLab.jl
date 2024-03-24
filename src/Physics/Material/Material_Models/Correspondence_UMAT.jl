@@ -43,7 +43,7 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict{String,Any})
   # set to 1 to avoid a later check if the state variable field exists or not
   num_state_vars::Int64 = 1
 
@@ -68,7 +68,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     end
     properties[iID] = material_parameter["Property_$iID"]
   end
-
+  println()
   if !haskey(material_parameter, "UMAT Material Name")
     @warn "No UMAT Material Name is defined. Please check if you use it as method to check different material in your UMAT."
     material_parameter["UMAT Material Name"] = ""
@@ -92,13 +92,14 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   if haskey(material_parameter, "Predefined Field Names")
     field_names = split(material_parameter["Predefined Field Names"], " ")
     fields = datamanager.create_constant_node_field("Predefined Fields", Float64, length(field_names))
-    for field_name in field_names
+    for (id, field_name) in enumerate(field_names)
       if !(field_name in datamanager.get_all_field_keys())
-        @error "$field_name is not specified in the mesh file"
+        @error "Predefined field ''$field_name'' is not defined in the mesh file."
         return nothing
       end
       # view or copy and than deleting the old one
-      # fields[:, :] = @view datamanager.get_field(field_name)
+      fields[:, id] = datamanager.get_field(String(field_name))
+
     end
     datamanager.create_constant_node_field("Predefined Fields Increment", Float64, length(field_names))
 
