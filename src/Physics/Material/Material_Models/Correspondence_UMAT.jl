@@ -76,7 +76,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     end
     properties[iID] = material_parameter["Property_$iID"]
   end
-  println()
+
   if !haskey(material_parameter, "UMAT Material Name")
     @warn "No UMAT Material Name is defined. Please check if you use it as method to check different material in your UMAT."
     material_parameter["UMAT Material Name"] = ""
@@ -169,7 +169,11 @@ Example:
 function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
   # the notation from the Abaqus Fortran subroutine is used. 
   nstatev = material_parameter["Number of State Variables"]
+  nprops = material_parameter["Number of Properties"]
+  props = datamanager.get_field("Properties")
+
   statev = datamanager.get_field("State Variables")
+
   stress_temp::Vector{Float64} = zeros(Float64, 3 * dof - 3)
   DDSDDE = zeros(Float64, 3 * dof - 3, 3 * dof - 3)
   SSE = datamanager.get_field("Specific Elastic Strain Energy")
@@ -195,15 +199,15 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   nshr = 2 * dof - 3
   # Size of the stress or strain component array
   ntens = ndi + nshr
-  not_supported_float = 0.0
+  not_supported_float::Float64 = 0.0
   angles = datamanager.get_field("Angles")
   DFGRD0 = datamanager.get_field("Deformation Gradient", "N")
   DFGRD1 = datamanager.get_field("Deformation Gradient", "NP1")
-  not_supported_int = 0
+  not_supported_int::Int64 = 0
   for iID in nodes
     stress_NP1[iID, :, :] = UMAT_interface
     rotNP1[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
-    UMAT_interface(material_parameter["file"], stress_temp, statev[iID, :], DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, time + dt, dt, temperature_N[iID], temperature_increment[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0, DFGRD1, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
+    UMAT_interface(material_parameter["file"], stress_temp, statev[iID, :], DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temperature_N[iID], temperature_increment[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, props, nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0, DFGRD1, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
     stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
   end
   # CORRESPONDENCE::UMATINT(sigmaNP1LocVoigt, statev, DDSDDE, &SSE, &SPD, &SCD, &RPL,
@@ -236,10 +240,58 @@ Example:
 ```julia
 ```
 """
-function UMAT_interface(filename::String)
-  #ccall((:__simplemodule_MOD_foo, "./simplemodule.so"), Int32, (Ptr{Int32},), a)
-  #ccall((:__simplemodule_MOD_foo, filename), Int32, (Ptr{Int32},), a)
-
+function UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
+  # Define the path to the shared library
+  global libtest = filename
+  println()
+  # Call the UMAT subroutine with uppercase variables
+  """
+   ccall((:UMAT, libtest), Cvoid,
+     (
+       Ptr{Float64},    # STRESS
+       Ptr{Float64},    # STATEV
+       Ptr{Float64},    # DDSDDE
+       Ptr{Float64},    # SSE
+       Ptr{Float64},    # SPD
+       Ptr{Float64},    # SCD
+       Ptr{Float64},    # RPL
+       Ptr{Float64},    # DDSDDT
+       Ptr{Float64},    # DRPLDE
+       Ptr{Float64},    # DRPLDT
+       Ptr{Float64},    # STRAN
+       Ptr{Float64},    # DSTRAN
+       Ptr{Float64},    # TIME
+       Ptr{Float64},    # DTIME
+       Ptr{Float64},    # TEMP
+       Ptr{Float64},    # DTEMP
+       Ptr{Float64},    # PREDEF
+       Ptr{Float64},    # DPRED
+       Ptr{UInt8},      # CMNAME
+       Cint,            # NDI
+       Cint,            # NSHR
+       Cint,            # NTENS
+       Cint,            # NSTATEV
+       Ptr{Float64},    # PROPS
+       Cint,            # NPROPS
+       Ptr{Float64},    # COORDS
+       Ptr{Float64},    # DROT
+       Ptr{Float64},    # PNEWDT
+       Ptr{Float64},    # CELENT
+       Ptr{Float64},    # DFGRD0
+       Ptr{Float64},    # DFGRD1
+       Ptr{Cint},       # NOEL
+       Ptr{Cint},       # NPT
+       Ptr{Cint},       # LAYER
+       Ptr{Cint},       # KSPT
+       Ptr{Cint},       # JSTEP
+       Ptr{Cint}        # KINC
+     ),
+     STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT,
+     STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME,
+     NDI, NSHR, NTENS, NSTATEV, PROPS, NPROPS, COORDS, DROT, PNEWDT,
+     CELENT, DFGRD0, DFGRD1, NOEL, NPT, LAYER, KSPT, JSTEP, KINC
+   )
+ """
 end
 
 
