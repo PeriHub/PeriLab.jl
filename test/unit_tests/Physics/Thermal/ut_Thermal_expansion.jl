@@ -6,7 +6,7 @@ using Test
 
 include("../../../../src/Physics/Thermal/thermal_expansion.jl")
 using .Thermal_expansion
-include("../../../../src/Support/data_manager.jl")
+# include("../../../../src/Support/data_manager.jl")
 
 @test Thermal_expansion.thermal_model_name() == "Thermal Expansion"
 
@@ -36,7 +36,8 @@ end
 @testset "ut_thermal_deformation" begin
     nnodes = 2
     dof = 2
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     test_Data_manager.set_num_controller(2)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 2

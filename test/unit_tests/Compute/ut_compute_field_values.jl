@@ -3,10 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-include("../../../src/Support/data_manager.jl")
+# include("../../../src/Support/data_manager.jl")
 include("../../../src/Compute/compute_field_values.jl")
 @testset "ut_get_forces_from_force_density" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     test_Data_manager.set_num_controller(5)
 
     test_Data_manager.create_node_field("Forces", Float64, 3)
@@ -27,7 +28,7 @@ include("../../../src/Compute/compute_field_values.jl")
 end
 
 @testset "ut_get_partial_stresses" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(5)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)

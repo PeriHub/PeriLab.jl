@@ -6,11 +6,11 @@ using Test
 
 include("../../../../src/Physics/Thermal/thermal_flow.jl")
 using .Thermal_Flow
-include("../../../../src/Support/data_manager.jl")
+# include("../../../../src/Support/data_manager.jl")
 
 @test Thermal_Flow.thermal_model_name() == "Thermal Flow"
 
 @testset "ut_compute_thermal_model" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     @test Thermal_Flow.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict("a" => 1), 1.0, 1.0) == test_Data_manager
 end

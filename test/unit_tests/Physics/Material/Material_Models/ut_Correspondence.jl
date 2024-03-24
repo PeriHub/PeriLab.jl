@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../../../src/Physics/Material/Material_Models/Correspondence.jl")
-include("../../../../../src/Support/data_manager.jl")
+# include("../../../../../src/Support/data_manager.jl")
 using Test
 using .Correspondence
 
 @testset "zero_energy_mode_compensation_exception" begin
 
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     nnodes = 2
     test_Data_manager.set_num_controller(nnodes)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)

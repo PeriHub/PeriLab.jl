@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 include("../../../../../../src/Physics/Material/BondBased/Bondbased_Elastic.jl")
-include("../../../../../../src/Support/data_manager.jl")
+# include("../../../../../../src/Support/data_manager.jl")
 
 using .Bondbased_Elastic
 using Test
@@ -15,7 +15,7 @@ const to = TimerOutput()
 end
 @testset "compute_forces" begin
     nodes = 2
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(nodes)
     dof = 3
     test_Data_manager.set_dof(dof)

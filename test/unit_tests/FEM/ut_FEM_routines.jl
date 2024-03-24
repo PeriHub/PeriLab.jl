@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 include("../../../src/FEM/FEM_routines.jl")
 include("../../../src/FEM/Element_formulation/lagrange_element.jl")
-include("../../../src/Support/data_manager.jl")
+# include("../../../src/Support/data_manager.jl")
 using Test
 
 @testset "ut_jacobi" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     dof = 2
     nelements = 1
     test_Data_manager.set_dof(dof)
@@ -111,7 +111,7 @@ using Test
 end
 
 @testset "ut_lumped_mass" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     dof = 2
     nelements = 1
     test_Data_manager.set_dof(dof)

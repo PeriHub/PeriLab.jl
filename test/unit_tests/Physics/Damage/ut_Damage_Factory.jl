@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../../src/Physics/Damage/Damage_Factory.jl")
-include("../../../../src/Support/data_manager.jl")
+# include("../../../../src/Support/data_manager.jl")
 using Test
 using .Damage
 
 @testset "init_damage_model_fields" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(4)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
@@ -28,7 +29,7 @@ using .Damage
 end
 
 @testset "damage_index" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(3)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 1
@@ -82,7 +83,7 @@ end
     @test damageNP1_test[3] == 1
 end
 @testset "set_bond_damage" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(3)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 1
@@ -110,7 +111,7 @@ end
     end
 end
 @testset "ut_Damage_factory_exceptions" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.properties[1] = Dict("Damage Model" => Dict("Damage Model" => "not there"))
     @test isnothing(Damage.init_damage_model(test_Data_manager, Vector{Int64}(1:3), 1))
 end

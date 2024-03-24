@@ -377,9 +377,13 @@ Returns a list of all field keys.
 """
 function clear_data_manager()
     global field_types
+    global nsets
+    global nnsets
     global physics_options
 
     field_types = Dict()
+    nsets = Dict()
+    nnsets = 0
     physics_options = Dict("Deformed Bond Geometry" => true,
     "Deformation Gradient" => false,
     "Shape Tensor" => false,
@@ -391,13 +395,11 @@ function clear_data_manager()
     # global properties
     # global fields
     # global model_modules
-    # global nsets
     # field_array_type = Dict()
     # fields_to_synch = Dict()
     # properties = Dict()
     # fields = Dict()
     # model_modules = Dict()
-    # nsets = Dict()
 end
 
 """

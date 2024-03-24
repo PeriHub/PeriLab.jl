@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-include("../../../src/Support/data_manager.jl")
+# include("../../../src/Support/data_manager.jl")
 include("../../../src/Compute/compute_global_values.jl")
 
 @testset "ut_global_value_sum" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(4)
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
@@ -41,7 +41,7 @@ include("../../../src/Compute/compute_global_values.jl")
 end
 
 @testset "ut_global_value_max" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(4)
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
@@ -76,7 +76,7 @@ end
 end
 
 @testset "ut_global_value_min" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(4)
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
@@ -108,7 +108,7 @@ end
     @test isnothing(calculate_nodelist(test_Data_manager, "not there", 1, "Minimum", nodes))
 end
 @testset "ut_global_value_avg" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(4)
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
@@ -141,7 +141,7 @@ end
 end
 
 @testset "ut_calculate_block" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
     @test isnothing(calculate_block(test_Data_manager, "no field", 1, "sum", 1))
     @test isnothing(calculate_block(test_Data_manager, "Disp", 1, "no option", 1))

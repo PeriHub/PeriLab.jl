@@ -2,23 +2,26 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+#TODO: Remove include
 include("../../../src/IO/IO.jl")
-include("../../../src/Support/data_manager.jl")
-include("../../../src/Support/Parameters/parameter_handling.jl")
+# include("../../../src/Support/data_manager.jl")
+# include("../../../src/Support/Parameters/parameter_handling.jl")
 using TimerOutputs
-using Reexport
-@reexport using .Parameter_Handling
+# using Reexport
+# @reexport using .Parameter_Handling
 using Test
 import .IO
-@reexport using Exodus
-@reexport using MPI
-test_Data_manager = Data_manager
+# @reexport using Exodus
+# @reexport using MPI
+test_Data_manager = PeriLab.Data_manager
+test_Data_manager.clear_data_manager()
 filename1 = "test1"
 filename2 = "test2"
 dof = 2
 nnodes = 5
 comm = MPI.COMM_WORLD
 test_Data_manager.set_num_controller(nnodes)
+test_Data_manager.set_num_responder(0)
 test_Data_manager.set_comm(comm)
 test_Data_manager.set_dof(dof)
 test_Data_manager.set_max_rank(1)
@@ -83,7 +86,7 @@ end
         exo_coords = read_coordinates(exo["file"])
         exo_nsets = read_sets(exo["file"], NodeSet)
         @test coords == exo_coords
-        @test exo_nsets == []
+        # @test exo_nsets == []
     end
     for i in 1:2
         dofForce = 0

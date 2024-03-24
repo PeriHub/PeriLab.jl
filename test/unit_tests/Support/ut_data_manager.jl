@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../src/Support/data_manager.jl")
+# include("../../../src/Support/data_manager.jl")
 using MPI
 using Test
 @testset "set_comm" begin
     # MPI.Init()
     comm = MPI.COMM_WORLD
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     test_Data_manager.set_comm(comm)
     b = test_Data_manager.get_comm()
     @test comm == b
@@ -16,7 +17,7 @@ using Test
 end
 
 @testset "ranks" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_rank(2)
     test_Data_manager.set_max_rank(3)
     @test test_Data_manager.get_rank() == 2
@@ -26,7 +27,7 @@ end
 end
 
 @testset "get_local_nodes" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_glob_to_loc(Dict{Int64,Int64}(1 => 1, 3 => 2, 2 => 3))
     @test test_Data_manager.get_local_nodes([1, 2, 3]) == [1, 3, 2]
     @test test_Data_manager.get_local_nodes([1]) == [1]
@@ -42,7 +43,7 @@ end
 
 
 @testset "get_set_functions" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     for i in 1:20
         test_Data_manager.set_dof(i)
         @test test_Data_manager.get_dof() == i
@@ -62,7 +63,7 @@ end
     @test test_Data_manager.get_nnodes() == 97
     @test nnodes == 3
 end
-test_Data_manager = Data_manager
+test_Data_manager = PeriLab.Data_manager
 num_controller = 3
 num_responder = 2
 test_Data_manager.set_num_controller(num_controller)
@@ -413,6 +414,7 @@ end
 end
 
 @testset "ut_block_list" begin
+    test_Data_manager.set_block_list(Vector{Int64}())
     block_list = test_Data_manager.get_block_list()
     @test length(block_list) == 0
     test_Data_manager.set_block_list([1, 2, 3, 4, 4, 4, 1, 1, 1, 2, 2])
@@ -462,7 +464,7 @@ end
 end
 
 @testset "get_physics_options" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     physics_options = test_Data_manager.get_physics_options()
     @test physics_options["Deformed Bond Geometry"]
     @test !physics_options["Bond Associated Shape Tensor"]

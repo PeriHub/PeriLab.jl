@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../src/Physics/Physics_Factory.jl")
-include("../../../src/Support/data_manager.jl")
+# include("../../../src/Support/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .Physics
 @testset "ut_get_block_model_definition" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     block_list = [1, 2, 3]
     test_Data_manager.set_block_list(block_list)
     prop_keys = test_Data_manager.init_property()
@@ -29,7 +30,7 @@ import .Physics
 end
 
 @testset "ut_read_properties" begin
-    test_Data_manager_read_properties = Data_manager
+    test_Data_manager_read_properties = PeriLab.Data_manager
     block_list = [1, 2, 3]
     test_Data_manager_read_properties.set_block_list(block_list)
 
@@ -56,7 +57,7 @@ end
 end
 
 @testset "init_pre_calculation" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(4)
     nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)

@@ -5,45 +5,45 @@
 using Test
 
 
-include("../../../../src/Core/BC_manager.jl")
-include("../../../../src/Core/Solver/Verlet.jl")
-include("../../../../src/Core/Solver/Solver_control.jl")
-include("../../../../src/Support/geometry.jl")
+# include("../../../../src/Core/BC_manager.jl")
+# include("../../../../src/Core/Solver/Verlet.jl")
+# include("../../../../src/Core/Solver/Solver_control.jl")
+# include("../../../../src/Support/geometry.jl")
 
-if !isdefined(@__MODULE__, :Data_manager)
-    include("../../../../src/Support/data_manager.jl")
-end
-include("../../../../src/Support/Parameters/parameter_handling.jl")
-using Reexport
-@reexport using .Parameter_Handling
-using .Data_manager
-using .Geometry
-using .Boundary_conditions
-using .Solver
-using .Verlet
+# if !isdefined(@__MODULE__, :Data_manager)
+#     include("../../../../src/Support/data_manager.jl")
+# end
+# include("../../../../src/Support/Parameters/parameter_handling.jl")
+# using Reexport
+# @reexport using .Parameter_Handling
+# using .Data_manager
+# using .Geometry
+# using .Boundary_conditions
+# using .Solver
+# using .Verlet
 using MPI
 @testset "ut_test_timestep" begin
-    @test Verlet.test_timestep(1.0, 2.0) == 1
-    @test Verlet.test_timestep(2.0, 1.1) == 1.1
-    @test Verlet.test_timestep(2.0, 2.0) == 2
+    @test PeriLab.Solver.Verlet.test_timestep(1.0, 2.0) == 1
+    @test PeriLab.Solver.Verlet.test_timestep(2.0, 1.1) == 1.1
+    @test PeriLab.Solver.Verlet.test_timestep(2.0, 2.0) == 2
 end
 
 @testset "ut_get_integration_steps" begin
-    @test isnothing(Verlet.get_integration_steps(0.0, 0.0, -1.0))
-    @test Verlet.get_integration_steps(0.0, 1.0, 1.0) == (1, 1.0)
-    @test Verlet.get_integration_steps(0.0, 2.0, 1.0) == (2, 1.0)
-    @test Verlet.get_integration_steps(0.0, 6.0, 2.0) == (3, 2.0)
-    @test Verlet.get_integration_steps(2.0, 6.0, 2.0) == (2, 2.0)
+    @test isnothing(PeriLab.Solver.Verlet.get_integration_steps(0.0, 0.0, -1.0))
+    @test PeriLab.Solver.Verlet.get_integration_steps(0.0, 1.0, 1.0) == (1, 1.0)
+    @test PeriLab.Solver.Verlet.get_integration_steps(0.0, 2.0, 1.0) == (2, 1.0)
+    @test PeriLab.Solver.Verlet.get_integration_steps(0.0, 6.0, 2.0) == (3, 2.0)
+    @test PeriLab.Solver.Verlet.get_integration_steps(2.0, 6.0, 2.0) == (2, 2.0)
 end
 
 @testset "ut_get_cs_denominator" begin
     volume = Float64[1, 2, 3]
     undeformed_bond = [1, 2, 3]
-    @test Verlet.get_cs_denominator(volume, undeformed_bond) == 3
+    @test PeriLab.Solver.Verlet.get_cs_denominator(volume, undeformed_bond) == 3
     undeformed_bond = [2, 4, 6]
-    @test Verlet.get_cs_denominator(volume, undeformed_bond) == 1.5
+    @test PeriLab.Solver.Verlet.get_cs_denominator(volume, undeformed_bond) == 1.5
     undeformed_bond = [1, 0.5, 2]
-    @test Verlet.get_cs_denominator(volume, undeformed_bond) == 6.5
+    @test PeriLab.Solver.Verlet.get_cs_denominator(volume, undeformed_bond) == 6.5
 end
 
 # nnodes = 5
