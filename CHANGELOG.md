@@ -8,6 +8,11 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2024-
+
+### Fixed
+
+
 ## [1.1.2] - 2024-03-25
 
 ### Fixed
