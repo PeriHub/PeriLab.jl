@@ -136,8 +136,6 @@ for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page
 """
 function elastic(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, theta::Vector{Float64}, weighted_volume::Vector{Float64}, omega::SubArray, material::Dict, bond_force_deviatoric_part::SubArray, bond_force_isotropic_part::SubArray)
 
-    #tbd
-    #shear_factor=Vector{Float64}([0,8,15])
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
 
