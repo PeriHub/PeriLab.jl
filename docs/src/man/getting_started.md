@@ -23,6 +23,12 @@ using PeriLab
 PeriLab.get_examples()
 PeriLab.main("examples/DCB/DCBmodel.yaml")
 ```
+The output should look like this:
+
+```@raw html
+<script src="https://asciinema.org/a/649032.js" id="asciicast-649032" async="true"></script>
+```
+
 The main functionalities for the `yaml` input deck is given in
 ```
 "examples/functionalities.yaml"
