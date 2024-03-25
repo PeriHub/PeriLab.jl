@@ -24,7 +24,9 @@ There are multiple options to generate your own input mesh:
 
 - Use the [Perihub](https://gitlab.com/dlr-perihub/Perihub.jl) framework to generate your own input mesh.
 
-- Generate your own input mesh with julia, [here](https://github.com/PeriHub/PeriLab.jl/-/tree/main/examples/Training/meshing/mesh.jl?ref_type=heads) is an example.
+- Generate your own input mesh with julia, [here](https://github.com/PeriHub/PeriLab.jl/blob/main/examples/Training/meshing/mesh.jl) is an example.
+
+- Create a .png image of your 2D model and translate it with this [script](https://github.com/PeriHub/PeriLab.jl/blob/main/examples/Training/meshing/image.py).
 
 - Use an existing Abaqus Inputfile (.inp).
 
