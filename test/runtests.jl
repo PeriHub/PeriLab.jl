@@ -168,6 +168,12 @@ MPI.Init()
     end
 
     @testset "fullscale_tests" begin
+        @testset "test_reload" begin
+            @includetests["fullscale_tests/test_reload/test_reload"]
+        end
+        @testset "test_dry_run" begin
+            @includetests["fullscale_tests/test_dry_run/test_dry_run"]
+        end
         @testset "test_additive_simple" begin
             @includetests["fullscale_tests/test_additive/test_additive"]
         end
@@ -216,6 +222,9 @@ MPI.Init()
         end
         @testset "test_DCB" begin
             @includetests["fullscale_tests/test_DCB/test_DCB"]
+        end
+        @testset "test_RVE" begin
+            @includetests["fullscale_tests/test_RVE/test_RVE"]
         end
         @testset "test_FEM" begin
             @includetests["fullscale_tests/test_FEM/test_FEM"]

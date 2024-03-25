@@ -13,9 +13,9 @@ export run_perilab
 export run_mpi_test
 export push_test!
 
-function run_perilab(filename, cores, compare, folder_name="")
+function run_perilab(filename, cores, compare, folder_name=""; reload=false)
     if cores == 1
-        PeriLab.main(filename * ".yaml"; silent=true)
+        PeriLab.main(filename * ".yaml"; silent=true, reload=reload)
     else
         mpiexec() do exe  # MPI wrapper
 
