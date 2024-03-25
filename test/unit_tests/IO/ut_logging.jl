@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../src/IO/logging.jl")
 using Test
-using Logging
 using LoggingExtras
 import .Logging_module
 

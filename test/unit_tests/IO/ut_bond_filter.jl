@@ -2,13 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../src/IO/mesh_data.jl")
-include("../../../src/Support/data_manager.jl")
-include("../../../src/Support/Parameters/parameter_handling.jl")
+# include("../../../src/IO/mesh_data.jl")
 using Test
-using Reexport
-@reexport using .Parameter_Handling
-using .Data_manager
 using DataFrames
 
 @testset "ut_bond_intersect_infinite_plane_2d" begin
