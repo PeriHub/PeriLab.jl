@@ -24,7 +24,7 @@ There are multiple options to generate your own input mesh:
 
 - Use the [Perihub](https://gitlab.com/dlr-perihub/Perihub.jl) framework to generate your own input mesh.
 
-- Generate your own input mesh with julia, [here](https://gitlab.com/dlr-perihub/PeriLab.jl/-/tree/main/examples/Training/meshing/mesh.jl?ref_type=heads) is an example.
+- Generate your own input mesh with julia, [here](https://github.com/PeriHub/PeriLab.jl/-/tree/main/examples/Training/meshing/mesh.jl?ref_type=heads) is an example.
 
 - Use an existing Abaqus Inputfile (.inp).
 
@@ -52,4 +52,4 @@ If your question is not addressed here, please feel free to [contact us](mailto:
 
 ## Contributions
 
-Contributions are always welcomed, take a look at the [Contributing Guidelines](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/CONTRIBUTING.md)
+Contributions are always welcomed, take a look at the [Contributing Guidelines](https://github.com/PeriHub/PeriLab.jl/blob/main/CONTRIBUTING.md)

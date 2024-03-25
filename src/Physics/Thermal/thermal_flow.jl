@@ -203,7 +203,7 @@ function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}
         if coordinates[iID, 3] < horizon[iID] && undeformed_bond[iID][jID, 3] > 0
           # check if mirrored neighbor would be lower z=0
           if coordinates[iID, 3] - undeformed_bond[iID][jID, 3] <= 0
-            temp_state = t_bed - temperature[iID]
+            temp_state = bond_damage[iID][jID] * (t_bed - temperature[iID])
             if coordinates[iID, 3] == 0.0
               heat_flow[iID] -= lambda_bed * kernel * temp_state / undeformed_bond[iID][jID, end] * volume[neighborID]
             else

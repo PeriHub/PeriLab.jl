@@ -34,10 +34,10 @@ function create_result_file(filename::Union{AbstractString,String}, num_nodes::I
     float_type = Float64
     num_elems = num_nodes
     num_side_sets = 0
-    init = Initialization{bulk_int_type}(
-        Int32(num_dim), Int32(num_nodes), Int32(num_elems),
-        Int32(num_elem_blks), Int32(num_node_sets), Int32(num_side_sets)
-    )
+    init = Initialization{
+        Int32(num_dim),Int32(num_nodes),Int32(num_elems),
+        Int32(num_elem_blks),Int32(num_node_sets),Int32(num_side_sets)
+    }()
     @info "Create output " * filename
     exo_db = ExodusDatabase{maps_int_type,ids_int_type,bulk_int_type,float_type}(
         filename, "w", init)
@@ -168,7 +168,8 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
 
     write_number_of_variables(exo, NodalVariable, length(nodal_output_names))
     write_names(exo, NodalVariable, nodal_output_names)
-    nnodes = exo.init.num_nodes
+    # nnodes = num_nodes(exo.init)
+    nnodes = length(coords[1, :])
 
     for varname in nodal_output_names
         # interface does not work with Int yet 28//08//2023

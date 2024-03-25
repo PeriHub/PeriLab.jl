@@ -31,18 +31,18 @@ cannot figure out how to do, please reach out with questions in Domains/Data on
 [Discourse](https://github.com/PeriHub/PeriLab.jl/discussions).
 
 Please report bugs by
-[opening an issue](https://gitlab.com/dlr-perihub/PeriLab.jl/-/issues/new).
+[opening an issue](https://github.com/PeriHub/PeriLab.jl/issues/new/choose).
 
 You can follow the **source** links throughout the documentation to jump right
 to the source files on GitHub to make pull requests for improving the
 documentation and function capabilities.
 
 Please review [PeriLab contributing
-guidelines](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/CONTRIBUTING.md)
+guidelines](https://github.com/PeriHub/PeriLab.jl/blob/main/CONTRIBUTING.md)
 before submitting your first PR!
 
 Information on specific versions can be found on the [Release
-page](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/CHANGELOG.md).
+page](https://github.com/PeriHub/PeriLab.jl/blob/main/CHANGELOG.md).
 
 ## Package Manual
 
@@ -59,4 +59,4 @@ loading the PeriLab.jl package with `using PeriLab`) types and functions
 are considered a part of the public API of the PeriLab.jl package. In general
 all such objects are documented in this manual (in case some documentation is
 missing please kindly report an issue
-[here](https://gitlab.com/dlr-perihub/PeriLab.jl/-/issues/new)).
+[here](https://github.com/PeriHub/PeriLab.jl/-/issues/new)).

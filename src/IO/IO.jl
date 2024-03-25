@@ -24,12 +24,14 @@ using Reexport
 @reexport using .Parameter_Handling
 export initialize_data
 export init_write_results
+export get_results_mapping
+export init_orientations
 export write_results
 export merge_exodus_files
 export show_block_summary
 export show_mpi_summary
-output_frequency = []
-global_values = []
+output_frequency::Vector{Dict} = []
+global_values::Vector{Float64} = []
 
 
 """
@@ -385,6 +387,7 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
 
     coords = vcat(transpose(coordinates[1:nnodes, :]))
     output_frequencies = get_output_frequency(params, nsteps)
+    global output_frequency = []
     for id in eachindex(result_files)
 
         if result_files[id]["type"] == "Exodus"

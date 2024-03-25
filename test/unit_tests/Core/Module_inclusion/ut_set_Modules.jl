@@ -7,7 +7,7 @@ include("../../../../src/Core/Module_inclusion/set_Modules.jl")
 
 using Test
 using Random
-using .Set_modules
+# using .Set_modules
 
 @testset "ut_find_jl_files" begin
     Random.seed!(rand(1:100000))
@@ -47,7 +47,7 @@ using .Set_modules
     io = open(folder * "/" * filename4 * ".dat", "w")
     close(io)
 
-    list = Set_modules.find_jl_files(base)
+    list = PeriLab.Solver.FEM.Set_modules.find_jl_files(base)
     folder * "/" * filename1 * ".jl" in list
     @test subfolder1 * "/" * filename2 * ".jl" in list
     @test subfolder1 * "/" * filename3 * ".jl" in list

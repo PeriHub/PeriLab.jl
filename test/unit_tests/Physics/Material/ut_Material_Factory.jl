@@ -3,13 +3,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../../src/Physics/Material/Material_Factory.jl")
-include("../../../../src/Support/data_manager.jl")
+# include("../../../../src/Support/data_manager.jl")
 include("../../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .Material
 
 @testset "ut_init_material_model_fields" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     test_Data_manager.set_dof(3)
     test_Data_manager.set_num_controller(4)
     test_Data_manager.create_constant_node_field("Coordinates", Float64, 3)

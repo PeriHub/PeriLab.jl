@@ -11,6 +11,7 @@ export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
 export fem_active
+export clear_data_manager
 export get_all_field_keys
 export get_block_list
 export get_crit_values_matrix
@@ -367,6 +368,38 @@ Returns a list of all field keys.
 function get_all_field_keys()
     global field_types
     return collect(keys(field_types))
+end
+
+"""
+    clear_data_manager()
+
+Returns a list of all field keys.
+"""
+function clear_data_manager()
+    global field_types
+    global nsets
+    global nnsets
+    global physics_options
+
+    field_types = Dict()
+    nsets = Dict()
+    nnsets = 0
+    physics_options = Dict("Deformed Bond Geometry" => true,
+    "Deformation Gradient" => false,
+    "Shape Tensor" => false,
+    "Bond Associated Shape Tensor" => false,
+    "Bond Associated Deformation Gradient" => false)
+
+    # global field_array_type
+    # global fields_to_synch
+    # global properties
+    # global fields
+    # global model_modules
+    # field_array_type = Dict()
+    # fields_to_synch = Dict()
+    # properties = Dict()
+    # fields = Dict()
+    # model_modules = Dict()
 end
 
 """

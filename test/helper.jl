@@ -7,17 +7,15 @@ using Test
 using MPI
 using JSON3
 using Logging
+using PeriLab
 
 export run_perilab
 export run_mpi_test
 export push_test!
 
 function run_perilab(filename, cores, compare, folder_name="")
-    main_path = dirname(@__FILE__)[1:end-4] * "src/main.jl"
-    command = `$(Base.julia_cmd()) --math-mode=fast $main_path -s $(filename).yaml`
     if cores == 1
-        exit_code = run(command).exitcode
-        @test exit_code == 0
+        PeriLab.main(filename * ".yaml"; silent=true)
     else
         mpiexec() do exe  # MPI wrapper
 
