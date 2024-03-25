@@ -6,9 +6,9 @@ https://perihub.github.io/PeriLab.jl/stable/lib/physics_functions/
 ).
 | Method | Related Model in PeriLab |
 |---|---|
-| [Bond-based](theory/basics.md#Bond-based) | [Bond-based Elastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) |
-| [Ordinary state-based](theory/basics.md#PD_Solind) | [PD Solid Elastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl) [PD Solid Plastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) |
-|[Non-ordinary state-based](theory/basics.md#Correspondence)| [Correspondence Elastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl) [Correspondence Plastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl)|
+| [Bond-based](../theory/basics.md#Bond-based) | [Bond-based Elastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) |
+| [Ordinary state-based](../theory/basics.md#Ordinary_state-based) | [PD Solid Elastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl) [PD Solid Plastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) |
+|[Non-ordinary state-based](../theory/basics.md#Correspondence)| [Correspondence Elastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl) [Correspondence Plastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl)|
 
 ## Bond-based Elastic
 
