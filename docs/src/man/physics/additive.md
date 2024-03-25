@@ -2,7 +2,7 @@
 
 | Additive Model           | Simple |
 |------------------------|:----------------:|
-| Print Temperature         | :heavy_check_mark:|
+| Print Temperature         | ✔️|
 
 
 ## Simple

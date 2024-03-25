@@ -1,3 +1,5 @@
+# Theory Basics
+
 Peridynamics is an integral continuum mechanics formulation. For a pure mechanical description it can be formulated as:
 
 $$\int_{\mathcal{H}}\underline{\mathbf{T}}\langle\mathbf{x},t\rangle-\underline{\mathbf{T}}\langle\mathbf{x}',t\rangle dV- \mathbf{b}=\rho\ddot{\mathbf{u}} $$
