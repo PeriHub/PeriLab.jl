@@ -758,10 +758,11 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
 
     if params["Discretization"]["Type"] == "Abaqus"
         mesh, nsets = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        nnodes = size(mesh, 1) + 1
         mesh, surface_ns = extrude_surface_mesh(mesh, params)
         if !isnothing(surface_ns)
             for (key, values) in surface_ns
-                nsets[key] = Vector{Int64}(values .+ id)
+                nsets[key] = Vector{Int64}(values .+ nnodes)
             end
         end
     else
