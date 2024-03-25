@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using Documenter, PeriLab, DocumenterCitations
+using Documenter, PeriLab, DocumenterCitations, DocumenterMermaid
 
 bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"))
 
@@ -13,9 +13,7 @@ makedocs(
     doctest=true,
     checkdocs=:none, # :all, :exports, :none
     sitename="PeriLab",
-    repo=Documenter.Remotes.GitHub("PeriHub", "PeriLab.jl"),
-
-    format=Documenter.HTML(
+    repo=Documenter.Remotes.GitHub("PeriHub", "PeriLab.jl"), format=Documenter.HTML(
         canonical="https://github.com/PeriHub/PeriLab.jl",
         assets=["assets/favicon.ico"],
         edit_link="main"
@@ -28,6 +26,13 @@ makedocs(
             "Input File"=>"man/input_yaml.md",
             "Mesh and Nodesets"=>"man/mesh_input.md",
             "Bond-Filter"=>"man/bond_filter.md",
+            "Physics"=>Any[
+                "Overview"=>"man/physics/overview.md",
+                "Material Models"=>"man/physics/materials.md",
+                "Damage Models"=>"man/physics/damage.md",
+                "Thermal Models"=>"man/physics/thermal.md",
+                "Additive Models"=>"man/physics/additive.md",
+            ],
         ],
         "API"=>Any[
             # "Types" => "lib/types.md",

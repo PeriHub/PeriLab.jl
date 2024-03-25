@@ -85,7 +85,7 @@ The PeriLab configuration file is a YAML file used to specify the parameters for
       - **_Own_Name_**: Numeric value representing interblock damage. (Float64 or Int64, required)
     - **Anisotropic Damage**: Dictionary of anisotropic damage parameters.
       - **Critical Value X/Y**: Numeric values representing critical values in X and Y directions. (Float64 or Int64, required)
-- **Material Models**: Dictionary of [material models](material_manual.md). (optional)
+- **Material Models**: Dictionary of [material models](physics/materials.md). (optional)
   - **_Own_Name_**: List of material model configurations.
     - **Material Model**: String representing the material model.
     - **Symmetry**: String representing the symmetry. (optional)

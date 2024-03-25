@@ -1,18 +1,26 @@
 # Material Models
 
 ## Existing Models
-The physics related functions can be found [here](
-https://perihub.github.io/PeriLab.jl/stable/lib/physics_functions/
-).
+The physics related functions can be found [here](@ref "Physics - Functions").
+
 | Method | Related Model in PeriLab |
 |---|---|
-| [Bond-based](../theory/basics.md#Bond-based) | [Bond-based Elastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) |
-| [Ordinary state-based](../theory/basics.md#Ordinary_state-based) | [PD Solid Elastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl) [PD Solid Plastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) |
-|[Non-ordinary state-based](../theory/basics.md#Correspondence)| [Correspondence Elastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl) [Correspondence Plastic](https://gitlab.com/dlr-perihub/PeriLab.jl/-/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl)|
+| [Bond-based](@ref "Theory Basics") | [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) |
+| [Ordinary state-based](@ref "Theory Basics") | [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl), [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) |
+|[Non-ordinary state-based](@ref "Theory Basics")| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl), [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl)|
+
+
+| Material Model             | Bond-based Elastic | PD Solid Elastic | PD Solid Plastic | Correspondence Elastic | Correspondence Plastic |
+|----------------------------|-------------------|------------------|------------------|------------------------|------------------------|
+| Symmetry                   | ✔️| ✔️ | ✔️ | ✔️     | ✔️     |
+| Poisson's/Young's/Bulk/Shear | ✔️| ✔️ | ✔️ | ✔️     | ✔️     |
+| Yield Stress               |                   |                  | ✔️|                        | ✔️     |
+| Zero Energy Control        |                   |                  |                  | ✔️     | ✔️     |
+| C11/C12/.../C66            | (✔️)| (✔️) | (✔️) | (✔️)     | (✔️)     |
 
 ## Bond-based Elastic
 
-The theory of the bond-based elastic material can be found [here](theory/basics.md#Bond-based)
+The theory of the bond-based elastic material can be found [here](@ref "Theory Basics")
 
 Material parameter
 tabelle
