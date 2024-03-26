@@ -34,6 +34,14 @@ makedocs(
                 "Additive Models"=>"man/physics/additive.md",
             ],
         ],
+        "Theory"=>Any[
+            "Basics"=>"theory/theory.md",
+            "Peridynamic Basics"=>Any[
+                "Bond-based"=>"theory/thery_bondbased.md",
+                "Ordinary state-based"=>"theory/ordinary.md",
+                "Non-Ordinary state-based"=>"theory/correspondence.md",
+            ],
+        ],
         "API"=>Any[
             # "Types" => "lib/types.md",
             "Functions"=>"lib/functions.md",
