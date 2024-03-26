@@ -1,7 +1,5 @@
 # PeriLab
 
-- [Theory Manual](theory.md)
-
 Welcome to the PeriLab documentation!
 
 This resource aims to teach you everything you need to know to get up and
