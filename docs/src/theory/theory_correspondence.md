@@ -1,4 +1,4 @@
-# Correspondence
+# Correspondence Peridynamics
 
 The correspondence formulation is a non-ordinary state-based formulation provided by [SillingSA2007](@cite). It has the goal to apply classical models to Peridynamics.
 

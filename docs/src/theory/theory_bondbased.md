@@ -1,7 +1,4 @@
-# Bond-based
-
-
-# Bond-Based Peridynamics
+# Bond-based Peridynamics
 
 Bond-based Peridynamics is a nonlocal extension of classical continuum mechanics, designed to address discontinuities like cracks within materials. Unlike traditional methods, which use partial differential equations (PDEs) and are based on local interactions, Peridynamics operates on integral equations and accounts for long-range forces.
 

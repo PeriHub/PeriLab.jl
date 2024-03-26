@@ -5,9 +5,9 @@ The physics related functions can be found [here](@ref "Physics - Functions").
 
 | Method | Related Model in PeriLab |
 |---|---|
-| [Bond-based](@ref "Bond-Based Peridynamics") | [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) |
-| [Ordinary state-based](@ref "Ordinary state-based") | [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl), [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) |
-|[Non-ordinary state-based](@ref "Correspondence")| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl), [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl)|
+| [Bond-based](@ref "Bond-based Peridynamics") | [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) |
+| [Ordinary state-based](@ref "Ordinary state-based Peridynamics") | [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl), [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) |
+|[Non-ordinary state-based](@ref "Correspondence Peridynamics")| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl), [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl)|
 
 
 | Material Model             | Bond-based Elastic | PD Solid Elastic | PD Solid Plastic | Correspondence Elastic | Correspondence Plastic |
@@ -20,7 +20,7 @@ The physics related functions can be found [here](@ref "Physics - Functions").
 
 ## Bond-based Elastic
 
-The theory of the bond-based elastic material can be found [here](@ref "Bond-Based Peridynamics")
+The theory of the bond-based elastic material can be found [here](@ref "Bond-based Peridynamics")
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -32,7 +32,7 @@ One of theses parameters have to be defined.
 >Note: In the bond-based formulation the Poisson's ratio is fixed by [0.25 for 2D plane strain and 1/3 for 3D and 2D plane stress](https://link.springer.com/article/10.1007/s42102-019-00021-x), respectively.
 
 ## PD Solid Elastic
-The underlying theory can be found [here](@ref "Ordinary state-based")
+The underlying theory can be found [here](@ref "Ordinary state-based Peridynamics")
 | Parameter | Unit | Description |
 |---|---|---|
 |Youngs Modulus | $\left[N/m^2\right]$| [Young's modulus](https://en.wikipedia.org/wiki/Young%27s_modulus) or elasticity modulus
@@ -50,7 +50,7 @@ Two of these parameters have to be defined. The other two are determined automat
 
 
 ## Correspondence Elastic
-The underlying correspondence theory can be found [here](@ref "Correspondence")
+The underlying correspondence theory can be found [here](@ref "Correspondence Peridynamics")
 
 | Parameter | Unit | Description |
 |---|---|---|

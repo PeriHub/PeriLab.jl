@@ -1,4 +1,4 @@
-# Ordinary State-based
+# Ordinary state-based Peridynamics
 > More details can be found here [WillbergC2019](@cite)
 
 For an isotropic Peridynamic solid and small deformations we can define $$\underline{x}=|\underline{\mathbf{X}}|$$ and  $$\underline{y}=|\underline{\mathbf{Y}}|$$
