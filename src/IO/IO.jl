@@ -661,10 +661,12 @@ function show_mpi_summary(log_file::String, silent::Bool, comm::MPI.Comm, datama
     nlist = datamanager.get_nlist()
     headers = ["Rank"]
     append!(headers, ["block_" * string(block) for block in range(1, max_block_id)])
+    append!(headers, ["Total"])
 
     df = DataFrame([header => [] for header in headers])
 
     row = [string(rank)]
+    total = 0
     for id in range(1, max_block_id)
         # get number of nodes
         # num_nodes = string(length(findall(x -> x == id, block_Id)))
@@ -674,7 +676,9 @@ function show_mpi_summary(log_file::String, silent::Bool, comm::MPI.Comm, datama
         end
         num_nodes = string(sum(length.(nlist[findall(x -> x == id, block_Id)])))
         push!(row, num_nodes)
+        total += parse(Int64, num_nodes)
     end
+    push!(row, string(total))
     push!(df, row)
     # Gather all DataFrames to the root process (rank 0)
     all_dfs = gather_values(comm, df)
