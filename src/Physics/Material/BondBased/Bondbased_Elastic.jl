@@ -87,9 +87,9 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     E = material_parameter["Young's Modulus"]
     for iID in nodes
         if symmetry == "plane stress"
-            constant = 12.0 * E / (pi * (1 + 1.0 / 3) * horizon[iID]^3)
+            constant = 9.0 * E / (pi * horizon[iID]^3)
         elseif symmetry == "plane strain"
-            constant = 12.0 * E / (pi * (1.25) * horizon[iID]^3)
+            constant = 48 * E / (5 * pi * horizon[iID]^3)
         else
             constant = 18.0 * K / (pi * horizon[iID]^4)
         end
