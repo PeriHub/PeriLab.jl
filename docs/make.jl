@@ -37,7 +37,7 @@ makedocs(
         "Theory"=>Any[
             "Basics"=>"theory/theory.md",
             "Peridynamic Basics"=>Any[
-                "Bond-based"=>"theory/thery_bondbased.md",
+                "Bond-based"=>"theory/theory_bondbased.md",
                 "Ordinary state-based"=>"theory/ordinary.md",
                 "Non-Ordinary state-based"=>"theory/correspondence.md",
             ],
