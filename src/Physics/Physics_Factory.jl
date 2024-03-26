@@ -196,8 +196,8 @@ Initialize models
 function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, to::TimerOutput)
     dof = datamanager.get_dof()
     deformed_coorN, deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
-    deformed_coorN[:] = copy(datamanager.get_field("Coordinates"))
-    deformed_coorNP1[:] = copy(datamanager.get_field("Coordinates"))
+    deformed_coorN = copy(datamanager.get_field("Coordinates"))
+    deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
     if solver_options["Additive Models"]
         @info "Init additive models"

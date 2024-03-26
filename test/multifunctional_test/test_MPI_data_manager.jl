@@ -23,7 +23,7 @@ else
 end
 test_Data_manager.set_num_controller(nnodes)
 nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-nn[:] = nneighbors
+nn = nneighbors
 nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 @testset "init_distributed_lists rank $rank" begin
     for (id, list) in enumerate(nlist)
@@ -37,7 +37,7 @@ if rank == 0
 end
 glob_to_loc = glob_to_loc(distribution)
 @testset "init_data rank $rank" begin
-    lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
+    lenNlist = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
     nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 
 end

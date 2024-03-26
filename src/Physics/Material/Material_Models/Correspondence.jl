@@ -202,7 +202,7 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
     piolaStress::Matrix{Float64} = jacobian .* invdeformation_gradient * stress_NP1[iID, :, :]
     temp::Matrix{Float64} = piolaStress * inverse_shape_tensor[iID, :, :]
 
-    bond_force[iID][:, :] = (bond_damage[iID][:] .* undeformed_bond[iID][:, 1:end-1]) * temp
+    bond_force[iID][:, :] = (bond_damage[iID] .* undeformed_bond[iID][:, 1:end-1]) * temp
 
   end
   return bond_force

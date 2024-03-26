@@ -103,7 +103,7 @@ function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, v
     for iID in nodes
         for i in 1:dof
             for j in 1:dof
-                shapeTensor[iID, i, j] = sum(bond_damage[iID][:] .* undeformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
+                shapeTensor[iID, i, j] = sum(bond_damage[iID] .* undeformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID]] .* omega[iID])
             end
 
         end
@@ -163,7 +163,7 @@ function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, 
     for iID in nodes
         for i in 1:dof
             for j in 1:dof
-                deformation_gradient[iID, i, j] = sum(bond_damage[iID][:] .* deformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
+                deformation_gradient[iID, i, j] = sum(bond_damage[iID] .* deformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID]] .* omega[iID])
             end
         end
         deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]

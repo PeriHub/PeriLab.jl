@@ -98,7 +98,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             return nothing
         end
         # Calculate the bond force
-        bond_force[iID] = (0.5 .* constant .* bond_damage[iID][:] .* (deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end]) ./ undeformed_bond[iID][:, end]) .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
+        bond_force[iID] = (0.5 .* constant .* bond_damage[iID] .* (deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end]) ./ undeformed_bond[iID][:, end]) .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
 
     end
 

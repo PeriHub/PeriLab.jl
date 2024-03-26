@@ -80,13 +80,13 @@ end
 # coor[5, 1] = 1;
 # coor[5, 2] = 1;
 
-# volume[:] = [0.5, 0.5, 0.5, 0.5, 0.5]
-# density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
-# horizon[:] = [3.1, 3.1, 3.1, 3.1, 3.1]
+# volume = [0.5, 0.5, 0.5, 0.5, 0.5]
+# density = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
+# horizon = [3.1, 3.1, 3.1, 3.1, 3.1]
 
 # undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
 
-# blocks[:] = [1, 1, 2, 2, 1]
+# blocks = [1, 1, 2, 2, 1]
 # blocks = test_Data_manager.set_block_list(blocks)
 # # from Peridigm
 # testValmech = 0.0002853254715348906
@@ -151,7 +151,7 @@ end
 # a = test_Data_manager.create_constant_node_field("Acceleration", Float64, dof)
 # v = test_Data_manager.create_node_field("Velocity", Float64, dof)
 
-# density[:] = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
+# density = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
 # test_Data_manager.set_nset("Nset_1", [1, 2, 3])
 # test_Data_manager.set_nset("Nset_2", [3, 4, 7, 10])
 # block_nodes = [1, 1, 2, 2, 1]

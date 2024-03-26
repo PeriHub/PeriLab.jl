@@ -153,8 +153,8 @@ function elastic(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, undeformed_bo
             continue
         end
         deviatoric_deformation = deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end] - (gamma * theta[iID] / 3) .* undeformed_bond[iID][:, end]
-        bond_force_deviatoric_part[iID] = bond_damage[iID][:] .* omega[iID] .* alpha .* deviatoric_deformation ./ weighted_volume[iID]
-        bond_force_isotropic_part[iID] = bond_damage[iID][:] .* omega[iID] .* kappa .* theta[iID] .* undeformed_bond[iID][:, end] ./ weighted_volume[iID]
+        bond_force_deviatoric_part[iID] = bond_damage[iID] .* omega[iID] .* alpha .* deviatoric_deformation ./ weighted_volume[iID]
+        bond_force_isotropic_part[iID] = bond_damage[iID] .* omega[iID] .* kappa .* theta[iID] .* undeformed_bond[iID][:, end] ./ weighted_volume[iID]
     end
     deviatoric_deformation = nothing
     return bond_force_deviatoric_part, bond_force_isotropic_part
