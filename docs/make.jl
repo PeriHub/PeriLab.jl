@@ -38,8 +38,8 @@ makedocs(
             "Basics"=>"theory/theory.md",
             "Peridynamic Basics"=>Any[
                 "Bond-based"=>"theory/theory_bondbased.md",
-                "Ordinary state-based"=>"theory/ordinary.md",
-                "Non-Ordinary state-based"=>"theory/correspondence.md",
+                "Ordinary state-based"=>"theory/theory_ordinary.md",
+                "Non-Ordinary state-based"=>"theory/theory_correspondence.md",
             ],
         ],
         "API"=>Any[
