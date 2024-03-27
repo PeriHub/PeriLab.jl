@@ -207,6 +207,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
                 if dof == 1
                     send_msg = array[iID]
                 else
+                    #TODO: Check if we can remove the [:,:]
                     send_msg = array[iID][:, :]
                 end
                 MPI.Send(send_msg, comm; dest=jcore - 1, tag=0)
