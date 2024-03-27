@@ -38,8 +38,8 @@ function init_additive_model_fields(datamanager::Module)
     if !("Active" in datamanager.get_all_field_keys())
         active = datamanager.create_constant_node_field("Active", Bool, 1, false)
         for iID in 1:nnodes
-            bond_damageN[iID][:] .= 0
-            bond_damageNP1[iID][:] .= 0
+            bond_damageN[iID] .= 0
+            bond_damageNP1[iID] .= 0
         end
     end
     nlist = datamanager.get_field("Neighborhoodlist")

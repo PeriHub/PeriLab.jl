@@ -222,10 +222,10 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
             end
         end
 
-        force_densities[iID, :] .+= transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* bond_mod .* volume[nlist[iID][:]], dims=1))
+        force_densities[iID, :] .+= transpose(sum(bond_damage[iID] .* bond_force[iID][:, :] .* bond_mod .* volume[nlist[iID]], dims=1))
 
-        # force_densities[nlist[iID][:], :][:] .-= bond_damage[iID][:] .* bond_force[iID][:] .* bond_mod[:] .* volume[iID]
-        force_densities[nlist[iID][:], :] .-= bond_damage[iID][:] .* bond_force[iID][:, :] .* bond_mod[:, :] .* volume[iID]
+        # force_densities[nlist[iID], :] .-= bond_damage[iID] .* bond_force[iID] .* bond_mod .* volume[iID]
+        force_densities[nlist[iID], :] .-= bond_damage[iID] .* bond_force[iID][:, :] .* bond_mod[:, :] .* volume[iID]
     end
     return force_densities
 end
@@ -247,9 +247,9 @@ Distribute the forces on the nodes
 """
 function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
     for iID in nodes
-        force_densities[iID, :] .+= transpose(sum(bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[nlist[iID][:]], dims=1))
+        force_densities[iID, :] .+= transpose(sum(bond_damage[iID] .* bond_force[iID][:, :] .* volume[nlist[iID]], dims=1))
 
-        force_densities[nlist[iID][:], :] .-= bond_damage[iID][:] .* bond_force[iID][:, :] .* volume[iID]
+        force_densities[nlist[iID], :] .-= bond_damage[iID] .* bond_force[iID][:, :] .* volume[iID]
     end
     return force_densities
 end

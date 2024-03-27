@@ -205,7 +205,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
         if overlapnodes[rank+1][jcore]["Controller"] != []
             for iID in overlapnodes[rank+1][jcore]["Controller"]
                 if dof == 1
-                    send_msg = array[iID][:]
+                    send_msg = array[iID]
                 else
                     send_msg = array[iID][:, :]
                 end
@@ -215,7 +215,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
         if overlapnodes[rank+1][jcore]["Responder"] != []
             for iID in overlapnodes[rank+1][jcore]["Responder"]
                 if dof == 1
-                    recv_msg = similar(array[iID][:])
+                    recv_msg = similar(array[iID])
                 else
                     recv_msg = similar(array[iID][:, :])
                 end

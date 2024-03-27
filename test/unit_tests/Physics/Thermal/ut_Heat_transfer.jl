@@ -42,10 +42,10 @@ using .Heat_transfer
     nlist[9] = [6, 8]
     nlist[10] = [9]
     volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
-    volume[:] .= 0.25
+    volume .= 0.25
     specific_volume = test_Data_manager.create_constant_node_field("specific_volume", Float64, 1)
     horizon = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
-    horizon[:] .= 0.55
+    horizon .= 0.55
     active = fill(true, nnodes)
     result = Heat_transfer.calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
     @test result == [1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.5, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 2.0]

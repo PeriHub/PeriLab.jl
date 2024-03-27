@@ -40,10 +40,10 @@ function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Su
 
     for iID in nodes
         # in Peridigm the weighted volume is for some reason independend from damages
-        weighted_volume[iID] = sum(omega[iID][:] .* bond_damage[iID][:] .* undeformed_bond[iID][:, end] .* undeformed_bond[iID][:, end] .* volume[nlist[iID][:]])
+        weighted_volume[iID] = sum(omega[iID] .* bond_damage[iID] .* undeformed_bond[iID][:, end] .* undeformed_bond[iID][:, end] .* volume[nlist[iID]])
 
     end
-    # @. weighted_volume[nodes] = sum(omega[nodes][:] .* bond_damage[nodes][:] .* undeformed_bond[nodes][:, end] .* bond_damage[nodes][:] .* undeformed_bond[nodes][:, end] .* volume[nlist[nodes][:]], dims=2)
+    # @. weighted_volume[nodes] = sum(omega[nodes] .* bond_damage[nodes] .* undeformed_bond[nodes][:, end] .* bond_damage[nodes] .* undeformed_bond[nodes][:, end] .* volume[nlist[nodes]], dims=2)
     return weighted_volume
 end
 
@@ -71,7 +71,7 @@ function get_bond_forces(nodes::Union{SubArray,Vector{Int64}}, bond_force_length
         if any(deformed_bond[iID][:, end] .== 0)
             @error "Length of bond is zero due to its deformation."
         else
-            bond_force[iID][:, 1:end] .= bond_force_length[iID] .* deformed_bond[iID][:, 1:end-1] ./ deformed_bond[iID][:, end][:]
+            bond_force[iID][:, 1:end] .= bond_force_length[iID] .* deformed_bond[iID][:, 1:end-1] ./ deformed_bond[iID][:, end]
         end
     end
     return bond_force

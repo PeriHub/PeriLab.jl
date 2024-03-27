@@ -157,11 +157,11 @@ if ncores == 3
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
 
     # sammel ein und summiere -> zweite routine mit sende vom Controller an alle responder
-    A[:] = synch_responder_to_controller(comm, overlap_map, A, 1)
-    B[:] = synch_responder_to_controller(comm, overlap_map, B, 4)
-    C[:] = synch_responder_to_controller(comm, overlap_map, C, 1)
-    D[:] = synch_responder_to_controller(comm, overlap_map, D, 5)
-    E[:] = synch_responder_to_controller(comm, overlap_map, E, 1)
+    A = synch_responder_to_controller(comm, overlap_map, A, 1)
+    B = synch_responder_to_controller(comm, overlap_map, B, 4)
+    C = synch_responder_to_controller(comm, overlap_map, C, 1)
+    D = synch_responder_to_controller(comm, overlap_map, D, 5)
+    E = synch_responder_to_controller(comm, overlap_map, E, 1)
 
     if rank == 0
         test = test_dict["synch_responder_to_controller_rank_0"] = Dict("tests" => [], "line" => [])
@@ -219,11 +219,11 @@ if ncores == 3
     end
     MPI.Barrier(comm)
 
-    A[:] = synch_controller_to_responder(comm, overlap_map, A, 1)
-    B[:] = synch_controller_to_responder(comm, overlap_map, B, 4)
-    C[:] = synch_controller_to_responder(comm, overlap_map, C, 1)
-    D[:] = synch_controller_to_responder(comm, overlap_map, D, 5)
-    E[:] = synch_controller_to_responder(comm, overlap_map, E, 1)
+    A = synch_controller_to_responder(comm, overlap_map, A, 1)
+    B = synch_controller_to_responder(comm, overlap_map, B, 4)
+    C = synch_controller_to_responder(comm, overlap_map, C, 1)
+    D = synch_controller_to_responder(comm, overlap_map, D, 5)
+    E = synch_controller_to_responder(comm, overlap_map, E, 1)
     if rank == 0
         test = test_dict["synch_controller_to_responder_rank_0"] = Dict("tests" => [], "line" => [])
         push_test!(test, isapprox(A[1], Float64(-0.9)), @__FILE__, @__LINE__)
@@ -310,7 +310,7 @@ if ncores == 3
     dbN, dbNP1 = test_Data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
     bg = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
     for iID in 1:nodes
-        bdNP1[iID][:] .= 1
+        bdNP1[iID] .= 1
         bg[iID][:, end] .= 1
         dbNP1[iID][:, end] .= 1 + (-1)^iID * 0.1
         dbNP1[iID][:, 1:dof] .= 1

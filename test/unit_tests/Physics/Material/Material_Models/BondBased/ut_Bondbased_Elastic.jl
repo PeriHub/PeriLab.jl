@@ -32,7 +32,7 @@ end
     dbN, dbNP1 = test_Data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
     bg = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
     for iID in 1:nodes
-        bdNP1[iID][:] .= 1
+        bdNP1[iID] .= 1
         bg[iID][:, end] .= 1
         dbNP1[iID][:, end] .= 1 + (-1)^iID * 0.1
         dbNP1[iID][:, 1:dof] .= 1
