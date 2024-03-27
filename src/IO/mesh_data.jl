@@ -521,12 +521,7 @@ function read_mesh(filename::String, params::Dict)
 
     elseif params["Discretization"]["Type"] == "Abaqus"
 
-        # added try because https://github.com/JuliaFEM/AbaqusReader.jl is not updated
-        try
-            mesh = abaqus_read_mesh(filename; verbose=false)
-        catch
-            mesh = abaqus_read_mesh(filename)
-        end
+        mesh = abaqus_read_mesh(filename; verbose=false)
 
         nodes = mesh["nodes"]
         elements = mesh["elements"]
