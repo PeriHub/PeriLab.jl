@@ -10,7 +10,7 @@ using MPI
 using PeriLab
 Logging.disable_logging(Logging.Error)
 
-# Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
+Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
 
 include("helper.jl")
 
@@ -223,9 +223,9 @@ MPI.Init()
         @testset "test_DCB" begin
             @includetests["fullscale_tests/test_DCB/test_DCB"]
         end
-        # @testset "test_RVE" begin
-        #     @includetests["fullscale_tests/test_RVE/test_RVE"]
-        # end
+        @testset "test_Abaqus" begin
+            @includetests["fullscale_tests/test_Abaqus/test_Abaqus"]
+        end
         @testset "test_FEM" begin
             @includetests["fullscale_tests/test_FEM/test_FEM"]
         end

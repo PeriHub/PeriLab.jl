@@ -13,7 +13,7 @@ COPY Project.toml ./Project.toml
 # Install build dependencies
 RUN apt-get update \
     && apt-get install -yq build-essential\
-    && julia --project=@. -e 'import Pkg; Pkg.add(url="https://github.com/JTHesse/AbaqusReader.jl"); Pkg.add("PackageCompiler")'
+    && julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler")'
 
 RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], force=true)'
 
