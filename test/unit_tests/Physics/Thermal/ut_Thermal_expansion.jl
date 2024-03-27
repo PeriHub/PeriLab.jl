@@ -43,25 +43,26 @@ end
     nn[1] = 2
     nn[2] = 3
     temperature = test_Data_manager.create_constant_node_field("Temperature", Float64, 1)
-    undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
+    undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
+    undeformed_bond_length = test_Data_manager.create_constant_bond_field("Bond Length", Float64, 1)
     thermal_bond_deformation = test_Data_manager.create_constant_bond_field("Thermal Deformation", Float64, dof)
 
     undeformed_bond[1][1, 1] = 0
     undeformed_bond[1][1, 2] = 1
-    undeformed_bond[1][1, 3] = 1
+    undeformed_bond_length[1][1] = 1
     undeformed_bond[1][2, 1] = 1
     undeformed_bond[1][2, 2] = 1
-    undeformed_bond[1][2, 3] = sqrt(2)
+    undeformed_bond_length[1][2] = sqrt(2)
 
     undeformed_bond[2][1, 1] = -1
     undeformed_bond[2][1, 2] = -1
-    undeformed_bond[2][1, 3] = sqrt(2)
+    undeformed_bond_length[2][1] = sqrt(2)
     undeformed_bond[2][2, 1] = 10
     undeformed_bond[2][2, 2] = -10
-    undeformed_bond[2][2, 3] = sqrt(200)
+    undeformed_bond_length[2][2] = sqrt(200)
     undeformed_bond[2][3, 1] = 0.1
     undeformed_bond[2][3, 2] = 0
-    undeformed_bond[2][3, 3] = 0.1
+    undeformed_bond_length[2][3] = 0.1
 
     nodes = Vector{Int64}(1:nnodes)
     alpha = zeros(dof, dof)

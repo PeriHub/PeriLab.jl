@@ -89,9 +89,10 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     nneighbors = datamanager.get_field("Number of Neighbors")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     bond_damage = datamanager.get_bond_damage("NP1")
     omega = datamanager.get_field("Influence Function")
-    undeformed_bond = datamanager.get_field("Bond Geometry")
+    undeformed_bond_length = datamanager.get_field("Bond Length")
     bond_force = datamanager.get_field("Bond Forces")
 
     bond_force_deviatoric_part = datamanager.get_field("Bond Forces Deviatoric")
@@ -102,11 +103,11 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     # optimizing, because if no damage it has not to be updated
 
-    @timeit to "Weighted Volume" weighted_volume = compute_weighted_volume(nodes, nlist, undeformed_bond, bond_damage, omega, volume)
-    @timeit to "Dilatation" theta = compute_dilatation(nodes, nneighbors, nlist, undeformed_bond, deformed_bond, bond_damage, volume, weighted_volume, omega)
+    @timeit to "Weighted Volume" weighted_volume = compute_weighted_volume(nodes, nlist, undeformed_bond_length, bond_damage, omega, volume)
+    @timeit to "Dilatation" theta = compute_dilatation(nodes, nneighbors, nlist, undeformed_bond_length, deformed_bond_length, bond_damage, volume, weighted_volume, omega)
 
-    @timeit to "Bond Forces" bond_force_deviatoric_part, bond_force_isotropic_part = elastic(nodes, dof, undeformed_bond, deformed_bond, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force_deviatoric_part, bond_force_isotropic_part)
-    bond_force = get_bond_forces(nodes, bond_force_deviatoric_part + bond_force_isotropic_part, deformed_bond, bond_force)
+    @timeit to "Bond Forces" bond_force_deviatoric_part, bond_force_isotropic_part = elastic(nodes, dof, undeformed_bond_length, deformed_bond_length, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force_deviatoric_part, bond_force_isotropic_part)
+    bond_force = get_bond_forces(nodes, bond_force_deviatoric_part + bond_force_isotropic_part, deformed_bond, deformed_bond_length, bond_force)
 
     return datamanager
 end
@@ -134,7 +135,7 @@ for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page
 # Returns
 - bond_force: dictionary of calculated bond forces for each node
 """
-function elastic(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, undeformed_bond::SubArray, deformed_bond::SubArray, bond_damage::SubArray, theta::Vector{Float64}, weighted_volume::Vector{Float64}, omega::SubArray, material::Dict, bond_force_deviatoric_part::SubArray, bond_force_isotropic_part::SubArray)
+function elastic(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, undeformed_bond_length::SubArray, deformed_bond_length::SubArray, bond_damage::SubArray, theta::Vector{Float64}, weighted_volume::Vector{Float64}, omega::SubArray, material::Dict, bond_force_deviatoric_part::SubArray, bond_force_isotropic_part::SubArray)
 
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
@@ -152,9 +153,9 @@ function elastic(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, undeformed_bo
         if weighted_volume[iID] == 0
             continue
         end
-        deviatoric_deformation = deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end] - (gamma * theta[iID] / 3) .* undeformed_bond[iID][:, end]
+        deviatoric_deformation = deformed_bond_length[iID] .- undeformed_bond_length[iID] - (gamma * theta[iID] / 3) .* undeformed_bond_length[iID]
         bond_force_deviatoric_part[iID] = bond_damage[iID] .* omega[iID] .* alpha .* deviatoric_deformation ./ weighted_volume[iID]
-        bond_force_isotropic_part[iID] = bond_damage[iID] .* omega[iID] .* kappa .* theta[iID] .* undeformed_bond[iID][:, end] ./ weighted_volume[iID]
+        bond_force_isotropic_part[iID] = bond_damage[iID] .* omega[iID] .* kappa .* theta[iID] .* undeformed_bond_length[iID] ./ weighted_volume[iID]
     end
     deviatoric_deformation = nothing
     return bond_force_deviatoric_part, bond_force_isotropic_part

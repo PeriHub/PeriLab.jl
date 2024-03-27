@@ -92,13 +92,15 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
         @error "Full heat expansion matrix is not implemented yet."
     end
     undeformed_bond = datamanager.get_field("Bond Geometry")
+    undeformed_bond_length = datamanager.get_field("Bond Length")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
 
     for iID in nodes
         for j in 1:dof
             deformed_bond[iID][:, j] .-= temperature_NP1[iID] * alpha_mat[j, j] .* undeformed_bond[iID][:, j]
         end
-        deformed_bond[iID][:, end] .-= sum(alpha_mat) / dof * temperature_NP1[iID] .* undeformed_bond[iID][:, end]
+        deformed_bond_length[iID] .-= sum(alpha_mat) / dof * temperature_NP1[iID] .* undeformed_bond_length[iID]
         if iID == 93
         end
     end
@@ -151,7 +153,7 @@ result = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal
 function thermal_deformation(nodes::Union{SubArray,Vector{Int64}}, alpha::Union{Matrix{Float64},Matrix{Int64}}, temperature::Union{Vector{Float64},SubArray}, undeformed_bond::SubArray, thermal_deformation::SubArray)
     for iID in nodes
         for jID in eachindex(undeformed_bond[iID][:, 1])
-            thermal_deformation[iID][jID, 1:end] = -thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID, 1:end-1]
+            thermal_deformation[iID][jID, :] = -thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID, :]
         end
     end
     return thermal_deformation

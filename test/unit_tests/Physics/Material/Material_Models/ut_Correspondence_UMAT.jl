@@ -104,7 +104,7 @@ KINC::Int64 = 1
 
 # Call the UMAT_interface
 Correspondence_UMAT.UMAT_interface(file, STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR, NTENS, NSTATEV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1, NOEL, NPT, LAYER, KSPT, JSTEP, KINC)
-println()
+
 # Example assertion (you should define appropriate checks based on your UMAT's expected behavior)
 # @test STRESS != zeros(Float64, 6)  # Check if STRESS was updated (or any other appropriate check)
 #end

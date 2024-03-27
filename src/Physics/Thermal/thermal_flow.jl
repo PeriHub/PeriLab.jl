@@ -71,6 +71,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   bond_damage = datamanager.get_bond_damage("NP1")
   heat_flow = datamanager.get_field("Heat Flow", "NP1")
   undeformed_bond = datamanager.get_field("Bond Geometry")
+  undeformed_bond_length = datamanager.get_field("Bond Length")
   volume = datamanager.get_field("Volume")
   temperature = datamanager.get_field("Temperature", "NP1")
   lambda = thermal_parameter["Thermal Conductivity"]
@@ -101,7 +102,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     if length(lambda) > 1
       lambda = lambda[1]
     end
-    heat_flow = compute_heat_flow_state_bond_based(nodes, dof, nlist, lambda, apply_print_bed, t_bed, lambda_bed, print_bed, coordinates, bond_damage, undeformed_bond, horizon, temperature, volume, heat_flow)
+    heat_flow = compute_heat_flow_state_bond_based(nodes, dof, nlist, lambda, apply_print_bed, t_bed, lambda_bed, print_bed, coordinates, bond_damage, undeformed_bond, undeformed_bond_length, horizon, temperature, volume, heat_flow)
     return datamanager
 
   elseif thermal_parameter["Type"] == "Correspondence"
@@ -170,6 +171,7 @@ Calculate heat flow based on a bond-based model for thermal analysis.
 - `lambda_bed::Float64`: The thermal conductivity of the print bed.
 - `bond_damage::SubArray`: A SubArray representing the damage state of bonds between nodes.
 - `undeformed_bond::SubArray`: A SubArray representing the geometry of the bonds.
+- `undeformed_bond_length::SubArray`: A SubArray representing the undeformed bond length for each bond.
 - `horizon::SubArray`: A SubArray representing the horizon for each node.
 - `temperature::SubArray`: A SubArray representing the temperature at each node.
 - `heat_flow::SubArray`: A SubArray where the computed heat flow values will be stored.
@@ -181,7 +183,7 @@ Calculate heat flow based on a bond-based model for thermal analysis.
 This function calculates the heat flow between neighboring nodes based on a bond-based model for thermal analysis [OterkusS2014b](@cite). It considers various parameters, including thermal conductivity, damage state of bonds, geometry of bonds, horizons, temperature, and volume. The calculated bond heat flow values are stored in the `heat_flow` array.
 
 """
-function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Float64,Int64}, apply_print_bed::Bool, t_bed::Float64, lambda_bed::Float64, print_bed, coordinates::SubArray, bond_damage::SubArray, undeformed_bond::SubArray, horizon::SubArray, temperature::SubArray, volume::SubArray, heat_flow::SubArray)
+function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, lambda::Union{Float64,Int64}, apply_print_bed::Bool, t_bed::Float64, lambda_bed::Float64, print_bed, coordinates::SubArray, bond_damage::SubArray, undeformed_bond::SubArray, undeformed_bond_length::SubArray, horizon::SubArray, temperature::SubArray, volume::SubArray, heat_flow::SubArray)
   kernel::Float64 = 0.0
   for iID in nodes
     if dof == 2
@@ -205,7 +207,7 @@ function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}
           if coordinates[iID, 3] - undeformed_bond[iID][jID, 3] <= 0
             temp_state = bond_damage[iID][jID] * (t_bed - temperature[iID])
             if coordinates[iID, 3] == 0.0
-              heat_flow[iID] -= lambda_bed * kernel * temp_state / undeformed_bond[iID][jID, end] * volume[neighborID]
+              heat_flow[iID] -= lambda_bed * kernel * temp_state / undeformed_bond_length[iID][jID] * volume[neighborID]
             else
               heat_flow[iID] -= lambda_bed * kernel * temp_state / coordinates[iID, 3] * volume[neighborID]
             end
@@ -213,7 +215,7 @@ function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}
         end
       end
       temp_state = bond_damage[iID][jID] * (temperature[neighborID] - temperature[iID])
-      heat_flow[iID] -= lambda * kernel * temp_state / undeformed_bond[iID][jID, end] * volume[neighborID]
+      heat_flow[iID] -= lambda * kernel * temp_state / undeformed_bond_length[iID][jID] * volume[neighborID]
     end
   end
   return heat_flow

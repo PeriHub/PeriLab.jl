@@ -48,7 +48,7 @@ This function depends on the following data fields from the `datamanager` module
 - `get_dof()`: Returns the degree of freedom.
 - `get_nlist()`: Returns the neighbor list.
 - `get_field("Density")`: Returns the density field.
-- `get_field("Bond Geometry")`: Returns the bond geometry field.
+- `get_field("Bond Length")`: Returns the bond distance field.
 - `get_field("Volume")`: Returns the volume field.
 - `get_field("Number of Neighbors")`: Returns the number of neighbors field.
 """
@@ -58,7 +58,7 @@ function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{I
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
-    undeformed_bond = datamanager.get_field("Bond Geometry")
+    undeformed_bond_length = datamanager.get_field("Bond Length")
     volume = datamanager.get_field("Volume")
     nneighbors = datamanager.get_field("Number of Neighbors")
     Cv = datamanager.get_field("Specific Heat Capacity")
@@ -66,7 +66,7 @@ function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{I
     eigLam = maximum(eigvals(lambda))
 
     for iID in nodes
-        denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond[iID][:, dof+1])
+        denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
         t = density[iID] * Cv[iID] / (eigLam * denominator)
         critical_time_step = test_timestep(t, critical_time_step)
     end
@@ -107,7 +107,7 @@ This function iterates over a collection of nodes and computes the critical time
 This function depends on the following data fields from the `datamanager` module:
 - `get_nlist()`: Returns the neighbor list.
 - `get_field("Density")`: Returns the density field.
-- `get_field("Bond Geometry")`: Returns the bond geometry field.
+- `get_field("Bond Length")`: Returns the bond distance field.
 - `get_field("Volume")`: Returns the volume field.
 - `get_field("Horizon")`: Returns the horizon field.
 """
@@ -115,12 +115,12 @@ function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int6
     critical_time_step::Float64 = 1.0e50
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
-    undeformed_bond = datamanager.get_field("Bond Geometry")
+    undeformed_bond_length = datamanager.get_field("Bond Length")
     volume = datamanager.get_field("Volume")
     horizon = datamanager.get_field("Horizon")
 
     for iID in nodes
-        denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond[iID][:, end])
+        denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
 
         springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 

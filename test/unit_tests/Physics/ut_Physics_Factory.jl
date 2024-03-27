@@ -4,7 +4,7 @@
 
 include("../../../src/Physics/Physics_Factory.jl")
 # include("../../../src/Support/data_manager.jl")
-include("../../../src/Support/Parameters/parameter_handling.jl")
+# include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 import .Physics
 @testset "ut_get_block_model_definition" begin

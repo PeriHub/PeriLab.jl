@@ -457,7 +457,7 @@ end
     test_Data_manager.set_num_responder(0)
     test_Data_manager.set_dof(2)
     lenNlist = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    lenNlist[:] = [2, 2, 2]
+    lenNlist .= [2, 2, 2]
     nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 
     nlist[1] = [2, 3]
@@ -474,27 +474,28 @@ end
     nnodes = test_Data_manager.get_nnodes()
     nlist = test_Data_manager.get_field("Neighborhoodlist")
     coor = test_Data_manager.get_field("Coordinates")
-    undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
-    undeformed_bond = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
+    undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
+    undeformed_bond_length = test_Data_manager.create_constant_bond_field("Bond Length", Float64, 1)
+    undeformed_bond, undeformed_bond_length = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond, undeformed_bond_length)
 
     @test undeformed_bond[1][1, 1] == 1
     @test undeformed_bond[1][1, 2] == 0
-    @test undeformed_bond[1][1, 3] == 1
+    @test undeformed_bond_length[1][1] == 1
     @test undeformed_bond[1][2, 1] == 0
     @test undeformed_bond[1][2, 2] == 1
-    @test undeformed_bond[1][2, 3] == 1
+    @test undeformed_bond_length[1][2] == 1
 
     @test undeformed_bond[2][1, 1] == -1
     @test undeformed_bond[2][1, 2] == 0
-    @test undeformed_bond[2][1, 3] == 1
+    @test undeformed_bond_length[2][1] == 1
     @test undeformed_bond[2][2, 1] == -1
     @test undeformed_bond[2][2, 2] == 1
-    @test undeformed_bond[2][2, 3] / sqrt(2) - 1 < 1e-8
+    @test undeformed_bond_length[2][2] / sqrt(2) - 1 < 1e-8
 
     @test undeformed_bond[3][1, 1] == 0
     @test undeformed_bond[3][1, 2] == -1
-    @test undeformed_bond[3][1, 3] == 1
+    @test undeformed_bond_length[3][1] == 1
     @test undeformed_bond[3][2, 1] == 1
     @test undeformed_bond[3][2, 2] == -1
-    @test undeformed_bond[3][2, 3] / sqrt(2) - 1 < 1e-8
+    @test undeformed_bond_length[3][2] / sqrt(2) - 1 < 1e-8
 end

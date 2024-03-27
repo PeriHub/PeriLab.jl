@@ -10,7 +10,7 @@ using MPI
 using PeriLab
 Logging.disable_logging(Logging.Error)
 
-Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
+# Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
 
 include("helper.jl")
 

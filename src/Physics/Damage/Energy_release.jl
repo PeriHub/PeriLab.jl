@@ -69,8 +69,10 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         end
     end
     undeformed_bond = datamanager.get_field("Bond Geometry")
+    undeformed_bond_length = datamanager.get_field("Bond Length")
     bond_forces = datamanager.get_field("Bond Forces")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     critical_energy = damage_parameter["Critical Value"]
     quad_horizon = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
@@ -108,7 +110,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
     for iID in nodes
-        relative_displacement_vector = deformed_bond[iID][:, 1:dof] .- undeformed_bond[iID][:, 1:dof]
+        relative_displacement_vector = deformed_bond[iID] .- undeformed_bond[iID]
         if aniso_damage
             rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
         end
@@ -119,7 +121,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             if norm_displacement == 0
                 continue
             end
-            if tension && deformed_bond[iID][jID, end] - undeformed_bond[iID][jID, end] < 0
+            if tension && deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
                 continue
             end
 

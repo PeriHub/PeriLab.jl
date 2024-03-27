@@ -190,8 +190,8 @@ function get_local_overlap_map(overlap_map, distribution::Vector{Vector{Int64}},
         ilocal = glob_to_loc(distribution[irank])
         for jrank in 1:ranks
             if irank != jrank
-                overlap_map[irank][jrank]["Responder"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Responder"])
-                overlap_map[irank][jrank]["Controller"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Controller"])
+                overlap_map[irank][jrank]["Responder"] .= local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Responder"])
+                overlap_map[irank][jrank]["Controller"] .= local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Controller"])
             end
         end
     end
@@ -237,15 +237,15 @@ function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Modul
     if rank == 0
         send_msg = get_number_of_neighbornodes(nlist, filtered)
     end
-    lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
+    lenNlist .= send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
     if filtered
         nlistCore = datamanager.create_constant_bond_field("FilteredNeighborhoodlist", Int64, 1)
     else
         nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     end
 
-    nlistCore[:] = nlist[distribution[rank+1][:]]
-    nlistCore[:] = get_local_neighbors(datamanager.get_local_nodes, nlistCore)
+    nlistCore .= nlist[distribution[rank+1][:]]
+    nlistCore .= get_local_neighbors(datamanager.get_local_nodes, nlistCore)
     nlist = 0
     return datamanager
 end
@@ -283,8 +283,9 @@ function get_bond_geometry(datamanager::Module)
     nnodes = datamanager.get_nnodes()
     nlist = datamanager.get_field("Neighborhoodlist")
     coor = datamanager.get_field("Coordinates")
-    undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
-    undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
+    undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof)
+    undeformed_bond_length = datamanager.create_constant_bond_field("Bond Length", Float64, 1)
+    undeformed_bond, undeformed_bond_length = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond, undeformed_bond_length)
     return datamanager
 end
 
@@ -339,7 +340,7 @@ function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh::DataFr
                 send_msg = 0
             end
             if fieldDof == 1
-                datafield[:] = send_vector_from_root_to_core_i(comm, send_msg, datafield, distribution)
+                datafield .= send_vector_from_root_to_core_i(comm, send_msg, datafield, distribution)
             else
                 datafield[:, localDof] = send_vector_from_root_to_core_i(comm, send_msg, datafield[:, localDof], distribution)
             end

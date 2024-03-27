@@ -37,7 +37,7 @@ end
     p = 2
     weights, integration_points = get_weights_and_integration_points(2, [3, 3])
     xi = Lagrange_element.define_lagrangian_grid_space(2, [p, p])
-    println()
+
     @test Lagrange_element.get_recursive_lagrange_shape_functions(xi[1, :], integration_points[1, 1], p) == [0.6872983346207417, 0.39999999999999997, -0.08729833462074169]
     @test Lagrange_element.get_recursive_lagrange_shape_functions(xi[1, :], integration_points[2, 1], p) == [0.0, 1.0, 0.0]
     @test Lagrange_element.get_recursive_lagrange_shape_functions(xi[1, :], integration_points[3, 1], p) == [-0.08729833462074169, 0.39999999999999997, 0.6872983346207417]

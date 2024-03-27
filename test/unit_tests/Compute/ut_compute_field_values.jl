@@ -47,14 +47,15 @@ end
 
     test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     bond_forcesN, bond_forcesNP1 = test_Data_manager.create_bond_field("Bond Forces", Float64, 3)
-    bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 4)
+    bond_geometry = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
+    bond_length = test_Data_manager.create_constant_bond_field("Bond Length", Float64, 1)
     test_Data_manager.create_node_field("Cauchy Stress", Float64, "Matrix", 3)
     volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
 
     volume[1:5] = 1:5
     for iID in 1:5
-        bond_geometry[iID][:, 1:end] .= 1
-        bond_geometry[iID][:, end] .= sqrt(3)
+        bond_geometry[iID] .= 1
+        bond_length[iID] .= sqrt(3)
         bond_forcesNP1[iID][:, :] .= 1
     end
 

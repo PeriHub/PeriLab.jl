@@ -114,6 +114,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   nlist = datamanager.get_nlist()
   symmetry::String = get_symmetry(material_parameter)
   deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+  deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
   omega = datamanager.get_field("Influence Function")
   bond_damage = datamanager.get_bond_damage("NP1")
   bond_force = datamanager.get_field("Bond Forces")
@@ -131,7 +132,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   lambdaNP1 = copy(lambdaN)
 
   bond_force_deviatoric_part, deviatoric_plastic_extension_state = plastic(nodes, td_norm, yield_value, lambdaNP1, alpha, omega, bond_damage, deviatoric_plastic_extension_state, bond_force_deviatoric_part)
-  bond_force = get_bond_forces(nodes, bond_force_deviatoric_part + bond_force_isotropic_part, deformed_bond, bond_force)
+  bond_force = get_bond_forces(nodes, bond_force_deviatoric_part + bond_force_isotropic_part, deformed_bond, deformed_bond_length, bond_force)
   return datamanager
 end
 
