@@ -42,7 +42,7 @@ end
     test_1[1] = 7.3
     test_2 = test_Data_manager.create_constant_node_field("test_field_3", Float64, 1)
     test_2 .= 3
-    mat_dict = Dict{String,Any}("File" => file, "UMAT name"=>"test_sub", "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3")
+    mat_dict = Dict{String,Any}("File" => file, "UMAT name" => "test_sub", "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3")
     Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), mat_dict)
     fields = test_Data_manager.get_field("Predefined Fields")
     inc = test_Data_manager.get_field("Predefined Fields Increment")
@@ -67,9 +67,9 @@ end
 # Test wrapper function for UMAT_interface
 @testset "UMAT_interface Tests" begin
     # Example test case (you should define your own)
-    file = "./src/Physics/Material/UMATs/libusertest.so"
+    file = "../../../../../src/Physics/Material/UMATs/libusertest.so"
     if !isfile(file)
-        file = "../src/Physics/Material/UMATs/libusertest.so"
+        file = "./src/Physics/Material/UMATs/libusertest.so"
     end
     function_name::String = "UMATTEST"
     STRESS::Vector{Float64} = zeros(Float64, 6)  # Example initialization, adjust the size as needed
@@ -110,9 +110,9 @@ end
     JSTEP::Int64 = 1
     KINC::Int64 = 1
     # Call the UMAT_interface
-    PROPS[1]=4.2
-    STRAN[1]=1
-    DSTRAN[1]=3
+    PROPS[1] = 4.2
+    STRAN[1] = 1
+    DSTRAN[1] = 3
     Correspondence_UMAT.UMAT_interface(file, function_name, STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR, NTENS, NSTATEV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1, NOEL, NPT, LAYER, KSPT, JSTEP, KINC)
 
     @test STRESS[1] == 0
