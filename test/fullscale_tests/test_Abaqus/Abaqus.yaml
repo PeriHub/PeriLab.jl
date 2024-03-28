@@ -4,27 +4,27 @@
 
 PeriLab:
   Discretization:
-    Input Mesh File: Dogbone.inp
+    Input Mesh File: plate.inp
     Type: Abaqus
     Distribution Type: Neighbor based
   Physics:
     Material Models:
       Material_1:
         Material Model: PD Solid Elastic
-        Young's Modulus: 200000.0
+        Young's Modulus: 100000.0
         Poisson's Ratio: 0.34
   Blocks:
     block_1:
       Material Model: Material_1
-      Horizon: 8
+      Horizon: 4
       Density: 2.7e-9
     block_2:
       Material Model: Material_1
-      Horizon: 8
+      Horizon: 4
       Density: 2.7e-9
     block_3:
       Material Model: Material_1
-      Horizon: 8
+      Horizon: 4
       Density: 2.7e-9
   Boundary Conditions:
     Displacement-1:
@@ -41,7 +41,7 @@ PeriLab:
     Output1:
       Output File Type: Exodus
       Output Filename: Abaqus
-      Number of Output Steps: 100
+      Number of Output Steps: 200
       Output Variables:
         Displacements: True
         Number of Neighbors: True

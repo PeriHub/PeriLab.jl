@@ -8,10 +8,16 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.3] - 2024-
+## [1.1.3] - 2024-03-28
 
 ### Fixed
 
+- Volume calculation for Abaqus
+- #137
+
+### Added 
+
+- Abaqus Test
 
 ## [1.1.2] - 2024-03-25
 
