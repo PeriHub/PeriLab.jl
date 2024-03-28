@@ -4,14 +4,14 @@
 using Test
 using LinearAlgebra
 include("../../../../../src/Physics/Material/Material_Models/Correspondence_UMAT.jl")
-include("../../../../../src/Support/data_manager.jl")
+# include("../../../../../src/Support/data_manager.jl")
 @testset "get_name&fe_support" begin
     @test Correspondence_UMAT.correspondence_name() == "Correspondence UMAT"
     @test Correspondence_UMAT.fe_support()
 end
 @testset "init exceptions" begin
     nodes = 2
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(nodes)
     dof = 3
     test_Data_manager.set_dof(dof)

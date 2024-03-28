@@ -188,7 +188,7 @@ end
     for i in eachindex(fem_nodes)
         @test fem_nodes[i]
     end
-    fem_nodes[:] .= false
+    fem_nodes .= false
     topology[1, 1] = 1
     topology[1, 2] = 5
     topology[1, 3] = 3

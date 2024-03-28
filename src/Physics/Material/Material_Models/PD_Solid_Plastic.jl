@@ -114,6 +114,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   nlist = datamanager.get_nlist()
   symmetry::String = get_symmetry(material_parameter)
   deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+  deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
   omega = datamanager.get_field("Influence Function")
   bond_damage = datamanager.get_bond_damage("NP1")
   bond_force = datamanager.get_field("Bond Forces")
@@ -131,7 +132,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   lambdaNP1 = copy(lambdaN)
 
   bond_force_deviatoric_part, deviatoric_plastic_extension_state = plastic(nodes, td_norm, yield_value, lambdaNP1, alpha, omega, bond_damage, deviatoric_plastic_extension_state, bond_force_deviatoric_part)
-  bond_force = get_bond_forces(nodes, bond_force_deviatoric_part + bond_force_isotropic_part, deformed_bond, bond_force)
+  bond_force = get_bond_forces(nodes, bond_force_deviatoric_part + bond_force_isotropic_part, deformed_bond, deformed_bond_length, bond_force)
   return datamanager
 end
 
@@ -165,7 +166,7 @@ function compute_deviatoric_force_state_norm(nodes::Union{SubArray,Vector{Int64}
   # not optimal allocation of memory, but not check of indices is needed
   td_norm = @MMatrix zeros(Float64, maximum(nodes))
   for iID in nodes
-    td_trial = bond_force_deviatoric[iID] - alpha .* bond_damage[iID][:] * omega[iID][:] * deviatoric_plastic_extension_state[iID][:]
+    td_trial = bond_force_deviatoric[iID] - alpha .* bond_damage[iID] * omega[iID] * deviatoric_plastic_extension_state[iID]
     td_norm[iID] = sum(td_trial * td_trial * volume[nlist[iID]])
   end
 
@@ -210,9 +211,9 @@ function plastic(nodes::Union{SubArray,Vector{Int64}}, td_norm, yield_value::Sub
     end
     delta_lambda = (td_norm / sqrt(2.0 * yield_value[iID]) - 1.0) / alpha
     lambdaNP1[iID] .+= delta_lambda
-    td_trial = bond_force_deviatoric[iID] - alpha .* bond_damage[iID][:] * omega[iID][:] * deviatoric_plastic_extension_state[iID][:]
+    td_trial = bond_force_deviatoric[iID] - alpha .* bond_damage[iID] * omega[iID] * deviatoric_plastic_extension_state[iID]
     bond_force_deviatoric[iID] = sqrt(2.0 * yield_value) * td_trial ./ td_norm[iID]
-    deviatoric_plastic_extension_state += bond_force_deviatoric_part[iID][:] .* delta_lambda
+    deviatoric_plastic_extension_state += bond_force_deviatoric_part[iID] .* delta_lambda
 
     return bond_force_deviatoric, deviatoric_plastic_extension_state
   end

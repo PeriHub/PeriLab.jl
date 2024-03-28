@@ -37,18 +37,12 @@ function run_perilab(filename, cores, compare, folder_name=""; reload=false)
 end
 
 function run_mpi_test(filename, cores, check, folder_name="")
-    Logging.disable_logging(Logging.Error)
     command = `$(Base.julia_cmd()) $(folder_name)/$(filename)`
-    if cores == 1
-        exit_code = run(command).exitcode
-        @test exit_code == 0
-    else
-        mpiexec() do exe  # MPI wrapper
 
-            cmd = `$exe -n $cores $command`
-            exit_code = run(cmd).exitcode
-            @test exit_code == 0
-        end
+    mpiexec() do exe  # MPI wrapper
+        cmd = `$exe -n $cores $command`
+        exit_code = run(cmd).exitcode
+        @test exit_code == 0
     end
     if check
         check_test_json(cores)

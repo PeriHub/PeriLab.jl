@@ -66,7 +66,8 @@ Initialize the pre-calculation.
 function init_pre_calculation(datamanager::Module, options::Dict)
     dof = datamanager.get_dof()
     if options["Deformed Bond Geometry"]
-        datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
+        datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
+        datamanager.create_bond_field("Deformed Bond Length", Float64, 1)
     end
     if options["Shape Tensor"]
         datamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)

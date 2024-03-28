@@ -9,7 +9,7 @@ export bond_geometry
 export shape_tensor
 
 """
-     bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
+     bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond, undeformed_bond_length)
 
 Calculate bond geometries between nodes based on their coordinates.
 
@@ -19,6 +19,7 @@ Calculate bond geometries between nodes based on their coordinates.
  - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
  - `coor`: A matrix representing the coordinates of each node.
  - `undeformed_bond`: A preallocated array or data structure to store bond geometries.
+ - `undeformed_bond_length`: A preallocated array or data structure to store bond distances.
 
 # Output
  - `undeformed_bond`: An updated `undeformed_bond` array with calculated bond geometries.
@@ -38,7 +39,7 @@ Calculate bond geometries between nodes based on their coordinates.
 
  undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
 """
-function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond)
+function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond, undeformed_bond_length)
 
     for iID in nodes
 
@@ -52,11 +53,11 @@ function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, 
             return nothing
         end
 
-        undeformed_bond[iID][:, 1:dof] .= bond_vectors
-        undeformed_bond[iID][:, dof+1] .= distances
+        undeformed_bond[iID] .= bond_vectors
+        undeformed_bond_length[iID] .= distances
 
     end
-    return undeformed_bond
+    return undeformed_bond, undeformed_bond_length
 end
 
 """
@@ -103,7 +104,7 @@ function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, v
     for iID in nodes
         for i in 1:dof
             for j in 1:dof
-                shapeTensor[iID, i, j] = sum(bond_damage[iID][:] .* undeformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
+                shapeTensor[iID, i, j] = sum(bond_damage[iID] .* undeformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID]] .* omega[iID])
             end
 
         end
@@ -163,7 +164,7 @@ function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, 
     for iID in nodes
         for i in 1:dof
             for j in 1:dof
-                deformation_gradient[iID, i, j] = sum(bond_damage[iID][:] .* deformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID][:]] .* omega[iID][:])
+                deformation_gradient[iID, i, j] = sum(bond_damage[iID] .* deformed_bond[iID][:, i] .* undeformed_bond[iID][:, j] .* volume[nlist[iID]] .* omega[iID])
             end
         end
         deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]

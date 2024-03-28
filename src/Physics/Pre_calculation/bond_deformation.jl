@@ -24,7 +24,8 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, time
     nlist = datamanager.get_nlist()
     deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    deformed_bond = Geometry.bond_geometry(nodes, dof, nlist, deformed_coor, deformed_bond)
+    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
+    deformed_bond, deformed_bond_length = Geometry.bond_geometry(nodes, dof, nlist, deformed_coor, deformed_bond, deformed_bond_length)
     return datamanager
 end
 

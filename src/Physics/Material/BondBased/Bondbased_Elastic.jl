@@ -78,8 +78,9 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     dof = datamanager.get_dof()
     horizon = datamanager.get_field("Horizon")
     symmetry::String = get_symmetry(material_parameter)
-    undeformed_bond = datamanager.get_field("Bond Geometry")
+    undeformed_bond_length = datamanager.get_field("Bond Length")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     bond_damage = datamanager.get_bond_damage("NP1")
     bond_force = datamanager.get_field("Bond Forces")
 
@@ -93,12 +94,12 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         else
             constant = 18.0 * K / (pi * horizon[iID]^4)
         end
-        if any(deformed_bond[iID][:, end] .== 0)
+        if any(deformed_bond_length[iID] .== 0)
             @error "Length of bond is zero due to its deformation."
             return nothing
         end
         # Calculate the bond force
-        bond_force[iID] = (0.5 .* constant .* bond_damage[iID][:] .* (deformed_bond[iID][:, end] .- undeformed_bond[iID][:, end]) ./ undeformed_bond[iID][:, end]) .* deformed_bond[iID][:, 1:dof] ./ deformed_bond[iID][:, end]
+        bond_force[iID] = (0.5 .* constant .* bond_damage[iID] .* (deformed_bond_length[iID] .- undeformed_bond_length[iID]) ./ undeformed_bond_length[iID]) .* deformed_bond[iID] ./ deformed_bond_length[iID]
 
     end
 

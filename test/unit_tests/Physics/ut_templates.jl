@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../src/Support/data_manager.jl")
+# include("../../../src/Support/data_manager.jl")
 include("../../../src/Physics/Corrosion/Corrosion_template/corrosion_template.jl")
 include("../../../src/Physics/Additive/Additive_template/additive_template.jl")
 include("../../../src/Physics/Damage/Damage_template/damage_template.jl")
@@ -17,7 +17,7 @@ using TimerOutputs
 
 const to = TimerOutput()
 
-test_Data_manager = Data_manager
+test_Data_manager = PeriLab.Data_manager
 test_Data_manager.set_num_controller(3)
 
 @testset "ut_additive_template" begin
@@ -40,7 +40,7 @@ end
 end
 
 @testset "ut_material_template" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     @test !(Material_template.fe_support())
     @test Material_template.material_name() == "Material Template"
     @test Material_template.init_material_model(test_Data_manager, Vector{Int64}(1:3), Dict()) == test_Data_manager
@@ -48,7 +48,7 @@ end
 end
 
 @testset "ut_correspondence_template" begin
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     @test !(Correspondence_template.fe_support())
     @test Correspondence_template.correspondence_name() == "Correspondence Template"
     @test Correspondence_template.init_material_model(test_Data_manager, Vector{Int64}(1:3), Dict()) == test_Data_manager

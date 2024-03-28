@@ -6,16 +6,44 @@ SPDX-License-Identifier: BSD-3-Clause
 
 # `PeriLab` - Peridynamic Laboratory
 
-[![Pipeline Status](https://img.shields.io/github/actions/workflow/status/PeriHub/PeriLab.jl/CI.yml?branch=main)](https://github.com/PeriHub/PeriLab.jl/actions)
-[![Coverage Report](https://codecov.io/gh/PeriHub/PeriLab.jl/graph/badge.svg?token=MYAGI49HE5)](https://codecov.io/gh/PeriHub/PeriLab.jl)
-[![Latest Release](https://img.shields.io/github/v/release/PeriHub/PeriLab.jl)](https://github.com/PeriHub/PeriLab.jl/releases)
-[![docs](https://img.shields.io/badge/docs-v1-blue.svg)](https://perihub.github.io/PeriLab.jl/)
-[![License](https://img.shields.io/badge/License-BSD-blue.svg)](https://gitlab.com/%{project_path}/-/blob/%{default_branch}/LICENSE)
-[![Docker Image](https://img.shields.io/docker/pulls/perihub/perilab)](https://hub.docker.com/r/perihub/perilab)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10229386.svg)](https://doi.org/10.5281/zenodo.10229386)
-[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
-[![YouTube](https://img.shields.io/youtube/channel/subscribers/UCeky7HtUGlOJ2OKknvl6YnQ)](https://www.youtube.com/@PeriHub)
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
+[docs-dev-url]: https://perihub.github.io/PeriLab.jl/dev
 
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: https://perihub.github.io/PeriLab.jl/stable
+
+[ci-img]: https://github.com/perihub/PeriLab.jl/actions/workflows/CI.yml/badge.svg
+[ci-url]: https://github.com/perihub/PeriLab.jl/actions/workflows/CI.yml
+
+[cov-img]: https://codecov.io/gh/perihub/PeriLab.jl/branch/main/graph/badge.svg
+[cov-url]: https://codecov.io/gh/perihub/PeriLab.jl
+
+[code-style-img]: https://img.shields.io/badge/code%20style-blue-4495d1.svg
+[code-style-url]: https://github.com/invenia/BlueStyle
+
+[aqua-img]: https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg
+[aqua-url]: https://github.com/JuliaTesting/Aqua.jl
+
+[doi-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.10229386.svg
+[doi-url]: https://doi.org/10.5281/zenodo.1022938
+
+[release-img]: https://img.shields.io/github/v/release/PeriHub/PeriLab.jl
+[release-url]: https://github.com/PeriHub/PeriLab.jl/releases
+
+[docker-img]: https://img.shields.io/docker/pulls/perihub/perilab
+[docker-url]: https://hub.docker.com/r/perihub/perilab
+
+[license-img]: https://img.shields.io/badge/License-BSD-blue.svg
+[license-url]: https://github.com/PeriHub/PeriLab.jl/LICENSE
+
+[youtube-img]: https://img.shields.io/youtube/channel/subscribers/UCeky7HtUGlOJ2OKknvl6YnQ
+[youtube-url]: https://www.youtube.com/@PeriHub
+
+| **Documentation** | **Build Status** |  **Quality** |
+|:----:|:----:|:----:|
+| [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url] [![][cov-img]][cov-url] | [![][aqua-img]][aqua-url] |
+| **Deployment** | **License** | **Socials** |
+| [![][release-img]][release-url]  [![][docker-img]][docker-url] | [![][license-img]][license-url] [![][doi-img]][doi-url] | [![][youtube-img]][youtube-url] | 
 
 Welcome to `PeriLab`, a powerful software solution designed for tackling Peridynamic problems. 
 

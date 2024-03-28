@@ -5,6 +5,7 @@
 using LinearAlgebra
 using AbaqusReader
 using DataFrames
+using TetGen
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
 using PrettyTables
@@ -190,8 +191,8 @@ function get_local_overlap_map(overlap_map, distribution::Vector{Vector{Int64}},
         ilocal = glob_to_loc(distribution[irank])
         for jrank in 1:ranks
             if irank != jrank
-                overlap_map[irank][jrank]["Responder"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Responder"])
-                overlap_map[irank][jrank]["Controller"][:] = local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Controller"])
+                overlap_map[irank][jrank]["Responder"] .= local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Responder"])
+                overlap_map[irank][jrank]["Controller"] .= local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Controller"])
             end
         end
     end
@@ -237,15 +238,15 @@ function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Modul
     if rank == 0
         send_msg = get_number_of_neighbornodes(nlist, filtered)
     end
-    lenNlist[:] = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
+    lenNlist .= send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
     if filtered
         nlistCore = datamanager.create_constant_bond_field("FilteredNeighborhoodlist", Int64, 1)
     else
         nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     end
 
-    nlistCore[:] = nlist[distribution[rank+1][:]]
-    nlistCore[:] = get_local_neighbors(datamanager.get_local_nodes, nlistCore)
+    nlistCore .= nlist[distribution[rank+1][:]]
+    nlistCore .= get_local_neighbors(datamanager.get_local_nodes, nlistCore)
     nlist = 0
     return datamanager
 end
@@ -283,8 +284,9 @@ function get_bond_geometry(datamanager::Module)
     nnodes = datamanager.get_nnodes()
     nlist = datamanager.get_field("Neighborhoodlist")
     coor = datamanager.get_field("Coordinates")
-    undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof + 1)
-    undeformed_bond = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond)
+    undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof)
+    undeformed_bond_length = datamanager.create_constant_bond_field("Bond Length", Float64, 1)
+    undeformed_bond, undeformed_bond_length = Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond, undeformed_bond_length)
     return datamanager
 end
 
@@ -339,7 +341,7 @@ function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh::DataFr
                 send_msg = 0
             end
             if fieldDof == 1
-                datafield[:] = send_vector_from_root_to_core_i(comm, send_msg, datafield, distribution)
+                datafield .= send_vector_from_root_to_core_i(comm, send_msg, datafield, distribution)
             else
                 datafield[:, localDof] = send_vector_from_root_to_core_i(comm, send_msg, datafield[:, localDof], distribution)
             end
@@ -520,19 +522,21 @@ function read_mesh(filename::String, params::Dict)
 
     elseif params["Discretization"]["Type"] == "Abaqus"
 
-        # added try because https://github.com/JuliaFEM/AbaqusReader.jl is not updated
-        try
-            mesh = abaqus_read_mesh(filename; verbose=false)
-        catch
-            mesh = abaqus_read_mesh(filename)
-        end
+        mesh = abaqus_read_mesh(filename; verbose=false)
 
         nodes = mesh["nodes"]
         elements = mesh["elements"]
         element_sets = mesh["element_sets"]
+        element_types = mesh["element_types"]
 
-        dof = size(nodes[1])[1]
         dof = 2
+
+        nodes_vector = collect(values(nodes))
+        node_z = [node[end] for node in nodes_vector]
+        if length(unique(node_z)) > 2
+            dof = 3
+        end
+        @info "Abaqus mesh with $dof DOF"
 
         mesh_df = ifelse(dof == 2,
             DataFrame(x=[], y=[], volume=[], block_id=Int[]),
@@ -545,7 +549,8 @@ function read_mesh(filename::String, params::Dict)
         nsets = Dict{String,Any}()
 
         # sort element_sets by length
-        element_sets_keys = sort(collect(keys(element_sets)), by=x -> length(element_sets[x]), rev=true)
+        # element_sets_keys = sort(collect(keys(element_sets)), by=x -> length(element_sets[x]), rev=true)
+        element_sets_keys = collect(keys(element_sets))
         for key in element_sets_keys
             ns_nodes = Int64[]
             for (i, element_id) in enumerate(element_sets[key])
@@ -555,13 +560,13 @@ function read_mesh(filename::String, params::Dict)
                 end
                 push!(ns_nodes, id)
                 node_ids = elements[element_id]
+                element_type = element_types[element_id]
                 vertices = [nodes[node_id] for node_id in node_ids]
+                volume = calculate_volume(string(element_type), vertices)
                 center = sum(vertices) / size(vertices)[1]
                 if dof == 2
-                    volume = area_of_polygon(vertices)
                     push!(mesh_df, (x=center[1], y=center[2], volume=volume, block_id=block_id))
                 else
-                    volume = abs(dot(vertices[1] - vertices[4], cross(vertices[2] - vertices[4], vertices[3] - vertices[4]))) / 6.0
                     push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=block_id))
                 end
                 push!(element_written, element_id)
@@ -588,6 +593,63 @@ function read_mesh(filename::String, params::Dict)
         return nothing
     end
 
+end
+
+"""
+    calculate_volume(element_type::String, vertices::Vector{Vector{Float64}})
+
+Calculate the volume of a element.
+
+# Arguments
+- `element_type`: The element type of the element.
+- `vertices`: The vertices of the element.
+# Returns
+- `volume`: The volume of the element.
+"""
+function calculate_volume(element_type::String, vertices::Vector{Vector{Float64}})
+    if element_type == "Quad4"
+        return area_of_polygon(vertices)
+    elseif element_type == "Tet4"
+        return tetrahedron_volume(vertices)
+    elseif element_type == "Hex8"
+        input = TetGen.RawTetGenIO{Cdouble}()
+        input.pointlist = hcat(vertices...)
+        TetGen.facetlist!(input, [1 2 3 4;
+            5 6 7 8;
+            1 2 6 5;
+            2 3 7 6;
+            3 4 8 7;
+            4 1 5 8]')
+        tet = tetrahedralize(input, "pQa")
+        num_tet = size(tet.tetrahedronlist)[2]
+        volumes = zeros(num_tet)
+
+        for i in 1:num_tet
+            tet_vertices = vertices[tet.tetrahedronlist[:, i]]
+            volumes[i] = tetrahedron_volume(tet_vertices)
+        end
+
+        return sum(volumes)
+    else
+        @error "Element type $element_type currently not supported"
+        return nothing
+    end
+end
+
+"""
+    tetrahedron_volume(tet_vertices)
+
+Calculate the volume of a tetrahedron.
+
+# Arguments
+- `tet_vertices`: The vertices of the tetrahedron.
+# Returns
+- `volume`: The volume of the tetrahedron.
+"""
+function tetrahedron_volume(tet_vertices::Vector{Vector{Float64}})
+    mat = hcat(hcat(tet_vertices...)', ones(4))  # Augmenting matrix with ones in the fourth column
+    volume = abs(det(mat) / 6)   # Using det function to calculate determinant
+    return volume
 end
 
 """

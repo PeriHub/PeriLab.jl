@@ -223,8 +223,8 @@ MPI.Init()
         @testset "test_DCB" begin
             @includetests["fullscale_tests/test_DCB/test_DCB"]
         end
-        @testset "test_RVE" begin
-            @includetests["fullscale_tests/test_RVE/test_RVE"]
+        @testset "test_Abaqus" begin
+            @includetests["fullscale_tests/test_Abaqus/test_Abaqus"]
         end
         @testset "test_FEM" begin
             @includetests["fullscale_tests/test_FEM/test_FEM"]

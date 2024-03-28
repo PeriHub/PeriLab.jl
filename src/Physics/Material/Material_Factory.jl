@@ -95,7 +95,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
         for iID in nodes
             if length(nlist_filtered_ids[iID]) != 0
                 for neighborID in nlist_filtered_ids[iID]
-                    bond_norm[iID][neighborID, :] .*= sign(dot((bond_geometry[iID][neighborID, 1:end-1]), bond_norm[iID][neighborID, :]))
+                    bond_norm[iID][neighborID, :] .*= sign(dot((bond_geometry[iID][neighborID, :]), bond_norm[iID][neighborID, :]))
                 end
             end
         end
