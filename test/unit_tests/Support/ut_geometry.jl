@@ -297,13 +297,13 @@ end
     @test rot[3, 3] == 1
     rot = PeriLab.IO.Geometry.rotation_tensor(fill(Float64(90), (1)))
     @test rot[1, 1] < 1e-10
-    @test rot[1, 2] == -1
-    @test rot[1, 3] < 1e-10
-    @test rot[2, 1] == 1
-    @test rot[2, 2] < 1e-10
+    @test rot[1, 2] < 1e-10
+    @test rot[1, 3] == 1
+    @test rot[2, 1] < 1e-10
+    @test rot[2, 2] == 1
     @test rot[2, 3] < 1e-10
-    @test rot[3, 1] < 1e-10
+    @test rot[3, 1] == -1
     @test rot[3, 2] < 1e-10
-    @test rot[3, 3] == 1
+    @test rot[3, 3] < 1e-10
 end
 

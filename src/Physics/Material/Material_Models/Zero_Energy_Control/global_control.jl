@@ -135,7 +135,7 @@ Creates the zero energy mode stiffness
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
-function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, angles::Vector{Float64}, Kinv::SubArray, zStiff::SubArray)
+function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, angles::SubArray, Kinv::SubArray, zStiff::SubArray)
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
         C = rotate_fourth_order_tensor(angles[iID, :], C, dof, false)
