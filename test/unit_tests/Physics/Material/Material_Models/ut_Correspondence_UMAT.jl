@@ -42,7 +42,8 @@ end
     test_1[1] = 7.3
     test_2 = test_Data_manager.create_constant_node_field("test_field_3", Float64, 1)
     test_2 .= 3
-    Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3"))
+    mat_dict = Dict{String,Any}("File" => file, "UMAT name"=>"test_sub", "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3")
+    Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), mat_dict)
     fields = test_Data_manager.get_field("Predefined Fields")
     inc = test_Data_manager.get_field("Predefined Fields Increment")
     @test size(fields) == (2, 2)
@@ -51,6 +52,12 @@ end
     @test fields[2, 1] == test_1[2]
     @test fields[1, 2] == test_2[1]
     @test fields[2, 2] == test_2[2]
+    @test mat_dict["UMAT name"] == "test_sub"
+    mat_dict = Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3")
+    @test !haskey(mat_dict, "UMAT name")
+    Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), mat_dict)
+    @test haskey(mat_dict, "UMAT name")
+    @test mat_dict["UMAT name"] == "UMAT"
 end
 @testset "ut_malloc_cstring" begin
     CMNAME = Correspondence_UMAT.malloc_cstring("UMAT_TEST")
@@ -58,53 +65,57 @@ end
 end
 
 # Test wrapper function for UMAT_interface
-#@testset "UMAT_interface Tests" begin
-# Example test case (you should define your own)
-file = "./src/Physics/Material/UMATs/libusertest.so"
-if !isfile(file)
-    file = "../src/Physics/Material/UMATs/libusertest.so"
-end
-STRESS::Vector{Float64} = zeros(Float64, 6)  # Example initialization, adjust the size as needed
-STATEV::Vector{Float64} = zeros(Float64, 10)  # Adjust the size and values as needed
-DDSDDE::Matrix{Float64} = Matrix{Float64}(I, 6, 6)  # Identity matrix for simplicity, adjust as needed
-SSE::Float64 = 0.0
-SPD::Float64 = 0.0
-SCD::Float64 = 0.0
-RPL::Float64 = 0.0
-DDSDDT::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
-DRPLDE::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
-DRPLDT::Float64 = 0.0  # Adjust as needed
-STRAN::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
-DSTRAN::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
-TIME::Float64 = 0.0
-DTIME::Float64 = 0.1
-TEMP::Float64 = 25.0
-DTEMP::Float64 = 0.1
-PREDEF::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
-DPRED::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
-CMNAME::Cstring = Correspondence_UMAT.malloc_cstring("UMAT_TEST")  # Adjust as needed
-NDI::Int64 = 3
-NSHR::Int64 = 3
-NTENS::Int64 = 6
-NSTATEV::Int64 = length(STATEV)
-PROPS::Vector{Float64} = zeros(Float64, 2)  # Adjust as needed
-NPROPS::Int64 = 2
-COORDS::Vector{Float64} = zeros(Float64, 3)  # Adjust as needed
-DROT::Matrix{Float64} = Matrix{Float64}(I, 3, 3)  # Adjust as needed
-PNEWDT::Float64 = 0.1
-CELENT::Float64 = 1.0
-DFGRD0::Matrix{Float64} = Matrix{Float64}(I, 3, 3)  # Adjust as needed
-DFGRD1::Matrix{Float64} = Matrix{Float64}(I, 3, 3)  # Adjust as needed
-NOEL::Int64 = 1
-NPT::Int64 = 1
-LAYER::Int64 = 1
-KSPT::Int64 = 1
-JSTEP::Int64 = 1
-KINC::Int64 = 1
+@testset "UMAT_interface Tests" begin
+    # Example test case (you should define your own)
+    file = "./src/Physics/Material/UMATs/libusertest.so"
+    if !isfile(file)
+        file = "../src/Physics/Material/UMATs/libusertest.so"
+    end
+    function_name::String = "UMATTEST"
+    STRESS::Vector{Float64} = zeros(Float64, 6)  # Example initialization, adjust the size as needed
+    STATEV::Vector{Float64} = zeros(Float64, 10)  # Adjust the size and values as needed
+    DDSDDE::Matrix{Float64} = Matrix{Float64}(I, 6, 6)  # Identity matrix for simplicity, adjust as needed
+    SSE::Float64 = 0.0
+    SPD::Float64 = 0.0
+    SCD::Float64 = 0.0
+    RPL::Float64 = 0.0
+    DDSDDT::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
+    DRPLDE::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
+    DRPLDT::Float64 = 0.0  # Adjust as needed
+    STRAN::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
+    DSTRAN::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
+    TIME::Float64 = 0.0
+    DTIME::Float64 = 0.1
+    TEMP::Float64 = 25.0
+    DTEMP::Float64 = 0.1
+    PREDEF::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
+    DPRED::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
+    CMNAME::Cstring = Correspondence_UMAT.malloc_cstring("UMAT_TEST")  # Adjust as needed
+    NDI::Int64 = 3
+    NSHR::Int64 = 3
+    NTENS::Int64 = 6
+    NSTATEV::Int64 = length(STATEV)
+    PROPS::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
+    NPROPS::Int64 = 1
+    COORDS::Vector{Float64} = zeros(Float64, 3)  # Adjust as needed
+    DROT::Matrix{Float64} = Matrix{Float64}(I, 3, 3)  # Adjust as needed
+    PNEWDT::Float64 = 0.1
+    CELENT::Float64 = 1.0
+    DFGRD0::Matrix{Float64} = Matrix{Float64}(I, 3, 3)  # Adjust as needed
+    DFGRD1::Matrix{Float64} = Matrix{Float64}(I, 3, 3)  # Adjust as needed
+    NOEL::Int64 = 1
+    NPT::Int64 = 1
+    LAYER::Int64 = 1
+    KSPT::Int64 = 1
+    JSTEP::Int64 = 1
+    KINC::Int64 = 1
+    # Call the UMAT_interface
+    PROPS[1]=4.2
+    STRAN[1]=1
+    DSTRAN[1]=3
+    Correspondence_UMAT.UMAT_interface(file, function_name, STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR, NTENS, NSTATEV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1, NOEL, NPT, LAYER, KSPT, JSTEP, KINC)
 
-# Call the UMAT_interface
-Correspondence_UMAT.UMAT_interface(file, STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR, NTENS, NSTATEV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1, NOEL, NPT, LAYER, KSPT, JSTEP, KINC)
-println()
-# Example assertion (you should define appropriate checks based on your UMAT's expected behavior)
-# @test STRESS != zeros(Float64, 6)  # Check if STRESS was updated (or any other appropriate check)
-#end
+    @test STRESS[1] == 0
+    @test STRAN[1] == 4.2
+    @test isapprox(DSTRAN[1], 12.6)
+end
