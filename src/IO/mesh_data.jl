@@ -5,7 +5,7 @@
 using LinearAlgebra
 using AbaqusReader
 using DataFrames
-using Delaunay
+using TetGen
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
 using PrettyTables
@@ -612,10 +612,23 @@ function calculate_volume(element_type::String, vertices::Vector{Vector{Float64}
     elseif element_type == "Tet4"
         return tetrahedron_volume(vertices)
     elseif element_type == "Hex8"
-        # Convert vertices to a 3x8 matrix for easier manipulation
-        vertices_matrix = hcat(vertices...)
-        tetrahedra_indices = delaunay(Matrix(vertices_matrix'))
-        volumes = [tetrahedron_volume(tetrahedra_indices.points[tetrahedra_indices.simplices[i, :], :]) for i in 1:size(tetrahedra_indices.simplices)[1]]
+        input = TetGen.RawTetGenIO{Cdouble}()
+        input.pointlist = hcat(vertices...)
+        TetGen.facetlist!(input, [1 2 3 4;
+            5 6 7 8;
+            1 2 6 5;
+            2 3 7 6;
+            3 4 8 7;
+            4 1 5 8]')
+        tet = tetrahedralize(input, "pQa")
+        num_tet = size(tet.tetrahedronlist)[2]
+        volumes = zeros(num_tet)
+
+        for i in 1:num_tet
+            tet_vertices = vertices[tet.tetrahedronlist[:, i]]
+            volumes[i] = tetrahedron_volume(tet_vertices)
+        end
+
         return sum(volumes)
     else
         @error "Element type $element_type currently not supported"
@@ -624,17 +637,17 @@ function calculate_volume(element_type::String, vertices::Vector{Vector{Float64}
 end
 
 """
-    tetrahedron_volume(vertices)
+    tetrahedron_volume(tet_vertices)
 
 Calculate the volume of a tetrahedron.
 
 # Arguments
-- `vertices`: The vertices of the tetrahedron.
+- `tet_vertices`: The vertices of the tetrahedron.
 # Returns
 - `volume`: The volume of the tetrahedron.
 """
-function tetrahedron_volume(vertices)
-    mat = hcat(vertices, ones(4))  # Augmenting matrix with ones in the fourth column
+function tetrahedron_volume(tet_vertices::Vector{Vector{Float64}})
+    mat = hcat(hcat(tet_vertices...)', ones(4))  # Augmenting matrix with ones in the fourth column
     volume = abs(det(mat) / 6)   # Using det function to calculate determinant
     return volume
 end
