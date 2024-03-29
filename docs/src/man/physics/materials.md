@@ -100,9 +100,6 @@ In PeriLab you are able to combine models with each other, by simply adding a +.
 
 >Note: If you want to run elastic platic please use Correspondence Elastic + Correspondence Plastic or PD Solid Elastic + PD Solid Plastic
 
-You can find the paramter by opening the routines. By I will add them as soon as possible in the function description and the documentation.
-
-For isotropic material two of these parameters have to be provided Shear Modulus, Poissons Ration, Youngs Modulus or Bulk Modulus.
-
+>Note 2: The order is defined by the user. Because the plastic routines need stresses to work, make sure the materials which provide these stresses are before the plastic models.
 
 
