@@ -7,7 +7,7 @@ The physics related functions can be found [here](@ref "Physics - Functions").
 |---|---|
 | [Bond-based](@ref "Bond-based Peridynamics") | [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) |
 | [Ordinary state-based](@ref "Ordinary state-based Peridynamics") | [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl), [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) |
-|[Non-ordinary state-based](@ref "Correspondence Peridynamics")| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl), [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl)|
+|[Non-ordinary state-based](@ref "Correspondence Peridynamics")| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl), [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl), [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_UMAT.jl)|
 
 
 | Material Model             | Bond-based Elastic | PD Solid Elastic | PD Solid Plastic | Correspondence Elastic | Correspondence Plastic |
@@ -20,7 +20,7 @@ The physics related functions can be found [here](@ref "Physics - Functions").
 
 ## Bond-based Elastic
 
-The theory of the bond-based elastic material can be found [here](@ref "Bond-based Peridynamics")
+ The [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) calculates the linear elastic behavior of a simple bond-based material. The theory of the bond-based elastic material can be found [here](@ref "Bond-based Peridynamics").
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -32,7 +32,8 @@ One of theses parameters have to be defined.
 >Note: In the bond-based formulation the Poisson's ratio is fixed by [0.25 for 2D plane strain and 1/3 for 3D and 2D plane stress](https://link.springer.com/article/10.1007/s42102-019-00021-x), respectively.
 
 ## PD Solid Elastic
-The underlying theory can be found [here](@ref "Ordinary state-based Peridynamics")
+
+The [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl) module calculates the isotropic linear elastic material law for a peridynamic solid material. The underlying theory can be found [here](@ref "Ordinary state-based Peridynamics").
 | Parameter | Unit | Description |
 |---|---|---|
 |Youngs Modulus | $\left[N/m^2\right]$| [Young's modulus](https://en.wikipedia.org/wiki/Young%27s_modulus) or elasticity modulus
@@ -44,13 +45,15 @@ Two of these parameters have to be defined. The other two are determined automat
 
 ## PD Solid Plastic
 
+The [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) material uses elastic stresses and calculate the plastic part for a peridynamic solid material. Has to be combined with a function, which provides elastic stresses.
+
 | Parameter | Unit | Description |
 |---|---|---|
 |Yield Stress | $\left[N/m^2\right]$| [Yield stress](https://en.wikipedia.org/wiki/Yield_(engineering))
 
 
 ## Correspondence Elastic
-The underlying correspondence theory can be found [here](@ref "Correspondence Peridynamics")
+The [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl) module calculates the fully anisotropic linear elastic material law. The underlying correspondence theory can be found [here](@ref "Correspondence Peridynamics").
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -67,15 +70,29 @@ For Correspondence Elastic you can provide all 27 elastic parameters if you like
 >Note 2: If you define a field "Angles" for 2D or "Anglesx", "Anglesy" and "Anglesz" for 3D in the mesh file your material will be rotated. This helps to create an arbitrary material orientation.
 
 ## Correspondence Plastic
+The [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl) material uses elastic stresses and calculate the plastic part. Has to be combined with a function, which provides elastic stresses.
 
 | Parameter | Unit | Description |
 |---|---|---|
 |Yield Stress | $\left[N/m^2\right]$| [Yield stress](https://en.wikipedia.org/wiki/Yield_(engineering))
 
 ## Correspondence UMAT
+The [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_UMAT.jl) can be used to include Abaqus user materials. 
+>Note: No extra Abaqus functions should be called in the user subroutine.
 
-in developement
+You can call the user subroutine by defining path with a compiled Fotran library.
+[WillbergC2023](@cite) gives an overview about the interface for Peridigm. In PeriLab all fields in the UMAT interface are supported execpt these integer (NOEL, NPT, LAYER, KSPT, JSTEP, KINC) and float values (PNEWDT, CELENT). In the material module these values defined for the interfase and named as not_supported_int and not_supported_float, respectively.
 
+| Parameter | Type and Range | Description | Optional |
+|---|---|---|---|
+| File | String | Path and filename of the UMAT, e.g. "./src/Physics/Material/UMATs/libusertest.so" | No |
+| Number of State Variables | Int $\geq$ 0 | Number of state variables; Defines the size of state variable field datamanager.create_constant_node_field("State Variables", Float64, num_state_vars)| yes |
+| Number of Properties | Int $\geq$ 1 | Properties of the material; Needed for the propterty field datamanager.create_constant_free_size_field("Properties", Float64, (num_props, 1))
+ | No |
+| Property_$iID| Float | iID is 1...Number of Properties. It has to be in order and can be utilized in the UMAT. | No|
+|UMAT Material Name|String (maximum are 80 characters)| Defines material names defined in the UMAT to destinguash between different areas of the Fortran routine | Yes |
+|UMAT name| in development | Should allow the definition of own subroutine name. The standard will be UMAT| in development |
+|Predefined Field Names| String separated by spaces $\geq0$ | Define all the fields in the mesh file which should be used as pre-defined values. An increment field is than defined as well. E.g. Predefined Field Names: "Temperature" "Color"; Temperature and Color must exist in the mesh file. **They must be defined as Float or Int in that case**.| Yes|
 
 ## Model merging
 
