@@ -34,7 +34,8 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
     anisotropic_damage = false
     correspondence = false
     for block_id in block_list
-        if haskey(params["Blocks"]["block_$block_id"], "Material Model") && occursin("Correspondence", params["Blocks"]["block_$block_id"]["Material Model"])
+        block_param = params["Blocks"]["block_$block_id"]
+        if haskey(block_param, "Material Model") && occursin("Correspondence", params["Physics"]["Material Models"][block_param["Material Model"]]["Material Model"])
             correspondence = true
         else
             correspondence = false
@@ -51,14 +52,14 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
         if anisotropic_damage
             if !correspondence
                 @warn "Not all material models are of type correspondence. Bond based and PD solid are not supported by anisotropic damage"
-                anisotropic_damage = false
+                # anisotropic_damage = false
             end
             break
         end
     end
     if anisotropic_damage
         datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
-        datamanager.create_node_field("Damage Anisotropic", Float64, dof)
+        # datamanager.create_node_field("Damage Anisotropic", Float64, dof)
     end
     nlist = datamanager.get_field("Neighborhoodlist")
     inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))

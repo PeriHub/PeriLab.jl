@@ -62,12 +62,13 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     bond_damage = datamanager.get_bond_damage("NP1")
     aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
     if aniso_damage
-        if "Bond Damage Anisotropic" in datamanager.get_all_field_keys()
-            bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic")
+        if "Bond Damage AnisotropicNP1" in datamanager.get_all_field_keys()
+            bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
         else
             aniso_damage = false
         end
     end
+
     undeformed_bond = datamanager.get_field("Bond Geometry")
     undeformed_bond_length = datamanager.get_field("Bond Length")
     bond_forces = datamanager.get_field("Bond Forces")
@@ -99,7 +100,6 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         aniso_crit_values = datamanager.get_aniso_crit_values()
         bond_norm::Float64 = 0.0
     end
-
 
     bond_energy::Float64 = 0.0
     norm_displacement::Float64 = 0.0

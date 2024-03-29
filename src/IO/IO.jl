@@ -297,9 +297,9 @@ function initialize_data(filename::String, filedirectory::String, datamanager::M
         datamanager.set_max_rank(MPI.Comm_size(comm))
         datamanager.set_comm(comm)
     end
+    datamanager, params = init_data(read_input_file(filename), filedirectory, datamanager, comm, to)
     datamanager = init_orientations(datamanager)
-    return init_data(read_input_file(filename), filedirectory, datamanager, comm, to)
-
+    return datamanager, params
 end
 
 """
@@ -317,11 +317,11 @@ function init_orientations(datamanager::Module)
     end
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
-    orientations = datamanager.create_constant_node_field("Orientations", Float64, "Vector", 3)
+    orientations = datamanager.create_constant_node_field("Orientations", Float64, dof)
     for iID in 1:nnodes
         rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
         if dof == 2
-            orientations[iID, :] = rotation_tensor * [1, 0, 0]
+            orientations[iID, :] = rotation_tensor[1:2, 1:2] * [1, 1]
         elseif dof == 3
             orientations[iID, :] = rotation_tensor * [1, 1, 1]
         end
