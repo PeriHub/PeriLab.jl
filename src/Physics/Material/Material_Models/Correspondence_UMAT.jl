@@ -112,6 +112,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
         return nothing
       end
       # view or copy and than deleting the old one
+      # TODO check if an existing field is a bool. 
       fields[:, id] = datamanager.get_field(String(field_name))
 
     end
@@ -217,11 +218,6 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
     UMAT_interface(material_parameter["file"], material_parameter["UMAT name"]  , stress_temp, statev[iID, :], DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temperature_N[iID], temperature_increment[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, props, nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0, DFGRD1, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
     stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
   end
-  # CORRESPONDENCE::UMATINT(sigmaNP1LocVoigt, statev, DDSDDE, &SSE, &SPD, &SCD, &RPL,
-  #   DDSDDT, DRPLDE, &DRPLDT, strainLocVoigt, depsLocVoigt, timeArray, &dtime, temp, dtemp,
-  #   &PREDEF, &DPRED, matnameArray, &nnormal, &nshr, &nstresscomp, &nstatev, props,
-  #   &nprops, coords, drot, &PNEWDT, &CELENT, defGradN, defGradNP1,
-  #   &NOEL, &NPT, &KSLAY, &KSPT, &JSTEP, &KINC, &nname)
 
   return datamanager, stress_NP1
 end
