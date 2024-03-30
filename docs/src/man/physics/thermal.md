@@ -19,14 +19,18 @@ Calculates the thermal expansion of the material.
 
 | Parameter | Unit | Description |
 |---|---|---|
-|Thermal Expansion Coefficient | $\left[1/K\right]$| [Thermal expansion](https://en.wikipedia.org/wiki/Thermal_expansion) can be a $3\times3$ matrix. 
+|Thermal Expansion Coefficient | $\left[1/K\right]$| [Thermal expansion](https://en.wikipedia.org/wiki/Thermal_expansion) can be a $3\times3$ matrix. |
 
 >Note: PeriLab supports currently only isotropic thermal expansion. 
 
 ## Thermal Flow
-
+| Parameter | Unit | Description |
+|---|---|---|
+|  |   |
 ## Heat Transfer
-
+| Parameter | Unit | Description |
+|---|---|---|
+|  |   |
 ## Model merging
 
 In PeriLab you are able to combine models with each other, by simply adding a +. Therefore, modules can be merged and double coding can be avoided. This is necessary if you want to model the heating of a model and its expansion.
