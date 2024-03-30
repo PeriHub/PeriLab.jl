@@ -17,6 +17,12 @@ The list shows the three main model, thermal expansion, thermal flow and heat tr
 
 Calculates the thermal expansion of the material. 
 
+| Parameter | Unit | Description |
+|---|---|---|
+|Thermal Expansion Coefficient | $\left[1/K\right]$| [Thermal expansion](https://en.wikipedia.org/wiki/Thermal_expansion) can be a $3\times3$ matrix. 
+
+>Note: PeriLab supports currently only isotropic thermal expansion. 
+
 ## Thermal Flow
 
 ## Heat Transfer
