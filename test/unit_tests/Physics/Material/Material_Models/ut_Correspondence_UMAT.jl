@@ -69,7 +69,7 @@ end
     # Example test case (you should define your own)
     file = "../../../../../src/Physics/Material/UMATs/libusertest.so"
     if !isfile(file)
-        file = "./src/Physics/Material/UMATs/libusertest.so"
+        file = "../src/Physics/Material/UMATs/libusertest.so"
     end
     function_name::String = "UMATTEST"
     STRESS::Vector{Float64} = zeros(Float64, 6)  # Example initialization, adjust the size as needed
