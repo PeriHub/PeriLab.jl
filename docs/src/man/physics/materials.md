@@ -18,6 +18,11 @@ The physics related functions can be found [here](@ref "Physics - Functions").
 | Zero Energy Control        |                   |                  |                  | ✔️     | ✔️     |
 | C11/C12/.../C66            | (✔️)| (✔️) | (✔️) | (✔️)     | (✔️)     |
 
+| Parameter | Unit | Description |
+|---|---|---|
+| Density |  $\left[\frac{kg}{m^3}\right]$ | Specific heat capacity of the block  
+| Horizon |  $[m]$ | Radius of the neighborhood |
+
 ## Bond-based Elastic
 
  The [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) calculates the linear elastic behavior of a simple bond-based material. The theory of the bond-based elastic material can be found [here](@ref "Bond-based Peridynamics").
