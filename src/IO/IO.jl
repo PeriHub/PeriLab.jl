@@ -321,7 +321,7 @@ function init_orientations(datamanager::Module)
     for iID in 1:nnodes
         rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
         if dof == 2
-            orientations[iID, :] = rotation_tensor[1:2, 1:2] * [1, 1]
+            orientations[iID, :] = rotation_tensor * [1, 0]
         elseif dof == 3
             orientations[iID, :] = rotation_tensor * [1, 1, 1]
         end
