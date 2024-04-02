@@ -483,7 +483,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
 
             step_time += dt
-            if idt < 10 || nsteps - idt < 10 || idt % ceil(nsteps / 10) == 0
+            if idt % ceil(nsteps / 100) == 0
                 @info "Step: $idt / $(nsteps+1) [$step_time s]"
             end
             if rank == 0 && !silent
