@@ -13,7 +13,9 @@ on:
       - main
     tags: "*"
   pull_request:
-
+permissions:
+  actions: write
+  contents: read
 jobs:
   build:
     permissions:
