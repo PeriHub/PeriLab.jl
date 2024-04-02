@@ -27,7 +27,8 @@ Calculates the thermal expansion of the material.
 |---|---|---|
 |Thermal Expansion Coefficient | $\left[1/K\right]$| [Thermal expansion](https://en.wikipedia.org/wiki/Thermal_expansion) can be a $3\times3$ matrix. |
 
->Note: PeriLab supports currently only isotropic thermal expansion. 
+!!! info "Thermal expansion"
+    PeriLab supports currently only isotropic thermal expansion. 
 
 ## Thermal Flow
 
@@ -43,6 +44,8 @@ Calculates the thermal expansion of the material.
 
 In PeriLab you are able to combine models with each other, by simply adding a +. Therefore, modules can be merged and double coding can be avoided. This is necessary if you want to model the heating of a model and its expansion.
 
->Note: If you want to run a full thermal model Thermal Flow + Heat Transfer + Thermal Expansion.
+!!! tip "Full Model"
+    If you want to run a full thermal model Thermal Flow + Heat Transfer + Thermal Expansion.
 
->Note 2: The order is defined by the user. Therfore, in this example first the flow, than the transfer to the environment and than the expansion will be calculated. 
+!!! tip "Model order"
+    The order is defined by the user. Therfore, in this example first the flow, than the transfer to the environment and than the expansion will be calculated. 
