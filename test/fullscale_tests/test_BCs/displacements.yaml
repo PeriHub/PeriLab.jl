@@ -47,7 +47,7 @@ PeriLab:
       Value: "if t>0.00001 0 else 0.1 end"
   Solver:
     Material Models: False
-    Solve For Displacement: True
+
     Initial Time: 0.0
     Final Time: 5.0e-5
     Verlet:
