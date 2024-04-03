@@ -16,7 +16,7 @@ $$\boldsymbol{\sigma} = f(\underline{\mathbf{F}}, t, T, ...)$$
 
 To get the force densities the First-Piola Kirchhoff stress tensor has to be calculated by
 
-$$\underline{\mathbf{P}} = \text{det}(\underline{\mathbf{F}})\boldsymbol{\sigma}\underline{\mathbf{F}} $$
+$$\underline{\mathbf{P}} = \text{det}(\underline{\mathbf{F}})\boldsymbol{\sigma}\underline{\mathbf{F}}$$
 
 and finaly the force density vector can be determined as
 
