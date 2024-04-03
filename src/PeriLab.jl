@@ -201,81 +201,95 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
         rank = MPI.Comm_rank(comm)
         size = MPI.Comm_size(comm)
 
-        Logging_module.init_logging(filename, debug, silent, rank, size)
-        if rank == 0
-            if !silent
-                print_banner()
-            end
-            @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
-            @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
-            try
-                dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))
-                if dirty
-                    @warn git_info
-                else
-                    @info git_info
-                end
-            catch e
-                if !isa(e, LibGit2.GitError)
-                    @warn "No current git info."
-                end
-            end
-            if size > 1
-                @info "MPI: Running on " * string(size) * " processes"
-            end
-        end
+        result_files = nothing
+        outputs = nothing
 
-        ################################
-        filedirectory = dirname(filename)
-        if output_dir != ""
-            if !isdir(output_dir)
+        try
+            Logging_module.init_logging(filename, debug, silent, rank, size)
+            if rank == 0
+                if !silent
+                    print_banner()
+                end
+                @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
+                @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
                 try
-                    mkpath(output_dir)
-                catch
-                    @error "Could not create output directory"
+                    dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))
+                    if dirty
+                        @warn git_info
+                    else
+                        @info git_info
+                    end
+                catch e
+                    if !isa(e, LibGit2.GitError)
+                        @warn "No current git info."
+                    end
+                end
+                if size > 1
+                    @info "MPI: Running on " * string(size) * " processes"
                 end
             end
-        else
-            output_dir = filedirectory
-        end
 
-        Data_manager.set_silent(silent)
-        if !reload
-            Data_manager.clear_data_manager()
-        else
-            @info "PeriLab started in the reload mode"
-        end
-        @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
-        @info "Init solver"
-        @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
-        IO.show_block_summary(solver_options, params, Logging_module.get_log_file(), silent, comm, datamanager)
-        IO.show_mpi_summary(Logging_module.get_log_file(), silent, comm, datamanager)
-        @debug "Init write results"
-        @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, output_dir, filedirectory, datamanager, solver_options["nsteps"], PERILAB_VERSION)
-        Logging_module.set_result_files(result_files)
-        if dry_run
-            nsteps = solver_options["nsteps"]
-            solver_options["nsteps"] = 10
-            elapsed_time = @elapsed begin
-                @timeit to "Solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+            ################################
+            filedirectory = dirname(filename)
+            if output_dir != ""
+                if !isdir(output_dir)
+                    try
+                        mkpath(output_dir)
+                    catch
+                        @error "Could not create output directory"
+                    end
+                end
+            else
+                output_dir = filedirectory
             end
 
-            @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
-            file_size = IO.get_file_size(result_files)
-            @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
+            Data_manager.set_silent(silent)
+            if !reload
+                Data_manager.clear_data_manager()
+            else
+                @info "PeriLab started in the reload mode"
+            end
+            @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
+            @info "Init solver"
+            @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
+            IO.show_block_summary(solver_options, params, Logging_module.get_log_file(), silent, comm, datamanager)
+            IO.show_mpi_summary(Logging_module.get_log_file(), silent, comm, datamanager)
+            @debug "Init write results"
+            @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, output_dir, filedirectory, datamanager, solver_options["nsteps"], PERILAB_VERSION)
+            Logging_module.set_result_files(result_files)
+            if dry_run
+                nsteps = solver_options["nsteps"]
+                solver_options["nsteps"] = 10
+                elapsed_time = @elapsed begin
+                    @timeit to "Solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+                end
 
-        else
-            @timeit to "Solver.solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+                @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
+                file_size = IO.get_file_size(result_files)
+                @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
+
+            else
+                @timeit to "Solver.solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+            end
+
+        catch e
+            if e isa InterruptException
+                @info "PeriLab was interrupted"
+            else
+                rethrow(e)
+            end
         end
+        if !isnothing(result_files)
+            @debug "Close result files"
+            IO.close_result_files(result_files, outputs)
 
-        IO.close_result_files(result_files, outputs)
-
-        if size > 1 && rank == 0
-            IO.merge_exodus_files(result_files, output_dir)
-        end
-        MPI.Barrier(comm)
-        if size > 1 || dry_run
-            IO.delete_files(result_files, output_dir)
+            if size > 1 && rank == 0
+                IO.merge_exodus_files(result_files, output_dir)
+            end
+            MPI.Barrier(comm)
+            if size > 1 || dry_run
+                IO.delete_files(result_files, output_dir)
+            end
         end
     end
     if verbose
