@@ -39,5 +39,3 @@ From [TrageserJ2020](@cite) we get
 |plane strain:| $c = \frac{48 E}{\pi 5 \delta^3}$ | fixed $\nu=0.25$|
 |plane stress:| $c = \frac{9 E}{\pi \delta^3}$ | fixed $\nu=1/3$|
 |3D:| $c = \frac{18 K}{\pi  \delta^4}$ | fixed $\nu=0.25$|
-
-         
