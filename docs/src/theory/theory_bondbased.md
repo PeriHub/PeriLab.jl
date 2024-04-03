@@ -10,7 +10,7 @@ In bond-based Peridynamics, the material is considered as a continuum of particl
 
 The equation of motion in Peridynamics is an integral equation, differing from the local PDEs in classical mechanics. For a particle at position $\mathbf{x}$, the equation is:
 
-$$ \rho(\mathbf{x}) \ddot{\mathbf{u}}(\mathbf{x}, t) = \int_{\mathcal{H}} \mathbf{f}(\mathbf{x}', \mathbf{x}, t) \, dV + \mathbf{b}(\mathbf{x}, t) $$
+$$\rho(\mathbf{x}) \ddot{\mathbf{u}}(\mathbf{x}, t) = \int_{\mathcal{H}} \mathbf{f}(\mathbf{x}', \mathbf{x}, t) \, dV + \mathbf{b}(\mathbf{x}, t)$$
 
 where:
 $\rho(\mathbf{x})$ is the mass density at $\mathbf{x}$.
@@ -23,7 +23,7 @@ $\mathbf{b}(\mathbf{x}, t)$ is the body force term.
 
 The fundamental interaction in bond-based Peridynamics is between pairs of points or particles within a certain horizon distance. The force vector between two points, $x$ and $x'$, is given by:
 
-$$ \mathbf{f}(\mathbf{x}', \mathbf{x}) = \underline{\omega}\langle \boldsymbol{\xi} \rangle c \, (\mathbf{u}(\mathbf{x}') - \mathbf{u}(\mathbf{x})) $$
+$$\mathbf{f}(\mathbf{x}', \mathbf{x}) = \underline{\omega}\langle \boldsymbol{\xi} \rangle c \, (\mathbf{u}(\mathbf{x}') - \mathbf{u}(\mathbf{x}))$$
 
 where:
 $\mathbf{f}(\mathbf{x}', \mathbf{x})$ is the force vector exerted by the particle at $\mathbf{x}'$ on the particle at $\mathbf{x}$.
