@@ -61,11 +61,13 @@ fieldNP1 = datamanager.get_field(Fieldname*"NP1"::String)
 For node and bond fields (constant and non-constant) the following options are possible.
 
 **Matrix style**
+
 You can switch between vector and matrix. If you give the keyword Matrix_or_Vector = "Vector" you get vector of length degree of freedom for each node or bond. If Matrix_or_Vector = "Matrix" each node or bond gets matrix dof $\times$ dof
 ```julia
 datamanager.create_node_field(Fieldname::String, Type_of_variable::Type, Matrix_or_Vector::String, Degree_of_freedom::Int64)
 ```
 **Pre-defined Values**
+
 You can add an optional value at the end. The default is zero.
 
 ```julia
@@ -78,8 +80,10 @@ Free size fields can be constant or non-constant. The size is defined by the use
  field = datamanager.create_constant_free_size_field(Fieldname::String, Type_of_variable::Type, size::Tuple)
  fieldN, fieldNP1 = datamanager.create_free_size_field(Fieldname::String, Type_of_variable::Type, size::Tuple)
 ```
+!!! info "free size example" 
+    A constant node field with a matrix $3\times3$ per node can be defined in a free size field by
 
-!!! info "free size example" A constant node field with a matrix $3\times3$ per node can be defined in a free size field by 
+
 ```julia
 field = datamanager.create_constant_free_size_field("Example", Float64, (number_of_nodes, 3, 3))
 ```
