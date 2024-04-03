@@ -32,14 +32,12 @@ body:
     validations:
       required: false
   - type: dropdown
-    id: download
+    id: pr-submit
     attributes:
-      label: How did you download the software?
+      label: Would you be willing to submit a PR?
       options:
-        - Built from source
-        - Homebrew
-        - MacPorts
-        - apt-get
-      default: 0
+        - Yes
+        - No
+      default: 1
     validations:
       required: true
