@@ -43,7 +43,6 @@ PeriLab:
       Coordinate: "y"
       Value: "0.1*y"
   Solver:
-    Solve For Displacement: True
     Initial Time: 0.0
     Final Time: 5.0e-6
     Verlet:

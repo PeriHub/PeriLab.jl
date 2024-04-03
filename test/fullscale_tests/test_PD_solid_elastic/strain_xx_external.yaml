@@ -11,17 +11,13 @@ PeriLab:
   Physics:
     Material Models:
       Mat_1:
-        Material Model: "Correspondence Elastic"
-        Symmetry: "isotropic plane stress"
+        Material Model: "PD Solid Elastic"
         Bulk Modulus: 2.5e+3
         Shear Modulus: 1.15e3
-        Zero Energy Control: "Global"
       Mat_2:
-        Material Model: "Correspondence Elastic"
-        Symmetry: "isotropic plane stress"
+        Material Model: "PD Solid Elastic"
         Bulk Modulus: 3.5e+3
         Shear Modulus: 2.15e3
-        Zero Energy Control: "Global"
   Blocks:
     block_1:
       Material Model: "Mat_1"
@@ -36,20 +32,20 @@ PeriLab:
       Type: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
-      Value: "0.0"
+      Value: "0.1*x"
     BC_2:
       Type: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "y"
-      Value: "0.1*y"
+      Value: "0.0"
   Solver:
     Initial Time: 0.0
     Final Time: 5.0e-6
-    Verlet:
+    External:
       Safety Factor: 1.0
   Outputs:
     Output1:
-      Output Filename: "correspondence_strain_pstress_zc_yy"
+      Output Filename: "strain_xx_external"
       Output Frequency: 1
       Output Variables:
         Displacements: True

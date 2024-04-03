@@ -174,8 +174,7 @@ global expected_structure = Dict(
                         ), false],
                 ), true],
             "Solver" => [Dict{Any,Any}(
-                    "Solve For Displacement" => [Bool, false],
-                    "Material Models" => [Bool, false],
+                     "Material Models" => [Bool, false],
                     "Damage Models" => [Bool, false],
                     "Maximum Damage" => [Float64, false],
                     "Thermal Models" => [Bool, false],

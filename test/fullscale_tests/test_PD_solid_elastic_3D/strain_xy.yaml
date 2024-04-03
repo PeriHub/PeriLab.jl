@@ -44,7 +44,6 @@ PeriLab:
       Coordinate: "z"
       Value: "0.0"
   Solver:
-    Solve For Displacement: True
     Initial Time: 0.0
     Final Time: 5.0e-6
     End step after damage: 3
