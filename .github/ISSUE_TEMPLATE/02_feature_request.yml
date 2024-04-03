@@ -31,3 +31,15 @@ body:
       description: Let us know if you already have an idea for how to implement this feature.
     validations:
       required: false
+  - type: dropdown
+    id: pr-submit
+    attributes:
+      label: If the feature request is approved, would you be willing to submit a PR?
+      multiple: false
+      options:
+        - Yes
+        - Yes, but I need help
+        - No
+      default: 2
+    validations:
+      required: true
