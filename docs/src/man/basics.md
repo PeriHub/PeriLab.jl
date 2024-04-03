@@ -43,5 +43,5 @@ minutes:
 ```julia
 using Pkg
 
-Pkg.test("PeriLab") # Warning! This will take more than 30 minutes.
+Pkg.test("PeriLab") # Warning! This will take a few minutes.
 ```

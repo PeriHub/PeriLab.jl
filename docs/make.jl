@@ -24,9 +24,9 @@ makedocs(
         "User Guide"=>Any[
             "Getting Started"=>"man/getting_started.md",
             "Development"=>Any[
-                "Guide"=>"man/developement_guide.md",
-                "Datamanager"=>"man/datamanager.md",
-                "Module integration"=>"man/module_integration.md",
+                "Guide"=>"man/dev/developement_guide.md",
+                "Datamanager"=>"man/dev/datamanager.md",
+                "Module integration"=>"man/dev/module_integration.md",
             ],
             "Input File"=>"man/input_yaml.md",
             "Mesh and Nodesets"=>"man/mesh_input.md",
