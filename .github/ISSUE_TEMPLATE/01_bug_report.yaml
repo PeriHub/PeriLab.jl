@@ -1,0 +1,92 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+name: 🐜 Bug report
+description: If something isn't working 🔧
+title: "[Bug]: "
+labels: ["bug"]
+# projects: []
+# assignees:
+#   - octocat
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: perilab-version
+    attributes:
+      label: PeriLab Version
+      description: What version of PeriLab are you using?
+      placeholder: 1.1.4
+    validations:
+      required: true
+  - type: input
+    id: julia-version
+    attributes:
+      label: Julia Version
+      description: What version of Julia are you using?
+      placeholder: 1.10.2
+    validations:
+      required: true
+  - type: input
+    id: mpi-version
+    attributes:
+      label: MPI Version
+      description: What version of MPI are you using?
+    validations:
+      required: false
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: What is the expected behavior?
+      value: "The simulation should..."
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What is the actual behavior?
+      value: "My simulation errored..."
+    validations:
+      required: true
+  - type: textarea
+  id: repro
+  attributes:
+    label: Reproduction steps
+    description: "How do you trigger this bug? Please walk us through it step by step."
+    value: |
+      1.
+      2.
+      3.
+      ...
+    render: bash
+  validations:
+    required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: What version of our software are you running?
+      options:
+        - 1.0.2 (Default)
+        - 1.0.3 (Edge)
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output.
+      render: shell
+  - type: checkboxes
+  id: operating-systems
+  attributes:
+    label: Which release of PeriLab are you seeing the problem on?
+    description: You may select more than one.
+    options:
+      - label: Julia Package
+      - label: Linux Release
+      - label: Docker Image
