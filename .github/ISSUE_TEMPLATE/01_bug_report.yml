@@ -45,18 +45,18 @@ body:
     validations:
       required: true
   - type: textarea
-  id: repro
-  attributes:
-    label: Reproduction steps
-    description: "How do you trigger this bug? Please walk us through it step by step."
-    value: |
-      1.
-      2.
-      3.
-      ...
-    render: bash
-  validations:
-    required: true
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: "How do you trigger this bug? Please walk us through it step by step."
+      value: |
+        1.
+        2.
+        3.
+        ...
+      render: bash
+    validations:
+      required: true
   - type: textarea
     id: logs
     attributes:
@@ -64,11 +64,11 @@ body:
       description: Please copy and paste any relevant log output.
       render: shell
   - type: checkboxes
-  id: operating-systems
-  attributes:
-    label: Which release of PeriLab are you seeing the problem on?
-    description: You may select more than one.
-    options:
-      - label: Julia Package
-      - label: Linux Release
-      - label: Docker Image
+    id: operating-systems
+    attributes:
+      label: Which release of PeriLab are you seeing the problem on?
+      description: You may select more than one.
+      options:
+        - label: Julia Package
+        - label: Linux Release
+        - label: Docker Image
