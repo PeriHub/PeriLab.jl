@@ -1,14 +1,7 @@
-# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
 name: 🐜 Bug report
 description: If something isn't working 🔧
 title: "[Bug]: "
 labels: ["bug"]
-# projects: []
-# assignees:
-#   - octocat
 body:
   - type: markdown
     attributes:
@@ -64,17 +57,6 @@ body:
     render: bash
   validations:
     required: true
-  - type: dropdown
-    id: version
-    attributes:
-      label: Version
-      description: What version of our software are you running?
-      options:
-        - 1.0.2 (Default)
-        - 1.0.3 (Edge)
-      default: 0
-    validations:
-      required: true
   - type: textarea
     id: logs
     attributes:
