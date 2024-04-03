@@ -32,12 +32,14 @@ body:
     validations:
       required: false
   - type: dropdown
-    id: pr-submit
+    id: download
     attributes:
-      label: If the feature request is approved, would you be willing to submit a PR?
+      label: How did you download the software?
       options:
-        - Yes
-        - No
-      default: 1
+        - Built from source
+        - Homebrew
+        - MacPorts
+        - apt-get
+      default: 0
     validations:
       required: true
