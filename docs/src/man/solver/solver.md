@@ -20,7 +20,9 @@
 | Fixed dt    | Float | Yes | Defines a fixed time step |
 | Number of Steps   | Int | Yes | Defines a fixed number of steps |
 
->Note: If a fixed time step is defined, the time integration can become unstable.
+
+!!! warning "Fixed dt"
+    If a fixed time step is defined, the time integration can become unstable.
 
 
 The Verlet time integration is used as standard solver for dynamic hyperbolic differential equation of motion. It is also used in Peridigm [LittlewoodDJ2023](@cite). The displacements for step $i+1$ are solved as follows
