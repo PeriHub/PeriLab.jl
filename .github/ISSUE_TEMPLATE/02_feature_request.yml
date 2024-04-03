@@ -36,8 +36,8 @@ body:
     attributes:
       label: Would you be willing to submit a PR?
       options:
-        - Yes
-        - No
+        - "Yes"
+        - "No"
       default: 1
     validations:
       required: true
