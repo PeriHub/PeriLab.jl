@@ -214,7 +214,7 @@ function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}})
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end
     # return RotXYZ(0, 0, angles[1] / 180 * pi)
-    return RotXY(0, angles[1] / 180 * pi)
+    return Angle2d(angles[1] / 180 * pi)
 end
 
 end

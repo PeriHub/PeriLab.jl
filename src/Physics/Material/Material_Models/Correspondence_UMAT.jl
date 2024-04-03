@@ -85,9 +85,9 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     @error "Due to old Fortran standards only a name length of 80 is supported"
     return nothing
   end
-  
-  if !haskey(material_parameter,"UMAT name")
-    material_parameter["UMAT name"] = "UMAT" 
+
+  if !haskey(material_parameter, "UMAT name")
+    material_parameter["UMAT name"] = "UMAT"
   end
 
 
@@ -215,7 +215,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   for iID in nodes
     stress_NP1[iID, :, :] = UMAT_interface
     rotNP1[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
-    UMAT_interface(material_parameter["file"], material_parameter["UMAT name"]  , stress_temp, statev[iID, :], DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temperature_N[iID], temperature_increment[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, props, nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0, DFGRD1, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
+    UMAT_interface(material_parameter["file"], stress_temp, statev[iID, :], DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temperature_N[iID], temperature_increment[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, props, nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0, DFGRD1, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
     stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
   end
 
@@ -223,49 +223,76 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
 end
 
 """
-    compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+    UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
 
-Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+UMAT interface
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
+- `filename::String`: Filename
+- `STRESS::Vector{Float64}`: Stress
+- `STATEV::Vector{Float64}`: State variables
+- `DDSDDE::Matrix{Float64}`: DDSDDE
+- `SSE::Float64`: SSE
+- `SPD::Float64`: SPD
+- `SCD::Float64`: SCD
+- `RPL::Float64`: RPL
+- `DDSDDT::Vector{Float64}`: DDSDDT
+- `DRPLDE::Vector{Float64}`: DRPLDE
+- `DRPLDT::Float64`: DRPLDT
+- `STRAN::Vector{Float64}`: Strain
+- `DSTRAN::Vector{Float64}`: Strain increment
+- `TIME::Float64`: Time
+- `DTIME::Float64`: Time increment
+- `TEMP::Float64`: Temperature
+- `DTEMP::Float64`: Temperature increment
+- `PREDEF::Vector{Float64}`: Predefined
+- `DPRED::Vector{Float64}`: Predefined increment
+- `CMNAME::Cstring`: Material name
+- `NDI::Int64`: Number of normal stress components
+- `NSHR::Int64`: Number of engineering shear stress components
+- `NTENS::Int64`: Size of the stress or strain component array
+- `NSTATEV::Int64`: Number of state variables
+- `PROPS::Vector{Float64}`: Properties
+- `NPROPS::Int64`: Number of properties
+- `COORDS::Vector{Float64}`: Coordinates
+- `DROT::Matrix{Float64}`: Rotation
+- `PNEWDT::Float64`: New time step
+- `CELENT::Float64`: Thickness
+- `DFGRD0::Matrix{Float64}`: Deformation gradient
+- `DFGRD1::Matrix{Float64}`: Deformation gradient
+- `NOEL::Int64`: Element number
+- `NPT::Int64`: Point number
+- `LAYER::Int64`: Layer
+- `KSPT::Int64`: Partition
+- `JSTEP::Int64`: Step
+- `KINC::Int64`: Increment
+
 # Returns
-- `datamanager::Data_manager`: Datamanager.
-- `stress_NP1::SubArray`: updated stresses
-Example:
-```julia
-```
+- `datamanager`: Datamanager
 """
-function UMAT_interface(filename::String, function_name::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
-  
-  
+function UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
+
+
   # TODO dynamicall change folders and subroutine name
- # ccall((:umattest_, "./src/Physics/Material/UMATs/libusertest.so"), Cvoid, (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64}, Ref{Float64},
- #sub_name = set_subroutine_caller(function_name)
- #test=":umattest_"
-#f=eval(:test)
- expr = :(ccall((:umattest_, $filename), Cvoid,
-        (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64}, Ref{Float64},
-         Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64},
-         Ref{Float64}, Ref{Float64}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Cstring, Ref{Int64}, Ref{Int64},
-         Ref{Int64}, Ref{Int64}, Ptr{Float64}, Ref{Int64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64},
-         Ptr{Float64}, Ptr{Float64}, Ref{Int64}, Ref{Int64}, Ref{Int64}, Ref{Int64}, Ref{Int64}, Ref{Int64}),
-        $STRESS, $STATEV, $DDSDDE, $SSE, $SPD, $SCD, $RPL, $DDSDDT, $DRPLDE, $DRPLDT, $STRAN, $DSTRAN, $TIME, $DTIME, $TEMP, $DTEMP, $PREDEF, $DPRED, $CMNAME, $NDI,
-        $NSHR, $NTENS, $NSTATEV, $PROPS, $NPROPS, $COORDS, $DROT, $PNEWDT, $CELENT, $DFGRD0, $DFGRD1, $NOEL, $NPT, $LAYER, $KSPT, $JSTEP, $KINC))
-        eval(expr)
+  # ccall((:umattest_, "./src/Physics/Material/UMATs/libusertest.so"), Cvoid, (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64}, Ref{Float64},
+  #sub_name = set_subroutine_caller(function_name)
+  #test=":umattest_"
+  #f=eval(:test)
+  expr = :(ccall((:umat_, $filename), Cvoid,
+    (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64}, Ref{Float64},
+      Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64},
+      Ref{Float64}, Ref{Float64}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Cstring, Ref{Int64}, Ref{Int64},
+      Ref{Int64}, Ref{Int64}, Ptr{Float64}, Ref{Int64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64},
+      Ptr{Float64}, Ptr{Float64}, Ref{Int64}, Ref{Int64}, Ref{Int64}, Ref{Int64}, Ref{Int64}, Ref{Int64}),
+    $STRESS, $STATEV, $DDSDDE, $SSE, $SPD, $SCD, $RPL, $DDSDDT, $DRPLDE, $DRPLDT, $STRAN, $DSTRAN, $TIME, $DTIME, $TEMP, $DTEMP, $PREDEF, $DPRED, $CMNAME, $NDI,
+    $NSHR, $NTENS, $NSTATEV, $PROPS, $NPROPS, $COORDS, $DROT, $PNEWDT, $CELENT, $DFGRD0, $DFGRD1, $NOEL, $NPT, $LAYER, $KSPT, $JSTEP, $KINC))
+  eval(expr)
 end
 
 
 # TODO Subroutine not hard coded
 # # sub_name::Symbol = set_subroutine_caller(function_name)    
-        
+
 
 """
 function set_subroutine_caller(sub_name::String)
@@ -279,7 +306,7 @@ Converts each letter in the string `str` to its corresponding lowercase equivale
 """
 
 function set_subroutine_caller(sub_name::String)
-   return eval(Meta.parse(":"*(lowercase(sub_name))*"_"))
+  return eval(Meta.parse(":" * (lowercase(sub_name)) * "_"))
 end
 
 

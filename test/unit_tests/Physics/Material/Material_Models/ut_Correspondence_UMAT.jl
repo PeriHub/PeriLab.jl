@@ -4,14 +4,14 @@
 using Test
 using LinearAlgebra
 include("../../../../../src/Physics/Material/Material_Models/Correspondence_UMAT.jl")
- include("../../../../../src/Support/data_manager.jl")
+# include("../../../../../src/Support/data_manager.jl")
 @testset "get_name&fe_support" begin
     @test Correspondence_UMAT.correspondence_name() == "Correspondence UMAT"
     @test Correspondence_UMAT.fe_support()
 end
 @testset "init exceptions" begin
     nodes = 2
-    test_Data_manager = Data_manager
+    test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(nodes)
     dof = 3
     test_Data_manager.set_dof(dof)
@@ -67,11 +67,10 @@ end
 # Test wrapper function for UMAT_interface
 @testset "UMAT_interface Tests" begin
     # Example test case (you should define your own)
-    file = "../../../../../src/Physics/Material/UMATs/libusertest.so"
+    file = "./src/Physics/Material/UMATs/libusertest.so"
     if !isfile(file)
         file = "../src/Physics/Material/UMATs/libusertest.so"
     end
-    function_name::String = "UMATTEST"
     STRESS::Vector{Float64} = zeros(Float64, 6)  # Example initialization, adjust the size as needed
     STATEV::Vector{Float64} = zeros(Float64, 10)  # Adjust the size and values as needed
     DDSDDE::Matrix{Float64} = Matrix{Float64}(I, 6, 6)  # Identity matrix for simplicity, adjust as needed
@@ -113,7 +112,7 @@ end
     PROPS[1] = 4.2
     STRAN[1] = 1
     DSTRAN[1] = 3
-    Correspondence_UMAT.UMAT_interface(file, function_name, STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR, NTENS, NSTATEV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1, NOEL, NPT, LAYER, KSPT, JSTEP, KINC)
+    Correspondence_UMAT.UMAT_interface(file, STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR, NTENS, NSTATEV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1, NOEL, NPT, LAYER, KSPT, JSTEP, KINC)
     @test STRESS[1] == 0
     @test STRAN[1] == 4.2
     @test isapprox(DSTRAN[1], 12.6)

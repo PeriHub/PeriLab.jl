@@ -33,8 +33,10 @@ The physics related functions can be found [here](@ref "Physics - Functions").
 |Shear Modulus | $\left[N/m^2\right]$| [Shear modulus](https://en.wikipedia.org/wiki/Shear_modulus)
 |Bulk Modulus | $\left[N/m^2\right]$| [Bulk modulus](https://en.wikipedia.org/wiki/Bulk_modulus) or compression modulus
 
-One of theses parameters have to be defined. 
->Note: In the bond-based formulation the Poisson's ratio is fixed by [0.25 for 2D plane strain and 1/3 for 3D and 2D plane stress](https://link.springer.com/article/10.1007/s42102-019-00021-x), respectively.
+One of theses parameters have to be defined.
+
+!!! info "Fixed Poisson's ratio"
+    In the bond-based formulation the Poisson's ratio is fixed by [0.25 for 2D plane strain and 1/3 for 3D and 2D plane stress](https://link.springer.com/article/10.1007/s42102-019-00021-x), respectively.
 
 ## PD Solid Elastic
 
@@ -70,9 +72,11 @@ The [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src
 
 For Correspondence Elastic you can provide all 27 elastic parameters if you like by adding C11,...,C66. 
 
->Note: For the time step calculation two of the four isotropic elastic parameter have to be defined.
+!!! tip "Isotropic elastic parameter"
+    For the time step calculation two of the four isotropic elastic parameter have to be defined.
 
->Note 2: If you define a field "Angles" for 2D or "Anglesx", "Anglesy" and "Anglesz" for 3D in the mesh file your material will be rotated. This helps to create an arbitrary material orientation.
+!!! tip "Material Rotation"
+    If you define a field "Angles" for 2D or "Anglesx", "Anglesy" and "Anglesz" for 3D in the mesh file your material will be rotated. This helps to create an arbitrary material orientation.
 
 ## Correspondence Plastic
 The [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl) material uses elastic stresses and calculate the plastic part. Has to be combined with a function, which provides elastic stresses.
@@ -82,8 +86,10 @@ The [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src
 |Yield Stress | $\left[N/m^2\right]$| [Yield stress](https://en.wikipedia.org/wiki/Yield_(engineering))
 
 ## Correspondence UMAT
-The [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_UMAT.jl) can be used to include Abaqus user materials. 
->Note: No extra Abaqus functions should be called in the user subroutine.
+The [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_UMAT.jl) can be used to include Abaqus user materials.
+
+!!! warning "Replace ABAQUS Functions"
+    No extra Abaqus functions should be called in the user subroutine. For example `INCLUDE 'ABA_PARAM.INC'` needs to be replaced by `implicit real(8) (a-h,o-z)`
 
 You can call the user subroutine by defining path with a compiled Fotran library.
 [WillbergC2023](@cite) gives an overview about the interface for Peridigm. In PeriLab all fields in the UMAT interface are supported execpt these integer (NOEL, NPT, LAYER, KSPT, JSTEP, KINC) and float values (PNEWDT, CELENT). In the material module these values defined for the interfase and named as not_supported_int and not_supported_float, respectively.
@@ -99,12 +105,22 @@ You can call the user subroutine by defining path with a compiled Fotran library
 |UMAT name| in development | Should allow the definition of own subroutine name. The standard will be UMAT| in development |
 |Predefined Field Names| String separated by spaces $\geq0$ | Define all the fields in the mesh file which should be used as pre-defined values. An increment field is than defined as well. E.g. Predefined Field Names: "Temperature" "Color"; Temperature and Color must exist in the mesh file. **They must be defined as Float or Int in that case**.| Yes|
 
+### Compilation of the UMAT subroutine
+In order to compile the UMAT subroutine you need to install gfortran. Have a look at [this](https://fortran-lang.org/en/learn/os_setup/install_gfortran/) page.
+After installation you can compile the Fortran subroutine with the following command:
+
+```shell
+gfortran -shared -fPIC -o libusermat.so base.f 
+```
+
 ## Model merging
 
 In PeriLab you are able to combine models with each other, by simply adding a +. Therefore, modules can be merged and double coding can be avoided.
 
->Note: If you want to run elastic platic please use Correspondence Elastic + Correspondence Plastic or PD Solid Elastic + PD Solid Plastic
+!!! tip "Elastic platic"
+    If you want to run elastic platic please use Correspondence Elastic + Correspondence Plastic or PD Solid Elastic + PD Solid Plastic
 
->Note 2: The order is defined by the user. Because the plastic routines need stresses to work, make sure the materials which provide these stresses are before the plastic models.
+!!! warning "Model order"
+    The order is defined by the user. Because the plastic routines need stresses to work, make sure the materials which provide these stresses are before the plastic models.
 
 

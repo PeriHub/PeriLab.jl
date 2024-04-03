@@ -1,0 +1,116 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1:
+      Damage Model: Damage
+      Density: 2.81e-09
+      Horizon: 5.533088235294117
+      Material Model: Aluminium
+    block_2:
+      Density: 2.81e-09
+      Horizon: 5.533088235294117
+      Material Model: Aluminium
+    block_3:
+      Density: 2.81e-09
+      Horizon: 5.533088235294117
+      Material Model: Aluminium
+    block_4:
+      Density: 2.81e-09
+      Horizon: 5.533088235294117
+      Material Model: Aluminium
+    block_5:
+      Density: 2.81e-09
+      Horizon: 5.533088235294117
+      Material Model: Aluminium
+  Boundary Conditions:
+    BC_1:
+      Coordinate: x
+      Node Set: Node Set 1
+      Type: Displacements
+      Value: 0
+    BC_2:
+      Coordinate: y
+      Node Set: Node Set 1
+      Type: Displacements
+      Value: 3000*t
+    BC_3:
+      Coordinate: x
+      Node Set: Node Set 2
+      Type: Displacements
+      Value: 0
+    BC_4:
+      Coordinate: y
+      Node Set: Node Set 2
+      Type: Displacements
+      Value: -3000*t
+  Compute Class Parameters:
+    External_Displacement:
+      Block: block_3
+      Calculation Type: Minimum
+      Compute Class: Block_Data
+      Variable: Displacements
+    External_Force:
+      Block: block_3
+      Calculation Type: Sum
+      Compute Class: Block_Data
+      Variable: Forces
+  Discretization:
+    Bond Filters:
+      bf_1:
+        Bottom Length: 56.75
+        Bottom Unit Vector X: 1.0
+        Bottom Unit Vector Y: 0.0
+        Bottom Unit Vector Z: 0.0
+        Lower Left Corner X: -0.5
+        Lower Left Corner Y: 0.0
+        Lower Left Corner Z: -1.0
+        Normal X: 0.0
+        Normal Y: 1.0
+        Normal Z: 0.0
+        Side Length: 2.0
+        Type: Rectangular_Plane
+    Input Mesh File: CompactTension.txt
+    Node Sets:
+      Node Set 1: ns_CompactTension_1.txt
+      Node Set 2: ns_CompactTension_2.txt
+    Type: Text File
+  Outputs:
+    Output1:
+      Number of Output Steps: 10
+      Output File Type: Exodus
+      Output Filename: aniso_damage
+      Output Variables:
+        Angles: true
+        Damage: true
+        Displacements: true
+        External_Displacement: true
+        External_Force: true
+        Forces: true
+        # Orientations: true
+  Physics:
+    Damage Models:
+      Damage:
+        Anisotropic Damage:
+          Critical Value X: 2
+          Critical Value Y: 0.5
+        Critical Value: 10.0
+        Damage Model: Critical Energy
+    Material Models:
+      Aluminium:
+        Material Model: PD Solid Elastic
+        Poisson's Ratio: 0.33
+        Symmetry: isotropic plane stress
+        Young's Modulus: 70000.0
+        Zero Energy Control: Global
+  Solver:
+    Damage Models: true
+    Final Time: 0.00005
+    Initial Time: 0.0
+    Material Models: true
+    Numerical Damping: 5.0e-06
+    Thermal Models: false
+    Verlet:
+      Safety Factor: 0.95
