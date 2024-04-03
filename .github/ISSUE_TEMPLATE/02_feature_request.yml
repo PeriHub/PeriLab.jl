@@ -35,7 +35,6 @@ body:
     id: pr-submit
     attributes:
       label: If the feature request is approved, would you be willing to submit a PR?
-      multiple: false
       options:
         - Yes
         - No
