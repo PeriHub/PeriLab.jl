@@ -23,6 +23,10 @@ makedocs(
         "First Steps with PeriLab"=>"man/basics.md",
         "User Guide"=>Any[
             "Getting Started"=>"man/getting_started.md",
+            "Development"=>Any[
+                "Guide"=>"man/developement_guide.md",
+                "Module integration"=>"man/module_integration.md",
+            ],
             "Input File"=>"man/input_yaml.md",
             "Mesh and Nodesets"=>"man/mesh_input.md",
             "Bond-Filter"=>"man/bond_filter.md",
@@ -52,6 +56,7 @@ makedocs(
             # "Metadata" => "lib/metadata.md",
             # hide("Internals" => "lib/internals.md"),
         ],
+        "Glossar"=>"lib/glossar.md",
         "References"=>"lib/references.md",
         "Dev Log"=>"devLog.md",
         "FAQ"=>"lib/faq.md",
