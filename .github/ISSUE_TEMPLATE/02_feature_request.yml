@@ -38,8 +38,7 @@ body:
       multiple: false
       options:
         - Yes
-        - Yes, but I need help
         - No
-      default: 2
+      default: 1
     validations:
       required: true
