@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+name: 🚀 Feature request
+description: If you have a feature request 💡
+title: "[feature]: "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this feature request form!
+  - type: textarea
+    id: what
+    attributes:
+      label: What are you trying to do and how would you want to do it differently?
+      value: "I would like to ..."
+    validations:
+      required: true
+  - type: textarea
+    id: related
+    attributes:
+      label: Is it something you currently you cannot do? Is this related to an issue/problem?
+    validations:
+      required: false
+  - type: textarea
+    id: idea
+    attributes:
+      label: Implementation details
+      description: "Let us know if you already have an idea for how to implement this feature."
+      render: bash
+    validations:
+      required: false
+  - type: dropdown
+    id: pr
+    attributes:
+      label: If the feature request is approved, would you be willing to submit a PR?
+      multiple: false
+      options:
+        - Yes
+        - Yes, but I need help
+        - No
