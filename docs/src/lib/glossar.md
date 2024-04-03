@@ -1,10 +1,10 @@
 # Glossar
 
-# Abbreviations
+## Abbreviations
 | Abbreviation | Full |
 |---|---|
 | PD | Peridynamics |
-# Variables
+## Variables
 | Parameter|Name |
 |---|---|
 | $\mathcal{H}$| Neighborhood [-]|
