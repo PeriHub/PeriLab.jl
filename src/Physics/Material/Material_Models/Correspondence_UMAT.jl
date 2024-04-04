@@ -6,7 +6,7 @@ module Correspondence_UMAT
 include("../material_basis.jl")
 include("../../../Support/geometry.jl")
 include("./Zero_Energy_Control/global_control.jl")
-using global_zero_energy_control: global_zero_energy_mode_stiffness
+using .Global_zero_energy_control: global_zero_energy_mode_stiffness
 export fe_support
 export init_material_model
 export correspondence_name
@@ -221,7 +221,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
     stress_NP1[iID, :, :] = UMAT_interface
     rotNP1[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
     UMAT_interface(material_parameter["file"], stress_temp, statev[iID, :], DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temperature_N[iID], temperature_increment[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, props, nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0, DFGRD1, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
-    zstiff[iID]=global_zero_energy_control.global_zero_energy_mode_stiffness(iID, dof, DDSDDE, Kinv)
+    zstiff[iID]=Global_zero_energy_control.global_zero_energy_mode_stiffness(iID, dof, DDSDDE, Kinv)
     stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
   end
 

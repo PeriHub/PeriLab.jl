@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module global_zero_energy_control
+module Global_zero_energy_control
 include("../../../../Support/helpers.jl")
 using Reexport
 @reexport using .Helpers

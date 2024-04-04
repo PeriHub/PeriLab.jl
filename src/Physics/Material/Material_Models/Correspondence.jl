@@ -10,7 +10,7 @@ include("Correspondence_Elastic.jl")
 include("./Zero_Energy_Control/global_control.jl")
 include("../material_basis.jl")
 include("../../../Support/geometry.jl")
-using .global_zero_energy_control
+using .Global_zero_energy_control
 using .Correspondence_Elastic
 
 
@@ -169,8 +169,8 @@ function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArra
     end
     return datamanager
   end
-  if material_parameter["Zero Energy Control"] == global_zero_energy_control.control_name()
-    datamanager = global_zero_energy_control.compute_control(datamanager, nodes, material_parameter, time, dt)
+  if material_parameter["Zero Energy Control"] == Global_zero_energy_control.control_name()
+    datamanager = Global_zero_energy_control.compute_control(datamanager, nodes, material_parameter, time, dt)
   end
   return datamanager
 end
