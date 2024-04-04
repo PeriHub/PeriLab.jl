@@ -56,6 +56,10 @@ Welcome to `PeriLab`, a powerful software solution designed for tackling Peridyn
 
 Explore the comprehensive [documentation](https://perihub.github.io/PeriLab.jl/) for `PeriLab`
 
+## Examples
+
+A few basic examples of `PeriLab` can be found in the [examples](https://github.com/PeriHub/PeriLab.jl/tree/main/examples) directory, or if you want to have a look at results go to our growing [PeriLab-Results service](https://perilab-results.nimbus-extern.dlr.de) 
+
 ## Features ⭐
 
 - 🚀 **Easy Installation**: PeriLab's straightforward installation process makes it accessible for researchers and engineers without extensive computational expertise.

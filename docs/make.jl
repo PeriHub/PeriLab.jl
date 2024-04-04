@@ -43,10 +43,11 @@ makedocs(
                 "Non-Ordinary state-based"=>"theory/theory_correspondence.md",
             ],
         ],
+        "FAQ"=>"lib/faq.md",
         "Glossar"=>"lib/glossar.md",
         "References"=>"lib/references.md",
+        "Useful Links"=>"lib/links.md",
         # "Dev Log"=>"devLog.md",
-        "FAQ"=>"lib/faq.md",
         "Development"=>Any[
             "Guide"=>"man/dev/developement_guide.md",
             "Datamanager"=>"man/dev/datamanager.md",
