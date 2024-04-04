@@ -277,13 +277,6 @@ UMAT interface
 - `datamanager`: Datamanager
 """
 function UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
-
-
-  # TODO dynamicall change folders and subroutine name
-  # ccall((:umattest_, "./src/Physics/Material/UMATs/libusertest.so"), Cvoid, (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64}, Ref{Float64},
-  #sub_name = set_subroutine_caller(function_name)
-  #test=":umattest_"
-  #f=eval(:test)
   expr = :(ccall((:umat_, $filename), Cvoid,
     (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64}, Ref{Float64},
       Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64},
@@ -294,11 +287,6 @@ function UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vecto
     $NSHR, $NTENS, $NSTATEV, $PROPS, $NPROPS, $COORDS, $DROT, $PNEWDT, $CELENT, $DFGRD0, $DFGRD1, $NOEL, $NPT, $LAYER, $KSPT, $JSTEP, $KINC))
   eval(expr)
 end
-
-
-# TODO Subroutine not hard coded
-# # sub_name::Symbol = set_subroutine_caller(function_name)    
-
 
 """
 function set_subroutine_caller(sub_name::String)
