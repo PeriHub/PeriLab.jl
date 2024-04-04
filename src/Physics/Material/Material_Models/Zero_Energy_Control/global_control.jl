@@ -12,6 +12,7 @@ using TensorOperations
 using .Geometry
 export control_name
 export compute_control
+export global_zero_energy_mode_stiffness
 
 """
     control_name()
@@ -46,7 +47,9 @@ function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness", Float64, "Matrix", dof)
     rotation::Bool, angles = datamanager.rotation_data()
     CVoigt = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
-    zStiff = create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff, rotation)
+    if !haskey(material_parameter,"UMAT Material Name")
+        zStiff = create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff, rotation)
+    end
     bond_force = get_zero_energy_mode_force(nodes, zStiff, deformation_gradient, undeformed_bond, deformed_bond, bond_force)
     return datamanager
 end
@@ -113,11 +116,31 @@ Creates the zero energy mode stiffness
 function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, Kinv::SubArray, zStiff::SubArray)
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
-        @tensor begin
-            zStiff[iID, i, j] = C[i, j, k, l] * Kinv[iID, k, l]
-        end
+        zStiff[iID, i, j] = global_zero_energy_mode_stiffness(iID, dof, CVoigt, Kinv)
     end
     return zStiff
+end
+
+"""
+global_zero_energy_mode_stiffness(id::Int64,dof::Int64, CVoigt, Kinv)
+
+Creates the zero energy mode stiffness, based on the UMAT interface
+
+# Arguments
+- `ID::Int64` : ID of the node
+- `dof::Int64`: The degree of freedom
+- `CVoigt::Union{StaticArraysCore.MMatrix, Matrix{Float64}}`: The Voigt matrix
+- `Kinv::SubArray`: The inverse shape tensor
+- `zStiff::SubArray`: The zero energy stiffness
+# Returns
+- `zStiff::SubArray`: The zero energy stiffness
+"""
+function global_zero_energy_mode_stiffness(id::Int64, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, Kinv::SubArray)
+    C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
+    return @tensor begin
+      C[i, j, k, l] * Kinv[ID, k, l]
+    end
+    
 end
 
 """
