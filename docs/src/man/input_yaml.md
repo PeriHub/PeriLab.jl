@@ -2,6 +2,8 @@
 
 The PeriLab configuration file is a YAML file used to specify the parameters for running simulations in the PeriLab software. This structure represents the global configuration for PeriLab.
 
+The information is stored in the [params dictionary](@ref "Parameters")
+
 ## `PeriLab`
 
 - **Blocks**: List of block configurations.
