@@ -41,6 +41,7 @@ One of theses parameters have to be defined.
 ## PD Solid Elastic
 
 The [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl) module calculates the isotropic linear elastic material law for a peridynamic solid material. The underlying theory can be found [here](@ref "Ordinary state-based Peridynamics").
+
 | Parameter | Unit | Description |
 |---|---|---|
 |Youngs Modulus | $\left[N/m^2\right]$| [Young's modulus](https://en.wikipedia.org/wiki/Young%27s_modulus) or elasticity modulus

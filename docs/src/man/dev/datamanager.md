@@ -1,7 +1,7 @@
 # Datamanager
 The datamanager is a central part of PeriLab. You can create fields as you need them. 
 ## Create constant node fields
-Constant node fields are fields with the length of the number of nodes. It return one vector of type Type_of_variable. 
+Constant node fields are fields with the length of the number of nodes. It return one vector of type `Type_of_variable`. 
 
 ```julia
 field = datamanager.create_constant_node_field(Fieldname::String, Type_of_variable::Type, Degree_of_freedom::Int64)
@@ -19,7 +19,8 @@ You will get a field with N and N+1 created it by this command
 ```julia
 fieldN, fieldNP1 = datamanager.create_node_field(Fieldname::String, Type_of_variable::Type, Degree_of_freedom::Int64)
 ```
-!!! info "Switch values" The non-constant fields are switched automatically at the end of each time integration step. At the beginning of the next step NP1 is zero, wheras N is the NP1 from the previous step.
+!!! info "Switch values" 
+    The non-constant fields are switched automatically at the end of each time integration step. At the beginning of the next step NP1 is zero, wheras N is the NP1 from the previous step.
 
 You can get non-constant fields as   
 ```julia
@@ -29,7 +30,7 @@ fieldN = datamanager.get_field(Fieldname*"N"::String)
 fieldNP1 = datamanager.get_field(Fieldname*"NP1"::String)
 ```
 ## Create constant bond fields
-Constant bond fields are fields with the length of the number of nodes. Each node has a vector of lenght number of neighbors or bonds with a defined degree of freedom. It return one vector of type Type_of_variable.
+Constant bond fields are fields with the length of the number of nodes. Each node has a vector of lenght number of neighbors or bonds with a defined degree of freedom. It return one vector of type `Type_of_variable`.
 
 ```julia
 field = datamanager.create_constant_node_field(Fieldname::String, Type_of_variable::Type, Degree_of_freedom::Int64)
@@ -42,12 +43,13 @@ field = datamanager.get_field(Fieldname::String)
 
 ## Create non-constant bond fields
 Non-constant node fields are fields with the length of the number of nodes. Each node has a vector of lenght number of neighbors or bonds with a defined degree of freedom. 
-You will get a field of type Type_of_variable with N and N+1 created it by this command
+You will get a field of type `Type_of_variable` with N and N+1 created it by this command
 
 ```julia
 fieldN, fieldNP1 = datamanager.create_bond_field(Fieldname::String, Type_of_variable::Type, Degree_of_freedom::Int64)
 ```
-!!! info "Switch values" The non-constant fields are switched automatically at the end of each time integration step. At the beginning of the next step NP1 is zero, wheras N is the NP1 from the previous step.
+!!! info "Switch values" 
+    The non-constant fields are switched automatically at the end of each time integration step. At the beginning of the next step NP1 is zero, wheras N is the NP1 from the previous step.
 
 You can get non-constant fields as   
 ```julia

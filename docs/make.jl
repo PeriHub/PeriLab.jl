@@ -23,11 +23,6 @@ makedocs(
         "First Steps with PeriLab"=>"man/basics.md",
         "User Guide"=>Any[
             "Getting Started"=>"man/getting_started.md",
-            "Development"=>Any[
-                "Guide"=>"man/dev/developement_guide.md",
-                "Datamanager"=>"man/dev/datamanager.md",
-                "Module integration"=>"man/dev/module_integration.md",
-            ],
             "Input File"=>"man/input_yaml.md",
             "Mesh and Nodesets"=>"man/mesh_input.md",
             "Bond-Filter"=>"man/bond_filter.md",
@@ -48,6 +43,15 @@ makedocs(
                 "Non-Ordinary state-based"=>"theory/theory_correspondence.md",
             ],
         ],
+        "Glossar"=>"lib/glossar.md",
+        "References"=>"lib/references.md",
+        # "Dev Log"=>"devLog.md",
+        "FAQ"=>"lib/faq.md",
+        "Development"=>Any[
+            "Guide"=>"man/dev/developement_guide.md",
+            "Datamanager"=>"man/dev/datamanager.md",
+            "Module integration"=>"man/dev/module_integration.md",
+        ],
         "API"=>Any[
             # "Types" => "lib/types.md",
             "Functions"=>"lib/functions.md",
@@ -57,10 +61,6 @@ makedocs(
             # "Metadata" => "lib/metadata.md",
             # hide("Internals" => "lib/internals.md"),
         ],
-        "Glossar"=>"lib/glossar.md",
-        "References"=>"lib/references.md",
-        "Dev Log"=>"devLog.md",
-        "FAQ"=>"lib/faq.md",
     ]
 )
 deploydocs(

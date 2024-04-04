@@ -37,11 +37,10 @@ package:
 using PeriLab
 ```
 If you want to make sure everything works as expected you can run the tests
-bundled with PeriLab, but be warned that it will take more than 30
-minutes:
+bundled with PeriLab:
 
 ```julia
 using Pkg
 
-Pkg.test("PeriLab") # Warning! This will take a few minutes.
+Pkg.test("PeriLab") # This will take a few minutes.
 ```
