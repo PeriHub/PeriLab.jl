@@ -160,10 +160,22 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
         end
         if !isempty(overlapnodes[rank+1][jcore]["Responder"])
             recv_index = overlapnodes[rank+1][jcore]["Responder"]
+            # if dof == 1
+            #     MPI.Recv!(vector[recv_index], comm; source=jcore - 1, tag=0)
+            # else
+            #     MPI.Recv!(vector[recv_index, :], comm; source=jcore - 1, tag=0)
+            # end
+
             if dof == 1
-                MPI.Recv!(vector[recv_index], comm; source=jcore - 1, tag=0)
+                recv_msg = similar(vector[recv_index])
             else
-                MPI.Recv!(vector[recv_index, :], comm; source=jcore - 1, tag=0)
+                recv_msg = similar(vector[recv_index, :])
+            end
+            MPI.Recv!(recv_msg, comm; source=jcore - 1, tag=0)
+            if dof == 1
+                vector[recv_index] .= recv_msg
+            else
+                vector[recv_index, :] .= recv_msg
             end
         end
     end
@@ -281,22 +293,23 @@ function synch_controller_bonds_to_responder_flattened(comm::MPI.Comm, overlapno
         end
         if !isempty(overlapnodes[rank+1][jcore]["Responder"])
             recv_indices = overlapnodes[rank+1][jcore]["Responder"]
-            # row_nums = [length(subarr) for subarr in array[recv_indices]]
-            # recv_msg = zeros(sum(row_nums))
-            # MPI.Recv!(recv_msg, comm; source=jcore - 1, tag=0)
-            # recv_msg = split_vector(recv_msg, row_nums, dof)
+            row_nums = [length(subarr) for subarr in array[recv_indices]]
+            recv_msg = zeros(sum(row_nums))
+            MPI.Recv!(recv_msg, comm; source=jcore - 1, tag=0)
+            recv_msg = split_vector(recv_msg, row_nums, dof)
+            array[recv_indices] .= recv_msg
             # if dof == 1
             #     array[recv_indices] .= recv_msg
             # else
             #     array[recv_indices] .= recv_msg
             # end
-            recv_msg = similar(array[recv_indices])
-            row_starts = cumsum([size(array[i], 1) for i in recv_indices])
-            row_starts = [0; row_starts[1:end-1]]
-            MPI.Recv!(recv_msg, comm, source=jcore - 1, tag=0)
-            for (i, idx) in enumerate(recv_indices)
-                array[idx] .= recv_msg[row_starts[i]+1:row_starts[i]+size(array[idx], 1), :]
-            end
+            # recv_msg = similar(array[recv_indices])
+            # row_starts = cumsum([size(array[i], 1) for i in recv_indices])
+            # row_starts = [0; row_starts[1:end-1]]
+            # MPI.Recv!(recv_msg, comm, source=jcore - 1, tag=0)
+            # for (i, idx) in enumerate(recv_indices)
+            #     array[idx] .= recv_msg[row_starts[i]+1:row_starts[i]+size(array[idx], 1), :]
+            # end
         end
     end
     return array
