@@ -201,7 +201,7 @@ function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, syn
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field)
             if occursin("Bond", synch_field)
-                return synch_controller_bonds_to_responder(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+                return synch_controller_bonds_to_responder_flattened(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
             else
                 return synch_controller_to_responder(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
             end

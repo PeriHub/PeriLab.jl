@@ -150,7 +150,6 @@ Entry point for the PeriLab application.
 This function serves as the entry point for the PeriLab application. It calls the core `main` function with the provided arguments.
 """
 function main()::Cint
-    atexit(() -> @info "Finished PeriLab")
     parsed_args = parse_commandline()
     @debug "Parsed args:"
     for (arg, val) in parsed_args
@@ -205,6 +204,8 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
         outputs = nothing
 
         try
+            # atexit(() -> cleanup(comm))
+
             Logging_module.init_logging(filename, debug, silent, rank, size)
             if rank == 0
                 if !silent

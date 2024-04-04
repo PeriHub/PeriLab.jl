@@ -105,11 +105,8 @@ synch_controller_to_responder
 synch_controller_bonds_to_responder
 split_vector
 synch_controller_bonds_to_responder_flattened
-send_vectors_to_cores
 send_vector_from_root_to_core_i
 send_value
-get_vector
-recv_vector_from_root
 find_and_set_core_value_min
 find_and_set_core_value_max
 find_and_set_core_value_sum
