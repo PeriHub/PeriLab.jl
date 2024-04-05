@@ -20,10 +20,10 @@ Calculate the global value of a field for a given set of nodes.
 function calculate_nodelist(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, node_set::Vector{Int64})
     # get block_nodes
     # check NP1
-    if fieldKey * "NP1" in datamanager.get_all_field_keys()
+    if datamanager.has_key(fieldKey * "NP1")
         fieldKey *= "NP1"
     end
-    if !(fieldKey in datamanager.get_all_field_keys())
+    if !datamanager.has_key(fieldKey)
         @error "Field $fieldKey does not exists for compute sum."
         return nothing
     end
@@ -76,10 +76,10 @@ Calculate the global value of a field for a given block.
 function calculate_block(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, block::Int64)
     # get block_nodes
     # check NP1
-    if fieldKey * "NP1" in datamanager.get_all_field_keys()
+    if datamanager.has_key(fieldKey * "NP1")
         fieldKey *= "NP1"
     end
-    if !(fieldKey in datamanager.get_all_field_keys())
+    if !datamanager.has_key(fieldKey)
         @error "Field $fieldKey does not exists for compute sum."
         return nothing
     end

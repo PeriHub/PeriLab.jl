@@ -133,7 +133,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 end
 
 """
-    determine_isotropic_parameter(prop::Dict)
+    determine_isotropic_parameter(datamanager::Module, prop::Dict)
 
 Determine the isotropic parameter.
 
@@ -142,8 +142,8 @@ Determine the isotropic parameter.
 # Returns
 - `prop::Dict`: The material property.
 """
-function determine_isotropic_parameter(prop::Dict)
-    get_all_elastic_moduli(prop)
+function determine_isotropic_parameter(datamanager::Module, prop::Dict)
+    get_all_elastic_moduli(datamanager, prop)
 end
 
 """

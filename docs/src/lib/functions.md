@@ -19,6 +19,7 @@ create_constant_node_field
 create_field
 create_node_field
 get_all_field_keys
+has_key
 get_block_list
 get_crit_values_matrix
 get_aniso_crit_values

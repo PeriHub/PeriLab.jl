@@ -297,7 +297,7 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
         dof = datamanager.get_dof()
         for block in blocks
             Material.check_material_symmetry(dof, datamanager.get_properties(block, "Material Model"))
-            Material.determine_isotropic_parameter(datamanager.get_properties(block, "Material Model"))
+            Material.determine_isotropic_parameter(datamanager, datamanager.get_properties(block, "Material Model"))
         end
     end
     return datamanager

@@ -26,7 +26,7 @@ Initialize additive model fields
 - `datamanager::Data_manager`: Datamanager.
 """
 function init_additive_model_fields(datamanager::Module)
-    if !("Activation_Time" in datamanager.get_all_field_keys())
+    if !datamanager.has_key("Activation_Time")
         @error "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file."
     end
     # must be specified, because it might be that no temperature model has been defined
@@ -35,7 +35,7 @@ function init_additive_model_fields(datamanager::Module)
     bond_damageN = datamanager.get_bond_damage("N")
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
     nnodes = datamanager.get_nnodes()
-    if !("Active" in datamanager.get_all_field_keys())
+    if !datamanager.has_key("Active")
         active = datamanager.create_constant_node_field("Active", Bool, 1, false)
         for iID in 1:nnodes
             bond_damageN[iID] .= 0

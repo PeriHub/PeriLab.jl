@@ -4,68 +4,75 @@
 using LinearAlgebra
 using StaticArrays
 
+function get_value(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}}, key::String, field_allocated::Bool)
+    if field_allocated
+        return datamanager.get_field(key)
+    end
+    if haskey(parameter, key)
+        return parameter[key]
+    end
+    return nothing
+end
+
 """
-    get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
+    get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}})
 
 Returns the elastic moduli of the material.
 
 # Arguments
 - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
 """
-function get_all_elastic_moduli(parameter::Union{Dict{Any,Any},Dict{String,Any}})
+function get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}})
     if haskey(parameter, "Computed")
         if parameter["Computed"]
             return nothing
         end
     end
-    K::Float64 = 0
-    E::Float64 = 0
-    nu::Float64 = 0
-    G::Float64 = 0
     bulk = false
     Youngs = false
     shear = false
     Poissons = false
-    if haskey(parameter, "Bulk Modulus")
-        K = parameter["Bulk Modulus"]
-        bulk = true
-    end
-    if haskey(parameter, "Young's Modulus")
-        E = parameter["Young's Modulus"]
-        Youngs = true
-    end
-    if haskey(parameter, "Shear Modulus")
-        G = parameter["Shear Modulus"]
-        shear = true
-    end
-    if haskey(parameter, "Poisson's Ratio")
-        nu = parameter["Poisson's Ratio"]
-        Poissons = true
-    end
+    field_allocated = false
+
+    bulk_field = datamanager.has_key("Bulk Modulus")
+    Youngs_field = datamanager.has_key("Young's Modulus")
+    Poissons_field = datamanager.has_key("Poisson's Ratio")
+    shear_field = datamanager.has_key("Shear Modulus")
+
+    bulk = haskey(parameter, "Bulk Modulus") | bulk_field
+    Youngs = haskey(parameter, "Young's Modulus") | Youngs_field
+    Poissons = haskey(parameter, "Poisson's Ratio") | Poissons_field
+    shear = haskey(parameter, "Shear Modulus") | shear_field
+
+    K = get_value(datamanager, parameter, "Bulk Modulus", bulk_field)
+    E = get_value(datamanager, parameter, "Young's Modulus", Youngs_field)
+    G = get_value(datamanager, parameter, "Shear Modulus", shear_field)
+    nu = get_value(datamanager, parameter, "Poisson's Ratio", Poissons_field)
+
     if bulk && Poissons
-        E = 3 * K * (1 - 2 * nu)
-        G = 3 * K * (1 - nu / (2 + 2 * nu))
+        E = 3 .* K .* (1 .- 2 .* nu)
+        G = 3 .* K .* (1 .- nu ./ (2 .+ 2 .* nu))
     end
     if shear && Poissons
-        E = 2 * G * (1 + nu)
-        K = 2 * G * (1 + nu) / (3 - 6 * nu)
+        E = 2 .* G .* (1 .+ nu)
+        K = 2 .* G .* (1 .+ nu) ./ (3 .- 6 .* nu)
     end
     if bulk && shear
-        E = 9 * K * G / (3 * K + G)
-        nu = (3 * K - 2 * G) / (6 * K + 2 * G)
+        E = 9 .* K .* G ./ (3 .* K .+ G)
+        nu = (3 .* K .- 2 .* G) ./ (6 .* K .+ 2 .* G)
     end
     if Youngs && shear
-        K = E * G / (9 * G - 3 * E)
-        nu = E / (2 * G) - 1
+        K = E .* G ./ (9 .* G .- 3 .* E)
+        nu = E ./ (2 .* G) .- 1
     end
 
     if Youngs && bulk
-        G = 3 * K * E / (9 * K - E)
-        nu = (3 * K - E) / (6 * K)
+        G = 3 .* K .* E ./ (9 .* K .- E)
+        nu = (3 .* K .- E) ./ (6 .* K)
     end
     if Youngs && Poissons
-        K = E / (3 - 6 * nu)
-        G = E / (2 + 2 * nu)
+        K = E ./ (3 .- 6 .* nu)
+        G = E ./ (2 .+ 2 .* nu)
     end
     # tbd non isotropic material check
     if bulk + Youngs + shear + Poissons < 2

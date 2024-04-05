@@ -13,6 +13,7 @@ export create_node_field
 export fem_active
 export clear_data_manager
 export get_all_field_keys
+export has_key
 export get_block_list
 export get_crit_values_matrix
 export get_aniso_crit_values
@@ -368,6 +369,16 @@ Returns a list of all field keys.
 function get_all_field_keys()
     global field_types
     return collect(keys(field_types))
+end
+
+"""
+    has_key(field_name::String)
+
+Control if a key exists.
+"""
+function has_key(field_name::String)
+    global field_types
+    return haskey(field_types, field_name)
 end
 
 """

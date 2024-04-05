@@ -105,7 +105,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
         end
     end
 
-    if "Deformation Gradient" in datamanager.get_all_field_keys()
+    if datamanager.has_key("Deformation Gradient")
         datamanager = Deformation_Gradient.compute(datamanager, nodes)
     end
 

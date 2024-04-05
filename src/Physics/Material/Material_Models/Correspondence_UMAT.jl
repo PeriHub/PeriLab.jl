@@ -107,7 +107,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     field_names = split(material_parameter["Predefined Field Names"], " ")
     fields = datamanager.create_constant_node_field("Predefined Fields", Float64, length(field_names))
     for (id, field_name) in enumerate(field_names)
-      if !(field_name in datamanager.get_all_field_keys())
+      if !datamanager.has_key(String(field_name))
         @error "Predefined field ''$field_name'' is not defined in the mesh file."
         return nothing
       end

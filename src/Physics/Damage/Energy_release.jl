@@ -62,7 +62,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     bond_damage = datamanager.get_bond_damage("NP1")
     aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
     if aniso_damage
-        if "Bond Damage AnisotropicNP1" in datamanager.get_all_field_keys()
+        if datamanager.has_key("Bond Damage AnisotropicNP1")
             bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
         else
             aniso_damage = false
@@ -79,7 +79,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     inverse_nlist = datamanager.get_inverse_nlist()
     dependend_value::Bool = false
     if haskey(damage_parameter, "Temperature dependend")
-        if !(damage_parameter["Temperature dependend"]["Field key"] in datamanager.get_all_field_keys())
+        if !datamanager.has_key(damage_parameter["Temperature dependend"]["Field key"])
             @error "Critical Value key " * damage_parameter["Temperature dependend"]["Field key"] * " does not exist for value interpolation in damage model."
             return nothing
         end
