@@ -11,6 +11,9 @@ Copy the template and put it in the folder. Change all the functions and give th
 !!! info "Automatic Integration" 
     In PeriLab makros are used to automatically integrate your model.
 
+## Parameter
+In PeriLab a field called params exists. This field provides all the material information. The structure is given [here](@ref "Parameters")
+
 ## Init function
 The init function is used to read and check the  properties provided by the yaml. It should be done there, because if the compute function is used, this check is done in every time step. Also specific fields can be defined here as well.
 
