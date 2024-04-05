@@ -27,17 +27,17 @@ PeriLab:
     BC_1:
       Coordinate: x
       Node Set: Node Set 1
-      Type: Displacements
+      Variable: Displacements
       Value: 0
     BC_2:
       Coordinate: x
       Node Set: Node Set 2
-      Type: Displacements
+      Variable: Displacements
       Value: 10*t
     BC_3:
       Coordinate: y
       Node Set: Node Set 2
-      Type: Displacements
+      Variable: Displacements
       Value: 10*t
   Blocks:
     block_1:

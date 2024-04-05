@@ -43,11 +43,11 @@ PeriLab:
       Specific Heat Capacity: 0.33
   Boundary Conditions:
     BC_1:
-      Type: "Temperature"
+      Variable: "Temperature"
       Node Set: "Node Set 1"
       Value: "10"
     BC_2:
-      Type: "Temperature"
+      Variable: "Temperature"
       Node Set: "Node Set 2"
       Value: "0.0"
   Solver:

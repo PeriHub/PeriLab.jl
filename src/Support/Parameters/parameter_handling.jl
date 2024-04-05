@@ -36,7 +36,8 @@ global expected_structure = Dict(
                     "Any" => [Dict{Any,Any}(
                             "Coordinate" => [String, false],
                             "Node Set" => [String, true],
-                            "Type" => [String, true],
+                            "Variable" => [String, true],
+                            "Type" => [String, false],
                             "Value" => [Union{Float64,Int64,String}, true],
                         ), true],
                 ), false],
@@ -174,7 +175,7 @@ global expected_structure = Dict(
                         ), false],
                 ), true],
             "Solver" => [Dict{Any,Any}(
-                     "Material Models" => [Bool, false],
+                    "Material Models" => [Bool, false],
                     "Damage Models" => [Bool, false],
                     "Maximum Damage" => [Float64, false],
                     "Thermal Models" => [Bool, false],

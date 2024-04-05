@@ -111,6 +111,7 @@ end
 
 @testset "get_Hooke_matrix" begin
     test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     parameter = Dict{String,Any}("Bulk Modulus" => 5, "Shear Modulus" => 1.25, "Poisson's Ratio" => 0.2)
     get_all_elastic_moduli(test_Data_manager, parameter)
 

@@ -34,15 +34,15 @@ PeriLab:
     BC_1:
       Coordinate: y
       Node Set: Node Set 1
-      Type: Displacements
+      Variable: Displacements
       Value: -4.4*t
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
-      Type: Displacements
+      Variable: Displacements
       Value: 4.4*t
     BC_3:
-      Type: "Temperature"
+      Variable: "Temperature"
       Node Set: "Node Set 3"
       Value: "0"
   Compute Class Parameters:

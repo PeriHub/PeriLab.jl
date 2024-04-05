@@ -273,12 +273,12 @@ PeriLab:
       Density: 2.7e-9
   Boundary Conditions:
     Displacement-1:
-      Type: Displacements
+      Variable: Displacements
       Node Set: Extruded_1
       Coordinate: x
       Value: 833.333*t
     Displacement-2:
-      Type: Displacements
+      Variable: Displacements
       Node Set: Extruded_2
       Coordinate: x
       Value: 0.0

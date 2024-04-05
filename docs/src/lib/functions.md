@@ -104,7 +104,8 @@ CurrentModule = PeriLab.Solver.Boundary_conditions
 check_valid_bcs
 init_BCs
 boundary_condition
-apply_bc
+apply_bc_dirichlet
+apply_bc_neumann
 clean_up
 eval_bc
 ```

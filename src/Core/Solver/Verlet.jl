@@ -21,7 +21,7 @@ include("../BC_manager.jl")
 include("../../Physics/Physics_Factory.jl")
 include("../../IO/logging.jl")
 using .Physics
-using .Boundary_conditions: apply_bc
+using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann
 using .Helpers: matrix_style
 using .Logging_module: print_table
 export init_solver
@@ -424,7 +424,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             if solver_options["Corrosion Models"]
                 concentrationNP1[nodes] = concentrationN[nodes] + delta_concentration[nodes]
             end
-            @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
+            @timeit to "apply_bc_dirichlet" datamanager = Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
             #if solver_options["Material Models"]
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
@@ -437,7 +437,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
 
             @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field, "download_from_cores")
             # synch
-            @timeit to "second apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
+            @timeit to "second apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, step_time) #-> von neumann
 
             if solver_options["Material Models"]
                 check_inf_or_nan(forces_density, "Forces")

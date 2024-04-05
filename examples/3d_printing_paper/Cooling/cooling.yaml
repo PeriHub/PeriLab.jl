@@ -27,7 +27,7 @@ PeriLab:
       Specific Heat Capacity: 1800.
   Boundary Conditions:
     BC_1:
-      Type: "Initial Temperature"
+      Variable: "Initial Temperature"
       Node Set: "Node Set 1"
       Value: 373.15
   Solver:

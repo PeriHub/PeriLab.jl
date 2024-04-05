@@ -279,11 +279,11 @@ end
     params = Dict("Boundary Conditions" => Dict())
     bcs = PeriLab.Solver.Parameter_Handling.get_bc_definitions(params)
     @test length(bcs) == 0
-    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")))
+    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Variable" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")))
     bcs = PeriLab.Solver.Parameter_Handling.get_bc_definitions(params)
     @test length(bcs) == 2
-    @test bcs["BC_1"] == Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t")
-    @test bcs["BC_2"] == Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")
+    @test bcs["BC_1"] == Dict("Variable" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t")
+    @test bcs["BC_2"] == Dict("Variable" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "0")
 end
 @testset "ut_get_solver_options" begin
     params = Dict("Solver" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true))

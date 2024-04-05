@@ -155,7 +155,7 @@ end
 # test_Data_manager.set_nset("Nset_1", [1, 2, 3])
 # test_Data_manager.set_nset("Nset_2", [3, 4, 7, 10])
 # block_nodes = [1, 1, 2, 2, 1]
-# params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Type" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Type" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "5")))
+# params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Variable" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "5")))
 
 # bcs = Boundary_conditions.init_BCs(params, test_Data_manager)
 # result_files = []

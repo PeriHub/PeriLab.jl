@@ -243,7 +243,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         error_logger = FormatLogger(log_file; append=false) do io, args
             if args.level == Logging.Error
                 close_result_files(result_files)
-                throw(args.message)
+                throw(ErrorException(args.message))
             end
         end
         filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))

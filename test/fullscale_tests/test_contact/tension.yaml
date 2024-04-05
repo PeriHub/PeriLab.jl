@@ -45,12 +45,12 @@ PeriLab:
       Material Model: Mat_1
   Boundary Conditions:
     BC_1:
-      Type: "Displacements"
+      Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
       Value: "-0.001*t"
     BC_2:
-      Type: "Displacements"
+      Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "x"
       Value: "0.001*t"
@@ -67,4 +67,3 @@ PeriLab:
       Output Variables:
         Displacements: True
         Number of Neighbors: True
-        

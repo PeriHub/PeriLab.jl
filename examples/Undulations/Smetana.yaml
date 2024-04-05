@@ -64,12 +64,12 @@ PeriLab:
     BC_1:
       Coordinate: x
       Node Set: Node Set 1
-      Type: Displacements
+      Variable: Displacements
       Value: 6*t
     BC_2:
       Coordinate: x
       Node Set: Node Set 2
-      Type: Displacements
+      Variable: Displacements
       Value: "0.0"
   Compute Class Parameters:
     External_Displacements:

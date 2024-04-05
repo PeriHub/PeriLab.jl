@@ -33,17 +33,17 @@ PeriLab:
       Horizon: 2.1
   Boundary Conditions:
     BC_1:
-      Type: "Displacements"
+      Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
       Value: "0.1*y"
     BC_2:
-      Type: "Displacements"
+      Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "y"
       Value: "0.1*x"
     BC_3:
-      Type: "Displacements"
+      Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "z"
       Value: "0.0"

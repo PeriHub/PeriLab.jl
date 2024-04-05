@@ -25,6 +25,7 @@ The PeriLab configuration file is a YAML file used to specify the parameters for
 - *__Own_Name__*: List of boundary condition configurations.
   - **Coordinate**: String representing the coordinate.
   - **Node Set**: String representing the node set.
+  - **Variable**: String representing the variable.
   - **Type**: String representing the type of boundary condition.
   - **Value**: Numeric value, string, or a combination representing the boundary condition value. (Float64, Int64, String)
 

@@ -4,7 +4,8 @@
 
 module Boundary_conditions
 export init_BCs
-export apply_bc
+export apply_bc_dirichlet
+export apply_bc_neumann
 include("../Support/Parameters/parameter_handling.jl")
 using Reexport
 @reexport using .Parameter_Handling: get_bc_definitions
@@ -32,11 +33,11 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
         end
         valid = false
         for data_entry in datamanager.get_all_field_keys()
-            initial = occursin("Initial", bcs[bc]["Type"])
-            bc_type = replace(bcs[bc]["Type"], "Initial " => "")
-            if (occursin(bc_type, data_entry) && occursin("NP1", data_entry)) || bc_type == data_entry
+            initial = occursin("Initial", bcs[bc]["Variable"])
+            bc_variable = replace(bcs[bc]["Variable"], "Initial " => "")
+            if (occursin(bc_variable, data_entry) && occursin("NP1", data_entry)) || bc_variable == data_entry
                 working_bcs[bc] = bcs[bc]
-                bcs[bc]["Type"] = data_entry
+                bcs[bc]["Variable"] = data_entry
                 bcs[bc]["Initial"] = initial
                 valid = true
                 break
@@ -45,6 +46,11 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
         if !valid
             @error "Boundary condition $bc is not valid."
             return nothing
+        end
+
+        if !haskey(bcs[bc], "Type") || bcs[bc]["Type"] != "Dirichlet" && bcs[bc]["Type"] != "Neumann"
+            bcs[bc]["Type"] = "Dirichlet"
+            @warn "Missing boundary condition type for $bc. Assuming Dirichlet."
         end
     end
     return working_bcs
@@ -105,7 +111,7 @@ function boundary_condition(params::Dict, datamanager)
 end
 
 """
-    apply_bc(bcs::Dict, datamanager::Module, time::Float64)
+    apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
 
 Apply the boundary conditions
 
@@ -116,15 +122,18 @@ Apply the boundary conditions
 # Returns
 - `datamanager::Module`: Datamanager
 """
-function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
+function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
     dof = datamanager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     coordinates = datamanager.get_field("Coordinates")
     for name in keys(bcs)
         bc = bcs[name]
-        field_to_apply_bc = datamanager.get_field(bc["Type"])
+        if bc["Type"] != "Dirichlet"
+            continue
+        end
+        field_to_apply_bc = datamanager.get_field(bc["Variable"])
         if length(field_to_apply_bc) == 0
-            field_to_apply_bc = datamanager.get_field(bc["Type"])
+            field_to_apply_bc = datamanager.get_field(bc["Variable"])
         end
 
         if ndims(field_to_apply_bc) > 1
@@ -136,6 +145,47 @@ function apply_bc(bcs::Dict, datamanager::Module, time::Float64)
             end
         else
             field_to_apply_bc[bc["Node Set"]] = eval_bc(field_to_apply_bc[bc["Node Set"]], bc["Value"], coordinates[bc["Node Set"], :], time, dof, bc["Initial"], name)
+        end
+
+    end
+    return datamanager
+end
+
+"""
+    apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
+
+Apply the boundary conditions
+
+# Arguments
+- `bcs::Dict{Any,Any}`: The boundary conditions
+- `datamanager::Module`: Datamanager
+- `time::Float64`: The current time
+# Returns
+- `datamanager::Module`: Datamanager
+"""
+function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
+    dof = datamanager.get_dof()
+    dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
+    coordinates = datamanager.get_field("Coordinates")
+    for name in keys(bcs)
+        bc = bcs[name]
+        if bc["Type"] != "Neumann"
+            continue
+        end
+        field_to_apply_bc = datamanager.get_field(bc["Variable"])
+        if length(field_to_apply_bc) == 0
+            field_to_apply_bc = datamanager.get_field(bc["Variable"])
+        end
+
+        if ndims(field_to_apply_bc) > 1
+            if haskey(dof_mapping, bc["Coordinate"])
+                field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] += eval_bc(field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]], bc["Value"], coordinates[bc["Node Set"], :], time, dof, bc["Initial"], name)
+            else
+                @error "Coordinate in boundary condition must be x,y or z."
+                return nothing
+            end
+        else
+            field_to_apply_bc[bc["Node Set"]] += eval_bc(field_to_apply_bc[bc["Node Set"]], bc["Value"], coordinates[bc["Node Set"], :], time, dof, bc["Initial"], name)
         end
 
     end

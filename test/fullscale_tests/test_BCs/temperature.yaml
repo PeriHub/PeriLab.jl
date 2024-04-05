@@ -34,15 +34,15 @@ PeriLab:
       Material Model: Mat_1
   Boundary Conditions:
     BC_1:
-      Type: "Temperature"
+      Variable: "Temperature"
       Node Set: "Node Set 1"
       Value: "300"
     BC_2:
-      Type: "Temperature"
+      Variable: "Temperature"
       Node Set: "Node Set 2"
       Value: "1*10^7*t"
     BC_3:
-      Type: "Temperature"
+      Variable: "Temperature"
       Node Set: "Node Set 3"
       Value: "if t>0.00001 0 else 600 end"
   Solver:

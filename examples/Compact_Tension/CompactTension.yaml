@@ -50,22 +50,22 @@ PeriLab:
     BC_1:
       Coordinate: y
       Node Set: Node Set 1
-      Type: Force Densities
+      Variable: Force Densities
       Value: 50000*t
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
-      Type: Force Densities
+      Variable: Force Densities
       Value: -50000*t
     BC_3:
       Coordinate: x
       Node Set: Node Set 1
-      Type: Displacements
+      Variable: Displacements
       Value: "0"
     BC_4:
       Coordinate: x
       Node Set: Node Set 2
-      Type: Displacements
+      Variable: Displacements
       Value: "0"
   Physics:
     Material Models:

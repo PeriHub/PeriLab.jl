@@ -40,17 +40,17 @@ PeriLab:
       Specific Heat Capacity: 1800.0e+6
   Boundary Conditions:
     BC_1:
-      Type: Displacements
+      Variable: Displacements
       Node Set: Node Set 1
       Coordinate: x
       Value: 0.0
     BC_2:
-      Type: Displacements
+      Variable: Displacements
       Node Set: Node Set 2
       Coordinate: y
       Value: 0.0
     BC_3:
-      Type: Displacements
+      Variable: Displacements
       Node Set: Node Set 2
       Coordinate: z
       Value: 0.0
