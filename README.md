@@ -54,11 +54,11 @@ Welcome to `PeriLab`, a powerful software solution designed for tackling Peridyn
 
 ## Documentation
 
-Explore the comprehensive [documentation](https://perihub.github.io/PeriLab.jl/) for `PeriLab`
+Explore the comprehensive [documentation](https://perihub.github.io/PeriLab.jl/) for `PeriLab`.
 
 ## Examples
 
-A few basic examples of `PeriLab` can be found in the [examples](https://github.com/PeriHub/PeriLab.jl/tree/main/examples) directory, or if you want to have a look at results go to our growing [PeriLab-Results service](https://perilab-results.nimbus-extern.dlr.de) 
+A few basic examples of `PeriLab` can be found in the [examples](https://github.com/PeriHub/PeriLab.jl/tree/main/examples) directory, or if you want to have a look at results go to our growing [PeriLab-Results service](https://perilab-results.nimbus-extern.dlr.de).
 
 ## Features ⭐
 
