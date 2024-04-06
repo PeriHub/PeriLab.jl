@@ -94,7 +94,7 @@ Calculate the symmetry parameters based on the given material symmetry. These pa
 - `gamma::Float64`: Gamma parameter.
 - `kappa::Float64`: Kappa parameter.
 """
-function calculate_symmetry_params(symmetry::String, shear_modulus::Float64, bulk_modulus::Float64)
+function calculate_symmetry_params(symmetry::String, shear_modulus::Union{Float64,SubArray,Vector{Float64}}, bulk_modulus::Union{Float64,SubArray,Vector{Float64}})
     three_bulk_modulus = 3 * bulk_modulus
     # from Peridigm damage model. to be checked with literature
     if symmetry == "plane stress"

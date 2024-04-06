@@ -276,7 +276,7 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
         catch e
             if e isa InterruptException
                 @info "PeriLab was interrupted"
-            elseif !isa(e, ErrorException)
+            elseif !isa(e, TaskFailedException)
                 rethrow(e)
             end
         end

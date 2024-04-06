@@ -4,14 +4,19 @@
 using LinearAlgebra
 using StaticArrays
 
-function get_value(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}}, key::String, field_allocated::Bool)
+function get_value(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}}, any_field_allocated::Bool, key::String, field_allocated::Bool)
     if field_allocated
-        return datamanager.get_field(key)
+        return datamanager.get_field(replace(key, " " => "_"))
     end
     if haskey(parameter, key)
-        return parameter[key]
+        if any_field_allocated
+            return datamanager.create_constant_node_field(replace(key, " " => "_"), Float64, 1, parameter[key])
+        else
+            return parameter[key]
+        end
     end
-    return nothing
+
+    return datamanager.create_constant_node_field(replace(key, " " => "_"), Float64, 1)
 end
 
 """
@@ -28,26 +33,23 @@ function get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,A
             return nothing
         end
     end
-    bulk = false
-    Youngs = false
-    shear = false
-    Poissons = false
-    field_allocated = false
 
-    bulk_field = datamanager.has_key("Bulk Modulus")
-    Youngs_field = datamanager.has_key("Young's Modulus")
-    Poissons_field = datamanager.has_key("Poisson's Ratio")
-    shear_field = datamanager.has_key("Shear Modulus")
+    bulk_field = datamanager.has_key("Bulk_Modulus")
+    Youngs_field = datamanager.has_key("Young's_Modulus")
+    Poissons_field = datamanager.has_key("Poisson's_Ratio")
+    shear_field = datamanager.has_key("Shear_Modulus")
+
+    any_field_allocated = bulk_field | Youngs_field | Poissons_field | shear_field
 
     bulk = haskey(parameter, "Bulk Modulus") | bulk_field
     Youngs = haskey(parameter, "Young's Modulus") | Youngs_field
     Poissons = haskey(parameter, "Poisson's Ratio") | Poissons_field
     shear = haskey(parameter, "Shear Modulus") | shear_field
 
-    K = get_value(datamanager, parameter, "Bulk Modulus", bulk_field)
-    E = get_value(datamanager, parameter, "Young's Modulus", Youngs_field)
-    G = get_value(datamanager, parameter, "Shear Modulus", shear_field)
-    nu = get_value(datamanager, parameter, "Poisson's Ratio", Poissons_field)
+    K = get_value(datamanager, parameter, any_field_allocated, "Bulk Modulus", bulk_field)
+    E = get_value(datamanager, parameter, any_field_allocated, "Young's Modulus", Youngs_field)
+    G = get_value(datamanager, parameter, any_field_allocated, "Shear Modulus", shear_field)
+    nu = get_value(datamanager, parameter, any_field_allocated, "Poisson's Ratio", Poissons_field)
 
     if bulk && Poissons
         E = 3 .* K .* (1 .- 2 .* nu)
@@ -78,12 +80,17 @@ function get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,A
     if bulk + Youngs + shear + Poissons < 2
         @error "Minimum of two parameters are needed for isotropic material"
     end
-
     parameter["Bulk Modulus"] = K
     parameter["Young's Modulus"] = E
     parameter["Shear Modulus"] = G
     parameter["Poisson's Ratio"] = nu
     parameter["Computed"] = true
+    if any_field_allocated
+        datamanager.get_field("Bulk_Modulus") .= K
+        datamanager.get_field("Young's_Modulus") .= E
+        datamanager.get_field("Shear_Modulus") .= G
+        datamanager.get_field("Poisson's_Ratio") .= nu
+    end
 end
 
 """

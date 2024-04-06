@@ -111,7 +111,7 @@ This function depends on the following data fields from the `datamanager` module
 - `get_field("Volume")`: Returns the volume field.
 - `get_field("Horizon")`: Returns the horizon field.
 """
-function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulkModulus::Union{Float64,Int64})
+function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulkModulus::Union{Float64,Int64,SubArray,Vector{Float64}})
     critical_time_step::Float64 = 1.0e50
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
@@ -122,7 +122,7 @@ function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int6
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
 
-        springConstant = 18.0 * bulkModulus / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
+        springConstant = 18.0 * maximum(bulkModulus) / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 
         t = density[iID] / (denominator * springConstant)
         critical_time_step = test_timestep(t, critical_time_step)

@@ -229,6 +229,9 @@ MPI.Init()
         @testset "test_aniso_damage" begin
             @includetests["fullscale_tests/test_aniso_damage/test_aniso_damage"]
         end
+        @testset "test_material_field" begin
+            @includetests["fullscale_tests/test_material_field/test_material_field"]
+        end
         @testset "test_FEM" begin
             @includetests["fullscale_tests/test_FEM/test_FEM"]
         end

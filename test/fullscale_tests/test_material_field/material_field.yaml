@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12
+    Type: "Text File"
+    Input Mesh File: "test_mesh.txt"
+  Physics:
+    Material Models:
+      Mat_1:
+        Material Model: "PD Solid Elastic"
+        Bulk Modulus: 2.5e+3
+        Shear Modulus: 1.15e3
+      Mat_2:
+        Material Model: "PD Solid Elastic"
+        Bulk Modulus: 3.5e+3
+        Shear Modulus: 2.15e3
+  Blocks:
+    block_1:
+      Material Model: "Mat_1"
+      Density: 2.7e-9
+      Horizon: 2.1
+    block_2:
+      Material Model: "Mat_2"
+      Density: 2.7e-9
+      Horizon: 2.1
+  Boundary Conditions:
+    BC_1:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "0.1*y"
+    BC_2:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "y"
+      Value: "0.1*x"
+  Solver:
+    Initial Time: 0.0
+    Final Time: 5.0e-6
+    Verlet:
+      Safety Factor: 1.0
+  Outputs:
+    Output1:
+      Output Filename: "material_field"
+      Output Frequency: 1
+      Output Variables:
+        Displacements: True
+        Forces: True
+        Volume: True
+        Bulk_Modulus: True
+        Shear_Modulus: True
+        Young's_Modulus: True
+        Poisson's_Ratio: True

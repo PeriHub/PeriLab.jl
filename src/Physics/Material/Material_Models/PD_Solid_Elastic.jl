@@ -105,7 +105,6 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     @timeit to "Weighted Volume" weighted_volume = compute_weighted_volume(nodes, nlist, undeformed_bond_length, bond_damage, omega, volume)
     @timeit to "Dilatation" theta = compute_dilatation(nodes, nneighbors, nlist, undeformed_bond_length, deformed_bond_length, bond_damage, volume, weighted_volume, omega)
-
     @timeit to "Bond Forces" bond_force_deviatoric_part, bond_force_isotropic_part = elastic(nodes, dof, undeformed_bond_length, deformed_bond_length, bond_damage, theta, weighted_volume, omega, material_parameter, bond_force_deviatoric_part, bond_force_isotropic_part)
     bond_force = get_bond_forces(nodes, bond_force_deviatoric_part + bond_force_isotropic_part, deformed_bond, deformed_bond_length, bond_force)
 
@@ -139,11 +138,10 @@ function elastic(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, undeformed_bo
 
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
-
     symmetry::String = get_symmetry(material)
-    kappa::Float64 = 0
-    gamma::Float64 = 0
-    alpha::Float64 = 0
+    # kappa::Float64 = 0
+    # gamma::Float64 = 0
+    # alpha::Float64 = 0
     deviatoric_deformation = @MVector zeros(Float64, dof)
 
     alpha, gamma, kappa = Ordinary.calculate_symmetry_params(symmetry, shear_modulus, bulk_modulus)
@@ -154,8 +152,13 @@ function elastic(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, undeformed_bo
             continue
         end
         deviatoric_deformation = deformed_bond_length[iID] .- undeformed_bond_length[iID] - (gamma * theta[iID] / 3) .* undeformed_bond_length[iID]
-        bond_force_deviatoric_part[iID] = bond_damage[iID] .* omega[iID] .* alpha .* deviatoric_deformation ./ weighted_volume[iID]
-        bond_force_isotropic_part[iID] = bond_damage[iID] .* omega[iID] .* kappa .* theta[iID] .* undeformed_bond_length[iID] ./ weighted_volume[iID]
+        if alpha isa Float64
+            bond_force_deviatoric_part[iID] = bond_damage[iID] .* omega[iID] .* alpha .* deviatoric_deformation ./ weighted_volume[iID]
+            bond_force_isotropic_part[iID] = bond_damage[iID] .* omega[iID] .* kappa .* theta[iID] .* undeformed_bond_length[iID] ./ weighted_volume[iID]
+        else
+            bond_force_deviatoric_part[iID] = bond_damage[iID] .* omega[iID] .* alpha[iID] .* deviatoric_deformation ./ weighted_volume[iID]
+            bond_force_isotropic_part[iID] = bond_damage[iID] .* omega[iID] .* kappa[iID] .* theta[iID] .* undeformed_bond_length[iID] ./ weighted_volume[iID]
+        end
     end
     deviatoric_deformation = nothing
     return bond_force_deviatoric_part, bond_force_isotropic_part
