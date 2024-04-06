@@ -219,17 +219,21 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 
 
 ## How to cite
+To cite PeriLab in your publications please use the following [paper](https://doi.org/10.1016/j.softx.2024.101700).
 
 ```s
-@software{PeriLab2023,
-  author       = {Willberg, Christian and Hesse, Jan-Timo},
-  title        = {PeriLab - Peridynamic Laboratory v1.0},
-  month        = nov,
-  year         = 2023,
-  publisher    = {Zenodo},
-  version      = {1.0},
-  doi          = {10.5281/zenodo.10229386},
-  url          = {https://doi.org/10.5281/zenodo.10229386}
+@Article{WillbergC2024,
+author={Willberg, Christian
+and Hesse, Jan-Timo
+and Pernatii, Anna},
+title={{PeriLab - Peridynamic Laboratory}},
+journal={SoftwareX},
+year={2024},
+publisher={Elsevier},
+volume={26},
+issn={2352-7110},
+doi={10.1016/j.softx.2024.101700},
+url={https://doi.org/10.1016/j.softx.2024.101700}
 }
 ```
 
