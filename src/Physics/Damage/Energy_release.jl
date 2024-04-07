@@ -74,7 +74,12 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     bond_forces = datamanager.get_field("Bond Forces")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    critical_energy = damage_parameter["Critical Value"]
+    critical_field = datamanager.has_key("Critical_Value")
+    if critical_field
+        critical_energy = datamanager.get_field("Critical_Value")
+    else
+        critical_energy = damage_parameter["Critical Value"]
+    end
     quad_horizon = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
     dependend_value::Bool = false
@@ -142,7 +147,12 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             if dependend_value
                 critical_energy = interpol_data(field[iID], damage_parameter["Temperature dependend"])
             end
-            crit_energy = inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
+
+            if critical_field
+                crit_energy = critical_energy[iID]
+            else
+                crit_energy = inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
+            end
 
             if aniso_damage
                 # @info "rotation_tensor: " * string(rotation_tensor)

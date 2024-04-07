@@ -56,7 +56,12 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
     block_ids = datamanager.get_field("Block_Id")
-    cricital_stretch = damage_parameter["Critical Value"]
+    critical_field = datamanager.has_key("Critical_Value")
+    if critical_field
+        cricital_stretch = datamanager.get_field("Critical_Value")
+    else
+        cricital_stretch = damage_parameter["Critical Value"]
+    end
     tension::Bool = get(damage_parameter, "Only Tension", true)
     inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
     if inter_block_damage
@@ -66,7 +71,12 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         for jID in nneighbors[iID]
             stretch = (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) / undeformed_bond_length[iID][jID]
 
-            crit_stretch = inter_block_damage ? inter_critical_stretch[block_ids[iID], block_ids[nlist[iID][jID]], block] : cricital_stretch
+            if critical_field
+                crit_stretch = cricital_stretch[iID]
+            else
+                crit_stretch = inter_block_damage ? inter_critical_stretch[block_ids[iID], block_ids[nlist[iID][jID]], block] : cricital_stretch
+            end
+
 
             if !tension
                 stretch = abs(stretch)
