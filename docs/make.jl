@@ -33,6 +33,7 @@ makedocs(
                 "Thermal Models"=>"man/physics/thermal.md",
                 "Additive Models"=>"man/physics/additive.md",
             ],
+            "Output"=>"man/output.md",
             "Solver"=>"man/solver/solver.md",
         ],
         "Theory"=>Any[
