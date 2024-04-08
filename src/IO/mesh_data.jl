@@ -5,7 +5,6 @@
 using LinearAlgebra
 using AbaqusReader
 using DataFrames
-using TetGen
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
 using PrettyTables
@@ -579,6 +578,8 @@ function read_mesh(filename::String, params::Dict)
         @info "Found $(length(nsets)) node sets"
         @info "NodeSets: $element_sets_keys"
 
+        CSV.write(replace(filename, ".inp" => ".txt"), mesh_df)
+
         mesh = nothing
         nodes = nothing
         elements = nothing
@@ -611,25 +612,17 @@ function calculate_volume(element_type::String, vertices::Vector{Vector{Float64}
         return area_of_polygon(vertices)
     elseif element_type == "Tet4"
         return tetrahedron_volume(vertices)
+    elseif element_type == "Wedge6"
+        return wedge6_volume(vertices)
     elseif element_type == "Hex8"
-        input = TetGen.RawTetGenIO{Cdouble}()
-        input.pointlist = hcat(vertices...)
-        TetGen.facetlist!(input, [1 2 3 4;
-            5 6 7 8;
-            1 2 6 5;
-            2 3 7 6;
-            3 4 8 7;
-            4 1 5 8]')
-        tet = tetrahedralize(input, "pQa")
-        num_tet = size(tet.tetrahedronlist)[2]
-        volumes = zeros(num_tet)
+        volume1 = tetrahedron_volume([vertices[1], vertices[2], vertices[4], vertices[5]])
+        volume2 = tetrahedron_volume([vertices[2], vertices[3], vertices[4], vertices[7]])
+        volume3 = tetrahedron_volume([vertices[2], vertices[5], vertices[6], vertices[7]])
+        volume4 = tetrahedron_volume([vertices[4], vertices[5], vertices[7], vertices[8]])
+        volume5 = tetrahedron_volume([vertices[2], vertices[4], vertices[5], vertices[7]])
+        volume = volume1 + volume2 + volume3 + volume4 + volume5
 
-        for i in 1:num_tet
-            tet_vertices = vertices[tet.tetrahedronlist[:, i]]
-            volumes[i] = tetrahedron_volume(tet_vertices)
-        end
-
-        return sum(volumes)
+        return volume
     else
         @error "Element type $element_type currently not supported"
         return nothing
@@ -649,6 +642,26 @@ Calculate the volume of a tetrahedron.
 function tetrahedron_volume(tet_vertices::Vector{Vector{Float64}})
     mat = hcat(hcat(tet_vertices...)', ones(4))  # Augmenting matrix with ones in the fourth column
     volume = abs(det(mat) / 6)   # Using det function to calculate determinant
+    return volume
+end
+
+"""
+    wedge6_volume(wedge_vertices)
+
+Calculate the volume of a wedge.
+
+# Arguments
+- `wedge_vertices`: The vertices of the wedge.
+# Returns
+- `volume`: The volume of the wedge.
+"""
+function wedge6_volume(wedge_vertices::Vector{Vector{Float64}})
+    x = wedge_vertices[1]
+    y = wedge_vertices[2]
+    z = wedge_vertices[3]
+
+    volume = (1 / 6) * abs(dot(x, cross(y .- x, z .- x)))
+
     return volume
 end
 
