@@ -578,7 +578,9 @@ function read_mesh(filename::String, params::Dict)
         @info "Found $(length(nsets)) node sets"
         @info "NodeSets: $element_sets_keys"
 
-        CSV.write(replace(filename, ".inp" => ".txt"), mesh_df)
+        txt_file = replace(filename, ".inp" => ".txt")
+        write(txt_file, "header: x y volume block_id\n")
+        CSV.write(txt_file, mesh_df; delim=' ', append=true)
 
         mesh = nothing
         nodes = nothing
