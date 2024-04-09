@@ -53,7 +53,7 @@ end
     test_Data_manager.set_num_controller(3)
     ref_parameter = Dict("Bulk Modulus" => 0, "Computed" => true, "Young's Modulus" => 0, "Shear Modulus" => 0, "Poisson's Ratio" => 0)
     test = get_all_elastic_moduli(test_Data_manager, Dict{String,Any}())
-    @test test
+    @test isnothing(test)
 
     parameter = Dict{String,Any}("Bulk Modulus" => 1000, "Young's Modulus" => 10)
     get_all_elastic_moduli(test_Data_manager, parameter)
@@ -100,7 +100,7 @@ end
     @test parameter["Poisson's Ratio"] == Float64(0.125)
     @test parameter["Young's Modulus"] == 5
 
-    test_Data_manager.create_constant_node_field("Bulk Modulus", Float64, 1, 10)
+    test_Data_manager.create_constant_node_field("Bulk_Modulus", Float64, 1, 10)
     parameter = Dict{String,Any}("Shear Modulus" => 10)
     get_all_elastic_moduli(test_Data_manager, parameter)
     @test parameter["Young's Modulus"] == [22.5, 22.5, 22.5]

@@ -209,7 +209,7 @@ csvfilename = "./tmp/" * "test_2.csv"
 csv_file = open(csvfilename, "w")
 println(csv_file, "Test")
 csv_file = create_result_file(csvfilename, computes)
-exo["file"] = write_global_results_in_exodus(exo["file"], 2, computes["Fields"], [0.1, 0.2])
+exo["file"] = write_global_results_in_exodus(exo["file"], 2, [0.1, 0.2])
 
 @testset "ut_write_global_results_in_exodus" begin
 
@@ -218,7 +218,8 @@ exo["file"] = write_global_results_in_exodus(exo["file"], 2, computes["Fields"],
     @test global_vars[2] == "External_Forces"
 
     ftest = read_values(exo["file"], GlobalVariable, 2)
-    @test ftest[1] == 0.2
+    @test ftest[1] == 0.1
+    @test ftest[2] == 0.2
 
 end
 

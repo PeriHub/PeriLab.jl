@@ -8,15 +8,17 @@ function get_value(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{Stri
     if field_allocated
         return datamanager.get_field(replace(key, " " => "_"))
     end
-    if haskey(parameter, key)
-        if any_field_allocated
+    if any_field_allocated
+        if haskey(parameter, key)
             return datamanager.create_constant_node_field(replace(key, " " => "_"), Float64, 1, parameter[key])
         else
-            return parameter[key]
+            return datamanager.create_constant_node_field(replace(key, " " => "_"), Float64, 1)
         end
+    elseif haskey(parameter, key)
+        return parameter[key]
     end
 
-    return datamanager.create_constant_node_field(replace(key, " " => "_"), Float64, 1)
+    return Float64(0.0)
 end
 
 """
