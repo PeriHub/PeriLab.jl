@@ -140,7 +140,6 @@ function global_zero_energy_mode_stiffness(ID::Int64, dof::Int64, CVoigt::Union{
     return @tensor begin
       C[i, j, k, l] * Kinv[ID, k, l]
     end
-    
 end
 
 """
