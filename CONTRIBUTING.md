@@ -12,7 +12,7 @@ Contributions are always welcomed!
 
 If you want to provide a code change, please:
 
-* Create a clone or fork of the GitLab project.
+* Create a clone or fork of the GitHub project.
 * Develop the feature/patch.
 * Provide a merge request.
 

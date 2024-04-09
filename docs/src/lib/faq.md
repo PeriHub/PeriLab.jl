@@ -22,7 +22,7 @@ To update PeriLab you just need to run `julia -e "using Pkg; Pkg.update()"` or p
 
 There are multiple options to generate your own input mesh:
 
-- Use the [Perihub](https://gitlab.com/dlr-perihub/Perihub.jl) framework to generate your own input mesh.
+- Use the [Perihub](https://github.com/PeriHub/Perihub) framework to generate your own input mesh.
 
 - Generate your own input mesh with julia, [here](https://github.com/PeriHub/PeriLab.jl/blob/main/examples/Training/meshing/mesh.jl) is an example.
 
