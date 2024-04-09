@@ -206,7 +206,6 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
     output_mapping = Dict{Int64,Dict{}}()
 
     for (id, output) in enumerate(keys(outputs))
-        result_id = 0
         output_mapping[id] = Dict{}()
         output_mapping[id]["Fields"] = Dict{}()
 
@@ -214,7 +213,6 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
         output_mapping[id]["flush_file"] = get_flush_file(outputs, output)
         output_mapping[id]["write_after_damage"] = get_write_after_damage(outputs, output)
         for fieldname in fieldnames
-            result_id += 1
             compute_name = ""
             compute_params = Dict{}
             global_var = false
@@ -236,26 +234,23 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             datafield = datamanager.get_field(fieldname)
             sizedatafield = size(datafield)
             if length(sizedatafield) == 0
-                #if fieldname == "Forces"
-                #output_mapping[id]["Forces"] = [fieldname, result_id, 1, typeof(datafield[1, 1])]
-                # compute class must be mapped here
                 @error "No field " * fieldname * " exists."
                 return nothing
             end
 
             if length(sizedatafield) == 1
                 if global_var
-                    output_mapping[id]["Fields"][compute_name] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => 1, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
+                    output_mapping[id]["Fields"][compute_name] = Dict("fieldname" => fieldname, "global_var" => global_var, "dof" => 1, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
                 else
-                    output_mapping[id]["Fields"][clearNP1(fieldname)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => 1, "type" => typeof(datafield[1, 1]))
+                    output_mapping[id]["Fields"][clearNP1(fieldname)] = Dict("fieldname" => fieldname, "global_var" => global_var, "dof" => 1, "type" => typeof(datafield[1, 1]))
                 end
             elseif length(sizedatafield) == 2
                 i_ref_dof = sizedatafield[2]
                 for dof in 1:i_ref_dof
                     if global_var
-                        output_mapping[id]["Fields"][compute_name*get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
+                        output_mapping[id]["Fields"][compute_name*get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "dof" => dof, "type" => typeof(datafield[1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
                     else
-                        output_mapping[id]["Fields"][clearNP1(fieldname)*get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "dof" => dof, "type" => typeof(datafield[1, 1]))
+                        output_mapping[id]["Fields"][clearNP1(fieldname)*get_paraview_coordinates(dof, i_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "dof" => dof, "type" => typeof(datafield[1, 1]))
                     end
                 end
             elseif length(sizedatafield) == 3
@@ -264,9 +259,9 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                 for i_dof in 1:i_ref_dof
                     for j_dof in 1:j_ref_dof
                         if global_var
-                            output_mapping[id]["Fields"][compute_name*get_paraview_coordinates(i_dof, i_ref_dof)*get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
+                            output_mapping[id]["Fields"][compute_name*get_paraview_coordinates(i_dof, i_ref_dof)*get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]), "compute_params" => compute_params, "nodeset" => nodeset)
                         else
-                            output_mapping[id]["Fields"][clearNP1(fieldname)*get_paraview_coordinates(i_dof, i_ref_dof)*get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "result_id" => result_id, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]))
+                            output_mapping[id]["Fields"][clearNP1(fieldname)*get_paraview_coordinates(i_dof, i_ref_dof)*get_paraview_coordinates(j_dof, j_ref_dof)] = Dict("fieldname" => fieldname, "global_var" => global_var, "i_dof" => i_dof, "j_dof" => j_dof, "type" => typeof(datafield[1, 1, 1]))
                         end
                     end
                 end
@@ -440,7 +435,7 @@ function write_results(result_files::Vector{Dict}, time::Float64, max_damage::Fl
             if length(global_outputs) > 0
                 global_values = get_global_values(global_outputs, datamanager)
                 if output_type == "Exodus"
-                    result_files[id]["file"] = write_global_results_in_exodus(result_files[id]["file"], output_frequency[id]["Step"], global_outputs, global_values)
+                    result_files[id]["file"] = write_global_results_in_exodus(result_files[id]["file"], output_frequency[id]["Step"], global_values)
                 end
                 if datamanager.get_rank() == 0
                     if output_type == "CSV"
@@ -472,7 +467,7 @@ Get global values.
 """
 function get_global_values(output::Dict, datamanager::Module)
     global_values = []
-    for varname in keys(output)
+    for varname in keys(sort(output))
         compute_class = output[varname]["compute_params"]["Compute Class"]
         calculation_type = output[varname]["compute_params"]["Calculation Type"]
         fieldname = output[varname]["compute_params"]["Variable"]

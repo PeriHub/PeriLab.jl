@@ -165,22 +165,19 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
     nodal_output_names = collect(keys(sort(nodal_outputs)))
     global_output_names = collect(keys(sort(global_outputs)))
     # compute_names = collect(keys(sort(computes)))
-
-    write_number_of_variables(exo, NodalVariable, length(nodal_output_names))
+    # write_number_of_variables(exo, NodalVariable, length(nodal_output_names))
     write_names(exo, NodalVariable, nodal_output_names)
     # nnodes = num_nodes(exo.init)
     nnodes = length(coords[1, :])
-
     for varname in nodal_output_names
-        # interface does not work with Int yet 28//08//2023
-        write_values(exo, NodalVariable, 1, output["Fields"][varname]["result_id"], varname, zeros(Float64, nnodes))
+        write_values(exo, NodalVariable, 1, varname, zeros(Float64, nnodes))
     end
-    if length(global_output_names) > 0
-        write_number_of_variables(exo, GlobalVariable, length(global_output_names))
+
+    global_used = length(global_output_names) > 0
+
+    if global_used
         write_names(exo, GlobalVariable, global_output_names)
-        for varname in global_output_names
-            write_values(exo, GlobalVariable, 1, output["Fields"][varname]["result_id"], varname, [Float64(0.0)])
-        end
+        write_values(exo, GlobalVariable, 1, zeros(Float64, length(global_output_names)))
     end
     return exo
 end
@@ -228,29 +225,26 @@ function write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output:
             var = convert(Array{Float64}, field[1:nnodes, output[varname]["i_dof"], output[varname]["j_dof"]])
         end
         # interface does not work with Int yet 28//08//2023
-        write_values(exo, NodalVariable, step, output[varname]["result_id"], varname, var)
+        write_values(exo, NodalVariable, step, varname, var)
     end
     return exo
 end
 
 """
-    write_global_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict, global_values)
+    write_global_results_in_exodus(exo::ExodusDatabase, step::Int64, global_values)
 
 Writes the global results in the exodus file
 
 # Arguments
 - `exo::ExodusDatabase`: The exodus file
 - `step::Int64`: The step
-- `output::Dict`: The output
 - `global_values`: The global values
 # Returns
 - `exo::ExodusDatabase`: The exodus file
 """
-function write_global_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict, global_values)
+function write_global_results_in_exodus(exo::ExodusDatabase, step::Int64, global_values)
 
-    for (id, varname) in enumerate(keys(output))
-        write_values(exo, GlobalVariable, step, output[varname]["result_id"], varname, [global_values[id]])
-    end
+    write_values(exo, GlobalVariable, step, Vector{Float64}(global_values))
     return exo
 end
 

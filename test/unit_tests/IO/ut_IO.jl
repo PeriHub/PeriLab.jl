@@ -57,13 +57,11 @@ block_Id[end] = 2
             if occursin("Forces", entry)
                 dof_force += 1
                 @test output[i]["Fields"][entry]["fieldname"] == "ForcesNP1"
-                @test output[i]["Fields"][entry]["result_id"] == i
                 @test output[i]["Fields"][entry]["dof"] == dof_force
                 @test output[i]["Fields"][entry]["type"] == Float64
             else
                 dof_disp += 1
                 @test output[i]["Fields"][entry]["fieldname"] == "DisplacementsNP1"
-                @test output[i]["Fields"][entry]["result_id"] == 1
                 @test output[i]["Fields"][entry]["dof"] == dof_disp
                 @test output[i]["Fields"][entry]["type"] == Float64
             end
@@ -95,13 +93,11 @@ end
             if occursin("Forces", entry)
                 dofForce += 1
                 @test outputs[i]["Fields"][entry]["fieldname"] == "ForcesNP1"
-                @test outputs[i]["Fields"][entry]["result_id"] == i
                 @test outputs[i]["Fields"][entry]["dof"] == dofForce
                 @test outputs[i]["Fields"][entry]["type"] == Float64
             else
                 dofDisp += 1
                 @test outputs[i]["Fields"][entry]["fieldname"] == "DisplacementsNP1"
-                @test outputs[i]["Fields"][entry]["result_id"] == 1
                 @test outputs[i]["Fields"][entry]["dof"] == dofDisp
                 @test outputs[i]["Fields"][entry]["type"] == Float64
             end
