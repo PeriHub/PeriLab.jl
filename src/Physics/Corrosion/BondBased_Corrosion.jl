@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Bondbased_Corrision
+module Bondbased_Corrosion
 export compute_corrosion_model
 export corrosion_name
 export init_corrosion_model
