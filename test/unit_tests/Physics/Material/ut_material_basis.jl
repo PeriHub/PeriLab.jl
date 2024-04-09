@@ -106,7 +106,7 @@ end
     @test parameter["Young's Modulus"] == [22.5, 22.5, 22.5]
     @test parameter["Poisson's Ratio"] == [0.125, 0.125, 0.125]
     @test parameter["Bulk Modulus"] == [10, 10, 10]
-    @test parameter["Shear Modulus"] == 10
+    @test parameter["Shear Modulus"] == [10, 10, 10]
 end
 
 @testset "get_Hooke_matrix" begin
