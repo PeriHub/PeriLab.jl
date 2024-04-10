@@ -8,6 +8,25 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4] - 2024-04-10
+
+### Fixed
+
+- Exodus global export #145
+- UMAT Header #139
+- Anisotropic Damage #136
+
+### Added
+
+- UMAT #138
+- Abaqus mesh to txt
+- Docs
+
+## Changed
+
+- MPI non-blocking
+- Bond length seperated from field #137
+
 ## [1.1.3] - 2024-03-28
 
 ### Fixed

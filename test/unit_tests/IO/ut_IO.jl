@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 #TODO: Remove include
-include("../../../src/IO/IO.jl")
+# include("../../../src/IO/IO.jl")
 # include("../../../src/Support/data_manager.jl")
 # include("../../../src/Support/Parameters/parameter_handling.jl")
 using TimerOutputs
 # using Reexport
 # @reexport using .Parameter_Handling
 using Test
-import .IO
+# import .IO
 # @reexport using Exodus
 # @reexport using MPI
 test_Data_manager = PeriLab.Data_manager
@@ -70,7 +70,7 @@ block_Id[end] = 2
 end
 
 @testset "ut_init_write_result_and_write_results" begin
-    result_files, outputs = IO.init_write_results(params, "", "", test_Data_manager, 2, "1.0.0")
+    result_files, outputs = PeriLab.IO.init_write_results(params, "", "", test_Data_manager, 2, "1.0.0")
     @test length(result_files) == 2
     @test length(result_files[1]["file"].nodal_var_name_dict) == 6
     entries = collect(keys(result_files[1]["file"].nodal_var_name_dict))
@@ -103,12 +103,12 @@ end
             end
         end
     end
-    IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
-    IO.write_results(result_files, 1.5, 0.0, outputs, test_Data_manager)
+    PeriLab.IO.output_frequency = [Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1), Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)]
+    PeriLab.IO.write_results(result_files, 1.5, 0.0, outputs, test_Data_manager)
 
     @test read_time(result_files[1]["file"], 2) == 1.5
     @test read_time(result_files[2]["file"], 2) == 1.5
-    IO.write_results(result_files, 1.6, 0.0, outputs, test_Data_manager)
+    PeriLab.IO.write_results(result_files, 1.6, 0.0, outputs, test_Data_manager)
 
     @test read_time(result_files[1]["file"], 3) == 1.6
     @test read_time(result_files[2]["file"], 3) == 1.6
@@ -126,9 +126,9 @@ end
         testBool = true
     end
     @test testBool
-    @test IO.close_result_files(result_files)
-    @test !(IO.close_result_files(result_files))
-    IO.merge_exodus_files(result_files, "")
+    @test PeriLab.IO.close_result_files(result_files)
+    @test !(PeriLab.IO.close_result_files(result_files))
+    PeriLab.IO.merge_exodus_files(result_files, "")
 
     rm(filename1 * ".e")
     rm(filename2 * ".e")
@@ -138,17 +138,17 @@ end
 #     test_Data_manager.set_block_list([1])
 #     solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
 #     params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
-#     IO.show_block_summary(solver_options, params, "test.log", comm, test_Data_manager)
+#     PeriLab.IO.show_block_summary(solver_options, params, "test.log", comm, test_Data_manager)
 # end
 
 # @testset "ut_show_mpi_summary" begin
 #     test_Data_manager.set_block_list([1])
-#     IO.show_mpi_summary("test.log", comm, test_Data_manager)
+#     PeriLab.IO.show_mpi_summary("test.log", comm, test_Data_manager)
 # end
 
 @testset "ut_init_orientations" begin
     angles = test_Data_manager.create_constant_node_field("Angles", Float64, 1, 90)
-    IO.init_orientations(test_Data_manager)
+    PeriLab.IO.init_orientations(test_Data_manager)
     orientations = test_Data_manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol=0.00001)
     @test isapprox(orientations[1, 2], 1; atol=0.00001)
