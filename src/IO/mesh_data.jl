@@ -490,11 +490,11 @@ function read_mesh(filename::String, params::Dict)
 
         coords = read_coordinates(exo)
         mesh_df = DataFrame(
-            x=[],
-            y=[],
-            z=[],
-            volume=[],
-            block_id=[],
+            x=Float64[],
+            y=Float64[],
+            z=Float64[],
+            volume=Float64[],
+            block_id=Int64[],
         )
         block_ids = read_ids(exo, Block)
 
@@ -506,10 +506,26 @@ function read_mesh(filename::String, params::Dict)
                     indices = block.num_nodes_per_elem*(i-1)+1:block.num_nodes_per_elem*i
                     node_ids = block_id_map[indices]
                     vertices = coords[:, node_ids]
-                    center = (vertices[:, 1] + vertices[:, 2] + vertices[:, 3] + vertices[:, 4]) / 4.0
-                    volume = abs(dot(vertices[:, 1] - vertices[:, 4], cross(vertices[:, 2] - vertices[:, 4], vertices[:, 3] - vertices[:, 4]))) / 6.0
+                    center = sum(vertices, dims=2) / size(vertices)[2]
+                    volume = tetrahedron_volume(vertices)
                     push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=Int64(block_id)))
                 end
+            elseif block.elem_type == "HEX8"
+                for i in 1:block.num_elem
+                    indices = block.num_nodes_per_elem*(i-1)+1:block.num_nodes_per_elem*i
+                    node_ids = block_id_map[indices]
+                    vertices = coords[:, node_ids]
+                    center = sum(vertices, dims=2) / size(vertices)[2]
+                    volume1 = tetrahedron_volume([vertices[:, 1], vertices[:, 2], vertices[:, 4], vertices[:, 5]])
+                    volume2 = tetrahedron_volume([vertices[:, 2], vertices[:, 3], vertices[:, 4], vertices[:, 7]])
+                    volume3 = tetrahedron_volume([vertices[:, 2], vertices[:, 5], vertices[:, 6], vertices[:, 7]])
+                    volume4 = tetrahedron_volume([vertices[:, 4], vertices[:, 5], vertices[:, 7], vertices[:, 8]])
+                    volume5 = tetrahedron_volume([vertices[:, 2], vertices[:, 4], vertices[:, 5], vertices[:, 7]])
+                    volume = volume1 + volume2 + volume3 + volume4 + volume5
+                    push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=Int64(block_id)))
+                end
+            else
+                @error "Element type $(block.elem_type) not supported"
             end
         end
 

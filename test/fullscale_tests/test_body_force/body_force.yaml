@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Input Mesh File: mesh.g
+    Type: Exodus
+    Distribution Type: Neighbor based
+  Physics:
+    Material Models:
+      Material_1:
+        Material Model: PD Solid Elastic
+        Bulk Modulus: 66.667e3
+        Shear Modulus: 40.0e3
+  Blocks:
+    block_1:
+      Material Model: Material_1
+      Horizon: 0.54
+      Density: 1000.0
+    block_2:
+      Material Model: Material_1
+      Horizon: 0.54
+      Density: 1000.0
+    block_3:
+      Material Model: Material_1
+      Horizon: 0.54
+      Density: 1000.0
+  Boundary Conditions:
+    Displacement-1:
+      Variable: Displacements
+      Node Set: Set-2
+      Coordinate: z
+      Value: 0
+    Displacement-2:
+      Variable: Displacements
+      Node Set: Set-3
+      Coordinate: x
+      Value: 0
+    Displacement-3:
+      Variable: Displacements
+      Node Set: Set-3
+      Coordinate: y
+      Value: 0
+    Displacement-4:
+      Variable: Force Densities
+      Node Set: Set-1
+      Coordinate: z
+      Value: 200
+  Outputs:
+    Output1:
+      Output File Type: Exodus
+      Output Filename: body_force
+      Number of Output Steps: 10
+      Output Variables:
+        Displacements: True
+        Number of Neighbors: True
+        Forces: True
+        External Forces: True
+        Velocity: True
+        Acceleration: True
+        Volume: True
+  Solver:
+    Initial Time: 0.0
+    Final Time: 1.0
+    Material Models: True
+    Verlet:
+      Safety Factor: 1.0
+      Fixed dt: 0.001

@@ -134,9 +134,13 @@ function get_node_sets(params::Dict, path::String)
         nset_names = read_names(exo, NodeSet)
         conn = collect_element_connectivities(exo)
         nset_nodes = []
-        for entry in nset_names
-            nset_nodes = Vector{Int64}(read_set(exo, NodeSet, entry).nodes)
-            nsets[entry] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+        for (id, entry) in enumerate(nset_names)
+            nset_nodes = Vector{Int64}(read_set(exo, NodeSet, id).nodes)
+            if length(entry) == 0
+                nsets["Set-"*string(id)] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+            else
+                nsets[entry] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+            end
             # end
         end
         conn = nothing

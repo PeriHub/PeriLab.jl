@@ -186,6 +186,9 @@ MPI.Init()
         @testset "test_BCs" begin
             @includetests["fullscale_tests/test_BCs/test_BCs"]
         end
+        @testset "test_body_force" begin
+            @includetests["fullscale_tests/test_body_force/test_body_force"]
+        end
         @testset "test_contact" begin
             @includetests["fullscale_tests/test_contact/test_contact"]
         end
