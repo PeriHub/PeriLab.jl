@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 #TODO: Remove include
-# include("../../../src/IO/IO.jl")
+include("../../../src/IO/IO.jl")
 # include("../../../src/Support/data_manager.jl")
 # include("../../../src/Support/Parameters/parameter_handling.jl")
 using TimerOutputs
