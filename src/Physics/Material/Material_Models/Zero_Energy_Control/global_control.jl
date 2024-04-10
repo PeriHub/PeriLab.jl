@@ -116,7 +116,7 @@ Creates the zero energy mode stiffness
 function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, Kinv::SubArray, zStiff::SubArray)
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
-        zStiff[iID, i, j] = global_zero_energy_mode_stiffness(iID, dof, CVoigt, Kinv)
+        global_zero_energy_mode_stiffness(iID, dof, CVoigt, Kinv,zStiff)
     end
     return zStiff
 end
@@ -135,12 +135,11 @@ Creates the zero energy mode stiffness, based on the UMAT interface
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
-function global_zero_energy_mode_stiffness(ID::Int64, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, Kinv::SubArray)
+function global_zero_energy_mode_stiffness(ID::Int64, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, Kinv::SubArray,zStiff::SubArray)
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
-    return @tensor begin
-      C[i, j, k, l] * Kinv[ID, k, l]
+    @tensor begin
+        zStiff[ID,i,j] = C[i, j, k, l] * Kinv[ID, k, l]
     end
-    
 end
 
 """
