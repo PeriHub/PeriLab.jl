@@ -76,7 +76,7 @@ function print_banner()
     \e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |  M.Sc. Jan-Timo Hesse (https://orcid.org/0000-0002-3006-1520)
     \e[1;36m8888888P"\e[0m \e[1;36md8P  Y8b\e[0m \e[1;36m888P"   888 888          \e[1;36m"88b\e[0m \e[1;36m888 "88b\e[0m  |  Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de
     \e[1;36m888\e[0m       \e[1;36m88888888\e[0m \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m.d888888\e[0m \e[1;36m888  888\e[0m  |  License: BSD-3-Clause
-    \e[1;36m888\e[0m       \e[1;36mY8b.\e[0m     \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m888  888\e[0m \e[1;36m888 d88P\e[0m  |  
+    \e[1;36m888\e[0m       \e[1;36mY8b.\e[0m     \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m888  888\e[0m \e[1;36m888 d88P\e[0m  |  DOI: 10.1016/j.softx.2024.101700
     \e[1;36m888\e[0m        \e[1;36m"Y8888\e[0m  \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m88888888\e[0m \e[1;36m"Y888888\e[0m \e[1;36m88888P"\e[0m   |  GitHub: https://github.com/PeriHub/PeriLab.jl\n""")
 end
 
@@ -211,7 +211,7 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
                 if !silent
                     print_banner()
                 end
-                @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n doi: \n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
+                @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n DOI: 10.1016/j.softx.2024.101700\n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
                 @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
                 try
                     dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))

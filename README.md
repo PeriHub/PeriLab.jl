@@ -24,8 +24,8 @@ SPDX-License-Identifier: BSD-3-Clause
 [aqua-img]: https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
 
-[doi-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.10229386.svg
-[doi-url]: https://doi.org/10.5281/zenodo.1022938
+[doi-img]: https://zenodo.org/badge/DOI/10.1016/j.softx.2024.101700.svg
+[doi-url]: https://doi.org/10.1016/j.softx.2024.101700
 
 [release-img]: https://img.shields.io/github/v/release/PeriHub/PeriLab.jl
 [release-url]: https://github.com/PeriHub/PeriLab.jl/releases
