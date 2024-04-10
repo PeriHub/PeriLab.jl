@@ -31,9 +31,10 @@ PeriLab:
       Specific Heat Capacity: 100
   Boundary Conditions:
     BC_1:
-      Variable: "Initial Temperature"
+      Variable: "Temperature"
       Node Set: "Node Set 1"
       Value: "10"
+      Type: "Initial"
   Solver:
     Material Models: False
     Thermal Models: True
