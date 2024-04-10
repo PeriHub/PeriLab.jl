@@ -25,7 +25,7 @@ function create_result_file(filename::String, outputs::Dict)
     csv_file = open(filename, "w")
 
     header = "Time,"
-    for key in keys(outputs["Fields"])
+    for key in keys(sort(outputs["Fields"]))
         header = string(header, key, ",")
     end
     write(csv_file, header * "\n")

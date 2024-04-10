@@ -164,7 +164,6 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
     global_outputs = Dict(key => value for (key, value) in output["Fields"] if (value["global_var"]))
     nodal_output_names = collect(keys(sort(nodal_outputs)))
     global_output_names = collect(keys(sort(global_outputs)))
-    # compute_names = collect(keys(sort(computes)))
     # write_number_of_variables(exo, NodalVariable, length(nodal_output_names))
     write_names(exo, NodalVariable, nodal_output_names)
     # nnodes = num_nodes(exo.init)

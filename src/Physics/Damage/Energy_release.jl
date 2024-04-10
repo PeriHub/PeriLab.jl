@@ -102,6 +102,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
 
     if aniso_damage
+        if !rotation
+            @error "Anisotropic damage requires Angles field"
+        end
         aniso_crit_values = datamanager.get_aniso_crit_values()
         bond_norm::Float64 = 0.0
     end
