@@ -12,6 +12,7 @@ Manifest.toml
 *.json
 *.out
 *.sbatch
+*.png
 !**/Reference/*.e*
 LocalPreferences.toml
 
