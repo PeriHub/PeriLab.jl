@@ -36,6 +36,7 @@ function init_material_model_fields(datamanager::Module)
     # tbd later in the compute class
     datamanager.create_constant_node_field("External Forces", Float64, dof)
     datamanager.create_node_field("Force Densities", Float64, dof)
+    datamanager.create_constant_node_field("External Force Densities", Float64, dof)
     datamanager.create_constant_node_field("Acceleration", Float64, dof)
     datamanager.create_node_field("Velocity", Float64, dof)
     datamanager.create_constant_bond_field("Bond Forces", Float64, dof)

@@ -364,8 +364,9 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     if solver_options["Material Models"]
         forces = datamanager.get_field("Forces", "NP1")
-        forces_density = datamanager.get_field("Force Densities", "NP1")
         external_forces = datamanager.get_field("External Forces")
+        forces_density = datamanager.get_field("Force Densities", "NP1")
+        external_forces_density = datamanager.get_field("External Force Densities")
         uN = datamanager.get_field("Displacements", "N")
         vN = datamanager.get_field("Velocity", "N")
         vNP1 = datamanager.get_field("Velocity", "NP1")
@@ -449,8 +450,9 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                     # toggles the value and switch the non FEM nodes to true
                     nodes = find_active(Vector{Bool}(.~fe_nodes[nodes]))
                 end
-                a[nodes, :] = (forces_density[nodes, :] .+ external_forces[nodes, :]) ./ density[nodes] # element wise
-                forces[nodes, :] = (forces_density[nodes, :] .+ external_forces[nodes, :]) .* volume[nodes]
+                forces_density[nodes, :] += external_forces_density[nodes, :] .+ external_forces[nodes, :] ./ volume[nodes]
+                a[nodes, :] = forces_density[nodes, :] ./ density[nodes] # element wise
+                forces[nodes, :] = forces_density[nodes, :] .* volume[nodes]
             end
             if solver_options["Thermal Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")

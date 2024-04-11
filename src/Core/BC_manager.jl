@@ -128,7 +128,7 @@ function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
     coordinates = datamanager.get_field("Coordinates")
     for name in keys(bcs)
         bc = bcs[name]
-        if bc["Type"] != "Dirichlet" || bc["Variable"] == "Force DensitiesNP1"
+        if bc["Type"] != "Dirichlet" || bc["Variable"] == "Force DensitiesNP1" || bc["Variable"] == "ForcesNP1"
             continue
         end
         field_to_apply_bc = datamanager.get_field(bc["Variable"])
@@ -166,10 +166,16 @@ function apply_bc_dirichlet_force(bcs::Dict, datamanager::Module, time::Float64)
     coordinates = datamanager.get_field("Coordinates")
     for name in keys(bcs)
         bc = bcs[name]
-        if bc["Type"] != "Dirichlet" || bc["Variable"] != "Force DensitiesNP1"
+        if bc["Type"] != "Dirichlet"
             continue
         end
-        field_to_apply_bc = datamanager.get_field("External Forces")
+        if bc["Variable"] == "ForcesNP1"
+            field_to_apply_bc = datamanager.get_field("External Forces")
+        elseif bc["Variable"] == "Forces DensitiesNP1"
+            field_to_apply_bc = datamanager.get_field("External Force Densities")
+        else
+            continue
+        end
 
         if ndims(field_to_apply_bc) > 1
             if haskey(dof_mapping, bc["Coordinate"])
