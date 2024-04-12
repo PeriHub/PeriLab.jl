@@ -45,16 +45,17 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict{String,Any})
+function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
   # set to 1 to avoid a later check if the state variable field exists or not
   num_state_vars::Int64 = 1
   if !haskey(material_parameter, "File")
     @error "UMAT file is not defined."
     return nothing
   end
-
+  directory = datamanager.get_directory()
+  material_parameter["File"] = joinpath(joinpath(pwd(), directory), material_parameter["File"])
   if !isfile(material_parameter["File"])
-    @error "File $(material_parameter["File"]) not there, please check name and directory."
+    @error "File $(material_parameter["File"]) does not exist, please check name and directory."
     return nothing
   end
   if haskey(material_parameter, "Number of State Variables")
@@ -101,11 +102,11 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   DDSDDT = datamanager.create_constant_node_field("Variation of the stress increments with respect to the temperature", Float64, 3 * dof - 3)
   DRPLDE = datamanager.create_constant_node_field("Variation of RPL with respect to the strain increment", Float64, 3 * dof - 3)
   DRPLDT = datamanager.create_constant_node_field("Variation of RPL with respect to the temperature", Float64, 1)
+  DFGRD0 = datamanager.create_constant_node_field("DFGRD0", Float64, "Matrix", dof)
   # is already initialized if thermal problems are adressed
-  temperature = datamanager.create_constant_node_field("Temperature", Float64, 1)
+  temperature = datamanager.create_node_field("Temperature", Float64, 1)
   deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
-
-  if haskey(material_parameter, "Predefined Field Names")
+   if haskey(material_parameter, "Predefined Field Names")
     field_names = split(material_parameter["Predefined Field Names"], " ")
     fields = datamanager.create_constant_node_field("Predefined Fields", Float64, length(field_names))
     for (id, field_name) in enumerate(field_names)
@@ -127,6 +128,8 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
       for iID in nodes
         rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
       end
+    else
+      datamanager.create_constant_node_field("Angles", Float64, dof)  
     end
   end
 
@@ -204,7 +207,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   coords = datamanager.get_field("Coordinates")
   rot_N = datamanager.get_field("Rotation", "N")
   rot_NP1 = datamanager.get_field("Rotation", "NP1")
-  zstiff = datamanager.get_field("Zero Energy Stiffness")
+  zStiff = datamanager.get_field("Zero Energy Stiffness")
   Kinv = datamanager.get_field("Inverse Shape Tensor")
   # Number of normal stress components at this point
   ndi = dof
@@ -214,17 +217,16 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   ntens = ndi + nshr
   not_supported_float::Float64 = 0.0
   angles = datamanager.get_field("Angles")
-  DFGRD0 = datamanager.get_field("Deformation Gradient", "N")
-  DFGRD1 = datamanager.get_field("Deformation Gradient", "NP1")
+  DFGRD0 = datamanager.get_field("DFGRD0")
+  DFGRD1 = datamanager.get_field("Deformation Gradient")
   not_supported_int::Int64 = 0
   for iID in nodes
-    stress_NP1[iID, :, :] = UMAT_interface
     rotNP1[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
-    UMAT_interface(material_parameter["file"], stress_temp, statev[iID, :], DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temperature_N[iID], temperature_increment[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, props, nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0, DFGRD1, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
-    zstiff[iID]=Global_zero_energy_control.global_zero_energy_mode_stiffness(iID, dof, DDSDDE, Kinv)
+    UMAT_interface(material_parameter["File"], stress_temp, statev[iID, :], DDSDDE, SSE[iID], SPD[iID], SCD[iID], RPL[iID], DDSDDT[iID,:], DRPLDE[iID,:], DRPLDT[iID], matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temp[iID], dtemp[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, props, nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0[iID,:,:], DFGRD1[iID,:,:], not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
+    Global_zero_energy_control.global_zero_energy_mode_stiffness(iID, dof, DDSDDE, Kinv, zStiff)
     stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
   end
-
+  DFGRD0 = DFGRD1
   return datamanager, stress_NP1
 end
 
@@ -276,7 +278,7 @@ UMAT interface
 # Returns
 - `datamanager`: Datamanager
 """
-function UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
+function UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::SubArray, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
   expr = :(ccall((:umat_, $filename), Cvoid,
     (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64}, Ref{Float64},
       Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64},

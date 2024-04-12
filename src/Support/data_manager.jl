@@ -18,6 +18,7 @@ export get_block_list
 export get_crit_values_matrix
 export get_aniso_crit_values
 export get_comm
+export get_directory
 export get_field
 export get_field_type
 export get_inverse_nlist
@@ -39,6 +40,7 @@ export rotation_data
 export set_block_list
 export set_crit_values_matrix
 export set_aniso_crit_values
+export set_directory
 export set_inverse_nlist
 export set_fem
 export set_glob_to_loc
@@ -74,6 +76,7 @@ global fields::Dict{DataType,Dict{String,Any}} = Dict(Int64 => Dict(), Float64 =
 global field_array_type::Dict{String,Dict{String,Any}} = Dict()
 global field_types::Dict{String,DataType} = Dict()
 global fields_to_synch::Dict{String,Any} = Dict()
+global filedirectory = ""
 global inverse_nlist::Vector{Dict{Int64,Int64}} = []
 global model_modules::Dict{String,Module} = Dict()
 global nsets::Dict{String,Vector{Int}} = Dict()
@@ -98,6 +101,11 @@ Get the MPI communicator
 function get_comm()
     global commMPi
     return commMPi
+end
+
+function get_directory()
+    global filedirectory
+    return filedirectory
 end
 
 """
@@ -963,6 +971,10 @@ Sets the anisotropic critical values globally.
 """
 function set_aniso_crit_values(crit_values::Dict{Int64,Any})
     global aniso_crit_values = crit_values
+end
+
+function set_directory(directory::String)
+    global filedirectory = directory
 end
 
 """
