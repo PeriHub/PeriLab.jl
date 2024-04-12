@@ -122,11 +122,11 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     datamanager.create_constant_node_field("Predefined Fields Increment", Float64, length(field_names))
 
     rotation::Bool, angles = datamanager.rotation_data()
-    rotN, rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
+    rot_N, rot_NP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
     if rotation
       angles = datamanager.get_field("Angles")
       for iID in nodes
-        rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
+        rot_N[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
       end
     else
       datamanager.create_constant_node_field("Angles", Float64, dof)  
@@ -221,7 +221,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   DFGRD1 = datamanager.get_field("Deformation Gradient")
   not_supported_int::Int64 = 0
   for iID in nodes
-    rotNP1[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
+    rot_NP1[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
     UMAT_interface(material_parameter["File"], stress_temp, statev[iID, :], DDSDDE, SSE[iID], SPD[iID], SCD[iID], RPL[iID], DDSDDT[iID,:], DRPLDE[iID,:], DRPLDT[iID], matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temp[iID], dtemp[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, props, nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0[iID,:,:], DFGRD1[iID,:,:], not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
     Global_zero_energy_control.global_zero_energy_mode_stiffness(iID, dof, DDSDDE, Kinv, zStiff)
     stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
