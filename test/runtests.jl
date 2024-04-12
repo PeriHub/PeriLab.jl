@@ -17,7 +17,9 @@ include("helper.jl")
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
-
+    @testset "test_DCB" begin
+        @includetests["fullscale_tests/test_DCB/test_DCB"]
+    end
     @testset "unit_tests" begin
         @testset "ut_perilab" begin
             @includetests["unit_tests/ut_perilab"]
