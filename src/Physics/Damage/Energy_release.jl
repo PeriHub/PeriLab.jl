@@ -158,27 +158,35 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             end
 
             if aniso_damage
-                # @info "rotation_tensor: " * string(rotation_tensor)
-                # @info "deformed_bond[iID][jID, 1:dof]: " * string(deformed_bond[iID][jID, 1:dof])
-                rotated_bond = rotation_tensor' * deformed_bond[iID][jID]
-                # @info "rotated_bond: " * string(rotated_bond)
-                for i in 1:dof
-                    if bond_damage_aniso[iID][jID, i] == 0 || rotated_bond[i] == 0
-                        continue
-                    end
-                    bond_norm = abs(rotated_bond[i]) / deformed_bond_length[iID][jID]
-                    # @info "Norm: " * string(bond_norm)
-                    # @info "bond_energy: " * string(bond_energy / quad_horizon[iID] * bond_norm)
-                    # @info "aniso_crit_values: " * string(aniso_crit_values[block_ids[iID]][i])
-                    if bond_energy / quad_horizon[iID] * bond_norm > aniso_crit_values[block_ids[iID]][i]
-                        bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct
-                        if bond_damage[iID][jID] < 0
-                            bond_damage[iID][jID] = 0
-                        end
-                        bond_damage_aniso[iID][jID, i] = 0
-                        update_list[iID] = true
-                    end
-                end
+                rotated_bond = rotation_tensor' * deformed_bond[iID][jID, :]
+                # Compute bond_norm for all components at once
+                bond_norm_all = abs.(rotated_bond) ./ deformed_bond_length[iID][jID]
+
+                # Compute the condition for all components at once
+                condition = bond_energy / quad_horizon[iID] * bond_norm_all .> aniso_crit_values[block_ids[iID]]
+
+                # Update bond_damage, bond_damage_aniso, and update_list in a vectorized manner
+                bond_damage[iID][jID] -= sum(bond_norm_all .* condition)
+                bond_damage[iID][jID] = max.(bond_damage[iID][jID], 0) # Ensure non-negative
+                bond_damage_aniso[iID][jID, :] .= 0 .+ condition
+                update_list[iID] = any(condition)
+
+                # for i in 1:dof
+                #     if bond_damage_aniso[iID][jID, i] == 0 || rotated_bond[i] == 0
+                #         continue
+                #     end
+                #     bond_norm = abs(rotated_bond[i]) / deformed_bond_length[iID][jID]
+                #     # @info "Norm: " * string(bond_norm)
+                #     # @info "bond_energy: " * string(bond_energy / quad_horizon[iID] * bond_norm)
+                #     # @info "aniso_crit_values: " * string(aniso_crit_values[block_ids[iID]][i])
+                #     if bond_energy / quad_horizon[iID] * bond_norm > aniso_crit_values[block_ids[iID]][i]
+                #         bond_damage[iID][jID] -= bond_norm # TODO: check if this is correct
+                #         bond_damage[iID][jID] = max(bond_damage[iID][jID], 0) # Ensure non-negative
+                #         bond_damage_aniso[iID][jID, i] = 0
+                #         update_list[iID] = true
+                #     end
+                # end
+
             else
                 if (bond_energy / quad_horizon[iID]) > crit_energy
                     bond_damage[iID][jID] = 0.0
