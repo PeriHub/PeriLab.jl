@@ -163,14 +163,24 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 bond_norm_all = abs.(rotated_bond) ./ deformed_bond_length[iID][jID]
 
                 # Compute the condition for all components at once
-                condition = bond_energy / quad_horizon[iID] * bond_norm_all .> aniso_crit_values[block_ids[iID]]
+                # condition = bond_energy / quad_horizon[iID] * bond_norm_all .> aniso_crit_values[block_ids[iID]]
 
-                # Update bond_damage, bond_damage_aniso, and update_list in a vectorized manner
-                bond_damage[iID][jID] -= sum(bond_norm_all .* condition)
-                bond_damage[iID][jID] = max.(bond_damage[iID][jID], 0) # Ensure non-negative
-                bond_damage_aniso[iID][jID, :] .= 0 .+ condition
-                update_list[iID] = any(condition)
+                # # Update bond_damage, bond_damage_aniso, and update_list in a vectorized manner
+                # bond_damage[iID][jID] -= sum(bond_norm_all .* condition)
+                # bond_damage[iID][jID] = max.(bond_damage[iID][jID], 0) # Ensure non-negative
+                # bond_damage_aniso[iID][jID, :] .= 0 .+ condition
+                # update_list[iID] = any(condition)
 
+                ###################################################################################################
+
+                x = abs(bond_norm_all[1]) / sum(abs.(bond_norm_all))
+                crit_energy = 6.41640733892757 + 43.447538762292922x - 48.899767470904678x^2 + 18.972581432264228x^3
+                if (bond_energy / quad_horizon[iID]) > crit_energy
+                    bond_damage[iID][jID] = 0.0
+                    update_list[iID] = true
+                end
+
+                ###################################################################################################
                 # for i in 1:dof
                 #     if bond_damage_aniso[iID][jID, i] == 0 || rotated_bond[i] == 0
                 #         continue

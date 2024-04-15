@@ -9,6 +9,7 @@ include("../../../src/Compute/compute_global_values.jl")
 @testset "ut_global_value_sum" begin
     test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(4)
+    test_Data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
     forcesNP1[1, 1:3] .= 1:3
@@ -43,6 +44,7 @@ end
 @testset "ut_global_value_max" begin
     test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(4)
+    test_Data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
 
@@ -78,6 +80,7 @@ end
 @testset "ut_global_value_min" begin
     test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(4)
+    test_Data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
     forcesNP1[1, 1:3] .= 1:3
@@ -110,6 +113,7 @@ end
 @testset "ut_global_value_avg" begin
     test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(4)
+    test_Data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
     nodes = Vector{Int64}(1:4)
     (forcesN, forcesNP1) = test_Data_manager.create_node_field("Forces", Float64, 3)
     forcesNP1[1, 1:3] .= 1:3
