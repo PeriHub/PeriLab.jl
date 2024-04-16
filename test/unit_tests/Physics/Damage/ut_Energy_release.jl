@@ -8,10 +8,12 @@ using Test
 using .Critical_Energy_Model
 @testset "get_quad_horizon" begin
     horizon::Float64 = 1.0
-    @test Critical_Energy_Model.get_quad_horizon(horizon, 3) == Float64(4 / (pi * horizon^4))
-    @test Critical_Energy_Model.get_quad_horizon(horizon, 2) == Float64(3 / (pi * horizon^3))
+    thickness::Float64 = 2.0
+    @test Critical_Energy_Model.get_quad_horizon(horizon, 3, thickness) == Float64(4 / (pi * horizon^4))
+    @test Critical_Energy_Model.get_quad_horizon(horizon, 2, thickness) == Float64(3 / (pi * horizon^3 * thickness))
 
     horizon = 5.6
-    @test Critical_Energy_Model.get_quad_horizon(horizon, 3) == Float64(4 / (pi * horizon^4))
-    @test Critical_Energy_Model.get_quad_horizon(horizon, 2) == Float64(3 / (pi * horizon^3))
+    thickness = 3.0
+    @test Critical_Energy_Model.get_quad_horizon(horizon, 3, thickness) == Float64(4 / (pi * horizon^4))
+    @test Critical_Energy_Model.get_quad_horizon(horizon, 2, thickness) == Float64(3 / (pi * horizon^3 * thickness))
 end
