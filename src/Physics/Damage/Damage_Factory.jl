@@ -234,16 +234,20 @@ Initialize the anisotropic critical values
 function init_aniso_crit_values(datamanager::Module, damage_parameter::Dict, block_id::Int64)
     aniso_crit::Dict{Int64,Any} = Dict()
 
-    crit_0 = damage_parameter["Critical Value"]
-    crit_90 = damage_parameter["Critical Value"]
-    if !haskey(damage_parameter, "Anisotropic Damage")
-        return datamanager
-    end
-    crit_0 = damage_parameter["Anisotropic Damage"]["Critical Value X"]
-    crit_90 = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
-    aniso_crit[block_id] = [crit_0, crit_90]
+    # crit_0 = damage_parameter["Critical Value"]
+    # crit_90 = damage_parameter["Critical Value"]
+    # if !haskey(damage_parameter, "Anisotropic Damage")
+    #     return datamanager
+    # end
+    # crit_0 = damage_parameter["Anisotropic Damage"]["Critical Value X"]
+    # crit_90 = damage_parameter["Anisotropic Damage"]["Critical Value Y"]
+    # aniso_crit[block_id] = [crit_0, crit_90]
 
+    # datamanager.set_aniso_crit_values(aniso_crit)
+
+    aniso_crit[block_id] = damage_parameter["Anisotropic Damage"]
     datamanager.set_aniso_crit_values(aniso_crit)
+
     return datamanager
 end
 

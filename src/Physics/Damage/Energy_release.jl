@@ -175,6 +175,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
                 x = abs(bond_norm_all[1]) / sum(abs.(bond_norm_all))
                 crit_energy = 6.41640733892757 + 43.447538762292922x - 48.899767470904678x^2 + 18.972581432264228x^3
+                # crit_energy = eval(Meta.parse(aniso_crit_values[block_ids[iID]]))
                 if (bond_energy / quad_horizon[iID]) > crit_energy
                     bond_damage[iID][jID] = 0.0
                     update_list[iID] = true
@@ -242,12 +243,12 @@ Get the quadric of the horizon.
 # Arguments
 - `horizon::Float64`: The horizon of the block.
 - `dof::Int64`: The degree of freedom.
+- `thickness::Float64`: The thickness of the block.
 # Returns
 - `quad_horizon::Float64`: The quadric of the horizon.
 """
-function get_quad_horizon(horizon::Float64, dof::Int64)
+function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
     if dof == 2
-        thickness::Float64 = 1 # is a placeholder
         return Float64(3 / (pi * horizon^3 * thickness))
     end
     return Float64(4 / (pi * horizon^4))
@@ -257,8 +258,9 @@ function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int
     quad_horizon = datamanager.create_constant_node_field("Quad Horizon", Float64, 1)
     horizon = datamanager.get_field("Horizon")
     dof = datamanager.get_dof()
+    thickness::Float64 = get(damage_parameter, "Thickness", 1)
     for iID in nodes
-        quad_horizon[iID] = get_quad_horizon(horizon[iID], dof)
+        quad_horizon[iID] = get_quad_horizon(horizon[iID], dof, thickness)
     end
     return datamanager
 end
