@@ -9,6 +9,7 @@ using TimerOutputs
 using DataFrames
 using LibGit2
 using PrettyTables
+using Dates
 # using ProgressMeter
 export init_logging
 export set_result_files
@@ -31,14 +32,14 @@ function set_log_file(filename::String, debug::Bool, rank::Int64, size::Int64)
 
     if size > 1
         if debug
-            return split(filename, ".")[1] * "_$size.$rank.log"
+            return split(filename, ".")[1] * "_" * Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") * "_$size.$rank.log"
         elseif rank == 0
-            return split(filename, ".")[1] * ".log"
+            return split(filename, ".")[1] * "_" * Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") * ".log"
         else
             return ""
         end
     end
-    return split(filename, ".")[1] * ".log"
+    return split(filename, ".")[1] * "_" * Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") * ".log"
 
 end
 
