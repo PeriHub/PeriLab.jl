@@ -229,9 +229,9 @@ MPI.Init()
         @testset "test_Abaqus" begin
             @includetests["fullscale_tests/test_Abaqus/test_Abaqus"]
         end
-        # @testset "test_aniso_damage" begin
-        #     @includetests["fullscale_tests/test_aniso_damage/test_aniso_damage"]
-        # end
+        @testset "test_aniso_damage" begin
+            @includetests["fullscale_tests/test_aniso_damage/test_aniso_damage"]
+        end
         @testset "test_material_field" begin
             @includetests["fullscale_tests/test_material_field/test_material_field"]
         end
@@ -244,3 +244,11 @@ MPI.Init()
 end
 
 MPI.Finalize()
+
+#cleanup
+rm("tmp", force=true, recursive=true)
+files = readdir()
+log_files = filter(endswith(".log"), files)
+for file in log_files
+    rm(file)
+end

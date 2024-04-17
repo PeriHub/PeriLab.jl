@@ -18,7 +18,8 @@ function main()
     exo = ExodusDatabase(file_name, "r")
 
     coords = read_coordinates(exo)
-    damage = read_values(exo, NodalVariable, 100, "Damage")
+    times = read_times(exo)
+    damage = read_values(exo, NodalVariable, length(times), "Damage")
 
     # Find indices of damaged coordinates
     damaged_indices = findall(x -> x > 0.3, damage)
@@ -37,8 +38,6 @@ function main()
 
     x_values .-= offset[1]
     y_values .-= offset[2]
-
-    times = read_times(exo)
 
     f = fit(x_values, y_values, 8; weights=damage[damaged_indices])
 

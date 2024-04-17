@@ -312,14 +312,15 @@ function init_orientations(datamanager::Module)
     end
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
-    orientations = datamanager.create_constant_node_field("Orientations", Float64, dof)
+    orientations = datamanager.create_constant_node_field("Orientations", Float64, 3)
     for iID in 1:nnodes
         rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
         if dof == 2
-            orientations[iID, :] = rotation_tensor * [1, 0]
+            orientations[iID, :] = vcat(rotation_tensor[:, 1], 0)
         elseif dof == 3
-            orientations[iID, :] = rotation_tensor * [1, 1, 1]
+            orientations[iID, :] = rotation_tensor[:, 1]
         end
+
     end
     return datamanager
 end
