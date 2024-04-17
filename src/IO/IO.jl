@@ -286,7 +286,7 @@ Initialize data.
 - `data::Dict`: The data
 """
 function initialize_data(filename::String, filedirectory::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
-
+    datamanager.set_directory(filedirectory)
     @timeit to "MPI init data" begin
         datamanager.set_rank(MPI.Comm_rank(comm))
         datamanager.set_max_rank(MPI.Comm_size(comm))
