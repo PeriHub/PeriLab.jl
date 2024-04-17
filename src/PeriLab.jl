@@ -205,7 +205,10 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
 
         try
             # atexit(() -> cleanup(comm))
-
+            if silent && debug
+                @warn "Silent and debug mode currently cannot be used at the same time."
+                silent = false
+            end
             Logging_module.init_logging(filename, debug, silent, rank, size)
             if rank == 0
                 if !silent

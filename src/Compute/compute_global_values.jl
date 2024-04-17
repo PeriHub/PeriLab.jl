@@ -28,34 +28,38 @@ function calculate_nodelist(datamanager::Module, fieldKey::String, dof::Union{In
         return nothing
     end
     field = datamanager.get_field(fieldKey)
-    nnodes = datamanager.get_nnodes()
-    nodes = 1:nnodes
-    nodes = nodes[node_set]
+    field_type = datamanager.get_field_type(fieldKey)
+    node_list = datamanager.get_local_nodes(node_set)
+
     if calculation_type == "Sum"
-        if length(nodes) == 0
-            value = fill(field_type(0), length(field[1, :]))
+        if length(node_list) == 0
+            value = field_type(0)
+        else
+            value = global_value_sum(field, dof, node_list)
         end
-        value = global_value_sum(field, dof, nodes)
     elseif calculation_type == "Maximum"
-        if length(nodes) == 0
-            value = fill(typemin(field_type), length(field[1, :]))
+        if length(node_list) == 0
+            value = typemin(field_type)
+        else
+            value = global_value_max(field, dof, node_list)
         end
-        value = global_value_max(field, dof, nodes)
     elseif calculation_type == "Minimum"
-        if length(nodes) == 0
-            value = fill(typemax(field_type), length(field[1, :]))
+        if length(node_list) == 0
+            value = typemax(field_type)
+        else
+            value = global_value_min(field, dof, node_list)
         end
-        value = global_value_min(field, dof, nodes)
     elseif calculation_type == "Average"
-        if length(nodes) == 0
-            value = fill(field_type(0), length(field[1, :]))
+        if length(node_list) == 0
+            value = field_type(0)
+        else
+            value = global_value_avg(field, dof, node_list)
         end
-        value = global_value_avg(field, dof, nodes)
     else
-        @warn "Unknown calculation type $calculationType"
+        @warn "Unknown calculation type $calculation_type"
         return nothing
     end
-    return value, Int64(length(nodes))
+    return value, Int64(length(node_list))
 end
 
 """

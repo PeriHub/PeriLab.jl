@@ -57,6 +57,7 @@ PeriLab:
         Number of Neighbors: True
         Forces: True
         External Forces: True
+        External Force Densities: True
         Velocity: True
         Acceleration: True
         Volume: True
