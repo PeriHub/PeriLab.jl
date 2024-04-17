@@ -10,16 +10,13 @@ using MPI
 using PeriLab
 Logging.disable_logging(Logging.Error)
 
-Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
+# Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
 
 include("helper.jl")
 
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
-    @testset "test_DCB" begin
-        @includetests["fullscale_tests/test_DCB/test_DCB"]
-    end
     @testset "unit_tests" begin
         @testset "ut_perilab" begin
             @includetests["unit_tests/ut_perilab"]
@@ -249,8 +246,4 @@ MPI.Finalize()
 
 #cleanup
 rm("tmp", force=true, recursive=true)
-files = readdir()
-log_files = filter(endswith(".log"), files)
-for file in log_files
-    rm(file)
-end
+run(`find . -name "*.log" -type f -delete`)

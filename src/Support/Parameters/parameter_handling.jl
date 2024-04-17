@@ -148,6 +148,9 @@ global expected_structure = Dict(
                                     "C55" => [Union{Float64,Int64}, false],
                                     "C56" => [Union{Float64,Int64}, false],
                                     "C66" => [Union{Float64,Int64}, false],
+                                    "File" => [String, false],
+                                    "Number of Properties" => [Int64, false],
+                                    "Predefined Field Names" => [String, false],
                                 ), true],
                         ), false],
                     "Thermal Models" => [Dict{Any,Any}(
@@ -304,7 +307,7 @@ function validate_yaml(params::Dict)
     validate, checked_keys = validate_structure_recursive(expected_structure, params, validate, checked_keys)
     #Check if all keys have been checked
     for key in all_keys
-        if !(key in checked_keys)
+        if !(key in checked_keys) && !contains(key, "Property_")
             @warn "Key not known - $key, going to ignore it"
         end
     end
