@@ -241,39 +241,51 @@ function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     initial_time = get_initial_time(params)
     final_time = get_final_time(params)
     safety_factor = get_safety_factor(params)
-    dt = get_fixed_dt(params)
-    # @info "Initial time: " * string(initial_time) * " [s]"
-    # @info "Final time: " * string(final_time) * " [s]"
-    if dt == -1.0
-        dt = compute_crititical_time_step(datamanager, block_nodes, mechanical, thermo)
-        # @info "Minimal time increment: " * string(dt) * " [s]"
+    fixed_dt = get_fixed_dt(params)
+    if fixed_dt == -1.0
+        min_dt = compute_crititical_time_step(datamanager, block_nodes, mechanical, thermo)
+        nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * min_dt)
     else
-        # @info "Fixed time increment: " * string(dt) * " [s]"
+        nsteps, dt = get_integration_steps(initial_time, final_time, fixed_dt)
     end
 
-    nsteps, dt = get_integration_steps(initial_time, final_time, safety_factor * dt)
     comm = datamanager.get_comm()
     dt = find_and_set_core_value_min(comm, dt)
     nsteps = find_and_set_core_value_max(comm, nsteps)
     numerical_damping = get_numerical_damping(params)
     max_damage = get_max_damage(params)
 
-    # @info "Safety Factor: " * string(safety_factor)
-    # @info "Time increment: " * string(dt) * " [s]"
-    # @info "Number of steps: " * string(nsteps)
-    # @info "Numerical Damping " * string(numerical_damping)
     if datamanager.get_rank() == 0
         data = [
             "Verlet Solver" "" "" "";
             "Initial time" "."^10 initial_time "s";
-            "Final time" "."^10 final_time "s";
-            "Minimal time increment" "."^10 dt "s";
-            "Fixed time increment" "."^10 dt "s";
-            "Safety factor" "."^10 safety_factor "";
-            "Time increment" "."^10 dt "s";
-            "Number of steps" "."^10 nsteps "";
-            "Numerical Damping" "."^10 numerical_damping ""
+            "Final time" "."^10 final_time "s"
         ]
+        if fixed_dt != -1.0
+            data = vcat(
+                data,
+                [
+                    "Fixed time increment" "."^10 fixed_dt "s";
+                ]
+            )
+        else
+            data = vcat(
+                data,
+                [
+                    "Minimal time increment" "."^10 min_dt "s";
+                    "Safety factor" "."^10 safety_factor "";
+                    "Time increment" "."^10 dt "s"
+                ]
+            )
+        end
+        data = vcat(
+            data,
+            [
+                "Number of steps" "."^10 nsteps "";
+                "Numerical Damping" "."^10 numerical_damping ""
+            ]
+        )
+
         print_table(data, datamanager)
     end
     return initial_time, dt, nsteps, numerical_damping, max_damage
@@ -476,7 +488,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 if !damage_init && max_damage > 0
                     damage_init = true
                     if !silent
-                        set_multiline_postfix(iter, "Bond damage initiated!")
+                        # set_multiline_postfix(iter, "Bond damage initiated!")
                     end
                 end
             end
