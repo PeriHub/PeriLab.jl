@@ -13,6 +13,7 @@ Manifest.toml
 *.out
 *.sbatch
 *.png
+*.svg
 !**/Reference/*.e*
 LocalPreferences.toml
 

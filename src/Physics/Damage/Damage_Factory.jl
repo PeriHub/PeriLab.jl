@@ -49,13 +49,6 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
         damage_name = params["Blocks"]["block_$block_id"]["Damage Model"]
         damage_parameter = params["Physics"]["Damage Models"][damage_name]
         anisotropic_damage = haskey(damage_parameter, "Anisotropic Damage")
-        if anisotropic_damage
-            if !correspondence
-                @warn "Not all material models are of type correspondence. Bond based and PD solid are not supported by anisotropic damage"
-                # anisotropic_damage = false
-            end
-            break
-        end
     end
     if anisotropic_damage
         datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)

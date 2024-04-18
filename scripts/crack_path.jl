@@ -43,8 +43,8 @@ function main()
 
     scatter(x_values, y_values, zcolor=damage[damaged_indices], label="Damage")
 
-    plot!(f, extrema(x_values)..., label="8")
-    savefig("plot.png")
+    plot!(f, extrema(x_values)..., label="Polynomial Fit")
+    savefig("plot.svg")
 
     @info f
 

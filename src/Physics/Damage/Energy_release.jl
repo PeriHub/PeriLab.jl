@@ -129,8 +129,10 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             if norm_displacement == 0
                 continue
             end
-            if tension && deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
-                continue
+            if tension
+                if deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
+                    continue
+                end
             end
 
             # check if the bond also exist at other node, due to different horizons
