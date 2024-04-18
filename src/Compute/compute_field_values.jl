@@ -33,21 +33,14 @@ Computes the partial stresses.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function get_partial_stresses(datamanager::Module)
-    nnodes = datamanager.get_nnodes()
-    bond_forces = datamanager.get_field("Bond Forces", "NP1")
+function get_partial_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+    bond_forces = datamanager.get_field("Bond Forces")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     stress = datamanager.get_field("Cauchy Stress", "NP1")
     dof = datamanager.get_dof()
-    for iID in 1:nnodes
-        for jID in eachindex(bond_forces[iID][:, 1])
-            for i in 1:dof
-                for j in 1:dof
-                    stress[iID, i, j] += bond_forces[iID][jID, i] * undeformed_bond[iID][jID, j] * volume[iID]
-                end
-            end
-        end
+    for iID in nodes
+        stress[iID, :, :] .+= bond_forces[iID]' * undeformed_bond[iID] .* volume[iID]
     end
     return datamanager
 end

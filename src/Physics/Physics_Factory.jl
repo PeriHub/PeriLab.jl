@@ -13,6 +13,7 @@ include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
+include("../Compute/compute_field_values.jl")
 @reexport using .Parameter_Handling: get_physics_option, get_model_parameter, get_heat_capacity
 # in future FEM will be outside of the Physics_Factory
 include("../FEM/FEM_Factory.jl")
@@ -110,7 +111,10 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
                 @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, model_param, time, dt, to)
                 #TODO: I think this needs to stay here as we need the active_nodes not the update_nodes
                 @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, active_nodes)
-                if haskey(model_param, "von Mises stresses") && model_param["von Mises stresses"]
+                if options["Calculate Cauchy"] | options["Calculate von Mises"]
+                    datamanager = get_partial_stresses(datamanager, active_nodes)
+                end
+                if options["Calculate von Mises"]
                     datamanager = Material.calculate_von_mises_stress(datamanager, active_nodes)
                 end
             end
@@ -238,6 +242,12 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
                 @timeit to "init material" datamanager = Material.init_material_model(datamanager, block_nodes[block], block)
             end
         end
+    end
+    if solver_options["Calculate Cauchy"] | solver_options["Calculate von Mises"]
+        datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
+    end
+    if solver_options["Calculate von Mises"]
+        datamanager.create_node_field("von Mises Stress", Float64, 1)
     end
     if solver_options["Thermal Models"]
         @info "Init thermal models"

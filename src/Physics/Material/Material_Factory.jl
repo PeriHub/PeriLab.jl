@@ -204,13 +204,10 @@ Calculate the von Mises stress.
 """
 function calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     dof = datamanager.get_dof()
-    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1", false)
-    if isnothing(stress_NP1)
-        return datamanager
-    end
+    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
     for iID in nodes
-        get_von_mises_stress(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
+        von_Mises_stress[iID], spherical_stress_NP1, deviatoric_stress_NP1 = get_von_mises_stress(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
     end
     return datamanager
 end

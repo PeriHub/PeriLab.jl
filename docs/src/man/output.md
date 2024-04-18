@@ -36,6 +36,8 @@ Below you can find a list of all current Output Variables and the necessary Prer
 |Acceleration|-|
 |Forces|-|
 |Force Densities|-|
+|Cauchy Stress|-|
+|von Mises Stress|-|
 |Orientations|Rotated Nodes|
 |Damage|Damage Model|
 |Weighted Volume|PD Solid Elastic|
@@ -43,9 +45,7 @@ Below you can find a list of all current Output Variables and the necessary Prer
 |Yield Value|PD Solid Plastic|
 |Lambda Plastic|PD Solid Plastic|
 |Strain|Correspondence|
-|Cauchy Stress|Correspondence|
 |Zero Energy Stiffness|Correspondence|
-|von Mises Stress|Correspondence Plastic|
 |Plastic Strain|Correspondence Plastic|
 |Temperature|Thermal Models|
 |Delta Temperature|Thermal Models|
