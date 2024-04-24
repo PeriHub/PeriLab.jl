@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+name: 📝 Documentation request
+description: If you are missing some relevant documentations ✍️
+title: "[Doc]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this documentation request form!
+  - type: textarea
+    id: what
+    attributes:
+      label: What is currently missing in the documentation?
+      value: "I am missing the ..."
+    validations:
+      required: true
+  - type: textarea
+    id: related
+    attributes:
+      label: Can you share related references or the speficic functions you want to document?
+    validations:
+      required: false
+  - type: dropdown
+    id: pr-submit
+    attributes:
+      label: Would you be willing to submit a PR?
+      options:
+        - "Yes"
+        - "No"
+      default: 1
+    validations:
+      required: true
