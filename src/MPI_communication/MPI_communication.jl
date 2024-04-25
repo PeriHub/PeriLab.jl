@@ -105,19 +105,25 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
         if !isempty(overlapnodes[rank+1][jcore]["Controller"])
             recv_index = overlapnodes[rank+1][jcore]["Controller"]
             if dof == 1
-                recv_msg = similar(vector[recv_index])
+                MPI.Recv!(vector[recv_index], comm; source=jcore - 1, tag=0)
             else
-                recv_msg = similar(vector[recv_index, :])
+                MPI.Recv!(vector[recv_index, :], comm; source=jcore - 1, tag=0)
             end
-            MPI.Recv!(recv_msg, comm, source=jcore - 1, tag=0)
-            if recv_msg[1, 1] isa Bool
-                continue
-            end
-            if dof == 1
-                vector[recv_index] .+= recv_msg
-            else
-                vector[recv_index, :] .+= recv_msg
-            end
+
+            # if dof == 1
+            #     recv_msg = similar(vector[recv_index])
+            # else
+            #     recv_msg = similar(vector[recv_index, :])
+            # end
+            # MPI.Recv!(recv_msg, comm, source=jcore - 1, tag=0)
+            # if recv_msg[1, 1] isa Bool
+            #     continue
+            # end
+            # if dof == 1
+            #     vector[recv_index] .+= recv_msg
+            # else
+            #     vector[recv_index, :] .+= recv_msg
+            # end
         end
     end
 
@@ -160,23 +166,23 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
         end
         if !isempty(overlapnodes[rank+1][jcore]["Responder"])
             recv_index = overlapnodes[rank+1][jcore]["Responder"]
-            # if dof == 1
-            #     MPI.Recv!(vector[recv_index], comm; source=jcore - 1, tag=0)
-            # else
-            #     MPI.Recv!(vector[recv_index, :], comm; source=jcore - 1, tag=0)
-            # end
+            if dof == 1
+                MPI.Recv!(vector[recv_index], comm; source=jcore - 1, tag=0)
+            else
+                MPI.Recv!(vector[recv_index, :], comm; source=jcore - 1, tag=0)
+            end
 
-            if dof == 1
-                recv_msg = similar(vector[recv_index])
-            else
-                recv_msg = similar(vector[recv_index, :])
-            end
-            MPI.Recv!(recv_msg, comm; source=jcore - 1, tag=0)
-            if dof == 1
-                vector[recv_index] .= recv_msg
-            else
-                vector[recv_index, :] .= recv_msg
-            end
+            # if dof == 1
+            #     recv_msg = similar(vector[recv_index])
+            # else
+            #     recv_msg = similar(vector[recv_index, :])
+            # end
+            # MPI.Recv!(recv_msg, comm; source=jcore - 1, tag=0)
+            # if dof == 1
+            #     vector[recv_index] .= recv_msg
+            # else
+            #     vector[recv_index, :] .= recv_msg
+            # end
         end
     end
     return vector
