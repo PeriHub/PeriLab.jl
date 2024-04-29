@@ -8,6 +8,21 @@ using Test
 # using Reexport
 # @reexport using .Helpers
 using ProgressBars
+
+@testset "ut_qdim" begin
+    @test isnothing(PeriLab.Solver.Helpers.qdim(0))
+    PeriLab.Solver.Helpers.qdim(1)==3
+    PeriLab.Solver.Helpers.qdim(2)==9
+    PeriLab.Solver.Helpers.qdim(3)==19
+    PeriLab.Solver.Helpers.qdim(4)==34
+    PeriLab.Solver.Helpers.qdim(5)==55
+    PeriLab.Solver.Helpers.qdim(6)==83
+    PeriLab.Solver.Helpers.qdim(7)==119
+    PeriLab.Solver.Helpers.qdim(8)==164
+    PeriLab.Solver.Helpers.qdim(9)==219
+    PeriLab.Solver.Helpers.qdim(10)==285
+end
+
 @testset "ut_interpolation" begin
     x = [0.0, 1.0, 2.0, 3.0, 4.0]
     y = [-1.0, 0.0, 7.0, 26.0, 63.0]  # x.^3 - 1.

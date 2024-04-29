@@ -7,6 +7,7 @@ module Helpers
 using Tensors
 using Dierckx
 using ProgressBars
+export qdim
 export check_inf_or_nan
 export find_active
 export get_active_update_nodes
@@ -18,6 +19,31 @@ export get_fourth_order
 export interpolation
 export interpol_data
 export progress_bar
+
+"""
+    qdim(order::Int64)
+
+Calculate the number of terms in a polynomial expansion up to a specified accuracy order.
+
+# Arguments
+- `order::Int64`: The accuracy order of the polynomial expansion.
+
+# Returns
+- `Int64`: The total number of terms in the polynomial expansion.
+
+# Description
+This function calculates the number of terms in a polynomial expansion up to the specified accuracy order 
+using an analytical formula derived from combinatorial considerations. The function iterates over each order 
+from 1 to the specified `order` and calculates the sum of binomial coefficients according to the formula:
+qdim(order) = Σ(i=1 to order) [(i+2)! / (2! * i!)]
+"""
+function qdim(order::Int64)
+    if order < 1
+        @error "Accuracy order must be greater than zero."
+        return nothing
+    end
+    return Int64(sum(factorial(i+2) / (factorial(2) * factorial(i)) for i in 1:order))
+end
 
 """
     find_indices(vector, what)
