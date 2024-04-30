@@ -6,13 +6,10 @@ module Correspondence
 using LinearAlgebra
 using TensorOperations
 using TimerOutputs
-include("Correspondence_Elastic.jl")
 include("./Zero_Energy_Control/global_control.jl")
 include("../material_basis.jl")
 include("../../../Support/geometry.jl")
 using .Global_zero_energy_control
-using .Correspondence_Elastic
-
 
 include("../../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
