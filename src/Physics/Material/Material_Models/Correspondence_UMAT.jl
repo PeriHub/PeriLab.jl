@@ -222,7 +222,7 @@ function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int6
   not_supported_int::Int64 = 0
   for iID in nodes
     rot_NP1[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
-    UMAT_interface(material_parameter["File"], stress_temp, statev[iID, :], DDSDDE, SSE[iID], SPD[iID], SCD[iID], RPL[iID], DDSDDT[iID,:], DRPLDE[iID,:], DRPLDT[iID], matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temp[iID], dtemp[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, props, nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0[iID,:,:], DFGRD1[iID,:,:], not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
+    UMAT_interface(material_parameter["File"], stress_temp, statev[iID, :], DDSDDE, SSE[iID], SPD[iID], SCD[iID], RPL[iID], DDSDDT[iID,:], DRPLDE[iID,:], DRPLDT[iID], matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temp[iID], dtemp[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, Vector{Float64}(props[:]), nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0[iID,:,:], DFGRD1[iID,:,:], not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
     Global_zero_energy_control.global_zero_energy_mode_stiffness(iID, dof, DDSDDE, Kinv, zStiff)
     stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
   end
@@ -278,7 +278,7 @@ UMAT interface
 # Returns
 - `datamanager`: Datamanager
 """
-function UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::SubArray, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
+function UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
   expr = :(ccall((:umat_, $filename), Cvoid,
     (Ptr{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ref{Float64}, Ref{Float64},
       Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64}, Ptr{Float64}, Ptr{Float64}, Ref{Float64},
