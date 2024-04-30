@@ -5,37 +5,19 @@ SPDX-License-Identifier: BSD-3-Clause
 -->
 
 ## Dev Steps
-    1. dof für koordinaten an alle cores verteilen verteilen -> done
-    2. num_responder num_controller verteilen -> done
-    3. coordinatenfelder initialisieren auf allen Knoten -> done
-    4. versenden von Koordinaten -> done
-    5. versenden der Block_Id der Knoten -> done
-    5.a neighborhoodlist -> num neighbor für jeden knoten -> done
-                         -> feld init an jedem knoten -> das vielleicht skalierbare referenz? -> done
-    5.b neighboorhoodlist verteilen -> done
-    5.c bond init lists -> done
-    !-----------
-    6. loc to glob -> distributionsfeld an die Knoten -> done 
-    7. glob to loc ableiten für RB Knoten -> done
-    8. overlapmap verteilen an Knoten -> send to all! -> done
-    ! ---------
-    9. block filter -> auf den Kernen block_id -> alle Knoten -> done
-    10. BC Filter -> an alle -> done
-    ! -------------
-    11. Nachbarschaftslisten versenden ! wie in sinnvoller Weise?
-    12. bondvectors set to zero -> done
-    13. bc interpreter -> done
-    13.a nodesets in mesh -> done
-    14. overlap synchronisation
-    15. bc in solver -> done
-    16. verlet solver -> pacackage?
-    17. write output -> done
-    18. integrate first model
-    18.a step width determination -> done
-    19. first test
-    20. 2D arrays in fields
-    21. params reader for material + physics -> done
-    22. compute class
+  Introduction of bond associated correspondence 
+
+**Developement plan**
+- Bond associated neighborhood is the overlap between nlist[iID] and nlist[nlist[iID][jID]]
+- Filter equal nodes and create a new neighborhoodlist for bond -> bond_nlist
+- calculate K, Kinv and defGrad -> already there if the neighborhood loop is in a function
+- weighted volume (sum(volume(bond_nlist))/sum(volume[nlist[iID]]))
+
+If this works for one core the following will be introduced
+
+- all neighbors search for neighbors at each core
+- numbers are correct and it allows a change in size -> local ID is correct
+
 
 ## Design decisions
 Each vector entry for a value exists for all nodes, also if the node does not have this property in a block. However, the synchronisation is very ugly, because all responder nodes of block with value I need the entry at the other core to. If not it will lead nowhere if MPI communication occurs
