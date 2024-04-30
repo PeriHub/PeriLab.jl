@@ -25,7 +25,7 @@ volume = datamanager.get_field("Volume")
 omega = datamanager.get_field("Influence Function")
 bond_damage = datamanager.get_bond_damage("NP1")
 undeformed_bond = datamanager.get_field("Bond Geometry")
-bond_shapeTensor = datamanager.get_field("Bond Associated Shape Tensor")
+bond_shape_tensor = datamanager.get_field("Bond Associated Shape Tensor")
 inverse_bond_shape_tensor = datamanager.get_field("Inverse Bond Associated Shape Tensor")
 
 
@@ -43,7 +43,7 @@ for iID in nodes
     for (jID, nID) in enumerate(nlist[iID])
         neighbor_nlist = find_local_neighbors(neighbor_coordinate[nID], coordinates[nlist[nlist.!=nID],:], nlist[iID], bond_horizon)
         indices = vcat(1:jID-1, jID+1:length(nlist[iID]))
-        shapeTensor[iID][jID,:,:], inverse_shape_tensor[iID][jID,:,:] = Geometry.bond_associated_shape_tensor(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond[iID][indices], bond_shapeTensor[iID][jID, :, :], inverse_bond_shape_tensor[iID][jID, :, :])      
+        shape_tensor[iID][jID,:,:], inverse_shape_tensor[iID][jID,:,:] = Geometry.bond_associated_shape_tensor(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond[iID][indices], bond_shape_tensor[iID][jID, :, :], inverse_bond_shape_tensor[iID][jID, :, :])      
       end
     
 end
@@ -51,28 +51,28 @@ return datamanager
 end
 end
 
-function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
-    shapeTensor .= 0
+function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+    shape_tensor .= 0
     for iID in nodes
-        shapeTensor[iID, :, :] = calculate_shape_tensor(shapeTensor[iID, :, :], dof, volume[nlist[iID]], omega[iID], bond_damage[iID], undeformed_bond[iID])
+        shape_tensor[iID, :, :] = calculate_shape_tensor(shape_tensor[iID, :, :], dof, volume[nlist[iID]], omega[iID], bond_damage[iID], undeformed_bond[iID])
         try
-            inverse_shape_tensor[iID, :, :] = inv(shapeTensor[iID, :, :])
+            inverse_shape_tensor[iID, :, :] = inv(shape_tensor[iID, :, :])
         catch ex
             @error "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
             return nothing, nothing
         end
     end
 
-    return shapeTensor, inverse_shape_tensor
+    return shape_tensor, inverse_shape_tensor
 end
 
-function calculate_shape_tensor(shapeTensor::Matrix{Float64}, dof::Int64, volume, omega, bond_damage, undeformed_bond)
+function calculate_shape_tensor(shape_tensor::Matrix{Float64}, dof::Int64, volume, omega, bond_damage, undeformed_bond)
 
 for i in 1:dof
     for j in 1:dof
-        shapeTensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
+        shape_tensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
     end
 end
 
-return shapeTensor
+return shape_tensor
 end

@@ -98,7 +98,7 @@ using Test
     undeformed_bond = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond, undeformed_bond_length)
     @test isnothing(undeformed_bond)
 end
-@testset "ut_shapeTensorAnddeformation_gradient" begin
+@testset "ut_shape_tensorAnddeformation_gradient" begin
     nnodes = 4
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
@@ -125,7 +125,7 @@ end
     omega = test_Data_manager.create_constant_bond_field("Influence Function", Float64, 1)
 
     bond_damage = test_Data_manager.create_constant_bond_field("Bond Damage", Float64, 1)
-    shapeTensor = test_Data_manager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
+    shape_tensor = test_Data_manager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
     inverse_shape_tensor = test_Data_manager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
     deformation_gradient = test_Data_manager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
     omega[1][:] .= 1
@@ -151,7 +151,7 @@ end
     coor[4, 2] = 0.5
 
     undeformed_bond, undeformed_bond_length = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond, undeformed_bond_length)
-    shapeTensor, inverse_shape_tensor = PeriLab.IO.Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
+    shape_tensor, inverse_shape_tensor = PeriLab.IO.Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
     deformed_coor = copy(coor)
 
@@ -218,8 +218,8 @@ end
     bond_damage[3][:] .= 0
     bond_damage[4][:] .= 0
 
-    shapeTensor, inverse_shape_tensor = PeriLab.IO.Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
-    @test isnothing(shapeTensor)
+    shape_tensor, inverse_shape_tensor = PeriLab.IO.Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+    @test isnothing(shape_tensor)
     @test isnothing(inverse_shape_tensor)
 end
 
@@ -236,7 +236,7 @@ end
     bond_damage = test_Data_manager.create_constant_bond_field("Bond Damage", Float64, 1)
     undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
     undeformed_bond_length = test_Data_manager.create_constant_bond_field("Bond Length", Float64, 1)
-    shapeTensor = test_Data_manager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
+    shape_tensor = test_Data_manager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
     inverse_shape_tensor = test_Data_manager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
 
 

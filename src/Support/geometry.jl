@@ -61,7 +61,7 @@ function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, 
 end
 
 """
-    shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
+    shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
 Calculate the shape tensor and its inverse for a set of nodes in a computational mechanics context.
 
@@ -73,11 +73,11 @@ Calculate the shape tensor and its inverse for a set of nodes in a computational
 - `omega`: A vector or array containing omega information for each node.
 - `bond_damage`: A data structure representing bond damage for each node.
 - `undeformed_bond`: A data structure representing bond geometries for each node.
-- `shapeTensor`: A preallocated 3D array to store the shape tensors for each node.
+- `shape_tensor`: A preallocated 3D array to store the shape tensors for each node.
 - `inverse_shape_tensor`: A preallocated 3D array to store the inverse shape tensors for each node.
 
 # Output
-- `shapeTensor`: An updated `shapeTensor` array with calculated shape tensors.
+- `shape_tensor`: An updated `shape_tensor` array with calculated shape tensors.
 - `inverse_shape_tensor`: An updated `inverse_shape_tensor` array with calculated inverse shape tensors.
 
 # Description
@@ -94,49 +94,49 @@ volume = [0.1, 0.2, 0.3]
 omega = [0.5, 0.4, 0.6]
 bond_damage = zeros(Float64, length(nodes), length(nlist[1]))
 undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
-shapeTensor = zeros(Float64, length(nodes), dof, dof)
+shape_tensor = zeros(Float64, length(nodes), dof, dof)
 inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 
-shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
+shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 """
-function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
+function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
     for iID in nodes
-        shapeTensor[iID, :, :] = calculate_shape_tensor(shapeTensor[iID, :, :], dof, volume[nlist[iID]], omega[iID], bond_damage[iID], undeformed_bond[iID])
+        shape_tensor[iID, :, :] = calculate_shape_tensor(shape_tensor[iID, :, :], dof, volume[nlist[iID]], omega[iID], bond_damage[iID], undeformed_bond[iID])
         try
-            inverse_shape_tensor[iID, :, :] = inv(shapeTensor[iID, :, :])
+            inverse_shape_tensor[iID, :, :] = inv(shape_tensor[iID, :, :])
         catch ex
             @error "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
             return nothing, nothing
         end
     end
 
-    return shapeTensor, inverse_shape_tensor
+    return shape_tensor, inverse_shape_tensor
 end
 
 
-function calculate_shape_tensor(shapeTensor::Matrix{Float64}, dof::Int64, volume, omega, bond_damage, undeformed_bond)
+function calculate_shape_tensor(shape_tensor::Matrix{Float64}, dof::Int64, volume, omega, bond_damage, undeformed_bond)
 
 for i in 1:dof
     for j in 1:dof
-        shapeTensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
+        shape_tensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
     end
 end
-return shapeTensor
+return shape_tensor
 end
 
 
-function bond_associated_shape_tensor(dof::Int64, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
+function bond_associated_shape_tensor(dof::Int64, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
-    shapeTensor[:, :] = calculate_shape_tensor(shapeTensor[:, :], dof, volume, omega, bond_damage, undeformed_bond)
+    shape_tensor[:, :] = calculate_shape_tensor(shape_tensor[:, :], dof, volume, omega, bond_damage, undeformed_bond)
     try
-        inverse_shape_tensor[:, :] = inv(shapeTensor[:, :])
+        inverse_shape_tensor[:, :] = inv(shape_tensor[:, :])
     catch ex
         @error "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
         return nothing, nothing
     end
 
-    return shapeTensor, inverse_shape_tensor
+    return shape_tensor, inverse_shape_tensor
 
 end
 
