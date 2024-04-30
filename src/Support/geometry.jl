@@ -100,7 +100,7 @@ inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
 """
 function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
-    shapeTensor .= 0
+
     for iID in nodes
         shapeTensor[iID, :, :] = calculate_shape_tensor(shapeTensor[iID, :, :], dof, volume[nlist[iID]], omega[iID], bond_damage[iID], undeformed_bond[iID])
         try
@@ -114,6 +114,7 @@ function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, v
     return shapeTensor, inverse_shape_tensor
 end
 
+
 function calculate_shape_tensor(shapeTensor::Matrix{Float64}, dof::Int64, volume, omega, bond_damage, undeformed_bond)
 
 for i in 1:dof
@@ -121,8 +122,30 @@ for i in 1:dof
         shapeTensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
     end
 end
-
 return shapeTensor
+end
+
+
+function bond_associated_shape_tensor(dof::Int64, volume, omega, bond_damage, undeformed_bond, shapeTensor, inverse_shape_tensor)
+
+    shapeTensor[:, :] = calculate_shape_tensor(shapeTensor[:, :], dof, volume, omega, bond_damage, undeformed_bond)
+    try
+        inverse_shape_tensor[:, :] = inv(shapeTensor[:, :])
+    catch ex
+        @error "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
+        return nothing, nothing
+    end
+
+    return shapeTensor, inverse_shape_tensor
+
+end
+
+
+
+function bond_associated_deformation_gradient(dof::Int64, volume, omega, bond_damage, undeformed_bond, deformed_bond, deformation_gradient)
+    
+    return calculate_deformation_gradient(deformation_gradient, dof, bond_damage, deformed_bond, undeformed_bond, volume, omega)
+
 end
 
 """
@@ -168,10 +191,7 @@ deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, undeformed_b
 function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, undeformed_bond::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
     deformation_gradient .= 0
     for iID in nodes
-
-        deformation_gradient[iID, :, :] = calculate_deformation_gradient(deformation_gradient[iID,:,:], dof, bond_damage[iID],deformed_bond[iID], undeformed_bond[iID], volume[nlist[iID]] ,omega[iID])
- 
-        deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]
+        deformation_gradient[iID, :, :] = calculate_deformation_gradient(deformation_gradient[iID,:,:], dof, bond_damage[iID], deformed_bond[iID], undeformed_bond[iID], volume[nlist[iID]], omega[iID])
     end
 
     return deformation_gradient
