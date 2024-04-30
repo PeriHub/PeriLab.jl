@@ -5,9 +5,9 @@
 module Pre_calculation
 include("bond_deformation.jl")
 include("bond_deformation_gradient.jl")
-include("bond_shapeTensor.jl")
+include("bond_shape_tensor.jl")
 include("deformation_gradient.jl")
-include("shapeTensor.jl")
+include("shape_tensor.jl")
 
 using TimerOutputs
 using .Bond_Deformation
