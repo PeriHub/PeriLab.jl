@@ -68,13 +68,13 @@ function correspondence_name()
 end
 
 """
-    compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+    compute_stresses(datamanager::Module, iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `iID::Int64`: Node ID.
 - `dof::Int64`: Degrees of freedom
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
@@ -82,6 +82,7 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
+- `nodeID`::Int64 = 0: (optional) is the primary nodes. If it exists, iID is the bond number. Is needed for bond associated material.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
@@ -89,13 +90,11 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nodeID::Int64 = -1)
 
    hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
-   for iID in nodes
-      stress_NP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) + stress_N[iID, :, :]
-   end
+   stress_NP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) + stress_N[iID, :, :]
 
    return stress_NP1, datamanager
 end
