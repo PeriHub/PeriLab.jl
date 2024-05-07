@@ -153,6 +153,7 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
         if !isempty(overlapnodes[rank+1][jcore]["Controller"])
             send_index = overlapnodes[rank+1][jcore]["Controller"]
             if dof == 1
+                # @info "$rank: Sending   $rank -> $(jcore-1): = $(vector[send_index])"
                 MPI.Isend(vector[send_index], comm; dest=jcore - 1, tag=0)
             else
                 MPI.Isend(vector[send_index, :], comm; dest=jcore - 1, tag=0)
@@ -161,9 +162,10 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
         if !isempty(overlapnodes[rank+1][jcore]["Responder"])
             recv_index = overlapnodes[rank+1][jcore]["Responder"]
             if dof == 1
-                MPI.Recv!(vector[recv_index], comm; source=jcore - 1, tag=0)
+                vector[recv_index] = MPI.Recv!(vector[recv_index], comm; source=jcore - 1, tag=0)
+                # @info "$rank: Received $(jcore-1) -> $rank = $(vector[recv_index])"
             else
-                MPI.Recv!(vector[recv_index, :], comm; source=jcore - 1, tag=0)
+                vector[recv_index, :] = MPI.Recv!(vector[recv_index, :], comm; source=jcore - 1, tag=0)
             end
 
             # if dof == 1
@@ -177,6 +179,7 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
             # else
             #     vector[recv_index, :] .= recv_msg
             # end
+            # @info "$rank: Received $(jcore-1) -> $rank = $recv_msg"
         end
     end
     return vector

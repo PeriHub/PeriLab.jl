@@ -94,8 +94,8 @@ end
     NSHR::Int64 = 3
     NTENS::Int64 = 6
     NSTATEV::Int64 = length(STATEV)
-    PROPS::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
     NPROPS::Int64 = 1
+    PROPS::SubArray = test_Data_manager.create_constant_free_size_field("Properties", Float64, (NPROPS, 1))
     COORDS::Vector{Float64} = zeros(Float64, 3)  # Adjust as needed
     DROT::Matrix{Float64} = Matrix{Float64}(I, 3, 3)  # Adjust as needed
     PNEWDT::Float64 = 0.1
