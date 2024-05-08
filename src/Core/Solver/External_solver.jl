@@ -162,7 +162,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         #einfaches Beispiel bauen;
         # -> das Beispiel von der Website mit dem Datamanager; 
         # -> weniger Punkte
-        p = (datamanager, block_nodes, dt, step_time, solver_options, bcs, synchronise_field, to)
+        p = (datamanager, block_nodes, dt, step_time, solver_options, synchronise_field, to)
         tspan = (step_time, step_time + dt)
 
         datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time + dt)
@@ -175,7 +175,8 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         # the switch N to NP1 already happend in solve process
 
         #uNP1[:, :] .= reshape(sol.u[end][1:nnodes*dof], (nnodes, dof))
-        uNP1[:, :] .= sol.u[end]
+        @info sol.u
+        uNP1 .= sol.u[end]
 
         @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, max_damage, outputs, datamanager)
 
@@ -200,23 +201,23 @@ end
 
 
 function ode_interface(ddu::Union{SubArray,Matrix{Float64}}, u::Union{SubArray,Matrix{Float64}}, p::Tuple, t::Float64)
-    datamanager, block_nodes, dt, step_time, solver_options, bcs, synchronise_field, to = p
+    datamanager, block_nodes, dt, step_time, solver_options, synchronise_field, to = p
     #println(t)
 
     uNP1 = datamanager.get_field("Displacements", "NP1")
-    uNP1[:, :] .= u[:, :]
+    uNP1 .= u
     #datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time + dt)
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     coor = datamanager.get_field("Coordinates")
     density = datamanager.get_field("Density")
 
-    deformed_coorNP1[:, :] = coor[:, :] + uNP1[:, :]
+    deformed_coorNP1 .= coor .+ uNP1
     datamanager.synch_manager(synchronise_field, "upload_to_cores")
     datamanager = Physics.compute_models(datamanager, block_nodes, dt, step_time, solver_options, synchronise_field, to)
     datamanager.synch_manager(synchronise_field, "download_from_cores")
     forces_density = datamanager.get_field("Force Densities", "NP1")
 
-    ddu .= forces_density[:, :] ./ density[:] # element wise
+    ddu .= forces_density ./ density # element wise
     check_inf_or_nan(forces_density, "Forces")
     # to avoid that forces accumulate during iteration
     forces_density .= 0
