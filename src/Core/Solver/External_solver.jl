@@ -4,6 +4,7 @@
 
 module External_solver
 using DifferentialEquations
+# using OrdinaryDiffEq
 using LinearAlgebra
 using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
@@ -174,8 +175,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
 
         # the switch N to NP1 already happend in solve process
 
-        #uNP1[:, :] .= reshape(sol.u[end][1:nnodes*dof], (nnodes, dof))
-        @info sol.u
+        # uNP1 .= reshape(sol.u[end][1:nnodes*dof], (nnodes, dof))
         uNP1 .= sol.u[end]
 
         @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, max_damage, outputs, datamanager)
