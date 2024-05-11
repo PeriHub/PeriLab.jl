@@ -44,6 +44,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
         for id_int in eachindex(B_matrix[:, 1, 1])
 
             # epsilon  = BT*u 
+            
             strain_NP1[id_el, id_int, :] = B_matrix[id_int, :, :]' * reshape((displacement[topo, :] * jacobian[id_el, id_int, :, :])', le)
             strain_increment[id_el, id_int, :] = strain_NP1[id_el, id_int, :] - strain_N[id_el, id_int, :]
 
@@ -65,8 +66,8 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
                 #tbd
                 stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
             end
-            #tbd reshape
-            force_densities[topo, :] += reshape(B_matrix[id_int, :, :] * stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int], (nnodes, dof)) * jacobian[id_el, id_int, :, :]
+            
+            force_densities[topo, :] += reshape(B_matrix[id_int, :, :] * stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int], (dof, nnodes))' * jacobian[id_el, id_int, :, :]
             # if you do not use permutedims you will get some index errors
             stress_temp .+= stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int]
         end
