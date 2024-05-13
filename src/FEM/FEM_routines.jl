@@ -276,14 +276,13 @@ function get_number_of_integration_points(p::Vector{Int64}, dof::Int64)
 end
 
 
-function create_B_matrix(elements::Vector{Int64}, dof::Int64, B_elem, jacobian, B)
-    # B is (num_elem, num_integration_points, dof*nodes, 3*dof-2)
-    int_points = length(B[1, :, 1, 1])
-    nnodes = length(B[1, 1, :, 1]) / dof
+function create_B_matrix(elements::Vector{Int64}, dof::Int64, B_elem::Array, jacobian::SubArray, B::SubArray)
+    # size of B (num_elem, num_integration_points, dof*nodes, 3*dof-2)
+    nnodes::Int64 = length(B[1, 1, :, 1]) / dof
     for id_el in elements
-        for id_int in 1:int_points
+        for id_int in eachindex(B[1, :, 1, 1])
             for id_nodes in 1:nnodes
-                B[id_el, id_int, (id_nodes-1)*dof+1:(id_nodes)*dof, :] = jacobian[id_el, id_int, :, :] * B[point_id, (id_nodes-1)*dof:(id_nodes)*dof, :]
+                B[id_el, id_int, (id_nodes-1)*dof+1:(id_nodes)*dof, :] = jacobian[id_el, id_int, :, :] * B_elem[id_int, (id_nodes-1)*dof+1:id_nodes*dof, :]
             end
         end
     end

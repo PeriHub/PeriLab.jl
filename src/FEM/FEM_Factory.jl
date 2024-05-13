@@ -71,7 +71,8 @@ function init_FEM(complete_params::Dict, datamanager::Module)
     lumped_mass = datamanager.create_constant_node_field("Lumped Mass Matrix", Float64, 1)
     rho = datamanager.get_field("Density")
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
-    B_matrix = create_B_matrix(elements, dof, topology, B_elem, jacobian, B_matrix)
+    B_matrix = create_B_matrix(elements, dof, B_elem, jacobian, B_matrix)
+
     datamanager = get_FEM_nodes(datamanager, topology)
 
     return datamanager
