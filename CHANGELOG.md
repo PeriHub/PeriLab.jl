@@ -8,6 +8,27 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.5] - 2024-05-13
+
+### Fixed
+
+- CSV Output order 
+- Force Boundary Condition
+- Nodeset compute class
+- Orientation
+- UMAT Interface
+
+### Added
+
+- Solver summary
+- Calculate cauchy and von Mises stress
+- calculate_shape_tensor and calculate_deformation_gradient functions #152
+
+### Changed
+
+- Optimized Anisotropic Damage
+- Optimized MPI communication #151
+
 ## [1.1.4] - 2024-04-10
 
 ### Fixed
@@ -22,7 +43,7 @@ All notable changes to this project will be documented in this file.
 - Abaqus mesh to txt
 - Docs
 
-## Changed
+### Changed
 
 - MPI non-blocking
 - Bond length seperated from field #137
