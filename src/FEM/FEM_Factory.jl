@@ -42,15 +42,17 @@ function init_FEM(complete_params::Dict, datamanager::Module)
     end
     num_int = get_number_of_integration_points(p, dof)
     N = datamanager.create_constant_free_size_field("N Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, dof))
-    B = datamanager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
+
+    B_matrix = datamanager.create_constant_free_size_field("B Matrix", Float64, (nelements, prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
 
     strainN, strainNP1 = datamanager.create_free_size_field("Element Strain", Float64, (nelements, prod(num_int), 3 * dof - 3))
     stressN, stressNP1 = datamanager.create_free_size_field("Element Stress", Float64, (nelements, prod(num_int), 3 * dof - 3))
     strain_increment = datamanager.create_constant_free_size_field("Element Strain Increment", Float64, (nelements, prod(num_int), 3 * dof - 3))
 
     specifics = Dict{String,String}("Call Function" => "create_element_matrices", "Name" => "element_name")
-    N[:], B[:] = create_element_matrices(dof, p, Set_modules.create_module_specifics(params["Element Type"], module_list, specifics))
-    if isnothing(N) || isnothing(B)
+    # B_elem only temporary
+    N[:], B_elem = create_element_matrices(dof, p, Set_modules.create_module_specifics(params["Element Type"], module_list, specifics))
+    if isnothing(N) || isnothing(B_matrix)
         return nothing
     end
     specifics = Dict{String,String}("Call Function" => "init_element", "Name" => "element_name")
@@ -64,12 +66,12 @@ function init_FEM(complete_params::Dict, datamanager::Module)
     end
     jacobian = datamanager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
     determinant_jacobian = datamanager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
-    jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
+    jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B_elem, jacobian, determinant_jacobian)
 
     lumped_mass = datamanager.create_constant_node_field("Lumped Mass Matrix", Float64, 1)
     rho = datamanager.get_field("Density")
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
-
+    B_matrix = create_B_matrix(elements, dof, topology, B_elem, jacobian, B_matrix)
     datamanager = get_FEM_nodes(datamanager, topology)
 
     return datamanager

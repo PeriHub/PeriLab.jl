@@ -34,6 +34,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
     cauchy_stress = datamanager.get_field("Cauchy Stress", "NP1")
 
     B_matrix = datamanager.get_field("B Matrix")
+
     stress_temp = @MVector zeros(3 * dof - 3)
     le::Int64 = 0
     for id_el in elements
@@ -43,9 +44,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
 
         for id_int in eachindex(B_matrix[:, 1, 1])
 
-            # epsilon  = BT*u 
-            
-            strain_NP1[id_el, id_int, :] = B_matrix[id_int, :, :]' * reshape((displacement[topo, :] * jacobian[id_el, id_int, :, :])', le)
+            strain_NP1[id_el, id_int, :] = B_matrix[id_el, id_int, :, :]' * reshape((displacement[topo, :])', le)
             strain_increment[id_el, id_int, :] = strain_NP1[id_el, id_int, :] - strain_N[id_el, id_int, :]
 
             if rotation
@@ -66,8 +65,8 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
                 #tbd
                 stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
             end
-            
-            force_densities[topo, :] += reshape(B_matrix[id_int, :, :] * stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int], (dof, nnodes))' * jacobian[id_el, id_int, :, :]
+
+            force_densities[topo, :] += reshape(B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int], (dof, nnodes))'
             # if you do not use permutedims you will get some index errors
             stress_temp .+= stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int]
         end
@@ -85,8 +84,9 @@ function get_lumped_mass(elements::Vector{Int64}, dof::Int64, topology::SubArray
         temp = N[id_int, :, :] * N[id_int, :, :]'
         for id_el in elements
             nnodes = length(topology[id_el, :])
+            mean_rho = mean(rho[topology[id_el, :]])
             for i_node in 1:nnodes
-                lumped_mass[topology[id_el, i_node]] += sum(temp[(i_node-1)*dof, :]) .* mean(rho[topology[id_el, :]]) * determinant_jacobian[id_el, id_int]
+                lumped_mass[topology[id_el, i_node]] += sum(temp[(i_node-1)*dof+1, :]) .* mean_rho * determinant_jacobian[id_el, id_int]
             end
         end
     end
@@ -273,4 +273,19 @@ function get_number_of_integration_points(p::Vector{Int64}, dof::Int64)
         num_int[idof] = 2 * p[idof] - 1
     end
     return num_int
+end
+
+
+function create_B_matrix(elements::Vector{Int64}, dof::Int64, B_elem, jacobian, B)
+    # B is (num_elem, num_integration_points, dof*nodes, 3*dof-2)
+    int_points = length(B[1, :, 1, 1])
+    nnodes = length(B[1, 1, :, 1]) / dof
+    for id_el in elements
+        for id_int in 1:int_points
+            for id_nodes in 1:nnodes
+                B[id_el, id_int, (id_nodes-1)*dof+1:(id_nodes)*dof, :] = jacobian[id_el, id_int, :, :] * B[point_id, (id_nodes-1)*dof:(id_nodes)*dof, :]
+            end
+        end
+    end
+    return B
 end
