@@ -66,7 +66,7 @@ function init_FEM(complete_params::Dict, datamanager::Module)
     determinant_jacobian = datamanager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
     jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
 
-    lumped_mass = datamanager.create_constant_node_field("Lumped Mass Matrix", Float64, dof)
+    lumped_mass = datamanager.create_constant_node_field("Lumped Mass Matrix", Float64, 1)
     rho = datamanager.get_field("Density")
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
 
