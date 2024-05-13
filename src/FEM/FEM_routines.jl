@@ -42,7 +42,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
         le = dof * length(topo)
         nnodes::Int64 = length(topo)
 
-        for id_int in eachindex(B_matrix[:, 1, 1])
+        for id_int in eachindex(B_matrix[1, :, 1, 1])
 
             strain_NP1[id_el, id_int, :] = B_matrix[id_el, id_int, :, :]' * reshape((displacement[topo, :])', le)
             strain_increment[id_el, id_int, :] = strain_NP1[id_el, id_int, :] - strain_N[id_el, id_int, :]
