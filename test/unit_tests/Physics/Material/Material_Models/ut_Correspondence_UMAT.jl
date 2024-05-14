@@ -4,7 +4,8 @@
 using Test
 using LinearAlgebra
 include("../../../../../src/Physics/Material/Material_Models/Correspondence_UMAT.jl")
-# include("../../../../../src/Support/data_manager.jl")
+#include("../../../../../src/PeriLab.jl")
+#using .PeriLab
 @testset "get_name&fe_support" begin
     @test Correspondence_UMAT.correspondence_name() == "Correspondence UMAT"
     @test Correspondence_UMAT.fe_support()
@@ -19,6 +20,7 @@ end
     if !isfile(file)
         file = "../src/Physics/Material/UMATs/libperuser.so"
     end
+
     @test !isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Property_4" => 2)))
     @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file * "_not_there")))
     @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file)))
@@ -67,6 +69,7 @@ end
 # Test wrapper function for UMAT_interface
 @testset "UMAT_interface Tests" begin
     # Example test case (you should define your own)
+    test_Data_manager = PeriLab.Data_manager
     file = "./src/Physics/Material/UMATs/libusertest.so"
     if !isfile(file)
         file = "../src/Physics/Material/UMATs/libusertest.so"
@@ -112,7 +115,8 @@ end
     PROPS[1] = 4.2
     STRAN[1] = 1
     DSTRAN[1] = 3
-    Correspondence_UMAT.UMAT_interface(file, STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR, NTENS, NSTATEV, PROPS, NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1, NOEL, NPT, LAYER, KSPT, JSTEP, KINC)
+    Correspondence_UMAT.UMAT_interface(file, STRESS, STATEV, DDSDDE, SSE, SPD, SCD, RPL, DDSDDT, DRPLDE, DRPLDT, STRAN, DSTRAN, TIME, DTIME, TEMP, DTEMP, PREDEF, DPRED, CMNAME, NDI, NSHR, NTENS, NSTATEV, Vector{Float64}(PROPS[:]), NPROPS, COORDS, DROT, PNEWDT, CELENT, DFGRD0, DFGRD1, NOEL, NPT, LAYER, KSPT, JSTEP, KINC)
+    println()
     @test STRESS[1] == 0
     @test STRAN[1] == 4.2
     @test isapprox(DSTRAN[1], 12.6)
