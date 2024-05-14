@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../../../src/Physics/Material/Material_Models/Bond_Associated_Correspondence_Material.jl")
+include("../../../../../src/Physics/Material/Material_Models/Bond_Associated_Correspondence.jl")
 # include("../../../../../src/Support/data_manager.jl")
 using Test
 @testset "ut_find_local_neighbors" begin
