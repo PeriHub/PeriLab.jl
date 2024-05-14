@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bond_Shape_Tensor
-include("../Material/Material_Models/Bond_Associated_Correspondence_Material.jl")
+include("../Material/Material_Models/Bond_Associated_Correspondence.jl")
+using .Bond_Associated_Correspondence: find_local_neighbors
+
 export compute
 
 """
@@ -19,35 +21,35 @@ Compute the bond shape tensor.
 """
 function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 
-dof = datamanager.get_dof()
-nlist = datamanager.get_nlist()
-volume = datamanager.get_field("Volume")
-omega = datamanager.get_field("Influence Function")
-bond_damage = datamanager.get_bond_damage("NP1")
-undeformed_bond = datamanager.get_field("Bond Geometry")
-bond_shape_tensor = datamanager.get_field("Bond Associated Shape Tensor")
-inverse_bond_shape_tensor = datamanager.get_field("Inverse Bond Associated Shape Tensor")
+    dof = datamanager.get_dof()
+    nlist = datamanager.get_nlist()
+    volume = datamanager.get_field("Volume")
+    omega = datamanager.get_field("Influence Function")
+    bond_damage = datamanager.get_bond_damage("NP1")
+    undeformed_bond = datamanager.get_field("Bond Geometry")
+    bond_shape_tensor = datamanager.get_field("Bond Associated Shape Tensor")
+    inverse_bond_shape_tensor = datamanager.get_field("Inverse Bond Associated Shape Tensor")
 
 
-blocks = datamanager.get_field("Block_Id")
-# TODO optimize out. should not be done in every step. Init is enough
-horizon = datamanager.get_field("Horizon")
-
-for iID in nodes
-    bond_horizon = datamanager.get_properties(blocks[iID], "Material Model", "Bond Horizon")
-    
+    blocks = datamanager.get_field("Block_Id")
     # TODO optimize out. should not be done in every step. Init is enough
-    if isnothing(bond_horizon)
-        bond_horizon = horizon[iID]
+    horizon = datamanager.get_field("Horizon")
+
+    for iID in nodes
+        bond_horizon = datamanager.get_properties(blocks[iID], "Material Model", "Bond Horizon")
+
+        # TODO optimize out. should not be done in every step. Init is enough
+        if isnothing(bond_horizon)
+            bond_horizon = horizon[iID]
+        end
+        for (jID, nID) in enumerate(nlist[iID])
+            neighbor_nlist = find_local_neighbors(neighbor_coordinate[nID], coordinates[nlist[nlist.!=nID], :], nlist[iID], bond_horizon)
+            indices = vcat(1:jID-1, jID+1:length(nlist[iID]))
+            shape_tensor[iID][jID, :, :], inverse_shape_tensor[iID][jID, :, :] = Geometry.bond_associated_shape_tensor(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond[iID][indices], bond_shape_tensor[iID][jID, :, :], inverse_bond_shape_tensor[iID][jID, :, :])
+        end
+
     end
-    for (jID, nID) in enumerate(nlist[iID])
-        neighbor_nlist = find_local_neighbors(neighbor_coordinate[nID], coordinates[nlist[nlist.!=nID],:], nlist[iID], bond_horizon)
-        indices = vcat(1:jID-1, jID+1:length(nlist[iID]))
-        shape_tensor[iID][jID,:,:], inverse_shape_tensor[iID][jID,:,:] = Geometry.bond_associated_shape_tensor(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond[iID][indices], bond_shape_tensor[iID][jID, :, :], inverse_bond_shape_tensor[iID][jID, :, :])      
-      end
-    
-end
-return datamanager
+    return datamanager
 end
 end
 
@@ -68,11 +70,11 @@ end
 
 function calculate_shape_tensor(shape_tensor::Matrix{Float64}, dof::Int64, volume, omega, bond_damage, undeformed_bond)
 
-for i in 1:dof
-    for j in 1:dof
-        shape_tensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
+    for i in 1:dof
+        for j in 1:dof
+            shape_tensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
+        end
     end
-end
 
-return shape_tensor
+    return shape_tensor
 end
