@@ -14,7 +14,8 @@ include("../../../src/Physics/Pre_calculation/Pre_calculation_template/pre_calcu
 
 using Test
 using TimerOutputs
-
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 const to = TimerOutput()
 
 test_Data_manager = PeriLab.Data_manager
@@ -53,7 +54,7 @@ end
     @test Correspondence_template.correspondence_name() == "Correspondence Template"
     @test Correspondence_template.init_material_model(test_Data_manager, Vector{Int64}(1:3), Dict()) == test_Data_manager
 
-    dat, vec = Correspondence_template.compute_stresses(test_Data_manager, Vector{Int64}(1:3), 2, Dict(), 0.0, 0.0, view([1, 2], :, :, :), view([1, 0], :, :, :), view([-1, 2.2], :, :, :))
+    dat, vec = Correspondence_template.compute_stresses(test_Data_manager, 1, 2, Dict(), 0.0, 0.0, view([1, 2], :, :, :), view([1, 0], :, :, :), view([-1, 2.2], :, :, :))
     @test dat == test_Data_manager
     @test vec[1] == -1
     @test vec[2] == 2.2
