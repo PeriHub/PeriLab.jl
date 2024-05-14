@@ -58,7 +58,7 @@ PeriLab:
 All elements that are defined in a element set in the Abaqus input file will be translated to PeriLab nodes. The center and volume of the elements will be calculated automatically. Have a look at the [AbaqusReader.jl](https://github.com/JuliaFEM/AbaqusReader.jl) package to see what elements are supported.
 
 !!! warning "Supported elements"
-    Currently only Hex8 and Wedge6 elements are tested!
+    Currently only Quad4, Tet4, Wedge6 and Hex8 elements are tested!
 
 ### How to define blocks and nodesets with Abaqus?
 

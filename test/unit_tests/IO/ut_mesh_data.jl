@@ -40,6 +40,12 @@ using DataFrames
     @test collect(skipmissing(data[3, :])) == [2, 3, 4, 5, 6, 7]
     @test collect(skipmissing(data[4, :])) == [5, 6, 7, 8]
 
+    params = Dict("Discretization" => Dict("Type" => "Exodus"))
+    data = read_mesh(joinpath(path, "example_mesh.g"), params)
+    @test length(data[:, 1]) == 324
+    @test data[!, "block_id"][1] == 1
+    @test data[!, "volume"][1] == 0.03314393939393944
+
 end
 
 @testset "ut_check_dataframe" begin
@@ -451,7 +457,7 @@ end
 
 end
 
-@testset "get_bond_geometry" begin
+@testset "ut_get_bond_geometry" begin
     test_Data_manager = PeriLab.Data_manager
     test_Data_manager.set_num_controller(3)
     test_Data_manager.set_num_responder(0)
@@ -498,4 +504,17 @@ end
     @test undeformed_bond[3][2, 1] == 1
     @test undeformed_bond[3][2, 2] == -1
     @test undeformed_bond_length[3][2] / sqrt(2) - 1 < 1e-8
+end
+
+@testset "ut_calculate_volume" begin
+    vertices::Vector{Vector{Float64}} = [[0, 0], [1, 0], [1, 1], [0, 1]]
+    @test isnothing(calculate_volume("NotSupported", vertices))
+    @test calculate_volume("Quad4", vertices) == 1
+    vertices = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 1]]
+    @test calculate_volume("Tet4", vertices) == 1 / 6
+    vertices = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1]]
+    @test calculate_volume("Wedge6", vertices) == 0.5
+    vertices = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]]
+    @test calculate_volume("Hex8", vertices) == 1
+
 end

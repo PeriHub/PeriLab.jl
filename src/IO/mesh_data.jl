@@ -151,10 +151,8 @@ function get_local_element_topology(datamanager::Module, topology::Vector{Vector
         if length(top) != master_len
             @error "Only one element type is supported. Please define the same numbers of nodes per element."
             return nothing
-            """
-            - new field like the bond field has to be defined for elements in the datamanager
-            - can be avoided right now by setting zeros in the topology vector as empty nodes
-            """
+            # - new field like the bond field has to be defined for elements in the datamanager
+            # - can be avoided right now by setting zeros in the topology vector as empty nodes
         end
     end
     topo = datamanager.create_constant_free_size_field("FE Topology", Int64, (length(topology), master_len))
@@ -633,14 +631,7 @@ function calculate_volume(element_type::String, vertices::Vector{Vector{Float64}
     elseif element_type == "Wedge6"
         return wedge6_volume(vertices)
     elseif element_type == "Hex8"
-        volume1 = tetrahedron_volume([vertices[1], vertices[2], vertices[4], vertices[5]])
-        volume2 = tetrahedron_volume([vertices[2], vertices[3], vertices[4], vertices[7]])
-        volume3 = tetrahedron_volume([vertices[2], vertices[5], vertices[6], vertices[7]])
-        volume4 = tetrahedron_volume([vertices[4], vertices[5], vertices[7], vertices[8]])
-        volume5 = tetrahedron_volume([vertices[2], vertices[4], vertices[5], vertices[7]])
-        volume = volume1 + volume2 + volume3 + volume4 + volume5
-
-        return volume
+        return hex8_volume(vertices)
     else
         @error "Element type $element_type currently not supported"
         return nothing
@@ -664,6 +655,33 @@ function tetrahedron_volume(tet_vertices::Vector{Vector{Float64}})
 end
 
 """
+hex8_volume(hex_vertices)
+
+Calculate the volume of a hex.
+
+# Arguments
+- `hex_vertices`: The vertices of the wedge.
+# Returns
+- `volume`: The volume of the wedge.
+"""
+function hex8_volume(hex_vertices::Vector{Vector{Float64}})
+    tets = [
+        [hex_vertices[1], hex_vertices[2], hex_vertices[4], hex_vertices[5]],
+        [hex_vertices[2], hex_vertices[3], hex_vertices[4], hex_vertices[7]],
+        [hex_vertices[2], hex_vertices[5], hex_vertices[6], hex_vertices[7]],
+        [hex_vertices[4], hex_vertices[5], hex_vertices[7], hex_vertices[8]],
+        [hex_vertices[2], hex_vertices[4], hex_vertices[5], hex_vertices[7]]
+    ]
+
+    volumes = []
+    for tet in tets
+        push!(volumes, tetrahedron_volume(tet))
+    end
+
+    return sum(volumes)
+end
+
+"""
     wedge6_volume(wedge_vertices)
 
 Calculate the volume of a wedge.
@@ -674,13 +692,18 @@ Calculate the volume of a wedge.
 - `volume`: The volume of the wedge.
 """
 function wedge6_volume(wedge_vertices::Vector{Vector{Float64}})
-    x = wedge_vertices[1]
-    y = wedge_vertices[2]
-    z = wedge_vertices[3]
+    tets = [
+        [wedge_vertices[1], wedge_vertices[2], wedge_vertices[3], wedge_vertices[4]],
+        [wedge_vertices[2], wedge_vertices[3], wedge_vertices[4], wedge_vertices[5]],
+        [wedge_vertices[3], wedge_vertices[4], wedge_vertices[5], wedge_vertices[6]]
+    ]
 
-    volume = (1 / 6) * abs(dot(x, cross(y .- x, z .- x)))
+    volumes = []
+    for tet in tets
+        push!(volumes, tetrahedron_volume(tet))
+    end
 
-    return volume
+    return sum(volumes)
 end
 
 """
@@ -1363,7 +1386,7 @@ Check if a line segment intersects a disk.
 - `Bool`: True if the line segment intersects the disk, False otherwise.
 """
 function bond_intersects_disc(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
-    numerator = dot((lower_left_corner - p0), normal)
+    numerator = dot((center - p0), normal)
     denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane, may or may not lie on the plane
@@ -1385,7 +1408,7 @@ function bond_intersects_disc(p0::Vector{Float64}, p1::Vector{Float64}, center::
     # Check if the intersection point is within the disk
     distance = norm(x - center)
 
-    if abs(distance) < radius
+    if abs(distance) < radius^2
         return true
     end
 
@@ -1551,7 +1574,7 @@ function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::
     end
     #normalize vector
     normal = normal ./ norm(normal)
-    filter_flag = fill(Vector{Bool}[], nnodes)
+    filter_flag::Vector{Vector{Bool}} = fill([], nnodes)
     for iID in 1:nnodes
         filter_flag[iID] = fill(true, length(nlist[iID]))
         for (jId, neighbor) in enumerate(nlist[iID])
