@@ -135,7 +135,7 @@ end
     B = test_Data_manager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
 
     N[:], B[:] = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
-    lumped_mass = test_Data_manager.create_constant_node_field("Lumped Mass Matrix", Float64, dof)
+    lumped_mass = test_Data_manager.create_constant_node_field("Lumped Mass Matrix", Float64, 1)
 
     coordinates[1, 1] = 0
     coordinates[1, 2] = 0
@@ -154,22 +154,20 @@ end
     rho[:] .= 1.0
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
     for i in 1:4
-        @test isapprox(lumped_mass[i, 1], 0.25)
-        @test isapprox(lumped_mass[i, 2], 0.25)
+        @test isapprox(lumped_mass[i], 0.25)
     end
-    lumped_mass[:, :] .= 0
+    lumped_mass[:] .= 0
     rho[:] .= 2.0
 
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
     for i in 1:4
-        @test isapprox(lumped_mass[i, 1], 0.5)
-        @test isapprox(lumped_mass[i, 2], 0.5)
+        @test isapprox(lumped_mass[i], 0.5)
     end
-    lumped_mass[:, :] .= 0
+    lumped_mass[:] .= 0
     rho[:] .= 1.2
 
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
-    @test lumped_mass == [0.3 0.3; 0.3 0.3; 0.3 0.3; 0.3 0.3]
+    @test lumped_mass == [0.3; 0.3; 0.3; 0.3]
 end
 
 @testset "ut_get_FE_material_model" begin

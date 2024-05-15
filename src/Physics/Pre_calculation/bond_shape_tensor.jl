@@ -2,15 +2,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Bond_Deformation_Gradient
+module Bond_Shape_Tensor
 include("../Material/Material_Models/Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence: find_local_neighbors
+
 export compute
 
 """
     compute(datamanager, nodes)
 
-Compute the bond deformation gradient.
+Compute the bond shape tensor.
 
 # Arguments
 - `datamanager`: Datamanager.
@@ -18,8 +19,6 @@ Compute the bond deformation gradient.
 # Returns
 - `datamanager`: Datamanager.
 """
-
-
 function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 
     dof = datamanager.get_dof()
@@ -28,10 +27,8 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     omega = datamanager.get_field("Influence Function")
     bond_damage = datamanager.get_bond_damage("NP1")
     undeformed_bond = datamanager.get_field("Bond Geometry")
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-
+    bond_shape_tensor = datamanager.get_field("Bond Associated Shape Tensor")
     inverse_bond_shape_tensor = datamanager.get_field("Inverse Bond Associated Shape Tensor")
-    bond_deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
 
 
     blocks = datamanager.get_field("Block_Id")
@@ -48,18 +45,10 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
         for (jID, nID) in enumerate(nlist[iID])
             neighbor_nlist = find_local_neighbors(neighbor_coordinate[nID], coordinates[nlist[nlist.!=nID], :], nlist[iID], bond_horizon)
             indices = vcat(1:jID-1, jID+1:length(nlist[iID]))
-
-            deformation_gradient[iID][jID, :, :] = Geometry.bond_associated_deformation_gradient(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond[iID][indices], deformed_bond[iID][indices], bond_deformation_gradient[iID][jID, :, :])
-
-            deformation_gradient[iID][jID, :, :] *= inverse_bond_shape_tensor[iID][jID, :, :]
+            shape_tensor[iID][jID, :, :], inverse_shape_tensor[iID][jID, :, :] = Geometry.bond_associated_shape_tensor(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond[iID][indices], bond_shape_tensor[iID][jID, :, :], inverse_bond_shape_tensor[iID][jID, :, :])
         end
 
     end
-
-
-
     return datamanager
 end
-
-
 end

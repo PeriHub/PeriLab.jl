@@ -6,13 +6,12 @@ module Correspondence
 using LinearAlgebra
 using TensorOperations
 using TimerOutputs
-include("Correspondence_Elastic.jl")
 include("./Zero_Energy_Control/global_control.jl")
+include("./Bond_Associated_Correspondence.jl")
+using .Bond_Associated_Correspondence
 include("../material_basis.jl")
 include("../../../Support/geometry.jl")
 using .Global_zero_energy_control
-using .Correspondence_Elastic
-
 
 include("../../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
@@ -41,7 +40,10 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   # global dof
   # global rotation
   # global angles
-
+  if !haskey(material_parameter, "Symmetry")
+    @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
+    return nothing
+  end
   dof = datamanager.get_dof()
   datamanager.create_node_field("Strain", Float64, "Matrix", dof)
   datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
@@ -62,6 +64,11 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     datamanager = mod.init_material_model(datamanager, nodes, material_parameter)
 
   end
+  if haskey(material_parameter, "Bond associated") && material_parameter["Bond associated"]
+    datamanager = Bond_Associated_Correspondence.init_material_model(datamanager, nodes, material_parameter)
+    return datamanager
+  end
+  material_parameter["Bond associated"] = false
   return datamanager
 end
 
@@ -106,10 +113,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   # global dof
   # global rotation
   # global angles
-  if !haskey(material_parameter, "Symmetry")
-    @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
-    return nothing
-  end
+
   rotation::Bool, angles = datamanager.rotation_data()
   dof = datamanager.get_dof()
   deformation_gradient = datamanager.get_field("Deformation Gradient")
@@ -137,7 +141,10 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   material_models = map(r -> strip(r), material_models)
   for material_model in material_models
     mod = datamanager.get_model_module(material_model)
-    stress_NP1, datamanager = mod.compute_stresses(datamanager, nodes, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1)
+
+    for iID in nodes
+      stress_NP1, datamanager = mod.compute_stresses(datamanager, iID, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1)
+    end
   end
   if rotation
     stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)

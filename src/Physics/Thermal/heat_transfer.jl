@@ -96,8 +96,9 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   return datamanager
 end
 
+#TODO @Jan-Timo update documentation
 """
-  calculate_specific_volume(iID::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
+  calculate_specific_volume(nodes::Int64, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, volume::SubArray, surface_nodes::Union{SubArray,Vector{Bool}})
 
 Calculates the specific volume.
 

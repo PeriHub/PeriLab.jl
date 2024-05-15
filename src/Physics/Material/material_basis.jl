@@ -111,7 +111,7 @@ function get_Hooke_matrix(parameter, symmetry, dof)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
     if occursin("anisotropic", symmetry)
-        anisoMatrix = @MMatrix zeros(Float64, 6, 6)
+        aniso_matrix = @MMatrix zeros(Float64, 6, 6)
         for iID in 1:6
             for jID in iID:6
                 if "C" * string(iID) * string(jID) in keys(parameter)
@@ -119,26 +119,26 @@ function get_Hooke_matrix(parameter, symmetry, dof)
                 else
                     value = 0
                 end
-                anisoMatrix[iID, jID] = value
-                anisoMatrix[jID, iID] = value
+                aniso_matrix[iID, jID] = value
+                aniso_matrix[jID, iID] = value
             end
         end
         if dof == 3
-            return anisoMatrix
+            return aniso_matrix
         elseif occursin("plane strain", symmetry)
             matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
-            matrix[1:2, 1:2] = anisoMatrix[1:2, 1:2]
-            matrix[3, 1:2] = anisoMatrix[6, 1:2]
-            matrix[1:2, 3] = anisoMatrix[1:2, 6]
-            matrix[3, 3] = anisoMatrix[6, 6]
+            matrix[1:2, 1:2] = aniso_matrix[1:2, 1:2]
+            matrix[3, 1:2] = aniso_matrix[6, 1:2]
+            matrix[1:2, 3] = aniso_matrix[1:2, 6]
+            matrix[3, 3] = aniso_matrix[6, 6]
             return matrix
         elseif occursin("plane stress", symmetry)
             matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
-            invAniso = inv(anisoMatrix)
-            matrix[1:2, 1:2] = invAniso[1:2, 1:2]
-            matrix[3, 1:2] = invAniso[6, 1:2]
-            matrix[1:2, 3] = invAniso[1:2, 6]
-            matrix[3, 3] = invAniso[6, 6]
+            inv_aniso = inv(aniso_matrix)
+            matrix[1:2, 1:2] = inv_aniso[1:2, 1:2]
+            matrix[3, 1:2] = inv_aniso[6, 1:2]
+            matrix[1:2, 3] = inv_aniso[1:2, 6]
+            matrix[3, 3] = inv_aniso[6, 6]
             return inv(matrix)
         else
             @error "2D model defintion is missing; plain stress or plain strain "

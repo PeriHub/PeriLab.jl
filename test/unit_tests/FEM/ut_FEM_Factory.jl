@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-# include("../../../src/FEM/FEM_Factory.jl")
-# include("../../../src/Support/data_manager.jl")
-# using .Data_manager
+#include("../../../src/PeriLab.jl")
+
+#using .PeriLab
 PeriLab.Data_manager.clear_data_manager()
 
 @testset "ut_valid_models" begin
@@ -75,9 +75,9 @@ end
     @test size(N) == (4, 8, 2)
     @test N[1, 1:4, :] == [0.6220084679281462 0.0; 0.0 0.6220084679281462; 0.16666666666666663 0.0; 0.0 0.16666666666666663]
     B = test_Data_manager.get_field("B Matrix")
-    @test size(B) == (4, 8, 3)
-    @test B[3, 1:6, 3] == [-0.39433756729740643, -0.10566243270259354, -0.10566243270259354, 0.10566243270259354, 0.39433756729740643, -0.39433756729740643]
 
+    @test size(B) == (2, 4, 8, 3)
+    @test B[1, 3, 1:6, 3] == [-0.7886751345948129, -0.21132486540518708, -0.21132486540518708, 0.21132486540518708, 0.7886751345948129, -0.7886751345948129]
     @test "Element StrainN" in test_Data_manager.get_all_field_keys()
     @test "Element StressN" in test_Data_manager.get_all_field_keys()
     @test "Element StrainNP1" in test_Data_manager.get_all_field_keys()
@@ -88,8 +88,8 @@ end
     @test "Lumped Mass Matrix" in test_Data_manager.get_all_field_keys()
     lumped_mass = test_Data_manager.get_field("Lumped Mass Matrix")
 
-    @test isapprox(lumped_mass[:, 1], [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994])
-    @test isapprox(lumped_mass[:, 2], [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994])
+    @test isapprox(lumped_mass[:], [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994])
+
     # only in tests for resize or redefinition reasons
     test_Data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
     @test isnothing(PeriLab.Solver.FEM.init_FEM(params, test_Data_manager))

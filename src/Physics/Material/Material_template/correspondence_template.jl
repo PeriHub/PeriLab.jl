@@ -72,7 +72,7 @@ Calculates the stresses of the material. This template has to be copied, the fil
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `iID::Int64`: Node ID.
 - `dof::Int64`: Degrees of freedom
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
@@ -80,14 +80,17 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
+- `nodeID`::Int64 = 0: (optional) is the primary nodes. If it exists, iID is the bond number. Is needed for bond associated material.
+
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
+
 Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nodeID::Int64 = -1)
   @info "Please write a material name in material_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_forces() and init_material_model() function."
