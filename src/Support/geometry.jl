@@ -117,12 +117,12 @@ end
 
 function calculate_shape_tensor(shape_tensor::Matrix{Float64}, dof::Int64, volume, omega, bond_damage, undeformed_bond)
 
-for i in 1:dof
-    for j in 1:dof
-        shape_tensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
+    for i in 1:dof
+        for j in 1:dof
+            shape_tensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
+        end
     end
-end
-return shape_tensor
+    return shape_tensor
 end
 
 
@@ -143,7 +143,7 @@ end
 
 
 function bond_associated_deformation_gradient(dof::Int64, volume, omega, bond_damage, undeformed_bond, deformed_bond, deformation_gradient)
-    
+
     return calculate_deformation_gradient(deformation_gradient, dof, bond_damage, deformed_bond, undeformed_bond, volume, omega)
 
 end
@@ -191,17 +191,18 @@ deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, undeformed_b
 function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, undeformed_bond::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
     deformation_gradient .= 0
     for iID in nodes
-        deformation_gradient[iID, :, :] = calculate_deformation_gradient(deformation_gradient[iID,:,:], dof, bond_damage[iID], deformed_bond[iID], undeformed_bond[iID], volume[nlist[iID]], omega[iID])
+        deformation_gradient[iID, :, :] = calculate_deformation_gradient(deformation_gradient[iID, :, :], dof, bond_damage[iID], deformed_bond[iID], undeformed_bond[iID], volume[nlist[iID]], omega[iID])
+        deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]
     end
 
     return deformation_gradient
 end
 
 
-function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_damage, deformed_bond, undeformed_bond, volume::Union{Vector{Int64}, Vector{Float64}}, omega)
+function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_damage, deformed_bond, undeformed_bond, volume::Union{Vector{Int64},Vector{Float64}}, omega)
     for i in 1:dof
         for j in 1:dof
-            deformation_gradient[i,j]=sum(bond_damage .* deformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
+            deformation_gradient[i, j] = sum(bond_damage .* deformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
         end
     end
     return deformation_gradient
