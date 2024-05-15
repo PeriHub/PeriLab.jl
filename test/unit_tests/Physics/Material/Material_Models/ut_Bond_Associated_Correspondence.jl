@@ -23,21 +23,21 @@ using Test
 
     bond_horizon::Float64 = 1
 
-    @test Bond_Associated_Correspondence.find_local_neighbors(coordinates[5,:], coordinates[nlist[nlist.!=5],:], nlist[nlist.!=5], bond_horizon) == []
+    @test Bond_Associated_Correspondence.find_local_neighbors(coordinates[5, :], coordinates[nlist[nlist.!=5], :], nlist[nlist.!=5], bond_horizon) == []
     bond_horizon = 2.6
-    @test Bond_Associated_Correspondence.find_local_neighbors(coordinates[5,:], coordinates[nlist[nlist.!=5],:], nlist[nlist.!=5], bond_horizon) == [2, 3, 4]
-    @test Bond_Associated_Correspondence.find_local_neighbors(coordinates[2,:], coordinates[nlist[nlist.!=2],:], nlist[nlist.!=2], bond_horizon) == [3, 4, 5]
+    @test Bond_Associated_Correspondence.find_local_neighbors(coordinates[5, :], coordinates[nlist[nlist.!=5], :], nlist[nlist.!=5], bond_horizon) == [2, 3, 4]
+    @test Bond_Associated_Correspondence.find_local_neighbors(coordinates[2, :], coordinates[nlist[nlist.!=2], :], nlist[nlist.!=2], bond_horizon) == [3, 4, 5]
 end
 
-@testset "ut_compute_bond_associated_weighted_volume"
+@testset "ut_compute_bond_associated_weighted_volume" begin
     # Initialize input arrays
     nodes = [1, 2, 3]
-    nlist = [ [2, 3], [1, 3], [1, 2] ]
-    coordinates = [ 0.0 0.0; 1.0 0.0; 0.0 1.0 ]
-    bond_damage = [ [1.0, 1.0], [0.0, 1.0], [1.0, 1.0] ]
-    omega = [ [0.5, 0.8], [0.7, 0.9], [0.6, 0.4] ]
+    nlist = [[2, 3], [1, 3], [1, 2]]
+    coordinates = [0.0 0.0; 1.0 0.0; 0.0 1.0]
+    bond_damage = [[1.0, 1.0], [0.0, 1.0], [1.0, 1.0]]
+    omega = [[0.5, 0.8], [0.7, 0.9], [0.6, 0.4]]
     volume = [1.0, 2.0, 3.0]
-    weighted_volume =  [ [0.0, 0.0], [0.0, 0.0], [0.0, 0.0] ]
+    weighted_volume = [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
     bond_horizon = 2.2
     # Call the function under test
     weighted_volume = Bond_Associated_Correspondence.compute_bond_associated_weighted_volume(nodes, nlist, coordinates, bond_damage, omega, volume, bond_horizon, weighted_volume)
