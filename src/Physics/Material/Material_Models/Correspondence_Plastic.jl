@@ -102,7 +102,7 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nodeID::Int64=-1)
+function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nID_and_Neighborindex::Tuple=())
 
   von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
   plastic_strain_N = datamanager.get_field("Plastic Strain", "N")

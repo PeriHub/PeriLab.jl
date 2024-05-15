@@ -106,7 +106,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   # is already initialized if thermal problems are adressed
   temperature = datamanager.create_node_field("Temperature", Float64, 1)
   deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
-   if haskey(material_parameter, "Predefined Field Names")
+  if haskey(material_parameter, "Predefined Field Names")
     field_names = split(material_parameter["Predefined Field Names"], " ")
     fields = datamanager.create_constant_node_field("Predefined Fields", Float64, length(field_names))
     for (id, field_name) in enumerate(field_names)
@@ -129,12 +129,12 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
         rot_N[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
       end
     else
-      datamanager.create_constant_node_field("Angles", Float64, dof)  
+      datamanager.create_constant_node_field("Angles", Float64, dof)
     end
   end
 
   zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness", Float64, "Matrix", dof)
-   
+
   return datamanager
 end
 
@@ -183,7 +183,7 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nodeID::Int64 = -1)
+function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nID_and_Neighborindex::Tuple=())
   # the notation from the Abaqus Fortran subroutine is used. 
   nstatev = material_parameter["Number of State Variables"]
   nprops = material_parameter["Number of Properties"]
@@ -225,10 +225,10 @@ function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_
   not_supported_int::Int64 = 0
 
   rot_NP1[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
-  UMAT_interface(material_parameter["File"], stress_temp, statev[iID, :], DDSDDE, SSE[iID], SPD[iID], SCD[iID], RPL[iID], DDSDDT[iID,:], DRPLDE[iID,:], DRPLDT[iID], matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temp[iID], dtemp[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, Vector{Float64}(props[:]), nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0[iID,:,:], DFGRD1[iID,:,:], not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
+  UMAT_interface(material_parameter["File"], stress_temp, statev[iID, :], DDSDDE, SSE[iID], SPD[iID], SCD[iID], RPL[iID], DDSDDT[iID, :], DRPLDE[iID, :], DRPLDT[iID], matrix_to_voigt(strain_N[iID, :, :]), matrix_to_voigt(strain_increment[iID, :, :]), time, dt, temp[iID], dtemp[iID], PREDEF[iID, :], DPRED[iID, :], CMNAME, ndi, nshr, ntens, nstatev, Vector{Float64}(props[:]), nprops, coords[iID, :], rot_NP1[iID, :, :] - rot_N[iID, :, :], not_supported_float, not_supported_float, DFGRD0[iID, :, :], DFGRD1[iID, :, :], not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int, not_supported_int)
   Global_zero_energy_control.global_zero_energy_mode_stiffness(iID, dof, DDSDDE, Kinv, zStiff)
   stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
-  
+
   DFGRD0 = DFGRD1
   return datamanager, stress_NP1
 end

@@ -73,7 +73,6 @@ function find_local_neighbors(neighbor_coordinate::Union{Vector{Float64},Vector{
 end
 
 
-
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
   rotation::Bool, angles = datamanager.rotation_data()
@@ -114,7 +113,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         strain_NP1[iID][jID, :, :] = Geometry.strain(nodes, deformation_gradient[iID][jID, :, :], strain_NP1[iID][jID, :, :])
         strain_increment[iID][jID, :, :] = strain_NP1[iID][jID, :, :] - strain_N[iID][jID, :, :]
 
-        stress_NP1[iID][jID, :, :], datamanager = mod.compute_stresses(datamanager, jID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :])
+        stress_NP1[iID][jID, :, :], datamanager = mod.compute_stresses(datamanager, nID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (iID, jID))
 
       end
     end
