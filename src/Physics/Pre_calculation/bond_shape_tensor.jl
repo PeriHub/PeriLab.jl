@@ -52,29 +52,3 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     return datamanager
 end
 end
-
-function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
-    shape_tensor .= 0
-    for iID in nodes
-        shape_tensor[iID, :, :] = calculate_shape_tensor(shape_tensor[iID, :, :], dof, volume[nlist[iID]], omega[iID], bond_damage[iID], undeformed_bond[iID])
-        try
-            inverse_shape_tensor[iID, :, :] = inv(shape_tensor[iID, :, :])
-        catch ex
-            @error "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
-            return nothing, nothing
-        end
-    end
-
-    return shape_tensor, inverse_shape_tensor
-end
-
-function calculate_shape_tensor(shape_tensor::Matrix{Float64}, dof::Int64, volume, omega, bond_damage, undeformed_bond)
-
-    for i in 1:dof
-        for j in 1:dof
-            shape_tensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
-        end
-    end
-
-    return shape_tensor
-end
