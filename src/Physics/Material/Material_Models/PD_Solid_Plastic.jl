@@ -164,10 +164,10 @@ Compute the norm of the deviatoric force state for each node.
 
 function compute_deviatoric_force_state_norm(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, alpha::Float64, bond_force_deviatoric::SubArray, bond_damage::SubArray, omega::SubArray, volume::SubArray, deviatoric_plastic_extension_state)
   # not optimal allocation of memory, but not check of indices is needed
-  td_norm = @MMatrix zeros(Float64, maximum(nodes))
+  td_norm = @MVector zeros(Float64, maximum(nodes))
   for iID in nodes
-    td_trial = bond_force_deviatoric[iID] - alpha .* bond_damage[iID] * omega[iID] * deviatoric_plastic_extension_state[iID]
-    td_norm[iID] = sum(td_trial * td_trial * volume[nlist[iID]])
+    td_trial = bond_force_deviatoric[iID] - alpha .* bond_damage[iID] .* omega[iID] .* deviatoric_plastic_extension_state[iID]
+    td_norm[iID] = sum(td_trial .* td_trial .* volume[nlist[iID]])
   end
 
   return sqrt.(td_norm)
@@ -202,20 +202,20 @@ Update the plastic state based on the deviatoric force norm.
 - `deviatoric_plastic_extension_state::SubArray`: Updated deviatoric plastic extension state.
 """
 
-function plastic(nodes::Union{SubArray,Vector{Int64}}, td_norm, yield_value::SubArray, lambdaNP1::SubArray, alpha::Float64, omega::SubArray, bond_damage::SubArray, deviatoric_plastic_extension_state::SubArray, bond_force_deviatoric::SubArray)
+function plastic(nodes::Union{SubArray,Vector{Int64}}, td_norm, yield_value::SubArray, lambdaNP1::Union{SubArray,Vector{Float64}}, alpha::Float64, omega::SubArray, bond_damage::SubArray, deviatoric_plastic_extension_state::SubArray, bond_force_deviatoric::SubArray)
 
 
   for iID in nodes
     if td_norm[iID] * td_norm[iID] / 2 - yield_value[iID] < 0
       continue
     end
-    delta_lambda = (td_norm / sqrt(2.0 * yield_value[iID]) - 1.0) / alpha
-    lambdaNP1[iID] .+= delta_lambda
-    td_trial = bond_force_deviatoric[iID] - alpha .* bond_damage[iID] * omega[iID] * deviatoric_plastic_extension_state[iID]
-    bond_force_deviatoric[iID] = sqrt(2.0 * yield_value) * td_trial ./ td_norm[iID]
-    deviatoric_plastic_extension_state += bond_force_deviatoric_part[iID] .* delta_lambda
+    delta_lambda = (td_norm[iID] / sqrt(2.0 * yield_value[iID]) - 1.0) / alpha
+    lambdaNP1[iID] += delta_lambda
+    td_trial = bond_force_deviatoric[iID] - alpha .* bond_damage[iID] .* omega[iID] .* deviatoric_plastic_extension_state[iID]
+    bond_force_deviatoric[iID] = sqrt(2.0 * yield_value[iID]) * td_trial ./ td_norm[iID]
+    deviatoric_plastic_extension_state[iID] += bond_force_deviatoric[iID] .* delta_lambda
 
-    return bond_force_deviatoric, deviatoric_plastic_extension_state
   end
+  return bond_force_deviatoric, deviatoric_plastic_extension_state
 end
 end

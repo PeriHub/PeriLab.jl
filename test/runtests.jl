@@ -197,6 +197,9 @@ MPI.Init()
         @testset "test_PD_Solid_Elastic_3D" begin
             @includetests["fullscale_tests/test_PD_solid_elastic_3D/test_PD_solid_elastic_3D"]
         end
+        # @testset "test_PD_Solid_Plastic" begin
+        #     @includetests["fullscale_tests/test_PD_solid_plastic/test_PD_solid_plastic"]
+        # end
         @testset "test_Critical_stretch" begin
             @includetests["fullscale_tests/test_critical_stretch/test_critical_stretch"]
         end
