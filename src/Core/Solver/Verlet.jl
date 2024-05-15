@@ -457,6 +457,8 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             if solver_options["Material Models"]
                 check_inf_or_nan(forces_density, "Forces")
                 if fem_option
+                    forces_density[find_active(fe_nodes[nodes]), :] + external_forces[fe_nodes[nodes], :]
+                    forces_density[nodes, :] += external_forces_density[fe_nodes[nodes], :] .* volume[fe_nodes[nodes]] .+ external_forces[fe_nodes[nodes], :]
                     a[find_active(fe_nodes[nodes]), :] = forces_density[find_active(fe_nodes[nodes]), :] ./ lumped_mass[find_active(fe_nodes[nodes])] # element wise
                     forces[find_active(fe_nodes[nodes]), :] = forces_density[find_active(fe_nodes[nodes]), :]
                     # toggles the value and switch the non FEM nodes to true
@@ -465,6 +467,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 forces_density[nodes, :] += external_forces_density[nodes, :] .+ external_forces[nodes, :] ./ volume[nodes]
                 a[nodes, :] = forces_density[nodes, :] ./ density[nodes] # element wise
                 forces[nodes, :] = forces_density[nodes, :] .* volume[nodes]
+
             end
             if solver_options["Thermal Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
