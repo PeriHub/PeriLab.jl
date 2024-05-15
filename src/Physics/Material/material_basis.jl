@@ -141,7 +141,8 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[3, 3] = inv_aniso[6, 6]
             return inv(matrix)
         else
-            @error "2D model defintion is missing; plain stress or plain strain "
+            @error "2D model defintion is missing; plane stress or plane strain "
+            return nothing
         end
     end
     if occursin("isotropic", symmetry)
@@ -183,12 +184,13 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[3, 3] = G
             return matrix
         else
-            @error "2D model defintion is missing; plain stress or plain strain "
+            @error "2D model defintion is missing; plane stress or plane strain "
+            return nothing
         end
     else
         matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
         if haskey(parameter, "Poisson's Ratio") && haskey(parameter, "Young's Modulus")
-            @warn "material model defintion is missing; assuming isotropic plain stress "
+            @warn "material model defintion is missing; assuming isotropic plane stress "
             nu = parameter["Poisson's Ratio"]
             E = parameter["Young's Modulus"]
             G = parameter["Shear Modulus"]
@@ -333,7 +335,7 @@ function check_symmetry(prop::Dict, dof::Int64)
             if occursin("plane strain", symmetry) || occursin("plane stress", symmetry)
                 return true
             else
-                @error "Model definition is missing; plain stress or plain strain has to be defined for 2D"
+                @error "Model definition is missing; plane stress or plane strain has to be defined for 2D"
                 return
             end
         end

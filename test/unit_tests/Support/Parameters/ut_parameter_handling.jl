@@ -100,6 +100,16 @@ end
     @test haskey(nsets, "Nset_1")
     @test !haskey(nsets, "Nset_2")
     rm(filename)
+
+    filename = "example_mesh.g"
+    params = Dict("Discretization" => Dict("Type" => "Exodus", "Input Mesh File" => filename, "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename)))
+    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "unit_tests/Support/Parameters")
+    @test "Set-1" in keys(nsets)
+    @test "Set-2" in keys(nsets)
+    @test "Set-3" in keys(nsets)
+    @test length(nsets["Set-1"]) == 297
+    @test length(nsets["Set-2"]) == 27
+    @test length(nsets["Set-3"]) == 3
 end
 @testset "ut_node_set" begin
 

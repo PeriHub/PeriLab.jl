@@ -141,6 +141,19 @@ end
         end
     end
     @test C2D[3, 3] == parameter["Shear Modulus"]
+
+    symmetry = "missing"
+    C2D = get_Hooke_matrix(parameter, symmetry, 2)
+    for iID in 1:2
+        @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
+        for jID in 1:2
+            if iID != jID
+                @test C2D[iID, jID] / (E * nu * temp) - 1 < 1e-7
+            end
+        end
+    end
+    @test C2D[3, 3] == parameter["Shear Modulus"]
+
     symmetry = "isotropic plane stress"
     C2D_test = zeros(3, 3)
     Cinv = inv(C)
@@ -161,6 +174,10 @@ end
             parameter["C"*string(iID)*string(jID)] = iID * jID + jID
         end
     end
+
+    symmetry = "isotropic missing"
+    @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
+
     symmetry = "anisotropic"
     C = get_Hooke_matrix(parameter, symmetry, 3)
     for iID in 1:6
@@ -188,6 +205,21 @@ end
     @test C[3, 2] == parameter["C26"]
 
     symmetry = "anisotropic plane stress"
+    C = get_Hooke_matrix(parameter, symmetry, 2)
+    for iID in 1:3
+        for jID in 1:3
+            if C2D_test[iID, jID] != 0
+                @test C[iID, jID] / C2D_test[iID, jID] - 1 < 1e-7
+            end
+        end
+    end
+
+    symmetry = "anisotropic missing"
+    @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
+
+    symmetry = "missing"
+    parameter = Dict{String,Any}("Missing" => 5)
+    @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
 
 end
 
