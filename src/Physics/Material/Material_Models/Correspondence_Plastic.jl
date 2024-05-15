@@ -77,7 +77,6 @@ end
 function correspondence_name()
   return "Correspondence Plastic"
 end
-
 """
     compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
@@ -103,7 +102,7 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nodeID::Int64 = -1)
+function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nodeID::Int64=-1)
 
   von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
   plastic_strain_N = datamanager.get_field("Plastic Strain", "N")
@@ -157,8 +156,8 @@ function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_
   temp_B = (deviatoric_stress_NP1 ./ deviatoric_stress_magnitude_NP1 + deviatoric_stress_N ./ deviatoric_stress_magnitude_N) ./ 2
   temp_scalar = sum(temp_A .* temp_B)
   plastic_strain_NP1[iID] = plastic_strain_N[iID] + maximum([0, sqrt23 * temp_scalar])
+  return stress_NP1, datamanager
 
-  
 end
 
 
