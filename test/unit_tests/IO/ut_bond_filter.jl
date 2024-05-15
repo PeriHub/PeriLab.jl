@@ -143,3 +143,62 @@ end
     bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
     @test bond_intersect == true
 end
+
+@testset "ut_disk_filter" begin
+    nnodes = 8
+
+    data = zeros(Float64, 3, 8)
+    data[1, 1] = 0
+    data[2, 1] = 0
+    data[3, 1] = -1.0
+
+    data[1, 2] = 0
+    data[2, 2] = 0.5
+    data[3, 2] = -1.0
+
+    data[1, 3] = 0
+    data[2, 3] = -0.5
+    data[3, 3] = -1.0
+
+    data[1, 4] = 2.0
+    data[2, 4] = -0.5
+    data[3, 4] = -1.0
+
+    data[1, 5] = 0
+    data[2, 5] = 0
+    data[3, 5] = 1.0
+
+    data[1, 6] = 0
+    data[2, 6] = 0.5
+    data[3, 6] = 1.0
+
+    data[1, 7] = 0
+    data[2, 7] = -0.5
+    data[3, 7] = 1.0
+
+    data[1, 8] = 2.0
+    data[2, 8] = -0.5
+    data[3, 8] = 1.0
+
+    filter = Dict("Center X" => 0.0, "Center Y" => 0.0, "Center Z" => 0.0, "Normal X" => 0.0, "Normal Y" => 0.0, "Normal Z" => 1.0, "Radius" => 1.0)
+
+    nlist = [[2, 3, 4, 5, 6, 7, 8], [1, 3, 4, 5, 6, 7, 8], [1, 2, 4, 5, 6, 7, 8], [1, 2, 3, 5, 6, 7, 8], [1, 2, 3, 4, 6, 7, 8], [1, 2, 3, 4, 5, 7, 8], [1, 2, 3, 4, 5, 6, 8], [1, 2, 3, 4, 5, 6, 7]]
+    dof = 3
+
+    # Define the expected output values
+    expected_filter_flag = [
+        [true, true, true, false, false, false, true],   # Node 1
+        [true, true, true, false, false, false, true],   # Node 2
+        [true, true, true, false, false, false, true],   # Node 3
+        [true, true, true, true, true, true, true],   # Node 4
+        [false, false, false, true, true, true, true],   # Node 5
+        [false, false, false, true, true, true, true],    # Node 6
+        [false, false, false, true, true, true, true],   # Node 7
+        [true, true, true, true, true, true, true]    # Node 8
+    ]
+
+    expected_normal = [0, 0, 1]
+    (filter_flag, normal) = disk_filter(nnodes, data, filter, nlist, dof)
+    @test filter_flag == expected_filter_flag
+    @test normal == expected_normal
+end
