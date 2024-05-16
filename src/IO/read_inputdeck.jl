@@ -21,9 +21,9 @@ function read_input(filename::String)
     try
         return YAML.load_file(filename)
     catch e
-        if isa(e, YAML.ParserError)
-            @error "Yaml Parser Error. Make sure the yaml file is valid."
-        end
+        # if isa(e, YAML.ParserError)
+        #     @error "Yaml Parser Error. Make sure the yaml file is valid."
+        # end
         @error "Failed to read $filename."
         return nothing
     end

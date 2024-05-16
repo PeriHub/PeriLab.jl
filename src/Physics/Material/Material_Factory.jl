@@ -88,7 +88,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
         datamanager = mod.init_material_model(datamanager, nodes, model_param)
     end
     #TODO in extra function
-    nlist = datamanager.get_nlist()
+    # nlist = datamanager.get_nlist()
     nlist_filtered_ids = datamanager.get_filtered_nlist()
     if !isnothing(nlist_filtered_ids)
         bond_norm = datamanager.get_field("Bond Norm")

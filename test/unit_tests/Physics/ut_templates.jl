@@ -37,7 +37,7 @@ end
     @test Damage_template.damage_name() == "Damage Template"
     @test Damage_template.compute_damage(test_Data_manager, Vector{Int64}(1:3), Dict(), 1, 0.0, 0.0) == test_Data_manager
     @test Damage_template.compute_damage_pre_calculation(test_Data_manager, Vector{Int64}(1:3), 1, "dummy for function", 0.0, 0.0) == test_Data_manager
-    # @test Damage_template.init_damage_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 1) == test_Data_manager
+    @test Damage_template.init_damage_model(test_Data_manager, Vector{Int64}(1:3), Dict(), 1) == test_Data_manager
 end
 
 @testset "ut_material_template" begin

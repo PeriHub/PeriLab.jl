@@ -20,6 +20,13 @@ using Test
     close(fid)
     @test isnothing(read_input(filename))
     rm(filename)
+
+    fid = open(filename, "w")
+    println(fid, "PeriLab:")
+    println(fid, "data")
+    close(fid)
+    @test isnothing(read_input(filename))
+    rm(filename)
 end
 
 @testset "ut_read_input_file" begin
