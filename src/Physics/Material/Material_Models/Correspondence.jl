@@ -64,11 +64,11 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     datamanager = mod.init_material_model(datamanager, nodes, material_parameter)
 
   end
-  if haskey(material_parameter, "Bond Associated") && material_parameter["Bond associated"]
+  if haskey(material_parameter, "Bond Associated") && material_parameter["Bond Associated"]
     datamanager = Bond_Associated_Correspondence.init_material_model(datamanager, nodes, material_parameter)
     return datamanager
   end
-  material_parameter["Bond associated"] = false
+  material_parameter["Bond Associated"] = false
   return datamanager
 end
 
@@ -111,7 +111,7 @@ Example:
 """
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
-  if material_models["Bond Associated"]
+  if material_parameter["Bond Associated"]
     return Bond_Associated_Correspondence.compute_forces(datamanager, nodes, material_parameter, time, dt, to)
   end
 
