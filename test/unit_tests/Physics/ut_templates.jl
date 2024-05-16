@@ -58,6 +58,12 @@ end
     @test dat == test_Data_manager
     @test vec[1] == -1
     @test vec[2] == 2.2
+
+    dat, vec = Correspondence_template.compute_stresses(test_Data_manager, 1, 2, Dict(), 0.0, 0.0, view([1, 2], :, :, :), view([1, 0], :, :, :), view([-1, 2.2], :, :, :), (1, 1))
+    @test dat == test_Data_manager
+    @test vec[1] == -1
+    @test vec[2] == 2.2
+
 end
 
 @testset "ut_thermal_template" begin

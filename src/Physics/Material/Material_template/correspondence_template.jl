@@ -90,7 +90,7 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nodeID::Int64 = -1)
+function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nID_and_Neighborindex::Tuple=())
   @info "Please write a material name in material_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_forces() and init_material_model() function."

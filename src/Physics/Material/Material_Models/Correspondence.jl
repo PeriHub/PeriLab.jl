@@ -64,11 +64,11 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     datamanager = mod.init_material_model(datamanager, nodes, material_parameter)
 
   end
-  if haskey(material_parameter, "Bond associated") && material_parameter["Bond associated"]
+  if haskey(material_parameter, "Bond Associated") && material_parameter["Bond Associated"]
     datamanager = Bond_Associated_Correspondence.init_material_model(datamanager, nodes, material_parameter)
     return datamanager
   end
-  material_parameter["Bond associated"] = false
+  material_parameter["Bond Associated"] = false
   return datamanager
 end
 
@@ -110,9 +110,10 @@ Example:
 ```
 """
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
-  # global dof
-  # global rotation
-  # global angles
+
+  if material_parameter["Bond Associated"]
+    return Bond_Associated_Correspondence.compute_forces(datamanager, nodes, material_parameter, time, dt, to)
+  end
 
   rotation::Bool, angles = datamanager.rotation_data()
   dof = datamanager.get_dof()
@@ -130,7 +131,6 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   strain_increment = datamanager.get_field("Strain Increment")
   strain_NP1 = Geometry.strain(nodes, deformation_gradient, strain_NP1)
   strain_increment[nodes, :, :] = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
-
 
   if rotation
     stress_N = rotate(nodes, dof, stress_N, angles, false)
