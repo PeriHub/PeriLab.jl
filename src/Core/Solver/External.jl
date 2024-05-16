@@ -85,35 +85,35 @@ function init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
         "Safety factor" "."^10 safety_factor "";
         "Time increment" "."^10 dt "s";
         "Number of steps" "."^10 nsteps "";
-        "Numerical Damping" "."^10 numerical_damping "";
+        "Numerical Damping" "."^10 numerical_damping ""
     ]
     if datamanager.get_rank() == 0
         pretty_table(
             data;
-            body_hlines        = [1,9],
-            body_hlines_format = Tuple('─' for _ = 1:4),
-            cell_alignment     = Dict((1, 1) => :l),
-            formatters         = ft_printf("%10.1f", 2),
-            highlighters       = (
+            body_hlines=[1, 9],
+            body_hlines_format=Tuple('─' for _ = 1:4),
+            cell_alignment=Dict((1, 1) => :l),
+            formatters=ft_printf("%10.1f", 2),
+            highlighters=(
                 hl_cell([(1, 1)], crayon"bold"),
                 hl_col(2, crayon"dark_gray")
             ),
-            show_header        = false,
-            tf                 = tf_borderless
+            show_header=false,
+            tf=tf_borderless
         )
         pretty_table(
             current_logger().loggers[2].logger.stream,
             data;
-            body_hlines        = [1,9],
-            body_hlines_format = Tuple('─' for _ = 1:4),
-            cell_alignment     = Dict((1, 1) => :l),
-            formatters         = ft_printf("%10.1f", 2),
-            highlighters       = (
+            body_hlines=[1, 9],
+            body_hlines_format=Tuple('─' for _ = 1:4),
+            cell_alignment=Dict((1, 1) => :l),
+            formatters=ft_printf("%10.1f", 2),
+            highlighters=(
                 hl_cell([(1, 1)], crayon"bold"),
                 hl_col(2, crayon"dark_gray")
             ),
-            show_header        = false,
-            tf                 = tf_borderless
+            show_header=false,
+            tf=tf_borderless
         )
     end
     return initial_time, dt, nsteps, numerical_damping, max_damage
@@ -204,7 +204,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     if solver_options["Material Models"]
         forces = datamanager.get_field("Forces", "NP1")
-        forces_density = datamanager.get_field("Force Densities", "NP1")
+        force_densities = datamanager.get_field("Force Densities", "NP1")
         uN = datamanager.get_field("Displacements", "N")
         vN = datamanager.get_field("Velocity", "N")
         vNP1 = datamanager.get_field("Velocity", "NP1")
@@ -212,7 +212,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         coor = datamanager.get_field("Coordinates")
         deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
     end
-    
+
     if solver_options["Damage Models"]
         damage = datamanager.get_damage("NP1")
     end
@@ -237,8 +237,8 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
 
             vNP1[nodes, :] = (1 - numerical_damping) .* vN[nodes, :] + 0.5 * dt .* a[nodes, :]
             uNP1[nodes, :] = uN[nodes, :] + dt .* vNP1[nodes, :]
-     
-           
+
+
             @timeit to "apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
             #if solver_options["Material Models"]
             #needed because of optional deformation_gradient, Deformed bonds, etc.
@@ -254,12 +254,12 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             # synch
             @timeit to "second apply_bc" datamanager = Boundary_conditions.apply_bc(bcs, datamanager, step_time)
 
-           
-            check_inf_or_nan(forces_density, "Forces")
 
-            a[nodes, :] = forces_density[nodes, :] ./ density[nodes] # element wise
-            forces[nodes, :] = forces_density[nodes, :] .* volume[nodes]
-           
+            check_inf_or_nan(force_densities, "Forces")
+
+            a[nodes, :] = force_densities[nodes, :] ./ density[nodes] # element wise
+            forces[nodes, :] = force_densities[nodes, :] .* volume[nodes]
+
             @timeit to "write_results" result_files = write_results(result_files, start_time + step_time, max_damage, outputs, datamanager)
             # for file in result_files
             #     flush(file)
@@ -285,8 +285,8 @@ end
 
 
 
-function residual(r,y,x,p)
-    return external_force-internal_force
+function residual(r, y, x, p)
+    return external_force - internal_force
 end
 
 
