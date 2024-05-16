@@ -154,6 +154,9 @@ MPI.Init()
                 @testset "ut_material_basis" begin
                     @includetests["unit_tests/Physics/Material/ut_material_basis"]
                 end
+                @testset "ut_bond_based" begin
+                    @includetests["unit_tests/Physics/Material/Material_Models/BondBased/ut_Bondbased_Elastic"]
+                end
                 @testset "ut_correspondence" begin
                     @includetests["unit_tests/Physics/Material/Material_Models/ut_Correspondence"]
                     @includetests["unit_tests/Physics/Material/Material_Models/ut_Correspondence_UMAT"]

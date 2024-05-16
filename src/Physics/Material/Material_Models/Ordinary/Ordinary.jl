@@ -72,6 +72,7 @@ function get_bond_forces(nodes::Union{SubArray,Vector{Int64}}, bond_force_length
     for iID in nodes
         if any(deformed_bond_length[iID] .== 0)
             @error "Length of bond is zero due to its deformation."
+            return nothing
         else
             bond_force[iID][:, 1:end] .= bond_force_length[iID] .* deformed_bond[iID] ./ deformed_bond_length[iID]
         end

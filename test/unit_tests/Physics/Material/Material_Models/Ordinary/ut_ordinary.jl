@@ -85,3 +85,18 @@ end
     @test isapprox(test_val[3], 0.5714285714285714)
     @test Ordinary.calculate_symmetry_params("plane strain", 1.0, 1.0) == (8, 2 / 3, 8 / 9)
 end
+
+@testset "ut_get_bond_forces" begin
+    vec = Vector{Int64}(1:nnodes)
+    bond_force_length = [Vector{Float64}(undef, 1), Vector{Float64}(undef, 1)]
+    bond_force_length[1][1] = 1
+    bond_force_length[2][1] = 1
+    deformed_bond = [Vector{Float64}(undef, 1), Vector{Float64}(undef, 1)]
+    deformed_bond[1][1] = 1
+    deformed_bond[2][1] = 1
+    bond_force = [Vector{Float64}(undef, 1), Vector{Float64}(undef, 1)]
+    bond_force = Ordinary.get_bond_forces(view(vec, :), view(bond_force_length, :), view(deformed_bond, :), view(deformed_bond_length, :), view(bond_force, :))
+    @test bond_force == [[0.5], [0.5]]
+    deformed_bond_length[2][1] = 0
+    @test isnothing(Ordinary.get_bond_forces(view(vec, :), view(bond_force_length, :), view(deformed_bond, :), view(deformed_bond_length, :), view(bond_force, :)))
+end

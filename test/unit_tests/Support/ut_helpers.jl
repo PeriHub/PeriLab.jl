@@ -11,16 +11,16 @@ using ProgressBars
 
 @testset "ut_qdim" begin
     @test isnothing(PeriLab.Solver.Helpers.qdim(0))
-    PeriLab.Solver.Helpers.qdim(1)==3
-    PeriLab.Solver.Helpers.qdim(2)==9
-    PeriLab.Solver.Helpers.qdim(3)==19
-    PeriLab.Solver.Helpers.qdim(4)==34
-    PeriLab.Solver.Helpers.qdim(5)==55
-    PeriLab.Solver.Helpers.qdim(6)==83
-    PeriLab.Solver.Helpers.qdim(7)==119
-    PeriLab.Solver.Helpers.qdim(8)==164
-    PeriLab.Solver.Helpers.qdim(9)==219
-    PeriLab.Solver.Helpers.qdim(10)==285
+    PeriLab.Solver.Helpers.qdim(1) == 3
+    PeriLab.Solver.Helpers.qdim(2) == 9
+    PeriLab.Solver.Helpers.qdim(3) == 19
+    PeriLab.Solver.Helpers.qdim(4) == 34
+    PeriLab.Solver.Helpers.qdim(5) == 55
+    PeriLab.Solver.Helpers.qdim(6) == 83
+    PeriLab.Solver.Helpers.qdim(7) == 119
+    PeriLab.Solver.Helpers.qdim(8) == 164
+    PeriLab.Solver.Helpers.qdim(9) == 219
+    PeriLab.Solver.Helpers.qdim(10) == 285
 end
 
 @testset "ut_interpolation" begin
@@ -34,6 +34,10 @@ end
     @test PeriLab.Solver.Helpers.interpol_data(-1, values_dict["value"]) == minimum(y)
     @test PeriLab.Solver.Helpers.interpol_data([-1, -8], values_dict["value"]) == [minimum(y), minimum(y)]
     @test PeriLab.Solver.Helpers.interpol_data(5, values_dict["value"]) == maximum(y)
+    x = [0.0, 1.0]
+    y = [-1.0, 0.0]
+    values_dict = Dict()
+    values_dict["value"] = PeriLab.Solver.Helpers.interpolation(x, y)
 end
 @testset "ut_find_indices" begin
     @test PeriLab.Solver.Helpers.find_indices([1, 1, 2, 3, 3, 4, 4, 4, 1], 1) == [1, 2, 9]

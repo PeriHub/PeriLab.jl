@@ -205,7 +205,6 @@ function get_Hooke_matrix(parameter, symmetry, dof)
         return nothing
 
     end
-    return matrix
 end
 
 """

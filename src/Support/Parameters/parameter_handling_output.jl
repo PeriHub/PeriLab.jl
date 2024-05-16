@@ -136,6 +136,7 @@ function get_output_fieldnames(outputs::Dict, variables::Vector{String}, compute
     for output in keys(outputs)
         if !isa(outputs[output], Bool)
             @error "Output variable $output must be set to True or False"
+            return nothing
         end
         if outputs[output]
             if output_type == "CSV"
@@ -226,9 +227,6 @@ function get_output_frequency(params::Dict, nsteps::Int64)
                 freq[id] = outputs[output][output_option]
                 if output_options["Number of Output Steps"]
                     freq[id] = Int64(ceil(nsteps / freq[id]))
-                    if freq[id] < 1
-                        freq[id] = 1
-                    end
                 end
                 if freq[id] > nsteps
                     freq[id] = nsteps

@@ -91,11 +91,26 @@ function get_node_set(computes::Dict, path::String, params::Dict)
     end
     nodeset = computes["Node Set"]
 
+    #TODO: could be merged with get_node_sets
     if params["Discretization"]["Type"] == "Exodus"
+        nsets = Dict{String,Any}()
         exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
-        nset = read_set(exo, NodeSet, nodeset)
+        nset_names = read_names(exo, NodeSet)
+        conn = collect_element_connectivities(exo)
+        nset_nodes = []
+        for (id, entry) in enumerate(nset_names)
+            nset_nodes = Vector{Int64}(read_set(exo, NodeSet, id).nodes)
+            if length(entry) == 0
+                nsets["Set-"*string(id)] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+            else
+                nsets[entry] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+            end
+            # end
+        end
+        conn = nothing
+        nset_nodes = nothing
         close(exo)
-        return Vector{Int64}(nset.nodes)
+        return nsets[nodeset]
     end
 
     if nodeset isa Int64 || nodeset isa Int32
@@ -106,6 +121,7 @@ function get_node_set(computes::Dict, path::String, params::Dict)
         nodes = CSV.read(nodeset, DataFrame; delim=" ", header=false, skipto=header_line + 1)
         if size(nodes) == (0, 0)
             @error "Node set file is empty " * nodeset
+            return nothing
         end
         return nodes.Column1
     else
