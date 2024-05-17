@@ -4,9 +4,9 @@
 include("../../../src/FEM/FEM_routines.jl")
 include("../../../src/FEM/Element_formulation/lagrange_element.jl")
 # include("../../../src/Support/data_manager.jl")
-include("../../../src/PeriLab.jl")
+# include("../../../src/PeriLab.jl")
 
-using .PeriLab
+# using .PeriLab
 using Test
 
 @testset "ut_jacobi" begin
