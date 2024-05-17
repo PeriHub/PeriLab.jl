@@ -234,22 +234,8 @@ end
     test, test2 = test_Data_manager.create_node_field("Test_size_4", Float64, "Matrix", 3)
     @test size(test) == (3, 3, 1, 3)
     @test size(test2) == (3, 3, 1, 3)
-end
-
-function create_constant_free_size_field(name::String, type::Type, dof::Tuple)
-    if haskey(fields, vartype) == false
-        fields[vartype] = Dict{String,Any}()
-    end
-    if name in get_all_field_keys()
-        if size(get_field(name)) != dof
-            @warn "Field $name exists already with different size. Predefined field is returned"
-        end
-        return get_field(name)
-    end
-    fields[vartype][name] = Array{type}(zeros(dof))
-    field_types[name] = vartype
-    field_array_type[name] = Dict("Type" => "Field", "Dof" => dof)
-    return get_field(name)
+    test = test_Data_manager.create_constant_free_size_field("Int8Matrix", Int8, (50, 3))
+    @test typeof(test[1]) == Int8
 end
 
 @testset "set_get_field" begin

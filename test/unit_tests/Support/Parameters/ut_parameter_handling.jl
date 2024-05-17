@@ -111,7 +111,7 @@ end
     @test length(nsets["Set-2"]) == 27
     @test length(nsets["Set-3"]) == 3
 end
-@testset "ut_node_set" begin
+@testset "ut_get_node_set" begin
 
     filename = "test.txt"
     numbers = [11, 12, 13, 44, 125]
@@ -132,6 +132,18 @@ end
     computes = Dict("Node Set" => "13 44 125")
     @test [13, 44, 125] == PeriLab.Solver.Parameter_Handling.get_node_set(computes, "", params)
     rm(filename)
+
+    file = open(filename, "w")
+    println(file, "header: global_id")
+    close(file)
+    computes = Dict("Node Set" => filename)
+    @test isnothing(PeriLab.Solver.Parameter_Handling.get_node_set(computes, "", params))
+    rm(filename)
+
+    filename = "example_mesh.g"
+    params = Dict("Discretization" => Dict("Type" => "Exodus", "Input Mesh File" => filename))
+    computes = Dict("Node Set" => "Set-3")
+    @test [322, 323, 324] == PeriLab.Solver.Parameter_Handling.get_node_set(computes, "unit_tests/Support/Parameters", params)
 end
 @testset "ut_validate_yaml" begin
     params = Dict{Any,Any}()
@@ -186,6 +198,27 @@ end
     @test filenames[2] == "test/4.e"
 end
 
+@testset "ut_get_output_fieldnames" begin
+    outputs = Dict("Displacements" => true, "Forces" => true, "External_Displacements" => true)
+    variables = ["DisplacementsNP1", "Forces"]
+    computes = ["External_Displacements"]
+    output_type = "Exodus"
+    fieldnames = PeriLab.Solver.Parameter_Handling.get_output_fieldnames(outputs, variables, computes, output_type)
+    @test fieldnames == ["DisplacementsNP1", "External_Displacements", "Forces"]
+
+    outputs = Dict("Displacements" => "true")
+    @test isnothing(PeriLab.Solver.Parameter_Handling.get_output_fieldnames(outputs, variables, computes, output_type))
+
+    outputs = Dict("External_Displacements" => true)
+    output_type = "CSV"
+    fieldnames = PeriLab.Solver.Parameter_Handling.get_output_fieldnames(outputs, variables, computes, output_type)
+    @test fieldnames == ["External_Displacements"]
+
+    outputs = Dict("External_Forces" => true)
+    fieldnames = PeriLab.Solver.Parameter_Handling.get_output_fieldnames(outputs, variables, computes, output_type)
+    @test fieldnames == []
+end
+
 @testset "get_output_frequency" begin
     nsteps = 40
     params = Dict()
@@ -193,18 +226,22 @@ end
     freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
     @test freq[1] == 2
     @test freq[2] == 40
+
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20), "Output2" => Dict("Number of Output Steps" => 10)))
     freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
     @test freq[1] == 20
     @test freq[2] == 4
+
     nsteps = 1000
     freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
     @test freq[1] == 20
     @test freq[2] == 100
+
     nsteps = 2
     freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
     @test freq[1] == 2
     @test freq[2] == 1
+
     params = Dict("Outputs" => Dict("Output1" => Dict("Output Frequency" => 20, "Number of Output Steps" => 10), "Output2" => Dict("Number of Output Steps" => 10, "Output Frequency" => 20)))
     nsteps = 1000
     freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
@@ -280,6 +317,12 @@ end
 
     @test "External_Forces" in computes_names
     @test "External_Displacements" in computes_names
+end
+
+@testset "ut_get_output_variables" begin
+    @test PeriLab.Solver.Parameter_Handling.get_output_variables("Force", ["Force", "DisplacementsNP1"]) == "Force"
+    @test PeriLab.Solver.Parameter_Handling.get_output_variables("Displacements", ["Force", "DisplacementsNP1"]) == "DisplacementsNP1"
+    @test isnothing(PeriLab.Solver.Parameter_Handling.get_output_variables("Stress", ["Force", "DisplacementsNP1"]))
 end
 
 @testset "ut_get_bc_definitions" begin
@@ -501,4 +544,57 @@ end
 @testset "ut_check_for_duplicates" begin
     @test !(PeriLab.Solver.Parameter_Handling.check_for_duplicates(["a", "b", "c"]))
     @test isnothing(PeriLab.Solver.Parameter_Handling.check_for_duplicates(["a", "b", "c", "a"]))
+end
+
+@testset "ut_validate_structure_recursive" begin
+    expected_structure = Dict(
+        "PeriLab" => [Dict{Any,Any}(
+                "Blocks" => [Dict{Any,Any}(
+                        "Any" => [Dict{Any,Any}(
+                                "Density" => [Union{Float64,Int64}, true],
+                                "Material Model" => [String, false],
+                            ), true],
+                    ), true],
+            ), true]
+    )
+    params = Dict(
+        "PeriLab" => Dict{Any,Any}(
+            "Blocks" => Dict{Any,Any}(
+                "Any" => Dict{Any,Any}(
+                    "Density" => 2.1,
+                    "Material Model" => "Test",
+                ),
+            ),
+        )
+    )
+    validate = true
+    checked_keys = []
+    validate, checked_keys = PeriLab.Solver.Parameter_Handling.validate_structure_recursive(expected_structure, params, validate, checked_keys)
+    @test validate
+    @test checked_keys == ["PeriLab", "Blocks", "Material Model", "Density", "Any"]
+
+    params = Dict(
+        "PeriLab" => Dict{Any,Any}(
+            "Blocks" => Dict{Any,Any}(
+                "Any" => Dict{Any,Any}(
+                    "Density" => "Test",
+                    "Material Model" => "Test",
+                ),
+            ),
+        )
+    )
+    validate, checked_keys = PeriLab.Solver.Parameter_Handling.validate_structure_recursive(expected_structure, params, validate, checked_keys)
+    @test !validate
+
+    params = Dict(
+        "PeriLab" => Dict{Any,Any}(
+            "Blocks" => Dict{Any,Any}(
+                "Any" => Dict{Any,Any}(
+                    "Material Model" => "Test",
+                ),
+            ),
+        )
+    )
+    validate, checked_keys = PeriLab.Solver.Parameter_Handling.validate_structure_recursive(expected_structure, params, validate, checked_keys)
+    @test !validate
 end

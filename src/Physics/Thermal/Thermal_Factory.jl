@@ -80,7 +80,7 @@ function init_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{In
     for thermal_model in thermal_models
         mod = Set_modules.create_module_specifics(thermal_model, module_list, "thermal_model_name")
         if isnothing(mod)
-            @error "No material of name " * material_model * " exists."
+            @error "No thermal model of name " * thermal_model * " exists."
         end
         datamanager.set_model_module(thermal_model, mod)
         datamanager = mod.init_thermal_model(datamanager, nodes, model_param)

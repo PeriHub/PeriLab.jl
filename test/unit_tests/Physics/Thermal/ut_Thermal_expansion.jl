@@ -106,5 +106,7 @@ end
         end
     end
 end
-
-
+@testset "ut_compute_thermal_model" begin
+    test_Data_manager = PeriLab.Data_manager
+    @test Thermal_Flow.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict("Thermal Expansion Coefficient" => [1, 2]), 1.0, 1.0) == test_Data_manager
+end

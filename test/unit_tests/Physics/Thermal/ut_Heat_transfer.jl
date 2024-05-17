@@ -49,4 +49,9 @@ using .Heat_transfer
     active = fill(true, nnodes)
     result = Heat_transfer.calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
     @test result == [1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.5, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 2.0]
+
+    dof = 3
+    test_Data_manager.set_dof(dof)
+    result = Heat_transfer.calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
+    @test result == [2.0, 1.3333333333333335, 2.0, 1.3333333333333335, 1.0, 1.3333333333333335, 2.0, 1.3333333333333335, 2.0, 4.0]
 end
