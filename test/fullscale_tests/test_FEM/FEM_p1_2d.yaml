@@ -5,7 +5,8 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 1: 1 2 3 4 5 6
+      Node Set 1: 1 4
+      Node Set 2: 3 6
     Input Mesh File: "test_mesh_p1_2d.txt"
     Type: Text File
     Input External Topology:
@@ -19,32 +20,33 @@ PeriLab:
     Material Models:
       Mat_1:
         Material Model: "Correspondence Elastic"
-        Symmetry: "isotropic plane strain"
-        Bulk Modulus: 2.5e+3
-        Shear Modulus: 1.15e3
+        Symmetry: "isotropic plane stress"
+        Bulk Modulus: 2.5e+5
+        Shear Modulus: 1.15e5
   Blocks:
     block_1:
       Material Model: "Mat_1"
-      Density: 2000
+      Density: 200
       Horizon: 1.1005
   Boundary Conditions:
     BC_1:
       Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
-      Value: "0.1*x"
+      Value: "0.0"
     BC_2:
       Variable: "Displacements"
-      Node Set: "Node Set 1"
-      Coordinate: "y"
-      Value: "0.0"
+      Node Set: "Node Set 2"
+      Coordinate: "x"
+      Value: "1.0"
+      Type: "Dirichlet"
   Solver:
     Initial Time: 0.0
-    Final Time: 0.8
+    Final Time: 0.0001
     Numerical Damping: 0e-0
     Verlet:
       Safety Factor: 1.00
-      Fixed dt: 0.4
+      Fixed dt: 1.4e-6
   Outputs:
     Output1:
       Output Filename: "FEM_p1_2d"

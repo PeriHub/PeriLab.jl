@@ -66,13 +66,14 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
                 stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
             end
 
-            force_densities[topo, :] += reshape(B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int], (dof, nnodes))'
+            force_densities[topo, :] -= reshape(B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int], (dof, nnodes))'
             # if you do not use permutedims you will get some index errors
             stress_temp .+= stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int]
         end
         # as long as no elements stresses are written
         temp = permutedims(cauchy_stress[topo, :, :], (2, 3, 1))
         temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
+        # no avering over element borders
         cauchy_stress[topo, :, :] = permutedims(temp[:, :, 1:nnodes], (3, 1, 2)) ./ sum(det_jacobian[id_el, :])
         stress_temp .= 0
     end
