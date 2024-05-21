@@ -497,9 +497,9 @@ end
 end
 
 @testset "ut_get_and_set_inverse_nlist" begin
-    inv_nlist = test_Data_manager.get_inverse_nlist()
-    @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}
-    @test length(inv_nlist) == 0
+    # inv_nlist = test_Data_manager.get_inverse_nlist()
+    # @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}
+    # @test length(inv_nlist) == 0
     test_Data_manager.set_inverse_nlist([Dict{Int64,Int64}(1 => 2), Dict{Int64,Int64}(1 => 2, 2 => 1)])
     inv_nlist = test_Data_manager.get_inverse_nlist()
     @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}

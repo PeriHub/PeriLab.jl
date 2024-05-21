@@ -52,6 +52,7 @@ const to = TimerOutput()
 # internal packages
 using .Data_manager
 
+import PrecompileTools
 import .Logging_module
 import .IO
 import .Solver
@@ -300,6 +301,10 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
         TimerOutputs.complement!(to)
         @info to
     end
+end
+
+PrecompileTools.@compile_workload begin
+    main("examples/Small/Input.yaml"; silent=true)
 end
 
 end # module

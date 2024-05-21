@@ -11,6 +11,7 @@ using Test
 
 @testset "ut_jacobi" begin
     test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     dof = 2
     nelements = 1
     test_Data_manager.set_dof(dof)
@@ -38,7 +39,6 @@ using Test
 
     jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
     determinant_jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
-
     test_jacobian, test_determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
     @test isnothing(test_jacobian)
     @test isnothing(test_determinant_jacobian)

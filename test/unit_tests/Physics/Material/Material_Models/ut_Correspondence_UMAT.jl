@@ -13,6 +13,7 @@ end
 @testset "init exceptions" begin
     nodes = 2
     test_Data_manager = PeriLab.Data_manager
+    test_Data_manager.clear_data_manager()
     test_Data_manager.set_num_controller(nodes)
     dof = 3
     test_Data_manager.set_dof(dof)

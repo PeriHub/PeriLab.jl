@@ -400,6 +400,7 @@ function clear_data_manager()
     global nsets
     global nnsets
     global physics_options
+    global filedirectory
 
     field_types = Dict()
     nsets = Dict()
@@ -409,6 +410,7 @@ function clear_data_manager()
         "Shape Tensor" => false,
         "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
+    filedirectory = ""
 
     # global field_array_type
     # global fields_to_synch
