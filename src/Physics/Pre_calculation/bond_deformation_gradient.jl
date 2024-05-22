@@ -46,7 +46,7 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
             bond_horizon = horizon[iID]
         end
         for (jID, nID) in enumerate(nlist[iID])
-            neighbor_nlist = find_local_neighbors(neighbor_coordinate[nID], coordinates[nlist[nlist.!=nID], :], nlist[iID], bond_horizon)
+            neighbor_nlist = find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon)
             indices = vcat(1:jID-1, jID+1:length(nlist[iID]))
 
             deformation_gradient[iID][jID, :, :] = Geometry.bond_associated_deformation_gradient(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond[iID][indices], deformed_bond[iID][indices], bond_deformation_gradient[iID][jID, :, :])
