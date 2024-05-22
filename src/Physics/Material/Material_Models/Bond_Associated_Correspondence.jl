@@ -20,16 +20,16 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   bond_horizon = material_parameter["Bond Horizon"]
   weighted_volume = datamanager.create_constant_bond_field("Bond Weighted Volume", Float64, 1)
 
-
   for iID in nodes
     for nID in nlist[iID]
-      if length(find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon))
+      if length(find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon)) == 0
         @error "Bond horizon is to small. No neighbors were found."
         return nothing
       end
 
     end
   end
+  return datamanager
 end
 
 function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, stress_integral::SubArray)
