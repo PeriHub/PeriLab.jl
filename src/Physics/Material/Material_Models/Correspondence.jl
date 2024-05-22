@@ -65,8 +65,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
 
   end
   if haskey(material_parameter, "Bond Associated") && material_parameter["Bond Associated"]
-    datamanager = Bond_Associated_Correspondence.init_material_model(datamanager, nodes, material_parameter)
-    return datamanager
+    return Bond_Associated_Correspondence.init_material_model(datamanager, nodes, material_parameter)
   end
   material_parameter["Bond Associated"] = false
   return datamanager
