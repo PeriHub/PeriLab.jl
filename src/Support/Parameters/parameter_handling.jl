@@ -116,6 +116,7 @@ global expected_structure = Dict(
                             "Any" => [Dict{Any,Any}(
                                     "Material Model" => [String, true],
                                     "Symmetry" => [String, false],
+                                    "Bond Associated" => [Bool, false],
                                     "Poisson's Ratio" => [Union{Float64,Int64}, false],
                                     "Young's Modulus" => [Union{Float64,Int64}, false],
                                     "Bulk Modulus" => [Union{Float64,Int64}, false],
