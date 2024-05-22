@@ -25,6 +25,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     for nID in nlist[iID]
       if length(find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon))
         @error "Bond horizon is to small. No neighbors were found."
+        return nothing
       end
 
     end
@@ -65,7 +66,7 @@ https://link.springer.com/article/10.1007/s10409-021-01055-5
 
 
 
-function find_local_neighbors(nID::Int64, coordinates::Union{Matrix{Float64},Matrix{Int64}}, nlist::Union{Vector{Int64},SubArray{Int64}}, bond_horizon::Union{Float64,Int64})
+function find_local_neighbors(nID::Int64, coordinates::Union{SubArray,Matrix{Float64},Matrix{Int64}}, nlist::Union{Vector{Int64},SubArray{Int64}}, bond_horizon::Union{Float64,Int64})
   # excludes right now iID node in the coordinates list. Because it is an abritrary sublist it should be fine.
   # saving faster than recalculation?
   nlist_without_neighbor = view(nlist[nlist.!=nID], :)
