@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
-
+include("../../../src/PeriLab.jl")
+using .PeriLab
+calculate_bond_length
 @testset "ut_undeformed_bond" begin
     nnodes = 4
     dof = 2
@@ -33,6 +33,14 @@ using Test
     coor[3, 2] = 0
     coor[4, 1] = 0
     coor[4, 2] = 1
+
+    u_bond, u_bond_length = PeriLab.IO.Geometry.calculate_bond_length(1, coor, nlist[1])
+    @test u_bond[1, 1] == 0.5
+    @test u_bond[1, 2] == 0.5
+    @test isapprox(u_bond_length[1], sqrt(0.5))
+    @test u_bond[2, 1] == 1
+    @test u_bond[2, 2] == 0
+    @test u_bond_length[2] == 1
 
     undeformed_bond, undeformed_bond_length = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), nlist, coor, undeformed_bond, undeformed_bond_length)
 
