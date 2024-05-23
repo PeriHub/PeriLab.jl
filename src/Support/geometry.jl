@@ -53,13 +53,25 @@ function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, co
             return nothing
         end
 
-        undeformed_bond[iID] .= bond_vectors
-        undeformed_bond_length[iID] .= distances
+        undeformed_bond[iID], undeformed_bond_length[iID] = calculate_bond_length(iID, coor, nlist[iID])
 
     end
     return undeformed_bond, undeformed_bond_length
 end
 
+function calculate_bond_length(iID::Int64, coor::SubArray, nlist::Vector{Int64})
+
+    bond_vectors = coor[nlist, :] .- coor[iID, :]'
+    distances = sqrt.(sum(bond_vectors .^ 2, dims=2))[:]
+
+    # Check for identical point coordinates
+    if any(distances .== 0)
+        println()
+        @error "Identical point coordinates with no distance $iID"
+        return nothing
+    end
+    return bond_vectors, distances
+end
 """
     shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
