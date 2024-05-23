@@ -11,7 +11,7 @@ This module provides functionality for running simulations in the PeriLab enviro
 
 ## Modules
 
-- `Support/data_manager.jl`: Data manager module for data management and access.
+- `Core/data_manager.jl`: Data manager module for data management and access.
 - `IO/logging.jl`: Module for setting up and managing logging.
 - `IO/IO.jl`: Input/output functions for handling data files.
 - `Core/Solver/Solver_control.jl`: Solver control module for managing simulation solvers.
@@ -35,12 +35,11 @@ main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=fals
 """
 
 module PeriLab
-include("./Support/data_manager.jl")
+include("./Core/data_manager.jl")
 include("./IO/logging.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
 
-# external packages
 using MPI
 using TimerOutputs
 using Logging
@@ -49,14 +48,12 @@ using Dates
 using LibGit2
 
 const to = TimerOutput()
-# internal packages
 using .Data_manager
 
-import PrecompileTools
+# import PrecompileTools
 import .Logging_module
 import .IO
 import .Solver
-# end
 
 PERILAB_VERSION = "1.1.6"
 
@@ -303,8 +300,8 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
     end
 end
 
-PrecompileTools.@compile_workload begin
-    main("examples/Small/Input.yaml"; silent=true)
-end
+# PrecompileTools.@compile_workload begin
+#     main("examples/Small/Input.yaml"; silent=true)
+# end
 
 end # module

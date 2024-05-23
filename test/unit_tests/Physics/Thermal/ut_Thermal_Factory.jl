@@ -5,7 +5,7 @@ using Test
 
 include("../../../../src/Physics/Thermal/Thermal_Factory.jl")
 using .Thermal
-# include("../../../../src/Support/data_manager.jl")
+# include("../../../../src/Core/data_manager.jl")
 
 
 @testset "init_thermal_model_fields" begin

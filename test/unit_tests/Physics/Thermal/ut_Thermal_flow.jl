@@ -6,7 +6,7 @@ using Test
 
 include("../../../../src/Physics/Thermal/thermal_flow.jl")
 using .Thermal_Flow
-# include("../../../../src/Support/data_manager.jl")
+# include("../../../../src/Core/data_manager.jl")
 
 @test Thermal_Flow.thermal_model_name() == "Thermal Flow"
 

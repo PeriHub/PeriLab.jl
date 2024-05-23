@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# include("../../../src/Support/data_manager.jl")
+# include("../../../src/Core/data_manager.jl")
 using MPI
 using Test
 @testset "set_comm" begin

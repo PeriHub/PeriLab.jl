@@ -81,7 +81,7 @@ end
 
 push_test!(test, (isnothing(send_single_value_from_vector(comm, 0, [1], String))), @__FILE__, @__LINE__)
 if ncores == 3
-    include("../../../src/Support/data_manager.jl")
+    include("../../../src/Core/data_manager.jl")
     include("../../../src/IO/IO.jl")
     import .IO
     using .Data_manager

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-# include("../../../src/Support/data_manager.jl")
+# include("../../../src/Core/data_manager.jl")
 include("../../../src/Compute/compute_global_values.jl")
 
 @testset "ut_global_value_sum" begin
