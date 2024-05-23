@@ -69,19 +69,23 @@ function init_pre_calculation(datamanager::Module, options::Dict)
         datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
         datamanager.create_bond_field("Deformed Bond Length", Float64, 1)
     end
+
+    if options["Deformation Gradient"]
+        datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+        options["Shape Tensor"] = true
+    end
+
+    if options["Bond Associated Deformation Gradient"]
+        datamanager.create_constant_bond_field("Bond Associated Deformation Gradient", Float64, "Matrix", dof)
+        options["Bond Associated Shape Tensor"] = true
+    end
     if options["Shape Tensor"]
         datamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
         datamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
     end
-    if options["Deformation Gradient"]
-        datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
-    end
     if options["Bond Associated Shape Tensor"]
         datamanager.create_constant_bond_field("Bond Associated Shape Tensor", Float64, "Matrix", dof)
         datamanager.create_constant_bond_field("Inverse Bond Associated Shape Tensor", Float64, "Matrix", dof)
-    end
-    if options["Bond Associated Deformation Gradient"]
-        datamanager.create_constant_bond_field("Bond Associated Deformation Gradient", Float64, "Matrix", dof)
     end
     return datamanager
 end
