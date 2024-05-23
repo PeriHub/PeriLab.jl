@@ -4,7 +4,7 @@
 
 using Test
 # include("../../../src/Support/helpers.jl")
-# include("../../../src/Support/data_manager.jl")
+# include("../../../src/Core/data_manager.jl")
 # using Reexport
 # @reexport using .Helpers
 using ProgressBars

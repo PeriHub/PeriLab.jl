@@ -14,7 +14,9 @@ If you want to provide a code change, please:
 
 * Create a clone or fork of the GitHub project.
 * Develop the feature/patch.
-* Provide a merge request.
+* Provide a pull request.
+
+> Take a look at the [GitHub Documentation](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) if you don't know how to do that.
 
 ## Contributors
 * Christian Willberg

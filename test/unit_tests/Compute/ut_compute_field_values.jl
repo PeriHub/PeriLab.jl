@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-# include("../../../src/Support/data_manager.jl")
+# include("../../../src/Core/data_manager.jl")
 include("../../../src/Compute/compute_field_values.jl")
 @testset "ut_get_forces_from_force_density" begin
     test_Data_manager = PeriLab.Data_manager

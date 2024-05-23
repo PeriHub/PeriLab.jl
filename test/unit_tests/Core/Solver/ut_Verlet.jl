@@ -11,7 +11,7 @@ using Test
 # include("../../../../src/Support/geometry.jl")
 
 # if !isdefined(@__MODULE__, :Data_manager)
-#     include("../../../../src/Support/data_manager.jl")
+#     include("../../../../src/Core/data_manager.jl")
 # end
 # include("../../../../src/Support/Parameters/parameter_handling.jl")
 # using Reexport

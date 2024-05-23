@@ -4,7 +4,7 @@
 
 include("../../../src/IO/exodus_export.jl")
 include("../../../src/IO/csv_export.jl")
-include("../../../src/Support/data_manager.jl")
+include("../../../src/Core/data_manager.jl")
 include("../../../src/Support/Parameters/parameter_handling.jl")
 using Test
 using TimerOutputs
