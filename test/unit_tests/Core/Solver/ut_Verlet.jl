@@ -87,7 +87,7 @@ volume = [0.5, 0.5, 0.5, 0.5, 0.5]
 density = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
 horizon = [3.1, 3.1, 3.1, 3.1, 3.1]
 
-undeformed_bond = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond, undeformed_bond_length)
+undeformed_bond = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), nlist, coor, undeformed_bond, undeformed_bond_length)
 
 blocks = [1, 1, 2, 2, 1]
 blocks = test_Data_manager.set_block_list(blocks)
