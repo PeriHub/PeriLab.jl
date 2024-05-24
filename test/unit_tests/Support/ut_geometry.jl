@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-include("../../../src/PeriLab.jl")
-using .PeriLab
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 calculate_bond_length
 @testset "ut_undeformed_bond" begin
     nnodes = 4

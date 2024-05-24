@@ -4,6 +4,7 @@
 
 module Bond_Shape_Tensor
 include("../Material/Material_Models/Bond_Associated_Correspondence.jl")
+
 using .Bond_Associated_Correspondence: find_local_neighbors
 
 export compute
@@ -26,7 +27,7 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
     bond_damage = datamanager.get_bond_damage("NP1")
-    undeformed_bond = datamanager.get_field("Bond Geometry")
+    coordinates = datamanager.get_field("Coordinates")
     bond_shape_tensor = datamanager.get_field("Bond Associated Shape Tensor")
     inverse_bond_shape_tensor = datamanager.get_field("Inverse Bond Associated Shape Tensor")
 
@@ -42,10 +43,17 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
         if isnothing(bond_horizon)
             bond_horizon = horizon[iID]
         end
+        #bond damage
         for (jID, nID) in enumerate(nlist[iID])
+
             neighbor_nlist = find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon)
+            undeformed_bond, distances = Geometry.calculate_bond_length(coor[nID, :], neighbor_nlist)
+            # TODO Bond damage is not correct and must be adapted
+            # indices are not needed for that
             indices = vcat(1:jID-1, jID+1:length(nlist[iID]))
-            shape_tensor[iID][jID, :, :], inverse_shape_tensor[iID][jID, :, :] = Geometry.bond_associated_shape_tensor(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond[iID][indices], bond_shape_tensor[iID][jID, :, :], inverse_bond_shape_tensor[iID][jID, :, :])
+
+
+            shape_tensor[iID][jID, :, :], inverse_shape_tensor[iID][jID, :, :] = Geometry.bond_associated_shape_tensor(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond, bond_shape_tensor[iID][jID, :, :], inverse_bond_shape_tensor[iID][jID, :, :])
         end
 
     end
