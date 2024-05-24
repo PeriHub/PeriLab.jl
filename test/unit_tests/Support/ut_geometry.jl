@@ -5,7 +5,6 @@
 using Test
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
-calculate_bond_length
 @testset "ut_undeformed_bond" begin
     nnodes = 4
     dof = 2

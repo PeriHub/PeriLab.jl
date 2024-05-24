@@ -38,7 +38,7 @@ Calculate bond geometries between nodes based on their coordinates.
 
  undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
 """
-function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, coor::Union{SubArray,Matrix{Float64},Matrix{Int64}}, undeformed_bond, undeformed_bond_length)
+function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{SubArray,Vector{Int64}}, coor::Union{SubArray,Matrix{Float64},Matrix{Int64}}, undeformed_bond, undeformed_bond_length)
 
     for iID in nodes
         undeformed_bond[iID], undeformed_bond_length[iID] = calculate_bond_length(iID, coor, nlist[iID])

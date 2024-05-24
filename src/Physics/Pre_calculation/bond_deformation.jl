@@ -20,12 +20,11 @@ Compute the bond deformation.
 - `datamanager`: Datamanager.
 """
 function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, time::Float64)
-    dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    deformed_bond, deformed_bond_length = Geometry.bond_geometry(nodes, dof, nlist, deformed_coor, deformed_bond, deformed_bond_length)
+    deformed_bond, deformed_bond_length = Geometry.bond_geometry(nodes, nlist, deformed_coor, deformed_bond, deformed_bond_length)
     return datamanager
 end
 
