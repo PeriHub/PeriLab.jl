@@ -13,10 +13,6 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   end
   nlist = datamanager.get_field("Neighborhoodlist")
   coordinates = datamanager.get_field("Coordinates")
-  if !haskey(material_parameter, "Bond Horizon")
-    horizon = datamanager.get_field("Horizon")
-    material_parameter["Bond Horizon"] = maximum(horizon)
-  end
   bond_horizon = material_parameter["Bond Horizon"]
   weighted_volume = datamanager.create_constant_bond_field("Bond Weighted Volume", Float64, 1)
 
@@ -87,10 +83,11 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   omega = datamanager.get_field("Influence Function")
   volume = datamanager.get_field("Volume")
   weighted_volume = datamanager.get_field("Bond Weighted Volume")
+  bond_horizon = material_parameter["Bond Horizon"]
   weighted_volume = compute_bond_associated_weighted_volume(nodes, nlist, coordinates, bond_damage, omega, volume, bond_horizon, weighted_volume)
 
   undeformed_bond = datamanager.get_field("Bond Geometry")
-  inverse_shape_tensor = datamanager.get_field("Bond Inverse Shape Tensor")
+  inverse_shape_tensor = datamanager.get_field("Inverse Bond Associated Shape Tensor")
   strain_N = datamanager.get_field("Bond Strain", "N")
   strain_NP1 = datamanager.get_field("Bond Strain", "NP1")
   stress_N = datamanager.get_field("Cauchy Stress", "N")

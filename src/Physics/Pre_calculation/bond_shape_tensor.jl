@@ -6,6 +6,8 @@ module Bond_Shape_Tensor
 include("../Material/Material_Models/Bond_Associated_Correspondence.jl")
 
 using .Bond_Associated_Correspondence: find_local_neighbors
+include("../../Support/geometry.jl")
+using .Geometry: calculate_bond_length, bond_associated_shape_tensor
 
 export compute
 
@@ -37,23 +39,20 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     horizon = datamanager.get_field("Horizon")
 
     for iID in nodes
-        bond_horizon = datamanager.get_properties(blocks[iID], "Material Model", "Bond Horizon")
+        bond_horizon = datamanager.get_property(blocks[iID], "Material Model", "Bond Horizon")
 
-        # TODO optimize out. should not be done in every step. Init is enough
-        if isnothing(bond_horizon)
-            bond_horizon = horizon[iID]
-        end
-        #bond damage
+        # TODO bond damage
         for (jID, nID) in enumerate(nlist[iID])
 
             neighbor_nlist = find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon)
-            undeformed_bond, distances = Geometry.calculate_bond_length(coor[nID, :], neighbor_nlist)
+            undeformed_bond, distances = calculate_bond_length(nID, coordinates, neighbor_nlist)
+
             # TODO Bond damage is not correct and must be adapted
             # indices are not needed for that
-            indices = vcat(1:jID-1, jID+1:length(nlist[iID]))
+            indices = vcat(1:length(neighbor_nlist))
 
 
-            shape_tensor[iID][jID, :, :], inverse_shape_tensor[iID][jID, :, :] = Geometry.bond_associated_shape_tensor(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond, bond_shape_tensor[iID][jID, :, :], inverse_bond_shape_tensor[iID][jID, :, :])
+            shape_tensor[iID][jID, :, :], inverse_shape_tensor[iID][jID, :, :] = bond_associated_shape_tensor(dof, volume[neighbor_nlist], omega[neighbor_nlist], bond_damage[iID][indices], undeformed_bond, bond_shape_tensor[iID][jID, :, :], inverse_bond_shape_tensor[iID][jID, :, :])
         end
 
     end
