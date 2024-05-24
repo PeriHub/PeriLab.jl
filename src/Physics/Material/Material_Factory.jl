@@ -72,8 +72,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
 
     if occursin("Correspondence", model_param["Material Model"])
         datamanager.set_model_module("Correspondence", Correspondence)
-        datamanager = Correspondence.init_material_model(datamanager, nodes, model_param)
-        return datamanager
+        return Correspondence.init_material_model(datamanager, nodes, model_param)
     end
 
     material_models = split(model_param["Material Model"], "+")

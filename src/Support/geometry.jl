@@ -9,13 +9,12 @@ export bond_geometry
 export shape_tensor
 
 """
-     bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond, undeformed_bond_length)
+     bond_geometry(nodes::Union{SubArray,Vector{Int64}}, nlist, coor, undeformed_bond, undeformed_bond_length)
 
 Calculate bond geometries between nodes based on their coordinates.
 
 # Arguments
  - `nodes::Union{SubArray,Vector{Int64}}`: A vector of integers representing node IDs.
- - `dof::Int64`: An integer representing the degrees of freedom.
  - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
  - `coor`: A matrix representing the coordinates of each node.
  - `undeformed_bond`: A preallocated array or data structure to store bond geometries.
@@ -39,27 +38,27 @@ Calculate bond geometries between nodes based on their coordinates.
 
  undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
 """
-function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, coor, undeformed_bond, undeformed_bond_length)
+function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{SubArray,Vector{Int64}}, coor::Union{SubArray,Matrix{Float64},Matrix{Int64}}, undeformed_bond, undeformed_bond_length)
 
     for iID in nodes
-
-        # Calculate bond vector and distance
-        bond_vectors = coor[nlist[iID], :] .- coor[iID, :]'
-        distances = sqrt.(sum(bond_vectors .^ 2, dims=2))
-
-        # Check for identical point coordinates
-        if any(distances .== 0)
+        undeformed_bond[iID], undeformed_bond_length[iID] = calculate_bond_length(iID, coor, nlist[iID])
+        if any(undeformed_bond_length[iID] .== 0)
+            println()
             @error "Identical point coordinates with no distance $iID"
             return nothing
         end
-
-        undeformed_bond[iID] .= bond_vectors
-        undeformed_bond_length[iID] .= distances
-
     end
     return undeformed_bond, undeformed_bond_length
 end
 
+function calculate_bond_length(iID::Int64, coor::Union{SubArray,Matrix{Float64},Matrix{Int64}}, nlist::Vector{Int64})
+
+    bond_vectors = coor[nlist, :] .- coor[iID, :]'
+    distances = sqrt.(sum(bond_vectors .^ 2, dims=2))[:]
+
+    # Check for identical point coordinates
+    return bond_vectors, distances
+end
 """
     shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
@@ -127,7 +126,7 @@ end
 
 
 function bond_associated_shape_tensor(dof::Int64, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
-
+    # bond geometries -> zwischen nachbar und seinen nachbarn
     shape_tensor[:, :] = calculate_shape_tensor(shape_tensor[:, :], dof, volume, omega, bond_damage, undeformed_bond)
     try
         inverse_shape_tensor[:, :] = inv(shape_tensor[:, :])
@@ -143,7 +142,7 @@ end
 
 
 function bond_associated_deformation_gradient(dof::Int64, volume, omega, bond_damage, undeformed_bond, deformed_bond, deformation_gradient)
-
+    # bond deformation -> zwischen nachbar und seinen nachbarn
     return calculate_deformation_gradient(deformation_gradient, dof, bond_damage, deformed_bond, undeformed_bond, volume, omega)
 
 end

@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../src/Physics/Physics_Factory.jl")
-# include("../../../src/Core/data_manager.jl")
-# include("../../../src/Support/Parameters/parameter_handling.jl")
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 using Test
 import .Physics
 @testset "ut_get_block_model_definition" begin
@@ -80,8 +80,8 @@ end
     test_Data_manager = Physics.init_pre_calculation(test_Data_manager, options)
     @test "Deformed Bond GeometryN" in test_Data_manager.get_all_field_keys()
     @test "Deformed Bond GeometryNP1" in test_Data_manager.get_all_field_keys()
-    @test !("Shape Tensor" in test_Data_manager.get_all_field_keys())
-    @test !("Inverse Shape Tensor" in test_Data_manager.get_all_field_keys())
+    @test "Shape Tensor" in test_Data_manager.get_all_field_keys()
+    @test "Inverse Shape Tensor" in test_Data_manager.get_all_field_keys()
     @test "Deformation Gradient" in test_Data_manager.get_all_field_keys()
     @test !("Bond Associated Shape Tensor" in test_Data_manager.get_all_field_keys())
     @test !("Bond Associated Deformation Gradient" in test_Data_manager.get_all_field_keys())
@@ -97,7 +97,7 @@ end
     @test "Bond Associated Shape Tensor" in test_Data_manager.get_all_field_keys()
     @test !("Bond Associated Deformation Gradient" in test_Data_manager.get_all_field_keys())
 
-    options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => true, "Deformation Gradient" => true, "Bond Associated Shape Tensor" => true, "Bond Associated Deformation Gradient" => true)
+    options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => false, "Deformation Gradient" => true, "Bond Associated Shape Tensor" => false, "Bond Associated Deformation Gradient" => true)
 
     test_Data_manager = Physics.init_pre_calculation(test_Data_manager, options)
     @test "Deformed Bond GeometryN" in test_Data_manager.get_all_field_keys()
@@ -106,4 +106,5 @@ end
     @test "Deformation Gradient" in test_Data_manager.get_all_field_keys()
     @test "Bond Associated Shape Tensor" in test_Data_manager.get_all_field_keys()
     @test "Bond Associated Deformation Gradient" in test_Data_manager.get_all_field_keys()
+
 end

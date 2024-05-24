@@ -20,16 +20,16 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   bond_horizon = material_parameter["Bond Horizon"]
   weighted_volume = datamanager.create_constant_bond_field("Bond Weighted Volume", Float64, 1)
 
-  try
-    for iID in nodes
-      for (jID, nID) in enumerate(nlist)
-        find_local_neighbors(coordinates[nID, :], coordinates[nlist, :], nlist, bond_horizon)
+  for iID in nodes
+    for nID in nlist[iID]
+      if length(find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon)) == 0
+        @error "Bond horizon is to small. No neighbors were found."
+        return nothing
       end
+
     end
-  catch
-    @error "Bond horizon is to small. Now neighbors were found."
-    return nothing
   end
+  return datamanager
 end
 
 function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, stress_integral::SubArray)
@@ -85,12 +85,12 @@ https://link.springer.com/article/10.1007/s10409-021-01055-5
 
 
 
-function find_local_neighbors(neighbor_coordinate::Union{Vector{Float64},Vector{Int64}}, coordinates::Union{Matrix{Float64},Matrix{Int64}}, nlist::Union{Vector{Int64},SubArray{Int64}}, bond_horizon::Union{Float64,Int64})
+function find_local_neighbors(nID::Int64, coordinates::Union{SubArray,Matrix{Float64},Matrix{Int64}}, nlist::Union{Vector{Int64},SubArray{Int64}}, bond_horizon::Union{Float64,Int64})
   # excludes right now iID node in the coordinates list. Because it is an abritrary sublist it should be fine.
   # saving faster than recalculation?
-  balltree = BallTree(transpose(coordinates))
-
-  return nlist[inrange(balltree, neighbor_coordinate, bond_horizon, true)]
+  nlist_without_neighbor = view(nlist[nlist.!=nID], :)
+  balltree = BallTree(transpose(coordinates[nlist_without_neighbor, :]))
+  return nlist_without_neighbor[inrange(balltree, coordinates[nID, :], bond_horizon, true)]
 
 end
 
@@ -181,8 +181,7 @@ function compute_bond_associated_weighted_volume(nodes::Union{SubArray,Vector{In
     neighborhood_volume = sum(volume[nlist[iID]] .* bond_damage[iID] .* omega[iID])
 
     for (jID, nID) in enumerate(nlist[iID])
-      nlist_without_neighbor = view(nlist[iID][nlist[iID].!=nID], :)
-      local_nlist = find_local_neighbors(coordinates[nID, :], coordinates[nlist_without_neighbor, :], nlist_without_neighbor, bond_horizon)
+      local_nlist = find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon)
       sub_bond_list = [findfirst(x -> x == elem, nlist[iID]) for elem in local_nlist]
       weighted_volume[iID][jID] = sum(volume[local_nlist] .* bond_damage[iID][sub_bond_list] .* omega[iID][sub_bond_list] / neighborhood_volume)
     end

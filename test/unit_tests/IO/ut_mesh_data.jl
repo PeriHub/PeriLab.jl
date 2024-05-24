@@ -482,7 +482,7 @@ end
     coor = test_Data_manager.get_field("Coordinates")
     undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
     undeformed_bond_length = test_Data_manager.create_constant_bond_field("Bond Length", Float64, 1)
-    undeformed_bond, undeformed_bond_length = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), dof, nlist, coor, undeformed_bond, undeformed_bond_length)
+    undeformed_bond, undeformed_bond_length = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), nlist, coor, undeformed_bond, undeformed_bond_length)
 
     @test undeformed_bond[1][1, 1] == 1
     @test undeformed_bond[1][1, 2] == 0

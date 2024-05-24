@@ -104,10 +104,10 @@ end
 
     bond_horizon::Float64 = 1
 
-    @test Bond_Associated_Correspondence.find_local_neighbors(coordinates[5, :], coordinates[nlist[nlist.!=5], :], nlist[nlist.!=5], bond_horizon) == []
+    @test Bond_Associated_Correspondence.find_local_neighbors(5, coordinates, nlist, bond_horizon) == []
     bond_horizon = 2.6
-    @test Bond_Associated_Correspondence.find_local_neighbors(coordinates[5, :], coordinates[nlist[nlist.!=5], :], nlist[nlist.!=5], bond_horizon) == [2, 3, 4]
-    @test Bond_Associated_Correspondence.find_local_neighbors(coordinates[2, :], coordinates[nlist[nlist.!=2], :], nlist[nlist.!=2], bond_horizon) == [3, 4, 5]
+    @test Bond_Associated_Correspondence.find_local_neighbors(5, coordinates, nlist, bond_horizon) == [2, 3, 4]
+    @test Bond_Associated_Correspondence.find_local_neighbors(2, coordinates, nlist, bond_horizon) == [3, 4, 5]
 end
 
 @testset "ut_compute_bond_associated_weighted_volume" begin
