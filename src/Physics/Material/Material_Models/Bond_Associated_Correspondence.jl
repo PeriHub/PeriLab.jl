@@ -50,6 +50,25 @@ function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, nlist::Su
   end
 end
 
+"""
+    correspondence_name()
+
+Gives the correspondence material name. It is needed for comparison with the yaml input deck.
+
+# Arguments
+
+# Returns
+- `name::String`: The name of the material.
+
+Example:
+```julia
+println(correspondence_name())
+"Material Template"
+```
+"""
+function correspondence_name()
+  return "Correspondence Bond-Associated"
+end
 
 """
 https://link.springer.com/article/10.1007/s10409-021-01055-5
@@ -87,6 +106,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   omega = datamanager.get_field("Influence Function")
   volume = datamanager.get_field("Volume")
   weighted_volume = datamanager.get_field("Bond Weighted Volume")
+  # bond_horizon = 2.2 #Temporary fix
   weighted_volume = compute_bond_associated_weighted_volume(nodes, nlist, coordinates, bond_damage, omega, volume, bond_horizon, weighted_volume)
 
   undeformed_bond = datamanager.get_field("Bond Geometry")
