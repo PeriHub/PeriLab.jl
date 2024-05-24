@@ -38,38 +38,25 @@ Calculate bond geometries between nodes based on their coordinates.
 
  undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
 """
-function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, coor::SubArray, undeformed_bond, undeformed_bond_length)
+function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, coor::Union{SubArray,Matrix{Float64},Matrix{Int64}}, undeformed_bond, undeformed_bond_length)
 
     for iID in nodes
-
-        # Calculate bond vector and distance
-        bond_vectors = coor[nlist[iID], :] .- coor[iID, :]'
-        distances = sqrt.(sum(bond_vectors .^ 2, dims=2))
-
-        # Check for identical point coordinates
-        if any(distances .== 0)
+        undeformed_bond[iID], undeformed_bond_length[iID] = calculate_bond_length(iID, coor, nlist[iID])
+        if any(undeformed_bond_length[iID] .== 0)
             println()
             @error "Identical point coordinates with no distance $iID"
             return nothing
         end
-
-        undeformed_bond[iID], undeformed_bond_length[iID] = calculate_bond_length(iID, coor, nlist[iID])
-
     end
     return undeformed_bond, undeformed_bond_length
 end
 
-function calculate_bond_length(iID::Int64, coor::SubArray, nlist::Vector{Int64})
+function calculate_bond_length(iID::Int64, coor::Union{SubArray,Matrix{Float64},Matrix{Int64}}, nlist::Vector{Int64})
 
     bond_vectors = coor[nlist, :] .- coor[iID, :]'
     distances = sqrt.(sum(bond_vectors .^ 2, dims=2))[:]
 
     # Check for identical point coordinates
-    if any(distances .== 0)
-        println()
-        @error "Identical point coordinates with no distance $iID"
-        return nothing
-    end
     return bond_vectors, distances
 end
 """
