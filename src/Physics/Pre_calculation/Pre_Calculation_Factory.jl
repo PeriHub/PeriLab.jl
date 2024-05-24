@@ -86,6 +86,13 @@ function init_pre_calculation(datamanager::Module, options::Dict)
     if options["Bond Associated Shape Tensor"]
         datamanager.create_constant_bond_field("Bond Associated Shape Tensor", Float64, "Matrix", dof)
         datamanager.create_constant_bond_field("Inverse Bond Associated Shape Tensor", Float64, "Matrix", dof)
+
+        for block_id in data_managerget_block_list()
+            if isnothing(datamanager.get_property(block_id, "Material Model", "Bond Horizon"))
+                horizon = datamanager.get_field("Horizon")
+                datamanager.set_property(block_id, "Material Model", "Bond Horizon", maximum(horizon))
+            end
+        end
     end
     return datamanager
 end
