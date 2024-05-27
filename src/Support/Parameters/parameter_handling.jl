@@ -117,6 +117,7 @@ global expected_structure = Dict(
                                     "Material Model" => [String, true],
                                     "Symmetry" => [String, false],
                                     "Bond Associated" => [Bool, false],
+                                    "Bond Horizon" => [Union{Float64,Int64}, false],
                                     "Poisson's Ratio" => [Union{Float64,Int64}, false],
                                     "Young's Modulus" => [Union{Float64,Int64}, false],
                                     "Bulk Modulus" => [Union{Float64,Int64}, false],
