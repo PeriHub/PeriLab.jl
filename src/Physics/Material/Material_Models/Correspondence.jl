@@ -11,13 +11,13 @@ include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 include("../material_basis.jl")
 include("../../../Support/geometry.jl")
+using .Geometry: strain
 using .Global_zero_energy_control
-
 include("../../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "correspondence_name")
 Set_modules.include_files(module_list)
-using .Geometry
+
 export init_material_model
 export material_name
 export compute_forces
