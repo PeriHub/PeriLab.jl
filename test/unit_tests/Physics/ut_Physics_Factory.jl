@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../src/Physics/Physics_Factory.jl")
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../src/PeriLab.jl")
+using .PeriLab
 using Test
 import .Physics
 @testset "ut_get_block_model_definition" begin
@@ -65,6 +65,7 @@ end
     nn[2] = 3
     nn[3] = 1
     nn[4] = 2
+    horizon = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
     options = Dict("Deformed Bond Geometry" => true, "Shape Tensor" => false, "Deformation Gradient" => false, "Bond Associated Shape Tensor" => false, "Bond Associated Deformation Gradient" => false)
     test_Data_manager = Physics.init_pre_calculation(test_Data_manager, options)
 
