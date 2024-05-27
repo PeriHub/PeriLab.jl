@@ -12,6 +12,7 @@ const to = TimerOutput()
 
 @testset "material_name" begin
     @test Bondbased_Elastic.material_name() == "Bond-based Elastic"
+    @test !(Bondbased_Elastic.fe_support())
 end
 @testset "compute_forces" begin
     nodes = 2

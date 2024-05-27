@@ -18,7 +18,7 @@ using Test
 
     @test isapprox(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Magnitude" => 0.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2]), stress), 5.29999999)
 
-    @test isapprox(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Location Z" => 2.1, "Flaw Magnitude" => 0.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2]), stress), 5.29999999)
+    @test isapprox(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Location Z" => 2.1, "Flaw Magnitude" => 0.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2, 3]), stress), 5.29999999)
 
 
     #  @test flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "x*x")), Vector{Float64}([1, 2]), stress) == 1
@@ -213,6 +213,9 @@ end
             end
         end
     end
+
+    parameter = Dict{String,Any}("C11" => 2.0, "C12" => 3.0, "C13" => 4.0, "C22" => 5.0, "C33" => 7.0)
+    @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
 
     symmetry = "anisotropic missing"
     @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))

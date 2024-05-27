@@ -184,9 +184,7 @@ get_block_models
 get_computes_names
 get_output_variables
 get_computes
-get_node_set
 get_mesh_name
-get_topology_name
 get_bond_filters
 get_node_sets
 check_for_duplicates

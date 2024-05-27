@@ -5,7 +5,6 @@
 export get_computes_names
 export get_output_variables
 export get_computes
-export get_node_set
 
 """
     get_computes_names(params::Dict)
@@ -71,61 +70,4 @@ function get_computes(params::Dict, variables::Vector{String})
         end
     end
     return computes
-end
-
-"""
-    get_node_set(computes::Dict, path::String, params::Dict)
-
-Get the node set.
-
-# Arguments
-- `computes::Dict`: The computes dictionary.
-- `path::String`: The path to the mesh.
-- `params::Dict`: The parameters dictionary.
-# Returns
-- `nodeset::Vector`: The node set.
-"""
-function get_node_set(computes::Dict, path::String, params::Dict)
-    if !haskey(computes::Dict, "Node Set")
-        return []
-    end
-    nodeset = computes["Node Set"]
-
-    #TODO: could be merged with get_node_sets
-    if params["Discretization"]["Type"] == "Exodus"
-        nsets = Dict{String,Any}()
-        exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
-        nset_names = read_names(exo, NodeSet)
-        conn = collect_element_connectivities(exo)
-        nset_nodes = []
-        for (id, entry) in enumerate(nset_names)
-            nset_nodes = Vector{Int64}(read_set(exo, NodeSet, id).nodes)
-            if length(entry) == 0
-                nsets["Set-"*string(id)] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
-            else
-                nsets[entry] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
-            end
-            # end
-        end
-        conn = nothing
-        nset_nodes = nothing
-        close(exo)
-        return nsets[nodeset]
-    end
-
-    if nodeset isa Int64 || nodeset isa Int32
-        return [nodeset]
-    elseif occursin(".txt", nodeset)
-
-        header_line, header = get_header(nodeset)
-        nodes = CSV.read(nodeset, DataFrame; delim=" ", header=false, skipto=header_line + 1)
-        if size(nodes) == (0, 0)
-            @error "Node set file is empty " * nodeset
-            return nothing
-        end
-        return nodes.Column1
-    else
-        nodes = split(nodeset)
-        return parse.(Int, nodes)
-    end
 end

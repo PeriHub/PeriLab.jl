@@ -111,40 +111,6 @@ end
     @test length(nsets["Set-2"]) == 27
     @test length(nsets["Set-3"]) == 3
 end
-@testset "ut_get_node_set" begin
-
-    filename = "test.txt"
-    numbers = [11, 12, 13, 44, 125]
-    file = open(filename, "w")
-    println(file, "header: global_id")
-    for number in numbers
-        println(file, number)
-    end
-    close(file)
-
-    params = Dict("Discretization" => Dict("Type" => "Text File"))
-    computes = Dict("Node Setas" => 12)
-    @test [] == PeriLab.Solver.Parameter_Handling.get_node_set(computes, "", params)
-    computes = Dict("Node Set" => 12)
-    @test [12] == PeriLab.Solver.Parameter_Handling.get_node_set(computes, "", params)
-    computes = Dict("Node Set" => filename)
-    @test [11, 12, 13, 44, 125] == PeriLab.Solver.Parameter_Handling.get_node_set(computes, "", params)
-    computes = Dict("Node Set" => "13 44 125")
-    @test [13, 44, 125] == PeriLab.Solver.Parameter_Handling.get_node_set(computes, "", params)
-    rm(filename)
-
-    file = open(filename, "w")
-    println(file, "header: global_id")
-    close(file)
-    computes = Dict("Node Set" => filename)
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_node_set(computes, "", params))
-    rm(filename)
-
-    filename = "example_mesh.g"
-    params = Dict("Discretization" => Dict("Type" => "Exodus", "Input Mesh File" => filename))
-    computes = Dict("Node Set" => "Set-3")
-    @test [322, 323, 324] == PeriLab.Solver.Parameter_Handling.get_node_set(computes, "unit_tests/Support/Parameters", params)
-end
 @testset "ut_validate_yaml" begin
     params = Dict{Any,Any}()
     @info "Error messages are tested and therefore okay."

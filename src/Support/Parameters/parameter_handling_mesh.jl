@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 export get_mesh_name
 export get_external_topology_name
-export get_topology_name
 export get_bond_filters
 export get_node_sets
 export get_header
@@ -49,26 +48,6 @@ function get_mesh_name(params::Dict)
         return nothing
     end
     return params["Discretization"]["Input Mesh File"]
-end
-
-"""
-    get_topology_name(params::Dict)
-
-Returns the name of the topology file from the parameters
-
-# Arguments
-- `params::Dict`: The parameters
-# Returns
-- `check::Bool`: Whether the topology file is defined
-- `topoFile::String`: The name of the topology file
-"""
-function get_topology_name(params::Dict)
-    check = haskey(params["Discretization"], "Input FEM Topology File")
-    topoFile::String = ""
-    if check
-        topoFile = params["Discretization"]["Input FEM Topology File"]
-    end
-    return check, topoFile
 end
 
 """

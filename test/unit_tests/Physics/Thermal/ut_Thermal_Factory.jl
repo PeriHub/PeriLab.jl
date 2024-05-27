@@ -36,7 +36,7 @@ end
     test_Data_manager.set_properties(1, "Thermal Model", Dict("Thermal Model" => "Heat Transfer"))
     Thermal.init_thermal_model(test_Data_manager, [1], 1)
     test_Data_manager.set_properties(2, "Thermal Model", Dict("Thermal Model" => "Missing"))
-    Thermal.init_thermal_model(test_Data_manager, [2], 1)
+    @test isnothing(Thermal.init_thermal_model(test_Data_manager, [1], 2))
 end
 
 @testset "ut_distribute_heat_flows" begin
