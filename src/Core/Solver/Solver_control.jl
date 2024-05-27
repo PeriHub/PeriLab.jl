@@ -161,9 +161,7 @@ Runs the solver.
 """
 function solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Dict}, write_results, to, silent::Bool)
 
-    if solver_options["Solver"] == "External"
-        return External_solver.run_solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)
-    elseif solver_options["Solver"] == "Verlet"
+    if solver_options["Solver"] == "Verlet"
         return Verlet.run_solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)
     end
 

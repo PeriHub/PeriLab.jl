@@ -46,6 +46,25 @@ function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, nlist::Su
   end
 end
 
+"""
+    correspondence_name()
+
+Gives the correspondence material name. It is needed for comparison with the yaml input deck.
+
+# Arguments
+
+# Returns
+- `name::String`: The name of the material.
+
+Example:
+```julia
+println(correspondence_name())
+"Material Template"
+```
+"""
+function correspondence_name()
+  return "Correspondence Bond-Associated"
+end
 
 """
 https://link.springer.com/article/10.1007/s10409-021-01055-5
