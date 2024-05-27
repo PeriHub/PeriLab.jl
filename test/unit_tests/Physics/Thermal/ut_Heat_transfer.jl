@@ -55,3 +55,10 @@ using .Heat_transfer
     result = Heat_transfer.calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
     @test result == [2.0, 1.3333333333333335, 2.0, 1.3333333333333335, 1.0, 1.3333333333333335, 2.0, 1.3333333333333335, 2.0, 4.0]
 end
+
+@testset "ut_compute_thermal_model" begin
+    test_Data_manager = PeriLab.Data_manager
+    dof = 3
+    test_Data_manager.set_dof(dof)
+    @test Thermal_Flow.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict("a" => 1), 1.0, 1.0) == test_Data_manager
+end

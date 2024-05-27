@@ -243,24 +243,15 @@ function validate_structure_recursive(expected::Dict, actual::Dict, validate::Bo
             continue
         end
 
-        try
-            if isa(actual[key], typeof(value[1])) || isa(actual[key], value[1])
-                push!(checked_keys, key)
-                if isa(value[1], Dict) && isa(actual[key], Dict)
-                    # Recursive call for nested dictionaries
-                    validate, checked_keys = validate_structure_recursive(value[1], actual[key], validate, checked_keys, current_path)
-                end
-            else
-                @error "Validation Error: Wrong type, expected - $(value[1]), got - $(typeof(actual[key])) in $current_path"
-                validate = false
+        if isa(actual[key], typeof(value[1])) || isa(actual[key], value[1])
+            push!(checked_keys, key)
+            if isa(value[1], Dict) && isa(actual[key], Dict)
+                # Recursive call for nested dictionaries
+                validate, checked_keys = validate_structure_recursive(value[1], actual[key], validate, checked_keys, current_path)
             end
-        catch e
-            if isa(e, TypeError)
-                @error "Validation Error: Wrong type, expected - $(value[1]), got - $(typeof(actual[key])) in $current_path"
-                validate = false
-            else
-                rethrow(e)
-            end
+        else
+            @error "Validation Error: Wrong type, expected - $(value[1]), got - $(typeof(actual[key])) in $current_path"
+            validate = false
         end
     end
     return validate, checked_keys

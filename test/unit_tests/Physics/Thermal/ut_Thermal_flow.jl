@@ -13,4 +13,5 @@ using .Thermal_Flow
 @testset "ut_compute_thermal_model" begin
     test_Data_manager = PeriLab.Data_manager
     @test Thermal_Flow.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict("a" => 1), 1.0, 1.0) == test_Data_manager
+    @test Thermal_Flow.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict("Print Bed Temperature" => 100), 1.0, 1.0) == test_Data_manager
 end

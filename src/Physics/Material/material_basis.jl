@@ -117,7 +117,8 @@ function get_Hooke_matrix(parameter, symmetry, dof)
                 if "C" * string(iID) * string(jID) in keys(parameter)
                     value = parameter["C"*string(iID)*string(jID)]
                 else
-                    value = 0
+                    @error "C" * string(iID) * string(jID) * " not defined"
+                    return nothing
                 end
                 aniso_matrix[iID, jID] = value
                 aniso_matrix[jID, iID] = value

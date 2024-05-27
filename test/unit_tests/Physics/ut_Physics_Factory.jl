@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../src/Physics/Physics_Factory.jl")
-include("../../../src/PeriLab.jl")
-using .PeriLab
+# include("../../../src/PeriLab.jl")
+# using .PeriLab
 using Test
 import .Physics
 @testset "ut_get_block_model_definition" begin
