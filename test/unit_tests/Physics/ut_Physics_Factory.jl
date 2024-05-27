@@ -107,5 +107,4 @@ end
     @test "Deformation Gradient" in test_Data_manager.get_all_field_keys()
     @test "Bond Associated Shape Tensor" in test_Data_manager.get_all_field_keys()
     @test "Bond Associated Deformation Gradient" in test_Data_manager.get_all_field_keys()
-
 end
