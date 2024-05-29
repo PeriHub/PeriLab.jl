@@ -93,6 +93,10 @@ function init_pre_calculation(datamanager::Module, options::Dict)
                 datamanager.set_property(block_id, "Material Model", "Bond Horizon", maximum(horizon))
             end
         end
+        if isnothing(datamanager.get_property(block_id, "Material Model", "Accuracy Order"))
+            @warn "Accuracy Order was not user defined. Using predefined value of 2."
+            datamanager.set_property(block_id, "Material Model", "Accuracy Order", 2)
+        end
     end
     return datamanager
 end
