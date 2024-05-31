@@ -191,21 +191,6 @@ function compute_bond_associated_weighted_volume(nodes::Union{SubArray,Vector{In
 end
 
 
-function compute_weighted_deformation_gradient(nnodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
-
-  for iID in nnodes
-    deformation_gradient[iID, :, :] = Matrix{Float64}(I(dof))
-    deformation_gradient_dot[iID, :, :] .= 0
-
-    disp_state = displacement[nlist[iID], :] .- displacement[iID, :]'
-    velocity_state = velocity[nlist[iID], :] .- velocity[iID, :]'
-    for (jID, nID) in enumerate(nlist)
-      deformation_gradient[iID, :, :] += disp_state[jID, :] * transpose(gradient_weight[jID, :]) .* volume[nID]
-      deformation_gradient_dot[iID, :, :] += velocity_state[jID, :] * transpose(phi[jID, :]) .* volume[nID]
-    end
-
-  end
-end
 function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{Float64}, horizon::Union{Int64,Float64})
   Q = ones(Float64, Qdim)  # Initialize Q with ones
   counter = 1

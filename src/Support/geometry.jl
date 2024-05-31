@@ -4,6 +4,8 @@
 
 module Geometry
 using LinearAlgebra
+using TensorOperations
+using Combinatorics: levicivita
 using Rotations
 export bond_geometry
 export shape_tensor
@@ -197,7 +199,11 @@ function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, 
     return deformation_gradient
 end
 
-
+function left_stretch_tensorN(nodes, deformation_gradient, left_stretch_tensorN)
+    for iID in nodes
+        left_stretch_tensorN[iID, :, :] = sqrt.(transpose(deformation_gradient[iID, :, :]) * deformation_gradient[iID, :, :])
+    end
+end
 function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_damage, deformed_bond, undeformed_bond, volume::Union{Vector{Int64},Vector{Float64}}, omega)
     for i in 1:dof
         for j in 1:dof
@@ -205,6 +211,71 @@ function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_d
         end
     end
     return deformation_gradient
+end
+
+
+
+
+function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
+
+    for iID in nodes
+        deformation_gradient[iID, :, :] = Matrix{Float64}(I(dof))
+        deformation_gradient_dot[iID, :, :] .= 0
+
+        disp_state = displacement[nlist[iID], :] .- displacement[iID, :]'
+        velocity_state = velocity[nlist[iID], :] .- velocity[iID, :]'
+        for (jID, nID) in enumerate(nlist[iID])
+            deformation_gradient[iID, :, :] += disp_state[jID, :] * transpose(gradient_weight[jID, :]) .* volume[nID]
+            deformation_gradient_dot[iID, :, :] += velocity_state[jID, :] * transpose(gradient_weight[jID, :]) .* volume[nID]
+        end
+
+    end
+    return deformation_gradient, deformation_gradient_dot
+end
+
+
+function deformation_gradient_with_rotation(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
+    # D. P. Flanagan, L. M. Taylor, Stress integration with finite rotations; https://doi.org/10.1016/0045-7825(87)90065-X
+    z = zeros(Float64, dof)
+    w = zeros(Float64, dof)
+    omega_vector = zeros(Float64, dof)
+    omega_matrix = zeros(Float64, dof, dof)
+    #scalarTemp = (1.0 - bondDamage) * omega * neighborVolume;
+    #
+    #*(FdotFirstTerm)   += scalarTemp * velStateX * undeformedBondX;
+    #*(FdotFirstTerm+1) += scalarTemp * velStateX * undeformedBondY;
+    #*(FdotFirstTerm+2) += scalarTemp * velStateX * undeformedBondZ;
+    #*(FdotFirstTerm+3) += scalarTemp * velStateY * undeformedBondX;
+    #*(FdotFirstTerm+4) += scalarTemp * velStateY * undeformedBondY;
+    #*(FdotFirstTerm+5) += scalarTemp * velStateY * undeformedBondZ;
+    #*(FdotFirstTerm+6) += scalarTemp * velStateZ * undeformedBondX;
+    #*(FdotFirstTerm+7) += scalarTemp * velStateZ * undeformedBondY;
+    #*(FdotFirstTerm+8) += scalarTemp * velStateZ * undeformedBondZ;
+    for iID in nodes
+        # Follow the algorithm at page 315
+        # Compute rate-of-deformation tensor, D = 1/2 * (L + Lt) -> from Eq (4)
+        velocity_gradient = deformation_gradient_dot[iID, :, :] * inv(deformation_gradient[iID, :, :])
+        rate_of_deformation = 0.5 .* (transpose(velocity_gradient) + velocity_gradient)
+        # Compute spin tensor, W = 1/2 * (L - Lt) -> from Eq (4)
+        spin = 0.5 .* (transpose(velocity_gradient) - velocity_gradient)
+        @tensor begin # Find the vector w_i = -1/2 * \epsilon_{ijk} * W_{jk} (T&F Eq. 11)
+            z[i] = levicivita([i, j, k]) * rate_of_deformation[iID, j, m] * left_stretch_tensorN[iID, m, k]
+            w[i] = -0.5 * levicivita([i, j, k]) * spin[iID, j, k]
+        end
+        #Find omega vector, i.e. \omega = w +  (trace(V) I - V)^(-1) * z (T&F Eq. 12)
+        omega_vector = w - (sum(diag(left_stretch_tensorN[iID, :, :])) * Matrix{Float64}(I, dof, dof) - left_stretch_tensorN[iID, :, :]) * z
+        @tensor begin # Find the vector w_i = -1/2 * \epsilon_{ijk} * W_{jk} (T&F Eq. 11)
+            omega_matrix[i, j] = levicivita([i, k, j]) * omega_vector[k]
+        end
+        rot_tensorNP1[iID, :, :] = inv((Matrix{Float64}(I, dof, dof) - 0.5 * dt .* omega_matrix)) * (Matrix{Float64}(I, dof, dof) + 0.5 * dt .* omega_matrix) * rot_tensorN[iID, :, :]
+
+        left_stretch_tensor_NP1[iID, :, :] = left_stretch_tensor_N[iID, :, :] + dt .* ((rate_of_deformation + spin) * left_stretch_tensorN[iID, :, :] - left_stretch_tensorN[iID, :, :] * omega_matrix)
+        #L*V-V*Omegamatrix -> rate of stretch
+        #vi+1 = vi+dt rateofstretch
+        #unroted rate of def = RNP1^T*rateofdef*RNP1
+        unrotated_rate_of_deformation[iID, :, :] = rot_tensorNP1[iID, :, :] * rate_of_deformation * transpose(rot_tensorNP1[iID, :, :])
+    end
+
 end
 
 """
