@@ -199,11 +199,37 @@ function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, 
     return deformation_gradient
 end
 
-function left_stretch_tensorN(nodes, deformation_gradient, left_stretch_tensorN)
+
+"""
+compute_left_stretch_tensor(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::Union{SubArray,Array{Float64}}, left_stretch_tensor::Union{SubArray,Array{Float64}})
+
+Calculate bond geometries between nodes based on their coordinates.
+
+# Arguments
+ - `nodes::Union{SubArray,Vector{Int64}}`: A vector of integers representing node IDs.
+ - `deformation_gradient::Union{SubArray,Array{Float64}}`: Deformation gradient.
+ - `left_stretch_tensor::Union{SubArray,Array{Float64}}`: Left stretch tensor.
+
+# Output
+ - `left_stretch_tensor`: Left stretch tensor.
+
+# Description
+ This function computes the left stretch tensor ``\\mathbf{U]``. The deformation gradient ``\\mathbf{F]`` can be splited in a rotation part and left or right stretch tensor.
+``\\mathbf{F}=\\mathbf{VR}=\\mathbf{RU}``
+To get the left stretch tensor, you can make use of the orthogonal character of your rotation tensor.
+``\\mathbf{RR}^T=\\mathbf{I}``
+Therefore,
+``\\mathbf{U}=\\sqrt{\\mathbf{F}\\mathbf{F}^T}=\\sqrt{\\mathbf{UR}^T\\mathbf{RU}}=\\sqrt{\\mathbf{UIU}}=\\sqrt{\\mathbf{U}^2}``
+ 
+"""
+
+function compute_left_stretch_tensor(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::Union{SubArray,Array{Float64}}, left_stretch_tensor::Union{SubArray,Array{Float64}})
     for iID in nodes
-        left_stretch_tensorN[iID, :, :] = sqrt.(transpose(deformation_gradient[iID, :, :]) * deformation_gradient[iID, :, :])
+        left_stretch_tensor[iID, :, :] = deformation_gradient[iID, :, :] * transpose(deformation_gradient[iID, :, :])
     end
+    return sqrt.(left_stretch_tensor)
 end
+
 function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_damage, deformed_bond, undeformed_bond, volume::Union{Vector{Int64},Vector{Float64}}, omega)
     for i in 1:dof
         for j in 1:dof
@@ -234,7 +260,28 @@ function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int6
 end
 
 
-function deformation_gradient_with_rotation(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
+function no_name_yet(nodes, datamanager)
+    dof = datamanager.get_dof()
+    nlist = datamanager.get_nlist()
+    volume = datamanager.get_field("Volume")
+    gradient_weight = datamanager.get_field("Gradient Weight")
+    displacement = datamanager.get_field("Displacement", "NP1")
+    velocity = datamanager.get_field("Velocity", "NP1")
+    deformation_gradient = datamanager.get_field("Deformation Gradient", "NP1")
+    deformation_gradient_dot = datamanager.get_field("Deformation Gradient Dot", "NP1")
+    left_stretch_tensorN = datamanager.get_field("Left Stretch Tensor", "N")
+    left_stretch_tensorNP1 = datamanager.get_field("Left Stretch Tensor", "NP1")
+    unrotated_rate_of_deformation = datamanager.get_field("Unrotated Rate Of Deformation")
+    rot_tensorN = datamanager.get_field("Rotation Tensor", "N")
+    rot_tensorNP1 = datamanager.get_field("Rotation Tensor", "NP1")
+    deformation_gradient, deformation_gradient_dot = compute_weighted_deformation_gradient(nodes, dof, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
+
+    left_stretch_tensorNP1 = compute_left_stretch_tensor(nodes, deformation_gradient, left_stretch_tensorNP1)
+
+    unrotated_rate_of_deformation, rotTensorNP1 = deformation_gradient_decomposition(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
+end
+
+function deformation_gradient_decomposition(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
     # D. P. Flanagan, L. M. Taylor, Stress integration with finite rotations; https://doi.org/10.1016/0045-7825(87)90065-X
     z = zeros(Float64, dof)
     w = zeros(Float64, dof)
@@ -269,7 +316,7 @@ function deformation_gradient_with_rotation(nodes, dof, deformation_gradient, de
         end
         rot_tensorNP1[iID, :, :] = inv((Matrix{Float64}(I, dof, dof) - 0.5 * dt .* omega_matrix)) * (Matrix{Float64}(I, dof, dof) + 0.5 * dt .* omega_matrix) * rot_tensorN[iID, :, :]
 
-        left_stretch_tensor_NP1[iID, :, :] = left_stretch_tensor_N[iID, :, :] + dt .* ((rate_of_deformation + spin) * left_stretch_tensorN[iID, :, :] - left_stretch_tensorN[iID, :, :] * omega_matrix)
+        left_stretch_tensorNP1[iID, :, :] = left_stretch_tensorN[iID, :, :] + dt .* ((rate_of_deformation + spin) * left_stretch_tensorN[iID, :, :] - left_stretch_tensorN[iID, :, :] * omega_matrix)
         #L*V-V*Omegamatrix -> rate of stretch
         #vi+1 = vi+dt rateofstretch
         #unroted rate of def = RNP1^T*rateofdef*RNP1
