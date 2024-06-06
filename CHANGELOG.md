@@ -8,6 +8,22 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.6] - 2024
+
+### Added
+
+- Bond associated basis
+- Many tests
+
+### Fixed
+
+- FEM basis, not yet coupled with PD #132
+
+### Changed
+
+- Moved datamanager #61
+- Code cleaning
+
 ## [1.1.5] - 2024-05-13
 
 ### Fixed
