@@ -21,3 +21,4 @@ test/tryout/
 examples/dev/
 LocalPreferences.toml
 .env
+scripts/Output

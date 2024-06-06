@@ -155,6 +155,7 @@ global expected_structure = Dict(
                                     "Type" => [String, false],
                                     "Heat Transfer Coefficient" => [Union{Float64,Int64}, false],
                                     "Environmental Temperature" => [Union{Float64,Int64}, false],
+                                    "Required Specific Volume" => [Union{Float64,Int64}, false],
                                     "Thermal Conductivity" => [Union{Float64,Int64}, false],
                                     "Thermal Expansion Coefficient" => [Union{Float64,Int64}, false],
                                     "Thermal Conductivity Print Bed" => [Union{Float64,Int64}, false],

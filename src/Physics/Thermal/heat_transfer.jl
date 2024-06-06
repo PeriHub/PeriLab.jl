@@ -68,6 +68,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   volume = datamanager.get_field("Volume")
   kappa = thermal_parameter["Heat Transfer Coefficient"]
   Tenv = thermal_parameter["Environmental Temperature"]
+  req_specific_volume = get(thermal_parameter, "Required Specific Volume", 1.1)
   heat_flow = datamanager.get_field("Heat Flow", "NP1")
   temperature = datamanager.get_field("Temperature", "NP1")
   surface_nodes = datamanager.get_field("Surface_Nodes")
@@ -77,7 +78,6 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   horizon = datamanager.get_field("Horizon")
   nlist = datamanager.get_nlist()
   dx = 1.0
-  area = 1.0
 
   specific_volume = calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
   for iID in nodes
@@ -87,9 +87,9 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     elseif dof == 3
       dx = volume[iID]^(1 / 3)
     end
-    #TODO: optimize logic @hess_jt
-    if surface_nodes[iID] && specific_volume[iID] > 1.1 # could be more as sometimes specific_volume is sometimes weird
-      heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx * specific_volume[iID]
+
+    if surface_nodes[iID] && specific_volume[iID] > req_specific_volume
+      heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx * floor(specific_volume[iID])
     end
   end
 

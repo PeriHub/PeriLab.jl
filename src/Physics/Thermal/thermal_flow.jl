@@ -88,7 +88,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     apply_print_bed = true
     t_bed = thermal_parameter["Print Bed Temperature"]
     lambda_bed = thermal_parameter["Thermal Conductivity Print Bed"]
-    print_bed = datamanager.get_field("Print_bed")
+    # print_bed = datamanager.get_field("Print_bed")
   end
 
   if !haskey(thermal_parameter, "Thermal Conductivity")
