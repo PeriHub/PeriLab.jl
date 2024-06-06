@@ -5,6 +5,37 @@
 using Test
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
+
+@testset "ut_compute_left_stretch_tensor" begin
+    nodes = [1, 2]
+    deformation_gradient = zeros(2, 2, 2)
+    deformation_gradient[1, :, :] = [1.0 0.0; 0.0 1.0]
+    deformation_gradient[2, :, :] = [0.5 0.5; 0.5 0.5]
+
+    left_stretch_tensor = zeros(Float64, 2, 2, 2)
+    result = zeros(2, 2, 2)
+    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(nodes, deformation_gradient, left_stretch_tensor)
+
+    expected_result = [
+        [1.0 0.0; 0.0 1.0],
+        [0.7071067811865476 0.7071067811865476; 0.7071067811865476 0.7071067811865476]
+    ]
+
+    @test result[1, :, :] == expected_result[1]
+    @test result[2, :, :] == expected_result[2]
+    alpha = 22 * pi / 180
+    rot = zeros(2, 2)
+    rot = [cos(alpha) sin(alpha); -sin(alpha) cos(alpha)]
+
+    # compute_left_stretch_tensor should "filter" the rotation
+    left_stretch_tensor[1, :, :] = rot * left_stretch_tensor[1, :, :] * transpose(rot)
+    left_stretch_tensor[2, :, :] = rot * left_stretch_tensor[2, :, :] * transpose(rot)
+    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(nodes, deformation_gradient, left_stretch_tensor)
+
+    @test result[1, :, :] == expected_result[1]
+    @test result[2, :, :] == expected_result[2]
+
+end
 @testset "ut_undeformed_bond" begin
     nnodes = 4
     dof = 2
@@ -300,3 +331,21 @@ end
     @test rot[2, 2] < 1e-10
 end
 
+@testset "ut_compute_weighted_deformation_gradient" begin
+    nnodes = [1, 2]
+    dof = 3
+    nlist = [[2], [1]]
+    volume = [0.1, 0.2]
+    gradient_weight = [0.5 0.5 0.5; 0.5 0.5 0.5]
+    displacement = [0.0 0.0 0.0; 1.0 1.0 1.0]
+    velocity = [0.0 0.0 0.0; 1.0 1.0 1.0]
+    deformation_gradient = zeros(Float64, length(nnodes), dof, dof)
+    deformation_gradient_dot = zeros(Float64, length(nnodes), dof, dof)
+
+    deformation_gradient, deformation_gradient_dot = PeriLab.IO.Geometry.compute_weighted_deformation_gradient(nnodes, dof, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
+
+    @test deformation_gradient[1, :, :] == [1.1 0.1 0.1; 0.1 1.1 0.1; 0.1 0.1 1.1]
+    @test deformation_gradient[2, :, :] == [0.95 -0.05 -0.05; -0.05 0.95 -0.05; -0.05 -0.05 0.95]
+    @test deformation_gradient_dot[1, :, :] == [0.1 0.1 0.1; 0.1 0.1 0.1; 0.1 0.1 0.1]
+    @test deformation_gradient_dot[2, :, :] == [-0.05 -0.05 -0.05; -0.05 -0.05 -0.05; -0.05 -0.05 -0.05]
+end

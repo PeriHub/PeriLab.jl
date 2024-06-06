@@ -3,24 +3,34 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-# include("../../../src/Support/helpers.jl")
-# include("../../../src/Core/data_manager.jl")
-# using Reexport
-# @reexport using .Helpers
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 using ProgressBars
 
 @testset "ut_qdim" begin
-    @test isnothing(PeriLab.Solver.Helpers.qdim(0))
-    PeriLab.Solver.Helpers.qdim(1) == 3
-    PeriLab.Solver.Helpers.qdim(2) == 9
-    PeriLab.Solver.Helpers.qdim(3) == 19
-    PeriLab.Solver.Helpers.qdim(4) == 34
-    PeriLab.Solver.Helpers.qdim(5) == 55
-    PeriLab.Solver.Helpers.qdim(6) == 83
-    PeriLab.Solver.Helpers.qdim(7) == 119
-    PeriLab.Solver.Helpers.qdim(8) == 164
-    PeriLab.Solver.Helpers.qdim(9) == 219
-    PeriLab.Solver.Helpers.qdim(10) == 285
+    @test isnothing(PeriLab.Solver.Helpers.qdim(0, 2))
+    @test isnothing(PeriLab.Solver.Helpers.qdim(0, 3))
+    @test PeriLab.Solver.Helpers.qdim(1, 2) == 2
+    @test PeriLab.Solver.Helpers.qdim(2, 2) == 5
+    @test PeriLab.Solver.Helpers.qdim(3, 2) == 9
+    @test PeriLab.Solver.Helpers.qdim(4, 2) == 14
+    @test PeriLab.Solver.Helpers.qdim(5, 2) == 20
+    @test PeriLab.Solver.Helpers.qdim(6, 2) == 27
+    @test PeriLab.Solver.Helpers.qdim(7, 2) == 35
+    @test PeriLab.Solver.Helpers.qdim(8, 2) == 44
+    @test PeriLab.Solver.Helpers.qdim(9, 2) == 54
+    @test PeriLab.Solver.Helpers.qdim(10, 2) == 65
+
+    @test PeriLab.Solver.Helpers.qdim(1, 3) == 3
+    @test PeriLab.Solver.Helpers.qdim(2, 3) == 9
+    @test PeriLab.Solver.Helpers.qdim(3, 3) == 19
+    @test PeriLab.Solver.Helpers.qdim(4, 3) == 34
+    @test PeriLab.Solver.Helpers.qdim(5, 3) == 55
+    @test PeriLab.Solver.Helpers.qdim(6, 3) == 83
+    @test PeriLab.Solver.Helpers.qdim(7, 3) == 119
+    @test PeriLab.Solver.Helpers.qdim(8, 3) == 164
+    @test PeriLab.Solver.Helpers.qdim(9, 3) == 219
+    @test PeriLab.Solver.Helpers.qdim(10, 3) == 285
 end
 
 @testset "ut_interpolation" begin

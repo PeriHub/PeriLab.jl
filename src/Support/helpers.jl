@@ -21,9 +21,10 @@ export interpol_data
 export progress_bar
 
 """
-    qdim(order::Int64)
+    qdim(order::Int64, dof::Int64)
 
-Calculate the number of terms in a polynomial expansion up to a specified accuracy order.
+Calculate the number of terms in a polynomial expansion up to a specified accuracy order. Simplied first complex loop in Peridigm correspondence::computeLagrangianGradientWeights.
+In the unit test this values where tested.
 
 # Arguments
 - `order::Int64`: The accuracy order of the polynomial expansion.
@@ -36,13 +37,14 @@ This function calculates the number of terms in a polynomial expansion up to the
 using an analytical formula derived from combinatorial considerations. The function iterates over each order 
 from 1 to the specified `order` and calculates the sum of binomial coefficients according to the formula:
 qdim(order) = Σ(i=1 to order) [(i+2)! / (2! * i!)]
+
 """
-function qdim(order::Int64)
+function qdim(order::Int64, dof::Int64)
     if order < 1
         @error "Accuracy order must be greater than zero."
         return nothing
     end
-    return Int64(sum(factorial(i+2) / (factorial(2) * factorial(i)) for i in 1:order))
+    return sum(binomial(i + dof - 1, dof - 1) for i in 1:order)
 end
 
 """

@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bond_Associated_Correspondence
+using LinearAlgebra
+include("../../../Support/geometry.jl")
+using .Geometry: strain
+include("../../../Support/helpers.jl")
+using .Helpers: qdim
 
 using TimerOutputs
 using NearestNeighbors: BallTree, inrange
@@ -13,20 +18,21 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   end
   nlist = datamanager.get_field("Neighborhoodlist")
   coordinates = datamanager.get_field("Coordinates")
-  bond_horizon = material_parameter["Bond Horizon"]
+  accuracy_order = material_parameter["Accuracy Order"]
+  dof = datamanager.get_dof()
+  datamanager.create_bond_field("Bond Strain", Float64, "Matrix", dof)
+  datamanager.create_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
+  datamanager.create_constant_bond_field("Bond Strain Increment", Float64, "Matrix", dof)
   weighted_volume = datamanager.create_constant_bond_field("Bond Weighted Volume", Float64, 1)
-
-  for iID in nodes
-    for nID in nlist[iID]
-      if length(find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon)) == 0
-        @error "Bond horizon is to small. No neighbors were found."
-        return nothing
-      end
-
-    end
-  end
+  qlen = qdim(accuracy_order)
+  datamanager.set_property(block_id, "Material Model", "Qdim", qlen)
+  q_term = datamanager.create_constant_bond_field("Q_term", Float64, qdim)
+  horizon = datamanager.get_field("Horizon")
+  undeformed_bond = datamanager.get_field("Bond Geometry")
+  #q_term = compute_q_term(nodes, horizon, undeformed_bond,)
   return datamanager
 end
+
 
 function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, stress_integral::SubArray)
   temp::Matrix{Float64} = zeros(dof, dof)
@@ -115,7 +121,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   stress_NP1 = datamanager.get_field("Bond Cauchy Stress", "NP1")
   strain_increment = datamanager.get_field("Bond Strain Increment")
 
-  deformation_gradient = datamanager.get_field("Bond Deformation Gradient")
+  deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
   bond_force = datamanager.get_field("Bond Forces")
 
   if rotation
@@ -129,8 +135,8 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     mod = datamanager.get_model_module(material_model)
     for iID in nodes
       for (jID, nID) in enumerate(nlist)
-        strain_NP1[iID][jID, :, :] = Geometry.strain(nodes, deformation_gradient[iID][jID, :, :], strain_NP1[iID][jID, :, :])
-        strain_increment[iID][jID, :, :] = strain_NP1[iID][jID, :, :] - strain_N[iID][jID, :, :]
+        strain_NP1[iID][jID, :, :] = strain(nodes, deformation_gradient[iID][:, :, :], strain_NP1[iID][:, :, :])
+        strain_increment[iID][jID, :, :] = strain_NP1[iID][:, :, :] - strain_N[iID][:, :, :]
 
         stress_NP1[iID][jID, :, :], datamanager = mod.compute_stresses(datamanager, nID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (iID, jID))
 
@@ -141,8 +147,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
   end
   bond_force = calculate_bond_force(nodes, deformation_gradient, undeformed_bond, bond_damage, inverse_shape_tensor, stress_NP1, bond_force)
-  # general interface, because it might be a flexbile Set_modules interface in future
-  datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
+
   return datamanager
 
 end
@@ -184,5 +189,51 @@ function compute_bond_associated_weighted_volume(nodes::Union{SubArray,Vector{In
   end
   return weighted_volume
 end
+
+
+function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{Float64}, horizon::Union{Int64,Float64})
+  Q = ones(Float64, Qdim)  # Initialize Q with ones
+  counter = 1
+  p = zeros(Int64, dof)
+  for this_order in 1:accuracy_order
+    for p[1] in 0:this_order
+      for p[2] in 0:(this_order-p[1])
+        if dof == 3
+          p[3] = this_order - p[1] - p[2]
+        end
+        # Calculate the product for Q[counter]
+        Q[counter] = prod((undeformed_bond ./ horizon) .^ p)
+        counter += 1
+      end
+    end
+  end
+  return Q
+end
+
+
+function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, qdim::Int64, accuracy_order::Int64, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
+  #https://arxiv.org/pdf/2004.11477
+  # maybe as static array
+  M = zeros(Float64, qdim, qdim)
+  for iID in nodes
+    for (jID, nID) in enumerate(nlist)
+      Q = calculate_Q(accuracy_order, dof, undeformed_bond[iID][jID, :], horizon[iID])
+      M += omega[iID][jID] * bond_damage[iID][jID] * volume[nID] .* Q * transpose(Q)
+    end
+    Minv = inv(M)
+    for (jID, nID) in enumerate(nlist)
+      Q = calculate_Q(accuracy_order, dof, deformed_bond[iID][jID, :], horizon[iID])
+      # this comes from Eq(19) in 10.1007/s40571-019-00266-9
+      # or example 1 in https://arxiv.org/pdf/2004.11477
+      for idof in 1:dof
+        gradient_weights[iID][jID, idof] = Minv[idof, :]' * Q ./ horizon
+      end
+    end
+  end
+  return gradient_weights
+end
+
+
+
 
 end
