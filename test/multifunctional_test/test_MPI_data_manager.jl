@@ -37,8 +37,8 @@ if rank == 0
 end
 glob_to_loc = glob_to_loc(distribution)
 @testset "init_data rank $rank" begin
-    lenNlist = send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
-    nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    length_nlist = send_vector_from_root_to_core_i(comm, send_msg, length_nlist, distribution)
+    nlist_core = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 
 end
 MPI.Finalize()
