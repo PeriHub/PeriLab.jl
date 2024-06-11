@@ -85,19 +85,16 @@ end
 function close_result_file(result_file::Dict)
     if !isnothing(result_file["file"])
         close(result_file["file"])
+        return true
     end
+    return false
 end
 
-function close_result_files(result_files::Vector{Dict})
+function close_result_files(result_files::Vector{Dict{String,IOStream}})
     for result_file in result_files
-        try
-            close_result_file(result_file)
-            return true
-        catch
-            @warn "File already closed"
-            return false
-        end
+        close_result_file(result_file)
     end
+    return true
 end
 
 """
