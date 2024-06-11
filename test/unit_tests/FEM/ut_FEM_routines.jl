@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 include("../../../src/FEM/FEM_routines.jl")
 include("../../../src/FEM/Element_formulation/lagrange_element.jl")
-# include("../../../src/Core/data_manager.jl")
 # include("../../../src/PeriLab.jl")
 
 # using .PeriLab

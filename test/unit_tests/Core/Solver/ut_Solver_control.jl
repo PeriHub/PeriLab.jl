@@ -5,15 +5,7 @@
 using Test
 using MPI
 using TimerOutputs
-# include("../../../../src/Core/Solver/Solver_control.jl")
-# include("../../../../src/Support/geometry.jl")
-# if !isdefined(@__MODULE__, :Data_manager)
-#     include("../../../../src/Core/data_manager.jl")
-# end
-# include("../../../../src/Support/Parameters/parameter_handling.jl")
-# using Reexport
-# @reexport using .Parameter_Handling
-# import .Solver
+
 
 @testset "ut_get_block_nodes" begin
     block_ids = [1, 1, 1, 2, 2, 3, 3, 3, 3, 1, 1, 2, 3, 3, 1, 1, 2]

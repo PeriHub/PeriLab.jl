@@ -2,12 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# include("../../../src/Core/BC_manager.jl")
-# include("../../../src/Core/data_manager.jl")
-# include("../../../src/Support/Parameters/parameter_handling.jl")
-# using Reexport
-# @reexport using .Parameter_Handling
-# @reexport using .Boundary_conditions
 
 using Test
 

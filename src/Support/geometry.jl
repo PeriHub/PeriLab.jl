@@ -45,7 +45,6 @@ function bond_geometry(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{SubArr
     for iID in nodes
         undeformed_bond[iID], undeformed_bond_length[iID] = calculate_bond_length(iID, coor, nlist[iID])
         if any(undeformed_bond_length[iID] .== 0)
-            println()
             @error "Identical point coordinates with no distance $iID"
             return nothing
         end
@@ -56,11 +55,12 @@ end
 function calculate_bond_length(iID::Int64, coor::Union{SubArray,Matrix{Float64},Matrix{Int64}}, nlist::Vector{Int64})
 
     bond_vectors = coor[nlist, :] .- coor[iID, :]'
-    distances = sqrt.(sum(bond_vectors .^ 2, dims=2))[:]
+    # distances = sqrt.(sum(bond_vectors .^ 2, dims=2))[:]
 
     # Check for identical point coordinates
-    return bond_vectors, distances
+    return bond_vectors, norm.(eachrow(bond_vectors))
 end
+
 """
     shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
@@ -103,7 +103,7 @@ shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, sha
 function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
     for iID in nodes
-        shape_tensor[iID, :, :] = calculate_shape_tensor(shape_tensor[iID, :, :], dof, volume[nlist[iID]], omega[iID], bond_damage[iID], undeformed_bond[iID])
+        shape_tensor[iID, :, :] = calculate_shape_tensor(dof, volume[nlist[iID]], omega[iID], bond_damage[iID], undeformed_bond[iID])
         try
             inverse_shape_tensor[iID, :, :] = inv(shape_tensor[iID, :, :])
         catch ex
@@ -116,20 +116,24 @@ function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, v
 end
 
 
-function calculate_shape_tensor(shape_tensor::Matrix{Float64}, dof::Int64, volume, omega, bond_damage, undeformed_bond)
+function calculate_shape_tensor(dof::Int64, volume, omega, bond_damage, undeformed_bond)
+    shape_tensor = zeros(Float64, dof, dof)
+    # Compute the element-wise product once
+    weighted_bond_damage = bond_damage .* volume .* omega
 
-    for i in 1:dof
+    @views Threads.@threads for i in 1:dof
         for j in 1:dof
-            shape_tensor[i, j] = sum(bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j] .* volume .* omega)
+            shape_tensor[i, j] = sum(weighted_bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j])
         end
     end
+
     return shape_tensor
 end
 
 
 function bond_associated_shape_tensor(dof::Int64, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
     # bond geometries -> zwischen nachbar und seinen nachbarn
-    shape_tensor[:, :] = calculate_shape_tensor(shape_tensor[:, :], dof, volume, omega, bond_damage, undeformed_bond)
+    shape_tensor[:, :] = calculate_shape_tensor(dof, volume, omega, bond_damage, undeformed_bond)
     try
         inverse_shape_tensor[:, :] = inv(shape_tensor[:, :])
     catch ex
@@ -219,7 +223,7 @@ Calculate bond geometries between nodes based on their coordinates.
 To get the left stretch tensor, you can make use of the orthogonal character of your rotation tensor.
 ``\\mathbf{RR}^T=\\mathbf{I}``
 Therefore,
-``\\mathbf{U}=\\sqrt{\\mathbf{F}\\mathbf{F}^T}=\\sqrt{\\mathbf{UR}^T\\mathbf{RU}}=\\sqrt{\\mathbf{UIU}}=\\sqrt{\\mathbf{U}^2}``
+``\\mathbf{U}=\\sqrt{\\mathbf{F}\\mathbf{F}^T}=\\sqrt{\\mathbf{UR}\\mathbf{R}^T\\mathbf{U}^T}=\\sqrt{\\mathbf{UIU}^T}=\\sqrt{\\mathbf{U}^2}``
  
 """
 
@@ -238,9 +242,6 @@ function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_d
     end
     return deformation_gradient
 end
-
-
-
 
 function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
 
@@ -269,7 +270,7 @@ function no_name_yet(nodes, datamanager)
     velocity = datamanager.get_field("Velocity", "NP1")
     deformation_gradient = datamanager.get_field("Deformation Gradient", "NP1")
     deformation_gradient_dot = datamanager.get_field("Deformation Gradient Dot", "NP1")
-    left_stretch_tensorN = datamanager.get_field("Left Stretch Tensor", "N")
+    left_stretch_tensorN = datamanager.get_field("Left Stretch Tensor", "N") # 
     left_stretch_tensorNP1 = datamanager.get_field("Left Stretch Tensor", "NP1")
     unrotated_rate_of_deformation = datamanager.get_field("Unrotated Rate Of Deformation")
     rot_tensorN = datamanager.get_field("Rotation Tensor", "N")
@@ -278,9 +279,39 @@ function no_name_yet(nodes, datamanager)
 
     left_stretch_tensorNP1 = compute_left_stretch_tensor(nodes, deformation_gradient, left_stretch_tensorNP1)
 
-    unrotated_rate_of_deformation, rotTensorNP1 = deformation_gradient_decomposition(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
+    #unrotated_rate_of_deformation, rotTensorNP1 = deformation_gradient_decomposition(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
+end
+function no_name_2(nodes, datamanager)
+    dof = datamanager.get_dof()
+    nlist = datamanager.get_nlist()
+    volume = datamanager.get_field("Volume")
+    gradient_weight = datamanager.get_field("Gradient Weight")
+    displacement = datamanager.get_field("Displacement", "NP1")
+    velocity = datamanager.get_field("Velocity", "NP1")
+    deformation_gradient = datamanager.get_field("Deformation Gradient", "NP1")
+    deformation_gradient_dot = datamanager.get_field("Deformation Gradient Dot")
+    left_stretch_tensor = datamanager.get_field("Left Stretch Tensor") # 
+    unrotated_rate_of_deformation = datamanager.get_field("Unrotated Rate Of Deformation")
+    rot_tensor = datamanager.get_field("Rotation Tensor", "NP1")
+    deformation_gradient, deformation_gradient_dot = compute_weighted_deformation_gradient(nodes, dof, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
+    left_stretch_tensor = compute_left_stretch_tensor(nodes, deformation_gradient, left_stretch_tensor)
+
 end
 
+function deformation_gradient_decomposition(nodes, deformation_gradient, deformation_gradient_dot, left_stretch_tensor, rot_tensor, unrotated_rate_of_deformation)
+
+
+    for iID in nodes
+        # Follow the algorithm at page 315
+        # Compute rate-of-deformation tensor, D = 1/2 * (L + Lt) -> from Eq (4)
+        velocity_gradient = deformation_gradient_dot[iID, :, :] * inv(deformation_gradient[iID, :, :])
+        rate_of_deformation = 0.5 .* (transpose(velocity_gradient) + velocity_gradient)
+        rot_tensor[iID, :, :] = inv(left_stretch_tensor[iID, :, :]) * deformation_gradient[iID, :, :]
+        unrotated_rate_of_deformation[iID, :, :] = transpose(rot_tensor[iID, :, :]) * rate_of_deformation * rot_tensor[iID, :, :]
+    end
+    return unrotated_rate_of_deformation, rot_tensor
+end
+"""
 function deformation_gradient_decomposition(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
     # D. P. Flanagan, L. M. Taylor, Stress integration with finite rotations; https://doi.org/10.1016/0045-7825(87)90065-X
     z = zeros(Float64, dof)
@@ -309,9 +340,9 @@ function deformation_gradient_decomposition(nodes, dof, deformation_gradient, de
             z[i] = levicivita([i, j, k]) * rate_of_deformation[iID, j, m] * left_stretch_tensorN[iID, m, k]
             w[i] = -0.5 * levicivita([i, j, k]) * spin[iID, j, k]
         end
-        #Find omega vector, i.e. \omega = w +  (trace(V) I - V)^(-1) * z (T&F Eq. 12)
+        #Find omega vector, i.e. omega = w +  (trace(V) I - V)^(-1) * z (T&F Eq. 12)
         omega_vector = w - (sum(diag(left_stretch_tensorN[iID, :, :])) * Matrix{Float64}(I, dof, dof) - left_stretch_tensorN[iID, :, :]) * z
-        @tensor begin # Find the vector w_i = -1/2 * \epsilon_{ijk} * W_{jk} (T&F Eq. 11)
+        @tensor begin # Find the vector w_i = -1/2 * epsilon_{ijk} * W_{jk} (T&F Eq. 11)
             omega_matrix[i, j] = levicivita([i, k, j]) * omega_vector[k]
         end
         rot_tensorNP1[iID, :, :] = inv((Matrix{Float64}(I, dof, dof) - 0.5 * dt .* omega_matrix)) * (Matrix{Float64}(I, dof, dof) + 0.5 * dt .* omega_matrix) * rot_tensorN[iID, :, :]
@@ -324,6 +355,7 @@ function deformation_gradient_decomposition(nodes, dof, deformation_gradient, de
     end
 
 end
+"""
 
 """
     function strain(nodes::Union{SubArray, Vector{Int64}}, deformation_gradient, strain)

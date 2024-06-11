@@ -3,24 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-
-
-# include("../../../../src/Core/BC_manager.jl")
-# include("../../../../src/Core/Solver/Verlet.jl")
-# include("../../../../src/Core/Solver/Solver_control.jl")
-# include("../../../../src/Support/geometry.jl")
-
-# if !isdefined(@__MODULE__, :Data_manager)
-#     include("../../../../src/Core/data_manager.jl")
-# end
-# include("../../../../src/Support/Parameters/parameter_handling.jl")
-# using Reexport
-# @reexport using .Parameter_Handling
-# using .Data_manager
-# using .Geometry
-# using .Boundary_conditions
-# using .Solver
-# using .Verlet
 using MPI
 @testset "ut_test_timestep" begin
     @test PeriLab.Solver.Verlet.test_timestep(1.0, 2.0) == 1
@@ -59,8 +41,8 @@ horizon = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
 coor = test_Data_manager.create_constant_node_field("Coordinates", Float64, 2)
 density = test_Data_manager.create_constant_node_field("Density", Float64, 1)
 volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
-lenNlist = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-lenNlist .= 4
+length_nlist = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+length_nlist .= 4
 
 nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
