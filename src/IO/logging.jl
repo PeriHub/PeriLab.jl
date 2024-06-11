@@ -10,7 +10,6 @@ using DataFrames
 using LibGit2
 using PrettyTables
 using Dates
-# using ProgressMeter
 export init_logging
 export set_result_files
 export get_current_git_info

@@ -227,43 +227,43 @@ Distributes the neighborhood list to the cores.
 function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist::Vector{Vector{Int64}}, distribution::Vector{Vector{Int64}}, filtered::Bool)
     send_msg = 0
     if filtered
-        lenNlist = datamanager.create_constant_node_field("Number of Filtered Neighbors", Int64, 1)
+        length_nlist = datamanager.create_constant_node_field("Number of Filtered Neighbors", Int64, 1)
     else
-        lenNlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+        length_nlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
     end
     rank = MPI.Comm_rank(comm)
     if rank == 0
         send_msg = get_number_of_neighbornodes(nlist, filtered)
     end
-    lenNlist .= send_vector_from_root_to_core_i(comm, send_msg, lenNlist, distribution)
+    length_nlist .= send_vector_from_root_to_core_i(comm, send_msg, length_nlist, distribution)
     if filtered
-        nlistCore = datamanager.create_constant_bond_field("FilteredNeighborhoodlist", Int64, 1)
+        nlist_core = datamanager.create_constant_bond_field("FilteredNeighborhoodlist", Int64, 1)
     else
-        nlistCore = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+        nlist_core = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     end
 
-    nlistCore .= nlist[distribution[rank+1][:]]
-    nlistCore .= get_local_neighbors(datamanager.get_local_nodes, nlistCore)
+    nlist_core .= nlist[distribution[rank+1][:]]
+    nlist_core .= get_local_neighbors(datamanager.get_local_nodes, nlist_core)
     nlist = 0
     return datamanager
 end
 
 """
-    get_local_neighbors(mapping, nlistCore)
+    get_local_neighbors(mapping, nlist_core)
 
 Gets the local neighborhood list from the global neighborhood list
 
 # Arguments
 - `mapping`: mapping function
-- `nlistCore`: global neighborhood list
+- `nlist_core`: global neighborhood list
 # Returns
-- `nlistCore`: local neighborhood list
+- `nlist_core`: local neighborhood list
 """
-function get_local_neighbors(mapping, nlistCore)
-    for id in eachindex(nlistCore)
-        nlistCore[id] = mapping(nlistCore[id])
+function get_local_neighbors(mapping, nlist_core)
+    for id in eachindex(nlist_core)
+        nlist_core[id] = mapping(nlist_core[id])
     end
-    return nlistCore
+    return nlist_core
 end
 
 """
@@ -327,17 +327,17 @@ function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh::DataFr
     end
     meshdata = send_value(comm, 0, meshdata)
     for fieldname in keys(meshdata)
-        fieldDof = length(meshdata[fieldname]["Mesh ID"])
-        datafield = datamanager.create_constant_node_field(fieldname, meshdata[fieldname]["Type"], fieldDof)
-        for (localDof, meshID) in enumerate(meshdata[fieldname]["Mesh ID"])
+        field_dof = length(meshdata[fieldname]["Mesh ID"])
+        datafield = datamanager.create_constant_node_field(fieldname, meshdata[fieldname]["Type"], field_dof)
+        for (localDof, mesh_id) in enumerate(meshdata[fieldname]["Mesh ID"])
             if rank == 0
-                send_msg = meshdata[fieldname]["Type"].(mesh[!, meshID])
+                send_msg = meshdata[fieldname]["Type"].(mesh[!, mesh_id])
                 # example send_msg = Float64.(mesh[!, names(mesh)[idof]])
                 # redefine from Float64 standard to Float64 for MPI
             else
                 send_msg = 0
             end
-            if fieldDof == 1
+            if field_dof == 1
                 datafield .= send_vector_from_root_to_core_i(comm, send_msg, datafield, distribution)
             else
                 datafield[:, localDof] = send_vector_from_root_to_core_i(comm, send_msg, datafield[:, localDof], distribution)
@@ -369,64 +369,64 @@ result = check_mesh_elements(mesh_data, dof)
 """
 function check_mesh_elements(mesh::DataFrame, dof::Int64)
     mnames = names(mesh)
-    meshInfoDict = Dict{String,Dict{String,Any}}()
+    mesh_info_dict = Dict{String,Dict{String,Any}}()
 
     for (id, mesh_entry) in enumerate(mnames)
-        fieldDof = 1
-        if ("y" == mesh_entry) || ("z" == mesh_entry) || (mesh_entry[1:end-1] in keys(meshInfoDict))
+        field_dof = 1
+        if ("y" == mesh_entry) || ("z" == mesh_entry) || (mesh_entry[1:end-1] in keys(mesh_info_dict))
             continue
         end
 
         if "x" == mesh_entry
             name = "Coordinates"
-            meshID = ["x", "y"]
+            mesh_id = ["x", "y"]
             if dof == 3
-                meshID = ["x", "y", "z"]
+                mesh_id = ["x", "y", "z"]
             end
         elseif "volume" == mesh_entry
             name = "Volume"
-            meshID = ["volume"]
+            mesh_id = ["volume"]
         elseif "block_id" == mesh_entry
             name = "Block_Id"
-            meshID = ["block_id"]
+            mesh_id = ["block_id"]
         else
             if "_x" == mesh_entry[end-1:end]
                 if id + 1 <= length(mnames)
                     if mnames[id+1][end-1:end] == "_y"
                         name = mesh_entry[1:end-2]
-                        meshID = [name * "_x", name * "_y"]
+                        mesh_id = [name * "_x", name * "_y"]
                         if dof == 3
-                            meshID = [name * "_x", name * "_y", name * "_z"]
+                            mesh_id = [name * "_x", name * "_y", name * "_z"]
                         end
                     end
                 end
             else
                 name = mesh_entry
-                meshID = [name]
+                mesh_id = [name]
             end
         end
 
-        if mesh[1, meshID[1]] isa Bool
+        if mesh[1, mesh_id[1]] isa Bool
             vartype = Bool
         else
             vartype = typeof(sum(sum(mesh[:, mid])
-                                 for mid in meshID))
+                                 for mid in mesh_id))
         end
-        meshInfoDict[name] = Dict{String,Any}("Mesh ID" => meshID, "Type" => vartype)
+        mesh_info_dict[name] = Dict{String,Any}("Mesh ID" => mesh_id, "Type" => vartype)
     end
-    if !(haskey(meshInfoDict, "Coordinates"))
+    if !(haskey(mesh_info_dict, "Coordinates"))
         @error "No coordinates defined"
         return nothing
     end
-    if !(haskey(meshInfoDict, "Block_Id"))
+    if !(haskey(mesh_info_dict, "Block_Id"))
         @error "No blocks defined"
         return nothing
     end
-    if !(haskey(meshInfoDict, "Volume"))
+    if !(haskey(mesh_info_dict, "Volume"))
         @error "No volumes defined"
         return nothing
     end
-    return meshInfoDict
+    return mesh_info_dict
 end
 
 """
@@ -905,19 +905,19 @@ Get the number of neighbors for each node.
 # Arguments
 - `nlist::Vector{Vector{Int64}}`: The neighborhood list of the mesh elements.
 # Returns
-- `lenNlist::Vector{Int64}`: The number of neighbors for each node.
+- `length_nlist::Vector{Int64}`: The number of neighbors for each node.
 """
 function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}}, filtered::Bool)
     len = length(nlist)
-    lenNlist = zeros(Int64, len)
+    length_nlist = zeros(Int64, len)
     for id in 1:len
         if !filtered && length(nlist[id]) == 0
             @error "Node $id has no neighbors please check the horizon."
             return nothing
         end
-        lenNlist[id] = length(nlist[id])
+        length_nlist[id] = length(nlist[id])
     end
-    return lenNlist
+    return length_nlist
 end
 
 """
@@ -989,48 +989,41 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, distributi
     nnodes = length(nlist)
     ntype = Dict("controllers" => Int64[], "responder" => Int64[])
     if size == 1
-        distribution = [collect(1:nnodes)]
-        overlap_map = [[[]]]
-        ptc = Int64[]
         append!(ntype["controllers"], nnodes)
         append!(ntype["responder"], 0)
+        return [collect(1:nnodes)], Int64[], ntype
+    end
+
+    if distribution_type == "Neighbor based"
+        distribution, ptc = create_distribution_neighbor_based(nnodes, nlist, size)
+    elseif distribution_type == "Node based"
+        distribution, ptc = create_distribution_node_based(nnodes, nlist, size)
     else
-        if distribution_type == "Neighbor based"
-            distribution, ptc = create_distribution_neighbor_based(nnodes, nlist, size)
-        elseif distribution_type == "Node based"
-            distribution, ptc = create_distribution_node_based(nnodes, nlist, size)
-        else
-            distribution, ptc = create_distribution(nnodes, size)
-        end
-        # check neighborhood & overlap -> all nodes after chunk are overlap
-        for i in 1:size
-            nchunks = length(distribution[i])
-            append!(ntype["controllers"], nchunks)
+        distribution, ptc = create_distribution(nnodes, size)
+    end
+    # check neighborhood & overlap -> all nodes after chunk are overlap
+    for i in 1:size
+        nchunks = length(distribution[i])
+        append!(ntype["controllers"], nchunks)
 
-            tempid = Int64[]
-            for j in 1:nchunks
-                id = distribution[i][j]
-                # find all nodes which are not in chunk
-                # add them to list as responder nodes for data exchange
-                # findall give the index of the valid statement
-                # that means that this indices have to be used to obtain the values
-                indices = findall(item -> item != i, ptc[nlist[id]])
-                if length(indices) > 0
-                    append!(tempid, nlist[id][indices])
-                end
+        tempid = Int64[]
+        for j in 1:nchunks
+            id = distribution[i][j]
+            # find all nodes which are not in chunk
+            # add them to list as responder nodes for data exchange
+            # findall give the index of the valid statement
+            # that means that this indices have to be used to obtain the values
+            indices = findall(item -> item != i, ptc[nlist[id]])
+            if length(indices) > 0
+                append!(tempid, nlist[id][indices])
             end
-            # only single new elements where added
-            append!(distribution[i], sort(unique(tempid)))
-            append!(ntype["responder"], length(unique(tempid)))
         end
-
+        # only single new elements where added
+        append!(distribution[i], sort(unique(tempid)))
+        append!(ntype["responder"], length(unique(tempid)))
     end
     return distribution, ptc, ntype
 end
-
-
-#dict instead of arrays, because it is more readable
-
 
 """
     _init_overlap_map_(size)
