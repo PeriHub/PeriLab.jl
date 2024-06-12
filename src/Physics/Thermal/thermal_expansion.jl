@@ -101,8 +101,6 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
             deformed_bond[iID][:, j] .-= temperature_NP1[iID] * alpha_mat[j, j] .* undeformed_bond[iID][:, j]
         end
         deformed_bond_length[iID] .-= sum(alpha_mat) / dof * temperature_NP1[iID] .* undeformed_bond_length[iID]
-        if iID == 93
-        end
     end
 
     if datamanager.has_key("Deformation Gradient")
