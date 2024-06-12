@@ -38,6 +38,22 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 
 """
 function init_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict)
+  dof = datamanager.get_dof()
+  if !haskey(thermal_parameter, "Type") || (thermal_parameter["Type"] != "Bond based" && thermal_parameter["Type"] != "Correspondence")
+    @error "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence''"
+    return nothing
+  end
+
+  if haskey(thermal_parameter, "Print Bed Temperature")
+    if dof < 3
+      @warn "Print bed temperature can only be defined for 3D problems. Its deactivated."
+      delete!(thermal_parameter, "Print Bed Temperature")
+    end
+  end
+  if !haskey(thermal_parameter, "Thermal Conductivity")
+    @error "Thermal Conductivity not defined."
+    return nothing
+  end
 
   return datamanager
 end
@@ -61,10 +77,6 @@ Example:
 """
 function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
 
-  if !haskey(thermal_parameter, "Type")
-    @error "No model type has beed defined; ''Type'': ''Bond based'' or Type: ''Correspondence''"
-    return datamanager
-  end
   dof = datamanager.get_dof()
   nlist = datamanager.get_nlist()
   coordinates = datamanager.get_field("Coordinates")
@@ -82,19 +94,12 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
   print_bed = nothing
 
   if haskey(thermal_parameter, "Print Bed Temperature")
-    if dof < 3
-      @error "Print bed temperature can only be defined for 3D problems"
-    end
     apply_print_bed = true
     t_bed = thermal_parameter["Print Bed Temperature"]
     lambda_bed = thermal_parameter["Thermal Conductivity Print Bed"]
     # print_bed = datamanager.get_field("Print_bed")
   end
 
-  if !haskey(thermal_parameter, "Thermal Conductivity")
-    @error "Thermal Conductivity not defined."
-    return nothing
-  end
   lambda = thermal_parameter["Thermal Conductivity"]
 
   if thermal_parameter["Type"] == "Bond based"
@@ -118,10 +123,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
         lambda_matrix[i, i] = lambda[i]
       end
     end
-
     heat_flow = compute_heat_flow_state_correspondence(nodes, dof, nlist, lambda_matrix, bond_damage, undeformed_bond, Kinv, temperature, volume, heat_flow)
-  else
-    @error "No model valid type has beed defined; ''Bond based'' or ''Correspondence''"
   end
   return datamanager
 end
