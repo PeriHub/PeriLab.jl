@@ -111,7 +111,7 @@ Calculates the specific volume.
 # Returns
 - `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function calculate_specific_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Vector{Vector{Int64}}, volume::SubArray, active::SubArray, specific_volume::SubArray, dof::Int64, horizon::SubArray)
+function calculate_specific_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{SubArray,Vector{Vector{Int64}}}, volume::SubArray, active::SubArray, specific_volume::SubArray, dof::Int64, horizon::SubArray)
 
   for iID in nodes
     neighbor_volume = 0.0

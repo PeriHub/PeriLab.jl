@@ -6,7 +6,8 @@ using Test
 
 include("../../../../src/Physics/Thermal/heat_transfer.jl")
 using .Heat_transfer
-# include("../../../../src/Core/data_manager.jl")
+#include("../../../../src/PeriLab.jl")
+#import .PeriLab
 
 @test Heat_transfer.thermal_model_name() == "Heat Transfer"
 
@@ -46,7 +47,8 @@ using .Heat_transfer
     specific_volume = test_Data_manager.create_constant_node_field("specific_volume", Float64, 1)
     horizon = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
     horizon .= 0.55
-    active = fill(true, nnodes)
+    active = test_Data_manager.create_constant_node_field("Active", Bool, 1)
+    active .= true
     result = Heat_transfer.calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
     @test result == [1.0, 0.6666666666666666, 1.0, 0.6666666666666666, 0.5, 0.6666666666666666, 1.0, 0.6666666666666666, 1.0, 2.0]
 
@@ -58,7 +60,11 @@ end
 
 @testset "ut_compute_thermal_model" begin
     test_Data_manager = PeriLab.Data_manager
-    dof = 3
-    test_Data_manager.set_dof(dof)
-    @test Thermal_Flow.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict("a" => 1), 1.0, 1.0) == test_Data_manager
+
+    test_Data_manager.create_node_field("Heat Flow", Float64, 1)
+    test_Data_manager.create_node_field("Temperature", Float64, 1)
+    test_Data_manager.create_constant_node_field("Specific Volume", Float64, 1)
+    test_Data_manager.create_constant_node_field("Surface_Nodes", Bool, 1)
+    test_Data_manager.create_bond_field("Bond Damage", Float64, 1)
+    @test Heat_transfer.compute_thermal_model(test_Data_manager, Vector{Int64}(1:10), Dict("Heat Transfer Coefficient" => 1, "Environmental Temperature" => 1.2), 1.0, 1.0) == test_Data_manager
 end
