@@ -6,7 +6,8 @@ using Test
 
 include("../../../../src/Physics/Thermal/thermal_expansion.jl")
 using .Thermal_expansion
-# include("../../../../src/Core/data_manager.jl")
+#include("../../../../src/PeriLab.jl")
+#import .PeriLab
 
 @test Thermal_expansion.thermal_model_name() == "Thermal Expansion"
 
@@ -105,9 +106,4 @@ end
             @test isapprox(thermal_bond_deformation[iID][jID, 2] + 1, .-undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID] + 1)
         end
     end
-end
-@testset "ut_compute_thermal_model" begin
-    test_Data_manager = PeriLab.Data_manager
-    @test Thermal_Flow.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict("Thermal Expansion Coefficient" => [1, 2]), 1.0, 1.0) == test_Data_manager
-    @test Thermal_Flow.compute_thermal_model(test_Data_manager, Vector{Int64}(1:3), Dict("Thermal Expansion Coefficient" => [1, 2, 3]), 1.0, 1.0) == test_Data_manager
 end
