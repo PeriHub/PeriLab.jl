@@ -30,6 +30,7 @@ PeriLab:
         Thermal Conductivity Print Bed: 1.2
         Print Bed Temperature: 60.0
         Thermal Expansion Coefficient: 7.0e-5
+        Required Specific Volume: 1.6
   Blocks:
     block_1:
       Material Model: PLA
@@ -61,18 +62,16 @@ PeriLab:
     Initial Time: 0.0
     Final Time: 2700
     # Final Time: 500
+    # Numerical Damping: 1e-2
     Verlet:
       Fixed dt: 1.0
       Safety Factor: 1.0
-      Numerical Damping: 1e-2
   Outputs:
     Output1:
       Output File Type: Exodus
       Output Filename: Zugstab_Output1
-      Output Frequency: 5
+      Number of Output Steps: 100
       Output Variables:
-        Displacements: true
-        Forces: true
         Activation_Time: true
         Number of Neighbors: true
         Temperature: True

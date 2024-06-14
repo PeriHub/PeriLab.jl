@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Type: "Text File"
+    Input Mesh File: "Rect.txt"
+    Node Sets:
+      Node Set 1: ns_Rect_1.txt
+      Node Set 2: ns_Rect_2.txt
+      Node Set 3: ns_Rect_3.txt
+      Node Set 4: ns_Rect_4.txt
+  Physics:
+    Material Models:
+      Aluminium:
+        Material Model: PD Solid Elastic
+        Bulk Modulus: 2.0e5
+        Shear Modulus: 1.0e5
+        Symmetry: "isotropic plane stress"
+        Zero Energy Control: "Global"
+    Damage Models:
+      Damage:
+        Critical Value: 1e-6
+        Damage Model: Critical Energy
+  Blocks:
+    block_1:
+      Material Model: "Aluminium"
+      Density: 2.7e-9
+      Horizon: 1.5
+    block_2:
+      Material Model: "Aluminium"
+      Density: 2.7e-9
+      Horizon: 1.5
+    block_3:
+      Material Model: "Aluminium"
+      Damage Model: "Damage"
+      Density: 2.7e-9
+      Horizon: 1.5
+    block_4:
+      Material Model: "Aluminium"
+      Density: 2.7e-9
+      Horizon: 1.5
+  Boundary Conditions:
+    BC_1:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "0"
+    BC_2:
+      Variable: "Displacements"
+      Node Set: "Node Set 4"
+      Coordinate: "x"
+      Value: "2*t"
+  Solver:
+    Material Models: True
+    Damage Models: True
+    Initial Time: 0.0
+    Final Time: 1e-5
+    Numerical Damping: 5e-06
+    Verlet:
+      Safety Factor: 1.00
+  Outputs:
+    Output1:
+      Flush File: False
+      Output Filename: "test_1"
+      Output File Type: "Exodus"
+      Number of Output Steps: 10
+      Output Variables:
+        Forces: True
+        Displacements: True
+        Volume: True
+        Number of Neighbors: True
+        Damage: True
