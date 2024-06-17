@@ -897,7 +897,7 @@ function init_property()
 
     block_list = get_block_list()
     for iblock in block_list
-        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}(), "FEM" => Dict{String,Any}())
+        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
     end
     return collect(keys(properties[block_list[1]]))
 end

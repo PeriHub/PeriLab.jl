@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 export get_density
+export get_fem_block
 export get_heat_capacity
 export get_horizon
 export get_values
@@ -22,6 +23,21 @@ Get the density of a block.
 """
 function get_density(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Density")
+end
+
+"""
+    get_fem_block(params::Dict, block_id::Int64)
+
+Get the fem_block of a block.
+
+# Arguments
+- `params::Dict`: The parameters
+- `block_id::Int64`: The ID of the block
+# Returns
+- `fem_block::Float64`: The fem_block of the block
+"""
+function get_fem_block(params::Dict, block_id::Int64)
+    return get_values(params, block_id, "FEM", false)
 end
 
 """
@@ -55,7 +71,7 @@ function get_horizon(params::Dict, block_id::Int64)
 end
 
 """
-    get_values(params::Dict, block_id::Int64, valueName::String)
+    get_values(params::Dict, block_id::Int64, valueName::String, defaultValue::Union{Float64,Bool,Nothing})
 
 Get the value of a block.
 
@@ -63,16 +79,19 @@ Get the value of a block.
 - `params::Dict`: The parameters
 - `block_id::Int64`: The ID of the block
 - `valueName::String`: The name of the value
+- `defaultValue::Union{Float64,Bool,Nothing`: The default value
 # Returns
 - `value::Float64`: The value of the block
 """
-function get_values(params::Dict, block_id::Int64, valueName::String)
+function get_values(params::Dict, block_id::Int64, valueName::String, defaultValue::Union{Float64,Bool,Nothing}=nothing)
     if haskey(params["Blocks"], "block_" * string(block_id))
         if haskey(params["Blocks"]["block_"*string(block_id)], valueName)
             return params["Blocks"]["block_"*string(block_id)][valueName]
         end
-        @error "$valueName of Block $block_id is not defined"
-        return nothing
+        if isnothing(defaultValue)
+            @error "$valueName of Block $block_id is not defined"
+        end
+        return defaultValue
     end
     @error "Block $block_id is not defined"
     return nothing

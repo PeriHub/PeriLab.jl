@@ -28,6 +28,7 @@ PeriLab:
       Material Model: "Mat_1"
       Density: 2000
       Horizon: 1.1005
+      FEM: True
   Boundary Conditions:
     BC_1:
       Variable: "Displacements"

@@ -23,7 +23,7 @@ Creates a exodus file for the results
 # Returns
 - `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
 """
-function create_result_file(filename::Union{AbstractString,String}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64)
+function create_result_file(filename::Union{AbstractString,String}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64, num_elements=0, topology=nothing)
 
     if isfile(filename)
         rm(filename)
@@ -32,7 +32,12 @@ function create_result_file(filename::Union{AbstractString,String}, num_nodes::I
     ids_int_type = Int32
     bulk_int_type = Int32
     float_type = Float64
-    num_elems = num_nodes
+    if num_elements == 0
+        num_elems = num_nodes
+    else
+        element_nodes = unique(reduce(vcat, topology))
+        num_elems = num_nodes - length(element_nodes) + num_elements
+    end
     num_side_sets = 0
     init = Initialization{
         Int32(num_dim),Int32(num_nodes),Int32(num_elems),
@@ -119,7 +124,7 @@ Initializes the results in exodus
 # Returns
 - `result_file::Dict{String,Any}`: The result file
 """
-function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String)
+function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String, fem_block=nothing, topology=nothing, num_elements=0, elem_global_ids=nothing)
     qa = Matrix{String}(undef, 1, 4)
     qa[1] = "PeriLab"
     qa[2] = "$PERILAB_VERSION"
@@ -147,16 +152,37 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
         write_name(exo, nsetExo, name)
     end
 
+    fem_active = !isnothing(topology)
+
     for block in uniqueBlocks
         conn = get_block_nodes(block_Id, block)# virtual elements   
-        write_block(exo, block, "SPHERE", conn)
-        write_name(exo, Block, block, "Block_" * string(block))
+        if fem_active
+            if fem_block[conn[1]]
+                # fem_conn = topology[conn, :]'
+                fem_conn = Matrix(topology')
+                fem_conn[end-1:end, :] .= fem_conn[[end; end - 1], :]
+                write_block(exo, block, "QUAD4", fem_conn)
+                write_name(exo, Block, block, "Block_" * string(block))
+            else
+                @info "HEre"
+                @info conn
+                write_block(exo, block, "SPHERE", conn)
+                write_name(exo, Block, block, "Block_" * string(block))
+            end
+        else
+            write_block(exo, block, "SPHERE", conn)
+            write_name(exo, Block, block, "Block_" * string(block))
+        end
     end
 
     # write element id map
-
+    @info global_ids
     write_id_map(exo, NodeMap, Int32.(global_ids))
-    write_id_map(exo, ElementMap, Int32.(global_ids))
+    if fem_active
+        write_id_map(exo, ElementMap, Int32.(elem_global_ids))
+    else
+        write_id_map(exo, ElementMap, Int32.(global_ids))
+    end
 
     # output structure var_name -> [fieldname, exodus id, field dof]
 

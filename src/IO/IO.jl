@@ -357,6 +357,20 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
     max_block_id = find_and_set_core_value_max(datamanager.get_comm(), max_block_id)
     nsets = datamanager.get_nsets()
     outputs = get_results_mapping(params, path, datamanager)
+
+    topology = nothing
+    fem_block = nothing
+    num_elements = 0
+    elem_global_ids = nothing
+    if datamanager.fem_active()
+        topology = datamanager.get_field("FE Topology")
+        fem_block = datamanager.get_field("FEM Block")
+        num_elements = datamanager.get_num_elements()
+        num_nodes_in_topo = length(unique(topology))
+        @info nnodes, num_elements, num_nodes_in_topo
+        elem_global_ids = datamanager.loc_to_glob(1:num_elements+nnodes-num_nodes_in_topo)
+        @info elem_global_ids
+    end
     for name in eachindex(nsets)
         existing_nodes = intersect(global_ids, nsets[name])
         nsets[name] = datamanager.get_local_nodes(existing_nodes)
@@ -370,7 +384,7 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
                 filename = filename * "." * string(max_rank) * "." * get_mpi_rank_string(rank, max_rank)
             end
             outputs[id]["Output File Type"] = "Exodus"
-            push!(result_files, create_result_file(filename, nnodes, dof, max_block_id, nnsets))
+            push!(result_files, create_result_file(filename, nnodes, dof, max_block_id, nnsets, num_elements, topology))
         elseif ".csv" == filename[end-3:end]
             if rank == 0
                 push!(result_files, create_result_file(filename, outputs[id]))
@@ -387,7 +401,7 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
     for id in eachindex(result_files)
 
         if result_files[id]["type"] == "Exodus"
-            result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids, PERILAB_VERSION)
+            result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids, PERILAB_VERSION, fem_block, topology, num_elements, elem_global_ids)
         end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 

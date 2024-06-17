@@ -8,7 +8,7 @@ using Reexport
 
 include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
-@reexport using .Parameter_Handling: get_density, get_horizon, get_solver_name, get_solver_options
+@reexport using .Parameter_Handling: get_density, get_horizon, get_solver_name, get_solver_options, get_fem_block
 @reexport using .Helpers: find_indices
 include("../../Physics/Physics_Factory.jl")
 include("../../Physics/Damage/Damage_Factory.jl")
@@ -48,10 +48,12 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     block_nodes = get_block_nodes(datamanager.get_field("Block_Id"), nnodes)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
+    fem_block = datamanager.create_constant_node_field("FEM Block", Bool, 1, false)
 
     datamanager.create_constant_node_field("Update List", Bool, 1, true)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
+    fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
     solver_options = get_solver_options(params)
 
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
@@ -120,6 +122,25 @@ function set_density(params::Dict, block_nodes::Dict, density::SubArray)
         density[block_nodes[block]] .= get_density(params, block)
     end
     return density
+end
+
+"""
+    set_fem_block(params::Dict, block_nodes::Dict, fem_block::SubArray)
+
+Sets the fem_block of the nodes in the dictionary.
+
+# Arguments
+- `params::Dict`: The parameters
+- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+- `fem_block::SubArray`: The fem_block
+# Returns
+- `fem_block::SubArray`: The fem_block
+"""
+function set_fem_block(params::Dict, block_nodes::Dict, fem_block::SubArray)
+    for block in eachindex(block_nodes)
+        fem_block[block_nodes[block]] .= get_fem_block(params, block)
+    end
+    return fem_block
 end
 
 """
