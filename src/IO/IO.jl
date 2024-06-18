@@ -401,7 +401,7 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
     for id in eachindex(result_files)
 
         if result_files[id]["type"] == "Exodus"
-            result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids, PERILAB_VERSION, fem_block, topology, num_elements, elem_global_ids)
+            result_files[id]["file"] = init_results_in_exodus(result_files[id]["file"], outputs[id], coords, block_Id[1:nnodes], Vector{Int64}(1:max_block_id), nsets, global_ids, PERILAB_VERSION, fem_block, topology, elem_global_ids)
         end
         push!(output_frequency, Dict{String,Int64}("Counter" => 0, "Output Frequency" => output_frequencies[id], "Step" => 1))
 

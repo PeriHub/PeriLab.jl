@@ -49,39 +49,53 @@ end
 if !isdir("tmp")
     mkdir("tmp")
 end
+
+test_Data_manager = Data_manager
+topology = test_Data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
+topology[1, 1] = 1
+topology[1, 2] = 2
+topology[1, 3] = 3
+topology[1, 4] = 4
+topology[2, 1] = 2
+topology[2, 2] = 3
+topology[2, 3] = 4
+topology[2, 4] = 5
 @testset "ut_create_result_file" begin
-    filename = "./tmp/" * "test.e"
+    filename1 = "./tmp/" * "test.e"
+    filename2 = "./tmp/" * "test2.e"
     nnodes = 4
     dof = 3
-    exo = create_result_file(filename, nnodes, dof, 1, 0)
-    @test isfile(filename)
-    @test exo["file"].file_name == filename
+    exo = create_result_file(filename1, 5, dof, 1, 0, 2, topology)
+    exo = create_result_file(filename2, nnodes, dof, 1, 0)
+    @test isfile(filename2)
+    @test exo["file"].file_name == filename2
     # @test num_dim(exo["file"].init) == dof
     # @test num_nodes(exo["file"].init) == nnodes
     # @test num_node_sets(exo["file"].init) == 0
     # @test num_elem_blks(exo["file"].init) == 1
 
     close(exo["file"])
-    rm(filename)
-    fid = open(filename, "w")
+    rm(filename2)
+    fid = open(filename2, "w")
     close(fid)
     nnodes = 300
     dof = 2
-    @test isfile(filename)
-    exo = create_result_file(filename, nnodes, dof, 3, 2)
-    @test isfile(filename)
-    @test exo["file"].file_name == filename
+    @test isfile(filename2)
+    exo = create_result_file(filename2, nnodes, dof, 3, 2)
+    @test isfile(filename2)
+    @test exo["file"].file_name == filename2
     # @test num_dim(exo["file"].init) == dof
     # @test num_nodes(exo["file"].init) == nnodes
     # @test num_node_sets(exo["file"].init) == 2
     # @test num_elem_blks(exo["file"].init) == 3
     close(exo["file"])
-    rm(filename)
+    rm(filename1)
+    rm(filename2)
 end
 filename = "./tmp/" * "test_2.e"
+filename2 = "./tmp/" * "test_22.e"
 nnodes = 5
 dof = 2
-test_Data_manager = Data_manager
 test_Data_manager.set_num_controller(nnodes)
 test_Data_manager.set_dof(dof)
 coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, 2)
@@ -99,6 +113,8 @@ test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
 block_Id = test_Data_manager.get_field("Block_Id")
 block_Id .+= 1
 block_Id[end] = 2
+test_Data_manager.create_constant_node_field("FEM", Bool, 1, true)
+fem_block = test_Data_manager.get_field("FEM")
 #outputs = ["Displacements", "Forces"]
 test_Data_manager.set_nset("Nset_1", [1, 2])
 test_Data_manager.set_nset("Nset_2", [5])
@@ -108,6 +124,9 @@ coords = vcat(transpose(coordinates))
 outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesxy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesxz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesyx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesyy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesyz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => false, "dof" => 1, "type" => Float64), "External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Node_Set_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
 computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Node_Set_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
 
+exo1 = create_result_file(filename2, nnodes, dof, maximum(block_Id), length(nsets), 2, topology)
+exo1["file"] = init_results_in_exodus(exo1["file"], outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets, [1, 2, 3, 4, 5], "1.0.0", fem_block, topology, [1, 2])
+rm(filename2)
 exo = create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
 exo["file"] = init_results_in_exodus(exo["file"], outputs, coords, block_Id[1:nnodes], Vector{Int64}(1:maximum(block_Id)), nsets, [1, 2, 3, 4, 5], "1.0.0")
 result_files = []

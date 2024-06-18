@@ -23,7 +23,7 @@ Creates a exodus file for the results
 # Returns
 - `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
 """
-function create_result_file(filename::Union{AbstractString,String}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64, num_elements=0, topology=nothing)
+function create_result_file(filename::Union{AbstractString,String}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64, num_elements::Int64=0, topology::Union{Nothing,SubArray}=nothing)
 
     if isfile(filename)
         rm(filename)
@@ -124,7 +124,7 @@ Initializes the results in exodus
 # Returns
 - `result_file::Dict{String,Any}`: The result file
 """
-function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String, fem_block=nothing, topology=nothing, num_elements=0, elem_global_ids=nothing)
+function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String, fem_block::Union{Nothing,SubArray}=nothing, topology::Union{Nothing,SubArray}=nothing, elem_global_ids::Union{Nothing,Vector{Int64}}=nothing)
     qa = Matrix{String}(undef, 1, 4)
     qa[1] = "PeriLab"
     qa[2] = "$PERILAB_VERSION"
@@ -164,8 +164,6 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
                 write_block(exo, block, "QUAD4", fem_conn)
                 write_name(exo, Block, block, "Block_" * string(block))
             else
-                @info "HEre"
-                @info conn
                 write_block(exo, block, "SPHERE", conn)
                 write_name(exo, Block, block, "Block_" * string(block))
             end
