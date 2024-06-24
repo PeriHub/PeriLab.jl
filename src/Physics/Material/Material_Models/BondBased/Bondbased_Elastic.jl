@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bondbased_Elastic
-include("../material_basis.jl")
+include("../../material_basis.jl")
 using TimerOutputs
 export init_material_model
 export fe_support

@@ -12,6 +12,46 @@ const to = TimerOutput()
 @testset "correspondence_name" begin
     @test Bond_Associated_Correspondence.correspondence_name() == "Correspondence Bond-Associated"
 end
+@testset "ut_calculate_Q" begin
+
+    accuracy_order = 1
+    dof = 2
+    undeformed_bond = [1.0, 2.0]
+    horizon = 3.0
+    expected_Q = [2.0 / 3.0, 1.0 / 3.0]
+
+    Q = Bond_Associated_Correspondence.calculate_Q(accuracy_order, dof, undeformed_bond, horizon)
+
+    @test isapprox(Q, expected_Q)
+
+
+    accuracy_order = 2
+    dof = 2
+    undeformed_bond = [1.0, 2.0]
+    horizon = 3.0
+    expected_Q = [0.6666666666666666, 0.3333333333333333, 0.4444444444444444, 0.2222222222222222, 0.1111111111111111]
+
+    Q = Bond_Associated_Correspondence.calculate_Q(accuracy_order, dof, undeformed_bond, horizon)
+
+    @test isapprox(Q, expected_Q)
+
+
+    accuracy_order = 2
+    dof = 3
+    undeformed_bond = [1.0, 2.0, 5]
+    horizon = 3.0
+    expected_Q = [1.6666666666666667, 0.6666666666666666, 0.3333333333333333, 2.777777777777778, 1.1111111111111112, 0.4444444444444444, 0.5555555555555556, 0.2222222222222222, 0.1111111111111111]
+
+    Q = Bond_Associated_Correspondence.calculate_Q(accuracy_order, dof, undeformed_bond, horizon)
+
+    @test isapprox(Q, expected_Q)
+end
+
+# Check if Q is calculated correctly
+#Q_expected = calculate_Q(accuracy_order, dof, undeformed_bond[1][1], horizon[1])
+#@test Q_expected == calculate_Q(accuracy_order, dof, undeformed_bond[1][1], horizon[1])
+
+
 # @testset "compute_forces" begin
 #     nodes = 3
 #     test_Data_manager = Data_manager

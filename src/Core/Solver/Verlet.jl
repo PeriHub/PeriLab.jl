@@ -459,7 +459,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
                     # force density is for FEM part force                   
-                    force_densities[nodes, :] += external_forces[fe_nodes[nodes], :]
+                    force_densities[find_active(fe_nodes[nodes]), :] += external_forces[find_active(fe_nodes[nodes]), :]
                     a[find_active(fe_nodes[nodes]), :] = force_densities[find_active(fe_nodes[nodes]), :] ./ lumped_mass[find_active(fe_nodes[nodes])] # element wise
                     forces[find_active(fe_nodes[nodes]), :] = force_densities[find_active(fe_nodes[nodes]), :]
 

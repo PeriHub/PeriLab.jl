@@ -192,16 +192,21 @@ end
 
 
 function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{Float64}, horizon::Union{Int64,Float64})
-  Q = ones(Float64, Qdim)  # Initialize Q with ones
+
+  Q = ones(Float64, qdim(accuracy_order, dof))  # Initialize Q with ones
   counter = 1
   p = zeros(Int64, dof)
   for this_order in 1:accuracy_order
     for p[1] in 0:this_order
-      for p[2] in 0:(this_order-p[1])
-        if dof == 3
+      if dof == 3
+        for p[2] in 0:(this_order-p[1])
           p[3] = this_order - p[1] - p[2]
+          # Calculate the product for Q[counter]
+          Q[counter] = prod((undeformed_bond ./ horizon) .^ p)
+          counter += 1
         end
-        # Calculate the product for Q[counter]
+      else
+        p[2] = this_order - p[1]
         Q[counter] = prod((undeformed_bond ./ horizon) .^ p)
         counter += 1
       end

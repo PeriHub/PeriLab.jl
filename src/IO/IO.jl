@@ -374,9 +374,9 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
         fem_block = datamanager.get_field("FEM Block")
         num_elements = datamanager.get_num_elements()
         num_nodes_in_topo = length(unique(topology))
-        @info nnodes, num_elements, num_nodes_in_topo
+        # @info nnodes, num_elements, num_nodes_in_topo
         elem_global_ids = datamanager.loc_to_glob(1:num_elements+nnodes-num_nodes_in_topo)
-        @info elem_global_ids
+        # @info elem_global_ids
     end
     for name in eachindex(nsets)
         existing_nodes = intersect(global_ids, nsets[name])
