@@ -12,43 +12,43 @@ include("../../../../../src/Physics/Material/Material_Models/Correspondence_UMAT
 end
 @testset "init exceptions" begin
     nodes = 2
-    test_Data_manager = PeriLab.Data_manager
-    test_Data_manager.clear_data_manager()
-    test_Data_manager.set_num_controller(nodes)
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.clear_data_manager()
+    test_data_manager.set_num_controller(nodes)
     dof = 3
-    test_Data_manager.set_dof(dof)
+    test_data_manager.set_dof(dof)
     file = "./src/Physics/Material/UMATs/libperuser.so"
     if !isfile(file)
         file = "../src/Physics/Material/UMATs/libperuser.so"
     end
 
-    @test !isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Property_4" => 2)))
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file * "_not_there")))
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file)))
+    @test !isnothing(Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Property_4" => 2)))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file * "_not_there")))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file)))
 
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}()))
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_3" => 2.4)))
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2.4, "Property_4" => 2)))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}()))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_3" => 2.4)))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2.4, "Property_4" => 2)))
 
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2.4, "Property_3" => 2.4, "UMAT Material Name" => "a"^81)))
-    @test !isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "UMAT Material Name" => "a"^80)))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2.4, "Property_3" => 2.4, "UMAT Material Name" => "a"^81)))
+    @test !isnothing(Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "UMAT Material Name" => "a"^80)))
 
-    properties = test_Data_manager.get_field("Properties")
+    properties = test_data_manager.get_field("Properties")
     @test length(properties) == 3
     @test properties[1] == 2
     @test properties[2] == 2
     @test properties[3] == 2.4
 
-    @test isnothing(Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3")))
+    @test isnothing(Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3")))
 
-    test_1 = test_Data_manager.create_constant_node_field("test_field_2", Float64, 1)
+    test_1 = test_data_manager.create_constant_node_field("test_field_2", Float64, 1)
     test_1[1] = 7.3
-    test_2 = test_Data_manager.create_constant_node_field("test_field_3", Float64, 1)
+    test_2 = test_data_manager.create_constant_node_field("test_field_3", Float64, 1)
     test_2 .= 3
     mat_dict = Dict{String,Any}("File" => file, "UMAT name" => "test_sub", "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3")
-    Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), mat_dict)
-    fields = test_Data_manager.get_field("Predefined Fields")
-    inc = test_Data_manager.get_field("Predefined Fields Increment")
+    Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
+    fields = test_data_manager.get_field("Predefined Fields")
+    inc = test_data_manager.get_field("Predefined Fields Increment")
     @test size(fields) == (2, 2)
     @test size(inc) == (2, 2)
     @test fields[1, 1] == test_1[1]
@@ -58,7 +58,7 @@ end
     @test mat_dict["UMAT name"] == "test_sub"
     mat_dict = Dict{String,Any}("File" => file, "Number of Properties" => 3, "Property_1" => 2, "Property_2" => 2, "Property_3" => 2.4, "Predefined Field Names" => "test_field_2 test_field_3")
     @test !haskey(mat_dict, "UMAT name")
-    Correspondence_UMAT.init_material_model(test_Data_manager, Vector{Int64}(1:nodes), mat_dict)
+    Correspondence_UMAT.init_material_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
     @test haskey(mat_dict, "UMAT name")
     @test mat_dict["UMAT name"] == "UMAT"
 end
@@ -70,7 +70,7 @@ end
 # Test wrapper function for UMAT_interface
 @testset "UMAT_interface Tests" begin
     # Example test case (you should define your own)
-    test_Data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_manager
     file = "./src/Physics/Material/UMATs/libusertest.so"
     if !isfile(file)
         file = "../src/Physics/Material/UMATs/libusertest.so"
@@ -99,7 +99,7 @@ end
     NTENS::Int64 = 6
     NSTATEV::Int64 = length(STATEV)
     NPROPS::Int64 = 1
-    PROPS::SubArray = test_Data_manager.create_constant_free_size_field("Properties", Float64, (NPROPS, 1))
+    PROPS::SubArray = test_data_manager.create_constant_free_size_field("Properties", Float64, (NPROPS, 1))
     COORDS::Vector{Float64} = zeros(Float64, 3)  # Adjust as needed
     DROT::Matrix{Float64} = Matrix{Float64}(I, 3, 3)  # Adjust as needed
     PNEWDT::Float64 = 0.1

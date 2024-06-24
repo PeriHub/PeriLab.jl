@@ -73,16 +73,16 @@ end
 end
 
 @testset "ut_find_inverse_bond_id" begin
-    test_Data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_manager
     nnodes = 2
     num_responder = 1
-    test_Data_manager.set_num_controller(nnodes)
-    test_Data_manager.set_num_responder(num_responder)
-    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    test_data_manager.set_num_controller(nnodes)
+    test_data_manager.set_num_responder(num_responder)
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 1
     nn[2] = 2
     nn[3] = 3
-    nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     nlist[1] = [2]
     nlist[2] = [1, 3]
     nlist[3] = [1, 2]
@@ -165,10 +165,10 @@ end
 
 @testset "get_active_update_nodes" begin
     nnodes = 4
-    test_Data_manager = PeriLab.Data_manager
-    test_Data_manager.set_num_controller(nnodes)
-    update_list = test_Data_manager.create_constant_node_field("Update List", Bool, 1, true)
-    active = test_Data_manager.create_constant_node_field("Active List", Bool, 1, true)
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.set_num_controller(nnodes)
+    update_list = test_data_manager.create_constant_node_field("Update List", Bool, 1, true)
+    active = test_data_manager.create_constant_node_field("Active List", Bool, 1, true)
     block_nodes = Dict(1 => [1, 2], 2 => [3, 4])
     block = 1
     @test PeriLab.Solver.Helpers.get_active_update_nodes(active, update_list, block_nodes, block) == ([1, 2], [1, 2],)

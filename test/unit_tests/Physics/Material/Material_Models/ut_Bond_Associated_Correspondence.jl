@@ -6,12 +6,71 @@ include("../../../../../src/Physics/Material/Material_Models/Bond_Associated_Cor
 # include("../../../../../src/Core/data_manager.jl")
 using Test
 using TimerOutputs
-
+include("../../../../../src/PeriLab.jl")
+using .PeriLab
 const to = TimerOutput()
 
 @testset "correspondence_name" begin
     @test Bond_Associated_Correspondence.correspondence_name() == "Correspondence Bond-Associated"
 end
+
+
+test_data_manager = PeriLab.Data_manager
+test_data_manager.clear_data_manager()
+test_data_manager.set_num_controller(4)
+test_data_manager.set_dof(3)
+nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+nodes = Vector{Int64}(1:4)
+println()
+@test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict()))
+
+material_parameter = Dict("Symmetry" => "isotropic")
+test_data_manager = Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, material_parameter)
+@test "Accuracy Order" in material_parameter
+@test material_parameter["Accuracy Order"] == 1
+@test "Accuracy Order" in test_data_manager.get_all_field_keys()
+@test "Bond Strain" in test_data_manager.get_all_field_keys()
+
+@test "Bond Cauchy Stress" in test_data_manager.get_all_field_keys()
+@test "Bond Strain Increment" in test_data_manager.get_all_field_keys()
+@test "Bond Weighted Volume" in test_data_manager.get_all_field_keys()
+@test "Lagrangian Gradient Weights" in test_data_manager.get_all_field_keys()
+
+material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
+test_data_manager = Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, material_parameter)
+
+@test material_parameter["Accuracy Order"] == 2
+
+@test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict("Symmetry" => "isotropic", "Accuracy Order" => 2.0)))
+@test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict("Symmetry" => "isotropic", "Accuracy Order" => 0)))
+
+
+
+nn[1:4] = 1:4
+nodes = [1, 2]
+nlist = [[2], [1]]
+omega = [1.0, 1.0]
+bond_damage = [[1.0], [1.0]]
+volume = [1.0, 1.0]
+weighted_volume = [1.0, 1.0]
+bond_geometry = [[[1.0, 0.0]], [[-1.0, 0.0]]]
+bond_length = [[1.0], [1.0]]
+bond_stresses = [[[[1.0, 0.0], [0.0, 1.0]]], [[[1.0, 0.0], [0.0, 1.0]]]]
+stress_integral = zeros(2, 2, 2)
+dof = 2
+
+Bond_Associated_Correspondence.compute_stress_integral(nodes, nlist, omega, bond_damage, volume, weighted_volume, bond_geometry, bond_length, bond_stresses, stress_integral)
+
+expected_stress_integral = [
+    [1.0 0.0; 0.0 1.0],
+    [1.0 0.0; 0.0 1.0]
+]
+
+@test isapprox(stress_integral[1, :, :], expected_stress_integral)
+@test isapprox(stress_integral[2, :, :], expected_stress_integral)
+
+
+
 @testset "ut_calculate_Q" begin
 
     accuracy_order = 1

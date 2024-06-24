@@ -50,8 +50,8 @@ if !isdir("tmp")
     mkdir("tmp")
 end
 
-test_Data_manager = Data_manager
-topology = test_Data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
+test_data_manager = Data_manager
+topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
 topology[1, 1] = 1
 topology[1, 2] = 2
 topology[1, 3] = 3
@@ -96,9 +96,9 @@ filename = "./tmp/" * "test_2.e"
 filename2 = "./tmp/" * "test_22.e"
 nnodes = 5
 dof = 2
-test_Data_manager.set_num_controller(nnodes)
-test_Data_manager.set_dof(dof)
-coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, 2)
+test_data_manager.set_num_controller(nnodes)
+test_data_manager.set_dof(dof)
+coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, 2)
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
@@ -109,17 +109,17 @@ coordinates[4, 1] = 1
 coordinates[4, 2] = 1
 coordinates[5, 1] = 2
 coordinates[5, 2] = 2
-test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
-block_Id = test_Data_manager.get_field("Block_Id")
+test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+block_Id = test_data_manager.get_field("Block_Id")
 block_Id .+= 1
 block_Id[end] = 2
-test_Data_manager.create_constant_node_field("FEM", Bool, 1, true)
-fem_block = test_Data_manager.get_field("FEM")
+test_data_manager.create_constant_node_field("FEM", Bool, 1, true)
+fem_block = test_data_manager.get_field("FEM")
 #outputs = ["Displacements", "Forces"]
-test_Data_manager.set_nset("Nset_1", [1, 2])
-test_Data_manager.set_nset("Nset_2", [5])
+test_data_manager.set_nset("Nset_1", [1, 2])
+test_data_manager.set_nset("Nset_2", [5])
 
-nsets = test_Data_manager.get_nsets()
+nsets = test_data_manager.get_nsets()
 coords = vcat(transpose(coordinates))
 outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesxy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesxz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesyx" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesyy" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Forcesyz" => Dict("fieldname" => "ForcesNP1", "global_var" => false, "dof" => 1, "type" => Float64), "Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => false, "dof" => 1, "type" => Float64), "External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Node_Set_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
 computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" => "DisplacementsNP1", "global_var" => true, "dof" => 1, "type" => Float64, "compute_params" => Dict("Compute Class" => "Block_Data", "Calculation Type" => "Maximum", "Block" => "block_1", "Variable" => "DisplacementsNP1")), "External_Forces" => Dict("fieldname" => "ForcesNP1", "global_var" => true, "dof" => 3, "type" => Float64, "compute_params" => Dict("Compute Class" => "Node_Set_Data", "Calculation Type" => "Minimum", "Node Set" => 1, "Variable" => "DisplacementsNP1"))))
@@ -160,10 +160,10 @@ result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 6, 6.7)
 end
 
 
-test_Data_manager.create_node_field("Forces", Float64, 6)
-test_Data_manager.create_node_field("Displacements", Float64, 1)
-force = test_Data_manager.get_field("Forces", "NP1")
-disp = test_Data_manager.get_field("Displacements", "NP1")
+test_data_manager.create_node_field("Forces", Float64, 6)
+test_data_manager.create_node_field("Displacements", Float64, 1)
+force = test_data_manager.get_field("Forces", "NP1")
+disp = test_data_manager.get_field("Displacements", "NP1")
 force[5, 1:6] .= 3.3
 force[1:3, 6] .= 2.3
 disp[1] = 3
@@ -173,7 +173,7 @@ disp[4] = -1.8
 disp[5] = 0
 
 nodal_outputs = Dict(key => value for (key, value) in outputs["Fields"] if (!value["global_var"]))
-exo["file"] = write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs, test_Data_manager)
+exo["file"] = write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs, test_data_manager)
 
 test_disp_step_zero = read_values(exo["file"], NodalVariable, 1, 1, "Displacements")
 

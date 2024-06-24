@@ -30,24 +30,24 @@ end
 
 nnodes = 5
 dof = 2
-test_Data_manager = PeriLab.Data_manager
-test_Data_manager.clear_data_manager()
+test_data_manager = PeriLab.Data_manager
+test_data_manager.clear_data_manager()
 comm = MPI.COMM_WORLD
-test_Data_manager.set_comm(comm)
-test_Data_manager.set_num_controller(5)
-test_Data_manager.set_dof(2)
-blocks = test_Data_manager.create_constant_node_field("Block_Id", Int64, 1)
-horizon = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
-coor = test_Data_manager.create_constant_node_field("Coordinates", Float64, 2)
-density = test_Data_manager.create_constant_node_field("Density", Float64, 1)
-volume = test_Data_manager.create_constant_node_field("Volume", Float64, 1)
-length_nlist = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+test_data_manager.set_comm(comm)
+test_data_manager.set_num_controller(5)
+test_data_manager.set_dof(2)
+blocks = test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+horizon = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
+coor = test_data_manager.create_constant_node_field("Coordinates", Float64, 2)
+density = test_data_manager.create_constant_node_field("Density", Float64, 1)
+volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
+length_nlist = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
 length_nlist .= 4
 
-nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-undeformed_bond = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
-undeformed_bond_length = test_Data_manager.create_constant_bond_field("Bond Length", Float64, 1)
-heat_capacity = test_Data_manager.create_constant_node_field("Specific Heat Capacity", Float64, 1, 18000)
+nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
+undeformed_bond_length = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
+heat_capacity = test_data_manager.create_constant_node_field("Specific Heat Capacity", Float64, 1, 18000)
 nlist[1] = [2, 3, 4, 5]
 nlist[2] = [1, 3, 4, 5]
 nlist[3] = [1, 2, 4, 5]
@@ -72,7 +72,7 @@ horizon = [3.1, 3.1, 3.1, 3.1, 3.1]
 undeformed_bond = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), nlist, coor, undeformed_bond, undeformed_bond_length)
 
 blocks = [1, 1, 2, 2, 1]
-blocks = test_Data_manager.set_block_list(blocks)
+blocks = test_data_manager.set_block_list(blocks)
 # from Peridigm
 testValmech = 0.0002853254715348906
 testVal = 72.82376628733019
@@ -80,24 +80,24 @@ testVal = 72.82376628733019
 # from Peridigm
 @testset "ut_mechanical_critical_time_step" begin
 
-    t = PeriLab.Solver.Verlet.compute_mechanical_critical_time_step(Vector{Int64}(1:nnodes), test_Data_manager, Float64(140.0))
+    t = PeriLab.Solver.Verlet.compute_mechanical_critical_time_step(Vector{Int64}(1:nnodes), test_data_manager, Float64(140.0))
     @test t == 1.4142135623730952e25 # not sure if this is right :D
 
 end
 # from Peridigm
 @testset "ut_thermodynamic_crititical_time_step" begin
 
-    t = PeriLab.Solver.Verlet.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes), test_Data_manager, Float64(0.12))
+    t = PeriLab.Solver.Verlet.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes), test_data_manager, Float64(0.12))
     @test t == 1e25
 
 end
 
-# test_Data_manager.init_property()
-# test_Data_manager.set_property(1, "Material Model", "Bulk Modulus", Float64(140.0))
-# test_Data_manager.set_property(2, "Material Model", "Bulk Modulus", Float64(140.0))
+# test_data_manager.init_property()
+# test_data_manager.set_property(1, "Material Model", "Bulk Modulus", Float64(140.0))
+# test_data_manager.set_property(2, "Material Model", "Bulk Modulus", Float64(140.0))
 # @testset "ut_init_Verlet" begin
 #     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0)))
-#     start_time, dt, nsteps = Verlet.init_solver(params, test_Data_manager, Dict{Int64,Vector{Int64}}(1 => Vector{Int64}(1:nnodes)), true, false)
+#     start_time, dt, nsteps = Verlet.init_solver(params, test_data_manager, Dict{Int64,Vector{Int64}}(1 => Vector{Int64}(1:nnodes)), true, false)
 
 #     @test start_time == params["Solver"]["Initial Time"]
 #     testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / testValmech))
@@ -109,7 +109,7 @@ end
 
 #     @test testDt / dt - 1 < 1e-6
 #     params = Dict("Solver" => Dict("Initial Time" => 0.0, "Final Time" => 1.0, "Verlet" => Dict("Safety Factor" => 1.0, "Fixed dt" => 1e-5)))
-#     start_time, dt, nsteps = Verlet.init_solver(params, test_Data_manager, Dict{Int64,Vector{Int64}}(1 => Vector{Int64}(1:nnodes)), true, false)
+#     start_time, dt, nsteps = Verlet.init_solver(params, test_data_manager, Dict{Int64,Vector{Int64}}(1 => Vector{Int64}(1:nnodes)), true, false)
 
 #     testStep = Int64(ceil((params["Solver"]["Final Time"] - params["Solver"]["Initial Time"]) / 1e-5))
 #     @test testStep == nsteps
@@ -122,37 +122,37 @@ end
 # nnodes = 5
 # dof = 2
 
-# test_Data_manager = Data_manager
-# test_Data_manager.set_comm(comm)
-# test_Data_manager.set_num_controller(5)
-# test_Data_manager.set_dof(2)
+# test_data_manager = Data_manager
+# test_data_manager.set_comm(comm)
+# test_data_manager.set_num_controller(5)
+# test_data_manager.set_dof(2)
 
-# test_Data_manager.set_glob_to_loc([1, 2, 3, 4, 5])
-# density = test_Data_manager.create_constant_node_field("Density", Float64, 1)
-# force = test_Data_manager.create_node_field("Forces", Float64, dof)
+# test_data_manager.set_glob_to_loc([1, 2, 3, 4, 5])
+# density = test_data_manager.create_constant_node_field("Density", Float64, 1)
+# force = test_data_manager.create_node_field("Forces", Float64, dof)
 # Y = testDatama#nager.create_node_field("Deformed State", Float64, dof)
-# u = test_Data_manager.create_node_field("Displacements", Float64, dof)
-# bu = test_Data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
-# a = test_Data_manager.create_constant_node_field("Acceleration", Float64, dof)
-# v = test_Data_manager.create_node_field("Velocity", Float64, dof)
+# u = test_data_manager.create_node_field("Displacements", Float64, dof)
+# bu = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof + 1)
+# a = test_data_manager.create_constant_node_field("Acceleration", Float64, dof)
+# v = test_data_manager.create_node_field("Velocity", Float64, dof)
 
 # density = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
-# test_Data_manager.set_nset("Nset_1", [1, 2, 3])
-# test_Data_manager.set_nset("Nset_2", [3, 4, 7, 10])
+# test_data_manager.set_nset("Nset_1", [1, 2, 3])
+# test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
 # block_nodes = [1, 1, 2, 2, 1]
 # params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Force", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Variable" => "Displacement", "Node Set" => "Nset_2", "Coordinate" => "y", "Value" => "5")))
 
-# bcs = Boundary_conditions.init_BCs(params, test_Data_manager)
+# bcs = Boundary_conditions.init_BCs(params, test_data_manager)
 # result_files = []
 # outputs = Dict()
 # solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
-# test_Data_manager.set_rank(0)
-# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(block_nodes), bcs, test_Data_manager, outputs, result_files, Solver.write_results)
-# test_Data_manager.set_rank(1)
+# test_data_manager.set_rank(0)
+# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(block_nodes), bcs, test_data_manager, outputs, result_files, Solver.write_results)
+# test_data_manager.set_rank(1)
 # # only if routine runs, if progress bar is not active
-# bcs = Boundary_conditions.init_BCs(params, test_Data_manager)
+# bcs = Boundary_conditions.init_BCs(params, test_data_manager)
 # result_files = []
 # outputs = Dict()
 # solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
-# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(block_nodes), bcs, test_Data_manager, outputs, result_files, Solver.write_results)
+# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(block_nodes), bcs, test_data_manager, outputs, result_files, Solver.write_results)
 

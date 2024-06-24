@@ -93,27 +93,27 @@ if ncores == 3
 
     overlap_map = IO.get_local_overlap_map(overlap_map, distribution, ncores)
 
-    test_Data_manager = Data_manager
-    test_Data_manager.set_comm(comm)
+    test_data_manager = Data_manager
+    test_data_manager.set_comm(comm)
 
     if rank == 0
-        test_Data_manager.set_num_controller(1)
-        test_Data_manager.set_num_responder(2)
+        test_data_manager.set_num_controller(1)
+        test_data_manager.set_num_responder(2)
     end
     if rank == 1
-        test_Data_manager.set_num_controller(2)
-        test_Data_manager.set_num_responder(1)
+        test_data_manager.set_num_controller(2)
+        test_data_manager.set_num_responder(1)
     end
     if rank == 2
-        test_Data_manager.set_num_controller(1)
-        test_Data_manager.set_num_responder(2)
+        test_data_manager.set_num_controller(1)
+        test_data_manager.set_num_responder(2)
     end
-    test_Data_manager.set_dof(dof)
-    A = test_Data_manager.create_constant_node_field("A", Float64, 1)
-    B = test_Data_manager.create_constant_node_field("B", Float64, 4)
-    C = test_Data_manager.create_constant_node_field("C", Int64, 1)
-    D = test_Data_manager.create_constant_node_field("D", Int64, 5)
-    E = test_Data_manager.create_constant_node_field("E", Bool, 1)
+    test_data_manager.set_dof(dof)
+    A = test_data_manager.create_constant_node_field("A", Float64, 1)
+    B = test_data_manager.create_constant_node_field("B", Float64, 4)
+    C = test_data_manager.create_constant_node_field("C", Int64, 1)
+    D = test_data_manager.create_constant_node_field("D", Int64, 5)
+    E = test_data_manager.create_constant_node_field("E", Bool, 1)
     if rank == 0
         A[1] = 1.4
         A[2] = 3
@@ -242,10 +242,10 @@ if ncores == 3
         push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_0"] = Dict("tests" => [], "line" => [])
-        push_test!(test, (IO.find_global_core_value!(0, "Sum", 1, test_Data_manager) == 3), @__FILE__, @__LINE__)
-        push_test!(test, (IO.find_global_core_value!(0, "Maximum", 1, test_Data_manager) == 2), @__FILE__, @__LINE__)
-        push_test!(test, (IO.find_global_core_value!(0, "Minimum", 1, test_Data_manager) == 0), @__FILE__, @__LINE__)
-        push_test!(test, (IO.find_global_core_value!(0, "Average", 1, test_Data_manager) == 1), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(0, "Sum", 1, test_data_manager) == 3), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(0, "Maximum", 1, test_data_manager) == 2), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(0, "Minimum", 1, test_data_manager) == 0), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(0, "Average", 1, test_data_manager) == 1), @__FILE__, @__LINE__)
     end
     if rank == 1
         test = test_dict["synch_controller_to_responder_rank_1"] = Dict("tests" => [], "line" => [])
@@ -266,10 +266,10 @@ if ncores == 3
         push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_1"] = Dict("tests" => [], "line" => [])
-        push_test!(test, (IO.find_global_core_value!(1, "Sum", 1, test_Data_manager) == 3), @__FILE__, @__LINE__)
-        push_test!(test, (IO.find_global_core_value!(1, "Maximum", 1, test_Data_manager) == 2), @__FILE__, @__LINE__)
-        push_test!(test, (IO.find_global_core_value!(1, "Minimum", 1, test_Data_manager) == 0), @__FILE__, @__LINE__)
-        push_test!(test, (IO.find_global_core_value!(1, "Average", 1, test_Data_manager) == 1), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(1, "Sum", 1, test_data_manager) == 3), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(1, "Maximum", 1, test_data_manager) == 2), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(1, "Minimum", 1, test_data_manager) == 0), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(1, "Average", 1, test_data_manager) == 1), @__FILE__, @__LINE__)
     end
     if rank == 2
         test = test_dict["synch_controller_to_responder_rank_2"] = Dict("tests" => [], "line" => [])
@@ -294,32 +294,32 @@ if ncores == 3
         push_test!(test, (E[2] == false), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_2"] = Dict("tests" => [], "line" => [])
-        push_test!(test, (IO.find_global_core_value!(2, "Sum", 1, test_Data_manager) == 3), @__FILE__, @__LINE__)
-        push_test!(test, (IO.find_global_core_value!(2, "Maximum", 1, test_Data_manager) == 2), @__FILE__, @__LINE__)
-        push_test!(test, (IO.find_global_core_value!(2, "Minimum", 1, test_Data_manager) == 0), @__FILE__, @__LINE__)
-        push_test!(test, (IO.find_global_core_value!(2, "Average", 1, test_Data_manager) == 1), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(2, "Sum", 1, test_data_manager) == 3), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(2, "Maximum", 1, test_data_manager) == 2), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(2, "Minimum", 1, test_data_manager) == 0), @__FILE__, @__LINE__)
+        push_test!(test, (IO.find_global_core_value!(2, "Average", 1, test_data_manager) == 1), @__FILE__, @__LINE__)
     end
-    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn .= 2
-    h = test_Data_manager.create_constant_node_field("Horizon", Float64, 1)
-    nodes = test_Data_manager.get_nnodes()
+    h = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
+    nodes = test_data_manager.get_nnodes()
     h .= 5.0
-    bf = test_Data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
+    bf = test_data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
 
-    bdN, bdNP1 = test_Data_manager.create_bond_field("Bond Damage", Float64, 1)
-    dbN, dbNP1 = test_Data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof)
-    dbdN, dbdNP1 = test_Data_manager.create_bond_field("Deformed Bond Length", Float64, 1)
-    bg = test_Data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
-    bd = test_Data_manager.create_constant_bond_field("Bond Length", Float64, 1)
+    bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
+    dbN, dbNP1 = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof)
+    dbdN, dbdNP1 = test_data_manager.create_bond_field("Deformed Bond Length", Float64, 1)
+    bg = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
+    bd = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
     for iID in 1:nodes
         bdNP1[iID] .= 1
         bd[iID] .= 1
         dbdNP1[iID] .= 1 + (-1)^iID * 0.1
         dbNP1[iID] .= 1
     end
-    test_Data_manager = Bondbased_Elastic.compute_forces(test_Data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0), 0.0, 0.0, to)
+    test_data_manager = Bondbased_Elastic.compute_forces(test_data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0), 0.0, 0.0, to)
 
-    bf = test_Data_manager.get_field("Bond Forces")
+    bf = test_data_manager.get_field("Bond Forces")
 
     synch_controller_bonds_to_responder(comm, overlap_map, bf, dof)
 
