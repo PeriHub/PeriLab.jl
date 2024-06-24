@@ -189,7 +189,10 @@ function compute_bond_associated_weighted_volume(nodes::Union{SubArray,Vector{In
   end
   return weighted_volume
 end
+"""
+accuracy_order::Int64 - needs a number of bonds which are linear independent
 
+"""
 
 function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{Float64}, horizon::Union{Int64,Float64})
 
@@ -197,9 +200,9 @@ function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{
   counter = 1
   p = zeros(Int64, dof)
   for this_order in 1:accuracy_order
-    for p[1] in 0:this_order
+    for p[1] in this_order:-1:0
       if dof == 3
-        for p[2] in 0:(this_order-p[1])
+        for p[2] in this_order-p[1]:-1:0
           p[3] = this_order - p[1] - p[2]
           # Calculate the product for Q[counter]
           Q[counter] = prod((undeformed_bond ./ horizon) .^ p)
@@ -214,24 +217,28 @@ function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{
   end
   return Q
 end
-
-
-function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, qdim::Int64, accuracy_order::Int64, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
+function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, qdim::Int64, accuracy_order::Int64, volume::Union{SubArray,Vector{Float64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, horizon::Union{SubArray,Vector{Float64}}, bond_damage::Union{SubArray,Vector{Vector{Float64}}}, omega::Union{SubArray,Vector{Vector{Float64}}}, undeformed_bond, gradient_weights)
   #https://arxiv.org/pdf/2004.11477
   # maybe as static array
   M = zeros(Float64, qdim, qdim)
+  Minv = zeros(Float64, qdim, qdim)
   for iID in nodes
-    for (jID, nID) in enumerate(nlist)
+    for (jID, nID) in enumerate(nlist[iID])
       Q = calculate_Q(accuracy_order, dof, undeformed_bond[iID][jID, :], horizon[iID])
-      M += omega[iID][jID] * bond_damage[iID][jID] * volume[nID] .* Q * transpose(Q)
+      M += omega[iID][jID] * bond_damage[iID][jID] * volume[nID] .* Q * Q'
     end
-    Minv = inv(M)
-    for (jID, nID) in enumerate(nlist)
-      Q = calculate_Q(accuracy_order, dof, deformed_bond[iID][jID, :], horizon[iID])
+    try
+      Minv = inv(M)
+    catch
+      @error "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this."
+      return nothing
+    end
+    for (jID, nID) in enumerate(nlist[iID])
+      Q = calculate_Q(accuracy_order, dof, undeformed_bond[iID][jID, :], horizon[iID])
       # this comes from Eq(19) in 10.1007/s40571-019-00266-9
       # or example 1 in https://arxiv.org/pdf/2004.11477
       for idof in 1:dof
-        gradient_weights[iID][jID, idof] = Minv[idof, :]' * Q ./ horizon
+        gradient_weights[iID][jID, idof] = omega[iID][jID] / horizon[iID] .* (Minv[idof, :]' * Q)
       end
     end
   end
