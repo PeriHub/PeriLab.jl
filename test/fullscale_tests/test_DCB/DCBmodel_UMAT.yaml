@@ -78,6 +78,7 @@ PeriLab:
         External_Displacements: True
         Strain: True
         Cauchy Stress: True
+        State Variables: True
   Physics:
     Damage Models:
       Damage:
