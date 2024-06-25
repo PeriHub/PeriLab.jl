@@ -7,6 +7,7 @@ using AbaqusReader
 using DataFrames
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
+using OrderedCollections: OrderedDict
 using PrettyTables
 include("./logging.jl")
 using .Logging_module: print_table
@@ -193,7 +194,7 @@ function get_local_overlap_map(overlap_map, distribution::Vector{Vector{Int64}},
             end
         end
     end
-    return sort(overlap_map)
+    return sort!(OrderedDict(overlap_map))
 end
 
 """
@@ -1019,7 +1020,7 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, distributi
             end
         end
         # only single new elements where added
-        append!(distribution[i], sort(unique(tempid)))
+        append!(distribution[i], sort!(unique(tempid)))
         append!(ntype["responder"], length(unique(tempid)))
     end
     return distribution, ptc, ntype

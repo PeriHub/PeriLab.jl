@@ -22,6 +22,7 @@ include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_communication.jl")
 using Reexport
 @reexport using .Parameter_Handling
+using OrderedCollections: OrderedDict
 export initialize_data
 export init_write_results
 export get_results_mapping
@@ -489,7 +490,7 @@ Get global values.
 """
 function get_global_values(output::Dict, datamanager::Module)
     global_values = []
-    for varname in keys(sort(output))
+    for varname in keys(sort!(OrderedDict(output)))
         compute_class = output[varname]["compute_params"]["Compute Class"]
         calculation_type = output[varname]["compute_params"]["Calculation Type"]
         fieldname = output[varname]["compute_params"]["Variable"]
