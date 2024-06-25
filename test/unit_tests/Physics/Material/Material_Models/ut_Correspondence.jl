@@ -10,15 +10,15 @@ using .Correspondence
 #using .PeriLab
 @testset "zero_energy_mode_compensation_exception" begin
 
-    test_Data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_manager
     nnodes = 2
-    test_Data_manager.set_num_controller(nnodes)
-    nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    test_data_manager.set_num_controller(nnodes)
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 2
     nn[2] = 3
     nodes = Vector{Int64}(1:2)
 
-    @test Correspondence.zero_energy_mode_compensation(test_Data_manager, nodes, Dict(), 0.0, 0.0) == test_Data_manager
+    @test Correspondence.zero_energy_mode_compensation(test_data_manager, nodes, Dict(), 0.0, 0.0) == test_data_manager
 end
 @testset "rotate_second_order_tensor" begin
 

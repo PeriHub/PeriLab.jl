@@ -10,7 +10,7 @@ using .Data_manager
 
 include("../../src/MPI_communication/MPI_communication.jl")
 MPI.Init()
-test_Data_manager = Data_manager
+test_data_manager = Data_manager
 comm = MPI.COMM_WORLD
 rank = MPI.Comm_rank(comm)
 
@@ -21,10 +21,10 @@ else
     nnodes = 4
     nneighbors = [2, 3, 2, 5]
 end
-test_Data_manager.set_num_controller(nnodes)
-nn = test_Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+test_data_manager.set_num_controller(nnodes)
+nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
 nn = nneighbors
-nlist = test_Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 @testset "init_distributed_lists rank $rank" begin
     for (id, list) in enumerate(nlist)
         @test length(list) == nneighbors[id]

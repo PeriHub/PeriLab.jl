@@ -16,29 +16,36 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
     return nothing
   end
-  nlist = datamanager.get_field("Neighborhoodlist")
-  coordinates = datamanager.get_field("Coordinates")
+  if !haskey(material_parameter, "Accuracy Order")
+    @warn "No Accuracy Order has been defined it is set to 1."
+    merge!(material_parameter, Dict("Accuracy Order" => 1))
+  end
   accuracy_order = material_parameter["Accuracy Order"]
+  if typeof(accuracy_order) != Int
+    @error "Accuracy Order must be an integer."
+    return nothing
+  elseif accuracy_order < 1
+    @error "Accuracy Order must be an greater than zero."
+    return nothing
+  end
   dof = datamanager.get_dof()
   datamanager.create_bond_field("Bond Strain", Float64, "Matrix", dof)
   datamanager.create_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
   datamanager.create_constant_bond_field("Bond Strain Increment", Float64, "Matrix", dof)
   weighted_volume = datamanager.create_constant_bond_field("Bond Weighted Volume", Float64, 1)
-  qlen = qdim(accuracy_order)
-  datamanager.set_property(block_id, "Material Model", "Qdim", qlen)
-  q_term = datamanager.create_constant_bond_field("Q_term", Float64, qdim)
-  horizon = datamanager.get_field("Horizon")
-  undeformed_bond = datamanager.get_field("Bond Geometry")
-  #q_term = compute_q_term(nodes, horizon, undeformed_bond,)
+  datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
+
+  #qlen = qdim(accuracy_order)
+  #datamanager.set_property(block_id, "Material Model", "Qdim", qlen)
   return datamanager
 end
 
 
-function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, stress_integral::SubArray)
+function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::Union{Vector{Vector{Int64}},SubArray}, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, stress_integral::SubArray)
   temp::Matrix{Float64} = zeros(dof, dof)
   for iID in nodes
     stress_integral[iID, :, :] .= 0.0
-    for (jID, nID) in eachindex(nlist[iID])
+    for (jID, nID) in enumerate(nlist[iID])
       for i in 1:dof
         temp[i, i] = 1 - bond_geometry[iID][jID, i] * bond_geometry[iID][jID, i]
         for j in i:dof
@@ -50,6 +57,7 @@ function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, nlist::Su
       stress_integral[iID, :, :] += (volume[nID] * omega[iID] * bond_damage[iID][jID] * (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])) .* bond_stresses[iID][jID, :, :] * temp
     end
   end
+  return stress_integral
 end
 
 """
@@ -189,7 +197,10 @@ function compute_bond_associated_weighted_volume(nodes::Union{SubArray,Vector{In
   end
   return weighted_volume
 end
+"""
+accuracy_order::Int64 - needs a number of bonds which are linear independent
 
+"""
 
 function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{Float64}, horizon::Union{Int64,Float64})
 
@@ -197,9 +208,9 @@ function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{
   counter = 1
   p = zeros(Int64, dof)
   for this_order in 1:accuracy_order
-    for p[1] in 0:this_order
+    for p[1] in this_order:-1:0
       if dof == 3
-        for p[2] in 0:(this_order-p[1])
+        for p[2] in this_order-p[1]:-1:0
           p[3] = this_order - p[1] - p[2]
           # Calculate the product for Q[counter]
           Q[counter] = prod((undeformed_bond ./ horizon) .^ p)
@@ -214,24 +225,28 @@ function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{
   end
   return Q
 end
-
-
-function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, qdim::Int64, accuracy_order::Int64, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
+function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, qdim::Int64, accuracy_order::Int64, volume::Union{SubArray,Vector{Float64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, horizon::Union{SubArray,Vector{Float64}}, bond_damage::Union{SubArray,Vector{Vector{Float64}}}, omega::Union{SubArray,Vector{Vector{Float64}}}, undeformed_bond, gradient_weights)
   #https://arxiv.org/pdf/2004.11477
   # maybe as static array
   M = zeros(Float64, qdim, qdim)
+  Minv = zeros(Float64, qdim, qdim)
   for iID in nodes
-    for (jID, nID) in enumerate(nlist)
+    for (jID, nID) in enumerate(nlist[iID])
       Q = calculate_Q(accuracy_order, dof, undeformed_bond[iID][jID, :], horizon[iID])
-      M += omega[iID][jID] * bond_damage[iID][jID] * volume[nID] .* Q * transpose(Q)
+      M += omega[iID][jID] * bond_damage[iID][jID] * volume[nID] .* Q * Q'
     end
-    Minv = inv(M)
-    for (jID, nID) in enumerate(nlist)
-      Q = calculate_Q(accuracy_order, dof, deformed_bond[iID][jID, :], horizon[iID])
+    try
+      Minv = inv(M)
+    catch
+      @error "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this."
+      return nothing
+    end
+    for (jID, nID) in enumerate(nlist[iID])
+      Q = calculate_Q(accuracy_order, dof, undeformed_bond[iID][jID, :], horizon[iID])
       # this comes from Eq(19) in 10.1007/s40571-019-00266-9
       # or example 1 in https://arxiv.org/pdf/2004.11477
       for idof in 1:dof
-        gradient_weights[iID][jID, idof] = Minv[idof, :]' * Q ./ horizon
+        gradient_weights[iID][jID, idof] = omega[iID][jID] / horizon[iID] .* (Minv[idof, :]' * Q)
       end
     end
   end

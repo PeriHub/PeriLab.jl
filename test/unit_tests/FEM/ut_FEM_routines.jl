@@ -9,20 +9,20 @@ include("../../../src/FEM/Element_formulation/lagrange_element.jl")
 using Test
 
 @testset "ut_jacobi" begin
-    test_Data_manager = PeriLab.Data_manager
-    test_Data_manager.clear_data_manager()
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.clear_data_manager()
     dof = 2
     nelements = 1
-    test_Data_manager.set_dof(dof)
-    test_Data_manager.set_num_elements(nelements)
-    test_Data_manager.set_num_controller(4)
-    test_Data_manager.create_node_field("Force Densities", Float64, dof)
+    test_data_manager.set_dof(dof)
+    test_data_manager.set_num_elements(nelements)
+    test_data_manager.set_num_controller(4)
+    test_data_manager.create_node_field("Force Densities", Float64, dof)
 
-    coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, dof)
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
         "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
 
-    topology = test_Data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
+    topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
     topology[1, 1] = 1
     topology[1, 2] = 2
     topology[1, 3] = 3
@@ -31,13 +31,13 @@ using Test
     p = get_polynomial_degree(params["FEM"]["FE_1"], dof)
     num_int = get_number_of_integration_points(p, dof)
 
-    N = test_Data_manager.create_constant_free_size_field("N Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, dof))
-    B = test_Data_manager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
+    N = test_data_manager.create_constant_free_size_field("N Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, dof))
+    B = test_data_manager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
 
     N, B = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
 
-    jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
-    determinant_jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
+    jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
+    determinant_jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
     test_jacobian, test_determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
     @test isnothing(test_jacobian)
     @test isnothing(test_determinant_jacobian)
@@ -113,18 +113,18 @@ using Test
 end
 
 @testset "ut_lumped_mass" begin
-    test_Data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_manager
     dof = 2
     nelements = 1
-    test_Data_manager.set_dof(dof)
-    test_Data_manager.set_num_elements(nelements)
-    test_Data_manager.set_num_controller(4)
+    test_data_manager.set_dof(dof)
+    test_data_manager.set_num_elements(nelements)
+    test_data_manager.set_num_controller(4)
 
-    coordinates = test_Data_manager.create_constant_node_field("Coordinates", Float64, dof)
+    coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, dof)
     params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model")),
         "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3)))
 
-    topology = test_Data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
+    topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
     topology[1, 1] = 1
     topology[1, 2] = 2
     topology[1, 3] = 3
@@ -133,11 +133,11 @@ end
     p = get_polynomial_degree(params["FEM"]["FE_1"], dof)
     num_int = get_number_of_integration_points(p, dof)
 
-    N = test_Data_manager.create_constant_free_size_field("N Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, dof))
-    B = test_Data_manager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
+    N = test_data_manager.create_constant_free_size_field("N Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, dof))
+    B = test_data_manager.create_constant_free_size_field("B Matrix", Float64, (prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3))
 
     N[:], B[:] = create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
-    lumped_mass = test_Data_manager.create_constant_node_field("Lumped Mass Matrix", Float64, 1)
+    lumped_mass = test_data_manager.create_constant_node_field("Lumped Mass Matrix", Float64, 1)
 
     matrix = zeros(3, 3)
     nu = 0.3
@@ -190,11 +190,11 @@ end
     coordinates[3, 2] = 1
     coordinates[4, 1] = 1
     coordinates[4, 2] = 1
-    jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
-    determinant_jacobian = test_Data_manager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
+    jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Matrix", Float64, (nelements, prod(num_int), dof, dof))
+    determinant_jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Determinant", Float64, (nelements, prod(num_int)))
     jacobian, determinant_jacobian = get_Jacobian(elements, dof, topology, coordinates, B, jacobian, determinant_jacobian)
-    N = test_Data_manager.get_field("N Matrix")
-    rho = test_Data_manager.create_constant_node_field("Density", Float64, 1)
+    N = test_data_manager.get_field("N Matrix")
+    rho = test_data_manager.create_constant_node_field("Density", Float64, 1)
 
     rho[:] .= 1.0
     lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
