@@ -13,14 +13,83 @@ const to = TimerOutput()
 @testset "ut_correspondence_name" begin
     @test Bond_Associated_Correspondence.correspondence_name() == "Correspondence Bond-Associated"
 end
-
-@testset "ut_init_Bond-Associated" begin
+@testset "ut_compute_weighted_volume" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.clear_data_manager()
     test_data_manager.set_num_controller(4)
     test_data_manager.set_dof(3)
+
+    volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
+    volume[:] = [1.0, 2.0, 3.0, 4.0]
+
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nodes = Vector{Int64}(1:4)
+    nn[1] = 3
+    nn[2:4] .= 1
+    nodes = [1]
+
+    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist[1] = [2, 3, 4]
+    nlist[2] = [1]
+    nlist[3] = [1]
+    nlist[4] = [1]
+
+    bond_damage = test_data_manager.create_constant_bond_field("Bond Damage", Float64, 1)
+    bond_damage[1][:] .= 1
+    omega = test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
+    omega[1][:] = [1.0, 0.8, 0.6]
+    weighted_volume = test_data_manager.create_constant_node_field("Weighted Volume", Float64, 1)
+
+
+    result = Bond_Associated_Correspondence.compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+
+    expected_weighted_volume = sum(bond_damage[1][:] .* omega[1][:] .* volume[nlist[1]])
+    @test isapprox(result[1], expected_weighted_volume)
+
+end
+
+
+@testset "ut_compute_Lagrangian_gradient_weights" begin
+    nodes = [1, 2]
+    dof = 2
+    accuracy_order = 2
+    nlist = [[2, 3, 5, 6, 7], [1, 3, 4, 5, 6, 7]]# tbd
+    horizon = [1.0, 1.0]
+    bond_damage = [[0.9, 0.8, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
+    omega = [[1.0, 1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
+    undeformed_bond = [[1.0 0.0; 0.0 1.0; 1.0 2.0; 0.2 1.0; 2.0 1.0], [-6.0 8.5; 6.0 1.5; 6.0 2.5; -0.9 0.8; 1.0 -0.9; 0.0 -0.9]]
+    volume = [1.0, 2.0, 1.0, 1.0, 1.0, 4.0, 1.0, 1.0]
+    gradient_weights = [[0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0], [0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0]]
+
+    gradient_weights = Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
+
+    @test isapprox(gradient_weights[1][1, :], [0.5555555555555571, -0.2777777777777777])
+    @test isapprox(gradient_weights[1][2, :], [-3.125000000000102, -1.2500000000000462])
+    @test isapprox(gradient_weights[1][3, :], [7.105427357601002e-15, -0.5])
+    @test isapprox(gradient_weights[1][4, :], [0.6944444444444704, 0.6944444444444562])
+    @test isapprox(gradient_weights[1][5, :], [-0.2777777777777821, 0.22222222222221788])
+
+    @test isapprox(gradient_weights[2][1, :], [0.0008338678006687417, 0.010443292032181972])
+    @test isapprox(gradient_weights[2][2, :], [-0.11142760668950946, -0.06982123424402786])
+    @test isapprox(gradient_weights[2][3, :], [0.09771932233446412, 0.06511412698788455])
+    @test isapprox(gradient_weights[2][4, :], [-0.36478006840748456, -0.17392108050722965])
+    @test isapprox(gradient_weights[2][5, :], [0.189737712841881, -0.016406644181643948])
+end
+@testset "ut_init_Bond-Associated" begin
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.clear_data_manager()
+    test_data_manager.set_num_controller(2)
+    test_data_manager.set_dof(3)
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn .= 1
+    nodes = Vector{Int64}(1:2)
+    test_data_manager.create_constant_node_field("Volume", Float64, 1)
+    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist[1] = [2]
+    nlist[2] = [1]
+    test_data_manager.create_constant_node_field("Horizon", Float64, 1)
+    test_data_manager.create_bond_field("Bond Damage", Float64, 1)
+    test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
+    test_data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
 
     @test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict()))
 
@@ -33,7 +102,7 @@ end
     @test "Bond Cauchy StressN" in test_data_manager.get_all_field_keys()
     @test "Bond Cauchy StressNP1" in test_data_manager.get_all_field_keys()
     @test "Bond Strain Increment" in test_data_manager.get_all_field_keys()
-    @test "Bond Weighted Volume" in test_data_manager.get_all_field_keys()
+    @test "Weighted Volume" in test_data_manager.get_all_field_keys()
     @test "Lagrangian Gradient Weights" in test_data_manager.get_all_field_keys()
 
     material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
@@ -132,25 +201,6 @@ end
     @test Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0) == [0, 1, 0]
     undeformed_bond = [0.0, 0.0, 1.0]
     @test Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0) == [0, 0, 1]
-end
-@testset "ut_compute_Lagrangian_gradient_weights" begin
-    nodes = [1, 2]
-    dof = 3
-    qdim = 9
-    accuracy_order = 2
-    nlist = [[2, 3, 5, 6, 7], [1, 3, 4, 5, 6, 7]]# tbd
-    horizon = [1.0, 1.0]
-    bond_damage = [[0.9, 0.8, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
-    omega = [[1.0, 1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
-    undeformed_bond = [[1.0 0.0 0.0; 0.0 1.0 0.0; 1.0 2.0 5; 0.0 1.0 1.0; 2.0 1.0 1.0], [-6.0 8.5 2; 6.0 1.5 2; 6.0 2.5 5; -0.9 0.8 0.1; 1.0 -0.9 0.2; 0.0 -0.9 0.2]]
-    volume = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-    gradient_weights = [[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0], [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]]
-
-    gradient_weights = Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes, dof, qdim, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
-
-    @test isapprox(gradient_weights[1][:], [2.28125, 0.5, 0.5, -0.25, -0.625, -0.125, -0.052109066205533794, -0.4375, 1.455078125, 0.5, 0.15625, -2.125, -0.125, 1.875, 0.0625])
-
-    @test isapprox(gradient_weights[2][:], [0.0012369601821692333, -0.03382323766941053, -0.006481215557232245, -0.20526883154875758, 0.2312955695281001, -0.2774482376609969, -0.006243107506445966, -0.018203513750354894, -0.0023387447599407807, 0.38834658871731265, 0.06936211266128167, -0.376723321917216, -0.025025064685230802, 0.007650389750137876, -0.014050789610079661, 0.6916462673154423, 0.7237356806277135, 0.3279228446136444])
 end
 
 @testset "ut_find_local_neighbors" begin
