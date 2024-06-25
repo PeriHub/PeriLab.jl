@@ -167,11 +167,14 @@ function compute_deviatoric_force_state_norm(nodes::Union{SubArray,Vector{Int64}
   td_norm = @MVector zeros(Float64, maximum(nodes))
   for iID in nodes
     td_trial = bond_force_deviatoric[iID] - alpha .* bond_damage[iID] .* omega[iID] .* deviatoric_plastic_extension_state[iID]
-    td_norm[iID] = sum(td_trial .* td_trial .* volume[nlist[iID]])
+    td_norm[iID] = sqrt(sum(td_trial .* td_trial .* volume[nlist[iID]]))
   end
 
-  return sqrt.(td_norm)
+  return td_norm
 end
+
+
+
 
 """
     plastic(nodes::Union{SubArray,Vector{Int64}}, 
