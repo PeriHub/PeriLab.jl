@@ -50,13 +50,13 @@ PeriLab:
     BC_1:
       Coordinate: y
       Node Set: Node Set 1
-      Variable: Force Densities
-      Value: 50000*t
+      Variable: Forces
+      Value: 30000*t
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
-      Variable: Force Densities
-      Value: -50000*t
+      Variable: Forces
+      Value: -30000*t
     BC_3:
       Coordinate: x
       Node Set: Node Set 1
@@ -78,7 +78,7 @@ PeriLab:
         Poisson's Ratio: 0.33
     Damage Models:
       Damage:
-        Critical Value: 19.550259414225938
+        Critical Value: 0.05
         Damage Model: Critical Energy
   Compute Class Parameters:
     External_Forces:
@@ -104,6 +104,7 @@ PeriLab:
         Displacements: true
         Forces: true
         Number of Neighbors: true
+        von Mises Stress: True
         # Strain: True
         # Cauchy Stress: True
     Output2:
@@ -119,5 +120,6 @@ PeriLab:
     Material Models: true
     Damage Models: true
     Numerical Damping: 5.0e-06
+    Calculate von Mises: true
     Verlet:
       Safety Factor: 0.95

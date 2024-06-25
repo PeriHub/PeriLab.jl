@@ -171,7 +171,7 @@ function apply_bc_dirichlet_force(bcs::Dict, datamanager::Module, time::Float64)
         end
         if bc["Variable"] == "ForcesNP1"
             field_to_apply_bc = datamanager.get_field("External Forces")
-        elseif bc["Variable"] == "Forces DensitiesNP1"
+        elseif bc["Variable"] == "Force DensitiesNP1"
             field_to_apply_bc = datamanager.get_field("External Force Densities")
         else
             continue

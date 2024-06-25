@@ -8,21 +8,25 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.6] - 2024
+## [1.1.6] - 2024-06-24
 
 ### Added
 
 - Bond associated basis
 - Many tests
+- Element support for exodus export #20
+- State variable in exodus export #148
 
 ### Fixed
 
 - FEM basis, not yet coupled with PD #132
+- Testset continues running after error
 
 ### Changed
 
 - Moved datamanager #61
-- Code cleaning
+- Code cleaning and test coverage
+- Optimized handling with specific volume
 
 ## [1.1.5] - 2024-05-13
 
