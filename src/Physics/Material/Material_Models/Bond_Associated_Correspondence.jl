@@ -32,12 +32,27 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   datamanager.create_bond_field("Bond Strain", Float64, "Matrix", dof)
   datamanager.create_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
   datamanager.create_constant_bond_field("Bond Strain Increment", Float64, "Matrix", dof)
-  weighted_volume = datamanager.create_constant_bond_field("Bond Weighted Volume", Float64, 1)
-  datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
+  weighted_volume = datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
+  gradient_weights = datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
+  volume = datamanager.get_field("Volume")
+  nlist = datamanager.get_nlist()
+  horizon = datamanager.get_field("Horizon")
 
-  #qlen = qdim(accuracy_order)
-  #datamanager.set_property(block_id, "Material Model", "Qdim", qlen)
+  bond_damage = datamanager.get_field("Bond Damage", "NP1")
+  omega = datamanager.get_field("Influence Function")
+  undeformed_bond = datamanager.get_field("Bond Geometry")
+
+  gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
+  weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+
   return datamanager
+end
+
+function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, volume::SubArray, bond_damage::SubArray, omega::SubArray, weighted_volume::SubArray)
+  for iID in nodes
+    weighted_volume = sum(bond_damage[iID][:] .* omega[iID][:] .* volume[nlist[iID]])
+  end
+  return weighted_volume
 end
 
 
@@ -225,12 +240,13 @@ function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{
   end
   return Q
 end
-function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, qdim::Int64, accuracy_order::Int64, volume::Union{SubArray,Vector{Float64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, horizon::Union{SubArray,Vector{Float64}}, bond_damage::Union{SubArray,Vector{Vector{Float64}}}, omega::Union{SubArray,Vector{Vector{Float64}}}, undeformed_bond, gradient_weights)
+function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, accuracy_order::Int64, volume::Union{SubArray,Vector{Float64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, horizon::Union{SubArray,Vector{Float64}}, bond_damage::Union{SubArray,Vector{Vector{Float64}}}, omega::Union{SubArray,Vector{Vector{Float64}}}, undeformed_bond, gradient_weights)
   #https://arxiv.org/pdf/2004.11477
   # maybe as static array
-  M = zeros(Float64, qdim, qdim)
-  Minv = zeros(Float64, qdim, qdim)
+  dim = qdim(accuracy_order, dof)
+  Minv = zeros(Float64, dim, dim)
   for iID in nodes
+    M = zeros(Float64, dim, dim)
     for (jID, nID) in enumerate(nlist[iID])
       Q = calculate_Q(accuracy_order, dof, undeformed_bond[iID][jID, :], horizon[iID])
       M += omega[iID][jID] * bond_damage[iID][jID] * volume[nID] .* Q * Q'
