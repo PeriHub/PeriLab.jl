@@ -949,7 +949,7 @@ Sets the block list globally.
 - `blocks::Union{SubArray,Vector{Int64}}`: The block list.
 """
 function set_block_list(blocks::Union{SubArray,Vector{Int64}})
-    global block_list = sort(unique(blocks))
+    global block_list = sort!(unique(blocks))
 end
 
 """

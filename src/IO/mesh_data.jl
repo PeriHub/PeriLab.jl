@@ -1019,7 +1019,7 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, distributi
             end
         end
         # only single new elements where added
-        append!(distribution[i], sort(unique(tempid)))
+        append!(distribution[i], sort!(unique(tempid)))
         append!(ntype["responder"], length(unique(tempid)))
     end
     return distribution, ptc, ntype
