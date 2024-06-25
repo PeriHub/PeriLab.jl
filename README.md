@@ -211,10 +211,17 @@ $ julia --project=. src/main.jl examples/DCB/DCBmodel.yaml
 For any questions or inquiries about PeriLab.jl, feel free to reach out to the authors via email.
 
 ## Authors and acknowledgment
+<p>
 
-<a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
+<a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Prof. Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
+
+</p>
+
+<p>
 
 <a href="https://orcid.org/0000-0002-3006-1520"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
+
+</p>
 
 ## Project status
 `PeriLab` is currently in development.
