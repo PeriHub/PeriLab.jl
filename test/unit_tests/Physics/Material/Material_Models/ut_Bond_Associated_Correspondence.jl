@@ -146,11 +146,11 @@ end
     volume = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
     gradient_weights = [[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0], [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]]
 
-    test = Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes, dof, qdim, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
+    gradient_weights = Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes, dof, qdim, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
 
-    @test isapprox(test[1][:], [2.28125, 0.5, 0.5, -0.25, -0.625, -0.125, -0.052109066205533794, -0.4375, 1.455078125, 0.5, 0.15625, -2.125, -0.125, 1.875, 0.0625])
+    @test isapprox(gradient_weights[1][:], [2.28125, 0.5, 0.5, -0.25, -0.625, -0.125, -0.052109066205533794, -0.4375, 1.455078125, 0.5, 0.15625, -2.125, -0.125, 1.875, 0.0625])
 
-    @test isapprox(test[2][:], [0.0012369601821692333, -0.03382323766941053, -0.006481215557232245, -0.20526883154875758, 0.2312955695281001, -0.2774482376609969, -0.006243107506445966, -0.018203513750354894, -0.0023387447599407807, 0.38834658871731265, 0.06936211266128167, -0.376723321917216, -0.025025064685230802, 0.007650389750137876, -0.014050789610079661, 0.6916462673154423, 0.7237356806277135, 0.3279228446136444])
+    @test isapprox(gradient_weights[2][:], [0.0012369601821692333, -0.03382323766941053, -0.006481215557232245, -0.20526883154875758, 0.2312955695281001, -0.2774482376609969, -0.006243107506445966, -0.018203513750354894, -0.0023387447599407807, 0.38834658871731265, 0.06936211266128167, -0.376723321917216, -0.025025064685230802, 0.007650389750137876, -0.014050789610079661, 0.6916462673154423, 0.7237356806277135, 0.3279228446136444])
 end
 
 @testset "ut_find_local_neighbors" begin
@@ -189,5 +189,5 @@ end
     # Call the function under test
     weighted_volume = Bond_Associated_Correspondence.compute_bond_associated_weighted_volume(nodes, nlist, coordinates, bond_damage, omega, volume, bond_horizon, weighted_volume)
     # Check the expected output
-    @test weighted_volume ≈ [[0.7058823529411765, 0.2941176470588235], [1.0, 0.0], [0.5714285714285715, 0.4285714285714286]]
+    @test isapprox(weighted_volume, [[0.7058823529411765, 0.2941176470588235], [1.0, 0.0], [0.5714285714285715, 0.4285714285714286]])
 end
