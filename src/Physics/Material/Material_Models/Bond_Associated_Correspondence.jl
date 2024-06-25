@@ -16,29 +16,36 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
     return nothing
   end
-  nlist = datamanager.get_field("Neighborhoodlist")
-  coordinates = datamanager.get_field("Coordinates")
+  if !haskey(material_parameter, "Accuracy Order")
+    @warn "No Accuracy Order has been defined it is set to 1."
+    merge!(material_parameter, Dict("Accuracy Order" => 1))
+  end
   accuracy_order = material_parameter["Accuracy Order"]
+  if typeof(accuracy_order) != Int
+    @error "Accuracy Order must be an integer."
+    return nothing
+  elseif accuracy_order < 1
+    @error "Accuracy Order must be an greater than zero."
+    return nothing
+  end
   dof = datamanager.get_dof()
   datamanager.create_bond_field("Bond Strain", Float64, "Matrix", dof)
   datamanager.create_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
   datamanager.create_constant_bond_field("Bond Strain Increment", Float64, "Matrix", dof)
   weighted_volume = datamanager.create_constant_bond_field("Bond Weighted Volume", Float64, 1)
-  qlen = qdim(accuracy_order)
-  datamanager.set_property(block_id, "Material Model", "Qdim", qlen)
-  q_term = datamanager.create_constant_bond_field("Q_term", Float64, qdim)
-  horizon = datamanager.get_field("Horizon")
-  undeformed_bond = datamanager.get_field("Bond Geometry")
-  #q_term = compute_q_term(nodes, horizon, undeformed_bond,)
+  datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
+
+  #qlen = qdim(accuracy_order)
+  #datamanager.set_property(block_id, "Material Model", "Qdim", qlen)
   return datamanager
 end
 
 
-function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, stress_integral::SubArray)
+function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::Union{Vector{Vector{Int64}},SubArray}, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, stress_integral::SubArray)
   temp::Matrix{Float64} = zeros(dof, dof)
   for iID in nodes
     stress_integral[iID, :, :] .= 0.0
-    for (jID, nID) in eachindex(nlist[iID])
+    for (jID, nID) in enumerate(nlist[iID])
       for i in 1:dof
         temp[i, i] = 1 - bond_geometry[iID][jID, i] * bond_geometry[iID][jID, i]
         for j in i:dof
@@ -50,6 +57,7 @@ function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, nlist::Su
       stress_integral[iID, :, :] += (volume[nID] * omega[iID] * bond_damage[iID][jID] * (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])) .* bond_stresses[iID][jID, :, :] * temp
     end
   end
+  return stress_integral
 end
 
 """
