@@ -6,8 +6,8 @@ include("../../../../../src/Physics/Material/Material_Models/Bond_Associated_Cor
 # include("../../../../../src/Core/data_manager.jl")
 using Test
 using TimerOutputs
-#include("../../../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../../../src/PeriLab.jl")
+using .PeriLab
 const to = TimerOutput()
 
 @testset "ut_correspondence_name" begin
