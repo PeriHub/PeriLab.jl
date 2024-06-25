@@ -7,6 +7,7 @@ using AbaqusReader
 using DataFrames
 using NearestNeighbors: BallTree
 using NearestNeighbors: inrange
+using OrderedCollections: OrderedDict
 using PrettyTables
 include("./logging.jl")
 using .Logging_module: print_table
@@ -193,7 +194,7 @@ function get_local_overlap_map(overlap_map, distribution::Vector{Vector{Int64}},
             end
         end
     end
-    return sort(overlap_map)
+    return sort!(OrderedDict(overlap_map))
 end
 
 """

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+using OrderedCollections: OrderedDict
+
 export get_computes_names
 export get_output_variables
 export get_computes
@@ -19,7 +21,7 @@ Get the names of the computes.
 function get_computes_names(params::Dict)
     if haskey(params::Dict, "Compute Class Parameters")
         computes = params["Compute Class Parameters"]
-        return string.(collect(keys(sort(computes))))
+        return string.(collect(keys(sort!(OrderedDict(computes)))))
     end
     return String[]
 end

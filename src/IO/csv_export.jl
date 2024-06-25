@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 using CSV
+using OrderedCollections: OrderedDict
 export create_result_file
 export write_global_results_in_csv
 
@@ -25,7 +26,7 @@ function create_result_file(filename::String, outputs::Dict)
     csv_file = open(filename, "w")
 
     header = "Time,"
-    for key in keys(sort(outputs["Fields"]))
+    for key in keys(sort!(OrderedDict(outputs["Fields"])))
         header = string(header, key, ",")
     end
     write(csv_file, header * "\n")
