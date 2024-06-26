@@ -61,6 +61,13 @@ global expected_structure = Dict(
                         ), false],
                     "Type" => [String, true],
                     "Distribution Type" => [String, false],
+                    "Surface Extrusion" => [Dict{Any,Any}(
+                            "Direction" => [String, true],
+                            "Step_X" => [Union{Float64,Int64}, true],
+                            "Step_Y" => [Union{Float64,Int64}, true],
+                            "Step_Z" => [Union{Float64,Int64}, true],
+                            "Number" => [Union{Float64,Int64}, true],
+                        ), false],
                     "Bond Filters" => [Dict{Any,Any}(
                             "Any" => [Dict{Any,Any}(
                                     "Type" => [String, true],
