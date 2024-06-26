@@ -78,7 +78,7 @@ PeriLab:
         Forces: True
   Solver:
     Initial Time: 0.0
-    Final Time: 1.0e-4
+    Final Time: 1.0e-5
     Material Models: True
     Damage Models: True
     Verlet:
