@@ -6,12 +6,27 @@ include("../../../../../src/Physics/Material/Material_Models/Bond_Associated_Cor
 # include("../../../../../src/Core/data_manager.jl")
 using Test
 using TimerOutputs
-#include("../../../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../../../src/PeriLab.jl")
+using .PeriLab
 const to = TimerOutput()
 
 @testset "ut_correspondence_name" begin
     @test Bond_Associated_Correspondence.correspondence_name() == "Correspondence Bond-Associated"
+end
+
+
+@testset "ut_update_Green_Langrange_strain" begin
+    dt = 0.1
+    deformation_gradient = [1.0 0.2 0.0; 0.1 1.0 0.3; 0.0 0.1 1.0]
+    deformation_gradient_dot = [0.05 0.01 0.0; 0.02 0.05 0.01; 0.0 0.02 0.05]
+    expected_strain = 0.5 * dt * (deformation_gradient * deformation_gradient_dot + (deformation_gradient * deformation_gradient_dot)')
+    computed_strain = Bond_Associated_Correspondence.update_Green_Langrange_strain(dt, deformation_gradient, deformation_gradient_dot)
+    @test isapprox(computed_strain, expected_strain)
+    deformation_gradient = zeros(3, 3)
+    deformation_gradient_dot = zeros(3, 3)
+    expected_strain = zeros(3, 3)
+    computed_strain = Bond_Associated_Correspondence.update_Green_Langrange_strain(dt, deformation_gradient, deformation_gradient_dot)
+    @test computed_strain == expected_strain
 end
 @testset "ut_compute_weighted_volume" begin
     test_data_manager = PeriLab.Data_manager

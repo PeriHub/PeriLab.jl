@@ -269,7 +269,9 @@ function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}
   return gradient_weights
 end
 
-
-
+function update_Green_Langrange_strain(dt::Float64, deformation_gradient::Matrix{Float64}, deformation_gradient_dot::Matrix{Float64})
+  A = dt * 0.5 .* (deformation_gradient * deformation_gradient_dot)
+  return A + A'
+end
 
 end
