@@ -806,6 +806,13 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
 
     if params["Discretization"]["Type"] == "Abaqus"
         mesh, nsets = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        nnodes = size(mesh, 1) + 1
+        mesh, surface_ns = extrude_surface_mesh(mesh, params)
+        if !isnothing(surface_ns)
+            for (key, values) in surface_ns
+                nsets[key] = Vector{Int64}(values .+ nnodes)
+            end
+        end
     else
         @debug "Read node sets"
         mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
@@ -1564,4 +1571,75 @@ function glob_to_loc(distribution)
         glob_to_loc[distribution[id]] = id
     end
     return glob_to_loc
+end
+
+"""
+    extrude_surface_mesh(mesh::DataFrame)
+
+extrude the mesh at the surface of the block
+
+# Arguments
+- `mesh::DataFrame`: The input mesh data represented as a DataFrame.
+- `params::Dict`: The input parameters.
+"""
+function extrude_surface_mesh(mesh::DataFrame, params::Dict)
+    if !("Surface Extrusion" in keys(params["Discretization"]))
+        return mesh, nothing
+    end
+    direction = params["Discretization"]["Surface Extrusion"]["Direction"]
+    step_x = params["Discretization"]["Surface Extrusion"]["Step_X"]
+    step_y = params["Discretization"]["Surface Extrusion"]["Step_Y"]
+    step_z = params["Discretization"]["Surface Extrusion"]["Step_Z"]
+    number = params["Discretization"]["Surface Extrusion"]["Number"]
+
+    # Finding min and max values for each dimension
+    min_x, max_x = extrema(mesh.x)
+    min_y, max_y = extrema(mesh.y)
+    min_z = 0.0
+    max_z = 0.0
+    if "z" in names(mesh)
+        min_z, max_z = extrema(mesh.z)
+    end
+
+    if direction == "X"
+        coord_min = min_x
+        coord_max = max_x
+        row_min = min_y
+        row_max = max_y
+    elseif direction == "Y"
+        coord_min = min_y
+        coord_max = max_y
+        row_min = min_x
+        row_max = max_x
+    end
+
+    block_id = maximum(mesh.block_id) + 1
+    volume = step_x * step_y * step_z
+
+    id = 0
+
+    node_sets = Dict("Extruded_1" => [], "Extruded_2" => [])
+
+    for i in coord_max+step_x:step_x:coord_max+step_x*number, j in row_min:step_y:row_max+step_y, k in min_z:step_z:max_z
+        if direction == "X"
+            push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
+        elseif direction == "Y"
+            push!(mesh, (x=j, y=i, z=k, volume=volume, block_id=block_id))
+        end
+        append!(node_sets["Extruded_1"], [Int64(id)])
+        id += 1
+    end
+
+    block_id += 1
+
+    for i in coord_min-step_x:-step_x:coord_min-step_x*number, j in row_min:step_y:row_max+step_y, k in min_z:step_z:max_z
+        if direction == "X"
+            push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
+        elseif direction == "Y"
+            push!(mesh, (x=j, y=i, z=k, volume=volume, block_id=block_id))
+        end
+        append!(node_sets["Extruded_2"], [Int64(id)])
+        id += 1
+    end
+    return mesh, node_sets
 end
