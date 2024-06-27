@@ -5,9 +5,10 @@
 module Bond_Associated_Correspondence
 using LinearAlgebra
 include("../../../Support/geometry.jl")
-using .Geometry: strain
+using .Geometry: strain, compute_left_stretch_tensor, compute_weighted_deformation_gradient
 include("../../../Support/helpers.jl")
 using .Helpers: qdim
+
 
 using TimerOutputs
 using NearestNeighbors: BallTree, inrange
@@ -34,16 +35,10 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   datamanager.create_constant_bond_field("Bond Strain Increment", Float64, "Matrix", dof)
   weighted_volume = datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
   gradient_weights = datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
-  volume = datamanager.get_field("Volume")
-  nlist = datamanager.get_nlist()
-  horizon = datamanager.get_field("Horizon")
+  integral_stress = datamanager.create_constant_bond_field("Integral Nodal Stress", Float64, "Matrix", dof)
 
-  bond_damage = datamanager.get_field("Bond Damage", "NP1")
-  omega = datamanager.get_field("Influence Function")
-  undeformed_bond = datamanager.get_field("Bond Geometry")
-
-  gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
-  weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+  deformation_gradient = datamanager.create_constant_bond_field("Bond Deformation Gradient", Float64, "Matrix", dof)
+  deformation_gradient_dot = datamanager.create_constant_bond_field("Bond Rated Deformation Gradient", Float64, "Matrix", dof)
 
   return datamanager
 end
@@ -123,30 +118,49 @@ end
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
   rotation::Bool, angles = datamanager.rotation_data()
+
   dof = datamanager.get_dof()
   nlist = datamanager.get_field("Neighborhoodlist")
-  coordinates = datamanager.get_field("Coordinates")
 
   bond_damage = datamanager.get_bond_damage("NP1")
+
   omega = datamanager.get_field("Influence Function")
   volume = datamanager.get_field("Volume")
-  weighted_volume = datamanager.get_field("Bond Weighted Volume")
-  bond_horizon = material_parameter["Bond Horizon"]
-  weighted_volume = compute_bond_associated_weighted_volume(nodes, nlist, coordinates, bond_damage, omega, volume, bond_horizon, weighted_volume)
+
+  bond_length = datamanager.get_field("Bond Length")
 
   undeformed_bond = datamanager.get_field("Bond Geometry")
-  inverse_shape_tensor = datamanager.get_field("Inverse Bond Associated Shape Tensor")
+
   strain_N = datamanager.get_field("Bond Strain", "N")
   strain_NP1 = datamanager.get_field("Bond Strain", "NP1")
-  stress_N = datamanager.get_field("Cauchy Stress", "N")
-  stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
+
+  integral_stress = datamanager.get_field("Integral Nodal Stress")
+
   stress_N = datamanager.get_field("Bond Cauchy Stress", "N")
   stress_NP1 = datamanager.get_field("Bond Cauchy Stress", "NP1")
-  strain_increment = datamanager.get_field("Bond Strain Increment")
 
-  deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
+  strain_increment = datamanager.get_field("Bond Strain Increment")
   bond_force = datamanager.get_field("Bond Forces")
 
+  gradient_weight = datamanager.get_field("Lagrangian Gradient Weights")
+  weighted_volume = datamanager.get_field("Weighted Volume")
+
+  displacments = datamanager.get_field("Displacement", "NP1")
+  velocity = datamanager.get_field("Velocity", "NP1")
+  accuracy_order = material_parameter["Accuracy Order"]
+
+  deformation_gradient = datamanager.get_field("Bond Deformation Gradient")
+  deformation_gradient_dot = datamanager.get_field("Bond Rated Deformation Gradient")
+
+
+  gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
+  weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+
+  deformation_gradient, deformation_gradient_dot = compute_weighted_deformation_gradient(nodes, dof, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
+
+
+  strain_increment = update_Green_Langrange_bond_strain_increment(nodes, nlist, dt, deformation_gradient, deformation_gradient_dot, strain_increment)
+  strain_NP1[:][:, :, :] = strain_N[:][:, :, :] .+ strain_increment[:][:, :, :]
   if rotation
     stress_N = rotate(nodes, dof, stress_N, angles, false)
     strain_increment = rotate(nodes, dof, strain_increment, angles, false)
@@ -154,12 +168,14 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
   material_models = split(material_parameter["Material Model"], "+")
   material_models = map(r -> strip(r), material_models)
+
   for material_model in material_models
     mod = datamanager.get_model_module(material_model)
     for iID in nodes
       for (jID, nID) in enumerate(nlist)
-        strain_NP1[iID][jID, :, :] = strain(nodes, deformation_gradient[iID][:, :, :], strain_NP1[iID][:, :, :])
-        strain_increment[iID][jID, :, :] = strain_NP1[iID][:, :, :] - strain_N[iID][:, :, :]
+
+
+        strain_increment = compute_stra
 
         stress_NP1[iID][jID, :, :], datamanager = mod.compute_stresses(datamanager, nID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (iID, jID))
 
@@ -169,8 +185,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   if rotation
     stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
   end
-  bond_force = calculate_bond_force(nodes, deformation_gradient, undeformed_bond, bond_damage, inverse_shape_tensor, stress_NP1, bond_force)
-
+  bond_force = compute_bond_forces(nodes, nlist, bond_geometry, bond_length, bond_stress, integratal_nodal_stress, weighted_volume, gradient_weights, omega, bond_damage, bond_force)
   return datamanager
 
 end
@@ -269,9 +284,43 @@ function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}
   return gradient_weights
 end
 
+function update_Green_Langrange_nodal_strain_increment(nodes::Union{SubArray,Vector{Int64}}, dt::Float64, deformation_gradient::SubArray, deformation_gradient_dot::SubArray, strain_increment::SubArray)
+
+  for iID in nodes
+    strain_increment[iID, :, :] = update_Green_Langrange_strain(dt, deformation_gradient[iID, :, :], deformation_gradient_dot[iID, :, :])
+  end
+
+end
+
+function update_Green_Langrange_bond_strain_increment(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, dt::Float64, deformation_gradient::SubArray, deformation_gradient_dot::SubArray, strain_increment::SubArray)
+
+  for iID in nodes
+    for jID in nlist[iID]
+      strain_increment[iID][jID, :, :] = update_Green_Langrange_strain(dt, deformation_gradient[iID][jID, :, :], deformation_gradient_dot[iID][jID, :, :])
+    end
+  end
+
+end
+
 function update_Green_Langrange_strain(dt::Float64, deformation_gradient::Matrix{Float64}, deformation_gradient_dot::Matrix{Float64})
+  # later in Geometry.jl
   A = dt * 0.5 .* (deformation_gradient * deformation_gradient_dot)
   return A + A'
 end
+
+function compute_bond_forces(nodes, nlist, bond_geometry, bond_length, bond_stress, integratal_nodal_stress, weighted_volume, gradient_weights, omega, bond_damage, bond_forces)
+
+  for iID in nodes
+    for (jID, nID) in enumerate(nlist[iID])
+      if bond_damage[iID][jID] == 0
+        continue
+      end
+      bond_forces[iID][jID] = bond_damage[iID][jID] * omega[iID][jID] / (weighted_volume[iID] * bond_length[iID][jID]) .* bond_stress[iID][jID, :, :] * bond_geometry[iID][jID, :]
+      bond_forces[iID][jID] += integratal_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
+    end
+  end
+  return bond_forces
+end
+
 
 end

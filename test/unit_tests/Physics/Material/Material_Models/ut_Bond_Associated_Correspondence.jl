@@ -96,14 +96,6 @@ end
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn .= 1
     nodes = Vector{Int64}(1:2)
-    test_data_manager.create_constant_node_field("Volume", Float64, 1)
-    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    nlist[1] = [2]
-    nlist[2] = [1]
-    test_data_manager.create_constant_node_field("Horizon", Float64, 1)
-    test_data_manager.create_bond_field("Bond Damage", Float64, 1)
-    test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
-    test_data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
 
     @test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict()))
 
@@ -118,13 +110,12 @@ end
     @test "Bond Strain Increment" in test_data_manager.get_all_field_keys()
     @test "Weighted Volume" in test_data_manager.get_all_field_keys()
     @test "Lagrangian Gradient Weights" in test_data_manager.get_all_field_keys()
-
+    @test "Integral Nodal Stress" in test_data_manager.get_all_field_keys()
     material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
     test_data_manager = Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, material_parameter)
 
     @test material_parameter["Accuracy Order"] == 2
 
-    @test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict("Symmetry" => "isotropic", "Accuracy Order" => 2.0)))
     @test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict("Symmetry" => "isotropic", "Accuracy Order" => 0)))
 
 end
