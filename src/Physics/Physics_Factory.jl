@@ -4,6 +4,7 @@
 
 module Physics
 include("../Support/helpers.jl")
+include("./Material/material_basis.jl")
 using Reexport
 @reexport using .Helpers: check_inf_or_nan, find_active, get_active_update_nodes
 include("./Additive/Additive_Factory.jl")
@@ -111,11 +112,18 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
                 @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, model_param, time, dt, to)
                 #TODO: I think this needs to stay here as we need the active_nodes not the update_nodes
                 @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, active_nodes)
-                if options["Calculate Cauchy"] | options["Calculate von Mises"]
-                    datamanager = get_partial_stresses(datamanager, active_nodes)
-                end
-                if options["Calculate von Mises"]
-                    datamanager = Material.calculate_von_mises_stress(datamanager, active_nodes)
+                if !occursin("Correspondence", model_param["Material Model"])
+                    if options["Calculate Cauchy"] | options["Calculate von Mises"] | options["Calculate Strain"]
+                        datamanager = get_partial_stresses(datamanager, active_nodes)
+                    end
+                    if options["Calculate von Mises"]
+                        datamanager = Material.calculate_von_mises_stress(datamanager, active_nodes)
+                    end
+                    if options["Calculate Strain"]
+                        material_parameter = datamanager.get_properties(block, "Material Model")
+                        hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], datamanager.get_dof())
+                        datamanager = Material.calculate_strain(datamanager, active_nodes, hookeMatrix)
+                    end
                 end
             end
         end
@@ -245,6 +253,9 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     end
     if solver_options["Calculate Cauchy"] | solver_options["Calculate von Mises"]
         datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
+    end
+    if solver_options["Calculate Strain"]
+        datamanager.create_node_field("Strain", Float64, "Matrix", dof)
     end
     if solver_options["Calculate von Mises"]
         datamanager.create_node_field("von Mises Stress", Float64, 1)

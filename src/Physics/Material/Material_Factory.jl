@@ -211,4 +211,24 @@ function calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,V
     return datamanager
 end
 
+"""
+    calculate_strain(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, hooke_matrix::Matrix{Float64})
+
+Calculate the von Mises stress.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `hooke_matrix::Matrix{Float64}`: The hooke matrix.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
+function calculate_strain(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, hooke_matrix::Matrix{Float64})
+    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
+    strain = datamanager.get_field("Strain", "NP1")
+    for iID in nodes
+        strain[iID, :, :] = get_strain(stress_NP1[iID, :, :], hooke_matrix)
+    end
+    return datamanager
+end
 end

@@ -52,30 +52,36 @@ PeriLab:
       Node Set: Node Set 1
       Variable: Forces
       Value: 30000*t
+      Type: Dirichlet
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
       Variable: Forces
       Value: -30000*t
+      Type: Dirichlet
     BC_3:
       Coordinate: x
       Node Set: Node Set 1
       Variable: Displacements
       Value: "0"
+      Type: Dirichlet
     BC_4:
       Coordinate: x
       Node Set: Node Set 2
       Variable: Displacements
       Value: "0"
+      Type: Dirichlet
   Physics:
     Material Models:
       Aluminium:
         Density: 2.81e-09
+        # Material Model: Correspondence Elastic + Correspondence Plastic
         Material Model: PD Solid Elastic
         Symmetry: isotropic plane stress
-        # Zero Energy Control: Global
+        Zero Energy Control: Global
         Young's Modulus: 71700.0
         Poisson's Ratio: 0.33
+        # Yield Stress: 74
     Damage Models:
       Damage:
         Critical Value: 0.05
@@ -104,9 +110,9 @@ PeriLab:
         Displacements: true
         Forces: true
         Number of Neighbors: true
-        von Mises Stress: True
-        # Strain: True
-        # Cauchy Stress: True
+        # von Mises Stress: True
+        Strain: True
+        Cauchy Stress: True
     Output2:
       Output File Type: CSV
       Output Filename: CompactTension_Output2
@@ -121,5 +127,7 @@ PeriLab:
     Damage Models: true
     Numerical Damping: 5.0e-06
     Calculate von Mises: true
+    Calculate Cauchy: true
+    Calculate Strain: true
     Verlet:
       Safety Factor: 0.95

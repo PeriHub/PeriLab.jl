@@ -447,3 +447,16 @@ function get_von_mises_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1:
 
     return von_Mises_stress, spherical_stress_NP1, deviatoric_stress_NP1
 end
+
+"""
+    get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
+
+# Arguments
+- `stress_NP1::Matrix{Float64}`: Stress.
+- `hooke_matrix::Matrix{Float64}`: Hooke matrix
+# returns
+- `strain::Matrix{Float64}`: Strain
+"""
+function get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
+    return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
+end

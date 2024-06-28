@@ -156,6 +156,7 @@ function get_solver_options(params::Dict)
     mechanical::Bool = get(params["Solver"], "Material Models", true)
     cauchy::Bool = get(params["Solver"], "Calculate Cauchy", false)
     von_mises::Bool = get(params["Solver"], "Calculate von Mises", false)
+    strain::Bool = get(params["Solver"], "Calculate Strain", false)
     thermal::Bool = get(params["Solver"], "Thermal Models", false)
-    return Dict{String,Any}("Additive Models" => additive, "Corrosion Models" => corrosion, "Damage Models" => damage, "Material Models" => mechanical, "Calculate Cauchy" => cauchy, "Calculate von Mises" => von_mises, "Thermal Models" => thermal)
+    return Dict{String,Any}("Additive Models" => additive, "Corrosion Models" => corrosion, "Damage Models" => damage, "Material Models" => mechanical, "Calculate Cauchy" => cauchy, "Calculate von Mises" => von_mises, "Calculate Strain" => strain, "Thermal Models" => thermal)
 end
