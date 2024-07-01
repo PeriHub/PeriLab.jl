@@ -54,6 +54,7 @@ Compute the forces.
 """
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
     material_models = split(model_param["Material Model"], "+")
+    material_models = map(r -> strip(r), material_models)
     if occursin("Correspondence", model_param["Material Model"])
         mod = datamanager.get_model_module("Correspondence")
         datamanager = mod.compute_forces(datamanager, nodes, model_param, time, dt, to)

@@ -294,6 +294,7 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
             end
         end
     end
+    @info "PeriLab finished"
     if verbose
         TimerOutputs.complement!(to)
         @info to
