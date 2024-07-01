@@ -392,6 +392,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         temperatureN = datamanager.get_field("Temperature", "N")
         temperatureNP1 = datamanager.get_field("Temperature", "NP1")
         heat_capacity = datamanager.get_field("Specific Heat Capacity")
+        ## TODO field creation not in run
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
     if solver_options["Corrosion Models"]
@@ -399,6 +400,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
         concentrationNP1 = datamanager.get_field("Concentration", "NP1")
         concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
         concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
+        ## TODO field creation not in run
         delta_concentration = datamanager.create_constant_node_field("Delta Concentration", Float64, 1)
     end
 
