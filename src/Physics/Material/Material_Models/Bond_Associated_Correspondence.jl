@@ -45,17 +45,85 @@ end
 
 function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, volume::SubArray, bond_damage::SubArray, omega::SubArray, weighted_volume::SubArray)
   for iID in nodes
-    weighted_volume = sum(bond_damage[iID][:] .* omega[iID][:] .* volume[nlist[iID]])
+    weighted_volume[iID] = sum(bond_damage[iID][:] .* omega[iID][:] .* volume[nlist[iID]])
   end
   return weighted_volume
 end
 
+
+"""
+std::vector<ScalarT> tempVector(9);
+ScalarT* temp = &tempVector[0];
+
+std::vector<ScalarT> stressVector(9);
+ScalarT* stress = &stressVector[0];
+
+std::vector<ScalarT> integrandVector(9);
+ScalarT* integrand = &integrandVector[0];
+
+int neighborIndex, numNeighbors;
+const int *neighborListPtr = neighborhoodList; 
+for(int iID=0 ; iID<numPoints ; ++iID, modelCoord+=3, w0++, integral+=9){
+
+  // Zero out data
+  *(integral)   = 0.0 ; *(integral+1) = 0.0 ; *(integral+2) = 0.0 ;
+  *(integral+3) = 0.0 ; *(integral+4) = 0.0 ; *(integral+5) = 0.0 ;
+  *(integral+6) = 0.0 ; *(integral+7) = 0.0 ; *(integral+8) = 0.0 ;
+
+  numNeighbors = *neighborListPtr; neighborListPtr++;
+  for(int n=0; n<numNeighbors; n++, neighborListPtr++, omega++,
+      stressXX++, stressXY++, stressXZ++, 
+      stressYX++, stressYY++, stressYZ++, 
+      stressZX++, stressZY++, stressZZ++){
+
+    if(*omega > 0.0){
+
+      neighborIndex = *neighborListPtr;
+      neighborVolume = volume[neighborIndex];
+      neighborModelCoord = modelCoordinates + 3*neighborIndex;
+      neighborW0 = weightedVolume + neighborIndex;
+
+      undeformedBondX = *(neighborModelCoord)   - *(modelCoord);
+      undeformedBondY = *(neighborModelCoord+1) - *(modelCoord+1);
+      undeformedBondZ = *(neighborModelCoord+2) - *(modelCoord+2);
+      undeformedBondLengthSq = undeformedBondX*undeformedBondX +
+                             undeformedBondY*undeformedBondY +
+                             undeformedBondZ*undeformedBondZ;
+
+      // write the stress in matrix form 
+      stress[0] = *stressXX; stress[1] = *stressXY; stress[2] = *stressXZ; 
+      stress[3] = *stressYX; stress[4] = *stressYY; stress[5] = *stressYZ; 
+      stress[6] = *stressZX; stress[7] = *stressZY; stress[8] = *stressZZ; 
+
+      // delta_jp - (y_j y_p)/|y|^2
+      *(temp+0) = 1.0 - undeformedBondX * undeformedBondX / undeformedBondLengthSq;
+      *(temp+1) = - undeformedBondX * undeformedBondY / undeformedBondLengthSq;
+      *(temp+2) = - undeformedBondX * undeformedBondZ / undeformedBondLengthSq;
+      *(temp+3) = *(temp+1);
+      *(temp+4) = 1.0 - undeformedBondY * undeformedBondY / undeformedBondLengthSq;
+      *(temp+5) = - undeformedBondY * undeformedBondZ / undeformedBondLengthSq;
+      *(temp+6) = *(temp+2);
+      *(temp+7) = *(temp+5);
+      *(temp+8) = 1.0 - undeformedBondZ * undeformedBondZ / undeformedBondLengthSq;
+
+      // Matrix multiply the stress and the second term to compute the integrand
+      MatrixMultiply(false, false, 1.0, stress, temp, integrand);
+
+      scalarTemp = *omega * (0.5 / *w0 + 0.5 / *neighborW0) * neighborVolume;
+
+      for(int i=0; i<9; i++)
+        *(integral+i) += scalarTemp * *(integrand+i);
+    }
+    """
 
 function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::Union{Vector{Vector{Int64}},SubArray}, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, stress_integral::SubArray)
   temp::Matrix{Float64} = zeros(dof, dof)
   for iID in nodes
     stress_integral[iID, :, :] .= 0.0
     for (jID, nID) in enumerate(nlist[iID])
+      if bond_damage[iID][jID] == 0
+        continue
+      end
       for i in 1:dof
         temp[i, i] = 1 - bond_geometry[iID][jID, i] * bond_geometry[iID][jID, i]
         for j in i:dof
@@ -123,7 +191,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   nlist = datamanager.get_field("Neighborhoodlist")
 
   bond_damage = datamanager.get_bond_damage("NP1")
-
+  horizon = datamanager.get_field("Horizon")
   omega = datamanager.get_field("Influence Function")
   volume = datamanager.get_field("Volume")
 
@@ -145,7 +213,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   gradient_weight = datamanager.get_field("Lagrangian Gradient Weights")
   weighted_volume = datamanager.get_field("Weighted Volume")
 
-  displacments = datamanager.get_field("Displacement", "NP1")
+  displacments = datamanager.get_field("Displacements", "NP1")
   velocity = datamanager.get_field("Velocity", "NP1")
   accuracy_order = material_parameter["Accuracy Order"]
 
@@ -161,6 +229,17 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
   strain_increment = update_Green_Langrange_bond_strain_increment(nodes, nlist, dt, deformation_gradient, deformation_gradient_dot, strain_increment)
   strain_NP1[:][:, :, :] = strain_N[:][:, :, :] .+ strain_increment[:][:, :, :]
+  # computeLagrangianGradientWeights
+  # computeDeformationGradient
+  #computeNodeLevelUnrotatedRateOfDeformationAndRotationTensor
+  #computeBondLevelUnrotatedRateOfDeformationAndRotationTensor
+  #computeCauchyStress nicht bötig?
+  #rotateBondLevelCauchyStress
+  #computeBondLevelPiolaStress
+  #computeStressIntegral
+  # bond force
+
+  #Geometry.compute_left_stretch_tensor()
   if rotation
     stress_N = rotate(nodes, dof, stress_N, angles, false)
     strain_increment = rotate(nodes, dof, strain_increment, angles, false)
