@@ -13,6 +13,20 @@ using Test
     @test Bond_Associated_Correspondence.correspondence_name() == "Correspondence Bond-Associated"
 end
 
+@testset "ut_compute_Piola_Kirchhoff_stress" begin
+    stress = [1.0 0.0; 0.0 1.0]
+    deformation_gradient = [2.0 0.0; 0.0 2.0]
+    expected_result = [2.0 0.0; 0.0 2.0]
+
+    result = Bond_Associated_Correspondence.compute_Piola_Kirchhoff_stress(stress, deformation_gradient)
+
+    @test isapprox(result, expected_result)
+    stress = [1.0 0.0; 0.0 1.0]
+    deformation_gradient = [1.0 2.0; 2.0 4.0] # Singular matrix
+
+    @test isnothing(Bond_Associated_Correspondence.compute_Piola_Kirchhoff_stress(stress, deformation_gradient))
+end
+
 
 @testset "ut_update_Green_Langrange_strain" begin
     dt = 0.1
@@ -60,7 +74,6 @@ end
     @test isapprox(result[1], expected_weighted_volume)
 
 end
-
 
 @testset "ut_compute_Lagrangian_gradient_weights" begin
     nodes = [1, 2]
@@ -160,8 +173,8 @@ end
     stress_integral = Bond_Associated_Correspondence.compute_stress_integral(nodes, dof, nlist, omega, bond_damage, volume, weighted_volume, bond_geometry, bond_length, bond_stresses, stress_integral)
 
     expected_stress_integral = [
-        [1.0 0.0; 0.0 0.0],
-        [2.0 0.0; 0.0 0.0]
+        [0.0 0.0; 0.0 1.0],
+        [0.0 0.0; 0.0 2.0]
     ]
     @test isapprox(stress_integral[1, :, :], expected_stress_integral[1][:, :])
     @test isapprox(stress_integral[2, :, :], expected_stress_integral[2][:, :])
