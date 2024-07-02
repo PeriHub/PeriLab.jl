@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../src/PeriLab.jl")
+using .PeriLab
 
 
 @testset "ut_deformation_gradient_decomposition" begin
@@ -366,7 +366,7 @@ end
     dof = 3
     nlist = [[2], [1]]
     volume = [0.1, 0.2]
-    gradient_weight = [0.5 0.5 0.5; 0.5 0.5 0.5]
+    gradient_weight = [[0.5 0.5 0.5; 0.5 0.5 0.5], [0.5 0.5 0.5; 0.5 0.5 0.5]]
     displacement = [0.0 0.0 0.0; 1.0 1.0 1.0]
     velocity = [0.0 0.0 0.0; 1.0 1.0 1.0]
     deformation_gradient = zeros(Float64, length(nnodes), dof, dof)

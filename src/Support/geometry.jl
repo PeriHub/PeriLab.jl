@@ -243,23 +243,19 @@ function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_d
     return deformation_gradient
 end
 
+
 function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
 
     for iID in nodes
         deformation_gradient[iID, :, :] = Matrix{Float64}(I(dof))
         deformation_gradient_dot[iID, :, :] .= 0
-
-        disp_state = displacement[nlist[iID], :] .- displacement[iID, :]'
-        velocity_state = velocity[nlist[iID], :] .- velocity[iID, :]'
         for (jID, nID) in enumerate(nlist[iID])
-            deformation_gradient[iID, :, :] += disp_state[jID, :] * transpose(gradient_weight[jID, :]) .* volume[nID]
-            deformation_gradient_dot[iID, :, :] += velocity_state[jID, :] * transpose(gradient_weight[jID, :]) .* volume[nID]
+            deformation_gradient[iID, :, :] += (displacement[nlist[iID][jID], :] .- displacement[iID, :]) * gradient_weight[iID][jID, :]' .* volume[nID]
+            deformation_gradient_dot[iID, :, :] += (velocity[nlist[iID][jID], :] .- velocity[iID, :]) * gradient_weight[iID][jID, :]' .* volume[nID]
         end
-
     end
     return deformation_gradient, deformation_gradient_dot
 end
-
 
 function no_name_yet(nodes, datamanager)
     dof = datamanager.get_dof()
