@@ -10,6 +10,8 @@ include("./Zero_Energy_Control/global_control.jl")
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 include("../material_basis.jl")
+include("../../../Support/helpers.jl")
+using .Helpers: invert
 include("../../../Support/geometry.jl")
 using .Geometry: strain
 using .Global_zero_energy_control
@@ -204,7 +206,7 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
       @error "Deformation Gradient is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
     end
     # taken from corresponcence.cxx -> computeForcesAndStresses
-    bond_force[iID][:, :] = jacobian .* (bond_damage[iID] .* undeformed_bond[iID]) * (inv(deformation_gradient[iID, :, :]) * stress_NP1[iID, :, :] * inverse_shape_tensor[iID, :, :])
+    bond_force[iID][:, :] = jacobian .* (bond_damage[iID] .* undeformed_bond[iID]) * (invert(deformation_gradient[iID, :, :], "Inversion of deformation gradient fails in function calculate_bond_force.") * stress_NP1[iID, :, :] * inverse_shape_tensor[iID, :, :])
 
   end
   return bond_force

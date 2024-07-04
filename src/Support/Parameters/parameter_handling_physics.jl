@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 include("../helpers.jl")
-@reexport using .Helpers: interpolation, interpol_data
+using .Helpers: interpolation, interpol_data
 export get_model_parameter
 export find_data_files
 

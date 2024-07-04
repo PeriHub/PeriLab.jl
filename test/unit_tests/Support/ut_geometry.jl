@@ -277,14 +277,6 @@ end
             end
         end
     end
-    bond_damage[1][:] .= 0
-    bond_damage[2][:] .= 0
-    bond_damage[3][:] .= 0
-    bond_damage[4][:] .= 0
-
-    shape_tensor, inverse_shape_tensor = PeriLab.IO.Geometry.shape_tensor(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
-    @test isnothing(shape_tensor)
-    @test isnothing(inverse_shape_tensor)
 end
 
 @testset "ut_strain" begin

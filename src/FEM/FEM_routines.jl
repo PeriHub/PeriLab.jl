@@ -6,7 +6,8 @@ using StaticArrays
 using FastGaussQuadrature
 using Statistics
 include("../Physics/Material/material_basis.jl")
-
+include("../Support/helpers.jl")
+using .Helpers: invert
 function get_FE_material_model(params::Dict, name::String)
     if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
         @error "Material model " * params["FEM"][name]["Material Model"] * " defined in FEM are not defined as material"
@@ -193,7 +194,7 @@ function get_Jacobian(elements::Vector{Int64}, dof::Int64, topology::SubArray{In
                 @error "The determinat of the Jacobian is " * string(determinant_jacobian[id_el, id_int]) * " in local element $id_el, and must be greater zero."
                 return nothing, nothing
             end
-            jacobian[id_el, id_int, :, :] = inv(jacobian[id_el, id_int, :, :])
+            jacobian[id_el, id_int, :, :] = invert(jacobian[id_el, id_int, :, :], "Jacobian in FEM Module is singular.")
         end
     end
     return jacobian, determinant_jacobian

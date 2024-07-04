@@ -10,9 +10,7 @@
 using Test
 using Random
 using Dierckx
-# using Reexport
-# @reexport using .Helpers
-# @reexport using .Parameter_Handling
+
 
 @testset "ut_get_element_degree" begin
     @test isnothing(PeriLab.Solver.Parameter_Handling.get_element_degree(Dict()))

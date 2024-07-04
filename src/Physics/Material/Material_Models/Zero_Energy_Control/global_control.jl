@@ -4,8 +4,7 @@
 
 module Global_zero_energy_control
 include("../../../../Support/helpers.jl")
-using Reexport
-@reexport using .Helpers
+using .Helpers: get_fourth_order
 include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
 using TensorOperations
@@ -47,7 +46,7 @@ function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness", Float64, "Matrix", dof)
     rotation::Bool, angles = datamanager.rotation_data()
     CVoigt = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
-    if !haskey(material_parameter,"UMAT Material Name")
+    if !haskey(material_parameter, "UMAT Material Name")
         zStiff = create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff, rotation)
     end
     bond_force = get_zero_energy_mode_force(nodes, zStiff, deformation_gradient, undeformed_bond, deformed_bond, bond_force)
@@ -116,7 +115,7 @@ Creates the zero energy mode stiffness
 function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, Kinv::SubArray, zStiff::SubArray)
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
-        global_zero_energy_mode_stiffness(iID, dof, CVoigt, Kinv,zStiff)
+        global_zero_energy_mode_stiffness(iID, dof, CVoigt, Kinv, zStiff)
     end
     return zStiff
 end
@@ -135,10 +134,10 @@ Creates the zero energy mode stiffness, based on the UMAT interface
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
-function global_zero_energy_mode_stiffness(ID::Int64, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, Kinv::SubArray,zStiff::SubArray)
+function global_zero_energy_mode_stiffness(ID::Int64, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, Kinv::SubArray, zStiff::SubArray)
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     @tensor begin
-        zStiff[ID,i,j] = C[i, j, k, l] * Kinv[ID, k, l]
+        zStiff[ID, i, j] = C[i, j, k, l] * Kinv[ID, k, l]
     end
 end
 
