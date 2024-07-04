@@ -7,6 +7,16 @@ using Test
 #using .PeriLab
 using ProgressBars
 
+@testset "ut_invert" begin
+    @test isnoting(PeriLab.Solver.Helpers.invert(zeros(Float64, 3, 3)))
+    @test isnoting(PeriLab.Solver.Helpers.invert(zeros(Int64, 3, 3)))
+    @test isnoting(PeriLab.Solver.Helpers.invert(zeros(Float64, 3, 3), "test Float is singular."))
+    @test isnoting(PeriLab.Solver.Helpers.invert(zeros(Int64, 3, 3), "test Int is singular."))
+    @test PeriLab.Solver.Helpers.invert([1 0; 0 1]) == inv([1 0; 0 1])
+    @test PeriLab.Solver.Helpers.invert([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], "test Int is singular.") == inv([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
+end
+
+
 @testset "ut_qdim" begin
     @test isnothing(PeriLab.Solver.Helpers.qdim(0, 2))
     @test isnothing(PeriLab.Solver.Helpers.qdim(0, 3))
