@@ -235,7 +235,7 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
                 if dot((displacements[nlist[iID][neighborID], :] - displacements[iID, :]), bond_norm[iID][neighborID, :]) > 0
                     bond_mod[neighborID, :] .= 0
                 else
-                    bond_mod[neighborID, :] = bond_norm[iID][neighborID, :]
+                    bond_mod[neighborID, :] = abs.(bond_norm[iID][neighborID, :])
                 end
             end
         end
