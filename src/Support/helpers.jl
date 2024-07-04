@@ -7,6 +7,7 @@ module Helpers
 using Tensors
 using Dierckx
 using ProgressBars
+using LinearAlgebra
 export qdim
 export check_inf_or_nan
 export find_active
@@ -230,6 +231,28 @@ function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64}, va
         @warn "Interpolation value is above interpolation range. Using maximum value of dataset."
     end
     return evaluate(values["spl"], x)
+end
+
+"""
+    invert(A::Union{Matrix{Float64},Matrix{Int64}}, error_message::String="Matrix is singular")
+
+Invert a n x n matrix. Throws an error if A is singular.
+
+# Arguments
+- A::Union{Matrix{Float64},Matrix{Int64}}: A n x n matrix.
+- error_message::String="Matrix is singular": The error message returned if A is singular.
+
+# Returns
+- inverted matrix or nothing if not inverable.
+"""
+function invert(A::Union{Matrix{Float64},Matrix{Int64}}, error_message::String="Matrix is singular")
+    try
+        return inv(A)
+    catch
+        @error error_message
+        return nothing
+    end
+
 end
 
 
