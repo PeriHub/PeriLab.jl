@@ -20,7 +20,7 @@ export get_fourth_order
 export interpolation
 export interpol_data
 export progress_bar
-
+export invert
 """
     qdim(order::Int64, dof::Int64)
 
