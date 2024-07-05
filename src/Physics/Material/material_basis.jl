@@ -460,3 +460,8 @@ end
 function get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
     return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
 end
+
+
+function compute_Piola_Kirchhoff_stress(stress::Matrix{Float64}, deformation_gradient::Matrix{Float64})
+    return det(deformation_gradient) .* stress * invert(deformation_gradient, "Bond level deformation gradient is singular and cannot be inverted.")
+end

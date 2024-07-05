@@ -226,6 +226,14 @@ end
 
 end
 
+@testset "ut_compute_Piola_Kirchhoff_stress" begin
+    stress = [1.0 0.0; 0.0 1.0]
+    deformation_gradient = [2.0 0.0; 0.0 2.0]
+    expected_result = [2.0 0.0; 0.0 2.0]
+    result = compute_Piola_Kirchhoff_stress(stress, deformation_gradient)
+    @test isapprox(result, expected_result)
+end
+
 @testset "ut_matrix_to_voigt" begin
     matrix = [1 2; 3 4]
     voigt = matrix_to_voigt(matrix)
