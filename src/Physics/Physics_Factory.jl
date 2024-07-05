@@ -5,8 +5,8 @@
 module Physics
 include("../Support/helpers.jl")
 include("./Material/material_basis.jl")
-using Reexport
-@reexport using .Helpers: check_inf_or_nan, find_active, get_active_update_nodes
+using LinearAlgebra: inv
+using .Helpers: check_inf_or_nan, find_active, get_active_update_nodes
 include("./Additive/Additive_Factory.jl")
 include("./Corrosion/Corrosion_Factory.jl")
 include("./Damage/Damage_Factory.jl")
@@ -15,7 +15,7 @@ include("./Thermal/Thermal_Factory.jl")
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
 include("../Compute/compute_field_values.jl")
-@reexport using .Parameter_Handling: get_physics_option, get_model_parameter, get_heat_capacity
+using .Parameter_Handling: get_physics_option, get_model_parameter, get_heat_capacity
 # in future FEM will be outside of the Physics_Factory
 include("../FEM/FEM_Factory.jl")
 
@@ -122,7 +122,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
                     if options["Calculate Strain"]
                         material_parameter = datamanager.get_properties(block, "Material Model")
                         hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], datamanager.get_dof())
-                        datamanager = Material.calculate_strain(datamanager, active_nodes, hookeMatrix)
+                        datamanager = Material.calculate_strain(datamanager, active_nodes, inv(hookeMatrix))
                     end
                 end
             end
