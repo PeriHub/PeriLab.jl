@@ -4,6 +4,7 @@
 
 module Data_manager
 using MPI
+using CUDA
 
 export create_bond_field
 export create_constant_free_size_field
@@ -92,6 +93,12 @@ global commMPi::Any
 global cancel::Bool = false
 global max_rank::Int64 = 0
 global silent::Bool = false
+const use_gpu = Ref(false)
+
+function __init__()
+    use_gpu[] = CUDA.functional()
+end
+
 ##########################
 
 """
@@ -221,7 +228,7 @@ function create_field(name::String, vartype::Type, dof::Tuple)
         end
         return get_field(name)
     end
-    fields[vartype][name] = Array{vartype}(zeros(dof))
+    fields[vartype][name] = use_gpu[] ? CuArray{vartype}(zeros(dof)) : Array{vartype}(zeros(dof))
     field_types[name] = vartype
     code::String = "view(fields[$vartype][\"$name\"]" * join(repeat(", :", length(size(fields[vartype][name])))) * ")"
     get_function() = eval(Meta.parse(code))
