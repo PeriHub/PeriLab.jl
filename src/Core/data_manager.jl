@@ -85,7 +85,6 @@ global overlap_map::Dict{Int64,Any}
 global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => true,
     "Deformation Gradient" => false,
     "Shape Tensor" => false,
-    "Bond Associated Shape Tensor" => false,
     "Bond Associated Deformation Gradient" => false)
 global rank::Int64 = 0
 global commMPi::Any
@@ -408,7 +407,6 @@ function clear_data_manager()
     physics_options = Dict("Deformed Bond Geometry" => true,
         "Deformation Gradient" => false,
         "Shape Tensor" => false,
-        "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
     filedirectory = ""
 
@@ -728,15 +726,11 @@ Get the physics options
 """
 function get_physics_options()
     global physics_options
-
     if physics_options["Deformation Gradient"]
         physics_options["Shape Tensor"] = true
         physics_options["Deformed Bond Geometry"] = true
     end
     if physics_options["Bond Associated Deformation Gradient"]
-        physics_options["Deformation Gradient"] = true
-        physics_options["Bond Associated Shape Tensor"] = true
-        physics_options["Shape Tensor"] = true
         physics_options["Deformed Bond Geometry"] = true
     end
     return physics_options

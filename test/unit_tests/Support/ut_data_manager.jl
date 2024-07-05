@@ -453,44 +453,37 @@ end
     test_data_manager = PeriLab.Data_manager
     physics_options = test_data_manager.get_physics_options()
     @test physics_options["Deformed Bond Geometry"]
-    @test !physics_options["Bond Associated Shape Tensor"]
     @test !physics_options["Bond Associated Deformation Gradient"]
     @test !physics_options["Deformation Gradient"]
     @test !physics_options["Shape Tensor"]
     test_data_manager.physics_options["Deformed Bond Geometry"] = false
     physics_options = test_data_manager.get_physics_options()
     @test !physics_options["Deformed Bond Geometry"]
-    @test !physics_options["Bond Associated Shape Tensor"]
     @test !physics_options["Bond Associated Deformation Gradient"]
     @test !physics_options["Deformation Gradient"]
     @test !physics_options["Shape Tensor"]
     test_data_manager.physics_options["Bond Associated Deformation Gradient"] = true
     physics_options = test_data_manager.get_physics_options()
     @test physics_options["Deformed Bond Geometry"]
-    @test physics_options["Bond Associated Shape Tensor"]
     @test physics_options["Bond Associated Deformation Gradient"]
-    @test physics_options["Deformation Gradient"]
-    @test physics_options["Shape Tensor"]
+    @test !physics_options["Deformation Gradient"]
+    @test !physics_options["Shape Tensor"]
     test_data_manager.physics_options["Deformed Bond Geometry"] = false
     test_data_manager.physics_options["Shape Tensor"] = false
-    test_data_manager.physics_options["Bond Associated Shape Tensor"] = false
     test_data_manager.physics_options["Deformation Gradient"] = false
     test_data_manager.physics_options["Bond Associated Deformation Gradient"] = false
     test_data_manager.physics_options["Deformation Gradient"] = true
     physics_options = test_data_manager.get_physics_options()
     @test physics_options["Deformed Bond Geometry"]
-    @test !physics_options["Bond Associated Shape Tensor"]
     @test !physics_options["Bond Associated Deformation Gradient"]
     @test physics_options["Deformation Gradient"]
     @test physics_options["Shape Tensor"]
     test_data_manager.physics_options["Deformed Bond Geometry"] = false
     test_data_manager.physics_options["Shape Tensor"] = false
-    test_data_manager.physics_options["Bond Associated Shape Tensor"] = false
     test_data_manager.physics_options["Deformation Gradient"] = true
     test_data_manager.physics_options["Bond Associated Deformation Gradient"] = true
     physics_options = test_data_manager.get_physics_options()
     @test physics_options["Deformed Bond Geometry"]
-    @test physics_options["Bond Associated Shape Tensor"]
     @test physics_options["Bond Associated Deformation Gradient"]
     @test physics_options["Deformation Gradient"]
     @test physics_options["Shape Tensor"]

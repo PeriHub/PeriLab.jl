@@ -439,12 +439,10 @@ end
     params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => false,
         "Deformation Gradient" => false,
         "Shape Tensor" => true,
-        "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)))
     options = Dict{String,Bool}("Deformed Bond Geometry" => true,
         "Deformation Gradient" => false,
         "Shape Tensor" => false,
-        "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
     optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
     # no material models included
@@ -453,7 +451,6 @@ end
     params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => true,
             "Deformation Gradient" => true,
             "Shape Tensor" => false,
-            "Bond Associated Shape Tensor" => false,
             "Bond Associated Deformation Gradient" => true),
         "Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1))))
     optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
@@ -479,11 +476,9 @@ end
     options = Dict{String,Bool}("Deformed Bond Geometry" => false,
         "Deformation Gradient" => false,
         "Shape Tensor" => false,
-        "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
     optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
     @test optionTest["Shape Tensor"]
-    @test !optionTest["Bond Associated Shape Tensor"]
     @test !optionTest["Bond Associated Deformation Gradient"]
     @test optionTest["Deformation Gradient"]
     @test optionTest["Deformed Bond Geometry"]
@@ -493,7 +488,6 @@ end
     optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
 
     @test optionTest["Shape Tensor"]
-    @test optionTest["Bond Associated Shape Tensor"]
     @test optionTest["Bond Associated Deformation Gradient"]
     @test optionTest["Deformation Gradient"]
     @test optionTest["Deformed Bond Geometry"]
@@ -502,7 +496,6 @@ end
     options = Dict{String,Bool}("Deformed Bond Geometry" => false,
         "Deformation Gradient" => false,
         "Shape Tensor" => false,
-        "Bond Associated Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false)
 end
 @testset "ut_check_for_duplicates" begin
