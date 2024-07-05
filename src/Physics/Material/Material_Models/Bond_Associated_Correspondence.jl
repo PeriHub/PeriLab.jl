@@ -7,7 +7,7 @@ using LinearAlgebra
 include("../../../Support/geometry.jl")
 using .Geometry: strain, compute_left_stretch_tensor, compute_weighted_deformation_gradient
 include("../../../Support/helpers.jl")
-using .Helpers: qdim
+using .Helpers: qdim, invert
 
 
 using TimerOutputs
@@ -199,12 +199,9 @@ end
 
 
 function compute_Piola_Kirchhoff_stress(stress::Matrix{Float64}, deformation_gradient::Matrix{Float64})
-  try
-    return det(deformation_gradient) .* stress * inv(deformation_gradient)
-  catch
-    @error "Bond level deformation gradient is singular and cannot be inverted."
-    return nothing
-  end
+
+  return det(deformation_gradient) .* stress * invert(deformation_gradient, "Bond level deformation gradient is singular and cannot be inverted.")
+
 end
 
 

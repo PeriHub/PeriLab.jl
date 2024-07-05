@@ -7,8 +7,11 @@ using LinearAlgebra
 using TensorOperations
 using Combinatorics: levicivita
 using Rotations
+include("helpers.jl")
+using .Helpers: invert
 export bond_geometry
 export shape_tensor
+
 
 """
      bond_geometry(nodes::Union{SubArray,Vector{Int64}}, nlist, coor, undeformed_bond, undeformed_bond_length)
@@ -104,12 +107,7 @@ function shape_tensor(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, v
 
     for iID in nodes
         shape_tensor[iID, :, :] = calculate_shape_tensor(dof, volume[nlist[iID]], omega[iID], bond_damage[iID], undeformed_bond[iID])
-        try
-            inverse_shape_tensor[iID, :, :] = inv(shape_tensor[iID, :, :])
-        catch ex
-            @error "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
-            return nothing, nothing
-        end
+        inverse_shape_tensor[iID, :, :] .= invert(shape_tensor[iID, :, :], "Shape Tensor is singular and cannot be inverted).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
     end
 
     return shape_tensor, inverse_shape_tensor
@@ -134,12 +132,9 @@ end
 function bond_associated_shape_tensor(dof::Int64, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
     # bond geometries -> zwischen nachbar und seinen nachbarn
     shape_tensor[:, :] = calculate_shape_tensor(dof, volume, omega, bond_damage, undeformed_bond)
-    try
-        inverse_shape_tensor[:, :] = inv(shape_tensor[:, :])
-    catch ex
-        @error "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
-        return nothing, nothing
-    end
+
+    inverse_shape_tensor[:, :] = invert(shape_tensor[:, :], "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
+
 
     return shape_tensor, inverse_shape_tensor
 
@@ -227,11 +222,8 @@ Therefore,
  
 """
 
-function compute_left_stretch_tensor(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::Union{SubArray,Array{Float64}}, left_stretch_tensor::Union{SubArray,Array{Float64}})
-    for iID in nodes
-        left_stretch_tensor[iID, :, :] = deformation_gradient[iID, :, :] * transpose(deformation_gradient[iID, :, :])
-    end
-    return sqrt.(left_stretch_tensor)
+function compute_left_stretch_tensor(deformation_gradient::Matrix{Float64})
+    return sqrt.(deformation_gradient * deformation_gradient')
 end
 
 function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_damage, deformed_bond, undeformed_bond, volume::Union{Vector{Int64},Vector{Float64}}, omega)
@@ -257,58 +249,17 @@ function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int6
     return deformation_gradient, deformation_gradient_dot
 end
 
-function no_name_yet(nodes, datamanager)
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    gradient_weight = datamanager.get_field("Gradient Weight")
-    displacement = datamanager.get_field("Displacements", "NP1")
-    velocity = datamanager.get_field("Velocity", "NP1")
-    deformation_gradient = datamanager.get_field("Deformation Gradient", "NP1")
-    deformation_gradient_dot = datamanager.get_field("Deformation Gradient Dot", "NP1")
-    left_stretch_tensorN = datamanager.get_field("Left Stretch Tensor", "N") # 
-    left_stretch_tensorNP1 = datamanager.get_field("Left Stretch Tensor", "NP1")
-    unrotated_rate_of_deformation = datamanager.get_field("Unrotated Rate Of Deformation")
-    rot_tensorN = datamanager.get_field("Rotation Tensor", "N")
-    rot_tensorNP1 = datamanager.get_field("Rotation Tensor", "NP1")
-    deformation_gradient, deformation_gradient_dot = compute_weighted_deformation_gradient(nodes, dof, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
 
-    left_stretch_tensorNP1 = compute_left_stretch_tensor(nodes, deformation_gradient, left_stretch_tensorNP1)
-
-    #unrotated_rate_of_deformation, rotTensorNP1 = deformation_gradient_decomposition(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
-end
-function no_name_2(nodes, datamanager)
-    dof = datamanager.get_dof()
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    gradient_weight = datamanager.get_field("Gradient Weight")
-    displacement = datamanager.get_field("Displacements", "NP1")
-    velocity = datamanager.get_field("Velocity", "NP1")
-    deformation_gradient = datamanager.get_field("Deformation Gradient", "NP1")
-    deformation_gradient_dot = datamanager.get_field("Deformation Gradient Dot")
-    left_stretch_tensor = datamanager.get_field("Left Stretch Tensor") # 
-    unrotated_rate_of_deformation = datamanager.get_field("Unrotated Rate Of Deformation")
-    rot_tensor = datamanager.get_field("Rotation Tensor", "NP1")
-    deformation_gradient, deformation_gradient_dot = compute_weighted_deformation_gradient(nodes, dof, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
-    left_stretch_tensor = compute_left_stretch_tensor(nodes, deformation_gradient, left_stretch_tensor)
-
-end
-
-function deformation_gradient_decomposition(nodes, deformation_gradient, deformation_gradient_dot, left_stretch_tensor, rot_tensor, unrotated_rate_of_deformation)
-
+function deformation_gradient_decomposition(nodes::Union{Base.OneTo{Int64},Vector{Int64}}, deformation_gradient, rot_tensor)
 
     for iID in nodes
-        # Follow the algorithm at page 315
-        # Compute rate-of-deformation tensor, D = 1/2 * (L + Lt) -> from Eq (4)
-        velocity_gradient = deformation_gradient_dot[iID, :, :] * inv(deformation_gradient[iID, :, :])
-        rate_of_deformation = 0.5 .* (transpose(velocity_gradient) + velocity_gradient)
-        rot_tensor[iID, :, :] = inv(left_stretch_tensor[iID, :, :]) * deformation_gradient[iID, :, :]
-        unrotated_rate_of_deformation[iID, :, :] = transpose(rot_tensor[iID, :, :]) * rate_of_deformation * rot_tensor[iID, :, :]
+        # EQ (15) in https://doi.org/10.1016/j.ijsolstr.2008.10.029
+        rot_tensor[iID, :, :] = invert(compute_left_stretch_tensor(deformation_gradient[iID, :, :]), "Inversion of left stretch tensor fails in function deformation_gradient_decomposition.") * deformation_gradient[iID, :, :]
     end
-    return unrotated_rate_of_deformation, rot_tensor
+    return rot_tensor
 end
-"""
-function deformation_gradient_decomposition(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
+
+function deformation_gradient_decomposition_from_peridigm(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
     # D. P. Flanagan, L. M. Taylor, Stress integration with finite rotations; https://doi.org/10.1016/0045-7825(87)90065-X
     z = zeros(Float64, dof)
     w = zeros(Float64, dof)
@@ -351,7 +302,7 @@ function deformation_gradient_decomposition(nodes, dof, deformation_gradient, de
     end
 
 end
-"""
+
 
 """
     function strain(nodes::Union{SubArray, Vector{Int64}}, deformation_gradient, strain)
@@ -397,4 +348,190 @@ function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}})
     return Angle2d(angles[1] / 180 * pi)
 end
 
+
+function compute_bond_level_rotation_tensor(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient, ba_rotation_tensor)
+    ba_left_stretch = zeros(Float64, dof, dof)
+    mean_deformation_gradient = zeros(Float64, dof, dof)
+    # all deformation gradients, etc. are in NP1. The increment is calculated outside this routine.
+    for iID in nodes
+        for (jID, nID) in enumerate(nlist[iID])
+            mean_deformation_gradient = 0.5 .* (deformation_gradient[iID, :, :] + deformation_gradient[nID, :, :])
+            for i in 1:dof
+                scalar_temp::Float64 = sum(mean_deformation_gradient[i, :] .* bond_geometry[iID][jID, i])
+                ba_deformation_gradient[iID][jID, i, :] = mean_deformation_gradient[i, :] .+ (bond_deformation[iID][jID, i] - scalar_temp) .* bond_geometry[iID][jID, i] / bond_length[iID][jID]
+            end
+
+            ba_rotation_tensor[iID][:, :, :] = deformation_gradient_decomposition(eachindex(nlist[iID]), ba_deformation_gradient[iID][:, :, :], ba_rotation_tensor[iID][:, :, :])
+        end
+
+    end
+    return ba_rotation_tensor
 end
+
+function compute_bond_level_unrotated_rate_of_deformation_and_rotation_tensor_from_Peridigm()
+    mean_deformation_gradient = zeros(Float64, dof, dof)
+    mean_deformation_gradient_rate = zeros(Float64, dof, dof)
+    velocity_state = zeros(Float64, dof)
+    omega = zeros(Float64, dof)
+    for iID in nodes
+        for (jID, nID) in enumerate(nlist[iID])
+            velocity_state = velocity[nID, :] - velocity[iID, :]
+            mean_deformation_gradient = 0.5 .* (deformation_gradient[iID, :, :] + deformation_gradient[nID, :, :])
+            mean_deformation_gradient_rate = 0.5 .* (deformation_gradient_dot[iID, :, :] + deformation_gradient_dot[nID, :, :])
+
+
+
+            for i in 1:dof
+                scalar_temp = sum(mean_deformation_gradient[i, :] .* bond_geometry[iID][jID, i])
+                scalar_temp_dot = sum(mean_deformation_gradient_rate[i, :] .* bond_geometry[iID][jID, i])
+                deformation_gradient[iID, i, :] = mean_deformation_gradient[i, :] .+ (bond_deformation[iID][jID, i] - scalar_temp) .* bond_geometry[iID][jID, i] / bond_length[iID][jID]
+                deformation_gradient_dot[iID, i, :] = mean_deformation_gradient_rate[i, :] .+ (velocity_state[i] - scalar_temp) .* bond_geometry[iID][jID, i] / bond_length[iID][jID]
+            end
+            jacobian[iID] = det(deformation_gradient[iID, :, :])
+
+            # Compute the Eulerian velocity gradient L = Fdot * Finv
+            eulerian_vel_grad = deformation_gradient_dot[iID, :, :] * invert(deformation_gradient[iID, :, :], "Deformation gradient is singular in compute_bond_level_unrotated_rate_of_deformation_and_rotation_tensor")
+
+            # Compute rate-of-deformation tensor, D = 1/2 * (L + Lt)
+            rate_of_deformation = 0.5 .* (eulerian_vel_grad + eulerian_vel_grad')
+            # Compute spin tensor, W = 1/2 * (L - Lt)
+            spin = 0.5 .* (eulerian_vel_grad - eulerian_vel_grad')
+            ###########################################################################
+            # Following Flanagan & Taylor (T&F) 
+            # 
+            # Find the vector z_i = epsilon_{ikj} * D_{jm} * V_{mk} (T&F Eq. 13)
+            # and find w_i = -1/2 * epsilon_{ijk} * W_{jk} (T&F Eq. 11)
+            # where epsilon_{ikj} is the alternator tensor.
+            # 
+            # Components below copied from computer algebra solution to the expansion
+            # above
+            ###########################################################################
+            z .= 0
+            w .= 0
+            for i = 1:dof
+                for k = 1:dof
+                    for k = 1:dof
+                        z[i] += levicivita([i, k, j]) .* rate_of_deformation[iID, j, m] * left_stretch_tensorN[iID, m, k]
+                        w[i] += -0.5 * levicivita([i, j, k]) .* spin[iID, j, k]
+                    end
+                end
+            end
+
+            # Find trace(V)
+
+            traceV = (sum(diag(left_stretch_tensorN[iID, :, :])))
+            # Compute (trace(V) * I - V) store in temp
+            temp = trace .* I(dof) - left_stretch_tensorN[iID, :, :]
+            # Find omega vector, i.e. \omega = w +  (trace(V) I - V)^(-1) * z (T&F Eq. 12)
+            omega = w + invert(temp) * z
+            omega_tensor .= 0
+            for i = 1:dof
+                for k = 1:dof
+                    for k = 1:dof
+                        omega_tensor[i, j] += levicivita([i, k, j]) * omega[k]
+                    end
+                end
+            end
+            ## Increment R with (T&F Eq. 36 and 44) as opposed to solving (T&F 39) this
+            ## is desirable for accuracy in implicit solves and has no effect on
+            ## explicit solves (other than a slight decrease in speed).
+            ## 
+            ##  Compute Q with (T&F Eq. 44)
+            ## 
+            ##  Omega^2 = w_i * w_i (T&F Eq. 42)
+            OmegaSq = omegaX * omegaX + omegaY * omegaY + omegaZ * omegaZ
+            # Omega = sqrt{OmegaSq}
+            Omega = sqrt(OmegaSq)
+
+            # Avoid a potential divide-by-zero
+            """
+            if(OmegaSq > 1.e-30){
+    
+              // Compute Q = I + sin( dt * Omega ) * OmegaTensor / Omega - (1. - cos(dt * Omega)) * omegaTensor^2 / OmegaSq
+              //           = I + scaleFactor1 * OmegaTensor + scaleFactor2 * OmegaTensorSq
+              scaleFactor1 = sin(dt*Omega) / Omega;
+              scaleFactor2 = -(1.0 - cos(dt*Omega)) / OmegaSq;
+              MatrixMultiply(false, false, 1.0, OmegaTensor, OmegaTensor, OmegaTensorSq);
+              *(QMatrix)   = 1.0 + scaleFactor1 * *(OmegaTensor)   + scaleFactor2 * *(OmegaTensorSq)   ;
+              *(QMatrix+1) =       scaleFactor1 * *(OmegaTensor+1) + scaleFactor2 * *(OmegaTensorSq+1) ;
+              *(QMatrix+2) =       scaleFactor1 * *(OmegaTensor+2) + scaleFactor2 * *(OmegaTensorSq+2) ;
+              *(QMatrix+3) =       scaleFactor1 * *(OmegaTensor+3) + scaleFactor2 * *(OmegaTensorSq+3) ;
+              *(QMatrix+4) = 1.0 + scaleFactor1 * *(OmegaTensor+4) + scaleFactor2 * *(OmegaTensorSq+4) ;
+              *(QMatrix+5) =       scaleFactor1 * *(OmegaTensor+5) + scaleFactor2 * *(OmegaTensorSq+5) ;
+              *(QMatrix+6) =       scaleFactor1 * *(OmegaTensor+6) + scaleFactor2 * *(OmegaTensorSq+6) ;
+              *(QMatrix+7) =       scaleFactor1 * *(OmegaTensor+7) + scaleFactor2 * *(OmegaTensorSq+7) ;
+              *(QMatrix+8) = 1.0 + scaleFactor1 * *(OmegaTensor+8) + scaleFactor2 * *(OmegaTensorSq+8) ;
+    
+            } else {
+              *(QMatrix)   = 1.0 ; *(QMatrix+1) = 0.0 ; *(QMatrix+2) = 0.0 ;
+              *(QMatrix+3) = 0.0 ; *(QMatrix+4) = 1.0 ; *(QMatrix+5) = 0.0 ;
+              *(QMatrix+6) = 0.0 ; *(QMatrix+7) = 0.0 ; *(QMatrix+8) = 1.0 ;
+            };
+    
+            // Compute R_STEP_NP1 = QMatrix * R_STEP_N (T&F Eq. 36)
+            MatrixMultiply(false, false, 1.0, QMatrix, rotTensorN, rotTensorNP1);
+    
+            // Compute rate of stretch, Vdot = L*V - V*Omega
+            // First tempA = L*V, 
+            MatrixMultiply(false, false, 1.0, eulerianVelGrad, leftStretchN, tempA);
+    
+            // tempB = V*Omega
+            MatrixMultiply(false, false, 1.0, leftStretchN, OmegaTensor, tempB);
+    
+            //Vdot = tempA - tempB
+            for(int i=0 ; i<9 ; ++i)
+              *(rateOfStretch+i) = *(tempA+i) - *(tempB+i);
+    
+            //V_STEP_NP1 = V_STEP_N + dt*Vdot
+            for(int i=0 ; i<9 ; ++i)
+              *(leftStretchNP1+i) = *(leftStretchN+i) + dt * *(rateOfStretch+i);
+    
+            // Compute the unrotated rate-of-deformation, d, i.e., temp = D * R
+            MatrixMultiply(false, false, 1.0, rateOfDef, rotTensorNP1, temp);
+    
+            // d = Rt * temp
+            MatrixMultiply(true, false, 1.0, rotTensorNP1, temp, unrotRateOfDef);
+    
+            // Store back in element-wise format
+            *leftStretchXXNP1 = *(leftStretchNP1+0); *leftStretchXYNP1 = *(leftStretchNP1+1); *leftStretchXZNP1 = *(leftStretchNP1+2);
+            *leftStretchYXNP1 = *(leftStretchNP1+3); *leftStretchYYNP1 = *(leftStretchNP1+4); *leftStretchYZNP1 = *(leftStretchNP1+5);
+            *leftStretchZXNP1 = *(leftStretchNP1+6); *leftStretchZYNP1 = *(leftStretchNP1+7); *leftStretchZZNP1 = *(leftStretchNP1+8);
+            *rotTensorXXNP1 = *(rotTensorNP1+0); *rotTensorXYNP1 = *(rotTensorNP1+1); *rotTensorXZNP1 = *(rotTensorNP1+2);
+            *rotTensorYXNP1 = *(rotTensorNP1+3); *rotTensorYYNP1 = *(rotTensorNP1+4); *rotTensorYZNP1 = *(rotTensorNP1+5);
+            *rotTensorZXNP1 = *(rotTensorNP1+6); *rotTensorZYNP1 = *(rotTensorNP1+7); *rotTensorZZNP1 = *(rotTensorNP1+8);
+            *unrotRateOfDefXX = *(unrotRateOfDef+0); *unrotRateOfDefXY = *(unrotRateOfDef+1); *unrotRateOfDefXZ = *(unrotRateOfDef+2);
+            *unrotRateOfDefYX = *(unrotRateOfDef+3); *unrotRateOfDefYY = *(unrotRateOfDef+4); *unrotRateOfDefYZ = *(unrotRateOfDef+5);
+            *unrotRateOfDefZX = *(unrotRateOfDef+6); *unrotRateOfDefZY = *(unrotRateOfDef+7); *unrotRateOfDefZZ = *(unrotRateOfDef+8);
+          }
+          else{
+            *leftStretchXXNP1 = *leftStretchXXN; *leftStretchXYNP1 = *leftStretchXYN; *leftStretchXZNP1 = *leftStretchXZN;
+            *leftStretchYXNP1 = *leftStretchYXN; *leftStretchYYNP1 = *leftStretchYYN; *leftStretchYZNP1 = *leftStretchYZN;
+            *leftStretchZXNP1 = *leftStretchZXN; *leftStretchZYNP1 = *leftStretchZYN; *leftStretchZZNP1 = *leftStretchZZN;
+            *rotTensorXXNP1 = *rotTensorXXN; *rotTensorXYNP1 = *rotTensorXYN; *rotTensorXZNP1 = *rotTensorXZN;
+            *rotTensorYXNP1 = *rotTensorYXN; *rotTensorYYNP1 = *rotTensorYYN; *rotTensorYZNP1 = *rotTensorYZN;
+            *rotTensorZXNP1 = *rotTensorZXN; *rotTensorZYNP1 = *rotTensorZYN; *rotTensorZZNP1 = *rotTensorZZN;
+            *unrotRateOfDefXX = 0.0; *unrotRateOfDefXY = 0.0; *unrotRateOfDefXZ = 0.0;
+            *unrotRateOfDefYX = 0.0; *unrotRateOfDefYY = 0.0; *unrotRateOfDefYZ = 0.0;
+            *unrotRateOfDefZX = 0.0; *unrotRateOfDefZY = 0.0; *unrotRateOfDefZZ = 0.0;
+          }
+        }
+      }
+      return returnCode;
+    }
+          
+    
+    TODO calculate def_Grad and synch def_Grad
+    """
+        end
+    end
+end
+end
+
+
+
+
+
+
+
+
+

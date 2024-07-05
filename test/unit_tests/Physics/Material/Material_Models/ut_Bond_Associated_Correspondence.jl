@@ -17,14 +17,8 @@ end
     stress = [1.0 0.0; 0.0 1.0]
     deformation_gradient = [2.0 0.0; 0.0 2.0]
     expected_result = [2.0 0.0; 0.0 2.0]
-
     result = Bond_Associated_Correspondence.compute_Piola_Kirchhoff_stress(stress, deformation_gradient)
-
     @test isapprox(result, expected_result)
-    stress = [1.0 0.0; 0.0 1.0]
-    deformation_gradient = [1.0 2.0; 2.0 4.0] # Singular matrix
-
-    @test isnothing(Bond_Associated_Correspondence.compute_Piola_Kirchhoff_stress(stress, deformation_gradient))
 end
 
 

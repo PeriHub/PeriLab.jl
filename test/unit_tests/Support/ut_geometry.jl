@@ -7,27 +7,50 @@ using Test
 #using .PeriLab
 
 
+@testset "ut_compute_bond_level_rotation_tensor" begin
+    nodes = [1]
+    nlist = [[2]]
+    dof = 2
+    ba_deformation_gradient = [zeros(Float64, 1, dof, dof) for _ in 1:dof]
+    bond_deformation = [zeros(1, dof)]
+    bond_geometry = [zeros(1, dof)]
+    bond_geometry[1][1, :] = [0 0] # as simple test
+    bond_length = [[1.0]]
+    deformation_gradient = zeros(2, dof, dof)
+    deformation_gradient[1, :, :] = [1 0; 0 1]
+    deformation_gradient[2, :, :] = [1 0; 0 1]
+
+    ba_rotation_tensor = [zeros(Float64, 1, dof, dof) for _ in 1:dof]
+    @test PeriLab.IO.Geometry.compute_bond_level_rotation_tensor(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient, ba_rotation_tensor)[1][1, :, :] == [1 0; 0 1]
+
+
+end
+
 @testset "ut_deformation_gradient_decomposition" begin
     nodes = [1, 2]
-    dof = 3
-    deformation_gradient = rand(Float64, 2, dof, dof)
-    deformation_gradient_dot = rand(Float64, 2, dof, dof)
+    dof = 2
+    deformation_gradient = zeros(Float64, 2, dof, dof)
 
-    left_stretch_tensor = zeros(Float64, 2, dof, dof)
-    left_stretch_tensor[1, 1, 1] = 1
-    left_stretch_tensor[1, 2, 2] = 1
-    left_stretch_tensor[1, 3, 3] = 1
-    left_stretch_tensor[2, 1, 1] = 1
-    left_stretch_tensor[2, 2, 2] = 1
-    left_stretch_tensor[2, 3, 3] = 1
     rot_tensor = zeros(Float64, 2, dof, dof)
-    unrotated_rate_of_deformation = zeros(Float64, 2, dof, dof)
-    dt = 0.01
+    deformation_gradient[:, 1, 1] .= 1
+    deformation_gradient[:, 2, 2] .= 1
+    rot_tensor = PeriLab.IO.Geometry.deformation_gradient_decomposition(nodes, deformation_gradient, rot_tensor)
 
-    PeriLab.IO.Geometry.deformation_gradient_decomposition(nodes, deformation_gradient, deformation_gradient_dot, left_stretch_tensor, rot_tensor, unrotated_rate_of_deformation)
+    @test rot_tensor == deformation_gradient
 
-    @test size(unrotated_rate_of_deformation) == (2, dof, dof)
-    @test all(isfinite.(unrotated_rate_of_deformation))
+    alpha = 22 * pi / 180
+    rot = zeros(2, 2)
+    rot = [cos(alpha) sin(alpha); -sin(alpha) cos(alpha)]
+
+    # compute_left_stretch_tensor should "filter" the rotation
+    deformation_gradient[1, :, :] = rot * deformation_gradient[1, :, :]
+    deformation_gradient[2, :, :] = rot * deformation_gradient[2, :, :]
+
+    rot_tensor = PeriLab.IO.Geometry.deformation_gradient_decomposition(nodes, deformation_gradient, rot_tensor)
+
+    @test rot_tensor[1, :, :] == rot
+    @test rot_tensor[1, :, :] == rot
+
 end
 
 
@@ -134,36 +157,31 @@ end
 end
 
 
-
-
 @testset "ut_compute_left_stretch_tensor" begin
-    nodes = [1, 2]
     deformation_gradient = zeros(2, 2, 2)
     deformation_gradient[1, :, :] = [1.0 0.0; 0.0 1.0]
     deformation_gradient[2, :, :] = [0.5 0.5; 0.5 0.5]
-
-    left_stretch_tensor = zeros(Float64, 2, 2, 2)
-    result = zeros(2, 2, 2)
-    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(nodes, deformation_gradient, left_stretch_tensor)
-
     expected_result = [
         [1.0 0.0; 0.0 1.0],
         [0.7071067811865476 0.7071067811865476; 0.7071067811865476 0.7071067811865476]
     ]
-
-    @test result[1, :, :] == expected_result[1]
-    @test result[2, :, :] == expected_result[2]
+    left_stretch_tensor = zeros(Float64, 2, 2, 2)
+    result = zeros(2, 2, 2)
+    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
+    @test result[:, :] == expected_result[1]
+    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
+    @test result[:, :] == expected_result[2]
     alpha = 22 * pi / 180
     rot = zeros(2, 2)
     rot = [cos(alpha) sin(alpha); -sin(alpha) cos(alpha)]
 
     # compute_left_stretch_tensor should "filter" the rotation
-    left_stretch_tensor[1, :, :] = rot * left_stretch_tensor[1, :, :] * transpose(rot)
-    left_stretch_tensor[2, :, :] = rot * left_stretch_tensor[2, :, :] * transpose(rot)
-    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(nodes, deformation_gradient, left_stretch_tensor)
-
-    @test result[1, :, :] == expected_result[1]
-    @test result[2, :, :] == expected_result[2]
+    deformation_gradient[1, :, :] = deformation_gradient[1, :, :] * rot
+    deformation_gradient[2, :, :] = deformation_gradient[2, :, :] * rot
+    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
+    @test result == expected_result[1]
+    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
+    @test result == expected_result[2]
 
 end
 @testset "ut_shape_tensor_and_deformation_gradient" begin
