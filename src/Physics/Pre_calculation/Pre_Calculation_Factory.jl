@@ -5,14 +5,13 @@
 module Pre_calculation
 include("bond_deformation.jl")
 include("bond_deformation_gradient.jl")
-include("bond_shape_tensor.jl")
+
 include("deformation_gradient.jl")
 include("shape_tensor.jl")
 
 using TimerOutputs
 using .Bond_Deformation
 using .Bond_Deformation_Gradient
-using .Bond_Shape_Tensor
 using .Deformation_Gradient
 using .Shape_Tensor
 export compute
@@ -43,12 +42,7 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, opti
     if options["Deformation Gradient"]
         @timeit to "Deformation Gradient" datamanager = Deformation_Gradient.compute(datamanager, nodes)
     end
-    if options["Bond Associated Shape Tensor"]
-        @timeit to "Bond Associated Shape Tensor" datamanager = Bond_Shape_Tensor.compute(datamanager, nodes)
-    end
-    if options["Bond Associated Deformation Gradient"]
-        @timeit to "Bond Associated Deformation Gradient" datamanager = Bond_Deformation_Gradient.compute(datamanager, nodes)
-    end
+
     return datamanager
 end
 
@@ -73,31 +67,16 @@ function init_pre_calculation(datamanager::Module, options::Dict)
     if options["Deformation Gradient"]
         datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
         options["Shape Tensor"] = true
+        options["Deformed Bond Geometry"] = true
     end
 
     if options["Bond Associated Deformation Gradient"]
         datamanager.create_constant_bond_field("Bond Associated Deformation Gradient", Float64, "Matrix", dof)
-        options["Bond Associated Shape Tensor"] = true
+        options["Deformed Bond Geometry"] = true
     end
     if options["Shape Tensor"]
         datamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
         datamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
-    end
-    if options["Bond Associated Shape Tensor"]
-        datamanager.create_constant_bond_field("Bond Associated Shape Tensor", Float64, "Matrix", dof)
-        datamanager.create_constant_bond_field("Inverse Bond Associated Shape Tensor", Float64, "Matrix", dof)
-
-        for block_id in datamanager.get_block_list()
-            if isnothing(datamanager.get_property(block_id, "Material Model", "Bond Horizon"))
-                horizon = datamanager.get_field("Horizon")
-                datamanager.set_property(block_id, "Material Model", "Bond Horizon", maximum(horizon))
-            end
-
-            if isnothing(datamanager.get_property(block_id, "Material Model", "Accuracy Order"))
-                @warn "Accuracy Order was not user defined. Using predefined value of 2."
-                datamanager.set_property(block_id, "Material Model", "Accuracy Order", 2)
-            end
-        end
     end
     return datamanager
 end
