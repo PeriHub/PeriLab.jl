@@ -256,6 +256,15 @@ function invert(A::Union{Matrix{Float64},Matrix{Int64}}, error_message::String="
 end
 
 
+function find_local_neighbors(nID::Int64, coordinates::Union{SubArray,Matrix{Float64},Matrix{Int64}}, nlist::Union{Vector{Int64},SubArray{Int64}}, bond_horizon::Union{Float64,Int64})
+    # excludes right now iID node in the coordinates list. Because it is an abritrary sublist it should be fine.
+    # saving faster than recalculation?
+    nlist_without_neighbor = view(nlist[nlist.!=nID], :)
+    balltree = BallTree(transpose(coordinates[nlist_without_neighbor, :]))
+    return nlist_without_neighbor[inrange(balltree, coordinates[nID, :], bond_horizon, true)]
+end
+
+
 """
     progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
 

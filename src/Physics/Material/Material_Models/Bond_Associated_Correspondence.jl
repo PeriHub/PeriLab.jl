@@ -37,9 +37,8 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   gradient_weights = datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
   integral_stress = datamanager.create_constant_bond_field("Integral Nodal Stress", Float64, "Matrix", dof)
 
-  deformation_gradient = datamanager.create_node_field("Deformation Gradient", Float64, "Matrix", dof)
-  deformation_gradient_dot = datamanager.create_constant_node_field("Rated Deformation Gradient", Float64, "Matrix", dof)
-
+  datamanager.create_bond_field("Bond Deformation Gradient", Float64, "Matrix", dof)
+  datamanager.create_bond_field("Bond Rotation Tensor", Float64, "Matrix", dof)
   return datamanager
 end
 
@@ -101,14 +100,6 @@ https://link.springer.com/article/10.1007/s10409-021-01055-5
 
 
 
-function find_local_neighbors(nID::Int64, coordinates::Union{SubArray,Matrix{Float64},Matrix{Int64}}, nlist::Union{Vector{Int64},SubArray{Int64}}, bond_horizon::Union{Float64,Int64})
-  # excludes right now iID node in the coordinates list. Because it is an abritrary sublist it should be fine.
-  # saving faster than recalculation?
-  nlist_without_neighbor = view(nlist[nlist.!=nID], :)
-  balltree = BallTree(transpose(coordinates[nlist_without_neighbor, :]))
-  return nlist_without_neighbor[inrange(balltree, coordinates[nID, :], bond_horizon, true)]
-
-end
 
 
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)

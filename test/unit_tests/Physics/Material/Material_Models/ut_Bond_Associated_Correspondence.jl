@@ -215,29 +215,6 @@ end
     @test Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0) == [0, 0, 1]
 end
 
-@testset "ut_find_local_neighbors" begin
-    coordinates = zeros(Float64, 5, 2)
-    coordinates[1, 1] = 0
-    coordinates[1, 2] = 0
-    coordinates[2, 1] = 1
-    coordinates[2, 2] = 0
-    coordinates[3, 1] = 0
-    coordinates[3, 2] = 1
-    coordinates[4, 1] = 1
-    coordinates[4, 2] = 1
-    coordinates[5, 1] = 2
-    coordinates[5, 2] = 2
-
-    nlist = [2, 3, 4, 5]
-
-    bond_horizon::Float64 = 1
-
-    @test Bond_Associated_Correspondence.find_local_neighbors(5, coordinates, nlist, bond_horizon) == []
-    bond_horizon = 2.6
-    @test Bond_Associated_Correspondence.find_local_neighbors(5, coordinates, nlist, bond_horizon) == [2, 3, 4]
-    @test Bond_Associated_Correspondence.find_local_neighbors(2, coordinates, nlist, bond_horizon) == [3, 4, 5]
-end
-
 @testset "ut_compute_bond_associated_weighted_volume" begin
     # Initialize input arrays
     nodes = [1, 2, 3]

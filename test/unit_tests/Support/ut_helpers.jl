@@ -17,6 +17,28 @@ using ProgressBars
 end
 
 
+@testset "ut_find_local_neighbors" begin
+    coordinates = zeros(Float64, 5, 2)
+    coordinates[1, 1] = 0
+    coordinates[1, 2] = 0
+    coordinates[2, 1] = 1
+    coordinates[2, 2] = 0
+    coordinates[3, 1] = 0
+    coordinates[3, 2] = 1
+    coordinates[4, 1] = 1
+    coordinates[4, 2] = 1
+    coordinates[5, 1] = 2
+    coordinates[5, 2] = 2
+
+    nlist = [2, 3, 4, 5]
+
+    bond_horizon::Float64 = 1
+
+    @test PeriLab.Solver.Helpers.find_local_neighbors(5, coordinates, nlist, bond_horizon) == []
+    bond_horizon = 2.6
+    @test PeriLab.Solver.Helpers.find_local_neighbors(5, coordinates, nlist, bond_horizon) == [2, 3, 4]
+    @test PeriLab.Solver.Helpers.find_local_neighbors(2, coordinates, nlist, bond_horizon) == [3, 4, 5]
+end
 @testset "ut_qdim" begin
     @test isnothing(PeriLab.Solver.Helpers.qdim(0, 2))
     @test isnothing(PeriLab.Solver.Helpers.qdim(0, 3))
