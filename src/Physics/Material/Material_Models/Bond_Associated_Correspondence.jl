@@ -151,6 +151,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   strain_NP1 = compute_bond_strain(nodes, nlist, deformation_gradient, strain_NP1)
   strain_increment[:][:, :, :] = strain_NP1[:][:, :, :] - strain_N[:][:, :, :]
   # TODO decomposition to get the rotation and large deformation in
+  # TODO store not angles, but rotation matrices, because they are computed in decomposition
   if rotation
     stress_N = rotate(nodes, dof, stress_N, angles, false)
     strain_increment = rotate(nodes, dof, strain_increment, angles, false)
@@ -165,7 +166,6 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
       for (jID, nID) in enumerate(nlist)
         # TODO how to make the seperation if the datamager is included?
         stress_NP1[iID][jID, :, :], datamanager = mod.compute_stresses(datamanager, iID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (jID, nID))
-
       end
     end
   end
