@@ -162,7 +162,6 @@ CurrentModule = PeriLab.Solver.Physics.Pre_calculation
 compute
 init_pre_calculation
 Bond_Deformation.compute
-Bond_Shape_Tensor.compute
 Deformation_Gradient.compute
 Shape_Tensor.compute
 ```
