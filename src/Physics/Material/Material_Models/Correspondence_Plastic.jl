@@ -78,7 +78,7 @@ function correspondence_name()
   return "Correspondence Plastic"
 end
 """
-    compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+    compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, jID_nID::Tuple=())
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -92,7 +92,7 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
-- `nodeID`::Int64 = 0: (optional) is the primary nodes. If it exists, iID is the bond number. Is needed for bond associated material.
+- `jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered jID the index of the bond of iID and nID the neighborID.
 
 # Returns
 - `datamanager::Data_manager`: Datamanager.
@@ -102,7 +102,7 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, nID_and_Neighborindex::Tuple=())
+function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, jID_nID::Tuple=())
 
   von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
   plastic_strain_N = datamanager.get_field("Plastic Strain", "N")

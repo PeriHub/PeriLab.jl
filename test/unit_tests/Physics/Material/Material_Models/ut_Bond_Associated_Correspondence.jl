@@ -13,15 +13,6 @@ using Test
     @test Bond_Associated_Correspondence.correspondence_name() == "Correspondence Bond-Associated"
 end
 
-@testset "ut_compute_Piola_Kirchhoff_stress" begin
-    stress = [1.0 0.0; 0.0 1.0]
-    deformation_gradient = [2.0 0.0; 0.0 2.0]
-    expected_result = [2.0 0.0; 0.0 2.0]
-    result = Bond_Associated_Correspondence.compute_Piola_Kirchhoff_stress(stress, deformation_gradient)
-    @test isapprox(result, expected_result)
-end
-
-
 @testset "ut_update_Green_Langrange_strain" begin
     dt = 0.1
     deformation_gradient = [1.0 0.2 0.0; 0.1 1.0 0.3; 0.0 0.1 1.0]
@@ -154,17 +145,21 @@ end
     bond_geometry[1][:] = [1.0, 0.0]
     bond_geometry[2][:] = [-1.0, 0.0]
 
-
     bond_length = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
     bond_length[1][:] = [1.0]
     bond_length[2][:] = [1.0]
+
+    deformation_gradient = test_data_manager.create_constant_bond_field("Bond Deformation Gradient", Float64, "Matrix", dof)
+    deformation_gradient[1][1, :, :] = [1.0 0.0; 0.0 1.0]
+    deformation_gradient[2][1, :, :] = [1.0 0.0; 0.0 1.0]
+
     bond_stresses = test_data_manager.create_constant_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
     bond_stresses[1][1, :, :] = [1.0 0.0; 0.0 1.0]
     bond_stresses[2][1, :, :] = [1.0 0.0; 0.0 1.0]
 
     stress_integral = test_data_manager.create_constant_node_field("Stress Integral", Float64, "Matrix", dof)
 
-    stress_integral = Bond_Associated_Correspondence.compute_stress_integral(nodes, dof, nlist, omega, bond_damage, volume, weighted_volume, bond_geometry, bond_length, bond_stresses, stress_integral)
+    stress_integral = Bond_Associated_Correspondence.compute_stress_integral(nodes, dof, nlist, omega, bond_damage, volume, weighted_volume, bond_geometry, bond_length, deformation_gradient, bond_stresses, stress_integral)
 
     expected_stress_integral = [
         [0.0 0.0; 0.0 1.0],

@@ -315,9 +315,7 @@ end
 
 
     deformation_gradient = PeriLab.IO.Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, undeformed_bond, undeformed_bond, inverse_shape_tensor, deformation_gradient)
-    strain = PeriLab.IO.Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strain)
-    deformation_gradient = PeriLab.IO.Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, undeformed_bond, undeformed_bond, inverse_shape_tensor, deformation_gradient)
-    strain = PeriLab.IO.Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient, strain) - strain
+    strain = PeriLab.IO.Geometry.strain(nodes, deformation_gradient, strain)
 
     for i in 1:nnodes
         @test strain[i, 1, 1] == 0
@@ -378,14 +376,11 @@ end
     volume = [0.1, 0.2]
     gradient_weight = [[0.5 0.5 0.5; 0.5 0.5 0.5], [0.5 0.5 0.5; 0.5 0.5 0.5]]
     displacement = [0.0 0.0 0.0; 1.0 1.0 1.0]
-    velocity = [0.0 0.0 0.0; 1.0 1.0 1.0]
     deformation_gradient = zeros(Float64, length(nnodes), dof, dof)
-    deformation_gradient_dot = zeros(Float64, length(nnodes), dof, dof)
 
-    deformation_gradient, deformation_gradient_dot = PeriLab.IO.Geometry.compute_weighted_deformation_gradient(nnodes, dof, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
+    deformation_gradient = PeriLab.IO.Geometry.compute_weighted_deformation_gradient(nnodes, dof, nlist, volume, gradient_weight, displacement, deformation_gradient)
 
     @test deformation_gradient[1, :, :] == [1.1 0.1 0.1; 0.1 1.1 0.1; 0.1 0.1 1.1]
     @test deformation_gradient[2, :, :] == [0.95 -0.05 -0.05; -0.05 0.95 -0.05; -0.05 -0.05 0.95]
-    @test deformation_gradient_dot[1, :, :] == [0.1 0.1 0.1; 0.1 0.1 0.1; 0.1 0.1 0.1]
-    @test deformation_gradient_dot[2, :, :] == [-0.05 -0.05 -0.05; -0.05 -0.05 -0.05; -0.05 -0.05 -0.05]
+
 end

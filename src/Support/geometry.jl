@@ -236,17 +236,15 @@ function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_d
 end
 
 
-function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, gradient_weight, displacement, velocity, deformation_gradient, deformation_gradient_dot)
+function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist, volume, gradient_weight, displacement, deformation_gradient)
 
     for iID in nodes
         deformation_gradient[iID, :, :] = Matrix{Float64}(I(dof))
-        deformation_gradient_dot[iID, :, :] .= 0
         for (jID, nID) in enumerate(nlist[iID])
             deformation_gradient[iID, :, :] += (displacement[nlist[iID][jID], :] .- displacement[iID, :]) * gradient_weight[iID][jID, :]' .* volume[nID]
-            deformation_gradient_dot[iID, :, :] += (velocity[nlist[iID][jID], :] .- velocity[iID, :]) * gradient_weight[iID][jID, :]' .* volume[nID]
         end
     end
-    return deformation_gradient, deformation_gradient_dot
+    return deformation_gradient
 end
 
 
@@ -305,7 +303,7 @@ end
 
 
 """
-    function strain(nodes::Union{SubArray, Vector{Int64}}, deformation_gradient, strain)
+    function strain(nodes::Union{Base.OneTo{Int64},Vector{Int64}, SubArray}, deformation_gradient, strain)
 
 Calculate strains for specified nodes based on deformation gradients.
 
@@ -320,7 +318,7 @@ Calculate strains for specified nodes based on deformation gradients.
 This function iterates over the specified nodes and computes strain at each node using the given deformation gradients.
 
 """
-function strain(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, strain::SubArray)
+function strain(nodes::Union{Base.OneTo{Int64},Vector{Int64},SubArray}, deformation_gradient::SubArray, strain::SubArray)
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     for iID in nodes
         strain[iID, :, :] = 0.5 * (transpose(deformation_gradient[iID, :, :]) * deformation_gradient[iID, :, :] - I)

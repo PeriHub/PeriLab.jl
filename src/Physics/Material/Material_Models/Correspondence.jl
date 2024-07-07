@@ -51,7 +51,10 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
   datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
   datamanager.create_node_field("von Mises Stress", Float64, 1)
-
+  rotation::Bool, angles = datamanager.rotation_data()
+  if rotation
+    datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
+  end
   material_models = split(material_parameter["Material Model"], "+")
   material_models = map(r -> strip(r), material_models)
   #occursin("Correspondence", material_name)
@@ -201,12 +204,9 @@ Calculate bond forces for specified nodes based on deformation gradients.
 """
 function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stress_NP1::SubArray, bond_force::SubArray)
   for iID in nodes
-    jacobian = det(deformation_gradient[iID, :, :])
-    if jacobian <= 1e-8
-      @error "Deformation Gradient is singular and cannot be inverted.\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds."
-    end
+
     # taken from corresponcence.cxx -> computeForcesAndStresses
-    bond_force[iID][:, :] = jacobian .* (bond_damage[iID] .* undeformed_bond[iID]) * (invert(deformation_gradient[iID, :, :], "Inversion of deformation gradient fails in function calculate_bond_force.") * stress_NP1[iID, :, :] * inverse_shape_tensor[iID, :, :])
+    bond_force[iID][:, :] = bond_damage[iID] .* undeformed_bond[iID] * compute_Piola_Kirchhoff_stress(stress_NP1[iID, :, :], deformation_gradient[iID, :, :]) * inverse_shape_tensor[iID, :, :]
 
   end
   return bond_force
