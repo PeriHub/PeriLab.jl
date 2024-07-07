@@ -1,0 +1,108 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    block_1:
+      Damage Model: Damage
+      Density: 1.95e-06
+      Horizon: 0.82
+      Material Model: Aluminium
+    block_2:
+      Damage Model: Damage
+      Density: 1.95e-06
+      Horizon: 0.82
+      Material Model: Aluminium
+    block_3:
+      Density: 1.95e-06
+      Horizon: 0.82
+      Material Model: Aluminium
+    block_4:
+      Density: 1.95e-06
+      Horizon: 0.82
+      Material Model: Aluminium
+  Boundary Conditions:
+    BC_1:
+      Coordinate: y
+      Node Set: Node Set 1
+      Variable: Displacements
+      Value: 4.4*t
+    BC_2:
+      Coordinate: y
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: -4.4*t
+  Compute Class Parameters:
+    External_Forces:
+      Compute Class: Block_Data
+      Calculation Type: Sum
+      Block: block_2
+      Variable: Forces
+    External_Displacements:
+      Compute Class: Block_Data
+      Calculation Type: Maximum
+      Block: block_2
+      Variable: Displacements
+  Discretization:
+    Input Mesh File: DCBmodel.txt
+    Node Sets:
+      Node Set 1: ns_DCBmodel_1.txt
+      Node Set 2: ns_DCBmodel_2.txt
+    Type: Text File
+    Bond Filters:
+      bf_1:
+        Bottom Length: 2.0
+        Bottom Unit Vector X: 1.0
+        Bottom Unit Vector Y: 0.0
+        Bottom Unit Vector Z: 0.0
+        Lower Left Corner X: -0.5
+        Lower Left Corner Y: 0.0
+        Lower Left Corner Z: -1.0
+        Normal X: 0.0
+        Normal Y: 1.0
+        Normal Z: 0.0
+        Side Length: 2.0
+        Type: Rectangular_Plane
+  Outputs:
+    Output1:
+      Number of Output Steps: 100
+      Output Filename: DCBmodel_correspondence
+      Output File Type: Exodus
+      Output Variables:
+        Damage: true
+        Displacements: true
+        Forces: true
+        Number of Neighbors: true
+        External_Forces: True
+        External_Displacements: True
+        Strain: True
+        Cauchy Stress: True
+  Physics:
+    Damage Models:
+      Damage:
+        Damage Model: Critical Energy
+        Critical Value: 0.0035714285714285716
+    Material Models:
+      Aluminium:
+        Material Model: "Correspondence Elastic"
+        Bond Associated: true
+        Bond Horizon: 0.42
+        Zero Energy Control: "Global"
+        Symmetry: isotropic plane stress
+        Young's Modulus: 70000.0
+        Poisson's Ratio: 0.3
+    Pre Calculation:
+      Bond Associated Deformation Gradient: true
+      Bond Associated Shape Tensor: true
+      Deformation Gradient: false
+      Deformed Bond Geometry: true
+      Shape Tensor: false
+  Solver:
+    Final Time: 0.0002
+    Initial Time: 0.0
+    Material Models: true
+    Damage Models: true
+    Numerical Damping: 5.0e-06
+    Verlet:
+      Safety Factor: 0.9
