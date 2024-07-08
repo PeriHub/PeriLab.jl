@@ -13,6 +13,7 @@ using Dates
 export init_logging
 export set_result_files
 export get_current_git_info
+export get_log_stream
 
 result_files::Vector{Dict} = []
 log_file::String = ""
@@ -55,6 +56,13 @@ function get_log_file()
     return log_file
 end
 
+function get_log_stream(id::Int64)
+    try
+        return current_logger().loggers[id].logger.stream
+    catch
+        return nothing
+    end
+end
 """
     set_result_files(result_files_temp::Vector{Dict})
 
@@ -121,35 +129,41 @@ function print_table(data::Matrix, datamanager::Module)
             show_header=false,
             tf=tf_borderless
         )
-        pretty_table(
-            current_logger().loggers[2].logger.stream,
-            data;
-            body_hlines=[1],
-            body_hlines_format=Tuple('─' for _ = 1:4),
-            cell_alignment=Dict((1, 1) => :l),
-            formatters=ft_printf("%10.1f", 2),
-            highlighters=(
-                hl_cell([(1, 1)], crayon"bold"),
-                hl_col(2, crayon"dark_gray")
-            ),
-            show_header=false,
-            tf=tf_borderless
-        )
+        stream = Logging_module.get_log_stream(2)
+        if !isnothing(stream)
+            pretty_table(
+                stream,
+                data;
+                body_hlines=[1],
+                body_hlines_format=Tuple('─' for _ = 1:4),
+                cell_alignment=Dict((1, 1) => :l),
+                formatters=ft_printf("%10.1f", 2),
+                highlighters=(
+                    hl_cell([(1, 1)], crayon"bold"),
+                    hl_col(2, crayon"dark_gray")
+                ),
+                show_header=false,
+                tf=tf_borderless
+            )
+        end
     else
-        pretty_table(
-            current_logger().loggers[1].logger.stream,
-            data;
-            body_hlines=[1],
-            body_hlines_format=Tuple('─' for _ = 1:4),
-            cell_alignment=Dict((1, 1) => :l),
-            formatters=ft_printf("%10.1f", 2),
-            highlighters=(
-                hl_cell([(1, 1)], crayon"bold"),
-                hl_col(2, crayon"dark_gray")
-            ),
-            show_header=false,
-            tf=tf_borderless
-        )
+        stream = Logging_module.get_log_stream(1)
+        if !isnothing(stream)
+            pretty_table(
+                stream,
+                data;
+                body_hlines=[1],
+                body_hlines_format=Tuple('─' for _ = 1:4),
+                cell_alignment=Dict((1, 1) => :l),
+                formatters=ft_printf("%10.1f", 2),
+                highlighters=(
+                    hl_cell([(1, 1)], crayon"bold"),
+                    hl_col(2, crayon"dark_gray")
+                ),
+                show_header=false,
+                tf=tf_borderless
+            )
+        end
     end
 end
 
