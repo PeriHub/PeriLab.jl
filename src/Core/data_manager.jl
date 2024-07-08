@@ -18,6 +18,7 @@ export has_key
 export get_block_list
 export get_crit_values_matrix
 export get_aniso_crit_values
+export get_gpu
 export get_comm
 export get_directory
 export get_field
@@ -100,6 +101,14 @@ function __init__()
 end
 
 ##########################
+"""
+    get_gpu()
+
+Get the GPU status
+"""
+function get_gpu()
+    return use_gpu[]
+end
 
 """
     get_comm()
@@ -111,6 +120,11 @@ function get_comm()
     return commMPi
 end
 
+"""
+    get_directory()
+
+Get the directory
+"""
 function get_directory()
     global filedirectory
     return filedirectory
@@ -304,10 +318,22 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
     end
     if bondOrNode == "Node_Field"
         if dof == 1
-            fields[vartype][name] = fill(vartype(default_value), nnodes)
+            if use_gpu[] && name in ["Volume"]
+                @info name
+                fields[vartype][name] = CuArray{vartype}(undef, nnodes)
+                fields[vartype][name] .= default_value
+            else
+                fields[vartype][name] = fill(vartype(default_value), nnodes)
+            end
             get_function = () -> view(fields[vartype][name], :)
         else
-            fields[vartype][name] = fill(vartype(default_value), nnodes, field_dof)
+            if use_gpu[] && name in ["Influence Function", "DamageNP1"]
+                @info name
+                fields[vartype][name] = CuArray{vartype}(undef, (nnodes, field_dof))
+                fields[vartype][name] .= default_value
+            else
+                fields[vartype][name] = fill(vartype(default_value), nnodes, field_dof)
+            end
             if VectorOrArray == "Matrix"
                 get_function = () -> view(reshape(fields[vartype][name], (:, dof, dof)), :, :, :)
             else

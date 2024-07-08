@@ -42,6 +42,9 @@ Initialize the solver
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
 function init(params::Dict, datamanager::Module, to::TimerOutput)
+    if datamanager.get_gpu()
+        @info "Initialized with CUDA support"
+    end
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
     block_nodes_with_neighbors = get_block_nodes(datamanager.get_field("Block_Id"), nnodes + num_responder)

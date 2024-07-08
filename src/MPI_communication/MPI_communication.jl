@@ -337,7 +337,8 @@ function send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, dis
         for rank in 1:MPI.Comm_size(comm)-1
             MPI.Isend(send_msg[distribution[rank+1]], comm; dest=rank, tag=0)
         end
-        recv_msg .= send_msg[distribution[1]]
+        # recv_msg .= send_msg[distribution[1]]
+        copyto!(recv_msg, send_msg[distribution[1]])
     else
         MPI.Recv!(recv_msg, comm; source=0, tag=0)
     end
