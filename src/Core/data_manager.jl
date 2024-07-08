@@ -35,6 +35,7 @@ export get_rank
 export get_num_responder
 export get_max_rank
 export get_cancel
+export get_output_frequency
 export init_property
 export rotation_data
 export set_block_list
@@ -54,6 +55,7 @@ export set_property
 export set_rank
 export set_max_rank
 export set_cancel
+export set_output_frequency
 export switch_NP1_to_N
 export synch_manager
 ##########################
@@ -86,6 +88,7 @@ global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => tru
     "Deformation Gradient" => false,
     "Shape Tensor" => false,
     "Bond Associated Deformation Gradient" => false)
+global output_frequency::Vector{Dict} = []
 global rank::Int64 = 0
 global commMPi::Any
 global cancel::Bool = false
@@ -861,6 +864,19 @@ function get_silent()
 end
 
 """
+    get_output_frequency()
+
+This function returns the `output_frequency` variable.
+
+# Returns
+- `output_frequency`::Any: The value of the `output_frequency` variable.
+"""
+function get_output_frequency()
+    global output_frequency
+    return output_frequency
+end
+
+"""
     loc_to_glob(range::UnitRange{Int64})
 
 Converts the local index to the global index.
@@ -1288,6 +1304,18 @@ Sets the silent flag.
 """
 function set_silent(value::Bool)
     global silent = value
+end
+
+"""
+    set_output_frequency(value)
+
+Sets the output frequency globally.
+
+# Arguments
+- `value`: The value to set as the output frequency.
+"""
+function set_output_frequency(value)
+    global output_frequency = value
 end
 
 """

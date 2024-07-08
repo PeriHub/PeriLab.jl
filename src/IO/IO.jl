@@ -31,7 +31,6 @@ export write_results
 export merge_exodus_files
 export show_block_summary
 export show_mpi_summary
-output_frequency::Vector{Dict} = []
 global_values::Vector{Float64} = []
 
 
@@ -349,8 +348,6 @@ Initialize write results.
 - `outputs::Dict`: The outputs
 """
 function init_write_results(params::Dict, output_dir::String, path::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
-    global output_frequency
-
     filenames = get_output_filenames(params, output_dir)
     if length(filenames) == 0
         @warn "No output file or output defined"
@@ -407,6 +404,7 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
 
     coords = vcat(transpose(coordinates[1:nnodes, :]))
     output_frequencies = get_output_frequency(params, nsteps)
+    output_frequency = []
     for id in eachindex(result_files)
 
         if result_files[id]["type"] == "Exodus"
@@ -418,6 +416,7 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
             close_result_file(result_files[id])
         end
     end
+    datamanager.set_output_frequency(output_frequency)
 
     return result_files, outputs
 end
@@ -437,13 +436,14 @@ Write results.
 - `result_files::Vector{Any}`: The result files
 """
 function write_results(result_files::Vector{Dict}, time::Float64, max_damage::Float64, outputs::Dict, datamanager::Module)
-
     for id in eachindex(result_files)
         output_type = outputs[id]["Output File Type"]
         # step 1 ist the zero step?!
         if outputs[id]["write_after_damage"] && max_damage == 0.0
             continue
         end
+        output_frequency = datamanager.get_output_frequency()
+        @info output_frequency
         output_frequency[id]["Counter"] += 1
         if output_frequency[id]["Counter"] == output_frequency[id]["Output Frequency"]
             output_frequency[id]["Step"] += 1
