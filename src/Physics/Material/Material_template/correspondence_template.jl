@@ -66,7 +66,7 @@ function correspondence_name()
 end
 
 """
-    compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, jID_nID::Tuple=())
+    compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -80,8 +80,7 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
-- `jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered jID the index of the bond of iID and nID the neighborID.
-
+- `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
@@ -90,7 +89,7 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, jID_nID::Tuple=())
+function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Union{SubArray,Array{Float64,3}}, stress_N::Union{SubArray,Array{Float64,3}}, stress_NP1::Union{SubArray,Array{Float64,3}}, iID_jID_nID::Tuple=())
   @info "Please write a material name in material_name()."
   @info "You can call your routine within the yaml file."
   @info "Fill the compute_forces() and init_material_model() function."

@@ -82,7 +82,7 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
 - `stress_N::SubArray`: Stress of step N.
 - `stress_NP1::SubArray`: Stress of step N+1.
-- `jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered jID the index of the bond of iID and nID the neighborID.
+- `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
@@ -90,7 +90,7 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, jID_nID::Tuple=())
+function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Union{SubArray,Array{Float64,3}}, stress_N::Union{SubArray,Array{Float64,3}}, stress_NP1::Union{SubArray,Array{Float64,3}}, iID_jID_nID::Tuple=())
 
    hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 

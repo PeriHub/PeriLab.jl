@@ -135,15 +135,14 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
   gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
 
-  ba_deformation_gradient = compute_bond_level_deformation_gradient(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient)
-  ba_rotation_tensor = compute_bond_level_rotation_tensor(nodes, nlist, ba_deformation_gradient, ba_rotation_tensor)
+  ba_deformation_gradient = compute_bond_level_deformation_gradient(nodes, nlist, dof, undeformed_bond, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient)
 
   strain_NP1 = compute_bond_strain(nodes, nlist, ba_deformation_gradient, strain_NP1)
-
   strain_increment[:][:, :, :] = strain_NP1[:][:, :, :] - strain_N[:][:, :, :]
   # TODO decomposition to get the rotation and large deformation in
   # TODO store not angles, but rotation matrices, because they are computed in decomposition
   if rotation
+    ba_rotation_tensor = compute_bond_level_rotation_tensor(nodes, nlist, ba_deformation_gradient, ba_rotation_tensor)
     stress_N = rotate(nodes, dof, stress_N, angles, false)
     strain_increment = rotate(nodes, dof, strain_increment, angles, false)
   end
@@ -156,7 +155,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     for iID in nodes
       for (jID, nID) in enumerate(nlist)
         # TODO how to make the seperation if the datamager is included?
-        stress_NP1[iID][jID, :, :], datamanager = mod.compute_stresses(datamanager, iID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (jID, nID))
+        stress_NP1[iID][jID, :, :], datamanager = mod.compute_stresses(datamanager, jID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (iID, jID, nID))
       end
     end
   end
