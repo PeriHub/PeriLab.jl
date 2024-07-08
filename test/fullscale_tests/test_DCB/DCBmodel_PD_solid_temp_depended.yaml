@@ -113,7 +113,6 @@ PeriLab:
         Poisson's Ratio: 0.3
     Pre Calculation:
       Bond Associated Deformation Gradient: false
-      Bond Associated Shape Tensor: false
       Deformation Gradient: false
       Deformed Bond Geometry: true
       Shape Tensor: false
