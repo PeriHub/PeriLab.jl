@@ -102,7 +102,7 @@ The information is stored in the [params dictionary](@ref "Parameters")
     - **Additive Model**: String representing the additive model.
     - **Print Temperature**: Numeric value representing the print temperature. (Float64 or Int64, optional)
 - **Pre Calculation**: Dictionary of pre-calculation parameters.
-  - **Bond Associated Deformation Gradient/Bond Associated Shape Tensor/Deformation Gradient/Deformed Bond Geometry/Shape Tensor**: Boolean values indicating whether to calculate the respective parameter. (optional)
+  - **Bond Associated Deformation Gradient/Deformation Gradient/Deformed Bond Geometry/Shape Tensor**: Boolean values indicating whether to calculate the respective parameter. (optional)
 
 ## `Solver`
 
