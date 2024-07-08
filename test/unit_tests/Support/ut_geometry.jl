@@ -175,14 +175,14 @@ end
     deformation_gradient[2, :, :] = [0.5 0.5; 0.5 0.5]
     expected_result = [
         [1.0 0.0; 0.0 1.0],
-        [0.7071067811865476 0.7071067811865476; 0.7071067811865476 0.7071067811865476]
+        [0.5 0.5; 0.5 0.5]
     ]
     left_stretch_tensor = zeros(Float64, 2, 2, 2)
     result = zeros(2, 2, 2)
     result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
     @test result[:, :] == expected_result[1]
     result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
-    @test result[:, :] == expected_result[2]
+    @test isapprox(result[:, :], expected_result[2])
     alpha = 22 * pi / 180
     rot = zeros(2, 2)
     rot = [cos(alpha) sin(alpha); -sin(alpha) cos(alpha)]
@@ -193,7 +193,7 @@ end
     result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
     @test result == expected_result[1]
     result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
-    @test result == expected_result[2]
+    @test isapprox(result[:, :], expected_result[2])
 
 end
 @testset "ut_shape_tensor_and_deformation_gradient" begin

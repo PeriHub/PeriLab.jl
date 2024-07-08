@@ -211,7 +211,7 @@ Therefore,
 """
 
 function compute_left_stretch_tensor(deformation_gradient::Matrix{Float64})
-    return sqrt.(deformation_gradient * deformation_gradient')
+    return sqrt(deformation_gradient * deformation_gradient')
 end
 
 function calculate_deformation_gradient(deformation_gradient, dof::Int64, bond_damage, deformed_bond, undeformed_bond, volume::Union{Vector{Int64},Vector{Float64}}, omega)
@@ -339,9 +339,7 @@ end
 function compute_bond_level_rotation_tensor(nodes, nlist, ba_deformation_gradient, ba_rotation_tensor)
     # all deformation gradients, etc. are in NP1. The increment is calculated outside this routine.
     for iID in nodes
-
         ba_rotation_tensor[iID][:, :, :] = deformation_gradient_decomposition(eachindex(nlist[iID]), ba_deformation_gradient[iID][:, :, :], ba_rotation_tensor[iID][:, :, :])
-
     end
     return ba_rotation_tensor
 end
