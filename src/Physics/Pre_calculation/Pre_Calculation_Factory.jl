@@ -21,6 +21,7 @@ export synchronize
 function synchronize(datamanager::Module, options::Dict, synchronise_field)
     if options["Bond Associated Deformation Gradient"]
         synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Deformation Gradient", "upload_to_cores")
+        synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Weighted Volume", "upload_to_cores")
     end
 end
 
@@ -51,7 +52,9 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, opti
     if options["Deformation Gradient"]
         @timeit to "Deformation Gradient" datamanager = Deformation_Gradient.compute(datamanager, nodes, block_id)
     end
-
+    if options["Bond Associated Deformation Gradient"]
+        @timeit to "Deformation Gradient" datamanager = Bond_Deformation_Gradient.compute(datamanager, nodes, block_id)
+    end
     return datamanager
 end
 
@@ -81,6 +84,8 @@ function init_pre_calculation(datamanager::Module, options::Dict)
 
     if options["Bond Associated Deformation Gradient"]
         datamanager.create_constant_bond_field("Bond Associated Deformation Gradient", Float64, "Matrix", dof)
+        datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
+        datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
         options["Deformed Bond Geometry"] = true
     end
     if options["Shape Tensor"]

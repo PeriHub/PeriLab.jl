@@ -4,8 +4,6 @@
 
 module Bond_Deformation_Gradient
 
-include("../Material/Material_Models/Bond_Associated_Correspondence.jl")
-using .Bond_Associated_Correspondence: find_local_neighbors
 include("../../Support/geometry.jl")
 using .Geometry: calculate_bond_length, compute_bond_level_deformation_gradient
 export compute
@@ -33,23 +31,19 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, bloc
     omega = datamanager.get_field("Influence Function")
     bond_damage = datamanager.get_bond_damage("NP1")
     undeformed_bond = datamanager.get_field("Bond Geometry")
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    bond_deformation = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformation_gradient = datamanager.get_field("Deformation Gradient")
     gradient_weights = datamanager.get_field("Lagrangian Gradient Weights")
-
-    gradient_weights = datamanager.get_field("Lagrangian Gradient Weights")
-
     weighted_volume = datamanager.get_field("Weighted Volume")
-
-    displacements = datamanager.get_field("Displacements", "NP1")
-    velocity = datamanager.get_field("Velocity", "NP1")
-    accuracy_order = material_parameter["Accuracy Order"]
-
+    bond_geometry = datamanager.get_field("Bond Geometry")
+    bond_length = datamanager.get_field("Bond Length")
     deformation_gradient = datamanager.get_field("Deformation Gradient")
-
-    ba_deformation_gradient = datamanager.get_field("Bond Deformation Gradient", "NP1")
+    horizon = datamanager.get_field("Horizon")
+    ba_deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
     ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
+    accuracy_order = 1
     try
+        # TODO accuracy order must be in place where it makes sense
         accuracy_order = datamanager.get_property(block_id, "Material Model", "Accuracy Order")
     catch
         @error "Accuracy order must be defined in all Materials if one is bond associated"
@@ -58,7 +52,6 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, bloc
     gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, bond_geometry, gradient_weights)
 
     ba_deformation_gradient = compute_bond_level_deformation_gradient(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient)
-
 
     return datamanager
 end

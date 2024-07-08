@@ -78,6 +78,15 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
                 datamanager = Damage.set_bond_damage(datamanager, active_nodes)
                 @timeit to "damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, active_nodes, block, synchronise_field, time, dt, to)
+            end
+        end
+        for block in eachindex(block_nodes)
+            nodes = block_nodes[block]
+            active_nodes = view(nodes, find_active(active[nodes]))
+            if fem_option
+                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
+            end
+            if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
                 @timeit to "damage" datamanager = Damage.compute_damage(datamanager, active_nodes, datamanager.get_properties(block, "Damage Model"), block, time, dt)
             end
         end
@@ -93,15 +102,17 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     end
     for block in eachindex(block_nodes)
         active_nodes, update_nodes = get_active_update_nodes(active, update_list, block_nodes, block)
-    end
-    for block in eachindex(block_nodes)
+
         if fem_option
             update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
+
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt, block, to)
     end
     @timeit to "pre_synchronize" Pre_calculation.synchronize(datamanager, datamanager.get_physics_options(), synchronise_field)
     for block in eachindex(block_nodes)
+        active_nodes, update_nodes = get_active_update_nodes(active, update_list, block_nodes, block)
+
         if fem_option
             update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
@@ -156,7 +167,7 @@ Compute the damage pre calculation
 """
 function compute_damage_pre_calculation(datamanager::Module, options::Dict, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64, to::TimerOutput)
 
-    @timeit to "compute" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt, to)
+    @timeit to "compute" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt, block, to)
 
     if options["Thermal Models"]
         @timeit to "thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
