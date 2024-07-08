@@ -349,6 +349,8 @@ Initialize write results.
 - `outputs::Dict`: The outputs
 """
 function init_write_results(params::Dict, output_dir::String, path::String, datamanager::Module, nsteps::Int64, PERILAB_VERSION::String)
+    global output_frequency
+
     filenames = get_output_filenames(params, output_dir)
     if length(filenames) == 0
         @warn "No output file or output defined"
@@ -405,7 +407,6 @@ function init_write_results(params::Dict, output_dir::String, path::String, data
 
     coords = vcat(transpose(coordinates[1:nnodes, :]))
     output_frequencies = get_output_frequency(params, nsteps)
-    global output_frequency = []
     for id in eachindex(result_files)
 
         if result_files[id]["type"] == "Exodus"
@@ -635,17 +636,29 @@ function show_block_summary(solver_options::Dict, params::Dict, log_file::String
         end
         if !silent
             pretty_table(full_df; show_subheader=false)
-            pretty_table(current_logger().loggers[2].logger.stream, full_df; show_subheader=false)
+            stream = Logging_module.get_log_stream(2)
+            if !isnothing(stream)
+                pretty_table(stream, full_df; show_subheader=false)
+            end
         else
-            pretty_table(current_logger().loggers[1].logger.stream, full_df; show_subheader=false)
+            stream = Logging_module.get_log_stream(1)
+            if !isnothing(stream)
+                pretty_table(stream, full_df; show_subheader=false)
+            end
         end
     else
         if log_file != ""
             if !silent
                 pretty_table(df; show_subheader=false)
-                pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
+                stream = Logging_module.get_log_stream(2)
+                if !isnothing(stream)
+                    pretty_table(stream, df; show_subheader=false)
+                end
             else
-                pretty_table(current_logger().loggers[1].logger.stream, df; show_subheader=false)
+                stream = Logging_module.get_log_stream(1)
+                if !isnothing(stream)
+                    pretty_table(stream, df; show_subheader=false)
+                end
             end
         end
     end
@@ -705,17 +718,29 @@ function show_mpi_summary(log_file::String, silent::Bool, comm::MPI.Comm, datama
         merged_df = vcat(all_dfs...)
         if !silent
             pretty_table(merged_df; show_subheader=false)
-            pretty_table(current_logger().loggers[2].logger.stream, merged_df; show_subheader=false)
+            stream = Logging_module.get_log_stream(2)
+            if !isnothing(stream)
+                pretty_table(stream, merged_df; show_subheader=false)
+            end
         else
-            pretty_table(current_logger().loggers[1].logger.stream, merged_df; show_subheader=false)
+            stream = Logging_module.get_log_stream(1)
+            if !isnothing(stream)
+                pretty_table(stream, merged_df; show_subheader=false)
+            end
         end
     else
         if log_file != ""
             if !silent
                 pretty_table(df; show_subheader=false)
-                pretty_table(current_logger().loggers[2].logger.stream, df; show_subheader=false)
+                stream = Logging_module.get_log_stream(2)
+                if !isnothing(stream)
+                    pretty_table(stream, df; show_subheader=false)
+                end
             else
-                pretty_table(current_logger().loggers[1].logger.stream, df; show_subheader=false)
+                stream = Logging_module.get_log_stream(1)
+                if !isnothing(stream)
+                    pretty_table(stream, df; show_subheader=false)
+                end
             end
         end
     end
