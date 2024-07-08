@@ -129,18 +129,6 @@ function calculate_shape_tensor(dof::Int64, volume, omega, bond_damage, undeform
 end
 
 
-function bond_associated_shape_tensor(dof::Int64, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
-    # bond geometries -> zwischen nachbar und seinen nachbarn
-    shape_tensor[:, :] = calculate_shape_tensor(dof, volume, omega, bond_damage, undeformed_bond)
-
-    inverse_shape_tensor[:, :] = invert(shape_tensor[:, :], "Shape Tensor is singular and cannot be inverted $(ex).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
-
-
-    return shape_tensor, inverse_shape_tensor
-
-end
-
-
 
 function bond_associated_deformation_gradient(dof::Int64, volume, omega, bond_damage, undeformed_bond, deformed_bond, deformation_gradient)
     # bond deformation -> zwischen nachbar und seinen nachbarn
@@ -319,6 +307,7 @@ This function iterates over the specified nodes and computes strain at each node
 
 """
 function compute_strain(nodes::Union{Base.OneTo{Int64},Vector{Int64},SubArray}, deformation_gradient::Union{Array{Float64,3},SubArray}, strain::Union{Array{Float64,3},SubArray})
+
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     for iID in nodes
         strain[iID, :, :] = 0.5 * (transpose(deformation_gradient[iID, :, :]) * deformation_gradient[iID, :, :] - I)
@@ -347,10 +336,17 @@ function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}})
 end
 
 
-function compute_bond_level_rotation_tensor(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient, ba_rotation_tensor)
-    ba_left_stretch = zeros(Float64, dof, dof)
-    mean_deformation_gradient = zeros(Float64, dof, dof)
+function compute_bond_level_rotation_tensor(nodes, nlist, ba_deformation_gradient, ba_rotation_tensor)
     # all deformation gradients, etc. are in NP1. The increment is calculated outside this routine.
+    for iID in nodes
+
+        ba_rotation_tensor[iID][:, :, :] = deformation_gradient_decomposition(eachindex(nlist[iID]), ba_deformation_gradient[iID][:, :, :], ba_rotation_tensor[iID][:, :, :])
+
+    end
+    return ba_rotation_tensor
+end
+
+function compute_bond_level_deformation_gradient(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient)
     for iID in nodes
         for (jID, nID) in enumerate(nlist[iID])
             mean_deformation_gradient = 0.5 .* (deformation_gradient[iID, :, :] + deformation_gradient[nID, :, :])
@@ -358,12 +354,9 @@ function compute_bond_level_rotation_tensor(nodes, nlist, dof, bond_geometry, bo
                 scalar_temp::Float64 = sum(mean_deformation_gradient[i, :] .* bond_geometry[iID][jID, i])
                 ba_deformation_gradient[iID][jID, i, :] = mean_deformation_gradient[i, :] .+ (bond_deformation[iID][jID, i] - scalar_temp) .* bond_geometry[iID][jID, i] / bond_length[iID][jID]
             end
-
-            ba_rotation_tensor[iID][:, :, :] = deformation_gradient_decomposition(eachindex(nlist[iID]), ba_deformation_gradient[iID][:, :, :], ba_rotation_tensor[iID][:, :, :])
         end
-
     end
-    return ba_rotation_tensor
+    return ba_deformation_gradient
 end
 
 function compute_bond_level_unrotated_rate_of_deformation_and_rotation_tensor_from_Peridigm()
