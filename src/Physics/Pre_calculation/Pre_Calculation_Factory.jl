@@ -25,29 +25,31 @@ function synchronize(datamanager::Module, options::Dict, synchronise_field)
 end
 
 """
-    compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64)
+    compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options::Dict, time::Float64, dt::Float64, block_id::Int64, to::TimerOutput)
 
 Compute the pre-calculation.
 
 # Arguments
 - `datamanager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `options`: Options.
+- `options::Dict`: Options.
 - `time::Float64`: Time.
 - `dt::Float64`: Time step.
+- `block_id::Int64`: Block ID
+- `to::TimerOutput`::TimerOutput 
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options::Dict, time::Float64, dt::Float64, to::TimerOutput)
+function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options::Dict, time::Float64, dt::Float64, block_id::Int64, to::TimerOutput)
 
     if options["Deformed Bond Geometry"]
-        @timeit to "Deformed Bond Geometry" datamanager = Bond_Deformation.compute(datamanager, nodes, time)
+        @timeit to "Deformed Bond Geometry" datamanager = Bond_Deformation.compute(datamanager, nodes, block_id)
     end
     if options["Shape Tensor"]
-        @timeit to "Shape Tensor" datamanager = Shape_Tensor.compute(datamanager, nodes)
+        @timeit to "Shape Tensor" datamanager = Shape_Tensor.compute(datamanager, nodes, block_id)
     end
     if options["Deformation Gradient"]
-        @timeit to "Deformation Gradient" datamanager = Deformation_Gradient.compute(datamanager, nodes)
+        @timeit to "Deformation Gradient" datamanager = Deformation_Gradient.compute(datamanager, nodes, block_id)
     end
 
     return datamanager

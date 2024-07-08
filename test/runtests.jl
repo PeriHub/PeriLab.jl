@@ -140,6 +140,9 @@ MPI.Init()
             @testset "ut_Physics_Factory" begin
                 include("unit_tests/Physics/ut_Physics_Factory.jl")
             end
+            @testset "ut_Pre_calculation" begin
+                include("unit_tests/Physics/Pre_calculation/ut_bond_deformation_gradient.jl")
+            end
             @testset "ut_Damage" begin
                 include("unit_tests/Physics/Damage/ut_Damage_Factory.jl")
                 include("unit_tests/Physics/Damage/ut_Energy_release.jl")
