@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bond_Associated_Correspondence
-using LinearAlgebra
+#using LinearAlgebra
 include("../../../Support/helpers.jl")
 include("../../../Support/geometry.jl")
 include("../material_basis.jl")
-using .Helpers: qdim, invert, find_local_neighbors
-using .Geometry: strain
+using .Helpers: find_local_neighbors, invert, qdim
+using .Geometry: compute_weighted_deformation_gradient, compute_strain
 using TimerOutputs
 
 function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
@@ -188,9 +188,9 @@ function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Un
   end
   return weighted_volume
 end
-function compute_bond_strain(nodes::Vector{Int64}, nlist, deformation_gradient, strain)
+function compute_bond_strain(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, deformation_gradient::SubArray, strain::SubArray)
   for iID in nodes
-    strain[iID][:, :, :] = strain(eachindes(nlist[iID]), deformation_gradient[iID][:, :, :], strain[iID][:, :, :])
+    strain[iID][:, :, :] = compute_strain(eachindex(nlist[iID]), deformation_gradient[iID][:, :, :], strain[iID][:, :, :])
   end
   return strain
 end

@@ -81,7 +81,7 @@ CurrentModule = PeriLab.IO.Geometry
 bond_geometry
 shape_tensor
 deformation_gradient
-strain
+compute_strain
 rotation_tensor
 ```
 
