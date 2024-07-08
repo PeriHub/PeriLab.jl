@@ -16,6 +16,13 @@ using .Deformation_Gradient
 using .Shape_Tensor
 export compute
 export init_pre_calculation
+export synchronize
+
+function synchronize(datamanger::Module, options::Dict, synchronise_field)
+    if options["Bond Associated Deformation Gradient"]
+        synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Deformation Gradient", "upload_to_cores")
+    end
+end
 
 """
     compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64)
@@ -31,7 +38,7 @@ Compute the pre-calculation.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options, time::Float64, dt::Float64, to::TimerOutput)
+function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, options::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
     if options["Deformed Bond Geometry"]
         @timeit to "Deformed Bond Geometry" datamanager = Bond_Deformation.compute(datamanager, nodes, time)
