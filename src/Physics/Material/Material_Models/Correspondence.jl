@@ -13,7 +13,7 @@ include("../material_basis.jl")
 include("../../../Support/helpers.jl")
 using .Helpers: invert
 include("../../../Support/geometry.jl")
-using .Geometry: strain
+using .Geometry: compute_strain
 using .Global_zero_energy_control
 include("../../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
@@ -133,7 +133,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   stress_N = datamanager.get_field("Cauchy Stress", "N")
   stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
   strain_increment = datamanager.get_field("Strain Increment")
-  strain_NP1 = Geometry.strain(nodes, deformation_gradient, strain_NP1)
+  strain_NP1 = compute_strain(nodes, deformation_gradient, strain_NP1)
   strain_increment[nodes, :, :] = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
 
   if rotation

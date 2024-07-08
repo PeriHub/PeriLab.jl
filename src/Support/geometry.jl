@@ -303,7 +303,7 @@ end
 
 
 """
-    function strain(nodes::Union{Base.OneTo{Int64},Vector{Int64}, SubArray}, deformation_gradient, strain)
+    function compute_strain(nodes::Union{Base.OneTo{Int64},Vector{Int64}, SubArray}, deformation_gradient, strain)
 
 Calculate strains for specified nodes based on deformation gradients.
 
@@ -318,7 +318,7 @@ Calculate strains for specified nodes based on deformation gradients.
 This function iterates over the specified nodes and computes strain at each node using the given deformation gradients.
 
 """
-function strain(nodes::Union{Base.OneTo{Int64},Vector{Int64},SubArray}, deformation_gradient::SubArray, strain::SubArray)
+function compute_strain(nodes::Union{Base.OneTo{Int64},Vector{Int64},SubArray}, deformation_gradient::Union{Array{Float64,3},SubArray}, strain::Union{Array{Float64,3},SubArray})
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     for iID in nodes
         strain[iID, :, :] = 0.5 * (transpose(deformation_gradient[iID, :, :]) * deformation_gradient[iID, :, :] - I)

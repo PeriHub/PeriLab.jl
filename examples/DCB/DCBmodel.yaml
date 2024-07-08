@@ -104,7 +104,6 @@ PeriLab:
         Young's Modulus: 40000.0
     Pre Calculation:
       Bond Associated Deformation Gradient: false
-      Bond Associated Shape Tensor: false
       Deformation Gradient: false
       Deformed Bond Geometry: true
       Shape Tensor: false

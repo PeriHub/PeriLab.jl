@@ -13,6 +13,38 @@ using Test
     @test Bond_Associated_Correspondence.correspondence_name() == "Correspondence Bond-Associated"
 end
 
+@testset "ut_compute_bond_strain" begin
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.clear_data_manager()
+    test_data_manager.set_num_controller(2)
+    test_data_manager.set_dof(2)
+
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 3
+    nn[2] = 1
+    nodes = [1, 2]
+
+    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist[1] = [2, 3]
+    nlist[2] = [1]
+
+
+    deformation_gradient = test_data_manager.create_constant_bond_field("Deformation Gradient", Float64, "Matrix", 2)
+    strain = test_data_manager.create_constant_bond_field("Strain", Float64, "Matrix", 2)
+
+    deformation_gradient[1][1, :, :] = [1 0; 0 1]
+    deformation_gradient[1][2, :, :] = [1 1; 1 1]
+
+    deformation_gradient[2][1, :, :] = [0 1; 0 1]
+
+    strain = Bond_Associated_Correspondence.compute_bond_strain(nodes, nlist, deformation_gradient, strain)
+
+    @test strain[1][1, :, :] == [0 0; 0 0]
+    @test strain[1][2, :, :] == [0.5 1; 1 0.5]
+    @test strain[2][1, :, :] == [-0.5 0; 0 -0.5]
+
+end
+
 @testset "ut_update_Green_Langrange_strain" begin
     dt = 0.1
     deformation_gradient = [1.0 0.2 0.0; 0.1 1.0 0.3; 0.0 0.1 1.0]

@@ -106,7 +106,6 @@ PeriLab:
         Predefined Field Names: "Volume"
     Pre Calculation:
       Bond Associated Deformation Gradient: false
-      Bond Associated Shape Tensor: false
       Deformation Gradient: false
       Deformed Bond Geometry: true
       Shape Tensor: false

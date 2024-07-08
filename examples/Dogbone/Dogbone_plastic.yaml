@@ -14,7 +14,6 @@ PeriLab:
       Deformed Bond Geometry: true
       Deformation Gradient: false
       Shape Tensor: false
-      Bond Associated Shape Tensor: false
       Bond Associated Deformation Gradient: false
     Material Models:
       PMMA:

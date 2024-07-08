@@ -315,7 +315,7 @@ end
 
 
     deformation_gradient = PeriLab.IO.Geometry.deformation_gradient(view(nodes, eachindex(nodes)), dof, nlist, volume, omega, bond_damage, undeformed_bond, undeformed_bond, inverse_shape_tensor, deformation_gradient)
-    strain = PeriLab.IO.Geometry.strain(nodes, deformation_gradient, strain)
+    strain = PeriLab.IO.Geometry.compute_strain(nodes, deformation_gradient, strain)
 
     for i in 1:nnodes
         @test strain[i, 1, 1] == 0
@@ -334,7 +334,7 @@ end
     deformation_gradient_3D[1, 3, 2] = -1.0
     deformation_gradient_3D[1, 3, 3] = 3.0
     strain_3D = test_data_manager.create_constant_node_field("Strain_3D", Float64, "Matrix", 3)
-    strain_3D = PeriLab.IO.Geometry.strain(view(nodes, eachindex(nodes)), deformation_gradient_3D, strain_3D)
+    strain_3D = PeriLab.IO.Geometry.compute_strain(view(nodes, eachindex(nodes)), deformation_gradient_3D, strain_3D)
     identity = zeros(3, 3)
     identity[1, 1] = 1
     identity[2, 2] = 1
