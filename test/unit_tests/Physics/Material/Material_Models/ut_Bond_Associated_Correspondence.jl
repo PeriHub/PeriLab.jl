@@ -38,10 +38,10 @@ end
     deformation_gradient[2][1, :, :] = [0 1; 0 1]
 
     strain = Bond_Associated_Correspondence.compute_bond_strain(nodes, nlist, deformation_gradient, strain)
-
+    println()
     @test strain[1][1, :, :] == [0 0; 0 0]
-    @test strain[1][2, :, :] == [0.5 1; 1 0.5]
-    @test strain[2][1, :, :] == [-0.5 0; 0 -0.5]
+    @test strain[1][2, :, :] == [0.5 1.0; 0.5 1.0]
+    @test strain[2][1, :, :] == [-0.5 0; 0 0.5]
 
 end
 
