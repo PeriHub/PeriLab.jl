@@ -18,7 +18,7 @@ end
 Init the Lagrange element of a given polynomial degree. This degree can be different for each direction
 
 # Arguments
-- `datamanager::Module`: Datamanger.
+- `datamanager::Module`: Datamanager.
 - `elements::Union{SubArray,Vector{Int64}}`: listed element numbers
 - `element_params::Dict`: Element specific data.
 - `p::Vector{Int64}`: A vector containing the polynomial degrees for each degree of freedom.
