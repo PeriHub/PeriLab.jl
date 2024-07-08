@@ -67,7 +67,7 @@ PeriLab:
   Outputs:
     Output1:
       Number of Output Steps: 100
-      Output Filename: DCBmodel_correspondence
+      Output Filename: DCBmodel_bond_associanted_correspondence
       Output File Type: Exodus
       Output Variables:
         Damage: true
