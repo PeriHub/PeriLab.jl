@@ -7,7 +7,7 @@ using Test
 #using .PeriLab
 
 
-@testset "ut_compute_bond_level_rotation_tensor" begin
+@testset "ut_compute_bond_level_deformation_gradient" begin
     nodes = [1]
     nlist = [[2]]
     dof = 2
@@ -20,9 +20,21 @@ using Test
     deformation_gradient[1, :, :] = [1 0; 0 1]
     deformation_gradient[2, :, :] = [1 0; 0 1]
 
-    ba_rotation_tensor = [zeros(Float64, 1, dof, dof) for _ in 1:dof]
-    @test PeriLab.IO.Geometry.compute_bond_level_rotation_tensor(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient, ba_rotation_tensor)[1][1, :, :] == [1 0; 0 1]
+    @test PeriLab.IO.Geometry.compute_bond_level_deformation_gradient(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient)[1][1, :, :] == [1 0; 0 1]
 
+end
+
+@testset "ut_compute_bond_level_rotation_tensor" begin
+    nodes = [1]
+    nlist = [[2]]
+    dof = 2
+    ba_deformation_gradient = [zeros(Float64, 1, dof, dof) for _ in 1:dof]
+
+    ba_deformation_gradient[1][1, :, :] = [1 0; 0 1]
+
+    ba_rotation_tensor = [zeros(Float64, 1, dof, dof) for _ in 1:dof]
+
+    @test PeriLab.IO.Geometry.compute_bond_level_rotation_tensor(nodes, nlist, ba_deformation_gradient, ba_rotation_tensor)[1][1, :, :] == [1 0; 0 1]
 
 end
 

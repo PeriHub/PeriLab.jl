@@ -8,7 +8,7 @@ include("../../../Support/helpers.jl")
 include("../../../Support/geometry.jl")
 include("../material_basis.jl")
 using .Helpers: find_local_neighbors, invert, qdim
-using .Geometry: compute_weighted_deformation_gradient, compute_strain
+using .Geometry: compute_weighted_deformation_gradient, compute_strain, compute_bond_level_rotation_tensor, compute_bond_level_deformation_gradient
 using TimerOutputs
 
 function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
@@ -105,6 +105,8 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   bond_length = datamanager.get_field("Bond Length")
 
   undeformed_bond = datamanager.get_field("Bond Geometry")
+  bond_length = datamanager.get_field("Bond Length")
+  bond_deformation = datamanager.get_field("Deformed Bond Geometry", "NP1")
 
   strain_N = datamanager.get_field("Bond Strain", "N")
   strain_NP1 = datamanager.get_field("Bond Strain", "NP1")
@@ -127,28 +129,17 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
   deformation_gradient = datamanager.get_field("Deformation Gradient")
 
-
-
-
-  function compute_bond_associated_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, coordinates::Union{SubArray,Matrix{Float64}}, bond_damage::Union{SubArray,Vector{Vector{Float64}}}, omega::Union{SubArray,Vector{Vector{Float64}}}, volume::Union{SubArray,Vector{Float64}}, bond_horizon::Float64, weighted_volume::Union{SubArray,Vector{Vector{Float64}}})
-    neighborhood_volume::Float64 = 0
-    for iID in nodes
-
-      neighborhood_volume = sum(volume[nlist[iID]] .* bond_damage[iID] .* omega[iID])
-
-      for (jID, nID) in enumerate(nlist[iID])
-        local_nlist = find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon)
-        sub_bond_list = [findfirst(x -> x == elem, nlist[iID]) for elem in local_nlist]
-        weighted_volume[iID][jID] = sum(volume[local_nlist] .* bond_damage[iID][sub_bond_list] .* omega[iID][sub_bond_list] / neighborhood_volume)
-      end
-    end
-    return weighted_volume
-  end
+  ba_deformation_gradient = datamanager.get_field("Bond Deformation Gradient", "NP1")
+  ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
 
   weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
   gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
-  deformation_gradient = compute_weighted_deformation_gradient(nodes, dof, nlist, volume, gradient_weights, displacements, deformation_gradient)
-  strain_NP1 = compute_bond_strain(nodes, nlist, deformation_gradient, strain_NP1)
+
+  ba_deformation_gradient = compute_bond_level_deformation_gradient(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient)
+  ba_rotation_tensor = compute_bond_level_rotation_tensor(nodes, nlist, ba_deformation_gradient, ba_rotation_tensor)
+
+  strain_NP1 = compute_bond_strain(nodes, nlist, ba_deformation_gradient, strain_NP1)
+
   strain_increment[:][:, :, :] = strain_NP1[:][:, :, :] - strain_N[:][:, :, :]
   # TODO decomposition to get the rotation and large deformation in
   # TODO store not angles, but rotation matrices, because they are computed in decomposition
@@ -188,7 +179,10 @@ function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Un
   end
   return weighted_volume
 end
-function compute_bond_strain(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, deformation_gradient::SubArray, strain::SubArray)
+#function compute_bond_strain(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, deformation_gradient::SubArray, strain::SubArray)
+#
+function compute_bond_strain(nodes, nlist, deformation_gradient, strain)
+
   for iID in nodes
     strain[iID][:, :, :] = compute_strain(eachindex(nlist[iID]), deformation_gradient[iID][:, :, :], strain[iID][:, :, :])
   end
