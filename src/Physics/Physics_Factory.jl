@@ -99,7 +99,7 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
         @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt, to)
-        @timeit to "pre_synchronize" Pre_calculation.synchronize(datamanger, datamanager.get_physics_options(), synchronise_field)
+        @timeit to "pre_synchronize" Pre_calculation.synchronize(datamanager, datamanager.get_physics_options(), synchronise_field)
 
         if options["Thermal Models"]
             if datamanager.check_property(block, "Thermal Model")

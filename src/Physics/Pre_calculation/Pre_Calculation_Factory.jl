@@ -18,7 +18,7 @@ export compute
 export init_pre_calculation
 export synchronize
 
-function synchronize(datamanger::Module, options::Dict, synchronise_field)
+function synchronize(datamanager::Module, options::Dict, synchronise_field)
     if options["Bond Associated Deformation Gradient"]
         synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Deformation Gradient", "upload_to_cores")
     end
