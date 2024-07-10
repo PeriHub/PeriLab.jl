@@ -86,6 +86,7 @@ PeriLab:
     Material Models:
       Aluminium:
         Material Model: "Correspondence Elastic"
+        Accuracy Order: 2
         Bond Associated: true
         Bond Horizon: 0.42
         Zero Energy Control: "Global"
@@ -94,7 +95,6 @@ PeriLab:
         Poisson's Ratio: 0.3
     Pre Calculation:
       Bond Associated Deformation Gradient: true
-      Bond Associated Shape Tensor: true
       Deformation Gradient: false
       Deformed Bond Geometry: true
       Shape Tensor: false
