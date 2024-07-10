@@ -2,9 +2,36 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# include("../../../src/Core/data_manager.jl")
 using MPI
 using Test
+
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
+
+
+@testset "set_and_get_pre_calculation" begin
+
+    test_data_manager = PeriLab.Data_manager
+
+    @test test_data_manager.get_pre_calculation() == []
+
+
+    test_data_manager.set_pre_calculation(PeriLab)
+    test_list = test_data_manager.get_pre_calculation()
+
+    @test length(test_list) == 1
+    @test PeriLab in test_list
+    @test !(test_data_manager in test_list)
+    test_data_manager.set_pre_calculation(test_data_manager)
+    @test length(test_list) == 2
+    @test PeriLab in test_list
+    @test test_data_manager in test_list
+    test_data_manager.set_pre_calculation(test_data_manager)
+    @test PeriLab in test_list
+    @test test_data_manager in test_list
+    @test length(test_list) == 2
+end
+
 @testset "set_comm" begin
     # MPI.Init()
     comm = MPI.COMM_WORLD

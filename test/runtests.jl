@@ -48,10 +48,6 @@ MPI.Init()
                 end
             end
 
-            @testset "ut_data_manager" begin
-                include("unit_tests/Support/ut_data_manager.jl")
-            end
-
             @testset "ut_helpers" begin
                 include("unit_tests/Support/ut_helpers.jl")
             end
@@ -61,6 +57,9 @@ MPI.Init()
             end
         end
         @testset "Core" begin
+            @testset "ut_data_manager" begin
+                include("unit_tests/Core/ut_data_manager.jl")
+            end
             @testset "Solver" begin
 
                 @testset "ut_Solver_control" begin
