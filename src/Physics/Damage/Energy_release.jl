@@ -231,8 +231,9 @@ Compute the pre calculation for the damage.
 - `datamanager::Data_manager`: Datamanager.
 """
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+    synchfield = Dict{String,String}("Bond Forces" => "upload_to_cores")
 
-    synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Bond Forces", "upload_to_cores")
+    synchronise_field(datamanager.get_comm(), synchfield, datamanager.get_overlap_map(), datamanager.get_field, "Bond Forces", "upload_to_cores")
 
     return datamanager
 end
