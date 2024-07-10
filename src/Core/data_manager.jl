@@ -28,7 +28,6 @@ export get_nnsets
 export get_nsets
 export get_nnodes
 export get_num_elements
-export get_pre_calculation
 export get_physics_options
 export get_properties
 export get_property
@@ -52,7 +51,6 @@ export set_nset
 export set_num_elements
 export set_num_responder
 export set_physics_options
-export set_pre_calculation
 export set_property
 export set_rank
 export set_max_rank
@@ -91,7 +89,6 @@ global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => tru
     "Shape Tensor" => false,
     "Bond Associated Deformation Gradient" => false)
 global output_frequency::Vector{Dict} = []
-global pre_calculation_list::Vector{Module} = []
 global rank::Int64 = 0
 global commMPi::Any
 global cancel::Bool = false
@@ -742,10 +739,6 @@ function get_physics_options()
     return physics_options
 end
 
-function get_pre_calculation()
-    global pre_calculation_list
-    return pre_calculation_list
-end
 """
     get_properties(block_id::Int64, property::String)
 
@@ -1206,12 +1199,6 @@ function set_physics_options(values::Dict{String,Bool})
 end
 
 
-function set_pre_calculation(module_input::Module)
-    global pre_calculation_list
-    if !(module_input in pre_calculation_list)
-        push!(pre_calculation_list, module_input)
-    end
-end
 
 """
     set_property(block_id, property, value_name, value)
