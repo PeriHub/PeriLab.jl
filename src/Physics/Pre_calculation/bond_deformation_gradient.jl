@@ -5,7 +5,7 @@
 module Bond_Deformation_Gradient
 
 include("../../Support/geometry.jl")
-using .Geometry: calculate_bond_length, compute_bond_level_deformation_gradient
+using .Geometry: calculate_bond_length, compute_weighted_deformation_gradient
 export compute
 include("../../Support/helpers.jl")
 using .Helpers: invert, qdim
@@ -33,26 +33,26 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, bloc
     undeformed_bond = datamanager.get_field("Bond Geometry")
     bond_deformation = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformation_gradient = datamanager.get_field("Deformation Gradient")
+    displacement = datamanager.get_field("Displacements", "NP1")
     gradient_weights = datamanager.get_field("Lagrangian Gradient Weights")
     weighted_volume = datamanager.get_field("Weighted Volume")
     bond_geometry = datamanager.get_field("Bond Geometry")
     bond_length = datamanager.get_field("Bond Length")
-    deformation_gradient = datamanager.get_field("Deformation Gradient")
+    deformation_gradient = datamanager.get_field("Weighted Deformation Gradient")
     horizon = datamanager.get_field("Horizon")
     ba_deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
     ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
-    accuracy_order = 1
+    accuracy_order = 2 # TODO check if a fix value is okay
     try
         # TODO accuracy order must be in place where it makes sense
         accuracy_order = datamanager.get_property(block_id, "Material Model", "Accuracy Order")
     catch
-        @error "Accuracy order must be defined in all Materials if one is bond associated"
+        @warn "Accuracy order must be defined in all Materials if one is bond associated"
+        accuracy_order = 2
     end
     weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
     gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, bond_geometry, gradient_weights)
-
-    ba_deformation_gradient = compute_bond_level_deformation_gradient(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient)
-
+    deformation_gradient = compute_weighted_deformation_gradient(nodes, dof, nlist, volume, gradient_weights, displacement, deformation_gradient)
     return datamanager
 end
 
