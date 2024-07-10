@@ -484,7 +484,7 @@ end
     @test optionTest["Deformed Bond Geometry"]
 
     params = Dict("Physics" => Dict(
-        "Material Models" => Dict("aBond Associated" => Dict("Material Model" => "adaCoBond Associated", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
+        "Material Models" => Dict("aBond Correspondence" => Dict("Material Model" => "adaCoBond Correspondence", "value" => 1, "Bond Associated" => true), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
     optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
 
     @test optionTest["Shape Tensor"]
