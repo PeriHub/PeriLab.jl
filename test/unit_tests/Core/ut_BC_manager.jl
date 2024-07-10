@@ -159,7 +159,8 @@ end
     test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
     test_data_manager.create_constant_node_field("Forces", Float64, 3)
     test_data_manager.create_node_field("Displacements", Float64, 3)
-
+    test_data_manager.set_nset("Nset_1", [1, 2, 3])
+    test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Variable" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "5")))
 
     force = test_data_manager.get_field("Forces")
@@ -172,15 +173,15 @@ end
     disp = test_data_manager.get_field("Displacements", "NP1")
     @test sum(force) == 0
     @test sum(disp) == 20
-    @test disp == [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5]
+    @test isapprox(disp, [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5])
 
     PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.2)
     force = test_data_manager.get_field("Forces")
     disp = test_data_manager.get_field("Displacements", "NP1")
     @test sum(force) == 12
-    @test force == [4 0 0; 0 0 0; 4 0 0; 4 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0]
+    @test isapprox(force, [4 0 0; 0 0 0; 4 0 0; 4 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0])
     @test sum(disp) == 20
-    @test disp == [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5]
+    @test isapprox(disp, [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5])
     # test if global nodes are not at the core
     bcs["BC_1"]["Node Set"] = []
     bcs["BC_2"]["Node Set"] = []
