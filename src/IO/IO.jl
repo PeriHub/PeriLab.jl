@@ -443,7 +443,6 @@ function write_results(result_files::Vector{Dict}, time::Float64, max_damage::Fl
             continue
         end
         output_frequency = datamanager.get_output_frequency()
-        @info output_frequency
         output_frequency[id]["Counter"] += 1
         if output_frequency[id]["Counter"] == output_frequency[id]["Output Frequency"]
             output_frequency[id]["Step"] += 1
