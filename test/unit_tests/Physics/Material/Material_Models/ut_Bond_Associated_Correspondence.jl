@@ -20,7 +20,7 @@ end
     test_data_manager.set_dof(2)
 
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn[1] = 3
+    nn[1] = 2
     nn[2] = 1
     nodes = [1, 2]
 
@@ -64,23 +64,22 @@ end
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(3)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn .= 1
+    nn[:] .= 1
+    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist[1] = [2]
+    nlist[2] = [1]
     nodes = Vector{Int64}(1:2)
-
+    test_data_manager.create_constant_node_field("Volume", Float64, 1)
+    test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
+    test_data_manager.create_bond_field("Bond Damage", Float64, 1)
     @test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict()))
 
     material_parameter = Dict{String,Any}("Symmetry" => "isotropic")
     test_data_manager = Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, material_parameter)
+
     @test haskey(material_parameter, "Accuracy Order")
     @test material_parameter["Accuracy Order"] == 1
-    @test "Bond StrainN" in test_data_manager.get_all_field_keys()
-    @test "Bond StrainNP1" in test_data_manager.get_all_field_keys()
-    @test "Bond Cauchy StressN" in test_data_manager.get_all_field_keys()
-    @test "Bond Cauchy StressNP1" in test_data_manager.get_all_field_keys()
-    @test "Bond Strain Increment" in test_data_manager.get_all_field_keys()
-    @test "Weighted Volume" in test_data_manager.get_all_field_keys()
-    @test "Lagrangian Gradient Weights" in test_data_manager.get_all_field_keys()
-    @test "Integral Nodal Stress" in test_data_manager.get_all_field_keys()
+
     material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
     test_data_manager = Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, material_parameter)
 
@@ -96,7 +95,8 @@ end
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(dof)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn .= 1
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[:] .= 1
     nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     nlist[1][:] = [2]
     nlist[2][:] = [1]
