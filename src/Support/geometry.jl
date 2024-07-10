@@ -177,12 +177,11 @@ deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 compute_deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 """
 function compute_deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, undeformed_bond::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
-    deformation_gradient .= 0
+    deformation_gradient[nodes, :, :] .= 0
     for iID in nodes
         deformation_gradient[iID, :, :] = calculate_deformation_gradient(deformation_gradient[iID, :, :], dof, bond_damage[iID], deformed_bond[iID], undeformed_bond[iID], volume[nlist[iID]], omega[iID])
         deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]
     end
-
     return deformation_gradient
 end
 
