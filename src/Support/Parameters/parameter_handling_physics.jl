@@ -158,7 +158,7 @@ function get_physics_option(params::Dict, options::Dict)
                 options["Deformation Gradient"] = true
                 options["Deformed Bond Geometry"] = true
                 if haskey(materials[material], "Bond Associated")
-                    if !(options["Bond Associated Deformation Gradient"])
+                    if !(options["Bond Associated"])
                         # if its activated it stays that way
                         options["Bond Associated Deformation Gradient"] = materials[material]["Bond Associated"]
                     end
