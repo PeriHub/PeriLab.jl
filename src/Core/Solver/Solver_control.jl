@@ -10,7 +10,7 @@ include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
 @reexport using .Parameter_Handling: get_density, get_horizon, get_solver_name, get_solver_options, get_fem_block
 @reexport using .Helpers: find_indices
-include("../../Physics/Physics_Factory.jl")
+include("../../Physics/Model_Factory.jl")
 include("../../Physics/Damage/Damage_Factory.jl")
 include("Verlet.jl")
 include("../BC_manager.jl")

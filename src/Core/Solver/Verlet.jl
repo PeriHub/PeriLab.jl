@@ -18,7 +18,7 @@ include("../../Support/Parameters/parameter_handling.jl")
 
 include("../../MPI_communication/MPI_communication.jl")
 include("../BC_manager.jl")
-include("../../Physics/Physics_Factory.jl")
+include("../../Physics/Model_Factory.jl")
 include("../../IO/logging.jl")
 using .Physics
 using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann

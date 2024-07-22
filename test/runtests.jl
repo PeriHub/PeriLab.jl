@@ -137,8 +137,8 @@ MPI.Init()
                 end
             end
 
-            @testset "ut_Physics_Factory" begin
-                include("unit_tests/Physics/ut_Physics_Factory.jl")
+            @testset "ut_Model_Factory" begin
+                include("unit_tests/Physics/ut_Model_Factory.jl")
             end
             @testset "ut_Damage" begin
                 include("unit_tests/Physics/Damage/ut_Damage_Factory.jl")
