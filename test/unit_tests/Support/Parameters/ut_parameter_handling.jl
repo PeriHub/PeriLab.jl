@@ -2,16 +2,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# if !isdefined(@__MODULE__, :Data_manager)
-#     include("../../../../src/Core/data_manager.jl")
-# end
-# include("../../../../src/Support/Parameters/parameter_handling.jl")
-# include("../../../../src/Support/helpers.jl")
+
 using Test
 using Random
 using Dierckx
 
-
+#include("../../../../src/PeriLab.jl")
+#using .PeriLab
 @testset "ut_get_element_degree" begin
     @test isnothing(PeriLab.Solver.Parameter_Handling.get_element_degree(Dict()))
     @test isnothing(PeriLab.Solver.Parameter_Handling.get_element_degree(Dict("Degree" => "ABC")))
@@ -19,6 +16,73 @@ using Dierckx
     @test PeriLab.Solver.Parameter_Handling.get_element_degree(Dict("Degree" => 1)) == 1
     @test PeriLab.Solver.Parameter_Handling.get_element_degree(Dict("Degree" => [1, 2, 3])) == [1, 2, 3]
     @test PeriLab.Solver.Parameter_Handling.get_element_degree(Dict("Degree" => [1, 2, 3, 5])) == [1, 2, 3, 5]
+end
+
+@testset "get_physics_option" begin
+    params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => false,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => true,
+        "Bond Associated Deformation Gradient" => false)))
+    options = Dict{String,Bool}("Deformed Bond Geometry" => true,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)
+    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    # no material models included
+    @test optionTest == params["Physics"]["Pre Calculation"]
+
+    params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => true,
+            "Deformation Gradient" => true,
+            "Shape Tensor" => false,
+            "Bond Associated Deformation Gradient" => true),
+        "Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1))))
+    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+
+    @test isnothing(optionTest)
+
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("a" => Dict("Material Model" => "adaCoB", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1))))
+    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    @test isnothing(optionTest)
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
+    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    @test isnothing(optionTest)
+
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("a" => Dict("value" => 1, "Material Model" => "adaCoB"), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
+    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    @test optionTest == options
+
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("a" => Dict("Material Model" => "adaCorrespondence", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCorresponde"))))
+    options = Dict{String,Bool}("Deformed Bond Geometry" => false,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)
+    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    @test optionTest["Shape Tensor"]
+    @test !optionTest["Bond Associated Deformation Gradient"]
+    @test optionTest["Deformation Gradient"]
+    @test optionTest["Deformed Bond Geometry"]
+    options = Dict{String,Bool}("Deformed Bond Geometry" => false,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("aBond Correspondence" => Dict("Material Model" => "adaCoBond Correspondence", "value" => 1, "Bond Associated" => true), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
+    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+
+    @test !optionTest["Shape Tensor"]
+    @test optionTest["Bond Associated Deformation Gradient"]
+    @test !optionTest["Deformation Gradient"]
+    @test optionTest["Deformed Bond Geometry"]
+    params = Dict("Physics" => Dict(
+        "Material Models" => Dict("aCorrespondence" => Dict("Material Model" => "adaCorrespondence", "value" => 1), "c Bond Associated" => Dict("Material Model" => "adaCoBond Associated", "value" => [1 2], "value2" => 1))))
+    options = Dict{String,Bool}("Deformed Bond Geometry" => false,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)
 end
 
 @testset "ut_get_element_type" begin
@@ -435,69 +499,7 @@ end
     @test testData["Damage Model"]["ss"] == 0
     @test testData["Damage Model"]["d"] == 1.1
 end
-@testset "get_physics_option" begin
-    params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => false,
-        "Deformation Gradient" => false,
-        "Shape Tensor" => true,
-        "Bond Associated Deformation Gradient" => false)))
-    options = Dict{String,Bool}("Deformed Bond Geometry" => true,
-        "Deformation Gradient" => false,
-        "Shape Tensor" => false,
-        "Bond Associated Deformation Gradient" => false)
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
-    # no material models included
-    @test optionTest == params["Physics"]["Pre Calculation"]
 
-    params = Dict("Physics" => Dict("Pre Calculation" => Dict{String,Bool}("Deformed Bond Geometry" => true,
-            "Deformation Gradient" => true,
-            "Shape Tensor" => false,
-            "Bond Associated Deformation Gradient" => true),
-        "Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1))))
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
-
-    @test isnothing(optionTest)
-
-    params = Dict("Physics" => Dict(
-        "Material Models" => Dict("a" => Dict("Material Model" => "adaCoB", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1))))
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
-    @test isnothing(optionTest)
-    params = Dict("Physics" => Dict(
-        "Material Models" => Dict("a" => Dict("value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
-    @test isnothing(optionTest)
-
-    params = Dict("Physics" => Dict(
-        "Material Models" => Dict("a" => Dict("value" => 1, "Material Model" => "adaCoB"), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
-    @test optionTest == options
-
-    params = Dict("Physics" => Dict(
-        "Material Models" => Dict("a" => Dict("Material Model" => "adaCorrespondence", "value" => 1), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCorresponde"))))
-    options = Dict{String,Bool}("Deformed Bond Geometry" => false,
-        "Deformation Gradient" => false,
-        "Shape Tensor" => false,
-        "Bond Associated Deformation Gradient" => false)
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
-    @test optionTest["Shape Tensor"]
-    @test !optionTest["Bond Associated Deformation Gradient"]
-    @test optionTest["Deformation Gradient"]
-    @test optionTest["Deformed Bond Geometry"]
-
-    params = Dict("Physics" => Dict(
-        "Material Models" => Dict("aBond Correspondence" => Dict("Material Model" => "adaCoBond Correspondence", "value" => 1, "Bond Associated" => true), "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"))))
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
-
-    @test optionTest["Shape Tensor"]
-    @test optionTest["Bond Associated Deformation Gradient"]
-    @test optionTest["Deformation Gradient"]
-    @test optionTest["Deformed Bond Geometry"]
-    params = Dict("Physics" => Dict(
-        "Material Models" => Dict("aCorrespondence" => Dict("Material Model" => "adaCorrespondence", "value" => 1), "c Bond Associated" => Dict("Material Model" => "adaCoBond Associated", "value" => [1 2], "value2" => 1))))
-    options = Dict{String,Bool}("Deformed Bond Geometry" => false,
-        "Deformation Gradient" => false,
-        "Shape Tensor" => false,
-        "Bond Associated Deformation Gradient" => false)
-end
 @testset "ut_check_for_duplicates" begin
     @test !(PeriLab.Solver.Parameter_Handling.check_for_duplicates(["a", "b", "c"]))
     @test isnothing(PeriLab.Solver.Parameter_Handling.check_for_duplicates(["a", "b", "c", "a"]))
