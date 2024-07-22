@@ -41,7 +41,11 @@ function compute(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}})
     active = datamanager.get_field("Active")
     update_list = datamanager.get_field("Update List")
     fem_option = datamanager.fem_active()
-    for pre_calculation_model in keys(datamanager.get_physics_options())
+    physics_options = datamanager.get_physics_options()
+    for pre_calculation_model in keys(physics_options)
+        if !(physics_options[pre_calculation_model])
+            continue
+        end
         mod = datamanager.get_model_module(pre_calculation_model)
         for block in eachindex(block_nodes)
             nodes = block_nodes[block]
@@ -53,6 +57,7 @@ function compute(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}})
             datamanager = mod.compute(datamanager, update_nodes, block)
         end
     end
+
     return datamanager
 end
 
