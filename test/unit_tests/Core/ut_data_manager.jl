@@ -5,8 +5,8 @@
 using MPI
 using Test
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../src/PeriLab.jl")
+using .PeriLab
 
 @testset "set_comm" begin
     # MPI.Init()
@@ -544,3 +544,13 @@ end
     @test test_data_manager.get_crit_values_matrix() == crit_values
 end
 
+
+@testset "ut_clear_data_manager" begin
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.create_node_field("test4", Float64, 3)
+    test_data_manager.clear_data_manager()
+    println()
+    @test test_data_manager.get_nnodes() == 0
+    @test test_data_manager.get_dof() == 1
+    @test test_data_manager.get_all_field_keys() == []
+end
