@@ -104,7 +104,7 @@ function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector
     end
 
     if datamanager.has_key("Deformation Gradient")
-        block_id = datamanger.get_field("Block_Id")
+        block_id = datamanager.get_field("Block_Id")
         # is a work around to get the block ID information. Because all points in this routine are in the same block, the first node give the information
         datamanager = Deformation_Gradient.compute(datamanager, nodes, block_id[nodes[1]])
     end
