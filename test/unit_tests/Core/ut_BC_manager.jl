@@ -154,7 +154,8 @@ end
 @testset "ut_apply_bc" begin
 
     test_data_manager = PeriLab.Data_manager
-
+    test_data_manager.clear_data_manager()
+    test_data_manager.set_num_controller(10)
     test_data_manager.set_dof(3)
     test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
     test_data_manager.create_constant_node_field("Forces", Float64, 3)
