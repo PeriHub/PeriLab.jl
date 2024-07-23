@@ -372,6 +372,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
     density = datamanager.get_field("Density")
     coor = datamanager.get_field("Coordinates")
     uNP1 = datamanager.get_field("Displacements", "NP1")
+    comm = datamanager.get_comm()
 
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     if solver_options["Material Models"]
@@ -520,6 +521,7 @@ function run_solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Ve
             if rank == 0 && !silent
                 set_postfix(iter, t=@sprintf("%.4e", step_time))
             end
+            MPI.Barrier(comm)
 
         end
     end

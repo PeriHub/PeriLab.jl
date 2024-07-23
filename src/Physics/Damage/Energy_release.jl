@@ -75,11 +75,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     critical_field = datamanager.has_key("Critical_Value")
-    if critical_field
-        critical_energy = datamanager.get_field("Critical_Value")
-    else
-        critical_energy = damage_parameter["Critical Value"]
-    end
+    critical_energy = critical_field ? datamanager.get_field("Critical_Value") : damage_parameter["Critical Value"]
     quad_horizon = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
     dependend_value::Bool = false
@@ -124,15 +120,11 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         end
 
         for (jID, neighborID) in enumerate(nlist[iID])
-            norm_displacement = norm(relative_displacement_vector[jID, :])
+            relative_displacement = relative_displacement_vector[jID, :]
+            norm_displacement = norm(relative_displacement)
 
-            if norm_displacement == 0
+            if norm_displacement == 0 || (tension && deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
                 continue
-            end
-            if tension
-                if deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
-                    continue
-                end
             end
 
             # check if the bond also exist at other node, due to different horizons
@@ -142,9 +134,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 fill!(neighbor_bond_force, 0.0)
             end
 
-            projected_force .= dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement_vector[jID, :]) / (norm_displacement * norm_displacement) .* relative_displacement_vector[jID, :]
+            projected_force .= dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement) / (norm_displacement * norm_displacement) .* relative_displacement
 
-            bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement_vector[jID, :]))
+            bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement))
             if bond_energy < 0
                 @error "Bond energy smaller zero"
                 return nothing
@@ -153,11 +145,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 critical_energy = interpol_data(field[iID], damage_parameter["Temperature dependend"])
             end
 
-            if critical_field
-                crit_energy = critical_energy[iID]
-            else
-                crit_energy = inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
-            end
+            crit_energy = critical_field ? critical_energy[iID] : inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
 
             if aniso_damage
                 rotated_bond = rotation_tensor' * deformed_bond[iID][jID, :]
