@@ -4,8 +4,8 @@
 
 using Test
 include("../../../../src/Physics/Pre_calculation/bond_deformation_gradient.jl")
-include("../../../../src/PeriLab.jl")
-using .PeriLab
+#include("../../../../src/PeriLab.jl")
+#using .PeriLab
 
 
 @testset "ut_calculate_Q" begin
