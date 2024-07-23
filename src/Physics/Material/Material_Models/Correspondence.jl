@@ -51,10 +51,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
   datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
   datamanager.create_node_field("von Mises Stress", Float64, 1)
-  rotation::Bool, angles = datamanager.rotation_data()
-  if rotation
-    datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
-  end
+
   material_models = split(material_parameter["Material Model"], "+")
   material_models = map(r -> strip(r), material_models)
   #occursin("Correspondence", material_name)

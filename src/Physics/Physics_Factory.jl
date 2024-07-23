@@ -220,6 +220,16 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     deformed_coorN = copy(datamanager.get_field("Coordinates"))
     deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
+    # TODO integrate this correctly
+    rotation::Bool, angles = datamanager.rotation_data()
+    if rotation
+        rotN, rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
+        for iID in nodes
+            rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
+            rotNP1 = copy(rotN)
+        end
+    end
+
     if solver_options["Additive Models"]
         @info "Init additive models"
         @timeit to "additive_model_fields" datamanager = Physics.init_additive_model_fields(datamanager)

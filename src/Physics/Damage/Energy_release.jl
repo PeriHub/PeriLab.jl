@@ -60,14 +60,6 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     update_list = datamanager.get_field("Update List")
     horizon = datamanager.get_field("Horizon")
     bond_damage = datamanager.get_bond_damage("NP1")
-    aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
-    if aniso_damage
-        if datamanager.has_key("Bond Damage AnisotropicNP1")
-            bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
-        else
-            aniso_damage = false
-        end
-    end
 
     undeformed_bond = datamanager.get_field("Bond Geometry")
     undeformed_bond_length = datamanager.get_field("Bond Length")
@@ -75,6 +67,10 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     critical_field = datamanager.has_key("Critical_Value")
+    aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
+    if aniso_damage
+        aniso_damage = damage_parameter["Anisotropic Damage"]
+    end
     if critical_field
         critical_energy = datamanager.get_field("Critical_Value")
     else
@@ -93,8 +89,6 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
 
     # for anisotropic damage models
-    rotation::Bool, angles = datamanager.rotation_data()
-
     tension::Bool = get(damage_parameter, "Only Tension", true)
     inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
     if inter_block_damage
@@ -102,9 +96,6 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
 
     if aniso_damage
-        if !rotation
-            @error "Anisotropic damage requires Angles field"
-        end
         aniso_crit_values = datamanager.get_aniso_crit_values()
         bond_norm::Float64 = 0.0
     end
@@ -263,6 +254,21 @@ function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int
     for iID in nodes
         quad_horizon[iID] = get_quad_horizon(horizon[iID], dof, thickness)
     end
+
+    aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
+
+    if aniso_damage
+        if !(damage_parameter["Anisotropic Damage"])
+            return datamanager
+        end
+        rotation::Bool, angles = datamanager.rotation_data()
+        if !rotation
+            # TODO is this necassary? If you have no angles, you can use the global ones.
+            @error "Anisotropic damage requires Angles field"
+            return nothing
+        end
+    end
+
     return datamanager
 end
 end
