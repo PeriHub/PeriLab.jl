@@ -29,10 +29,12 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   if typeof(accuracy_order) != Int
     @error "Accuracy Order must be an integer."
     return nothing
+
   elseif accuracy_order < 1
     @error "Accuracy Order must be an greater than zero."
     return nothing
   end
+
   dof = datamanager.get_dof()
   datamanager.create_bond_field("Bond Strain", Float64, "Matrix", dof)
   datamanager.create_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
@@ -61,7 +63,7 @@ function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, dof::Int6
       if bond_damage[iID][jID] == 0
         continue
       end
-      temp = (I(dof) - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./ bond_length[iID][jID]
+      temp = (I(dof) - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./ (bond_length[iID][jID] * bond_length[iID][jID])
       stress_integral[iID, :, :] += (volume[nID] * omega[iID][jID] * bond_damage[iID][jID] * (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])) .* compute_Piola_Kirchhoff_stress(bond_stresses[iID][jID, :, :], deformation_gradient[iID][jID, :, :]) * temp
     end
   end
@@ -130,15 +132,16 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   strain_increment = datamanager.get_field("Bond Strain Increment")
   bond_force = datamanager.get_field("Bond Forces")
 
+  # computed in pre calculation ----------------------------------
   gradient_weights = datamanager.get_field("Lagrangian Gradient Weights")
-
   weighted_volume = datamanager.get_field("Weighted Volume")
-
+  deformation_gradient = datamanager.get_field("Weighted Deformation Gradient")
+  #---------------------------------------------------------------
   displacements = datamanager.get_field("Displacements", "NP1")
   velocity = datamanager.get_field("Velocity", "NP1")
   accuracy_order = material_parameter["Accuracy Order"]
 
-  deformation_gradient = datamanager.get_field("Weighted Deformation Gradient")
+
 
   ba_deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
 
@@ -163,7 +166,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     mod = datamanager.get_model_module(material_model)
     for iID in nodes
       for (jID, nID) in enumerate(nlist[iID])
-        # TODO how to make the seperation if the datamager is included?
+        # TODO how to make the separation if the datamager is included?
         stress_NP1[iID][:, :, :], datamanager = mod.compute_stresses(datamanager, jID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (iID, jID, nID))
       end
     end
