@@ -91,8 +91,8 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
     end
 
     # Create buffers for send and receive operations
-    recv_buffers = Vector{Union{Nothing,Matrix{Float64}}}(undef, ncores)
-    send_buffers = Vector{Union{Nothing,Matrix{Float64}}}(undef, ncores)
+    recv_buffers = Vector{Union{Nothing,Matrix,Vector}}(undef, ncores)
+    send_buffers = Vector{Union{Nothing,Matrix,Vector}}(undef, ncores)
 
     # Prepare send and receive operations
     for jcore in 1:ncores
