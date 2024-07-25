@@ -228,7 +228,7 @@ function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int6
     for iID in nodes
         deformation_gradient[iID, :, :] = Matrix{Float64}(I(dof))
         for (jID, nID) in enumerate(nlist[iID])
-            deformation_gradient[iID, :, :] += (displacement[nlist[iID][jID], :] .- displacement[iID, :]) * gradient_weight[iID][jID, :]' .* volume[nID]
+            deformation_gradient[iID, :, :] += ((displacement[nlist[iID][jID], :] .- displacement[iID, :]) * gradient_weight[iID][jID, :]')' .* volume[nID]
         end
     end
     return deformation_gradient
@@ -305,8 +305,14 @@ function compute_bond_level_deformation_gradient(nodes, nlist, dof, bond_geometr
         for (jID, nID) in enumerate(nlist[iID])
             mean_deformation_gradient = 0.5 .* (deformation_gradient[iID, :, :] + deformation_gradient[nID, :, :])
             for i in 1:dof
-                scalar_temp::Float64 = sum(mean_deformation_gradient[i, :] .* bond_geometry[iID][jID, i])
-                ba_deformation_gradient[iID][jID, i, :] = mean_deformation_gradient[i, :] .+ (bond_deformation[iID][jID, i] - scalar_temp) .* bond_geometry[iID][jID, i] / bond_length[iID][jID]
+                scalar_temp::Float64 = mean_deformation_gradient[i, :]' * bond_geometry[iID][jID, :]
+                ba_deformation_gradient[iID][jID, i, :] = mean_deformation_gradient[i, :] + (bond_deformation[iID][jID, i] - scalar_temp) .* bond_geometry[iID][jID, :] / (bond_length[iID][jID] * bond_length[iID][jID])
+
+                # scalarTemp = *(meanDefGrad+0) * undeformedBondX + *(meanDefGrad+1) * undeformedBondY + *(meanDefGrad+2) * undeformedBondZ;
+
+                # *(defGrad+0) = *(meanDefGrad+0) + (defStateX - scalarTemp) * undeformedBondX/undeformedBondLengthSq;
+                # *(defGrad+1) = *(meanDefGrad+1) + (defStateX - scalarTemp) * undeformedBondY/undeformedBondLengthSq;
+                # *(defGrad+2) = *(meanDefGrad+2) + (defStateX - scalarTemp) * undeformedBondZ/undeformedBondLengthSq;
             end
         end
     end

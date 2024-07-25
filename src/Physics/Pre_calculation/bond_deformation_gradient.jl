@@ -30,7 +30,7 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, bloc
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
     bond_damage = datamanager.get_bond_damage("NP1")
-    bond_deformation = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    bond_geometry = datamanager.get_field("Bond Geometry")
     deformation_gradient = datamanager.get_field("Deformation Gradient")
     displacement = datamanager.get_field("Displacements", "NP1")
     gradient_weights = datamanager.get_field("Lagrangian Gradient Weights")
@@ -49,7 +49,7 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, bloc
     #    accuracy_order = 2
     #end
     weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
-    gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, bond_deformation, gradient_weights)
+    gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, bond_geometry, gradient_weights)
     deformation_gradient = compute_weighted_deformation_gradient(nodes, dof, nlist, volume, gradient_weights, displacement, deformation_gradient)
     return datamanager
 end
@@ -69,10 +69,10 @@ accuracy_order::Int64 - needs a number of bonds which are linear independent
 
 """
 
-function calculate_Q(accuracy_order::Int64, dof::Int64, bond_deformation::Vector{Float64}, horizon::Union{Int64,Float64})
+function calculate_Q(accuracy_order::Int64, dof::Int64, bond_geometry::Vector{Float64}, horizon::Union{Int64,Float64})
 
     Q = ones(Float64, qdim(accuracy_order, dof))  # Initialize Q with ones
-    counter = 1
+    counter = 0
     p = zeros(Int64, dof)
     for this_order in 1:accuracy_order
         for p[1] in this_order:-1:0
@@ -80,19 +80,21 @@ function calculate_Q(accuracy_order::Int64, dof::Int64, bond_deformation::Vector
                 for p[2] in this_order-p[1]:-1:0
                     p[3] = this_order - p[1] - p[2]
                     # Calculate the product for Q[counter]
-                    Q[counter] = prod((bond_deformation ./ horizon) .^ p)
                     counter += 1
+                    Q[counter] = prod((bond_geometry ./ horizon) .^ p)
+
                 end
             else
                 p[2] = this_order - p[1]
-                Q[counter] = prod((bond_deformation ./ horizon) .^ p)
                 counter += 1
+                Q[counter] = prod((bond_geometry ./ horizon) .^ p)
+
             end
         end
     end
     return Q
 end
-function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, accuracy_order::Int64, volume::Union{SubArray,Vector{Float64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, horizon::Union{SubArray,Vector{Float64}}, bond_damage::Union{SubArray,Vector{Vector{Float64}}}, omega::Union{SubArray,Vector{Vector{Float64}}}, bond_deformation, gradient_weights)
+function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, accuracy_order::Int64, volume::Union{SubArray,Vector{Float64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, horizon::Union{SubArray,Vector{Float64}}, bond_damage::Union{SubArray,Vector{Vector{Float64}}}, omega::Union{SubArray,Vector{Vector{Float64}}}, bond_geometry, gradient_weights)
     #https://arxiv.org/pdf/2004.11477
     # maybe as static array
     dim = qdim(accuracy_order, dof)
@@ -100,18 +102,20 @@ function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}
     for iID in nodes
         M = zeros(Float64, dim, dim)
         for (jID, nID) in enumerate(nlist[iID])
-            Q = calculate_Q(accuracy_order, dof, bond_deformation[iID][jID, :], horizon[iID])
+            Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID, :], horizon[iID])
             M += omega[iID][jID] * bond_damage[iID][jID] * volume[nID] .* Q * Q'
         end
+
         Minv = invert(M, "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this.")
 
         for (jID, nID) in enumerate(nlist[iID])
-            Q = calculate_Q(accuracy_order, dof, bond_deformation[iID][jID, :], horizon[iID])
+            Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID, :], horizon[iID])
             # this comes from Eq(19) in 10.1007/s40571-019-00266-9
             # or example 1 in https://arxiv.org/pdf/2004.11477
             for idof in 1:dof
-                gradient_weights[iID][jID, idof] = omega[iID][jID] / horizon[iID] .* (Minv[idof, :]' * Q)
+                gradient_weights[iID][jID, idof] = omega[iID][jID] * bond_damage[iID][jID] / horizon[iID] * Minv[idof, :]' * Q
             end
+
         end
     end
     return gradient_weights

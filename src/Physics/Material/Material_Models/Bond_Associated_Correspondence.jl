@@ -16,6 +16,26 @@ using TimerOutputs
 export init_material_model
 export compute_forces
 
+"""
+    correspondence_name()
+
+Gives the correspondence material name. It is needed for comparison with the yaml input deck.
+
+# Arguments
+
+# Returns
+- `name::String`: The name of the material.
+
+Example:
+```julia
+println(correspondence_name())
+"Material Template"
+```
+"""
+function correspondence_name()
+  return "Correspondence Bond-Associated"
+end
+
 function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
   if !haskey(material_parameter, "Symmetry")
     @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
@@ -55,40 +75,6 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
 end
 
 
-function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::Union{Vector{Vector{Int64}},SubArray}, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, deformation_gradient::SubArray, stress_integral::SubArray)
-  temp::Matrix{Float64} = zeros(dof, dof)
-  for iID in nodes
-    stress_integral[iID, :, :] .= 0.0
-    for (jID, nID) in enumerate(nlist[iID])
-      if bond_damage[iID][jID] == 0
-        continue
-      end
-      temp = (I(dof) - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./ (bond_length[iID][jID] * bond_length[iID][jID])
-      stress_integral[iID, :, :] += (volume[nID] * omega[iID][jID] * bond_damage[iID][jID] * (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])) .* compute_Piola_Kirchhoff_stress(bond_stresses[iID][jID, :, :], deformation_gradient[iID][jID, :, :]) * temp
-    end
-  end
-  return stress_integral
-end
-
-"""
-    correspondence_name()
-
-Gives the correspondence material name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the material.
-
-Example:
-```julia
-println(correspondence_name())
-"Material Template"
-```
-"""
-function correspondence_name()
-  return "Correspondence Bond-Associated"
-end
 
 """
 https://link.springer.com/article/10.1007/s10409-021-01055-5
@@ -182,6 +168,22 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   cauchy_stress .= stress_integral
   return datamanager
 
+end
+
+function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::Union{Vector{Vector{Int64}},SubArray}, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, deformation_gradient::SubArray, stress_integral::SubArray)
+  temp::Matrix{Float64} = zeros(dof, dof)
+  for iID in nodes
+    stress_integral[iID, :, :] .= 0.0
+    for (jID, nID) in enumerate(nlist[iID])
+      if bond_damage[iID][jID] == 0
+        continue
+      end
+      temp = (I(dof) - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./ (bond_length[iID][jID] * bond_length[iID][jID])
+      factor = volume[nID] * omega[iID][jID] * bond_damage[iID][jID] * (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
+      stress_integral[iID, :, :] += factor .* compute_Piola_Kirchhoff_stress(bond_stresses[iID][jID, :, :], deformation_gradient[iID][jID, :, :]) * temp
+    end
+  end
+  return stress_integral
 end
 
 #function compute_bond_strain(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, deformation_gradient::SubArray, strain::SubArray)
