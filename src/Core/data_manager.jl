@@ -14,6 +14,7 @@ export fem_active
 export clear_data_manager
 export get_all_field_keys
 export has_key
+export get_accuracy_order
 export get_block_list
 export get_crit_values_matrix
 export get_aniso_crit_values
@@ -38,6 +39,7 @@ export get_cancel
 export get_output_frequency
 export init_property
 export rotation_data
+export set_accuracy_order
 export set_block_list
 export set_crit_values_matrix
 export set_aniso_crit_values
@@ -89,12 +91,26 @@ global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => tru
     "Shape Tensor" => false,
     "Bond Associated Deformation Gradient" => false)
 global output_frequency::Vector{Dict} = []
+global accuracy_order = 2
 global rank::Int64 = 0
 global commMPi::Any
 global cancel::Bool = false
 global max_rank::Int64 = 0
 global silent::Bool = false
 ##########################
+
+"""
+    get_accuracy_order()
+
+Returns the accuracy order for the "bond associated correspondence" implementation.
+
+# Arguments
+- `value::Int64`: The value of the accuracy_order.
+"""
+function get_accuracy_order()
+    global accuracy_order
+    return accuracy_order
+end
 
 """
     get_comm()
@@ -956,6 +972,23 @@ function rotation_data(element_or_node::String="Node")
     end
     return false, nothing
 end
+
+"""
+    set_accuracy_order(value::Int64)
+
+Sets the accuracy order for the "bond associated correspondence" implementation.
+
+# Arguments
+- `value::Int64`: The value of the accuracy_order.
+"""
+function set_accuracy_order(value::Int64)
+    if value < 1
+        @error "Accuracy order must be greater than zero."
+        return nothing
+    end
+    global accuracy_order = value
+end
+
 
 """
     set_block_list(blocks::Union{SubArray,Vector{Int64}})

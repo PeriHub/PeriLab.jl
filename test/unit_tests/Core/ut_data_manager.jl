@@ -19,6 +19,14 @@ using .PeriLab
     # MPI.Finalize()
 end
 
+@testset "ut_set_get_accuracy_order" begin
+    @test get_accuracy_order() == 2
+    set_accuracy_order(1)
+    @test get_accuracy_order() == 1
+    set_accuracy_order(5)
+    @test get_accuracy_order() == 5
+    @test isnothing(set_accuracy_order(0))
+end
 @testset "ranks" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.set_rank(2)
