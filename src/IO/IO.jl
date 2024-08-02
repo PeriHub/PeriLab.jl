@@ -105,12 +105,11 @@ function close_result_files(result_files::Vector{Dict})
     for result_file in result_files
         try
             close_result_file(result_file)
-            return true
         catch
             @warn "File already closed"
-            return false
         end
     end
+    return true
 end
 
 """

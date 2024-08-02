@@ -128,7 +128,6 @@ end
     end
     @test testBool
     @test PeriLab.IO.close_result_files(result_files[2:3])
-    @test !(PeriLab.IO.close_result_files(result_files[2:3]))
     PeriLab.IO.merge_exodus_files(result_files[2:3], "")
 
     rm(filename1 * ".e")
