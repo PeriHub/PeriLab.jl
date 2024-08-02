@@ -159,11 +159,10 @@ function get_physics_option(params::Dict, options::Dict)
                     if !(options["Bond Associated Deformation Gradient"])
                         # if its activated it stays that way
                         options["Bond Associated Deformation Gradient"] = materials[material]["Bond Associated"]
-                        return options
                     end
-                end
-                options["Shape Tensor"] = true
+                else
                 options["Deformation Gradient"] = true
+                end
             end
         else
             @error "No Material Model: '$material' has been defined"

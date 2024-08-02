@@ -41,18 +41,8 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
     return nothing
   end
-  if !haskey(material_parameter, "Accuracy Order")
-    @warn "No Accuracy Order has been defined it is set to 1."
-    merge!(material_parameter, Dict("Accuracy Order" => 1))
-  end
-  accuracy_order = material_parameter["Accuracy Order"]
-  if typeof(accuracy_order) != Int
-    @error "Accuracy Order must be an integer."
-    return nothing
-
-  elseif accuracy_order < 1
-    @error "Accuracy Order must be an greater than zero."
-    return nothing
+  if haskey(material_parameter, "Accuracy Order")
+datamanager.set_accuracy_order( material_parameter["Accuracy Order"])
   end
 
   dof = datamanager.get_dof()
@@ -125,9 +115,6 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   #---------------------------------------------------------------
   displacements = datamanager.get_field("Displacements", "NP1")
   velocity = datamanager.get_field("Velocity", "NP1")
-  accuracy_order = material_parameter["Accuracy Order"]
-
-
 
   ba_deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
 

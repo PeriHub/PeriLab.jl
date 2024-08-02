@@ -40,14 +40,8 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, bloc
     horizon = datamanager.get_field("Horizon")
     ba_deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
     ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
-    accuracy_order = 2 # TODO check if a fix value is okay
-    #try
-    #    # TODO accuracy order must be in place where it makes sense
-    #    accuracy_order = datamanager.get_property(block_id, "Material Model", "Accuracy Order")
-    #catch
-    #    @warn "Accuracy order must be defined in all Materials if one is bond associated"
-    #    accuracy_order = 2
-    #end
+    accuracy_order = datamanager.get_accuracy_order()
+
     weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
     gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, bond_geometry, gradient_weights)
     deformation_gradient = compute_weighted_deformation_gradient(nodes, dof, nlist, volume, gradient_weights, displacement, deformation_gradient)

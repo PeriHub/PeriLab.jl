@@ -92,6 +92,7 @@ function init_pre_calculation(datamanager::Module, options::Dict)
 
     if options["Bond Associated Deformation Gradient"]
         datamanager.create_constant_bond_field("Bond Associated Deformation Gradient", Float64, "Matrix", dof)
+        datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
         datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
         datamanager.create_constant_node_field("Weighted Deformation Gradient", Float64, "Matrix", dof)
         options["Deformed Bond Geometry"] = true
