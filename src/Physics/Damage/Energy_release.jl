@@ -89,7 +89,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
 
     # for anisotropic damage models
-    rotation::Bool, angles = datamanager.rotation_data()
+    rotation::Bool = datamanager.get_rotation()
 
     tension::Bool = get(damage_parameter, "Only Tension", true)
     inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
@@ -103,6 +103,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         end
         aniso_crit_values = datamanager.get_aniso_crit_values()
         bond_norm::Float64 = 0.0
+        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
     end
 
     bond_energy::Float64 = 0.0
@@ -115,9 +116,6 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     for iID in nodes
         relative_displacement_vector = deformed_bond[iID] .- undeformed_bond[iID]
-        if aniso_damage
-            rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
-        end
 
         for (jID, neighborID) in enumerate(nlist[iID])
             relative_displacement = relative_displacement_vector[jID, :]
@@ -148,7 +146,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
             crit_energy = critical_field ? critical_energy[iID] : inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
 
             if aniso_damage
-                rotated_bond = rotation_tensor' * deformed_bond[iID][jID, :]
+                #TODO Fix bug herem rotation_tensor is zero
+                @info rotation_tensor[iID, :, :]'
+                rotated_bond = rotation_tensor[iID, :, :]' * deformed_bond[iID][jID, :]
                 # Compute bond_norm for all components at once
                 bond_norm_all = abs.(rotated_bond) ./ deformed_bond_length[iID][jID]
 

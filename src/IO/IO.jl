@@ -312,19 +312,33 @@ Initialize orientations.
 - `datamanager::Module`: The datamanager
 """
 function init_orientations(datamanager::Module)
-    rotation::Bool, angles = datamanager.rotation_data()
-    if !rotation
+
+    if "Angles" in datamanager.get_all_field_keys()
+        datamanager.set_rotation(true)
+    end
+    if "Element Angles" in datamanager.get_all_field_keys()
+        datamanager.set_element_rotation(true)
+    end
+    rotation::Bool = datamanager.get_rotation()
+    element_rotation::Bool = datamanager.get_element_rotation()
+
+    if !rotation && !element_rotation
         return datamanager
     end
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     orientations = datamanager.create_constant_node_field("Orientations", Float64, 3)
+    rotation_tensor_N, rotation_tensor_NP1 = datamanager.create_node_field("Rotation Tensor", Float64, "Matrix", dof)
+    angles = datamanager.get_field("Angles")
+
     for iID in 1:nnodes
-        rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
+        rotation_tensor_N[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
+        rotation_tensor_NP1[iID, :, :] = rotation_tensor_N[iID, :, :]
+
         if dof == 2
-            orientations[iID, :] = vcat(rotation_tensor[:, 1], 0)
+            orientations[iID, :] = vcat(rotation_tensor_NP1[iID, :, 1], 0)
         elseif dof == 3
-            orientations[iID, :] = rotation_tensor[:, 1]
+            orientations[iID, :] = rotation_tensor_NP1[iID, :, 1]
         end
 
     end

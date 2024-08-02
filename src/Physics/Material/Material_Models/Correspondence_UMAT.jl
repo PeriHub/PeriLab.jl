@@ -121,8 +121,8 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     end
     datamanager.create_constant_node_field("Predefined Fields Increment", Float64, length(field_names))
 
-    rotation::Bool, angles = datamanager.rotation_data()
-    rot_N, rot_NP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
+    rotation::Bool = datamanager.get_rotation()
+    rot_N = datamanager.get_field("Rotation Tensor", "N")
     if rotation
       angles = datamanager.get_field("Angles")
       for iID in nodes
@@ -207,8 +207,8 @@ function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_
   # only 80 charakters are supported
   CMNAME::Cstring = malloc_cstring(material_parameter["UMAT Material Name"])
   coords = datamanager.get_field("Coordinates")
-  rot_N = datamanager.get_field("Rotation", "N")
-  rot_NP1 = datamanager.get_field("Rotation", "NP1")
+  rot_N = datamanager.get_field("Rotation Tensor", "N")
+  rot_NP1 = datamanager.get_field("Rotation Tensor", "NP1")
   zStiff = datamanager.get_field("Zero Energy Stiffness")
   Kinv = datamanager.get_field("Inverse Shape Tensor")
   # Number of normal stress components at this point

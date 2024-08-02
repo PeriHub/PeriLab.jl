@@ -4,7 +4,8 @@
 
 #TODO: Remove include
 include("../../../src/IO/IO.jl")
-# include("../../../src/Core/data_manager.jl")
+using PeriLab
+using MPI
 # include("../../../src/Support/Parameters/parameter_handling.jl")
 using TimerOutputs
 # using Reexport
@@ -149,6 +150,7 @@ end
 
 @testset "ut_init_orientations" begin
     angles = test_data_manager.create_constant_node_field("Angles", Float64, 1, 90)
+    test_data_manager.set_rotation(true)
     PeriLab.IO.init_orientations(test_data_manager)
     orientations = test_data_manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol=0.00001)
@@ -185,6 +187,7 @@ end
     # coordinates[5, 2] = 2
     # coordinates[5, 3] = 0
     angles = test_data_manager.create_constant_node_field("Angles", Float64, 3, 90)
+    test_data_manager.set_rotation(true)
     PeriLab.IO.init_orientations(test_data_manager)
     orientations = test_data_manager.get_field("Orientations")
     @test isapprox(orientations[1, 1], 0; atol=0.00001)

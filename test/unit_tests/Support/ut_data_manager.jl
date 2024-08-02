@@ -506,24 +506,26 @@ end
 end
 
 @testset "ut_rotation" begin
-    rotation, angles = test_data_manager.rotation_data()
+    rotation = test_data_manager.get_rotation()
+    angles = test_data_manager.get_field("Angles")
     @test !rotation
     @test isnothing(angles)
     test_angles = test_data_manager.create_constant_node_field("Angles", Float32, 3)
-    rotation, angles = test_data_manager.rotation_data()
+    test_data_manager.set_rotation(true)
+    rotation = test_data_manager.get_rotation()
+    angles = test_data_manager.get_field("Angles")
     @test rotation
     @test angles == test_angles
-    rotation, angles = test_data_manager.rotation_data("Node")
-    @test rotation
-    @test angles == test_angles
-    rotation, angles = test_data_manager.rotation_data("Element")
+    rotation = test_data_manager.get_element_rotation()
+    angles = test_data_manager.get_field("Element Angles")
     @test !rotation
     @test isnothing(angles)
     test_angles = test_data_manager.create_constant_node_field("Element Angles", Float32, 3)# in code it has length number of elements * element integration points
-    rotation, angles = test_data_manager.rotation_data("Element")
+    test_data_manager.set_element_rotation(true)
+    rotation = test_data_manager.get_element_rotation()
+    angles = test_data_manager.get_field("Element Angles")
     @test rotation
     @test angles == test_angles
-    @test isnothing(test_data_manager.rotation_data("Hello"))
 
 end
 
