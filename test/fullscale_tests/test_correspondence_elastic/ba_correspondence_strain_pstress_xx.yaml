@@ -17,6 +17,8 @@ PeriLab:
     Material Models:
       Mat_1:
         Material Model: "Correspondence Elastic"
+        Accuracy Order: 2
+        Bond Associated: true
         Symmetry: "isotropic plane stress"
         Bulk Modulus: 2.5e+3
         Shear Modulus: 1.15e3
@@ -24,6 +26,8 @@ PeriLab:
         Accuracy Order: 2
       Mat_2:
         Material Model: "Correspondence Elastic"
+        Accuracy Order: 2
+        Bond Associated: true
         Symmetry: "isotropic plane stress"
         Bulk Modulus: 3.5e+3
         Shear Modulus: 2.15e3
