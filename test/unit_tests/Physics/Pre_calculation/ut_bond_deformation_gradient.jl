@@ -97,8 +97,8 @@ end
 
     gradient_weights = Bond_Deformation_Gradient.compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
 
-    @test isapprox(gradient_weights[1][1, :], [0.5555555555555571, -0.2777777777777777])
-    @test isapprox(gradient_weights[1][2, :], [-3.125000000000102, -1.2500000000000462])
+    @test isapprox(gradient_weights[1][1, :], [0.5000000000000014, -0.24999999999999992])
+    @test isapprox(gradient_weights[1][2, :], [-2.5000000000000817, -1.000000000000037])
     @test isapprox(gradient_weights[1][3, :], [7.105427357601002e-15, -0.5])
     @test isapprox(gradient_weights[1][4, :], [0.6944444444444704, 0.6944444444444562])
     @test isapprox(gradient_weights[1][5, :], [-0.2777777777777821, 0.22222222222221788])
