@@ -70,9 +70,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     critical_field = datamanager.has_key("Critical_Value")
     aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
-    if aniso_damage
-        aniso_damage = damage_parameter["Anisotropic Damage"]
-    end
+    angles = datamanager.get_field("Angles")
     if critical_field
         critical_energy = datamanager.get_field("Critical_Value")
     else
@@ -99,6 +97,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     if aniso_damage
         aniso_crit_values = datamanager.get_aniso_crit_values()
+        bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
         bond_norm::Float64 = 0.0
     end
 
@@ -257,12 +256,7 @@ function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int
         quad_horizon[iID] = get_quad_horizon(horizon[iID], dof, thickness)
     end
 
-    aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
-
-    if aniso_damage
-        if !(damage_parameter["Anisotropic Damage"])
-            return datamanager
-        end
+    if haskey(damage_parameter, "Anisotropic Damage")
         rotation::Bool, angles = datamanager.rotation_data()
         if !rotation
             # TODO is this necassary? If you have no angles, you can use the global ones.
