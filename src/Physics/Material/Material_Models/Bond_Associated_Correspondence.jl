@@ -7,7 +7,7 @@ module Bond_Associated_Correspondence
 include("../../../Support/helpers.jl")
 include("../../../Support/geometry.jl")
 include("../material_basis.jl")
-using .Helpers: find_local_neighbors, invert
+using .Helpers: find_local_neighbors, invert, rotate
 using .Geometry: compute_strain, compute_bond_level_rotation_tensor, compute_bond_level_deformation_gradient
 include("../../Pre_calculation/bond_deformation_gradient.jl")
 using .Bond_Deformation_Gradient: compute_weighted_volume
@@ -42,7 +42,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     return nothing
   end
   if haskey(material_parameter, "Accuracy Order")
-datamanager.set_accuracy_order( material_parameter["Accuracy Order"])
+    datamanager.set_accuracy_order(material_parameter["Accuracy Order"])
   end
 
   dof = datamanager.get_dof()
@@ -128,8 +128,11 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   # TODO store not angles, but rotation matrices, because they are computed in decomposition
   if rotation
     ba_rotation_tensor = compute_bond_level_rotation_tensor(nodes, nlist, ba_deformation_gradient, ba_rotation_tensor)
-    stress_N = rotate(nodes, dof, stress_N, angles, false)
-    strain_increment = rotate(nodes, dof, strain_increment, angles, false)
+    nneighbors = datamanager.get_field("Number of Neighbors")
+    for iID in nodes
+      stress_N[iID] = rotate(Vector{Int64}(1:nneighbors[iID]), stress_N[iID], ba_rotation_tensor[iID], false)
+      strain_increment[iID] = rotate(Vector{Int64}(1:nneighbors[iID]), strain_increment[iID], ba_rotation_tensor[iID], false)
+    end
   end
 
   material_models = split(material_parameter["Material Model"], "+")
@@ -145,7 +148,9 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
   end
   if rotation
-    stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
+    for iID in nodes
+      stress_NP1[iID] = rotate(Vector{Int64}(1:nneighbors[iID]), stress_NP1[iID], ba_rotation_tensor[iID], true)
+    end
   end
 
   stress_integral = compute_stress_integral(nodes, dof, nlist, omega, bond_damage, volume, weighted_volume, bond_geometry, bond_length, stress_NP1, ba_deformation_gradient, stress_integral)

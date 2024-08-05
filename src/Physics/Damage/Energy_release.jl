@@ -6,9 +6,11 @@ module Critical_Energy_Model
 include("../Material/Material_Factory.jl")
 include("../../Support/geometry.jl")
 include("../Pre_calculation/Pre_Calculation_Factory.jl")
+include("../../Support/helpers.jl")
 using .Material
 using .Geometry
 using .Pre_calculation
+using .Helpers: rotate
 using LinearAlgebra
 using StaticArrays
 export compute_damage

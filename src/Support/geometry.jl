@@ -228,7 +228,7 @@ function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int6
     for iID in nodes
         deformation_gradient[iID, :, :] = Matrix{Float64}(I(dof))
         for (jID, nID) in enumerate(nlist[iID])
-            deformation_gradient[iID, :, :] += ((displacement[nlist[iID][jID], :] .- displacement[iID, :]) * gradient_weight[iID][jID, :]')' .* volume[nID]
+            deformation_gradient[iID, :, :] += ((displacement[nlist[iID][jID], :] .- displacement[iID, :]) * gradient_weight[iID][jID, :]') .* volume[nID]
         end
     end
     return deformation_gradient

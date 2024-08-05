@@ -50,8 +50,8 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
 
             if rotation
                 #tbd
-                stress_N = rotate(nodes, dof, stress_N, angles, false)
-                strain_increment = rotate(nodes, dof, strain_increment, angles, false)
+                # stress_N = rotate(nodes, dof, stress_N, angles, false)
+                # strain_increment = rotate(nodes, dof, strain_increment, angles, false)
             end
 
             # in future this part must be changed -> using set Modules
@@ -64,7 +64,7 @@ function calculate_FEM(datamanager::Module, elements::Union{SubArray,Vector{Int6
 
             if rotation
                 #tbd
-                stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
+                #stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
             end
 
             force_densities[topo, :] -= reshape(B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int], (dof, nnodes))'
