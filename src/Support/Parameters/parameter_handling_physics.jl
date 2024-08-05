@@ -161,7 +161,8 @@ function get_physics_option(params::Dict, options::Dict)
                         options["Bond Associated Deformation Gradient"] = materials[material]["Bond Associated"]
                     end
                 else
-                options["Deformation Gradient"] = true
+                    options["Shape Tensor"] = true
+                    options["Deformation Gradient"] = true
                 end
             end
         else
