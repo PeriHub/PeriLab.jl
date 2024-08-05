@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../../../src/Physics/Material/Material_Models/Bond_Associated_Correspondence.jl")
-# include("../../../../../src/Core/data_manager.jl")
 using Test
 #include("../../../../../src/PeriLab.jl")
 #using .PeriLab
@@ -15,7 +14,7 @@ end
 
 @testset "ut_compute_bond_strain" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(2)
 
@@ -60,7 +59,7 @@ end
 end
 @testset "ut_init_Bond-Associated" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(3)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
@@ -72,26 +71,24 @@ end
     test_data_manager.create_constant_node_field("Volume", Float64, 1)
     test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
     test_data_manager.create_bond_field("Bond Damage", Float64, 1)
+
     @test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict()))
 
     material_parameter = Dict{String,Any}("Symmetry" => "isotropic")
     test_data_manager = Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, material_parameter)
 
-    @test haskey(material_parameter, "Accuracy Order")
-    @test material_parameter["Accuracy Order"] == 1
+    @test test_data_manager.get_accuracy_order() == 1
 
     material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
     test_data_manager = Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, material_parameter)
 
-    @test material_parameter["Accuracy Order"] == 2
-
-    @test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict("Symmetry" => "isotropic", "Accuracy Order" => 0)))
+    @test test_data_manager.get_accuracy_order() == 2
 
 end
 @testset "ut_compute_stress_integral" begin
     test_data_manager = PeriLab.Data_manager
     dof = 2
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(dof)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)

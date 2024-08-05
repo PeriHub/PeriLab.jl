@@ -12,7 +12,7 @@ using Test
     # MPI.Init()
     comm = MPI.COMM_WORLD
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_comm(comm)
     b = test_data_manager.get_comm()
     @test comm == b
@@ -554,10 +554,10 @@ end
 end
 
 
-@testset "ut_clear_data_manager" begin
+@testset "ut_initialize_data" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.create_node_field("test4", Float64, 3)
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     println()
     @test test_data_manager.get_nnodes() == 0
     @test test_data_manager.get_dof() == 1

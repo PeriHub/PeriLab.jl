@@ -70,7 +70,7 @@ end
 
 @testset "ut_boundary_condition" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_dof() = 2
     params = Dict()
     bcs = PeriLab.Solver.Boundary_conditions.boundary_condition(params, test_data_manager)
@@ -154,7 +154,7 @@ end
 @testset "ut_apply_bc" begin
 
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(10)
     test_data_manager.set_dof(3)
     test_data_manager.create_constant_node_field("Coordinates", Float64, 3)

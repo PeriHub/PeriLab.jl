@@ -65,7 +65,7 @@ set_max_rank
 set_synch
 switch_NP1_to_N
 synch_manager
-clear_data_manager
+initialize_data
 ```
 
 ```@meta

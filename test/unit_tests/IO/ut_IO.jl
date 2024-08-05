@@ -14,7 +14,7 @@ using Test
 # @reexport using Exodus
 # @reexport using MPI
 test_data_manager = PeriLab.Data_manager
-test_data_manager.clear_data_manager()
+test_data_manager.initialize_data()
 filename1 = "test1"
 filename2 = "test2"
 filename3 = "test3"
@@ -158,7 +158,7 @@ end
 end
 
 @testset "ut_init_orientations_3d" begin
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     dof = 3
     nnodes = 5
     comm = MPI.COMM_WORLD
@@ -202,7 +202,7 @@ end
 end
 
 @testset "ut_show_block_summary" begin
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     dof = 2
     nnodes = 5
     comm = MPI.COMM_WORLD

@@ -9,7 +9,7 @@ using .Damage
 
 @testset "init_damage_model_fields" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_dof(3)
     test_data_manager.set_num_controller(4)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)

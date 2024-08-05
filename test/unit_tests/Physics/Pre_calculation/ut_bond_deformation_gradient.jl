@@ -51,7 +51,7 @@ end
 
 @testset "ut_compute_weighted_volume" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(4)
     test_data_manager.set_dof(3)
 

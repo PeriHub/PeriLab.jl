@@ -11,7 +11,7 @@ export create_constant_bond_field
 export create_constant_node_field
 export create_node_field
 export fem_active
-export clear_data_manager
+export initialize_data
 export get_all_field_keys
 export has_key
 export get_accuracy_order
@@ -63,41 +63,112 @@ export synch_manager
 ##########################
 # Variables
 ##########################
-global nnodes::Int64 = 0
-global num_controller::Int64 = 0
-global num_responder::Int64 = 0
-global num_elements::Int64 = 0
-global nnsets::Int64 = 0
-global dof::Int64 = 1
-global fem_option = false
-global block_list::Vector{Int64} = []
+global nnodes::Int64
+global num_controller::Int64
+global num_responder::Int64
+global num_elements::Int64
+global nnsets::Int64
+global dof::Int64
+global fem_option::Bool
+global block_list::Vector{Int64}
 global distribution::Vector{Int64}
-global crit_values_matrix::Array{Float64,3} = fill(-1, (1, 1, 1))
+global crit_values_matrix::Array{Float64,3}
 global aniso_crit_values::Dict{Int64,Vector{Float64}}
-# global aniso_crit_values::Dict{Int64,String}
-global properties::Dict{Int64,Dict{String,Any}} = Dict()
+global properties::Dict{Int64,Dict{String,Any}}
 global glob_to_loc::Dict{Int64,Int64}
-global fields::Dict{DataType,Dict{String,Any}} = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
-global field_array_type::Dict{String,Dict{String,Any}} = Dict()
-global field_types::Dict{String,DataType} = Dict()
-global fields_to_synch::Dict{String,Any} = Dict()
-global filedirectory = ""
-global inverse_nlist::Vector{Dict{Int64,Int64}} = []
-global model_modules::Dict{String,Module} = Dict()
-global nsets::Dict{String,Vector{Int}} = Dict()
+global fields::Dict{DataType,Dict{String,Any}}
+global field_array_type::Dict{String,Dict{String,Any}}
+global field_types::Dict{String,DataType}
+global fields_to_synch::Dict{String,Any}
+global filedirectory::String
+global inverse_nlist::Vector{Dict{Int64,Int64}}
+global model_modules::Dict{String,Module}
+global nsets::Dict{String,Vector{Int}}
 global overlap_map::Dict{Int64,Any}
-global physics_options::Dict{String,Bool} = Dict("Deformed Bond Geometry" => true,
-    "Deformation Gradient" => false,
-    "Shape Tensor" => false,
-    "Bond Associated Deformation Gradient" => false)
-global output_frequency::Vector{Dict} = []
-global accuracy_order = 2
-global rank::Int64 = 0
+global physics_options::Dict{String,Bool}
+global output_frequency::Vector{Dict}
+global accuracy_order
+global rank::Int64
 global commMPi::Any
-global cancel::Bool = false
-global max_rank::Int64 = 0
-global silent::Bool = false
+global cancel::Bool
+global max_rank::Int64
+global silent::Bool
 ##########################
+
+"""
+    initialize_data()
+
+Returns a list of all field keys.
+"""
+function initialize_data()
+    global nnodes
+    nnodes = 0
+    global num_controller
+    num_controller = 0
+    global num_responder
+    num_responder = 0
+    global num_elements
+    num_elements = 0
+    global nnsets
+    nnsets = 0
+    global dof
+    dof = 2
+    global fem_option
+    fem_option = false
+    global block_list
+    block_list = []
+    global distribution
+    distribution = []
+    global crit_values_matrix
+    crit_values_matrix = fill(-1, (1, 1, 1))
+    global aniso_crit_values
+    aniso_crit_values = Dict()
+    global properties
+    properties = Dict()
+    global glob_to_loc
+    glob_to_loc = Dict()
+    global fields
+    fields = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
+    global field_array_type
+    field_array_type = Dict()
+    global field_types
+    field_types = Dict()
+    global fields_to_synch
+    fields_to_synch = Dict()
+    global filedirectory
+    filedirectory = ""
+    global inverse_nlist
+    inverser_nlist = []
+    global model_modules
+    model_modules = Dict()
+    global nsets
+    nsets = Dict()
+    global overlap_map
+    overlap_map = Dict()
+    global physics_options
+    physics_options = Dict("Deformed Bond Geometry" => true,
+        "Deformation Gradient" => false,
+        "Shape Tensor" => false,
+        "Bond Associated Deformation Gradient" => false)
+    global output_frequency
+    output_frequency = []
+    global accuracy_order
+    accuracy_order = 1
+    global rank
+    rank = 0
+    global cancel
+    cancel = false
+    global max_rank
+    max_rank = 0
+    global silent
+    silent = false
+
+end
+###################################
+
+
+
+
 
 """
     get_accuracy_order()
@@ -406,46 +477,6 @@ Control if a key exists.
 function has_key(field_name::String)
     global field_types
     return haskey(field_types, field_name)
-end
-
-"""
-    clear_data_manager()
-
-Returns a list of all field keys.
-"""
-function clear_data_manager()
-    global field_types
-    global nsets
-    global nnsets
-    global physics_options
-    global filedirectory
-    global num_controller
-    global num_responder
-    global nnodes
-    num_controller = num_responder = nnodes = 0
-    global dof
-    dof = 1
-    field_types = Dict()
-    nsets = Dict()
-    nnsets = 0
-    physics_options = Dict("Deformed Bond Geometry" => true,
-        "Deformation Gradient" => false,
-        "Shape Tensor" => false,
-        "Bond Associated Deformation Gradient" => false)
-    filedirectory = ""
-    global fields
-    fields = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
-
-    # global field_array_type
-    # global fields_to_synch
-    # global properties
-    # global fields
-    # global model_modules
-    # field_array_type = Dict()
-    # fields_to_synch = Dict()
-    # properties = Dict()
-    # fields = Dict()
-    # model_modules = Dict()
 end
 
 """

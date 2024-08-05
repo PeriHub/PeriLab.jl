@@ -16,7 +16,7 @@ using .Heat_transfer
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_dof(dof)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
