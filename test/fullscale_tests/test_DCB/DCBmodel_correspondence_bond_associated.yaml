@@ -50,6 +50,7 @@ PeriLab:
       Node Set 1: ns_DCBmodel_1.txt
       Node Set 2: ns_DCBmodel_2.txt
     Type: Text File
+    #Influence Function: "1/xi^2"
     Bond Filters:
       bf_1:
         Bottom Length: 2.0
@@ -86,7 +87,7 @@ PeriLab:
     Material Models:
       Aluminium:
         Material Model: "Correspondence Elastic"
-        Accuracy Order: 2
+        Accuracy Order: 1
         Bond Associated: true
         Bond Horizon: 0.42
         Zero Energy Control: "Global"
@@ -103,6 +104,6 @@ PeriLab:
     Initial Time: 0.0
     Material Models: true
     Damage Models: true
-    Numerical Damping: 5.0e-06
+    Numerical Damping: 5.0e-04
     Verlet:
       Safety Factor: 0.9
