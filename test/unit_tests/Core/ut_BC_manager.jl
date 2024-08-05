@@ -5,8 +5,8 @@
 
 using Test
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../src/PeriLab.jl")
+using .PeriLab
 @testset "ut_clean_up" begin
     @test PeriLab.Solver.Boundary_conditions.clean_up("") == ""
     @test PeriLab.Solver.Boundary_conditions.clean_up("-") == " .- "
@@ -116,14 +116,17 @@ end
 @testset "ut_init_BCs" begin
 
     test_data_manager = PeriLab.Data_manager
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(10)
-
+    test_data_manager.set_nset("Nset_1", [1, 2, 3])
+    test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
+    test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 3, 3 => 4, 4 => 2, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10))
     test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
     test_data_manager.create_constant_node_field("Forces", Float64, 3)
     test_data_manager.create_node_field("Displacements", Float64, 3)
-    test_data_manager.set_dof(2)
+    test_data_manager.set_dof(3)
 
-    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Variable" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "5")))
+    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t")))
 
     bcs = PeriLab.Solver.Boundary_conditions.init_BCs(params, test_data_manager)
     @test length(bcs) == 1
@@ -135,7 +138,7 @@ end
     @test bcs["BC_1"]["Value"] == "20*t"
     @test bcs["BC_1"]["Node Set"] == [1, 3, 4]
 
-    test_data_manager.set_dof(3)
+    params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Variable" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "5")))
     bcs = PeriLab.Solver.Boundary_conditions.init_BCs(params, test_data_manager)
     @test length(bcs) == 2
     @test "BC_1" in keys(bcs)
@@ -162,6 +165,7 @@ end
     test_data_manager.create_node_field("Displacements", Float64, 3)
     test_data_manager.set_nset("Nset_1", [1, 2, 3])
     test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
+    test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 3, 3 => 4, 4 => 2, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10))
     params = Dict("Boundary Conditions" => Dict("BC_1" => Dict("Variable" => "Forces", "Node Set" => "Nset_1", "Coordinate" => "x", "Value" => "20*t"), "BC_2" => Dict("Variable" => "Displacements", "Node Set" => "Nset_2", "Coordinate" => "z", "Value" => "5")))
 
     force = test_data_manager.get_field("Forces")
@@ -175,10 +179,11 @@ end
     @test sum(force) == 0
     @test sum(disp) == 20
     @test isapprox(disp, [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5])
-
+    println()
     PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.2)
     force = test_data_manager.get_field("Forces")
     disp = test_data_manager.get_field("Displacements", "NP1")
+
     @test sum(force) == 12
     @test isapprox(force, [4 0 0; 0 0 0; 4 0 0; 4 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0])
     @test sum(disp) == 20

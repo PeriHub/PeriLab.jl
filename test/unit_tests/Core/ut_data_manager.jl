@@ -21,12 +21,13 @@ end
 
 @testset "ut_set_get_accuracy_order" begin
     test_data_manager = PeriLab.Data_manager
-    @test test_data_manager.get_accuracy_order() == 2
-    test_data_manager.set_accuracy_order(1)
+    test_data_manager.initialize_data()
     @test test_data_manager.get_accuracy_order() == 1
+    test_data_manager.set_accuracy_order(2)
+    @test test_data_manager.get_accuracy_order() == 2
     test_data_manager.set_accuracy_order(5)
-    @test get_accuracy_order() == 5
-    @test test_data_manager.isnothing(set_accuracy_order(0))
+    @test test_data_manager.get_accuracy_order() == 5
+    @test isnothing(test_data_manager.set_accuracy_order(0))
 end
 @testset "ranks" begin
     test_data_manager = PeriLab.Data_manager
@@ -558,8 +559,8 @@ end
     test_data_manager = PeriLab.Data_manager
     test_data_manager.create_node_field("test4", Float64, 3)
     test_data_manager.initialize_data()
-    println()
+
     @test test_data_manager.get_nnodes() == 0
-    @test test_data_manager.get_dof() == 1
+    @test test_data_manager.get_dof() == 2
     @test test_data_manager.get_all_field_keys() == []
 end

@@ -5,12 +5,12 @@
 include("../../../src/IO/exodus_export.jl")
 include("../../../src/IO/csv_export.jl")
 include("../../../src/Core/data_manager.jl")
-include("../../../src/Support/Parameters/parameter_handling.jl")
+
 using Test
 using TimerOutputs
-using Reexport
-@reexport using .Parameter_Handling
+
 using Exodus
+Data_manager.initialize_data()
 @testset "ut_get_block_nodes" begin
     block_Id = [1, 1, 2, 2, 2, 3, 3, 3, 1, 3, 3, 4]
     test = get_block_nodes(block_Id, 1)
