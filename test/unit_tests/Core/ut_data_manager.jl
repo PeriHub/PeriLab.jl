@@ -5,8 +5,8 @@
 using MPI
 using Test
 
-include("../../../src/PeriLab.jl")
-using .PeriLab
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 
 @testset "set_comm" begin
     # MPI.Init()
@@ -20,12 +20,13 @@ using .PeriLab
 end
 
 @testset "ut_set_get_accuracy_order" begin
-    @test get_accuracy_order() == 2
-    set_accuracy_order(1)
-    @test get_accuracy_order() == 1
-    set_accuracy_order(5)
+    test_data_manager = PeriLab.Data_manager
+    @test test_data_manager.get_accuracy_order() == 2
+    test_data_manager.set_accuracy_order(1)
+    @test test_data_manager.get_accuracy_order() == 1
+    test_data_manager.set_accuracy_order(5)
     @test get_accuracy_order() == 5
-    @test isnothing(set_accuracy_order(0))
+    @test test_data_manager.isnothing(set_accuracy_order(0))
 end
 @testset "ranks" begin
     test_data_manager = PeriLab.Data_manager
