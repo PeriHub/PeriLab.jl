@@ -103,11 +103,9 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     end
 
     @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, block_nodes)
-    println()
     @timeit to "pre_synchronize" Pre_calculation.synchronize(datamanager, datamanager.get_physics_options(), synchronise_field)
     for block in eachindex(block_nodes)
         active_nodes, update_nodes = get_active_update_nodes(active, update_list, block_nodes, block)
-
         if fem_option
             update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
