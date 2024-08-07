@@ -22,7 +22,7 @@ export interpolation
 export interpol_data
 export progress_bar
 export invert
-export rotation
+export rotate
 """
     qdim(order::Int64, dof::Int64)
 

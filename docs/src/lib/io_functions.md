@@ -152,6 +152,8 @@ matrix_style
 progress_bar
 get_fourth_order
 find_inverse_bond_id
+rotate
+rotate_second_order_tensor
 ```
 
 ```@meta

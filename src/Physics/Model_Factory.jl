@@ -219,7 +219,7 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
     # TODO integrate this correctly
-    rotation::Bool, angles = datamanager.rotation_data()
+    rotation = datamanager.get_rotation()
     #if rotation
     rotN, rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
     #    for iID in nodes
