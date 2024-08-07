@@ -94,6 +94,7 @@ if ncores == 3
     overlap_map = IO.get_local_overlap_map(overlap_map, distribution, ncores)
 
     test_data_manager = Data_manager
+    test_data_manager.initialize_data()
     test_data_manager.set_comm(comm)
 
     if rank == 0

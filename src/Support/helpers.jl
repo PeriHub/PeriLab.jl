@@ -8,6 +8,7 @@ using Tensors
 using Dierckx
 using ProgressBars
 using LinearAlgebra
+using TensorOperations
 export qdim
 export check_inf_or_nan
 export find_active
@@ -21,6 +22,7 @@ export interpolation
 export interpol_data
 export progress_bar
 export invert
+export rotate
 """
     qdim(order::Int64, dof::Int64)
 
@@ -286,4 +288,52 @@ function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
     # If rank is not 0, return a range from 1 to nsteps + 1.
     return 1:nsteps+1
 end
+
+
+"""
+    rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
+
+Rotates the matrix.
+
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `matrix::Union{SubArray,Array{Float64,3}}`: Matrix.
+- `rot::SubArray`: Rotation tensor.
+- `back::Bool`: Back.
+# Returns
+- `matrix::SubArray`: Matrix.
+"""
+function rotate(nodes::Union{SubArray,Vector{Int64}}, matrix::Union{SubArray,Array{Float64,3}}, rot::Union{SubArray,Array{Float64,3}}, back::Bool)
+    for iID in nodes
+        matrix[iID, :, :] = rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :], back)
+    end
+    return matrix
+end
+
+"""
+    rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
+
+Rotates the second order tensor.
+
+# Arguments
+- `angles::Union{Vector{Float64},Vector{Int64}}`: Angles.
+- `tensor::Matrix{Float64}`: Second order tensor.
+- `dof::Int64`: Degree of freedom.
+- `back::Bool`: Back.
+# Returns
+- `tensor::Matrix{Float64}`: Second order tensor.
+"""
+function rotate_second_order_tensor(R::Matrix{Float64}, tensor::Matrix{Float64}, back::Bool)
+
+    if back
+        @tensor begin
+            tensor[m, n] = tensor[i, j] * R[m, i] * R[n, j]
+        end
+    else
+        @tensor begin
+            tensor[m, n] = tensor[i, j] * R[i, m] * R[j, n]
+        end
+    end
+end
+
 end

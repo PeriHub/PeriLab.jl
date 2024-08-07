@@ -95,7 +95,6 @@ function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_
    hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
    stress_NP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) + stress_N[iID, :, :]
-
    return stress_NP1, datamanager
 end
 

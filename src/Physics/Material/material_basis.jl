@@ -463,5 +463,5 @@ end
 
 
 function compute_Piola_Kirchhoff_stress(stress::Matrix{Float64}, deformation_gradient::Matrix{Float64})
-    return det(deformation_gradient) .* stress * invert(deformation_gradient, "Bond level deformation gradient is singular and cannot be inverted.")
+    return det(deformation_gradient) .* stress * invert(deformation_gradient, "Deformation gradient is singular and cannot be inverted.")
 end

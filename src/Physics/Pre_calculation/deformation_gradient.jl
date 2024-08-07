@@ -4,7 +4,7 @@
 
 module Deformation_Gradient
 include("../../Support/geometry.jl")
-using .Geometry
+using .Geometry: compute_deformation_gradient
 export compute
 """
     compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
@@ -17,7 +17,7 @@ Compute the deformation gradient.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block_id::Int64)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
@@ -28,7 +28,7 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     deformation_gradient = datamanager.get_field("Deformation Gradient")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
 
-    deformation_gradient = Geometry.deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, deformed_bond, undeformed_bond, inverse_shape_tensor, deformation_gradient)
+    deformation_gradient = compute_deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, deformed_bond, undeformed_bond, inverse_shape_tensor, deformation_gradient)
 
     return datamanager
 end

@@ -6,7 +6,7 @@ using Test
 #include("../../../src/PeriLab.jl")
 
 #using .PeriLab
-PeriLab.Data_manager.clear_data_manager()
+PeriLab.Data_manager.initialize_data()
 
 @testset "ut_valid_models" begin
     @test isnothing(PeriLab.Solver.FEM.valid_models(Dict()))

@@ -137,7 +137,7 @@ function bond_associated_deformation_gradient(dof::Int64, volume, omega, bond_da
 end
 
 """
-    deformation_gradient(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
+    compute_deformation_gradient(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 
 Calculate the deformation gradient tensor for a set of nodes in a computational mechanics context.
 
@@ -174,15 +174,14 @@ deformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 inverse_shape_tensor = rand(Float64, length(nodes), dof, dof)
 deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 
-deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
+compute_deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 """
-function deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, undeformed_bond::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
-    deformation_gradient .= 0
+function compute_deformation_gradient(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray, volume::SubArray, omega::SubArray, bond_damage::SubArray, deformed_bond::Union{SubArray,Vector{Matrix{Float64}}}, undeformed_bond::SubArray, inverse_shape_tensor::SubArray, deformation_gradient::SubArray)
+    deformation_gradient[nodes, :, :] .= 0
     for iID in nodes
         deformation_gradient[iID, :, :] = calculate_deformation_gradient(deformation_gradient[iID, :, :], dof, bond_damage[iID], deformed_bond[iID], undeformed_bond[iID], volume[nlist[iID]], omega[iID])
         deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]
     end
-
     return deformation_gradient
 end
 
@@ -229,7 +228,7 @@ function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int6
     for iID in nodes
         deformation_gradient[iID, :, :] = Matrix{Float64}(I(dof))
         for (jID, nID) in enumerate(nlist[iID])
-            deformation_gradient[iID, :, :] += (displacement[nlist[iID][jID], :] .- displacement[iID, :]) * gradient_weight[iID][jID, :]' .* volume[nID]
+            deformation_gradient[iID, :, :] += ((displacement[nlist[iID][jID], :] .- displacement[iID, :]) * gradient_weight[iID][jID, :]') .* volume[nID]
         end
     end
     return deformation_gradient
@@ -245,49 +244,6 @@ function deformation_gradient_decomposition(nodes::Union{Base.OneTo{Int64},Vecto
     return rot_tensor
 end
 
-function deformation_gradient_decomposition_from_peridigm(nodes, dof, deformation_gradient, deformation_gradient_dot, left_stretch_tensorN, left_stretch_tensorNP1, rot_tensorN, rot_tensorNP1, unrotated_rate_of_deformation)
-    # D. P. Flanagan, L. M. Taylor, Stress integration with finite rotations; https://doi.org/10.1016/0045-7825(87)90065-X
-    z = zeros(Float64, dof)
-    w = zeros(Float64, dof)
-    omega_vector = zeros(Float64, dof)
-    omega_matrix = zeros(Float64, dof, dof)
-    #scalarTemp = (1.0 - bondDamage) * omega * neighborVolume;
-    #
-    #*(FdotFirstTerm)   += scalarTemp * velStateX * undeformedBondX;
-    #*(FdotFirstTerm+1) += scalarTemp * velStateX * undeformedBondY;
-    #*(FdotFirstTerm+2) += scalarTemp * velStateX * undeformedBondZ;
-    #*(FdotFirstTerm+3) += scalarTemp * velStateY * undeformedBondX;
-    #*(FdotFirstTerm+4) += scalarTemp * velStateY * undeformedBondY;
-    #*(FdotFirstTerm+5) += scalarTemp * velStateY * undeformedBondZ;
-    #*(FdotFirstTerm+6) += scalarTemp * velStateZ * undeformedBondX;
-    #*(FdotFirstTerm+7) += scalarTemp * velStateZ * undeformedBondY;
-    #*(FdotFirstTerm+8) += scalarTemp * velStateZ * undeformedBondZ;
-    for iID in nodes
-        # Follow the algorithm at page 315
-        # Compute rate-of-deformation tensor, D = 1/2 * (L + Lt) -> from Eq (4)
-        velocity_gradient = deformation_gradient_dot[iID, :, :] * inv(deformation_gradient[iID, :, :])
-        rate_of_deformation = 0.5 .* (transpose(velocity_gradient) + velocity_gradient)
-        # Compute spin tensor, W = 1/2 * (L - Lt) -> from Eq (4)
-        spin = 0.5 .* (transpose(velocity_gradient) - velocity_gradient)
-        @tensor begin # Find the vector w_i = -1/2 * \epsilon_{ijk} * W_{jk} (T&F Eq. 11)
-            z[i] = levicivita([i, j, k]) * rate_of_deformation[iID, j, m] * left_stretch_tensorN[iID, m, k]
-            w[i] = -0.5 * levicivita([i, j, k]) * spin[iID, j, k]
-        end
-        #Find omega vector, i.e. omega = w +  (trace(V) I - V)^(-1) * z (T&F Eq. 12)
-        omega_vector = w - (sum(diag(left_stretch_tensorN[iID, :, :])) * Matrix{Float64}(I, dof, dof) - left_stretch_tensorN[iID, :, :]) * z
-        @tensor begin # Find the vector w_i = -1/2 * epsilon_{ijk} * W_{jk} (T&F Eq. 11)
-            omega_matrix[i, j] = levicivita([i, k, j]) * omega_vector[k]
-        end
-        rot_tensorNP1[iID, :, :] = inv((Matrix{Float64}(I, dof, dof) - 0.5 * dt .* omega_matrix)) * (Matrix{Float64}(I, dof, dof) + 0.5 * dt .* omega_matrix) * rot_tensorN[iID, :, :]
-
-        left_stretch_tensorNP1[iID, :, :] = left_stretch_tensorN[iID, :, :] + dt .* ((rate_of_deformation + spin) * left_stretch_tensorN[iID, :, :] - left_stretch_tensorN[iID, :, :] * omega_matrix)
-        #L*V-V*Omegamatrix -> rate of stretch
-        #vi+1 = vi+dt rateofstretch
-        #unroted rate of def = RNP1^T*rateofdef*RNP1
-        unrotated_rate_of_deformation[iID, :, :] = rot_tensorNP1[iID, :, :] * rate_of_deformation * transpose(rot_tensorNP1[iID, :, :])
-    end
-
-end
 
 
 """
@@ -349,8 +305,14 @@ function compute_bond_level_deformation_gradient(nodes, nlist, dof, bond_geometr
         for (jID, nID) in enumerate(nlist[iID])
             mean_deformation_gradient = 0.5 .* (deformation_gradient[iID, :, :] + deformation_gradient[nID, :, :])
             for i in 1:dof
-                scalar_temp::Float64 = sum(mean_deformation_gradient[i, :] .* bond_geometry[iID][jID, i])
-                ba_deformation_gradient[iID][jID, i, :] = mean_deformation_gradient[i, :] .+ (bond_deformation[iID][jID, i] - scalar_temp) .* bond_geometry[iID][jID, i] / bond_length[iID][jID]
+                scalar_temp::Float64 = mean_deformation_gradient[i, :]' * bond_geometry[iID][jID, :]
+                ba_deformation_gradient[iID][jID, i, :] = mean_deformation_gradient[i, :] + (bond_deformation[iID][jID, i] - scalar_temp) .* bond_geometry[iID][jID, :] / (bond_length[iID][jID] * bond_length[iID][jID])
+
+                # scalarTemp = *(meanDefGrad+0) * undeformedBondX + *(meanDefGrad+1) * undeformedBondY + *(meanDefGrad+2) * undeformedBondZ;
+
+                # *(defGrad+0) = *(meanDefGrad+0) + (defStateX - scalarTemp) * undeformedBondX/undeformedBondLengthSq;
+                # *(defGrad+1) = *(meanDefGrad+1) + (defStateX - scalarTemp) * undeformedBondY/undeformedBondLengthSq;
+                # *(defGrad+2) = *(meanDefGrad+2) + (defStateX - scalarTemp) * undeformedBondZ/undeformedBondLengthSq;
             end
         end
     end
