@@ -8,6 +8,19 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2024-07-08
+
+### Added
+
+- Bond associated formulation #154
+- Surface extrusion for Abaqus
+- Strain for non correspondence models
+
+### Fixed
+
+- Quasi-contact
+- Inter critical value
+
 ## [1.1.6] - 2024-06-24
 
 ### Added
