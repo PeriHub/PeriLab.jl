@@ -10,7 +10,7 @@ cd("fullscale_tests/" * folder_name) do
     run_perilab("correspondence_strain_pstrain_xy", 1, true, folder_name)
     # run_perilab("correspondence_strain_pstrain_yy", 1, true, folder_name)
     run_perilab("ba_correspondence_strain_pstress_xx", 1, true, folder_name)
-    # run_perilab("correspondence_strain_pstress_xx", 1, true, folder_name)
+    run_perilab("ba_correspondence_strain_pstress_xy", 1, true, folder_name)
     run_perilab("correspondence_strain_pstress_xy", 1, true, folder_name)
     # run_perilab("correspondence_strain_pstress_yy", 1, true, folder_name)
 end

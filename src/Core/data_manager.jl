@@ -87,7 +87,7 @@ global nsets::Dict{String,Vector{Int}}
 global overlap_map::Dict{Int64,Any}
 global physics_options::Dict{String,Bool}
 global output_frequency::Vector{Dict}
-global accuracy_order
+global accuracy_order::Int64
 global rank::Int64
 global commMPi::Any
 global cancel::Bool
@@ -98,7 +98,7 @@ global silent::Bool
 """
     initialize_data()
 
-Returns a list of all field keys.
+Initialize all parameter in the datamanager and sets them to the default values.
 """
 function initialize_data()
     global nnodes

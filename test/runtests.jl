@@ -61,6 +61,9 @@ MPI.Init()
             @testset "ut_data_manager" begin
                 include("unit_tests/Core/ut_data_manager.jl")
             end
+            @testset "ut_influence_function" begin
+                include("unit_tests/Core/ut_Influence_function.jl")
+            end
             @testset "Solver" begin
 
                 @testset "ut_Solver_control" begin

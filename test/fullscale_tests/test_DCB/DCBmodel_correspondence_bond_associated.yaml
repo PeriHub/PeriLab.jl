@@ -50,7 +50,7 @@ PeriLab:
       Node Set 1: ns_DCBmodel_1.txt
       Node Set 2: ns_DCBmodel_2.txt
     Type: Text File
-    #Influence Function: "1/xi^2"
+    Influence Function: "1/xi^2"
     Bond Filters:
       bf_1:
         Bottom Length: 2.0
@@ -68,7 +68,7 @@ PeriLab:
   Outputs:
     Output1:
       Number of Output Steps: 100
-      Output Filename: DCBmodel_bond_associanted_correspondence
+      Output Filename: DCBmodel_correspondence_bond_associated
       Output File Type: Exodus
       Output Variables:
         Damage: true
