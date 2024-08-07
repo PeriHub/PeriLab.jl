@@ -92,7 +92,7 @@ https://link.springer.com/article/10.1007/s10409-021-01055-5
 
 function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
-  rotation::Bool, angles = datamanager.rotation_data()
+  rotation::Bool = datamanager.get_rotation()
 
   dof = datamanager.get_dof()
   nlist = datamanager.get_field("Neighborhoodlist")
@@ -142,9 +142,10 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   # TODO decomposition to get the rotation and large deformation in
   # TODO store not angles, but rotation matrices, because they are computed in decomposition
   if rotation
+    rotation_tensor = datamanager.get_field("Rotation Tensor")
     ba_rotation_tensor = compute_bond_level_rotation_tensor(nodes, nlist, ba_deformation_gradient, ba_rotation_tensor)
-    stress_N = rotate(nodes, dof, stress_N, angles, false)
-    strain_increment = rotate(nodes, dof, strain_increment, angles, false)
+    stress_N = rotate(nodes, dof, stress_N, rotation_tensor, false)
+    strain_increment = rotate(nodes, dof, strain_increment, rotation_tensor, false)
   end
 
   material_models = split(material_parameter["Material Model"], "+")

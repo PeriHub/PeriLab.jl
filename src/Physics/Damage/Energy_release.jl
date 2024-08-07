@@ -75,11 +75,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     critical_field = datamanager.has_key("Critical_Value")
-    if critical_field
-        critical_energy = datamanager.get_field("Critical_Value")
-    else
-        critical_energy = damage_parameter["Critical Value"]
-    end
+    critical_energy = critical_field ? datamanager.get_field("Critical_Value") : damage_parameter["Critical Value"]
     quad_horizon = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
     dependend_value::Bool = false
@@ -93,7 +89,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
 
     # for anisotropic damage models
-    rotation::Bool, angles = datamanager.rotation_data()
+    rotation::Bool = datamanager.get_rotation()
 
     tension::Bool = get(damage_parameter, "Only Tension", true)
     inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
@@ -107,6 +103,7 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
         end
         aniso_crit_values = datamanager.get_aniso_crit_values()
         bond_norm::Float64 = 0.0
+        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
     end
 
     bond_energy::Float64 = 0.0
@@ -119,20 +116,13 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
     for iID in nodes
         relative_displacement_vector = deformed_bond[iID] .- undeformed_bond[iID]
-        if aniso_damage
-            rotation_tensor = Geometry.rotation_tensor(angles[iID, :])
-        end
 
         for (jID, neighborID) in enumerate(nlist[iID])
-            norm_displacement = norm(relative_displacement_vector[jID, :])
+            relative_displacement = relative_displacement_vector[jID, :]
+            norm_displacement = norm(relative_displacement)
 
-            if norm_displacement == 0
+            if norm_displacement == 0 || (tension && deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
                 continue
-            end
-            if tension
-                if deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
-                    continue
-                end
             end
 
             # check if the bond also exist at other node, due to different horizons
@@ -142,9 +132,9 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 fill!(neighbor_bond_force, 0.0)
             end
 
-            projected_force .= dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement_vector[jID, :]) / (norm_displacement * norm_displacement) .* relative_displacement_vector[jID, :]
+            projected_force .= dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement) / (norm_displacement * norm_displacement) .* relative_displacement
 
-            bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement_vector[jID, :]))
+            bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement))
             if bond_energy < 0
                 @error "Bond energy smaller zero"
                 return nothing
@@ -153,14 +143,12 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
                 critical_energy = interpol_data(field[iID], damage_parameter["Temperature dependend"])
             end
 
-            if critical_field
-                crit_energy = critical_energy[iID]
-            else
-                crit_energy = inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
-            end
+            crit_energy = critical_field ? critical_energy[iID] : inter_block_damage ? inter_critical_energy[block_ids[iID], block_ids[neighborID], block] : critical_energy
 
             if aniso_damage
-                rotated_bond = rotation_tensor' * deformed_bond[iID][jID, :]
+                #TODO Fix bug herem rotation_tensor is zero
+                @info rotation_tensor[iID, :, :]'
+                rotated_bond = rotation_tensor[iID, :, :]' * deformed_bond[iID][jID, :]
                 # Compute bond_norm for all components at once
                 bond_norm_all = abs.(rotated_bond) ./ deformed_bond_length[iID][jID]
 

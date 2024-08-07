@@ -23,32 +23,36 @@ end
 @testset "rotate_second_order_tensor" begin
 
     angles = [0]
+    rotation_tensor = PeriLab.IO.Geometry.rotation_tensor(angles)
     tensor = zeros(2, 2)
     tensor[1, 1] = 1
     dof = 2
     back = true
-    tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, back)
+    tensorTest = Correspondence.rotate_second_order_tensor(rotation_tensor, tensor, dof, back)
     @test tensorTest == tensor
     angles = [90.0]
-    tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, back)
+    rotation_tensor = PeriLab.IO.Geometry.rotation_tensor(angles)
+    tensorTest = Correspondence.rotate_second_order_tensor(rotation_tensor, tensor, dof, back)
     @test isapprox(tensorTest[1, 1] + 1, 1) # plus one, because of how approx works
     @test isapprox(tensorTest[1, 2] + 1, 1)
     @test isapprox(tensorTest[2, 1] + 1, 1)
     # @test isapprox(tensorTest[2, 2], 1)
     back = false
-    tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, back)
+    tensorTest = Correspondence.rotate_second_order_tensor(rotation_tensor, tensor, dof, back)
     @test tensorTest == tensor
 
     angles = [0, 0, 0]
+    rotation_tensor = PeriLab.IO.Geometry.rotation_tensor(angles)
     tensor = zeros(3, 3)
     tensor[1, 1] = 1
     dof = 3
 
     back = true
-    tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, back)
+    tensorTest = Correspondence.rotate_second_order_tensor(rotation_tensor, tensor, dof, back)
     @test tensorTest == tensor
     angles = [0, 0, 90.0]
-    tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, back)
+    rotation_tensor = PeriLab.IO.Geometry.rotation_tensor(angles)
+    tensorTest = Correspondence.rotate_second_order_tensor(rotation_tensor, tensor, dof, back)
     @test isapprox(tensorTest[1, 1] + 1, 1) # plus one, because of how approx works
     @test isapprox(tensorTest[1, 2] + 1, 1)
     @test isapprox(tensorTest[1, 3] + 1, 1)
@@ -60,12 +64,13 @@ end
     @test isapprox(tensorTest[3, 3] + 1, 1)
 
     back = false
-    tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, back)
+    tensorTest = Correspondence.rotate_second_order_tensor(rotation_tensor, tensor, dof, back)
     @test tensorTest == tensor
 
     angles = [10, 20, 90.0]
-    tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, true)
-    tensorTest = Correspondence.rotate_second_order_tensor(angles, tensor, dof, false)
+    rotation_tensor = PeriLab.IO.Geometry.rotation_tensor(angles)
+    tensorTest = Correspondence.rotate_second_order_tensor(rotation_tensor, tensor, dof, true)
+    tensorTest = Correspondence.rotate_second_order_tensor(rotation_tensor, tensor, dof, false)
     @test tensorTest == tensor
 
 end
