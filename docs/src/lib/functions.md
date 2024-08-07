@@ -41,9 +41,10 @@ get_properties
 get_property
 get_rank
 get_max_rank
+get_rotation
+get_element_rotation
 loc_to_glob
 init_property
-rotation_data
 set_block_list
 set_crit_values_matrix
 set_aniso_crit_values
@@ -63,6 +64,8 @@ set_properties
 set_rank
 set_max_rank
 set_synch
+set_rotation
+set_element_rotation
 switch_NP1_to_N
 synch_manager
 initialize_data

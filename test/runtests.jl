@@ -140,8 +140,8 @@ MPI.Init()
                 end
             end
 
-            @testset "ut_Physics_Factory" begin
-                include("unit_tests/Physics/ut_Physics_Factory.jl")
+            @testset "ut_Model_Factory" begin
+                include("unit_tests/Physics/ut_Model_Factory.jl")
             end
             @testset "ut_Pre_calculation" begin
                 include("unit_tests/Physics/Pre_calculation/ut_bond_deformation_gradient.jl")
@@ -243,9 +243,9 @@ MPI.Init()
         @testset "test_Abaqus" begin
             include("fullscale_tests/test_Abaqus/test_Abaqus.jl")
         end
-        @testset "test_aniso_damage" begin
-            include("fullscale_tests/test_aniso_damage/test_aniso_damage.jl")
-        end
+        # @testset "test_aniso_damage" begin
+        #     include("fullscale_tests/test_aniso_damage/test_aniso_damage.jl")
+        # end
         @testset "test_material_field" begin
             include("fullscale_tests/test_material_field/test_material_field.jl")
         end

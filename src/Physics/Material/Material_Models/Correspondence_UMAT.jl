@@ -197,8 +197,8 @@ function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_
   # only 80 charakters are supported
   CMNAME::Cstring = malloc_cstring(material_parameter["UMAT Material Name"])
   coords = datamanager.get_field("Coordinates")
-  rot_N = datamanager.get_field("Rotation", "N")
-  rot_NP1 = datamanager.get_field("Rotation", "NP1")
+  rot_N = datamanager.get_field("Rotation Tensor", "N")
+  rot_NP1 = datamanager.get_field("Rotation Tensor", "NP1")
   zStiff = datamanager.get_field("Zero Energy Stiffness")
   Kinv = datamanager.get_field("Inverse Shape Tensor")
   # Number of normal stress components at this point

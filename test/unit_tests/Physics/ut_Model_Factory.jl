@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../src/Physics/Physics_Factory.jl")
+include("../../../src/Physics/Model_Factory.jl")
 # include("../../../src/PeriLab.jl")
 # using .PeriLab
 using Test

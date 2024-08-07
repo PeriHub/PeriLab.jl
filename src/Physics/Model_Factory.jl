@@ -16,7 +16,7 @@ include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
 include("../Compute/compute_field_values.jl")
 using .Parameter_Handling: get_physics_option, get_model_parameter, get_heat_capacity
-# in future FEM will be outside of the Physics_Factory
+# in future FEM will be outside of the Model_Factory
 include("../FEM/FEM_Factory.jl")
 
 using .Additive
@@ -25,7 +25,7 @@ using .Damage
 using .Material
 using .Pre_calculation
 using .Thermal
-# in future FEM will be outside of the Physics_Factory
+# in future FEM will be outside of the Model_Factory
 using .FEM
 using TimerOutputs
 export compute_models

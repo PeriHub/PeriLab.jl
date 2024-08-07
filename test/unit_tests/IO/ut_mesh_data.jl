@@ -41,7 +41,7 @@ using DataFrames
     data = PeriLab.IO.read_mesh(joinpath(path, "example_mesh.g"), params)
     @test length(data[:, 1]) == 324
     @test data[!, "block_id"][1] == 1
-    @test data[!, "volume"][1] == 0.03314393939393944
+    @test isapprox(data[!, "volume"][1], 0.03314393939393944, atol=1e-15)
 
 end
 

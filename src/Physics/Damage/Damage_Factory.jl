@@ -198,7 +198,7 @@ function init_interface_crit_values(datamanager::Module, damage_parameter::Dict,
     max_block_id = maximum(datamanager.get_block_list())
     inter_critical_value = datamanager.get_crit_values_matrix()
     if inter_critical_value == fill(-1, (1, 1, 1))
-        inter_critical_value = fill(damage_parameter["Critical Value"], (max_block_id, max_block_id, max_block_id))
+        inter_critical_value = fill(Float64(damage_parameter["Critical Value"]), (max_block_id, max_block_id, max_block_id))
     end
     for block_iId in 1:max_block_id
         for block_jId in 1:max_block_id

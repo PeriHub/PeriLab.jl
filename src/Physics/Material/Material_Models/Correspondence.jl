@@ -5,6 +5,7 @@
 module Correspondence
 using LinearAlgebra
 using TimerOutputs
+using Rotations
 include("./Zero_Energy_Control/global_control.jl")
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
@@ -50,7 +51,7 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
   datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
   datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
   datamanager.create_node_field("von Mises Stress", Float64, 1)
-
+  rotation::Bool = datamanager.get_rotation()
   material_models = split(material_parameter["Material Model"], "+")
   material_models = map(r -> strip(r), material_models)
   #occursin("Correspondence", material_name)
@@ -115,7 +116,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     return Bond_Associated_Correspondence.compute_forces(datamanager, nodes, material_parameter, time, dt, to)
   end
 
-  rotation::Bool, angles = datamanager.rotation_data()
+  rotation::Bool = datamanager.get_rotation()
   dof = datamanager.get_dof()
   deformation_gradient = datamanager.get_field("Deformation Gradient")
   bond_force = datamanager.get_field("Bond Forces")
@@ -133,8 +134,9 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   strain_increment[nodes, :, :] = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
 
   if rotation
-    stress_N = rotate(nodes, stress_N, rotation_tensor, false)
-    strain_increment = rotate(nodes, strain_increment, rotation_tensor, false)
+    rotation_tensor = datamanager.get_field("Rotation Tensor")
+    stress_N = rotate(nodes, dof, stress_N, rotation_tensor, false)
+    strain_increment = rotate(nodes, dof, strain_increment, rotation_tensor, false)
   end
 
   material_models = split(material_parameter["Material Model"], "+")
@@ -147,7 +149,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
   end
   if rotation
-    stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
+    stress_NP1 = rotate(nodes, dof, stress_NP1, rotation_tensor, true)
   end
   bond_force = calculate_bond_force(nodes, deformation_gradient, undeformed_bond, bond_damage, inverse_shape_tensor, stress_NP1, bond_force)
   # general interface, because it might be a flexbile Set_modules interface in future
@@ -207,5 +209,54 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_
   end
   return bond_force
 end
+
+"""
+    rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
+
+Rotates the matrix.
+
+# Arguments
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `dof::Int64`: Degree of freedom.
+- `matrix::Union{SubArray,Array{Float64,3}}`: Matrix.
+- `angles::SubArray`: Angles.
+- `back::Bool`: Back.
+# Returns
+- `matrix::SubArray`: Matrix.
+"""
+function rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, rotation_tensor::SubArray, back::Bool)
+  for iID in nodes
+    matrix[iID, :, :] = rotate_second_order_tensor(rotation_tensor[iID, :], matrix[iID, :, :], dof, back)
+  end
+  return matrix
+end
+
+"""
+    rotate_second_order_tensor(angles::Union{Vector{Float64},Vector{Int64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
+
+Rotates the second order tensor.
+
+# Arguments
+- `angles::Union{Vector{Float64},Vector{Int64}}`: Angles.
+- `tensor::Matrix{Float64}`: Second order tensor.
+- `dof::Int64`: Degree of freedom.
+- `back::Bool`: Back.
+# Returns
+- `tensor::Matrix{Float64}`: Second order tensor.
+"""
+function rotate_second_order_tensor(rotation_tensor::Union{Vector{Float64},Vector{Int64},Rotations.Angle2d{Float64},Rotations.RotXYZ{Float64}}, tensor::Matrix{Float64}, dof::Int64, back::Bool)
+  R = rotation_tensor[1:dof, 1:dof]
+
+  if back
+    @tensor begin
+      tensor[m, n] = tensor[i, j] * R[m, i] * R[n, j]
+    end
+  else
+    @tensor begin
+      tensor[m, n] = tensor[i, j] * R[i, m] * R[j, n]
+    end
+  end
+end
+
 
 end

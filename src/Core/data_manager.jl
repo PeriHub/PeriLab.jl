@@ -37,8 +37,9 @@ export get_num_responder
 export get_max_rank
 export get_cancel
 export get_output_frequency
+export get_rotation
+export get_element_rotation
 export init_property
-export rotation_data
 export set_accuracy_order
 export set_block_list
 export set_crit_values_matrix
@@ -58,6 +59,8 @@ export set_rank
 export set_max_rank
 export set_cancel
 export set_output_frequency
+export set_rotation
+export set_element_rotation
 export switch_NP1_to_N
 export synch_manager
 ##########################
@@ -93,6 +96,8 @@ global commMPi::Any
 global cancel::Bool
 global max_rank::Int64
 global silent::Bool
+global rotation::Bool
+global element_rotation::Bool
 ##########################
 
 """
@@ -162,6 +167,10 @@ function initialize_data()
     max_rank = 0
     global silent
     silent = false
+    global rotation
+    rotation = false
+    global element_rotation
+    element_rotation = false
 
 end
 ###################################
@@ -918,6 +927,32 @@ function get_silent()
 end
 
 """
+    get_rotation()
+
+This function returns the `rotation` flag.
+
+# Returns
+- `rotation`::Bool: The value of the `rotation` variable.
+"""
+function get_rotation()
+    global rotation
+    return rotation
+end
+
+"""
+    get_element_rotation()
+
+This function returns the `element_rotation` flag.
+
+# Returns
+- `element_rotation`::Bool: The value of the `element_rotation` variable.
+"""
+function get_element_rotation()
+    global element_rotation
+    return element_rotation
+end
+
+"""
     get_output_frequency()
 
 This function returns the `output_frequency` variable.
@@ -964,44 +999,6 @@ function init_property()
         properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
     end
     return collect(keys(properties[block_list[1]]))
-end
-"""
-    rotation_data()
-
-Check if the "Angles" field is present in the datamanager's field keys.
-If present, return true and retrieve the value of the "Angles" field.
-If not present, return false and nothing.
-
-# Input
-element_or_node::String="Node" :  "Node" or "Element" angles; Node is default
-
-# Returns
-- `Tuple{Bool, Union{Nothing, Any}}`: A tuple containing a Boolean value
-  indicating whether the "Angles" field is present (`true` or `false`), and
-  the value of the "Angles" field if present; otherwise, `nothing`.
-
-# Example
-```julia
-result, angles = rotation_data()
-if result
-    println("Angles field is present. Value: ", angles)
-else
-    println("Angles field is not present.")
-end
-"""
-function rotation_data(element_or_node::String="Node")
-    rotation::Bool = false
-    if element_or_node != "Node" && element_or_node != "Element"
-        @error "Invalid input. Please provide 'Node' or 'Element'."
-        return nothing
-    end
-    if "Angles" in get_all_field_keys() && element_or_node == "Node"
-        return true, get_field("Angles")
-    end
-    if "Element Angles" in get_all_field_keys() && element_or_node == "Element"
-        return true, get_field("Element Angles")
-    end
-    return false, nothing
 end
 
 """
@@ -1377,6 +1374,30 @@ Sets the silent flag.
 """
 function set_silent(value::Bool)
     global silent = value
+end
+
+"""
+    set_rotation(value::Int64)
+
+Sets the rotation flag.
+
+# Arguments
+- `value::Bool`: The rotation flag.
+"""
+function set_rotation(value::Bool)
+    global rotation = value
+end
+
+"""
+    set_element_rotation(value::Int64)
+
+Sets the element_rotation flag.
+
+# Arguments
+- `value::Bool`: The element_rotation flag.
+"""
+function set_element_rotation(value::Bool)
+    global element_rotation = value
 end
 
 """
