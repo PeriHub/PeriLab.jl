@@ -50,6 +50,7 @@ PeriLab:
       Node Set 1: ns_DCBmodel_1.txt
       Node Set 2: ns_DCBmodel_2.txt
     Type: Text File
+    Influence Function: "1/xi^2"
     Bond Filters:
       bf_1:
         Bottom Length: 2.0
@@ -67,7 +68,7 @@ PeriLab:
   Outputs:
     Output1:
       Number of Output Steps: 100
-      Output Filename: DCBmodel_bond_associanted_correspondence
+      Output Filename: DCBmodel_correspondence_bond_associated
       Output File Type: Exodus
       Output Variables:
         Damage: true
@@ -86,6 +87,7 @@ PeriLab:
     Material Models:
       Aluminium:
         Material Model: "Correspondence Elastic"
+        Accuracy Order: 1
         Bond Associated: true
         Bond Horizon: 0.42
         Zero Energy Control: "Global"
@@ -94,7 +96,6 @@ PeriLab:
         Poisson's Ratio: 0.3
     Pre Calculation:
       Bond Associated Deformation Gradient: true
-      Bond Associated Shape Tensor: true
       Deformation Gradient: false
       Deformed Bond Geometry: true
       Shape Tensor: false
@@ -103,6 +104,6 @@ PeriLab:
     Initial Time: 0.0
     Material Models: true
     Damage Models: true
-    Numerical Damping: 5.0e-06
+    Numerical Damping: 5.0e-04
     Verlet:
       Safety Factor: 0.9

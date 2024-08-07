@@ -2,42 +2,43 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../src/IO/read_inputdeck.jl")
+
 
 using Test
-
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 @testset "ut_read_input" begin
     filename = "test.yaml"
     fid = open(filename, "w")
     println(fid, "PeriLab:")
     println(fid, " data: 1")
     close(fid)
-    dict = read_input(filename)
+    dict = PeriLab.IO.read_input(filename)
     @test haskey(dict["PeriLab"], "data")
     @test dict["PeriLab"]["data"] == 1
     rm(filename)
     fid = open(filename, "w")
     close(fid)
-    @test isnothing(read_input(filename))
+    @test isnothing(PeriLab.IO.read_input(filename))
     rm(filename)
 
     fid = open(filename, "w")
     println(fid, "PeriLab:")
     println(fid, "data")
     close(fid)
-    @test isnothing(read_input(filename))
+    @test isnothing(PeriLab.IO.read_input(filename))
     rm(filename)
 end
 
 @testset "ut_read_input_file" begin
-    dict = read_input_file("filename")
+    dict = PeriLab.IO.read_input_file("filename")
     @test isnothing(dict)
     filename = "test.xml"
     fid = open(filename, "w")
     println(fid, "PeriLab:")
     println(fid, " data: 1")
     close(fid)
-    dict = read_input_file(filename)
+    dict = PeriLab.IO.read_input_file(filename)
     @test isnothing(dict)
     rm(filename)
     filename = "test.yaml"
@@ -45,7 +46,7 @@ end
     println(fid, "PeriLab:")
     println(fid, " data: 1")
     close(fid)
-    dict = read_input_file(filename)
+    dict = PeriLab.IO.read_input_file(filename)
     @test isnothing(dict)
     rm(filename)
     filename = "test.yaml"
@@ -63,7 +64,7 @@ end
     println(fid, "  Initial Time: 0.0")
     println(fid, "  Final Time: 1.0")
     close(fid)
-    dict = read_input_file(filename)
+    dict = PeriLab.IO.read_input_file(filename)
     @test dict["Physics"]["d"] == 3
     @test dict["Physics"]["a"] == 1
     @test dict["Discretization"]["Input Mesh File"] == "test"

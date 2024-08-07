@@ -65,12 +65,13 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             end
         end
     end
+
     active = datamanager.get_field("Active")
     if options["Damage Models"]
-        #tbd damage specific pre_calculation-> in damage template
+        @timeit to "pre_calculation in damage" datamanager = Pre_calculation.compute(datamanager, block_nodes)
+        @timeit to "pre_synchronize in damage" Pre_calculation.synchronize(datamanager, datamanager.get_physics_options(), synchronise_field)
         for block in eachindex(block_nodes)
             nodes = block_nodes[block]
-
             active_nodes = view(nodes, find_active(active[nodes]))
             if fem_option
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
@@ -78,6 +79,15 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
                 datamanager = Damage.set_bond_damage(datamanager, active_nodes)
                 @timeit to "damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, active_nodes, block, synchronise_field, time, dt, to)
+            end
+        end
+        for block in eachindex(block_nodes)
+            nodes = block_nodes[block]
+            active_nodes = view(nodes, find_active(active[nodes]))
+            if fem_option
+                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
+            end
+            if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
                 @timeit to "damage" datamanager = Damage.compute_damage(datamanager, active_nodes, datamanager.get_properties(block, "Damage Model"), block, time, dt)
             end
         end
@@ -91,16 +101,14 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
         # in future the FE analysis can be put into the block loop. Right now it is outside the block.
         datamanager = FEM.eval(datamanager, Vector{Int64}(1:nelements), datamanager.get_properties(1, "FEM"), time, dt)
     end
+
+    @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, block_nodes)
+    @timeit to "pre_synchronize" Pre_calculation.synchronize(datamanager, datamanager.get_physics_options(), synchronise_field)
     for block in eachindex(block_nodes)
-
         active_nodes, update_nodes = get_active_update_nodes(active, update_list, block_nodes, block)
-
         if fem_option
             update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
-        @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, update_nodes, datamanager.get_physics_options(), time, dt, to)
-        @timeit to "pre_synchronize" Pre_calculation.synchronize(datamanager, datamanager.get_physics_options(), synchronise_field)
-
         if options["Thermal Models"]
             if datamanager.check_property(block, "Thermal Model")
                 @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, update_nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
@@ -151,8 +159,6 @@ Compute the damage pre calculation
 - `datamanager::Data_manager`: Datamanager.
 """
 function compute_damage_pre_calculation(datamanager::Module, options::Dict, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64, to::TimerOutput)
-
-    @timeit to "compute" datamanager = Pre_calculation.compute(datamanager, nodes, datamanager.get_physics_options(), time, dt, to)
 
     if options["Thermal Models"]
         @timeit to "thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
@@ -212,6 +218,16 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     deformed_coorN = copy(datamanager.get_field("Coordinates"))
     deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
+    # TODO integrate this correctly
+    rotation = datamanager.get_rotation()
+    #if rotation
+    rotN, rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
+    #    for iID in nodes
+    #        rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
+    #        rotNP1 = copy(rotN)
+    #    end
+    #end
+
     if solver_options["Additive Models"]
         @info "Init additive models"
         @timeit to "additive_model_fields" datamanager = Physics.init_additive_model_fields(datamanager)

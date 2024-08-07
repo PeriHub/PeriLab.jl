@@ -80,7 +80,7 @@ CurrentModule = PeriLab.IO.Geometry
 ```@docs
 bond_geometry
 shape_tensor
-deformation_gradient
+compute_deformation_gradient
 compute_strain
 rotation_tensor
 ```
@@ -152,6 +152,8 @@ matrix_style
 progress_bar
 get_fourth_order
 find_inverse_bond_id
+rotate
+rotate_second_order_tensor
 ```
 
 ```@meta

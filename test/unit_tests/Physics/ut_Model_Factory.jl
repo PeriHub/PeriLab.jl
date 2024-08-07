@@ -9,7 +9,7 @@ using Test
 import .Physics
 @testset "ut_get_block_model_definition" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     block_list = [1, 2, 3]
     test_data_manager.set_block_list(block_list)
     prop_keys = test_data_manager.init_property()

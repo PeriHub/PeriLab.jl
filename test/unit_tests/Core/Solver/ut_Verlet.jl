@@ -31,7 +31,7 @@ end
 nnodes = 5
 dof = 2
 test_data_manager = PeriLab.Data_manager
-test_data_manager.clear_data_manager()
+test_data_manager.initialize_data()
 comm = MPI.COMM_WORLD
 test_data_manager.set_comm(comm)
 test_data_manager.set_num_controller(5)

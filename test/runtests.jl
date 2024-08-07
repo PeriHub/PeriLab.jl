@@ -17,6 +17,7 @@ include("helper.jl")
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
+
     @testset "unit_tests" begin
         @testset "ut_perilab" begin
             include("unit_tests/ut_perilab.jl")
@@ -48,10 +49,6 @@ MPI.Init()
                 end
             end
 
-            @testset "ut_data_manager" begin
-                include("unit_tests/Support/ut_data_manager.jl")
-            end
-
             @testset "ut_helpers" begin
                 include("unit_tests/Support/ut_helpers.jl")
             end
@@ -61,6 +58,12 @@ MPI.Init()
             end
         end
         @testset "Core" begin
+            @testset "ut_data_manager" begin
+                include("unit_tests/Core/ut_data_manager.jl")
+            end
+            @testset "ut_influence_function" begin
+                include("unit_tests/Core/ut_Influence_function.jl")
+            end
             @testset "Solver" begin
 
                 @testset "ut_Solver_control" begin
@@ -139,6 +142,9 @@ MPI.Init()
 
             @testset "ut_Model_Factory" begin
                 include("unit_tests/Physics/ut_Model_Factory.jl")
+            end
+            @testset "ut_Pre_calculation" begin
+                include("unit_tests/Physics/Pre_calculation/ut_bond_deformation_gradient.jl")
             end
             @testset "ut_Damage" begin
                 include("unit_tests/Physics/Damage/ut_Damage_Factory.jl")

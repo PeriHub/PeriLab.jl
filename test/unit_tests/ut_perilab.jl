@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-using PeriLab
+#using PeriLab
 
 @testset "ut_print_banner" begin
     PeriLab.print_banner()

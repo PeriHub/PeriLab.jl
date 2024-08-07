@@ -10,7 +10,7 @@ using Test
 
 @testset "ut_jacobi" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     dof = 2
     nelements = 1
     test_data_manager.set_dof(dof)

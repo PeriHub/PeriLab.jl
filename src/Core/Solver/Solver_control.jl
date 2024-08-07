@@ -16,11 +16,13 @@ include("Verlet.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../../FEM/FEM_Factory.jl")
+include("../Influence_function.jl")
 
 using .Physics
 using .Boundary_conditions: init_BCs
 using .Verlet
 using .FEM
+using .Influence_function
 using TimerOutputs
 
 export init
@@ -55,8 +57,10 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
     solver_options = get_solver_options(params)
-
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
+    for iblock in eachindex(block_nodes)
+        datamanager = Influence_function.init_influence_function(block_nodes[iblock], datamanager, params["Discretization"])
+    end
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
     @debug "Read properties"
     Physics.read_properties(params, datamanager, solver_options["Material Models"])

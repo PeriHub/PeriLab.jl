@@ -6,9 +6,11 @@ module Critical_Energy_Model
 include("../Material/Material_Factory.jl")
 include("../../Support/geometry.jl")
 include("../Pre_calculation/Pre_Calculation_Factory.jl")
+include("../../Support/helpers.jl")
 using .Material
 using .Geometry
 using .Pre_calculation
+using .Helpers: rotate
 using LinearAlgebra
 using StaticArrays
 export compute_damage
@@ -61,13 +63,6 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     horizon = datamanager.get_field("Horizon")
     bond_damage = datamanager.get_bond_damage("NP1")
     aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
-    if aniso_damage
-        if datamanager.has_key("Bond Damage AnisotropicNP1")
-            bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
-        else
-            aniso_damage = false
-        end
-    end
 
     undeformed_bond = datamanager.get_field("Bond Geometry")
     undeformed_bond_length = datamanager.get_field("Bond Length")
@@ -98,10 +93,8 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
 
     if aniso_damage
-        if !rotation
-            @error "Anisotropic damage requires Angles field"
-        end
         aniso_crit_values = datamanager.get_aniso_crit_values()
+        bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
         bond_norm::Float64 = 0.0
         rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
     end
@@ -219,9 +212,8 @@ Compute the pre calculation for the damage.
 - `datamanager::Data_manager`: Datamanager.
 """
 function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
-
-    synchronise_field(datamanager.get_comm(), datamanager.get_synch_fields(), datamanager.get_overlap_map(), datamanager.get_field, "Bond Forces", "upload_to_cores")
-
+    synchfield = Dict("Bond Forces" => Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()))
+    synchronise_field(datamanager.get_comm(), synchfield, datamanager.get_overlap_map(), datamanager.get_field, "Bond Forces", "upload_to_cores")
     return datamanager
 end
 
@@ -252,6 +244,16 @@ function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int
     for iID in nodes
         quad_horizon[iID] = get_quad_horizon(horizon[iID], dof, thickness)
     end
+
+    if haskey(damage_parameter, "Anisotropic Damage")
+        rotation::Bool, angles = datamanager.rotation_data()
+        if !rotation
+            # TODO is this necassary? If you have no angles, you can use the global ones.
+            @error "Anisotropic damage requires Angles field"
+            return nothing
+        end
+    end
+
     return datamanager
 end
 end

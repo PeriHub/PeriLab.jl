@@ -7,55 +7,14 @@ module Bond_Associated_Correspondence
 include("../../../Support/helpers.jl")
 include("../../../Support/geometry.jl")
 include("../material_basis.jl")
-using .Helpers: find_local_neighbors, invert, qdim
-using .Geometry: compute_weighted_deformation_gradient, compute_strain, compute_bond_level_rotation_tensor, compute_bond_level_deformation_gradient
+using .Helpers: find_local_neighbors, invert, rotate
+using .Geometry: compute_strain, compute_bond_level_rotation_tensor, compute_bond_level_deformation_gradient
+include("../../Pre_calculation/bond_deformation_gradient.jl")
+using .Bond_Deformation_Gradient: compute_weighted_volume
 using TimerOutputs
 
-function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
-  if !haskey(material_parameter, "Symmetry")
-    @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
-    return nothing
-  end
-  if !haskey(material_parameter, "Accuracy Order")
-    @warn "No Accuracy Order has been defined it is set to 1."
-    merge!(material_parameter, Dict("Accuracy Order" => 1))
-  end
-  accuracy_order = material_parameter["Accuracy Order"]
-  if typeof(accuracy_order) != Int
-    @error "Accuracy Order must be an integer."
-    return nothing
-  elseif accuracy_order < 1
-    @error "Accuracy Order must be an greater than zero."
-    return nothing
-  end
-  dof = datamanager.get_dof()
-  datamanager.create_bond_field("Bond Strain", Float64, "Matrix", dof)
-  datamanager.create_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
-  datamanager.create_constant_bond_field("Bond Strain Increment", Float64, "Matrix", dof)
-  weighted_volume = datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
-  gradient_weights = datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
-  integral_stress = datamanager.create_constant_bond_field("Integral Nodal Stress", Float64, "Matrix", dof)
-
-  datamanager.create_bond_field("Bond Deformation Gradient", Float64, "Matrix", dof)
-  datamanager.create_bond_field("Bond Rotation Tensor", Float64, "Matrix", dof)
-  return datamanager
-end
-
-
-function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::Union{Vector{Vector{Int64}},SubArray}, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, deformation_gradient::SubArray, stress_integral::SubArray)
-  temp::Matrix{Float64} = zeros(dof, dof)
-  for iID in nodes
-    stress_integral[iID, :, :] .= 0.0
-    for (jID, nID) in enumerate(nlist[iID])
-      if bond_damage[iID][jID] == 0
-        continue
-      end
-      temp = (I(dof) - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./ bond_length[iID][jID]
-      stress_integral[iID, :, :] += (volume[nID] * omega[iID] * bond_damage[iID][jID] * (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])) .* compute_Piola_Kirchhoff_stress(bond_stresses[iID][jID, :, :], deformation_gradient[iID][jID, :, :]) * temp
-    end
-  end
-  return stress_integral
-end
+export init_material_model
+export compute_forces
 
 """
     correspondence_name()
@@ -76,6 +35,36 @@ println(correspondence_name())
 function correspondence_name()
   return "Correspondence Bond-Associated"
 end
+
+function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  if !haskey(material_parameter, "Symmetry")
+    @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
+    return nothing
+  end
+  if haskey(material_parameter, "Accuracy Order")
+    datamanager.set_accuracy_order(material_parameter["Accuracy Order"])
+  end
+
+  dof = datamanager.get_dof()
+  datamanager.create_bond_field("Bond Strain", Float64, "Matrix", dof)
+  datamanager.create_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
+  datamanager.create_constant_bond_field("Bond Strain Increment", Float64, "Matrix", dof)
+  datamanager.create_constant_node_field("Integral Nodal Stress", Float64, "Matrix", dof)
+
+  datamanager.create_bond_field("Bond Rotation Tensor", Float64, "Matrix", dof)
+
+  nlist = datamanager.get_nlist()
+  volume = datamanager.get_field("Volume")
+  omega = datamanager.get_field("Influence Function")
+  bond_damage = datamanager.get_bond_damage("NP1")
+  weighted_volume = datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
+
+  weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+
+  return datamanager
+end
+
+
 
 """
 https://link.springer.com/article/10.1007/s10409-021-01055-5
@@ -104,48 +93,47 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
   bond_length = datamanager.get_field("Bond Length")
 
-  undeformed_bond = datamanager.get_field("Bond Geometry")
+  bond_geometry = datamanager.get_field("Bond Geometry")
   bond_length = datamanager.get_field("Bond Length")
   bond_deformation = datamanager.get_field("Deformed Bond Geometry", "NP1")
 
   strain_N = datamanager.get_field("Bond Strain", "N")
   strain_NP1 = datamanager.get_field("Bond Strain", "NP1")
 
-  integral_stress = datamanager.get_field("Integral Nodal Stress")
-
+  stress_integral = datamanager.get_field("Integral Nodal Stress")
+  cauchy_stress = datamanager.get_field("Cauchy Stress", "NP1")
   stress_N = datamanager.get_field("Bond Cauchy Stress", "N")
   stress_NP1 = datamanager.get_field("Bond Cauchy Stress", "NP1")
 
   strain_increment = datamanager.get_field("Bond Strain Increment")
   bond_force = datamanager.get_field("Bond Forces")
 
+  # computed in pre calculation ----------------------------------
   gradient_weights = datamanager.get_field("Lagrangian Gradient Weights")
-
   weighted_volume = datamanager.get_field("Weighted Volume")
-
+  deformation_gradient = datamanager.get_field("Weighted Deformation Gradient")
+  #---------------------------------------------------------------
   displacements = datamanager.get_field("Displacements", "NP1")
   velocity = datamanager.get_field("Velocity", "NP1")
-  accuracy_order = material_parameter["Accuracy Order"]
 
-  deformation_gradient = datamanager.get_field("Deformation Gradient")
+  ba_deformation_gradient = datamanager.get_field("Bond Associated Deformation Gradient")
 
-  ba_deformation_gradient = datamanager.get_field("Bond Deformation Gradient", "NP1")
+  ba_deformation_gradient = compute_bond_level_deformation_gradient(nodes, nlist, dof, bond_geometry, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient)
+
   ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
 
-  weighted_volume = compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
-  gradient_weights = compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
-
-  ba_deformation_gradient = compute_bond_level_deformation_gradient(nodes, nlist, dof, undeformed_bond, bond_length, bond_deformation, deformation_gradient, ba_deformation_gradient)
-
   strain_NP1 = compute_bond_strain(nodes, nlist, ba_deformation_gradient, strain_NP1)
-  strain_increment[:][:, :, :] = strain_NP1[:][:, :, :] - strain_N[:][:, :, :]
+  strain_increment = strain_NP1 - strain_N
   # TODO decomposition to get the rotation and large deformation in
   # TODO store not angles, but rotation matrices, because they are computed in decomposition
   if rotation
     rotation_tensor = datamanager.get_field("Rotation Tensor")
     ba_rotation_tensor = compute_bond_level_rotation_tensor(nodes, nlist, ba_deformation_gradient, ba_rotation_tensor)
-    stress_N = rotate(nodes, dof, stress_N, rotation_tensor, false)
-    strain_increment = rotate(nodes, dof, strain_increment, rotation_tensor, false)
+    nneighbors = datamanager.get_field("Number of Neighbors")
+    for iID in nodes
+      stress_N[iID] = rotate(Vector{Int64}(1:nneighbors[iID]), stress_N[iID], ba_rotation_tensor[iID], false)
+      strain_increment[iID] = rotate(Vector{Int64}(1:nneighbors[iID]), strain_increment[iID], ba_rotation_tensor[iID], false)
+    end
   end
 
   material_models = split(material_parameter["Material Model"], "+")
@@ -154,31 +142,43 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   for material_model in material_models
     mod = datamanager.get_model_module(material_model)
     for iID in nodes
-      for (jID, nID) in enumerate(nlist)
-        # TODO how to make the seperation if the datamager is included?
-        stress_NP1[iID][jID, :, :], datamanager = mod.compute_stresses(datamanager, jID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (iID, jID, nID))
+      for (jID, nID) in enumerate(nlist[iID])
+        # TODO how to make the separation if the datamager is included?
+        stress_NP1[iID][:, :, :], datamanager = mod.compute_stresses(datamanager, jID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (iID, jID, nID))
       end
     end
   end
   if rotation
-    stress_NP1 = rotate(nodes, dof, stress_NP1, angles, true)
+    for iID in nodes
+      stress_NP1[iID] = rotate(Vector{Int64}(1:nneighbors[iID]), stress_NP1[iID], ba_rotation_tensor[iID], true)
+    end
   end
-  #compute_bond_level_Piola_sress(stress_NP1, def_grad)
 
+  stress_integral = compute_stress_integral(nodes, dof, nlist, omega, bond_damage, volume, weighted_volume, bond_geometry, bond_length, stress_NP1, ba_deformation_gradient, stress_integral)
 
-  stress_integral = compute_stress_integral(nodes, dof, nlist, omega, bond_damage, volume, weighted_volume, bond_geometry, bond_length, deformation_gradient, bond_stresses, stress_integral)
-
-  bond_force = compute_bond_forces(nodes, nlist, bond_geometry, bond_length, bond_stress, integratal_nodal_stress, weighted_volume, gradient_weights, omega, bond_damage, bond_force) # here comes the compute_Piola_Kirchhoff_stress
+  bond_force = compute_bond_forces(nodes, nlist, bond_geometry, bond_length, stress_NP1, stress_integral, weighted_volume, gradient_weights, omega, bond_damage, bond_force)
+  # TODO test
+  cauchy_stress .= stress_integral
   return datamanager
 
 end
 
-function compute_weighted_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, volume::SubArray, bond_damage::SubArray, omega::SubArray, weighted_volume::SubArray)
+function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::Union{Vector{Vector{Int64}},SubArray}, omega::SubArray, bond_damage::SubArray, volume::SubArray, weighted_volume::SubArray, bond_geometry::SubArray, bond_length::SubArray, bond_stresses::SubArray, deformation_gradient::SubArray, stress_integral::SubArray)
+  temp::Matrix{Float64} = zeros(dof, dof)
   for iID in nodes
-    weighted_volume[iID] = sum(bond_damage[iID][:] .* omega[iID][:] .* volume[nlist[iID]])
+    stress_integral[iID, :, :] .= 0.0
+    for (jID, nID) in enumerate(nlist[iID])
+      if bond_damage[iID][jID] == 0
+        continue
+      end
+      temp = (I(dof) - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./ (bond_length[iID][jID] * bond_length[iID][jID])
+      factor = volume[nID] * omega[iID][jID] * bond_damage[iID][jID] * (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
+      stress_integral[iID, :, :] += factor .* compute_Piola_Kirchhoff_stress(bond_stresses[iID][jID, :, :], deformation_gradient[iID][jID, :, :]) * temp
+    end
   end
-  return weighted_volume
+  return stress_integral
 end
+
 #function compute_bond_strain(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, deformation_gradient::SubArray, strain::SubArray)
 #
 function compute_bond_strain(nodes, nlist, deformation_gradient, strain)
@@ -229,62 +229,6 @@ function compute_bond_associated_weighted_volume(nodes::Union{SubArray,Vector{In
   end
   return weighted_volume
 end
-"""
-accuracy_order::Int64 - needs a number of bonds which are linear independent
-
-"""
-
-function calculate_Q(accuracy_order::Int64, dof::Int64, undeformed_bond::Vector{Float64}, horizon::Union{Int64,Float64})
-
-  Q = ones(Float64, qdim(accuracy_order, dof))  # Initialize Q with ones
-  counter = 1
-  p = zeros(Int64, dof)
-  for this_order in 1:accuracy_order
-    for p[1] in this_order:-1:0
-      if dof == 3
-        for p[2] in this_order-p[1]:-1:0
-          p[3] = this_order - p[1] - p[2]
-          # Calculate the product for Q[counter]
-          Q[counter] = prod((undeformed_bond ./ horizon) .^ p)
-          counter += 1
-        end
-      else
-        p[2] = this_order - p[1]
-        Q[counter] = prod((undeformed_bond ./ horizon) .^ p)
-        counter += 1
-      end
-    end
-  end
-  return Q
-end
-function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, accuracy_order::Int64, volume::Union{SubArray,Vector{Float64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, horizon::Union{SubArray,Vector{Float64}}, bond_damage::Union{SubArray,Vector{Vector{Float64}}}, omega::Union{SubArray,Vector{Vector{Float64}}}, undeformed_bond, gradient_weights)
-  #https://arxiv.org/pdf/2004.11477
-  # maybe as static array
-  dim = qdim(accuracy_order, dof)
-  Minv = zeros(Float64, dim, dim)
-  for iID in nodes
-    M = zeros(Float64, dim, dim)
-    for (jID, nID) in enumerate(nlist[iID])
-      Q = calculate_Q(accuracy_order, dof, undeformed_bond[iID][jID, :], horizon[iID])
-      M += omega[iID][jID] * bond_damage[iID][jID] * volume[nID] .* Q * Q'
-    end
-    try
-      Minv = inv(M)
-    catch
-      @error "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this."
-      return nothing
-    end
-    for (jID, nID) in enumerate(nlist[iID])
-      Q = calculate_Q(accuracy_order, dof, undeformed_bond[iID][jID, :], horizon[iID])
-      # this comes from Eq(19) in 10.1007/s40571-019-00266-9
-      # or example 1 in https://arxiv.org/pdf/2004.11477
-      for idof in 1:dof
-        gradient_weights[iID][jID, idof] = omega[iID][jID] / horizon[iID] .* (Minv[idof, :]' * Q)
-      end
-    end
-  end
-  return gradient_weights
-end
 
 function update_Green_Langrange_nodal_strain_increment(nodes::Union{SubArray,Vector{Int64}}, dt::Float64, deformation_gradient::SubArray, deformation_gradient_dot::SubArray, strain_increment::SubArray)
 
@@ -310,15 +254,15 @@ function update_Green_Langrange_strain(dt::Float64, deformation_gradient::Matrix
   return A + A'
 end
 
-function compute_bond_forces(nodes, nlist, bond_geometry, bond_length, bond_stress, integratal_nodal_stress, weighted_volume, gradient_weights, omega, bond_damage, bond_forces)
+function compute_bond_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, bond_geometry, bond_length, bond_stress, integral_nodal_stress, weighted_volume, gradient_weights, omega, bond_damage, bond_forces)
 
   for iID in nodes
     for (jID, nID) in enumerate(nlist[iID])
       if bond_damage[iID][jID] == 0
         continue
       end
-      bond_forces[iID][jID] = bond_damage[iID][jID] * omega[iID][jID] / (weighted_volume[iID] * bond_length[iID][jID]) .* bond_stress[iID][jID, :, :] * bond_geometry[iID][jID, :]
-      bond_forces[iID][jID] += integratal_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
+      bond_forces[iID][jID, :] = bond_damage[iID][jID] * omega[iID][jID] / (weighted_volume[iID] * bond_length[iID][jID] * bond_length[iID][jID]) .* bond_stress[iID][jID, :, :] * bond_geometry[iID][jID, :]
+      bond_forces[iID][jID, :] += integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
     end
   end
   return bond_forces

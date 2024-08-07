@@ -247,7 +247,7 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
 
             Data_manager.set_silent(silent)
             if !reload
-                Data_manager.clear_data_manager()
+                Data_manager.initialize_data()
             else
                 @info "PeriLab started in the reload mode"
             end

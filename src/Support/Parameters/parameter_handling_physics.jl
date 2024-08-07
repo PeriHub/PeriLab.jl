@@ -154,12 +154,16 @@ function get_physics_option(params::Dict, options::Dict)
     for material in eachindex(materials)
         if haskey(materials[material], "Material Model")
             if occursin("Correspondence", materials[material]["Material Model"])
-                options["Shape Tensor"] = true
-                options["Deformation Gradient"] = true
                 options["Deformed Bond Geometry"] = true
-            elseif occursin("Bond Associated", materials[material]["Material Model"])
-                options["Bond Associated Deformation Gradient"] = true
-                options["Deformed Bond Geometry"] = true
+                if haskey(materials[material], "Bond Associated")
+                    if !(options["Bond Associated Deformation Gradient"])
+                        # if its activated it stays that way
+                        options["Bond Associated Deformation Gradient"] = materials[material]["Bond Associated"]
+                    end
+                else
+                    options["Shape Tensor"] = true
+                    options["Deformation Gradient"] = true
+                end
             end
         else
             @error "No Material Model: '$material' has been defined"

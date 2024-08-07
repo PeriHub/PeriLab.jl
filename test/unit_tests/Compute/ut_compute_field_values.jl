@@ -7,7 +7,7 @@ using Test
 include("../../../src/Compute/compute_field_values.jl")
 @testset "ut_get_forces_from_force_density" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.clear_data_manager()
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(5)
 
     test_data_manager.create_node_field("Forces", Float64, 3)
