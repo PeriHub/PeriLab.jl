@@ -44,8 +44,8 @@ function compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness", Float64, "Matrix", dof)
-    rotation::Bool = datamanager.get_rotation()
-    angles = datamanager.get_field("Angles")
+    rotation::Bool, angles = datamanager.get_rotation()
+
     CVoigt = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
     if !haskey(material_parameter, "UMAT Material Name")
         zStiff = create_zero_energy_mode_stiffness(nodes, dof, CVoigt, angles, Kinv, zStiff, rotation)
