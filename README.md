@@ -66,7 +66,7 @@ A few basic examples of `PeriLab` can be found in the [examples](https://github.
 
 - ✒️ **Modularization**: The software is designed with a modular architecture that allows users to easily integrate their own material and damage models.
 
-- 🎨 **Formulations**: Bond-based as well as oridnary and non-ordinary state-based peridynamic formulations can be used with PeriLab.
+- 🎨 **Formulations**: Bond-based, bond-associated, as well as oridnary and non-ordinary state-based peridynamic formulations can be used with PeriLab.
 
 - 🔩 **Material models**: PeriLab supports various material models, such as elastic, plastic, and more, enabling simulation of complex materials and structures.
 
