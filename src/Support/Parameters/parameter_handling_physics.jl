@@ -153,14 +153,13 @@ function get_physics_option(params::Dict, options::Dict)
     materials = params["Physics"]["Material Models"]
     for material in eachindex(materials)
         if haskey(materials[material], "Material Model")
+            options["Deformed Bond Geometry"] = true
             if occursin("Correspondence", materials[material]["Material Model"])
-                options["Deformed Bond Geometry"] = true
-                if haskey(materials[material], "Bond Associated")
-                    if !(options["Bond Associated Deformation Gradient"])
-                        # if its activated it stays that way
-                        options["Bond Associated Deformation Gradient"] = materials[material]["Bond Associated"]
-                    end
-                else
+                if haskey(materials[material], "Bond Associated") && !(options["Bond Associated Deformation Gradient"])
+                    # if its activated it stays that way
+                    options["Bond Associated Deformation Gradient"] = materials[material]["Bond Associated"]
+                end
+                if !(options["Bond Associated Deformation Gradient"])
                     options["Shape Tensor"] = true
                     options["Deformation Gradient"] = true
                 end
