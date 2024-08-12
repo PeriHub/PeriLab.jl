@@ -101,10 +101,11 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   strain_NP1 = datamanager.get_field("Bond Strain", "NP1")
 
   stress_integral = datamanager.get_field("Integral Nodal Stress")
-  cauchy_stress = datamanager.get_field("Cauchy Stress", "NP1")
+  cauchy_stress_N = datamanager.get_field("Cauchy Stress", "N")
+  cauchy_stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
   stress_N = datamanager.get_field("Bond Cauchy Stress", "N")
   stress_NP1 = datamanager.get_field("Bond Cauchy Stress", "NP1")
-
+  strain_increment_nodal = datamanager.get_field("Strain Increment")
   strain_increment = datamanager.get_field("Bond Strain Increment")
   bond_force = datamanager.get_field("Bond Forces")
 
@@ -142,6 +143,9 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   for material_model in material_models
     mod = datamanager.get_model_module(material_model)
     for iID in nodes
+
+      #cauchy_stress_NP1, datamanager = mod.compute_stresses(datamanager, iID, dof, material_parameter, time, dt, strain_increment_nodal, cauchy_stress_N, stress_NP1)
+
       for (jID, nID) in enumerate(nlist[iID])
         # TODO how to make the separation if the datamager is included?
         stress_NP1[iID][:, :, :], datamanager = mod.compute_stresses(datamanager, jID, dof, material_parameter, time, dt, strain_increment[iID][:, :, :], stress_N[iID][:, :, :], stress_NP1[iID][:, :, :], (iID, jID, nID))
@@ -157,8 +161,7 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
   stress_integral = compute_stress_integral(nodes, dof, nlist, omega, bond_damage, volume, weighted_volume, bond_geometry, bond_length, stress_NP1, ba_deformation_gradient, stress_integral)
 
   bond_force = compute_bond_forces(nodes, nlist, bond_geometry, bond_length, stress_NP1, stress_integral, weighted_volume, gradient_weights, omega, bond_damage, bond_force)
-  # TODO test
-  cauchy_stress .= stress_integral
+
   return datamanager
 
 end
