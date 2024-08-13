@@ -138,7 +138,7 @@ Checks if the sum of the array is finite. If not, an error is raised.
 """
 function check_inf_or_nan(array, msg)
     if !isfinite(sum(array))
-        @error msg * " is infinite."
+        @error "Field $msg  is infinite."
         return true
     end
     return false
