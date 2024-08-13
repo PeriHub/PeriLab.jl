@@ -32,16 +32,7 @@ function init_damage_model_fields(datamanager::Module, params::Dict)
     datamanager.create_node_field("Damage", Float64, 1)
     block_list = datamanager.get_block_list()
     anisotropic_damage = false
-    correspondence = false
-    for block_id in block_list
-        block_param = params["Blocks"]["block_$block_id"]
-        if haskey(block_param, "Material Model") && occursin("Correspondence", params["Physics"]["Material Models"][block_param["Material Model"]]["Material Model"])
-            correspondence = true
-        else
-            correspondence = false
-            break
-        end
-    end
+
     for block_id in block_list
         if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
             continue
