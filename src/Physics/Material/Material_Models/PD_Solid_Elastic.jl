@@ -143,22 +143,20 @@ function elastic(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, undeformed_bo
     # gamma::Float64 = 0
     # alpha::Float64 = 0
     deviatoric_deformation = @MVector zeros(Float64, dof)
-
-    alpha, gamma, kappa = Ordinary.calculate_symmetry_params(symmetry, shear_modulus, bulk_modulus)
-
+    if shear_modulus isa Float64
+        alpha, gamma, kappa = Ordinary.calculate_symmetry_params(symmetry, shear_modulus, bulk_modulus)
+    end
     for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
             continue
         end
-        deviatoric_deformation = deformed_bond_length[iID] .- undeformed_bond_length[iID] - (gamma * theta[iID] / 3) .* undeformed_bond_length[iID]
-        if alpha isa Float64
-            bond_force_deviatoric_part[iID] = bond_damage[iID] .* omega[iID] .* alpha .* deviatoric_deformation ./ weighted_volume[iID]
-            bond_force_isotropic_part[iID] = bond_damage[iID] .* omega[iID] .* kappa .* theta[iID] .* undeformed_bond_length[iID] ./ weighted_volume[iID]
-        else
-            bond_force_deviatoric_part[iID] = bond_damage[iID] .* omega[iID] .* alpha[iID] .* deviatoric_deformation ./ weighted_volume[iID]
-            bond_force_isotropic_part[iID] = bond_damage[iID] .* omega[iID] .* kappa[iID] .* theta[iID] .* undeformed_bond_length[iID] ./ weighted_volume[iID]
+        if !(shear_modulus isa Float64)
+            alpha, gamma, kappa = Ordinary.calculate_symmetry_params(symmetry, shear_modulus[iID], bulk_modulus[iID])
         end
+        deviatoric_deformation = deformed_bond_length[iID] .- undeformed_bond_length[iID] - (gamma * theta[iID] / 3) .* undeformed_bond_length[iID]
+        bond_force_deviatoric_part[iID] = bond_damage[iID] .* omega[iID] .* alpha .* deviatoric_deformation ./ weighted_volume[iID]
+        bond_force_isotropic_part[iID] = bond_damage[iID] .* omega[iID] .* kappa .* theta[iID] .* undeformed_bond_length[iID] ./ weighted_volume[iID]
     end
     deviatoric_deformation = nothing
     return bond_force_deviatoric_part, bond_force_isotropic_part

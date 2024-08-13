@@ -5,8 +5,8 @@
 
 using Test
 
-include("../../../src/PeriLab.jl")
-using .PeriLab
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 @testset "ut_clean_up" begin
     @test PeriLab.Solver.Boundary_conditions.clean_up("") == ""
     @test PeriLab.Solver.Boundary_conditions.clean_up("-") == " .- "

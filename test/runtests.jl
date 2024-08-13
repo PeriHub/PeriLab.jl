@@ -234,7 +234,7 @@ MPI.Init()
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
             include("fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control.jl")
         end
-        @testset "test_Correspondence_Elastic" begin
+        @testset "test_Correspondence_Elastic_3D" begin
             include("fullscale_tests/test_correspondence_elastic_3D/test_correspondence_elastic_3D.jl")
         end
         @testset "test_DCB" begin

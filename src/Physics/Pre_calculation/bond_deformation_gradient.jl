@@ -76,7 +76,6 @@ function calculate_Q(accuracy_order::Int64, dof::Int64, bond_geometry::Vector{Fl
                     # Calculate the product for Q[counter]
                     counter += 1
                     Q[counter] = prod((bond_geometry ./ horizon) .^ p)
-
                 end
             else
                 p[2] = this_order - p[1]
@@ -106,7 +105,7 @@ function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}
             Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID, :], horizon[iID])
             # this comes from Eq(19) in 10.1007/s40571-019-00266-9
             # or example 1 in https://arxiv.org/pdf/2004.11477
-            for idof in 1:dof
+            for idof in 1:dof # Eq (3) flowing
                 gradient_weights[iID][jID, idof] = omega[iID][jID] * bond_damage[iID][jID] / horizon[iID] * Minv[idof, :]' * Q
             end
 

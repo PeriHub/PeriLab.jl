@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-# include("../../../../src/Physics/Material/material_basis.jl")
+#include("../../../../src/Physics/Material/material_basis.jl")
+#include("../../../../src/PeriLab.jl")
+#using .PeriLab
 
 @testset "ut_flaw_function" begin
 
@@ -121,11 +123,11 @@ end
     temp = 1 / ((1 + nu) * (1 - 2 * nu))
     C = get_Hooke_matrix(parameter, symmetry, 3)
     for iID in 1:3
-        @test C[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
+        @test isapprox(C[iID, iID] , E * (1 - nu) * temp)
         @test C[iID+3, iID+3] == parameter["Shear Modulus"]
         for jID in 1:3
             if iID != jID
-                @test C[iID, jID] / (E * nu * temp) - 1 < 1e-7
+                @test isapprox(C[iID, jID], E * nu * temp)
             end
         end
     end

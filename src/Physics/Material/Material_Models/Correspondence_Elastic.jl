@@ -92,7 +92,7 @@ Example:
 """
 function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Union{SubArray,Array{Float64,3}}, stress_N::Union{SubArray,Array{Float64,3}}, stress_NP1::Union{SubArray,Array{Float64,3}}, iID_jID_nID::Tuple=())
 
-   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
+   hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID)
 
    stress_NP1[iID, :, :] = voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) + stress_N[iID, :, :]
    return stress_NP1, datamanager
@@ -120,7 +120,7 @@ Example:
 ```
 """
 function compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Vector{Float64}, stress_N::Vector{Float64}, stress_NP1::Vector{Float64})
-
+   # TODO include element wise material defintion
    hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
    return hookeMatrix * strain_increment + stress_N, datamanager

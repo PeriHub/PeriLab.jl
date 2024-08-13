@@ -96,7 +96,7 @@ function get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,A
 end
 
 """
-    get_Hooke_matrix(parameter, symmetry, dof)
+    get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
 
 Returns the Hooke matrix of the material.
 
@@ -104,10 +104,11 @@ Returns the Hooke matrix of the material.
 - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
 - `symmetry::String`: The symmetry of the material.
 - `dof::Int64`: The degree of freedom.
+- `ID::Int64=1`: ID of the point. Needed for point wise defined material properties.
 # Returns
 - `matrix::Matrix{Float64}`: The Hooke matrix.
 """
-function get_Hooke_matrix(parameter, symmetry, dof)
+function get_Hooke_matrix(parameter::Dict, symmetry::String,dof::Int64, ID::Int64=1)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
     if occursin("anisotropic", symmetry)
@@ -146,11 +147,18 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             return nothing
         end
     end
+    if !haskey(parameter, "Poisson's Ratio") || !haskey(parameter, "Young's Modulus")||!haskey(parameter, "Shear Modulus")
+        @error "No valid definition of Hook matrix inputs."
+        return nothing
+    end
+    iID = ID
+    if parameter["Poisson's Ratio"] isa Float64
+        iID = 1
+    end
     if occursin("isotropic", symmetry)
-
-        nu = parameter["Poisson's Ratio"]
-        E = parameter["Young's Modulus"]
-        G = parameter["Shear Modulus"]
+        nu = parameter["Poisson's Ratio"][iID]
+        E = parameter["Young's Modulus"][iID]
+        G = parameter["Shear Modulus"][iID]
         temp = E / ((1 + nu) * (1 - 2 * nu))
 
         if dof == 3
@@ -159,11 +167,11 @@ function get_Hooke_matrix(parameter, symmetry, dof)
             matrix[2, 2] = (1 - nu) * temp
             matrix[3, 3] = (1 - nu) * temp
             matrix[1, 2] = nu * temp
-            matrix[1, 3] = nu * temp
             matrix[2, 1] = nu * temp
-            matrix[1, 2] = nu * temp
-            matrix[3, 2] = nu * temp
+            matrix[1, 3] = nu * temp
+            matrix[3, 1] = nu * temp
             matrix[2, 3] = nu * temp
+            matrix[3, 2] = nu * temp
             matrix[4, 4] = G
             matrix[5, 5] = G
             matrix[6, 6] = G
@@ -190,20 +198,17 @@ function get_Hooke_matrix(parameter, symmetry, dof)
         end
     else
         matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
-        if haskey(parameter, "Poisson's Ratio") && haskey(parameter, "Young's Modulus")
-            @warn "material model defintion is missing; assuming isotropic plane stress "
-            nu = parameter["Poisson's Ratio"]
-            E = parameter["Young's Modulus"]
-            G = parameter["Shear Modulus"]
-            matrix[1, 1] = E / (1 - nu * nu)
-            matrix[1, 2] = E * nu / (1 - nu * nu)
-            matrix[2, 1] = E * nu / (1 - nu * nu)
-            matrix[2, 2] = E / (1 - nu * nu)
-            matrix[3, 3] = G
-            return matrix
-        end
-        @error "no valid definition"
-        return nothing
+        
+        @warn "material model defintion is missing; assuming isotropic plane stress "
+        nu = parameter["Poisson's Ratio"][iID]
+        E = parameter["Young's Modulus"][iID]
+        G = parameter["Shear Modulus"][iID]
+        matrix[1, 1] = E / (1 - nu * nu)
+        matrix[1, 2] = E * nu / (1 - nu * nu)
+        matrix[2, 1] = E * nu / (1 - nu * nu)
+        matrix[2, 2] = E / (1 - nu * nu)
+        matrix[3, 3] = G
+        return matrix
 
     end
 end
