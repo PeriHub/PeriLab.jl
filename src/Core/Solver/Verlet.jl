@@ -89,7 +89,7 @@ function get_cs_denominator(volume::Union{SubArray,Vector{Float64},Vector{Int64}
 end
 
 """
-    compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulkModulus::Float64)
+    compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulk_modulus::Float64)
 
 Calculate the critical time step for a mechanical simulation using a bond-based approximation [LittlewoodDJ2013](@cite).
 
@@ -98,7 +98,7 @@ This function iterates over a collection of nodes and computes the critical time
 # Arguments
 - `nodes::Union{SubArray, Vector{Int64}}`: The collection of nodes to calculate the critical time step for.
 - `datamanager::Module`: The data manager module that provides access to required data fields.
-- `bulkModulus::Float64`: The bulk modulus used in the calculations.
+- `bulk_modulus::Float64`: The bulk modulus used in the calculations.
 
 # Returns
 - `Float64`: The calculated critical time step for the mechanical simulation.
@@ -111,7 +111,7 @@ This function depends on the following data fields from the `datamanager` module
 - `get_field("Volume")`: Returns the volume field.
 - `get_field("Horizon")`: Returns the horizon field.
 """
-function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulkModulus::Union{Float64,Int64,SubArray,Vector{Float64}})
+function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulk_modulus::Union{Float64,Int64,SubArray,Vector{Float64}})
     critical_time_step::Float64 = 1.0e50
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
@@ -122,7 +122,7 @@ function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int6
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
 
-        springConstant = 18.0 * maximum(bulkModulus) / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
+        springConstant = 18.0 * maximum(bulk_modulus) / (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
 
         t = density[iID] / (denominator * springConstant)
         critical_time_step = test_timestep(t, critical_time_step)
@@ -191,9 +191,9 @@ function compute_crititical_time_step(datamanager::Module, block_nodes::Dict{Int
             end
         end
         if mechanical
-            bulkModulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
-            if !isnothing(bulkModulus)
-                t = compute_mechanical_critical_time_step(block_nodes[iblock], datamanager, bulkModulus)
+            bulk_modulus = datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
+            if !isnothing(bulk_modulus)
+                t = compute_mechanical_critical_time_step(block_nodes[iblock], datamanager, bulk_modulus)
                 critical_time_step = test_timestep(t, critical_time_step)
             else
                 @error "No time step for material is determined because of missing properties."
