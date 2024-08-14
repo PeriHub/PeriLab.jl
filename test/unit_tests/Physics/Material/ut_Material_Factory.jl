@@ -17,11 +17,11 @@ import .Material
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1:4] = 1:4
     Material.init_material_model_fields(test_data_manager)
-    fieldkeys = test_data_manager.get_all_field_keys()
-    @test "ForcesN" in fieldkeys
-    @test "ForcesNP1" in fieldkeys
-    @test "Acceleration" in fieldkeys
-    @test "VelocityN" in fieldkeys
-    @test "VelocityNP1" in fieldkeys
-    @test "Bond Forces" in fieldkeys
+    field_keys = test_data_manager.get_all_field_keys()
+    @test "ForcesN" in field_keys
+    @test "ForcesNP1" in field_keys
+    @test "Acceleration" in field_keys
+    @test "VelocityN" in field_keys
+    @test "VelocityNP1" in field_keys
+    @test "Bond Forces" in field_keys
 end

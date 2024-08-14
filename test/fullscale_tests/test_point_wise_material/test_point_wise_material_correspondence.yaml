@@ -9,13 +9,20 @@ PeriLab:
     Type: "Text File"
     Input Mesh File: "test_mesh.txt"
   Physics:
+    Pre Calculation:
+      Deformed Bond Geometry: true
+      Deformation Gradient: true
+      Shape Tensor: true
+      Bond Associated Deformation Gradient: false
     Material Models:
       Mat_1:
-        Material Model: "PD Solid Elastic"
+        Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane strain"
         Bulk Modulus: 2.5e+3
         Shear Modulus: 1.15e3
       Mat_2:
-        Material Model: "PD Solid Elastic"
+        Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane strain"
         Bulk Modulus: 3.5e+3
         Shear Modulus: 2.15e3
   Blocks:
@@ -32,12 +39,12 @@ PeriLab:
       Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
-      Value: "0.1*y"
+      Value: "0.1*x"
     BC_2:
       Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "y"
-      Value: "0.1*x"
+      Value: "0.0"
   Solver:
     Initial Time: 0.0
     Final Time: 5.0e-6
@@ -45,13 +52,9 @@ PeriLab:
       Safety Factor: 1.0
   Outputs:
     Output1:
-      Output Filename: "material_field"
+      Output Filename: "test_point_wise_material_correspondence"
       Output Frequency: 1
       Output Variables:
         Displacements: True
         Forces: True
         Volume: True
-        Bulk_Modulus: True
-        Shear_Modulus: True
-        Young's_Modulus: True
-        Poisson's_Ratio: True

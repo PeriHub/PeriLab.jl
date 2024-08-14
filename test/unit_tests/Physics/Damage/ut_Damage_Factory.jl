@@ -33,9 +33,9 @@ using .Damage
             "Physics" => Dict("Damage Models" => Dict("a" => Dict("value" => "b"))),
         ),
     )
-    fieldkeys = test_data_manager.get_all_field_keys()
-    @test "DamageN" in fieldkeys
-    @test "DamageNP1" in fieldkeys
+    field_keys = test_data_manager.get_all_field_keys()
+    @test "DamageN" in field_keys
+    @test "DamageNP1" in field_keys
 end
 
 @testset "damage_index" begin

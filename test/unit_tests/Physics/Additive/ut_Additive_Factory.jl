@@ -28,8 +28,8 @@ using .Additive
     nlist[4] = [1, 3]
     test_data_manager.create_bond_field("Bond Damage", Float64, 1)
     test_data_manager = Additive.init_additive_model_fields(test_data_manager)
-    fieldkeys = test_data_manager.get_all_field_keys()
-    @test "Active" in fieldkeys
+    field_keys = test_data_manager.get_all_field_keys()
+    @test "Active" in field_keys
     active = test_data_manager.get_field("Active")
     for iID = 1:4
         @test active[iID] == false

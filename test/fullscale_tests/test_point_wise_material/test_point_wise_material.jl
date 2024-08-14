@@ -3,7 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+
 folder_name = basename(@__FILE__)[1:end-3]
 cd("fullscale_tests/" * folder_name) do
-    run_perilab("material_field", 1, true, folder_name)
+    run_perilab("test_point_wise_material_bond_based", 1, true, folder_name)
+    run_perilab("test_point_wise_material_PD_solid", 1, true, folder_name)
+    run_perilab("test_point_wise_material_correspondence", 1, true, folder_name)
 end

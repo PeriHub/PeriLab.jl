@@ -3,11 +3,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-# include("../../../src/Core/data_manager.jl")
+
 include("../../../src/Compute/compute_global_values.jl")
 
+include("../../../src/PeriLab.jl")
+using .PeriLab
 @testset "ut_global_value_sum" begin
     test_data_manager = PeriLab.Data_manager
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(4)
     test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
     nodes = Vector{Int64}(1:4)
@@ -15,13 +18,13 @@ include("../../../src/Compute/compute_global_values.jl")
     forcesNP1[1, 1:3] .= 1:3
     forcesNP1[3, 1:3] .= 5.2
     forcesNP1[4, 1] = -20
-
     @test global_value_sum(forcesNP1, 1, nodes) == -13.8
     @test global_value_sum(forcesNP1, 2, nodes) == 7.2
     @test global_value_sum(forcesNP1, 3, nodes) == 8.2
     @test calculate_nodelist(test_data_manager, "Forces", 1, "Sum", nodes) == (-13.8, 4)
     @test calculate_nodelist(test_data_manager, "Forces", 2, "Sum", nodes) == (7.2, 4)
     @test calculate_nodelist(test_data_manager, "Forces", 3, "Sum", nodes) == (8.2, 4)
+
     nodes = Vector{Int64}(1:2)
     @test global_value_sum(forcesNP1, 1, nodes) == 1
     @test global_value_sum(forcesNP1, 2, nodes) == 2
@@ -39,6 +42,20 @@ include("../../../src/Compute/compute_global_values.jl")
     @test calculate_nodelist(test_data_manager, "Disp", 1, "Sum", nodes) == (5, 2)
     @test isnothing(calculate_nodelist(test_data_manager, "Disp", 1, "", nodes))
     @test isnothing(calculate_nodelist(test_data_manager, "not there", 1, "Sum", nodes))
+
+    test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2))
+    nodes = Vector{Int64}(3:4)
+
+    @test calculate_nodelist(test_data_manager, "Disp", 1, "Sum", nodes) == (0, 0)
+    @test calculate_nodelist(test_data_manager, "Disp", 1, "Average", nodes) == (0, 0)
+    @test calculate_nodelist(test_data_manager, "Disp", 1, "Minimum", nodes) == (Inf, 0)
+    @test calculate_nodelist(test_data_manager, "Disp", 1, "Maximum", nodes) == (-Inf, 0)
+
+    matrix = test_data_manager.create_constant_node_field("Matrix", Float64, "Matrix", 3)
+    matrix[:, 1, 2] .= 4
+    nodes = Vector{Int64}(1:2)
+    @test calculate_nodelist(test_data_manager, "Matrix", [1, 2], "Sum", nodes) == (8, 2)
+
 end
 
 @testset "ut_global_value_max" begin
@@ -149,7 +166,13 @@ end
 
 @testset "ut_calculate_block" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
+    test_data_manager.create_constant_node_field("Block_Id", Int64, 1, 1)
+    test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
+    nodes = Vector{Int64}(1:4)
+    (forcesN, forcesNP1) = test_data_manager.create_node_field("Forces", Float64, 3)
+    forcesNP1[1, 1:3] .= 1:3
+    forcesNP1[3, 1:3] .= 5.2
+    forcesNP1[4, 1] = -20
     @test isnothing(calculate_block(test_data_manager, "no field", 1, "sum", 1))
-    @test isnothing(calculate_block(test_data_manager, "Disp", 1, "no option", 1))
+    @test calculate_block(test_data_manager, "Forces", 1, "Sum", 1) == (-13.8, 4)
 end
