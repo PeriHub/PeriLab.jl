@@ -9,10 +9,10 @@
 #   verbose: true
 #   language: "script"
 #   description: "Runs julia tests"
-# - id: format_julia
-#   name: "format_julia"
-#   entry: pre_commit_hooks/format.sh
-#   files: '\.(jl|JL)$'
-#   verbose: true
-#   language: "script"
-#   description: "Reformats Julia code"
+- id: format_julia
+  name: "format_julia"
+  entry: pre_commit_hooks/format.sh
+  files: '\.(jl|JL)$'
+  verbose: true
+  language: "script"
+  description: "Reformats Julia code"
