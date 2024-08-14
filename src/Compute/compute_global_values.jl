@@ -19,7 +19,7 @@ Calculate the global value of a field for a given set of nodes.
 """
 function calculate_nodelist(
     datamanager::Module,
-    fieldKey::String,
+    field_key::String,
     dof::Union{Int64,Vector{Int64}},
     calculation_type::String,
     node_set::Vector{Int64},
