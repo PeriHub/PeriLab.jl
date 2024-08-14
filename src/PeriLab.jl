@@ -55,7 +55,7 @@ import .Logging_module
 import .IO
 import .Solver
 
-PERILAB_VERSION = "1.1.7"
+PERILAB_VERSION = "1.2.1"
 
 export main
 
@@ -69,7 +69,7 @@ This function prints a banner containing details about the PeriLab application, 
 function print_banner()
     println("""\e[]
     \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: $PERILAB_VERSION
-    \e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |  Copyright: 
+    \e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |  Copyright:
     \e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Dr.-Ing. Christian Willberg (https://orcid.org/0000-0003-2433-9183)
     \e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |  M.Sc. Jan-Timo Hesse (https://orcid.org/0000-0002-3006-1520)
     \e[1;36m8888888P"\e[0m \e[1;36md8P  Y8b\e[0m \e[1;36m888P"   888 888          \e[1;36m"88b\e[0m \e[1;36m888 "88b\e[0m  |  Contact: christian.willberg@h2.de, jan-timo.hesse@dlr.de
