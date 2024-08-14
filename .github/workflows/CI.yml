@@ -11,11 +11,15 @@ on:
   push:
     paths:
       - "src/**"
+      - "test/**"
+      - "Project.toml"
     branches:
       - main
   pull_request:
     paths:
       - "src/**"
+      - "test/**"
+      - "Project.toml"
     branches-ignore:
       - release
 
