@@ -32,14 +32,23 @@ function set_log_file(filename::String, debug::Bool, rank::Int64, size::Int64)
 
     if size > 1
         if debug
-            return split(filename, ".")[1] * "_" * Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") * "_$size.$rank.log"
+            return split(filename, ".")[1] *
+                   "_" *
+                   Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") *
+                   "_$size.$rank.log"
         elseif rank == 0
-            return split(filename, ".")[1] * "_" * Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") * ".log"
+            return split(filename, ".")[1] *
+                   "_" *
+                   Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") *
+                   ".log"
         else
             return ""
         end
     end
-    return split(filename, ".")[1] * "_" * Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") * ".log"
+    return split(filename, ".")[1] *
+           "_" *
+           Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") *
+           ".log"
 
 end
 
@@ -118,32 +127,29 @@ function print_table(data::Matrix, datamanager::Module)
     if !datamanager.get_silent()
         pretty_table(
             data;
-            body_hlines=[1],
-            body_hlines_format=Tuple('─' for _ = 1:4),
-            cell_alignment=Dict((1, 1) => :l),
-            formatters=ft_printf("%10.1f", 2),
-            highlighters=(
-                hl_cell([(1, 1)], crayon"bold"),
-                hl_col(2, crayon"dark_gray")
-            ),
-            show_header=false,
-            tf=tf_borderless
+            body_hlines = [1],
+            body_hlines_format = Tuple('─' for _ = 1:4),
+            cell_alignment = Dict((1, 1) => :l),
+            formatters = ft_printf("%10.1f", 2),
+            highlighters = (hl_cell([(1, 1)], crayon"bold"), hl_col(2, crayon"dark_gray")),
+            show_header = false,
+            tf = tf_borderless,
         )
         stream = Logging_module.get_log_stream(2)
         if !isnothing(stream)
             pretty_table(
                 stream,
                 data;
-                body_hlines=[1],
-                body_hlines_format=Tuple('─' for _ = 1:4),
-                cell_alignment=Dict((1, 1) => :l),
-                formatters=ft_printf("%10.1f", 2),
-                highlighters=(
+                body_hlines = [1],
+                body_hlines_format = Tuple('─' for _ = 1:4),
+                cell_alignment = Dict((1, 1) => :l),
+                formatters = ft_printf("%10.1f", 2),
+                highlighters = (
                     hl_cell([(1, 1)], crayon"bold"),
-                    hl_col(2, crayon"dark_gray")
+                    hl_col(2, crayon"dark_gray"),
                 ),
-                show_header=false,
-                tf=tf_borderless
+                show_header = false,
+                tf = tf_borderless,
             )
         end
     else
@@ -152,16 +158,16 @@ function print_table(data::Matrix, datamanager::Module)
             pretty_table(
                 stream,
                 data;
-                body_hlines=[1],
-                body_hlines_format=Tuple('─' for _ = 1:4),
-                cell_alignment=Dict((1, 1) => :l),
-                formatters=ft_printf("%10.1f", 2),
-                highlighters=(
+                body_hlines = [1],
+                body_hlines_format = Tuple('─' for _ = 1:4),
+                cell_alignment = Dict((1, 1) => :l),
+                formatters = ft_printf("%10.1f", 2),
+                highlighters = (
                     hl_cell([(1, 1)], crayon"bold"),
-                    hl_col(2, crayon"dark_gray")
+                    hl_col(2, crayon"dark_gray"),
                 ),
-                show_header=false,
-                tf=tf_borderless
+                show_header = false,
+                tf = tf_borderless,
             )
         end
     end
@@ -179,7 +185,8 @@ Filter progress messages.
 - `false`: If the message is a progress message.
 """
 function progress_filter(log_args)
-    if log_args.message isa TimerOutputs.TimerOutput || log_args.message isa DataFrames.DataFrame
+    if log_args.message isa TimerOutputs.TimerOutput ||
+       log_args.message isa DataFrames.DataFrame
         return true
     end
     if log_args.message isa String
@@ -218,9 +225,19 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
     demux_logger = nothing
     try
         if debug
-            file_logger = FormatLogger(log_file; append=false) do io, args
+            file_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
-                    println(io, "[", args.level, "] ", args._module, ", ", args.line, " | ", args.message)
+                    println(
+                        io,
+                        "[",
+                        args.level,
+                        "] ",
+                        args._module,
+                        ", ",
+                        args.line,
+                        " | ",
+                        args.message,
+                    )
                 end
             end
             filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
@@ -231,12 +248,12 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         elseif silent
             io = open(log_file, "a")
             redirect_stderr(io)
-            file_logger = FormatLogger(log_file; append=false) do io, args
+            file_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
                     println(io, "[", args.level, "] ", args.message)
                 end
             end
-            error_logger = FormatLogger(log_file; append=false) do io, args
+            error_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level == Logging.Error
                     close_result_files(result_files)
                     exit()
@@ -247,12 +264,12 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
                 MinLevelLogger(error_logger, Logging.Info),
             )
         else
-            file_logger = FormatLogger(log_file; append=false) do io, args
+            file_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
                     println(io, "[", args.level, "] ", args.message)
                 end
             end
-            error_logger = FormatLogger(log_file; append=false) do io, args
+            error_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level == Logging.Error
                     close_result_files(result_files)
                     throw(DomainError(args, args.message))
@@ -276,7 +293,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
     global_logger(demux_logger)
 end
 
-function get_current_git_info(repo_path::AbstractString=".")
+function get_current_git_info(repo_path::AbstractString = ".")
     repo = LibGit2.GitRepo(repo_path)
     head_name = LibGit2.headname(repo)
     head_oid = LibGit2.head_oid(repo)

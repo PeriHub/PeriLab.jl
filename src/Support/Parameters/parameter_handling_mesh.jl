@@ -116,9 +116,11 @@ function get_node_sets(params::Dict, path::String)
         for (id, entry) in enumerate(nset_names)
             nset_nodes = Vector{Int64}(read_set(exo, NodeSet, id).nodes)
             if length(entry) == 0
-                nsets["Set-"*string(id)] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+                nsets["Set-"*string(id)] =
+                    findall(row -> all(val -> any(val .== nset_nodes), row), conn)
             else
-                nsets[entry] = findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+                nsets[entry] =
+                    findall(row -> all(val -> any(val .== nset_nodes), row), conn)
             end
             # end
         end
@@ -139,13 +141,23 @@ function get_node_sets(params::Dict, path::String)
         elseif occursin(".txt", nodesets[entry])
 
             if isnothing(get_header(joinpath(path, nodesets[entry])))
-                @warn "Node set file " * nodesets[entry] * " is not correctly specified. Please check the examples. The node set is excluded."
+                @warn "Node set file " *
+                      nodesets[entry] *
+                      " is not correctly specified. Please check the examples. The node set is excluded."
                 continue
             end
             header_line, header = get_header(joinpath(path, nodesets[entry]))
-            nodes = CSV.read(joinpath(path, nodesets[entry]), DataFrame; delim=" ", header=false, skipto=header_line + 1)
+            nodes = CSV.read(
+                joinpath(path, nodesets[entry]),
+                DataFrame;
+                delim = " ",
+                header = false,
+                skipto = header_line + 1,
+            )
             if size(nodes) == (0, 0)
-                @error "Node set file is empty " * joinpath(path, nodesets[entry]) * ". The node set is excluded."
+                @error "Node set file is empty " *
+                       joinpath(path, nodesets[entry]) *
+                       ". The node set is excluded."
                 continue
             end
             nsets[entry] = nodes.Column1

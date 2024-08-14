@@ -20,9 +20,29 @@ include("../../Support/helpers.jl")
 using .Helpers: find_active, get_active_update_nodes
 function synchronize(datamanager::Module, options::Dict, synchronise_field)
     if options["Bond Associated Deformation Gradient"]
-        synchfield = Dict("Deformation Gradient" => Dict("upload_to_cores" => true, "dof" => datamanager.get_dof() * datamanager.get_dof()), "Weighted Volume" => Dict("upload_to_cores" => true, "dof" => 1))
-        synchronise_field(datamanager.get_comm(), synchfield, datamanager.get_overlap_map(), datamanager.get_field, "Deformation Gradient", "upload_to_cores")
-        synchronise_field(datamanager.get_comm(), synchfield, datamanager.get_overlap_map(), datamanager.get_field, "Weighted Volume", "upload_to_cores")
+        synchfield = Dict(
+            "Deformation Gradient" => Dict(
+                "upload_to_cores" => true,
+                "dof" => datamanager.get_dof() * datamanager.get_dof(),
+            ),
+            "Weighted Volume" => Dict("upload_to_cores" => true, "dof" => 1),
+        )
+        synchronise_field(
+            datamanager.get_comm(),
+            synchfield,
+            datamanager.get_overlap_map(),
+            datamanager.get_field,
+            "Deformation Gradient",
+            "upload_to_cores",
+        )
+        synchronise_field(
+            datamanager.get_comm(),
+            synchfield,
+            datamanager.get_overlap_map(),
+            datamanager.get_field,
+            "Weighted Volume",
+            "upload_to_cores",
+        )
     end
 end
 
@@ -49,10 +69,12 @@ function compute(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}})
         mod = datamanager.get_model_module(pre_calculation_model)
         for block in eachindex(block_nodes)
             nodes = block_nodes[block]
-            active_nodes, update_nodes = get_active_update_nodes(active, update_list, block_nodes, block)
+            active_nodes, update_nodes =
+                get_active_update_nodes(active, update_list, block_nodes, block)
             if fem_option
                 fe_nodes = datamanager.get_field("FE Nodes")
-                update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
+                update_nodes =
+                    block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
             end
             datamanager = mod.compute(datamanager, update_nodes, block)
         end
@@ -81,7 +103,12 @@ function init_pre_calculation(datamanager::Module, options::Dict)
     end
 
     if options["Deformation Gradient"]
-        datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+        datamanager.create_constant_node_field(
+            "Deformation Gradient",
+            Float64,
+            "Matrix",
+            dof,
+        )
         options["Shape Tensor"] = true
         options["Deformed Bond Geometry"] = true
         # order is important
@@ -91,18 +118,41 @@ function init_pre_calculation(datamanager::Module, options::Dict)
     end
 
     if options["Bond Associated Deformation Gradient"]
-        datamanager.create_constant_bond_field("Bond Associated Deformation Gradient", Float64, "Matrix", dof)
-        datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+        datamanager.create_constant_bond_field(
+            "Bond Associated Deformation Gradient",
+            Float64,
+            "Matrix",
+            dof,
+        )
+        datamanager.create_constant_node_field(
+            "Deformation Gradient",
+            Float64,
+            "Matrix",
+            dof,
+        )
         datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
-        datamanager.create_constant_node_field("Weighted Deformation Gradient", Float64, "Matrix", dof)
+        datamanager.create_constant_node_field(
+            "Weighted Deformation Gradient",
+            Float64,
+            "Matrix",
+            dof,
+        )
         options["Deformed Bond Geometry"] = true
         # order is important
         datamanager.set_model_module("Deformed Bond Geometry", Bond_Deformation)
-        datamanager.set_model_module("Bond Associated Deformation Gradient", Bond_Deformation_Gradient)
+        datamanager.set_model_module(
+            "Bond Associated Deformation Gradient",
+            Bond_Deformation_Gradient,
+        )
     end
     if options["Shape Tensor"]
         datamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
-        datamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
+        datamanager.create_constant_node_field(
+            "Inverse Shape Tensor",
+            Float64,
+            "Matrix",
+            dof,
+        )
         # order is important
         datamanager.set_model_module("Deformed Bond Geometry", Bond_Deformation)
         datamanager.set_model_module("Shape Tensor", Shape_Tensor)

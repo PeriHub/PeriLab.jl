@@ -47,7 +47,13 @@ Compute the thermal model
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+function compute_thermal_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    model_param::Dict,
+    time::Float64,
+    dt::Float64,
+)
 
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
@@ -73,12 +79,20 @@ Compute the thermal model
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function init_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_thermal_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    block::Int64,
+)
     model_param = datamanager.get_properties(block, "Thermal Model")
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
-        mod = Set_modules.create_module_specifics(thermal_model, module_list, "thermal_model_name")
+        mod = Set_modules.create_module_specifics(
+            thermal_model,
+            module_list,
+            "thermal_model_name",
+        )
         if isnothing(mod)
             @error "No thermal model of name " * thermal_model * " exists."
             return nothing

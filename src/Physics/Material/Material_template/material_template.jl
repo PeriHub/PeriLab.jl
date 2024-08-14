@@ -26,7 +26,7 @@ false
 ```
 """
 function fe_support()
-  return false
+    return false
 end
 
 """
@@ -42,8 +42,12 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
-  return datamanager
+function init_material_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    material_parameter::Dict,
+)
+    return datamanager
 end
 
 """
@@ -63,7 +67,7 @@ println(material_name())
 ```
 """
 function material_name()
-  return "Material Template"
+    return "Material Template"
 end
 
 """
@@ -83,12 +87,19 @@ Example:
 ```julia
 ```
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
-  @info "Please write a material name in material_name()."
-  @info "You can call your routine within the yaml file."
-  @info "Fill the compute_forces() and init_material_model() function."
-  @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
-  @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-  return datamanager
+function compute_forces(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    material_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+    to::TimerOutput,
+)
+    @info "Please write a material name in material_name()."
+    @info "You can call your routine within the yaml file."
+    @info "Fill the compute_forces() and init_material_model() function."
+    @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
+    @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+    return datamanager
 end
 end

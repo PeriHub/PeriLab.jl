@@ -2,14 +2,17 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../../../src/Physics/Material/Material_Models/Bond_Associated_Correspondence.jl")
+include(
+    "../../../../../src/Physics/Material/Material_Models/Bond_Associated_Correspondence.jl",
+)
 using Test
 #include("../../../../../src/PeriLab.jl")
 #using .PeriLab
 
 
 @testset "ut_correspondence_name" begin
-    @test Bond_Associated_Correspondence.correspondence_name() == "Correspondence Bond-Associated"
+    @test Bond_Associated_Correspondence.correspondence_name() ==
+          "Correspondence Bond-Associated"
 end
 
 @testset "ut_compute_bond_strain" begin
@@ -28,7 +31,12 @@ end
     nlist[2] = [1]
 
 
-    deformation_gradient = test_data_manager.create_constant_bond_field("Deformation Gradient", Float64, "Matrix", 2)
+    deformation_gradient = test_data_manager.create_constant_bond_field(
+        "Deformation Gradient",
+        Float64,
+        "Matrix",
+        2,
+    )
     strain = test_data_manager.create_constant_bond_field("Strain", Float64, "Matrix", 2)
 
     deformation_gradient[1][1, :, :] = [1 0; 0 1]
@@ -36,7 +44,12 @@ end
 
     deformation_gradient[2][1, :, :] = [0 1; 0 1]
 
-    strain = Bond_Associated_Correspondence.compute_bond_strain(nodes, nlist, deformation_gradient, strain)
+    strain = Bond_Associated_Correspondence.compute_bond_strain(
+        nodes,
+        nlist,
+        deformation_gradient,
+        strain,
+    )
 
     @test strain[1][1, :, :] == [0 0; 0 0]
     @test strain[1][2, :, :] == [0.5 1.0; 1.0 0.5]
@@ -48,13 +61,27 @@ end
     dt = 0.1
     deformation_gradient = [1.0 0.2 0.0; 0.1 1.0 0.3; 0.0 0.1 1.0]
     deformation_gradient_dot = [0.05 0.01 0.0; 0.02 0.05 0.01; 0.0 0.02 0.05]
-    expected_strain = 0.5 * dt * (deformation_gradient * deformation_gradient_dot + (deformation_gradient * deformation_gradient_dot)')
-    computed_strain = Bond_Associated_Correspondence.update_Green_Langrange_strain(dt, deformation_gradient, deformation_gradient_dot)
+    expected_strain =
+        0.5 *
+        dt *
+        (
+            deformation_gradient * deformation_gradient_dot +
+            (deformation_gradient * deformation_gradient_dot)'
+        )
+    computed_strain = Bond_Associated_Correspondence.update_Green_Langrange_strain(
+        dt,
+        deformation_gradient,
+        deformation_gradient_dot,
+    )
     @test isapprox(computed_strain, expected_strain)
     deformation_gradient = zeros(3, 3)
     deformation_gradient_dot = zeros(3, 3)
     expected_strain = zeros(3, 3)
-    computed_strain = Bond_Associated_Correspondence.update_Green_Langrange_strain(dt, deformation_gradient, deformation_gradient_dot)
+    computed_strain = Bond_Associated_Correspondence.update_Green_Langrange_strain(
+        dt,
+        deformation_gradient,
+        deformation_gradient_dot,
+    )
     @test computed_strain == expected_strain
 end
 @testset "ut_init_Bond-Associated" begin
@@ -72,15 +99,29 @@ end
     test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
     test_data_manager.create_bond_field("Bond Damage", Float64, 1)
 
-    @test isnothing(Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, Dict()))
+    @test isnothing(
+        Bond_Associated_Correspondence.init_material_model(
+            test_data_manager,
+            nodes,
+            Dict(),
+        ),
+    )
 
     material_parameter = Dict{String,Any}("Symmetry" => "isotropic")
-    test_data_manager = Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, material_parameter)
+    test_data_manager = Bond_Associated_Correspondence.init_material_model(
+        test_data_manager,
+        nodes,
+        material_parameter,
+    )
 
     @test test_data_manager.get_accuracy_order() == 1
 
     material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
-    test_data_manager = Bond_Associated_Correspondence.init_material_model(test_data_manager, nodes, material_parameter)
+    test_data_manager = Bond_Associated_Correspondence.init_material_model(
+        test_data_manager,
+        nodes,
+        material_parameter,
+    )
 
     @test test_data_manager.get_accuracy_order() == 2
 
@@ -107,10 +148,12 @@ end
     bond_damage[2][:] = [1.0]
     volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
     volume .= 1
-    weighted_volume = test_data_manager.create_constant_node_field("Weighted Volume", Float64, 1)
+    weighted_volume =
+        test_data_manager.create_constant_node_field("Weighted Volume", Float64, 1)
     weighted_volume .= 1
 
-    bond_geometry = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
+    bond_geometry =
+        test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
     bond_geometry[1][:] = [1.0, 0.0]
     bond_geometry[2][:] = [-1.0, 0.0]
 
@@ -118,22 +161,47 @@ end
     bond_length[1][:] = [1.0]
     bond_length[2][:] = [1.0]
 
-    deformation_gradient = test_data_manager.create_constant_bond_field("Bond Deformation Gradient", Float64, "Matrix", dof)
+    deformation_gradient = test_data_manager.create_constant_bond_field(
+        "Bond Deformation Gradient",
+        Float64,
+        "Matrix",
+        dof,
+    )
     deformation_gradient[1][1, :, :] = [1.0 0.0; 0.0 1.0]
     deformation_gradient[2][1, :, :] = [1.0 0.0; 0.0 1.0]
 
-    bond_stresses = test_data_manager.create_constant_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
+    bond_stresses = test_data_manager.create_constant_bond_field(
+        "Bond Cauchy Stress",
+        Float64,
+        "Matrix",
+        dof,
+    )
     bond_stresses[1][1, :, :] = [1.0 0.0; 0.0 1.0]
     bond_stresses[2][1, :, :] = [1.0 0.0; 0.0 1.0]
 
-    stress_integral = test_data_manager.create_constant_node_field("Stress Integral", Float64, "Matrix", dof)
+    stress_integral = test_data_manager.create_constant_node_field(
+        "Stress Integral",
+        Float64,
+        "Matrix",
+        dof,
+    )
 
-    stress_integral = Bond_Associated_Correspondence.compute_stress_integral(nodes, dof, nlist, omega, bond_damage, volume, weighted_volume, bond_geometry, bond_length, deformation_gradient, bond_stresses, stress_integral)
+    stress_integral = Bond_Associated_Correspondence.compute_stress_integral(
+        nodes,
+        dof,
+        nlist,
+        omega,
+        bond_damage,
+        volume,
+        weighted_volume,
+        bond_geometry,
+        bond_length,
+        deformation_gradient,
+        bond_stresses,
+        stress_integral,
+    )
 
-    expected_stress_integral = [
-        [0.0 0.0; 0.0 1.0],
-        [0.0 0.0; 0.0 2.0]
-    ]
+    expected_stress_integral = [[0.0 0.0; 0.0 1.0], [0.0 0.0; 0.0 2.0]]
     @test isapprox(stress_integral[1, :, :], expected_stress_integral[1][:, :])
     @test isapprox(stress_integral[2, :, :], expected_stress_integral[2][:, :])
 end
@@ -149,7 +217,24 @@ end
     weighted_volume = [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
     bond_horizon = 2.2
     # Call the function under test
-    weighted_volume = Bond_Associated_Correspondence.compute_bond_associated_weighted_volume(nodes, nlist, coordinates, bond_damage, omega, volume, bond_horizon, weighted_volume)
+    weighted_volume =
+        Bond_Associated_Correspondence.compute_bond_associated_weighted_volume(
+            nodes,
+            nlist,
+            coordinates,
+            bond_damage,
+            omega,
+            volume,
+            bond_horizon,
+            weighted_volume,
+        )
     # Check the expected output
-    @test isapprox(weighted_volume, [[0.7058823529411765, 0.2941176470588235], [1.0, 0.0], [0.5714285714285715, 0.4285714285714286]])
+    @test isapprox(
+        weighted_volume,
+        [
+            [0.7058823529411765, 0.2941176470588235],
+            [1.0, 0.0],
+            [0.5714285714285715, 0.4285714285714286],
+        ],
+    )
 end

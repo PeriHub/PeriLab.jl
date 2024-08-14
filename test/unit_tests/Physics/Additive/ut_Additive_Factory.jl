@@ -31,13 +31,16 @@ using .Additive
     fieldkeys = test_data_manager.get_all_field_keys()
     @test "Active" in fieldkeys
     active = test_data_manager.get_field("Active")
-    for iID in 1:4
+    for iID = 1:4
         @test active[iID] == false
     end
 end
 
 @testset "init_additive" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.properties[23] = Dict("Additive Model" => Dict("Additive Model" => "does not exist"))
-    @test isnothing(Additive.init_additive_model(test_data_manager, Vector{Int64}([1, 2, 3]), 23))
+    test_data_manager.properties[23] =
+        Dict("Additive Model" => Dict("Additive Model" => "does not exist"))
+    @test isnothing(
+        Additive.init_additive_model(test_data_manager, Vector{Int64}([1, 2, 3]), 23),
+    )
 end

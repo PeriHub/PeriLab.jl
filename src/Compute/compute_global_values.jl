@@ -17,7 +17,13 @@ Calculate the global value of a field for a given set of nodes.
 - `value::Vector`: Global value.
 - `nnodes::Int64`: Number of nodes.
 """
-function calculate_nodelist(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, node_set::Vector{Int64})
+function calculate_nodelist(
+    datamanager::Module,
+    fieldKey::String,
+    dof::Union{Int64,Vector{Int64}},
+    calculation_type::String,
+    node_set::Vector{Int64},
+)
     # get block_nodes
     # check NP1
     if datamanager.has_key(fieldKey * "NP1")
@@ -77,7 +83,13 @@ Calculate the global value of a field for a given block.
 - `value::Float64`: Global value.
 - `nnodes::Int64`: Number of nodes.
 """
-function calculate_block(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, block::Int64)
+function calculate_block(
+    datamanager::Module,
+    fieldKey::String,
+    dof::Union{Int64,Vector{Int64}},
+    calculation_type::String,
+    block::Int64,
+)
     # get block_nodes
     # check NP1
     if datamanager.has_key(fieldKey * "NP1")
@@ -136,7 +148,11 @@ Calculate the global sum of a field for given nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
-function global_value_sum(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
+function global_value_sum(
+    field::SubArray,
+    dof::Union{Int64,Vector{Int64}},
+    nodes::Union{SubArray,Vector{Int64}},
+)
 
     # returnValue = zeros(length(field[1, :]))
     # for iID in eachindex(field[1, :])
@@ -162,7 +178,11 @@ Calculate the global maximum of a field for given nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
-function global_value_max(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
+function global_value_max(
+    field::SubArray,
+    dof::Union{Int64,Vector{Int64}},
+    nodes::Union{SubArray,Vector{Int64}},
+)
     # returnValue = zeros(length(field[1, :]))
     # for iID in eachindex(field[1, :])
     #     returnValue[iID] = maximum(field[nodes, iID])
@@ -183,7 +203,11 @@ Calculate the global minimum of a field for given nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
-function global_value_min(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
+function global_value_min(
+    field::SubArray,
+    dof::Union{Int64,Vector{Int64}},
+    nodes::Union{SubArray,Vector{Int64}},
+)
 
     # returnValue = zeros(length(field[1, :]))
     # for iID in eachindex(field[1, :])
@@ -205,7 +229,11 @@ Calculate the global average of a field for given nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
-function global_value_avg(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
+function global_value_avg(
+    field::SubArray,
+    dof::Union{Int64,Vector{Int64}},
+    nodes::Union{SubArray,Vector{Int64}},
+)
 
     # returnValue = zeros(length(field[1, :]))
     # for iID in eachindex(field[1, :])

@@ -23,12 +23,20 @@ Initializes the contact model.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_contact_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_contact_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    block::Int64,
+)
     model_param = datamanager.get_properties(block, "Thermal Model")
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
-        mod = Set_modules.create_module_specifics(thermal_model, module_list, "thermal_model_name")
+        mod = Set_modules.create_module_specifics(
+            thermal_model,
+            module_list,
+            "thermal_model_name",
+        )
         if isnothing(mod)
             @error "No contact of name " * material_model * " exists."
         end
@@ -52,7 +60,14 @@ Compute the forces.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
+function compute_forces(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    model_param::Dict,
+    time::Float64,
+    dt::Float64,
+    to::TimerOutput,
+)
     material_models = split(model_param["Material Model"], "+")
     material_models = map(r -> strip(r), material_models)
     if occursin("Correspondence", model_param["Material Model"])

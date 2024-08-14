@@ -36,8 +36,8 @@ In the unit test this values where tested.
 - `Int64`: The total number of terms in the polynomial expansion.
 
 # Description
-This function calculates the number of terms in a polynomial expansion up to the specified accuracy order 
-using an analytical formula derived from combinatorial considerations. The function iterates over each order 
+This function calculates the number of terms in a polynomial expansion up to the specified accuracy order
+using an analytical formula derived from combinatorial considerations. The function iterates over each order
 from 1 to the specified `order` and calculates the sum of binomial coefficients according to the formula:
 qdim(order) = Σ(i=1 to order) [(i+2)! / (2! * i!)]
 
@@ -47,7 +47,7 @@ function qdim(order::Int64, dof::Int64)
         @error "Accuracy order must be greater than zero."
         return nothing
     end
-    return sum(binomial(i + dof - 1, dof - 1) for i in 1:order)
+    return sum(binomial(i + dof - 1, dof - 1) for i = 1:order)
 end
 
 """
@@ -93,7 +93,12 @@ Returns the active nodes and the update nodes.
 - `active_nodes::Vector{Int64}`: The nodes of `active` that are true.
 - `update_nodes::Vector{Int64}`: The nodes of `update` that are true.
 """
-function get_active_update_nodes(active::SubArray, update_list::SubArray, block_nodes::Dict{Int64,Vector{Int64}}, block::Int64)
+function get_active_update_nodes(
+    active::SubArray,
+    update_list::SubArray,
+    block_nodes::Dict{Int64,Vector{Int64}},
+    block::Int64,
+)
     active_nodes::Vector{Int64} = []
     update_nodes::Vector{Int64} = []
     active_index = find_active(active[block_nodes[block]])
@@ -121,7 +126,10 @@ Returns a list of files in `folder_path` that end with `file_ending`.
 - `file_list::Vector{String}`: The list of files that end with `file_ending`.
 """
 function find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
-    file_list = filter(x -> isfile(joinpath(folder_path, x)) && endswith(x, file_ending), readdir(folder_path))
+    file_list = filter(
+        x -> isfile(joinpath(folder_path, x)) && endswith(x, file_ending),
+        readdir(folder_path),
+    )
     return file_list
 end
 
@@ -168,9 +176,9 @@ end
 
 Constructs a symmetric fourth-order tensor from a Voigt notation vector. It uses Tensors.jl package.
 
-This function takes a Voigt notation vector `CVoigt` and the degree of freedom `dof` 
-to create a symmetric fourth-order tensor. The `CVoigt` vector contains components 
-that represent the tensor in Voigt notation, and `dof` specifies the dimension 
+This function takes a Voigt notation vector `CVoigt` and the degree of freedom `dof`
+to create a symmetric fourth-order tensor. The `CVoigt` vector contains components
+that represent the tensor in Voigt notation, and `dof` specifies the dimension
 of the tensor.
 
 # Arguments
@@ -217,15 +225,21 @@ function find_inverse_bond_id(nlist::SubArray)
     return inverse_nlist
 end
 
-function interpolation(x::Union{Vector{Float64},Vector{Int64}}, y::Union{Vector{Float64},Vector{Int64}})
+function interpolation(
+    x::Union{Vector{Float64},Vector{Int64}},
+    y::Union{Vector{Float64},Vector{Int64}},
+)
     k = 3
     if length(x) <= k
         k = length(x) - 1
     end
-    return Dict("spl" => Spline1D(x, y, k=k), "min" => minimum(x), "max" => maximum(x))
+    return Dict("spl" => Spline1D(x, y, k = k), "min" => minimum(x), "max" => maximum(x))
 end
 
-function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64}, values::Dict{String,Any})
+function interpol_data(
+    x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
+    values::Dict{String,Any},
+)
     if values["min"] > minimum(x)
         @warn "Interpolation value is below interpolation range. Using minimum value of dataset."
     end
@@ -247,7 +261,10 @@ Invert a n x n matrix. Throws an error if A is singular.
 # Returns
 - inverted matrix or nothing if not inverable.
 """
-function invert(A::Union{Matrix{Float64},Matrix{Int64}}, error_message::String="Matrix is singular")
+function invert(
+    A::Union{Matrix{Float64},Matrix{Int64}},
+    error_message::String = "Matrix is singular",
+)
     try
         return inv(A)
     catch
@@ -258,12 +275,22 @@ function invert(A::Union{Matrix{Float64},Matrix{Int64}}, error_message::String="
 end
 
 
-function find_local_neighbors(nID::Int64, coordinates::Union{SubArray,Matrix{Float64},Matrix{Int64}}, nlist::Union{Vector{Int64},SubArray{Int64}}, bond_horizon::Union{Float64,Int64})
+function find_local_neighbors(
+    nID::Int64,
+    coordinates::Union{SubArray,Matrix{Float64},Matrix{Int64}},
+    nlist::Union{Vector{Int64},SubArray{Int64}},
+    bond_horizon::Union{Float64,Int64},
+)
     # excludes right now iID node in the coordinates list. Because it is an abritrary sublist it should be fine.
     # saving faster than recalculation?
     nlist_without_neighbor = view(nlist[nlist.!=nID], :)
     balltree = BallTree(transpose(coordinates[nlist_without_neighbor, :]))
-    return nlist_without_neighbor[inrange(balltree, coordinates[nID, :], bond_horizon, true)]
+    return nlist_without_neighbor[inrange(
+        balltree,
+        coordinates[nID, :],
+        bond_horizon,
+        true,
+    )]
 end
 
 
@@ -303,9 +330,15 @@ Rotates the matrix.
 # Returns
 - `matrix::SubArray`: Matrix.
 """
-function rotate(nodes::Union{SubArray,Vector{Int64}}, matrix::Union{SubArray,Array{Float64,3}}, rot::Union{SubArray,Array{Float64,3}}, back::Bool)
+function rotate(
+    nodes::Union{SubArray,Vector{Int64}},
+    matrix::Union{SubArray,Array{Float64,3}},
+    rot::Union{SubArray,Array{Float64,3}},
+    back::Bool,
+)
     for iID in nodes
-        matrix[iID, :, :] = rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :], back)
+        matrix[iID, :, :] =
+            rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :], back)
     end
     return matrix
 end

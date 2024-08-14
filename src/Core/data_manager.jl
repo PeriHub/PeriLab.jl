@@ -151,10 +151,12 @@ function initialize_data()
     global overlap_map
     overlap_map = Dict()
     global physics_options
-    physics_options = Dict("Deformed Bond Geometry" => true,
+    physics_options = Dict(
+        "Deformed Bond Geometry" => true,
         "Deformation Gradient" => false,
         "Shape Tensor" => false,
-        "Bond Associated Deformation Gradient" => false)
+        "Bond Associated Deformation Gradient" => false,
+    )
     global output_frequency
     output_frequency = []
     global accuracy_order
@@ -221,7 +223,12 @@ end
 ##########################
 # Material information
 ##########################
-global material_type::Dict{String,Bool} = Dict("Bond-Based" => false, "Ordinary" => false, "Correspondence" => true, "Bond-Associated" => false)
+global material_type::Dict{String,Bool} = Dict(
+    "Bond-Based" => false,
+    "Ordinary" => false,
+    "Correspondence" => true,
+    "Bond-Associated" => false,
+)
 ##########################
 
 """
@@ -264,14 +271,27 @@ Example:
 create_bond_field("stress", Float64, 6)  # creates a stress bond field with 6 degrees of freedom
 ```
 """
-function create_bond_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
+function create_bond_field(
+    name::String,
+    type::Type,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool} = 0,
+)
 
-    return create_field(name * "N", type, "Bond_Field", dof, default_value), create_field(name * "NP1", type, "Bond_Field", dof, default_value)
+    return create_field(name * "N", type, "Bond_Field", dof, default_value),
+    create_field(name * "NP1", type, "Bond_Field", dof, default_value)
 end
 
-function create_bond_field(name::String, type::Type, VectorOrArray::String, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
+function create_bond_field(
+    name::String,
+    type::Type,
+    VectorOrArray::String,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool} = 0,
+)
 
-    return create_field(name * "N", type, "Bond_Field", VectorOrArray, dof, default_value), create_field(name * "NP1", type, "Bond_Field", VectorOrArray, dof, default_value)
+    return create_field(name * "N", type, "Bond_Field", VectorOrArray, dof, default_value),
+    create_field(name * "NP1", type, "Bond_Field", VectorOrArray, dof, default_value)
 end
 
 """
@@ -293,11 +313,22 @@ Example:
 create_constant_bond_field("density", Float64, 1)  # creates a density constant bond field
 ```
    """
-function create_constant_bond_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
+function create_constant_bond_field(
+    name::String,
+    type::Type,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool} = 0,
+)
     return create_field(name, type, "Bond_Field", dof, default_value)
 end
 
-function create_constant_bond_field(name::String, type::Type, VectorOrArray::String, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
+function create_constant_bond_field(
+    name::String,
+    type::Type,
+    VectorOrArray::String,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool} = 0,
+)
     return create_field(name, type, "Bond_Field", VectorOrArray, dof, default_value)
 end
 
@@ -321,9 +352,13 @@ function create_field(name::String, vartype::Type, dof::Tuple)
     end
     fields[vartype][name] = Array{vartype}(zeros(dof))
     field_types[name] = vartype
-    code::String = "view(fields[$vartype][\"$name\"]" * join(repeat(", :", length(size(fields[vartype][name])))) * ")"
+    code::String =
+        "view(fields[$vartype][\"$name\"]" *
+        join(repeat(", :", length(size(fields[vartype][name])))) *
+        ")"
     get_function() = eval(Meta.parse(code))
-    field_array_type[name] = Dict("Type" => "Field", "Dof" => dof, "get_function" => get_function())
+    field_array_type[name] =
+        Dict("Type" => "Field", "Dof" => dof, "get_function" => get_function())
     return get_field(name)
 end
 
@@ -346,10 +381,21 @@ Example:
 create_constant_node_field("temperature", Float64, 1)  # creates a temperature constant node field
 ```
 """
-function create_constant_node_field(name::String, type::Type, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
+function create_constant_node_field(
+    name::String,
+    type::Type,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool} = 0,
+)
     return create_field(name, type, "Node_Field", dof, default_value)
 end
-function create_constant_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64, default_value::Union{Int64,Float64,Bool}=0)
+function create_constant_node_field(
+    name::String,
+    type::Type,
+    VectorOrArray::String,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool} = 0,
+)
     return create_field(name, type, "Node_Field", VectorOrArray, dof, default_value)
 end
 
@@ -367,11 +413,24 @@ Create a field with the given `name` for the specified `vartype`. If the field a
 # Returns
 The field with the given `name` and specified characteristics.
 """
-function create_field(name::String, vartype::Type, bondOrNode::String, dof::Int64, default_value::Union{Int64,Float64,Bool})
+function create_field(
+    name::String,
+    vartype::Type,
+    bondOrNode::String,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool},
+)
     create_field(name, vartype, bondOrNode, "Vector", dof, default_value)
 end
 
-function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrArray::String, dof::Int64, default_value::Union{Int64,Float64,Bool})
+function create_field(
+    name::String,
+    vartype::Type,
+    bondOrNode::String,
+    VectorOrArray::String,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool},
+)
     global nnodes
     global num_controller
     global fields
@@ -400,7 +459,8 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
         else
             fields[vartype][name] = fill(vartype(default_value), nnodes, field_dof)
             if VectorOrArray == "Matrix"
-                get_function = () -> view(reshape(fields[vartype][name], (:, dof, dof)), :, :, :)
+                get_function =
+                    () -> view(reshape(fields[vartype][name], (:, dof, dof)), :, :, :)
             else
                 get_function = () -> view(fields[vartype][name], :, :)
             end
@@ -412,16 +472,26 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
         else
             fields[vartype][name] = Matrix{vartype}[]
         end
-        for i in 1:num_controller+num_responder
+        for i = 1:num_controller+num_responder
             if dof == 1
                 append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
                 fill!(fields[vartype][name][end], vartype(default_value))
-                get_function = () -> view(fields[vartype][name], :,)
+                get_function = () -> view(fields[vartype][name], :)
             else
-                append!(fields[vartype][name], [Matrix{vartype}(undef, nBonds[i], field_dof)])
+                append!(
+                    fields[vartype][name],
+                    [Matrix{vartype}(undef, nBonds[i], field_dof)],
+                )
                 fill!(fields[vartype][name][end], vartype(default_value))
                 if VectorOrArray == "Matrix"
-                    get_function = () -> view([reshape(field, (:, dof, dof)) for field in fields[vartype][name]], :,)
+                    get_function =
+                        () -> view(
+                            [
+                                reshape(field, (:, dof, dof)) for
+                                field in fields[vartype][name]
+                            ],
+                            :,
+                        )
                 else
                     get_function = () -> view(fields[vartype][name], :, :)
                 end
@@ -429,7 +499,8 @@ function create_field(name::String, vartype::Type, bondOrNode::String, VectorOrA
         end
     end
     field_types[name] = vartype
-    field_array_type[name] = Dict("Type" => VectorOrArray, "Dof" => dof, "get_function" => get_function())
+    field_array_type[name] =
+        Dict("Type" => VectorOrArray, "Dof" => dof, "get_function" => get_function())
     return get_field(name)
 end
 """
@@ -451,13 +522,21 @@ Example:
 create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
 ```
 """
-function create_node_field(name::String, type::Type, dof::Int64, default_value::Any=0)
+function create_node_field(name::String, type::Type, dof::Int64, default_value::Any = 0)
 
-    return create_field(name * "N", type, "Node_Field", dof, default_value), create_field(name * "NP1", type, "Node_Field", dof, default_value)
+    return create_field(name * "N", type, "Node_Field", dof, default_value),
+    create_field(name * "NP1", type, "Node_Field", dof, default_value)
 end
 
-function create_node_field(name::String, type::Type, VectorOrArray::String, dof::Int64, default_value::Any=0)
-    return create_field(name * "N", type, "Node_Field", VectorOrArray, dof, default_value), create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof, default_value)
+function create_node_field(
+    name::String,
+    type::Type,
+    VectorOrArray::String,
+    dof::Int64,
+    default_value::Any = 0,
+)
+    return create_field(name * "N", type, "Node_Field", VectorOrArray, dof, default_value),
+    create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof, default_value)
 end
 """
    fem_active()
@@ -547,7 +626,7 @@ Returns the field with the given name and time.
 # Returns
 - `field::Field`: The field with the given name and time.
 """
-function get_field(name::String, time::String, throw_error::Bool=true)
+function get_field(name::String, time::String, throw_error::Bool = true)
 
     if time == "Constant" || time == "CONSTANT"
         return get_field(name)
@@ -567,14 +646,16 @@ Returns the field with the given name.
 # Returns
 - `field::Field`: The field with the given name.
 """
-function get_field(name::String, throw_error::Bool=true)
+function get_field(name::String, throw_error::Bool = true)
     global field_array_type
 
     if name in get_all_field_keys()
         return field_array_type[name]["get_function"]
     end
     if throw_error
-        @error "Field ''" * name * "'' does not exist. Check if it is initialized as constant."
+        @error "Field ''" *
+               name *
+               "'' does not exist. Check if it is initialized as constant."
     end
     return nothing
 end
@@ -653,7 +734,10 @@ get_local_nodes()  # returns local nodes or if they do not exist at the core an 
 function get_local_nodes(global_nodes)
     global glob_to_loc
 
-    return [glob_to_loc[global_node] for global_node in global_nodes if global_node in keys(glob_to_loc)]
+    return [
+        glob_to_loc[global_node] for
+        global_node in global_nodes if global_node in keys(glob_to_loc)
+    ]
 
 end
 
@@ -690,7 +774,7 @@ Retrieves the number of nodes.
 
 Example:
 ```julia
-get_nnodes()  # returns the current number of nodes 
+get_nnodes()  # returns the current number of nodes
 ```
 """
 function get_nnodes()
@@ -996,7 +1080,12 @@ function init_property()
 
     block_list = get_block_list()
     for iblock in block_list
-        properties[iblock] = Dict{String,Dict}("Thermal Model" => Dict{String,Any}(), "Damage Model" => Dict{String,Any}(), "Material Model" => Dict{String,Any}(), "Additive Model" => Dict{String,Any}())
+        properties[iblock] = Dict{String,Dict}(
+            "Thermal Model" => Dict{String,Any}(),
+            "Damage Model" => Dict{String,Any}(),
+            "Material Model" => Dict{String,Any}(),
+            "Additive Model" => Dict{String,Any}(),
+        )
     end
     return collect(keys(properties[block_list[1]]))
 end
@@ -1205,7 +1294,7 @@ end
 """
     set_num_elements(n::Int64)
 
-Sets the number of finite elements globally. 
+Sets the number of finite elements globally.
 
 # Arguments
 - `n::Int64`: The value to set as the number of finite elements.
@@ -1427,10 +1516,18 @@ function set_synch(name, download_from_cores, upload_to_cores)
 
     if name in get_all_field_keys()
         field = get_field(name)
-        fields_to_synch[name] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, "dof" => length(field[1, :]))
+        fields_to_synch[name] = Dict{String,Any}(
+            "upload_to_cores" => upload_to_cores,
+            "download_from_cores" => download_from_cores,
+            "dof" => length(field[1, :]),
+        )
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name * "NP1")
-        fields_to_synch[name*"NP1"] = Dict{String,Any}("upload_to_cores" => upload_to_cores, "download_from_cores" => download_from_cores, "dof" => length(field[1, :]))
+        fields_to_synch[name*"NP1"] = Dict{String,Any}(
+            "upload_to_cores" => upload_to_cores,
+            "download_from_cores" => download_from_cores,
+            "dof" => length(field[1, :]),
+        )
     end
 
 end
@@ -1491,7 +1588,14 @@ function synch_manager(synchronise_field, direction::String)
 
     synch_fields = get_synch_fields()
     for synch_field in keys(synch_fields)
-        synchronise_field(get_comm(), synch_fields, overlap_map, get_field, synch_field, direction)
+        synchronise_field(
+            get_comm(),
+            synch_fields,
+            overlap_map,
+            get_field,
+            synch_field,
+            direction,
+        )
     end
 end
 end

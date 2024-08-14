@@ -22,7 +22,17 @@ using .Damage
     nlist[2] = [1, 3]
     nlist[3] = [1]
     nlist[4] = [1, 3]
-    Damage.init_damage_model_fields(test_data_manager, Dict("Blocks" => Dict("block_1" => Dict("Damage Model" => "a"), "block_2" => Dict("Damage Model" => "a"), "block_3" => Dict("Damage Model" => "a")), "Physics" => Dict("Damage Models" => Dict("a" => Dict("value" => "b")))))
+    Damage.init_damage_model_fields(
+        test_data_manager,
+        Dict(
+            "Blocks" => Dict(
+                "block_1" => Dict("Damage Model" => "a"),
+                "block_2" => Dict("Damage Model" => "a"),
+                "block_3" => Dict("Damage Model" => "a"),
+            ),
+            "Physics" => Dict("Damage Models" => Dict("a" => Dict("value" => "b"))),
+        ),
+    )
     fieldkeys = test_data_manager.get_all_field_keys()
     @test "DamageN" in fieldkeys
     @test "DamageNP1" in fieldkeys
@@ -91,8 +101,8 @@ end
     nn[3] = 1
     bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
 
-    for iID in 1:3
-        for jID in 1:nn[iID]
+    for iID = 1:3
+        for jID = 1:nn[iID]
             bdN[iID][jID] = jID * iID * iID + jID - iID
             @test bdNP1[iID][jID] == 0
         end
@@ -101,8 +111,8 @@ end
     Damage.set_bond_damage(test_data_manager, nodes)
     bdN = test_data_manager.get_field("Bond Damage", "N")
     bdNP1 = test_data_manager.get_field("Bond Damage", "NP1")
-    for iID in 1:3
-        for jID in 1:nn[iID]
+    for iID = 1:3
+        for jID = 1:nn[iID]
             @test bdNP1[iID][jID] == bdN[iID][jID]
             bdN[iID][jID] = 0
             @test bdNP1[iID][jID] == jID * iID * iID + jID - iID
@@ -112,7 +122,8 @@ end
 end
 @testset "ut_Damage_factory_exceptions" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.properties[1] = Dict("Damage Model" => Dict("Damage Model" => "not there"))
+    test_data_manager.properties[1] =
+        Dict("Damage Model" => Dict("Damage Model" => "not there"))
     @test isnothing(Damage.init_damage_model(test_data_manager, Vector{Int64}(1:3), 1))
 end
 
@@ -121,7 +132,14 @@ end
     test_data_manager.set_block_list([2, 3, 1, 1])
     crit_values_matrix::Array{Float64,3} = fill(-1, (1, 1, 1))
     test_data_manager.set_crit_values_matrix(crit_values_matrix)
-    damage_parameter = Dict("Critical Value" => 1.0, "Interblock Damage" => Dict("Interblock Critical Value 1_2" => 0.2, "Interblock Critical Value 2_3" => 0.3, "Interblock Critical Value 2_1" => 0.4))
+    damage_parameter = Dict(
+        "Critical Value" => 1.0,
+        "Interblock Damage" => Dict(
+            "Interblock Critical Value 1_2" => 0.2,
+            "Interblock Critical Value 2_3" => 0.3,
+            "Interblock Critical Value 2_1" => 0.4,
+        ),
+    )
     Damage.init_interface_crit_values(test_data_manager, damage_parameter, 1)
     @test test_data_manager.get_crit_values_matrix()[1, 2, 1] == 0.2
     @test test_data_manager.get_crit_values_matrix()[2, 3, 1] == 0.3

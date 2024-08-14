@@ -44,7 +44,11 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+function init_material_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    material_parameter::Dict,
+)
     return datamanager
 end
 
@@ -72,7 +76,14 @@ Calculate the elastic bond force for each node.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
+function compute_forces(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    material_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+    to::TimerOutput,
+)
     # global dof
     # global horizon
     dof = datamanager.get_dof()
@@ -86,21 +97,26 @@ function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
 
 
     E = material_parameter["Young's Modulus"]
-    
+
     for iID in nodes
         if symmetry == "plane stress"
-            constant = 9.0  / (pi * horizon[iID]^3)
+            constant = 9.0 / (pi * horizon[iID]^3)
         elseif symmetry == "plane strain"
-            constant = 48  / (5 * pi * horizon[iID]^3)
+            constant = 48 / (5 * pi * horizon[iID]^3)
         else
-            constant = 27.0  / (pi * horizon[iID]^4)
+            constant = 27.0 / (pi * horizon[iID]^4)
         end
         if any(deformed_bond_length[iID] .== 0)
             @error "Length of bond is zero due to its deformation."
             return nothing
         end
         # Calculate the bond force
-        bond_force[iID] = (0.5 .* constant .* bond_damage[iID] .* (deformed_bond_length[iID] .- undeformed_bond_length[iID]) ./ undeformed_bond_length[iID]) .* deformed_bond[iID] ./ deformed_bond_length[iID]
+        bond_force[iID] =
+            (
+                0.5 .* constant .* bond_damage[iID] .*
+                (deformed_bond_length[iID] .- undeformed_bond_length[iID]) ./
+                undeformed_bond_length[iID]
+            ) .* deformed_bond[iID] ./ deformed_bond_length[iID]
 
     end
     bond_force .*= E

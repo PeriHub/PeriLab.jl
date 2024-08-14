@@ -23,7 +23,7 @@ println(flow_name())
 ```
 """
 function thermal_model_name()
-  return "Heat Transfer"
+    return "Heat Transfer"
 end
 
 
@@ -41,9 +41,13 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict)
+function init_thermal_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    thermal_parameter::Dict,
+)
 
-  return datamanager
+    return datamanager
 end
 
 """
@@ -63,37 +67,52 @@ Example:
 ```julia
 ```
 """
-function compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, thermal_parameter::Dict, time::Float64, dt::Float64)
-  dof = datamanager.get_dof()
-  volume = datamanager.get_field("Volume")
-  kappa = thermal_parameter["Heat Transfer Coefficient"]
-  Tenv = thermal_parameter["Environmental Temperature"]
-  req_specific_volume = get(thermal_parameter, "Required Specific Volume", 1.1)
-  heat_flow = datamanager.get_field("Heat Flow", "NP1")
-  temperature = datamanager.get_field("Temperature", "NP1")
-  surface_nodes = datamanager.get_field("Surface_Nodes")
-  specific_volume = datamanager.get_field("Specific Volume")
-  bond_damage = datamanager.get_bond_damage("NP1")
-  active = datamanager.get_field("Active")
-  horizon = datamanager.get_field("Horizon")
-  nlist = datamanager.get_nlist()
-  dx = 1.0
+function compute_thermal_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    thermal_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+)
+    dof = datamanager.get_dof()
+    volume = datamanager.get_field("Volume")
+    kappa = thermal_parameter["Heat Transfer Coefficient"]
+    Tenv = thermal_parameter["Environmental Temperature"]
+    req_specific_volume = get(thermal_parameter, "Required Specific Volume", 1.1)
+    heat_flow = datamanager.get_field("Heat Flow", "NP1")
+    temperature = datamanager.get_field("Temperature", "NP1")
+    surface_nodes = datamanager.get_field("Surface_Nodes")
+    specific_volume = datamanager.get_field("Specific Volume")
+    bond_damage = datamanager.get_bond_damage("NP1")
+    active = datamanager.get_field("Active")
+    horizon = datamanager.get_field("Horizon")
+    nlist = datamanager.get_nlist()
+    dx = 1.0
 
-  specific_volume = calculate_specific_volume(nodes, nlist, volume, active, specific_volume, dof, horizon)
-  for iID in nodes
+    specific_volume = calculate_specific_volume(
+        nodes,
+        nlist,
+        volume,
+        active,
+        specific_volume,
+        dof,
+        horizon,
+    )
+    for iID in nodes
 
-    if dof == 2
-      dx = sqrt(volume[iID])
-    elseif dof == 3
-      dx = volume[iID]^(1 / 3)
+        if dof == 2
+            dx = sqrt(volume[iID])
+        elseif dof == 3
+            dx = volume[iID]^(1 / 3)
+        end
+
+        if surface_nodes[iID] && specific_volume[iID] > req_specific_volume
+            heat_flow[iID] +=
+                (kappa * (temperature[iID] - Tenv)) / dx * floor(specific_volume[iID])
+        end
     end
 
-    if surface_nodes[iID] && specific_volume[iID] > req_specific_volume
-      heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx * floor(specific_volume[iID])
-    end
-  end
-
-  return datamanager
+    return datamanager
 end
 
 #TODO @Jan-Timo update documentation
@@ -111,34 +130,42 @@ Calculates the specific volume.
 # Returns
 - `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function calculate_specific_volume(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{SubArray,Vector{Vector{Int64}}}, volume::SubArray, active::SubArray, specific_volume::SubArray, dof::Int64, horizon::SubArray)
+function calculate_specific_volume(
+    nodes::Union{SubArray,Vector{Int64}},
+    nlist::Union{SubArray,Vector{Vector{Int64}}},
+    volume::SubArray,
+    active::SubArray,
+    specific_volume::SubArray,
+    dof::Int64,
+    horizon::SubArray,
+)
 
-  for iID in nodes
-    neighbor_volume = 0.0
-    for (jID, neighborID) in enumerate(nlist[iID])
-      if active[neighborID]
-        neighbor_volume += volume[neighborID]
-      end
+    for iID in nodes
+        neighbor_volume = 0.0
+        for (jID, neighborID) in enumerate(nlist[iID])
+            if active[neighborID]
+                neighbor_volume += volume[neighborID]
+            end
+        end
+        if dof == 2
+            horizon_volume = pi * horizon[iID]^2
+        elseif dof == 3
+            horizon_volume = 4 / 3 * pi * horizon[iID]^3
+        end
+        if neighbor_volume != 0.0
+            specific_volume[iID] = horizon_volume / neighbor_volume
+        end
     end
+
     if dof == 2
-      horizon_volume = pi * horizon[iID]^2
+        scaling_factor = 2.0 / maximum(specific_volume)
     elseif dof == 3
-      horizon_volume = 4 / 3 * pi * horizon[iID]^3
+        scaling_factor = 4.0 / maximum(specific_volume)
     end
-    if neighbor_volume != 0.0
-      specific_volume[iID] = horizon_volume / neighbor_volume
+    if !isinf(scaling_factor)
+        specific_volume .*= scaling_factor
     end
-  end
 
-  if dof == 2
-    scaling_factor = 2.0 / maximum(specific_volume)
-  elseif dof == 3
-    scaling_factor = 4.0 / maximum(specific_volume)
-  end
-  if !isinf(scaling_factor)
-    specific_volume .*= scaling_factor
-  end
-
-  return specific_volume
+    return specific_volume
 end
 end

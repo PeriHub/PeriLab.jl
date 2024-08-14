@@ -41,7 +41,7 @@ using DataFrames
     data = PeriLab.IO.read_mesh(joinpath(path, "example_mesh.g"), params)
     @test length(data[:, 1]) == 324
     @test data[!, "block_id"][1] == 1
-    @test isapprox(data[!, "volume"][1], 0.03314393939393944, atol=1e-15)
+    @test isapprox(data[!, "volume"][1], 0.03314393939393944, atol = 1e-15)
 
 end
 
@@ -70,39 +70,77 @@ end
 @testset "ut_create_consistent_neighborhoodlist" begin
     path = "./unit_tests/IO/"
 
-    external_topology = PeriLab.IO.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
+    external_topology =
+        PeriLab.IO.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
     if isnothing(external_topology)
         path = "./test/unit_tests/IO/"
-        external_topology = PeriLab.IO.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
+        external_topology =
+            PeriLab.IO.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
     end
     dof::Int64 = 2
     params = Dict()
 
-    nlist::Vector{Vector{Int64}} = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
+    nlist::Vector{Vector{Int64}} =
+        [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
 
-    nlist_test, topology, nodes_to_element = PeriLab.IO.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+    nlist_test, topology, nodes_to_element =
+        PeriLab.IO.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
 
     @test topology[1] == [1, 2, 3, 4]
     @test topology[2] == [3, 4, 5, 6]
     @test topology[3] == [2, 3, 4, 5, 6, 7]
     @test topology[4] == [5, 6, 7, 8]
-    @test nodes_to_element == [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
-    @test nlist == [[2, 3, 4], [1, 3, 4, 5, 6, 7], [1, 2, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [3, 4, 6, 2, 7, 8], [3, 4, 5, 2, 7, 8], [2, 3, 4, 5, 6, 8], [5, 6, 7], [10]]
+    @test nodes_to_element ==
+          [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
+    @test nlist == [
+        [2, 3, 4],
+        [1, 3, 4, 5, 6, 7],
+        [1, 2, 4, 5, 6, 7],
+        [1, 2, 3, 5, 6, 7],
+        [3, 4, 6, 2, 7, 8],
+        [3, 4, 5, 2, 7, 8],
+        [2, 3, 4, 5, 6, 8],
+        [5, 6, 7],
+        [10],
+    ]
     params = Dict("Add Neighbor Search" => false)
     nlist = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
-    nlist, topology, nodes_to_element = PeriLab.IO.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
-    @test nlist == [[2, 3, 4], [1, 3, 4, 5, 6, 7], [1, 2, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [3, 4, 6, 2, 7, 8], [3, 4, 5, 2, 7, 8], [2, 3, 4, 5, 6, 8], [5, 6, 7], [10]]
+    nlist, topology, nodes_to_element =
+        PeriLab.IO.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+    @test nlist == [
+        [2, 3, 4],
+        [1, 3, 4, 5, 6, 7],
+        [1, 2, 4, 5, 6, 7],
+        [1, 2, 3, 5, 6, 7],
+        [3, 4, 6, 2, 7, 8],
+        [3, 4, 5, 2, 7, 8],
+        [2, 3, 4, 5, 6, 8],
+        [5, 6, 7],
+        [10],
+    ]
 
     params = Dict("Add Neighbor Search" => true)
     nlist = [[2, 3, 4, 11], [1, 3, 4], [1, 2, 22, 23], [4], [8], [9], [1, 6], [3, 2], [10]]
-    nlist, topology, nodes_to_element = PeriLab.IO.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+    nlist, topology, nodes_to_element =
+        PeriLab.IO.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
 
     @test topology[1] == [1, 2, 3, 4]
     @test topology[2] == [3, 4, 5, 6]
     @test topology[3] == [2, 3, 4, 5, 6, 7]
     @test topology[4] == [5, 6, 7, 8]
-    @test nodes_to_element == [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
-    @test nlist == [[2, 3, 4, 11], [1, 3, 4, 5, 6, 7], [1, 2, 22, 23, 4, 5, 6, 7], [1, 2, 3, 5, 6, 7], [8, 3, 4, 6, 2, 7], [9, 3, 4, 5, 2, 7, 8], [1, 6, 2, 3, 4, 5, 8], [3, 2, 5, 6, 7], [10]]
+    @test nodes_to_element ==
+          [[1], [1, 3], [1, 2, 3], [1, 2, 3], [2, 3, 4], [2, 3, 4], [3, 4], [4]]
+    @test nlist == [
+        [2, 3, 4, 11],
+        [1, 3, 4, 5, 6, 7],
+        [1, 2, 22, 23, 4, 5, 6, 7],
+        [1, 2, 3, 5, 6, 7],
+        [8, 3, 4, 6, 2, 7],
+        [9, 3, 4, 5, 2, 7, 8],
+        [1, 6, 2, 3, 4, 5, 8],
+        [3, 2, 5, 6, 7],
+        [10],
+    ]
 end
 @testset "ut_element_distribution" begin
     nnodes = 8
@@ -133,8 +171,10 @@ end
 
     test_data_manager = PeriLab.Data_manager
     topology::Vector{Vector{Int64}} = [[1, 2, 3, 4], [3, 4, 2, 1]]
-    distribution::Vector{Vector{Int64}} = [[2, 3, 4, 1], [1, 2, 3, 4], [5, 6, 3, 2, 8, 1, 4]]
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[1])
+    distribution::Vector{Vector{Int64}} =
+        [[2, 3, 4, 1], [1, 2, 3, 4], [5, 6, 3, 2, 8, 1, 4]]
+    test_data_manager =
+        PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[1])
     topo = test_data_manager.get_field("FE Topology")
 
     @test topo[1, 1] == 4
@@ -145,7 +185,8 @@ end
     @test topo[2, 2] == 3
     @test topo[2, 3] == 1
     @test topo[2, 4] == 4
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[2])
+    test_data_manager =
+        PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[2])
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 1
     @test topo[1, 2] == 2
@@ -155,7 +196,8 @@ end
     @test topo[2, 2] == 4
     @test topo[2, 3] == 2
     @test topo[2, 4] == 1
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[3])
+    test_data_manager =
+        PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[3])
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 6
     @test topo[1, 2] == 4
@@ -166,7 +208,11 @@ end
     @test topo[2, 3] == 4
     @test topo[2, 4] == 6
 
-    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, Vector([Vector{Int64}([])]), distribution[3])
+    test_data_manager = PeriLab.IO.get_local_element_topology(
+        test_data_manager,
+        Vector([Vector{Int64}([])]),
+        distribution[3],
+    )
     # nothing happens, because no field is initialized
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 6
@@ -180,7 +226,9 @@ end
 
     topology = [[1, 2, 3, 4], [3, 4, 2, 1, 3]]
 
-    @test isnothing(PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[3]))
+    @test isnothing(
+        PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[3]),
+    )
 end
 @testset "ut_create_distribution" begin
     distribution, point_to_core = PeriLab.IO.create_distribution(4, 1)
@@ -214,7 +262,8 @@ end
     nlist[2] = [1, 3, 4]
     nlist[3] = [1, 2]
     nlist[4] = [2]
-    @test PeriLab.IO.create_distribution_node_based(4, nlist, 1) == PeriLab.IO.create_distribution(4, 1)
+    @test PeriLab.IO.create_distribution_node_based(4, nlist, 1) ==
+          PeriLab.IO.create_distribution(4, 1)
     distribution, point_to_core = PeriLab.IO.create_distribution_node_based(4, nlist, 2)
     @test distribution[1] == Int64[1, 2]
     @test distribution[2] == Int64[3, 4]
@@ -246,24 +295,13 @@ end
     @test test == [2, 4, 3, 1]
 end
 @testset "ut_check_mesh_elements" begin
-    data = Dict(
-        "volume" => [1, 1, 1],
-        "block_id" => [1, 1, 1]
-    )
+    data = Dict("volume" => [1, 1, 1], "block_id" => [1, 1, 1])
     df = DataFrame(data)
     @test isnothing(PeriLab.IO.check_mesh_elements(df, 2))
-    data = Dict(
-        "x" => [1.0, 1.1, 3],
-        "y" => [25, 30, 22],
-        "block_id" => [1, 1, 1]
-    )
+    data = Dict("x" => [1.0, 1.1, 3], "y" => [25, 30, 22], "block_id" => [1, 1, 1])
     df = DataFrame(data)
     @test isnothing(PeriLab.IO.check_mesh_elements(df, 2))
-    data = Dict(
-        "x" => [1.0, 1.1, 3],
-        "y" => [25, 30, 22],
-        "volume" => [1, 1, 1]
-    )
+    data = Dict("x" => [1.0, 1.1, 3], "y" => [25, 30, 22], "volume" => [1, 1, 1])
     df = DataFrame(data)
     @test isnothing(PeriLab.IO.check_mesh_elements(df, 2))
 
@@ -272,7 +310,7 @@ end
         "y" => [25, 30, 22],
         "volume" => [1, 1, 1],
         "block_id" => [1, 1, 1],
-        "active" => [true, true, false]
+        "active" => [true, true, false],
     )
 
     df = DataFrame(data)
@@ -298,7 +336,7 @@ end
         "active_x" => [true, true, false],
         "active_y" => [true, true, false],
         "active_z" => [true, true, false],
-        "field" => [1.0, 3.3, 2.3]
+        "field" => [1.0, 3.3, 2.3],
     )
     df = DataFrame(data)
     mesh_info_dict = PeriLab.IO.check_mesh_elements(df, 3)
@@ -336,7 +374,11 @@ end
 end
 
 @testset "ut_create_overlap_map" begin
-    distribution = Vector([Vector{Int64}([1, 2, 3]), Vector{Int64}([2, 3, 4]), Vector{Int64}([4, 1, 3])])
+    distribution = Vector([
+        Vector{Int64}([1, 2, 3]),
+        Vector{Int64}([2, 3, 4]),
+        Vector{Int64}([4, 1, 3]),
+    ])
     size::Int64 = 3
     ptc = [1, 2, 2, 3]
     overlap_map = PeriLab.IO.create_overlap_map(distribution, ptc, size)
@@ -348,10 +390,11 @@ end
     @test overlap_map[1][3]["Controller"] == overlap_map[3][1]["Responder"]
     @test overlap_map[2][3]["Controller"] == overlap_map[3][2]["Responder"]
 
-    for i in 1:3
-        for j in 1:3
+    for i = 1:3
+        for j = 1:3
             if i != j
-                if overlap_map[i][j]["Responder"] != [] && overlap_map[i][j]["Controller"] != []
+                if overlap_map[i][j]["Responder"] != [] &&
+                   overlap_map[i][j]["Controller"] != []
                     @test overlap_map[i][j]["Responder"] != overlap_map[i][j]["Controller"]
                 end
             end
@@ -408,13 +451,13 @@ end
 @testset "ut_neighbors" begin
 
     nlist = fill(Vector{Int64}([]), 4)
-    for i in 1:4
+    for i = 1:4
         nlist[i] = Vector{Int64}(collect(1:3*i*i-2))
     end
 
     length_nlist = PeriLab.IO.get_number_of_neighbornodes(nlist, false)
 
-    for i in 1:4
+    for i = 1:4
         @test length_nlist[i] == 3 * i * i - 2
     end
     nlist[1] = []
@@ -428,14 +471,14 @@ end
     glob_to_loc = PeriLab.IO.glob_to_loc(distribution)
     len = length(distribution)
     #check trivial case of global and local are identical
-    for id in 1:len
+    for id = 1:len
         @test distribution[id] == glob_to_loc[id]
     end
     @test length(distribution) == length(glob_to_loc)
     # reverse -> glob_to_loc_to_glob
     distribution = [1, 4, 2, 5, 6]
     glob_to_loc = PeriLab.IO.glob_to_loc(distribution)
-    for id in 1:len
+    for id = 1:len
         @test distribution[id] == distribution[glob_to_loc[distribution[id]]]
     end
 
@@ -443,7 +486,10 @@ end
 
 @testset "ut_define_nsets" begin
 
-    nsets_predef = Dict{String,Any}("Nset_2" => [11, 12, 13, 44, 125], "Nset_1" => [1, 2, 3, 4, 5, 6, 7])
+    nsets_predef = Dict{String,Any}(
+        "Nset_2" => [11, 12, 13, 44, 125],
+        "Nset_1" => [1, 2, 3, 4, 5, 6, 7],
+    )
 
     test_data_manager = PeriLab.Data_manager
     @test test_data_manager.get_nnsets() == 0
@@ -460,7 +506,8 @@ end
     test_data_manager.set_num_controller(3)
     test_data_manager.set_num_responder(0)
     test_data_manager.set_dof(2)
-    length_nlist = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    length_nlist =
+        test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     length_nlist .= [2, 2, 2]
     nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 
@@ -478,9 +525,17 @@ end
     nnodes = test_data_manager.get_nnodes()
     nlist = test_data_manager.get_field("Neighborhoodlist")
     coor = test_data_manager.get_field("Coordinates")
-    undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
-    undeformed_bond_length = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
-    undeformed_bond, undeformed_bond_length = PeriLab.IO.Geometry.bond_geometry(Vector(1:nnodes), nlist, coor, undeformed_bond, undeformed_bond_length)
+    undeformed_bond =
+        test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
+    undeformed_bond_length =
+        test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
+    undeformed_bond, undeformed_bond_length = PeriLab.IO.Geometry.bond_geometry(
+        Vector(1:nnodes),
+        nlist,
+        coor,
+        undeformed_bond,
+        undeformed_bond_length,
+    )
 
     @test undeformed_bond[1][1, 1] == 1
     @test undeformed_bond[1][1, 2] == 0
@@ -512,7 +567,16 @@ end
     @test PeriLab.IO.calculate_volume("Tet4", vertices) == 1 / 6
     vertices = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1]]
     @test PeriLab.IO.calculate_volume("Wedge6", vertices) == 0.5
-    vertices = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]]
+    vertices = [
+        [0, 0, 0],
+        [1, 0, 0],
+        [1, 1, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+        [1, 0, 1],
+        [1, 1, 1],
+        [0, 1, 1],
+    ]
     @test PeriLab.IO.calculate_volume("Hex8", vertices) == 1
 
 end

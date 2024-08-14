@@ -12,15 +12,90 @@ using Test
     stress::Float64 = 5.3
     @test flaw_function(Dict(), Vector{Float64}([1, 2]), stress) == stress
 
-    @test isnothing(flaw_function(Dict("Flaw Function" => Dict()), Vector{Float64}([1, 2]), stress))
-    @test isnothing(flaw_function(Dict("Flaw Function" => Dict("Active" => false)), Vector{Float64}([1, 2]), stress))
-    @test flaw_function(Dict("Flaw Function" => Dict("Active" => false, "Function" => "Pre-defined")), Vector{Float64}([1, 2]), stress) == stress
-    @test isnothing(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Magnitude" => 1.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2]), stress))
-    @test isnothing(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Magnitude" => -1.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2]), stress))
+    @test isnothing(
+        flaw_function(Dict("Flaw Function" => Dict()), Vector{Float64}([1, 2]), stress),
+    )
+    @test isnothing(
+        flaw_function(
+            Dict("Flaw Function" => Dict("Active" => false)),
+            Vector{Float64}([1, 2]),
+            stress,
+        ),
+    )
+    @test flaw_function(
+        Dict("Flaw Function" => Dict("Active" => false, "Function" => "Pre-defined")),
+        Vector{Float64}([1, 2]),
+        stress,
+    ) == stress
+    @test isnothing(
+        flaw_function(
+            Dict(
+                "Flaw Function" => Dict(
+                    "Active" => true,
+                    "Function" => "Pre-defined",
+                    "Flaw Location X" => 1.1,
+                    "Flaw Location Y" => 1.1,
+                    "Flaw Magnitude" => 1.3,
+                    "Flaw Size" => 0.2,
+                ),
+            ),
+            Vector{Float64}([1, 2]),
+            stress,
+        ),
+    )
+    @test isnothing(
+        flaw_function(
+            Dict(
+                "Flaw Function" => Dict(
+                    "Active" => true,
+                    "Function" => "Pre-defined",
+                    "Flaw Location X" => 1.1,
+                    "Flaw Location Y" => 1.1,
+                    "Flaw Magnitude" => -1.3,
+                    "Flaw Size" => 0.2,
+                ),
+            ),
+            Vector{Float64}([1, 2]),
+            stress,
+        ),
+    )
 
-    @test isapprox(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Magnitude" => 0.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2]), stress), 5.29999999)
+    @test isapprox(
+        flaw_function(
+            Dict(
+                "Flaw Function" => Dict(
+                    "Active" => true,
+                    "Function" => "Pre-defined",
+                    "Flaw Location X" => 1.1,
+                    "Flaw Location Y" => 1.1,
+                    "Flaw Magnitude" => 0.3,
+                    "Flaw Size" => 0.2,
+                ),
+            ),
+            Vector{Float64}([1, 2]),
+            stress,
+        ),
+        5.29999999,
+    )
 
-    @test isapprox(flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "Pre-defined", "Flaw Location X" => 1.1, "Flaw Location Y" => 1.1, "Flaw Location Z" => 2.1, "Flaw Magnitude" => 0.3, "Flaw Size" => 0.2)), Vector{Float64}([1, 2, 3]), stress), 5.29999999)
+    @test isapprox(
+        flaw_function(
+            Dict(
+                "Flaw Function" => Dict(
+                    "Active" => true,
+                    "Function" => "Pre-defined",
+                    "Flaw Location X" => 1.1,
+                    "Flaw Location Y" => 1.1,
+                    "Flaw Location Z" => 2.1,
+                    "Flaw Magnitude" => 0.3,
+                    "Flaw Size" => 0.2,
+                ),
+            ),
+            Vector{Float64}([1, 2, 3]),
+            stress,
+        ),
+        5.29999999,
+    )
 
 
     #  @test flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "x*x")), Vector{Float64}([1, 2]), stress) == 1
@@ -53,7 +128,13 @@ end
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(3)
-    ref_parameter = Dict("Bulk Modulus" => 0, "Computed" => true, "Young's Modulus" => 0, "Shear Modulus" => 0, "Poisson's Ratio" => 0)
+    ref_parameter = Dict(
+        "Bulk Modulus" => 0,
+        "Computed" => true,
+        "Young's Modulus" => 0,
+        "Shear Modulus" => 0,
+        "Poisson's Ratio" => 0,
+    )
     test = get_all_elastic_moduli(test_data_manager, Dict{String,Any}())
     @test isnothing(test)
 
@@ -65,7 +146,11 @@ end
     get_all_elastic_moduli(test_data_manager, parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
-    parameter = Dict{String,Any}("Bulk Modulus" => 1, "Shear Modulus" => 10, "Poisson's Ratio" => 0.2)
+    parameter = Dict{String,Any}(
+        "Bulk Modulus" => 1,
+        "Shear Modulus" => 10,
+        "Poisson's Ratio" => 0.2,
+    )
     get_all_elastic_moduli(test_data_manager, parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
@@ -114,7 +199,11 @@ end
 @testset "get_Hooke_matrix" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
-    parameter = Dict{String,Any}("Bulk Modulus" => 5, "Shear Modulus" => 1.25, "Poisson's Ratio" => 0.2)
+    parameter = Dict{String,Any}(
+        "Bulk Modulus" => 5,
+        "Shear Modulus" => 1.25,
+        "Poisson's Ratio" => 0.2,
+    )
     get_all_elastic_moduli(test_data_manager, parameter)
 
     symmetry = "isotropic"
@@ -122,10 +211,10 @@ end
     nu = parameter["Poisson's Ratio"]
     temp = 1 / ((1 + nu) * (1 - 2 * nu))
     C = get_Hooke_matrix(parameter, symmetry, 3)
-    for iID in 1:3
-        @test isapprox(C[iID, iID] , E * (1 - nu) * temp)
+    for iID = 1:3
+        @test isapprox(C[iID, iID], E * (1 - nu) * temp)
         @test C[iID+3, iID+3] == parameter["Shear Modulus"]
-        for jID in 1:3
+        for jID = 1:3
             if iID != jID
                 @test isapprox(C[iID, jID], E * nu * temp)
             end
@@ -134,9 +223,9 @@ end
 
     symmetry = "isotropic plane strain"
     C2D = get_Hooke_matrix(parameter, symmetry, 2)
-    for iID in 1:2
+    for iID = 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
-        for jID in 1:2
+        for jID = 1:2
             if iID != jID
                 @test C2D[iID, jID] / (E * nu * temp) - 1 < 1e-7
             end
@@ -146,9 +235,9 @@ end
 
     symmetry = "missing"
     C2D = get_Hooke_matrix(parameter, symmetry, 2)
-    for iID in 1:2
+    for iID = 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
-        for jID in 1:2
+        for jID = 1:2
             if iID != jID
                 @test C2D[iID, jID] / (E * nu * temp) - 1 < 1e-7
             end
@@ -163,16 +252,16 @@ end
     C2D_test[3, 3] = Cinv[6, 6]
     C2D_test = inv(C2D_test)
     C = get_Hooke_matrix(parameter, symmetry, 2)
-    for iID in 1:3
-        for jID in 1:3
+    for iID = 1:3
+        for jID = 1:3
             if C2D_test[iID, jID] != 0
                 @test C[iID, jID] / C2D_test[iID, jID] - 1 < 1e-7
             end
         end
     end
 
-    for iID in 1:6
-        for jID in 1:6
+    for iID = 1:6
+        for jID = 1:6
             parameter["C"*string(iID)*string(jID)] = iID * jID + jID
         end
     end
@@ -182,8 +271,8 @@ end
 
     symmetry = "anisotropic"
     C = get_Hooke_matrix(parameter, symmetry, 3)
-    for iID in 1:6
-        for jID in 1:6
+    for iID = 1:6
+        for jID = 1:6
             @test C[iID, jID] == C[jID, iID]
             if jID >= iID
                 @test C[iID, jID] == parameter["C"*string(iID)*string(jID)]
@@ -192,8 +281,8 @@ end
     end
     symmetry = "anisotropic plane strain"
     C = get_Hooke_matrix(parameter, symmetry, 2)
-    for iID in 1:2
-        for jID in 1:2
+    for iID = 1:2
+        for jID = 1:2
             @test C[iID, jID] == C[jID, iID]
             if jID >= iID
                 @test C[iID, jID] == parameter["C"*string(iID)*string(jID)]
@@ -208,15 +297,21 @@ end
 
     symmetry = "anisotropic plane stress"
     C = get_Hooke_matrix(parameter, symmetry, 2)
-    for iID in 1:3
-        for jID in 1:3
+    for iID = 1:3
+        for jID = 1:3
             if C2D_test[iID, jID] != 0
                 @test C[iID, jID] / C2D_test[iID, jID] - 1 < 1e-7
             end
         end
     end
 
-    parameter = Dict{String,Any}("C11" => 2.0, "C12" => 3.0, "C13" => 4.0, "C22" => 5.0, "C33" => 7.0)
+    parameter = Dict{String,Any}(
+        "C11" => 2.0,
+        "C12" => 3.0,
+        "C13" => 4.0,
+        "C22" => 5.0,
+        "C33" => 7.0,
+    )
     @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
 
     symmetry = "anisotropic missing"

@@ -16,7 +16,7 @@ using Random
     @test isnothing(Set_modules.find_jl_files(base))
 
     if isdir(base)
-        rm(base, recursive=true)
+        rm(base, recursive = true)
     end
 
     mkdir(base)
@@ -54,5 +54,5 @@ using Random
     @test subfolder1 * "/" * filename4 * ".jl" in list
     @test subsubfolder * "/" * filename5 * ".jl" in list
     @test !(folder * "/" * filename4 * ".dat" in list)
-    rm(base, recursive=true)
+    rm(base, recursive = true)
 end

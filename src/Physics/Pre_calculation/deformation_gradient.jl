@@ -28,7 +28,18 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, bloc
     deformation_gradient = datamanager.get_field("Deformation Gradient")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
 
-    deformation_gradient = compute_deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, deformed_bond, undeformed_bond, inverse_shape_tensor, deformation_gradient)
+    deformation_gradient = compute_deformation_gradient(
+        nodes,
+        dof,
+        nlist,
+        volume,
+        omega,
+        bond_damage,
+        deformed_bond,
+        undeformed_bond,
+        inverse_shape_tensor,
+        deformation_gradient,
+    )
 
     return datamanager
 end

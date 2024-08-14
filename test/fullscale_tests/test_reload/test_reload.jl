@@ -7,5 +7,5 @@
 folder_name = basename(@__FILE__)[1:end-3]
 cd("fullscale_tests/" * folder_name) do
     run_perilab("reload1", 1, true, folder_name)
-    run_perilab("reload2", 1, true, folder_name; reload=true)
+    run_perilab("reload2", 1, true, folder_name; reload = true)
 end

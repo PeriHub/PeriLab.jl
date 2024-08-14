@@ -38,6 +38,7 @@ We are looking for different kind of contributions:
 
 ### Code style
 
+* Make sure that [pre-commit](https://pre-commit.com/#installation) is installed and run `pre-commit install` before you commit.
 * Functions and variables should be snake_case, e.g. `my_variable`.
 * Functions and variables should clearly describe their purpose and function, e.g. `bond_forces` and not `b_f`.
 * Modules should use capital letter `My_Module`
@@ -51,7 +52,7 @@ We are looking for different kind of contributions:
 
 * Add tests for new features.
 * Add your input values in the yaml check in parameter_handling.jl.
-* Do not call Modules at same level, e.g. Material Models should not call Thermal Models. 
+* Do not call Modules at same level, e.g. Material Models should not call Thermal Models.
 
 ### Documentation
 

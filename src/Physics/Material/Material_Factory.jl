@@ -63,7 +63,11 @@ Initializes the material model.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_material_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    block::Int64,
+)
     model_param = datamanager.get_properties(block, "Material Model")
     if !haskey(model_param, "Material Model")
         @error "Block " * string(block) * " has no material model defined."
@@ -79,7 +83,11 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
     material_models = map(r -> strip(r), material_models)
 
     for material_model in material_models
-        mod = Set_modules.create_module_specifics(material_model, module_list, "material_name")
+        mod = Set_modules.create_module_specifics(
+            material_model,
+            module_list,
+            "material_name",
+        )
         if isnothing(mod)
             @error "No material of name " * material_model * " exists."
         end
@@ -95,7 +103,12 @@ function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{I
         for iID in nodes
             if length(nlist_filtered_ids[iID]) != 0
                 for neighborID in nlist_filtered_ids[iID]
-                    bond_norm[iID][neighborID, :] .*= sign(dot((bond_geometry[iID][neighborID, :]), bond_norm[iID][neighborID, :]))
+                    bond_norm[iID][neighborID, :] .*= sign(
+                        dot(
+                            (bond_geometry[iID][neighborID, :]),
+                            bond_norm[iID][neighborID, :],
+                        ),
+                    )
                 end
             end
         end
@@ -118,7 +131,14 @@ Compute the forces.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
+function compute_forces(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    model_param::Dict,
+    time::Float64,
+    dt::Float64,
+    to::TimerOutput,
+)
     material_models = split(model_param["Material Model"], "+")
     material_models = map(r -> strip(r), material_models)
     if occursin("Correspondence", model_param["Material Model"])
@@ -173,7 +193,10 @@ Distribute the force densities.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+function distribute_force_densities(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+)
     nlist = datamanager.get_nlist()
     nlist_filtered_ids = datamanager.get_filtered_nlist()
     bond_force = datamanager.get_field("Bond Forces")
@@ -184,9 +207,26 @@ function distribute_force_densities(datamanager::Module, nodes::Union{SubArray,V
     if !isnothing(nlist_filtered_ids)
         bond_norm = datamanager.get_field("Bond Norm")
         displacements = datamanager.get_field("Displacements", "NP1")
-        force_densities = distribute_forces(nodes, nlist, nlist_filtered_ids, bond_force, volume, bond_damage, displacements, bond_norm, force_densities)
+        force_densities = distribute_forces(
+            nodes,
+            nlist,
+            nlist_filtered_ids,
+            bond_force,
+            volume,
+            bond_damage,
+            displacements,
+            bond_norm,
+            force_densities,
+        )
     else
-        force_densities = distribute_forces(nodes, nlist, bond_force, volume, bond_damage, force_densities)
+        force_densities = distribute_forces(
+            nodes,
+            nlist,
+            bond_force,
+            volume,
+            bond_damage,
+            force_densities,
+        )
     end
     return datamanager
 end
@@ -202,12 +242,16 @@ Calculate the von Mises stress.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+function calculate_von_mises_stress(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+)
     dof = datamanager.get_dof()
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
     for iID in nodes
-        von_Mises_stress[iID], spherical_stress_NP1, deviatoric_stress_NP1 = get_von_mises_stress(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
+        von_Mises_stress[iID], spherical_stress_NP1, deviatoric_stress_NP1 =
+            get_von_mises_stress(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
     end
     return datamanager
 end
@@ -224,7 +268,11 @@ Calculate the von Mises stress.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function calculate_strain(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, hooke_matrix::Matrix{Float64})
+function calculate_strain(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    hooke_matrix::Matrix{Float64},
+)
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     strain = datamanager.get_field("Strain", "NP1")
     for iID in nodes

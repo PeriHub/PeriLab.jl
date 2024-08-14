@@ -8,7 +8,11 @@ using ProgressBars
 using LinearAlgebra
 using Plots
 
-function closest_point_to_vector(start_point::Vector{Float64}, end_point::Vector{Float64}, point::Vector{Float64})
+function closest_point_to_vector(
+    start_point::Vector{Float64},
+    end_point::Vector{Float64},
+    point::Vector{Float64},
+)
     # Calculate the direction vector of the line segment
     dir = normalize(end_point - start_point)
 
@@ -20,14 +24,15 @@ function closest_point_to_vector(start_point::Vector{Float64}, end_point::Vector
     closest_point = start_point + (dir * distance_along_line)
 
     # Calculate the distance from the closest point to the point
-    distance_to_closest_point = sqrt((point[1] - closest_point[1])^2 + (point[2] - closest_point[2])^2)
+    distance_to_closest_point =
+        sqrt((point[1] - closest_point[1])^2 + (point[2] - closest_point[2])^2)
 
     return distance_along_line, distance_to_closest_point
 end
 
 function write_mesh(event_file, dx, dt, scale, width)
 
-    events = CSV.read(event_file, DataFrame; delim=",", comment="#")
+    events = CSV.read(event_file, DataFrame; delim = ",", comment = "#")
 
     time_event = events[:, 1]
     x_event = events[:, 2]
@@ -63,7 +68,14 @@ function write_mesh(event_file, dx, dt, scale, width)
     used_ids = []
     p = Plots.plot()
 
-    mesh_df = DataFrame(x=Float64[], y=Float64[], z=Float64[], k=Int64[], volume=Float64[], time=Float64[])
+    mesh_df = DataFrame(
+        x = Float64[],
+        y = Float64[],
+        z = Float64[],
+        k = Int64[],
+        volume = Float64[],
+        time = Float64[],
+    )
 
     iter = ProgressBar(eachindex(time_event))
     for i in iter
@@ -78,17 +90,30 @@ function write_mesh(event_file, dx, dt, scale, width)
             distance = norm([x, y] - [previous_x, previous_y])
             v = distance / (time - previous_time)
 
-            p = plot!(p, [previous_x, x], [previous_y, y], label="Plot", lc=:black, lw=1)
+            p = plot!(
+                p,
+                [previous_x, x],
+                [previous_y, y],
+                label = "Plot",
+                lc = :black,
+                lw = 1,
+            )
 
             for j in eachindex(grid_x)
                 px = grid_x[j]
                 py = grid_y[j]
                 if !(j in used_ids)
-                    distance_along_line, distance_to_closest_point = closest_point_to_vector([previous_x, previous_y], [x, y], [px, py])
-                    if distance_to_closest_point <= width / 2 && distance_along_line <= distance && distance_along_line >= 0
+                    distance_along_line, distance_to_closest_point =
+                        closest_point_to_vector([previous_x, previous_y], [x, y], [px, py])
+                    if distance_to_closest_point <= width / 2 &&
+                       distance_along_line <= distance &&
+                       distance_along_line >= 0
                         time_to_activation = distance_along_line / v
                         push!(used_ids, j)
-                        push!(mesh_df, [px, py, z, 1, volume, time_to_activation + previous_time])
+                        push!(
+                            mesh_df,
+                            [px, py, z, 1, volume, time_to_activation + previous_time],
+                        )
                         push!(x_peri, px)
                         push!(y_peri, py)
                     end
@@ -97,7 +122,16 @@ function write_mesh(event_file, dx, dt, scale, width)
         end
 
         if i == length(time_event) || z != z_event[i+1]
-            p = scatter!(p, x_peri, y_peri, title="Layer" * string(z), xlabel="X", ylabel="Y", ma=0.5, ms=1)
+            p = scatter!(
+                p,
+                x_peri,
+                y_peri,
+                title = "Layer" * string(z),
+                xlabel = "X",
+                ylabel = "Y",
+                ma = 0.5,
+                ms = 1,
+            )
             savefig(p, "Output/layer" * string(z) * ".svg")
             x_peri = []
             y_peri = []
@@ -116,7 +150,7 @@ function write_mesh(event_file, dx, dt, scale, width)
 
     txt_file = joinpath("Output", replace(event_file, ".inp" => ".txt"))
     write(txt_file, "header: x y z block_id volume Activation_Time\n")
-    CSV.write(txt_file, mesh_df; delim=' ', append=true)
+    CSV.write(txt_file, mesh_df; delim = ' ', append = true)
 end
 
 event_file = "L-Angle_v2_EventSeries.inp"

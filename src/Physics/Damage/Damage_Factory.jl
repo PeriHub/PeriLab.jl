@@ -67,7 +67,14 @@ Computes the damage model
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+function compute_damage(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    model_param::Dict,
+    block::Int64,
+    time::Float64,
+    dt::Float64,
+)
 
     mod = datamanager.get_model_module(model_param["Damage Model"])
     datamanager = mod.compute_damage(datamanager, nodes, model_param, block, time, dt)
@@ -94,15 +101,30 @@ Compute the pre calculation for the damage.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, model_param::Dict, synchronise_field, time::Float64, dt::Float64)
+function compute_damage_pre_calculation(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    block::Int64,
+    model_param::Dict,
+    synchronise_field,
+    time::Float64,
+    dt::Float64,
+)
     mod = datamanager.get_model_module(model_param["Damage Model"])
-    return mod.compute_damage_pre_calculation(datamanager, nodes, block, synchronise_field, time, dt)
+    return mod.compute_damage_pre_calculation(
+        datamanager,
+        nodes,
+        block,
+        synchronise_field,
+        time,
+        dt,
+    )
 end
 
 """
     damage_index(datamanager,::Union{SubArray, Vector{Int64})
 
-Function calculates the damage index related to the neighborhood volume for a set of corresponding nodes. 
+Function calculates the damage index related to the neighborhood volume for a set of corresponding nodes.
 The damage index is defined as damaged volume in relation the neighborhood volume.
 damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 
@@ -110,7 +132,11 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 - `datamanager::Data_manager`: all model data
 - `nodes::Union{SubArray, Vector{Int64}}`: corresponding nodes to this model
 """
-function damage_index(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, nlist_filtered_ids::SubArray)
+function damage_index(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    nlist_filtered_ids::SubArray,
+)
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
@@ -182,20 +208,28 @@ Initialize the critical values
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function init_interface_crit_values(datamanager::Module, damage_parameter::Dict, block_id::Int64)
+function init_interface_crit_values(
+    datamanager::Module,
+    damage_parameter::Dict,
+    block_id::Int64,
+)
     if !haskey(damage_parameter, "Interblock Damage")
         return datamanager
     end
     max_block_id = maximum(datamanager.get_block_list())
     inter_critical_value = datamanager.get_crit_values_matrix()
     if inter_critical_value == fill(-1, (1, 1, 1))
-        inter_critical_value = fill(Float64(damage_parameter["Critical Value"]), (max_block_id, max_block_id, max_block_id))
+        inter_critical_value = fill(
+            Float64(damage_parameter["Critical Value"]),
+            (max_block_id, max_block_id, max_block_id),
+        )
     end
-    for block_iId in 1:max_block_id
-        for block_jId in 1:max_block_id
+    for block_iId = 1:max_block_id
+        for block_jId = 1:max_block_id
             critical_value_name = "Interblock Critical Value $(block_iId)_$block_jId"
             if haskey(damage_parameter["Interblock Damage"], critical_value_name)
-                inter_critical_value[block_iId, block_jId, block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+                inter_critical_value[block_iId, block_jId, block_id] =
+                    damage_parameter["Interblock Damage"][critical_value_name]
             end
         end
     end
@@ -215,7 +249,11 @@ Initialize the anisotropic critical values
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function init_aniso_crit_values(datamanager::Module, damage_parameter::Dict, block_id::Int64)
+function init_aniso_crit_values(
+    datamanager::Module,
+    damage_parameter::Dict,
+    block_id::Int64,
+)
     aniso_crit::Dict{Int64,Any} = Dict()
 
     crit_0 = damage_parameter["Critical Value"]
@@ -238,9 +276,17 @@ function init_aniso_crit_values(datamanager::Module, damage_parameter::Dict, blo
     return datamanager
 end
 
-function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_damage_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    block::Int64,
+)
     model_param = datamanager.get_properties(block, "Damage Model")
-    mod = Set_modules.create_module_specifics(model_param["Damage Model"], module_list, "damage_name")
+    mod = Set_modules.create_module_specifics(
+        model_param["Damage Model"],
+        module_list,
+        "damage_name",
+    )
 
     if isnothing(mod)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."

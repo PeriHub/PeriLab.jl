@@ -12,7 +12,13 @@ PeriLab.Data_manager.initialize_data()
     @test isnothing(PeriLab.Solver.FEM.valid_models(Dict()))
     @test isnothing(PeriLab.Solver.FEM.valid_models(Dict("Additive Model" => "a")))
     @test isnothing(PeriLab.Solver.FEM.valid_models(Dict("Damage Model" => "a")))
-    @test PeriLab.Solver.FEM.valid_models(Dict("Damage Model" => "a", "Additive Model" => "a", "Material Model" => "a Correspondence"))
+    @test PeriLab.Solver.FEM.valid_models(
+        Dict(
+            "Damage Model" => "a",
+            "Additive Model" => "a",
+            "Material Model" => "a Correspondence",
+        ),
+    )
     @test isnothing(PeriLab.Solver.FEM.valid_models(Dict("Thermal Model" => "a")))
     @test PeriLab.Solver.FEM.valid_models(Dict("Material Model" => "a"))
 end
@@ -29,9 +35,11 @@ end
     test = PeriLab.Solver.FEM.init_FEM(Dict("FEM" => Dict()), test_data_manager)
     @test isnothing(test)
     test_data_manager.set_dof(1)
-    test = PeriLab.Solver.FEM.init_FEM(Dict("FEM" => Dict("Degree" => 1)), test_data_manager)
+    test =
+        PeriLab.Solver.FEM.init_FEM(Dict("FEM" => Dict("Degree" => 1)), test_data_manager)
     @test isnothing(test)
-    test = PeriLab.Solver.FEM.init_FEM(Dict("FEM" => Dict("Degree" => 4)), test_data_manager)
+    test =
+        PeriLab.Solver.FEM.init_FEM(Dict("FEM" => Dict("Degree" => 4)), test_data_manager)
     @test isnothing(test)
     dof = 2
     test_data_manager.set_dof(dof)
@@ -50,7 +58,8 @@ end
     coordinates[6, 1] = 2
     coordinates[6, 2] = 1
 
-    topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
+    topology =
+        test_data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
     topology[1, 1] = 1
     topology[1, 2] = 2
     topology[1, 3] = 3
@@ -62,9 +71,43 @@ end
     test_data_manager.block_list = [1, 2]
     test_data_manager.init_property()
 
-    params = Dict("FEM" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model"), "Physics" => Dict("Material Models" => Dict("Not FEM name" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3))))
+    params = Dict(
+        "FEM" => Dict(
+            "Degree" => 1,
+            "Element Type" => "Lagrange",
+            "Material Model" => "Elastic Model",
+        ),
+        "Physics" => Dict(
+            "Material Models" => Dict(
+                "Not FEM name" => Dict(
+                    "Material Model" => "Correspondence Elastic",
+                    "Symmetry" => "isotropic plane strain",
+                    "Young's Modulus" => 2.5e+3,
+                    "Poisson's Ratio" => 0.33,
+                    "Shear Modulus" => 2.0e3,
+                ),
+            ),
+        ),
+    )
     @test isnothing(PeriLab.Solver.FEM.init_FEM(params, test_data_manager))
-    params = Dict("FEM" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model"), "Physics" => Dict("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 2.5e+3, "Poisson's Ratio" => 0.33, "Shear Modulus" => 2.0e3))))
+    params = Dict(
+        "FEM" => Dict(
+            "Degree" => 1,
+            "Element Type" => "Lagrange",
+            "Material Model" => "Elastic Model",
+        ),
+        "Physics" => Dict(
+            "Material Models" => Dict(
+                "Elastic Model" => Dict(
+                    "Material Model" => "Correspondence Elastic",
+                    "Symmetry" => "isotropic plane strain",
+                    "Young's Modulus" => 2.5e+3,
+                    "Poisson's Ratio" => 0.33,
+                    "Shear Modulus" => 2.0e3,
+                ),
+            ),
+        ),
+    )
 
 
     test_data_manager = PeriLab.Solver.FEM.init_FEM(params, test_data_manager)
@@ -73,11 +116,23 @@ end
     @test "B Matrix" in test_data_manager.get_all_field_keys()
     N = test_data_manager.get_field("N Matrix")
     @test size(N) == (4, 8, 2)
-    @test N[1, 1:4, :] == [0.6220084679281462 0.0; 0.0 0.6220084679281462; 0.16666666666666663 0.0; 0.0 0.16666666666666663]
+    @test N[1, 1:4, :] == [
+        0.6220084679281462 0.0
+        0.0 0.6220084679281462
+        0.16666666666666663 0.0
+        0.0 0.16666666666666663
+    ]
     B = test_data_manager.get_field("B Matrix")
 
     @test size(B) == (2, 4, 8, 3)
-    @test B[1, 3, 1:6, 3] == [-0.7886751345948129, -0.21132486540518708, -0.21132486540518708, 0.21132486540518708, 0.7886751345948129, -0.7886751345948129]
+    @test B[1, 3, 1:6, 3] == [
+        -0.7886751345948129,
+        -0.21132486540518708,
+        -0.21132486540518708,
+        0.21132486540518708,
+        0.7886751345948129,
+        -0.7886751345948129,
+    ]
     @test "Element StrainN" in test_data_manager.get_all_field_keys()
     @test "Element StressN" in test_data_manager.get_all_field_keys()
     @test "Element StrainNP1" in test_data_manager.get_all_field_keys()
@@ -88,7 +143,17 @@ end
     @test "Lumped Mass Matrix" in test_data_manager.get_all_field_keys()
     lumped_mass = test_data_manager.get_field("Lumped Mass Matrix")
 
-    @test isapprox(lumped_mass[:], [0.49999999999999994, 0.9999999999999998, 0.49999999999999994, 0.9999999999999998, 0.4999999999999999, 0.49999999999999994])
+    @test isapprox(
+        lumped_mass[:],
+        [
+            0.49999999999999994,
+            0.9999999999999998,
+            0.49999999999999994,
+            0.9999999999999998,
+            0.4999999999999999,
+            0.49999999999999994,
+        ],
+    )
 
     # only in tests for resize or redefinition reasons
     test_data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
@@ -120,7 +185,8 @@ end
     coordinates[6, 1] = 2
     coordinates[6, 2] = 1
 
-    topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
+    topology =
+        test_data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
     topology[1, 1] = 1
     topology[1, 2] = 2
     topology[1, 3] = 3
@@ -132,17 +198,40 @@ end
     test_data_manager.block_list = [1, 2]
     test_data_manager.init_property()
 
-    params = Dict("FEM" => Dict("Degree" => 1, "Element Type" => "Lagrange", "Material Model" => "Elastic Model"), "Physics" => Dict("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic", "Symmetry" => "isotropic plane strain", "Young's Modulus" => 1.5, "Poisson's Ratio" => 0.33, "Shear Modulus" => 0.5639))))
+    params = Dict(
+        "FEM" => Dict(
+            "Degree" => 1,
+            "Element Type" => "Lagrange",
+            "Material Model" => "Elastic Model",
+        ),
+        "Physics" => Dict(
+            "Material Models" => Dict(
+                "Elastic Model" => Dict(
+                    "Material Model" => "Correspondence Elastic",
+                    "Symmetry" => "isotropic plane strain",
+                    "Young's Modulus" => 1.5,
+                    "Poisson's Ratio" => 0.33,
+                    "Shear Modulus" => 0.5639,
+                ),
+            ),
+        ),
+    )
 
     test_data_manager = PeriLab.Solver.FEM.init_FEM(params, test_data_manager)
     elements = Vector{Int64}([1, 2])
-    test_data_manager = PeriLab.Solver.FEM.eval(test_data_manager, elements, test_data_manager.get_properties(1, "FEM"), 0.0, 1.0e-6)
+    test_data_manager = PeriLab.Solver.FEM.eval(
+        test_data_manager,
+        elements,
+        test_data_manager.get_properties(1, "FEM"),
+        0.0,
+        1.0e-6,
+    )
 
     stress = test_data_manager.get_field("Element Stress", "NP1")
     strain = test_data_manager.get_field("Element Strain", "NP1")
-    for iEl in 1:2
-        for i_int in 1:4
-            for i in 1:3
+    for iEl = 1:2
+        for i_int = 1:4
+            for i = 1:3
                 @test stress[iEl, i_int, i] == 0
                 @test strain[iEl, i_int, i] == 0
             end
@@ -162,12 +251,18 @@ end
     displacements[5, 2] = 0.5
     displacements[6, 1] = 1
     displacements[6, 2] = 0.5
-    test_data_manager = PeriLab.Solver.FEM.eval(test_data_manager, elements, test_data_manager.get_properties(1, "FEM"), 0.0, 1.0e-6)
+    test_data_manager = PeriLab.Solver.FEM.eval(
+        test_data_manager,
+        elements,
+        test_data_manager.get_properties(1, "FEM"),
+        0.0,
+        1.0e-6,
+    )
     stress = test_data_manager.get_field("Element Stress", "NP1")
     strain = test_data_manager.get_field("Element Strain", "NP1")
 
-    for iEl in 1:2
-        for i_int in 1:4
+    for iEl = 1:2
+        for i_int = 1:4
             @test isapprox(strain[iEl, i_int, 1], 1)
             @test isapprox(strain[iEl, i_int, 2] + 1, 1)
             @test isapprox(strain[iEl, i_int, 3] + 1, 1)

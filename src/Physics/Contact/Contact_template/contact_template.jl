@@ -24,7 +24,7 @@ println(flow_name())
 ```
 """
 function contact_model_name()
-  return "Contact Template"
+    return "Contact Template"
 end
 
 """
@@ -41,9 +41,13 @@ Inits the contact model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_contact_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, contact_parameter::Dict)
+function init_contact_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    contact_parameter::Dict,
+)
 
-  return datamanager
+    return datamanager
 end
 
 """
@@ -63,13 +67,19 @@ Example:
 ```julia
 ```
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, contact_parameter::Dict, time::Float64, dt::Float64)
-  @info "Please write a contact model name in thermal_name()."
-  @info "You can call your routine within the yaml file."
-  @info "Fill the compute_thermal_model(datamanager, nodes, contact_parameter, time, dt) function."
-  @info "The datamanager and contact_parameter holds all you need to solve your problem on contact flow level."
-  @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-  return datamanager
+function compute_forces(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    contact_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+)
+    @info "Please write a contact model name in thermal_name()."
+    @info "You can call your routine within the yaml file."
+    @info "Fill the compute_thermal_model(datamanager, nodes, contact_parameter, time, dt) function."
+    @info "The datamanager and contact_parameter holds all you need to solve your problem on contact flow level."
+    @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+    return datamanager
 end
 
 end

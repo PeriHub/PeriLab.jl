@@ -67,15 +67,17 @@ Prints a banner displaying information about the PeriLab application.
 This function prints a banner containing details about the PeriLab application, including its name, version, copyright, contact information, and license. It provides a visual introduction to the application.
 """
 function print_banner()
-    println("""\e[]
-    \e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: $PERILAB_VERSION
-    \e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |  Copyright:
-    \e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Dr.-Ing. Christian Willberg (https://orcid.org/0000-0003-2433-9183)
-    \e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |  M.Sc. Jan-Timo Hesse (https://orcid.org/0000-0002-3006-1520)
-    \e[1;36m8888888P"\e[0m \e[1;36md8P  Y8b\e[0m \e[1;36m888P"   888 888          \e[1;36m"88b\e[0m \e[1;36m888 "88b\e[0m  |  Contact: christian.willberg@h2.de, jan-timo.hesse@dlr.de
-    \e[1;36m888\e[0m       \e[1;36m88888888\e[0m \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m.d888888\e[0m \e[1;36m888  888\e[0m  |  License: BSD-3-Clause
-    \e[1;36m888\e[0m       \e[1;36mY8b.\e[0m     \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m888  888\e[0m \e[1;36m888 d88P\e[0m  |  DOI: 10.1016/j.softx.2024.101700
-    \e[1;36m888\e[0m        \e[1;36m"Y8888\e[0m  \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m88888888\e[0m \e[1;36m"Y888888\e[0m \e[1;36m88888P"\e[0m   |  GitHub: https://github.com/PeriHub/PeriLab.jl\n""")
+    println(
+        """\e[]
+\e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: $PERILAB_VERSION
+\e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |  Copyright:
+\e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Dr.-Ing. Christian Willberg (https://orcid.org/0000-0003-2433-9183)
+\e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |  M.Sc. Jan-Timo Hesse (https://orcid.org/0000-0002-3006-1520)
+\e[1;36m8888888P"\e[0m \e[1;36md8P  Y8b\e[0m \e[1;36m888P"   888 888          \e[1;36m"88b\e[0m \e[1;36m888 "88b\e[0m  |  Contact: christian.willberg@h2.de, jan-timo.hesse@dlr.de
+\e[1;36m888\e[0m       \e[1;36m88888888\e[0m \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m.d888888\e[0m \e[1;36m888  888\e[0m  |  License: BSD-3-Clause
+\e[1;36m888\e[0m       \e[1;36mY8b.\e[0m     \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m888  888\e[0m \e[1;36m888 d88P\e[0m  |  DOI: 10.1016/j.softx.2024.101700
+\e[1;36m888\e[0m        \e[1;36m"Y8888\e[0m  \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m88888888\e[0m \e[1;36m"Y888888\e[0m \e[1;36m88888P"\e[0m   |  GitHub: https://github.com/PeriHub/PeriLab.jl\n""",
+    )
 end
 
 """
@@ -154,7 +156,15 @@ function main()::Cint
         @debug "  $arg  =>  $val"
     end
     MPI.Init()
-    main(parsed_args["filename"]; output_dir=parsed_args["output_dir"], dry_run=parsed_args["dry_run"], verbose=parsed_args["verbose"], debug=parsed_args["debug"], silent=parsed_args["silent"], reload=parsed_args["reload"])
+    main(
+        parsed_args["filename"];
+        output_dir = parsed_args["output_dir"],
+        dry_run = parsed_args["dry_run"],
+        verbose = parsed_args["verbose"],
+        debug = parsed_args["debug"],
+        silent = parsed_args["silent"],
+        reload = parsed_args["reload"],
+    )
     return 0
 end
 
@@ -188,7 +198,15 @@ This function serves as the entry point for the PeriLab application. It calls th
 - `silent::Bool=false`: Whether to run in silent mode.
 - `reload::Bool=false`: Whether to reload the input file.
 """
-function main(filename::String; output_dir::String="", dry_run::Bool=false, verbose::Bool=false, debug::Bool=false, silent::Bool=false, reload::Bool=false)
+function main(
+    filename::String;
+    output_dir::String = "",
+    dry_run::Bool = false,
+    verbose::Bool = false,
+    debug::Bool = false,
+    silent::Bool = false,
+    reload::Bool = false,
+)
 
     @timeit to "PeriLab" begin
         if !MPI.Initialized()
@@ -215,7 +233,8 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
                 @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n DOI: 10.1016/j.softx.2024.101700\n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
                 @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
                 try
-                    dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))
+                    dirty, git_info =
+                        Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))
                     if dirty
                         @warn git_info
                     else
@@ -251,19 +270,46 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
             else
                 @info "PeriLab started in the reload mode"
             end
-            @timeit to "IO.initialize_data" datamanager, params = IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
+            @timeit to "IO.initialize_data" datamanager, params =
+                IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
             @info "Init solver"
-            @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options = Solver.init(params, datamanager, to)
-            IO.show_block_summary(solver_options, params, Logging_module.get_log_file(), silent, comm, datamanager)
+            @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options =
+                Solver.init(params, datamanager, to)
+            IO.show_block_summary(
+                solver_options,
+                params,
+                Logging_module.get_log_file(),
+                silent,
+                comm,
+                datamanager,
+            )
             IO.show_mpi_summary(Logging_module.get_log_file(), silent, comm, datamanager)
             @debug "Init write results"
-            @timeit to "IO.init_write_results" result_files, outputs = IO.init_write_results(params, output_dir, filedirectory, datamanager, solver_options["nsteps"], PERILAB_VERSION)
+            @timeit to "IO.init_write_results" result_files, outputs =
+                IO.init_write_results(
+                    params,
+                    output_dir,
+                    filedirectory,
+                    datamanager,
+                    solver_options["nsteps"],
+                    PERILAB_VERSION,
+                )
             Logging_module.set_result_files(result_files)
             if dry_run
                 nsteps = solver_options["nsteps"]
                 solver_options["nsteps"] = 10
                 elapsed_time = @elapsed begin
-                    @timeit to "Solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+                    @timeit to "Solver" result_files = Solver.solver(
+                        solver_options,
+                        block_nodes,
+                        bcs,
+                        datamanager,
+                        outputs,
+                        result_files,
+                        IO.write_results,
+                        to,
+                        silent,
+                    )
                 end
 
                 @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
@@ -271,7 +317,17 @@ function main(filename::String; output_dir::String="", dry_run::Bool=false, verb
                 @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
 
             else
-                @timeit to "Solver.solver" result_files = Solver.solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, IO.write_results, to, silent)
+                @timeit to "Solver.solver" result_files = Solver.solver(
+                    solver_options,
+                    block_nodes,
+                    bcs,
+                    datamanager,
+                    outputs,
+                    result_files,
+                    IO.write_results,
+                    to,
+                    silent,
+                )
             end
 
         catch e

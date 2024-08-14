@@ -26,7 +26,7 @@ function get_computes_names(params::Dict)
     return String[]
 end
 
-""" 
+"""
     get_output_variables(output::String, variables::Vector)
 
 Get the output variable.
@@ -66,9 +66,12 @@ function get_computes(params::Dict, variables::Vector{String})
     for compute in keys(params["Compute Class Parameters"])
         if haskey(params["Compute Class Parameters"][compute], "Variable")
             computes[compute] = params["Compute Class Parameters"][compute]
-            computes[compute]["Variable"] = get_output_variables(computes[compute]["Variable"], variables)
+            computes[compute]["Variable"] =
+                get_output_variables(computes[compute]["Variable"], variables)
         else
-            @warn "No output variables are defined for " * output * ". Global variable is not defined"
+            @warn "No output variables are defined for " *
+                  output *
+                  ". Global variable is not defined"
         end
     end
     return computes

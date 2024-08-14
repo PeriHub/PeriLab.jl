@@ -47,7 +47,14 @@ Example:
 ```julia
 ```
 """
-function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64, time::Float64, dt::Float64)
+function compute_damage(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    damage_parameter::Dict,
+    block::Int64,
+    time::Float64,
+    dt::Float64,
+)
 
     nlist = datamanager.get_nlist()
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
@@ -69,12 +76,20 @@ function compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}
     end
     for iID in nodes
         for jID in nneighbors[iID]
-            stretch = (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) / undeformed_bond_length[iID][jID]
+            stretch =
+                (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) /
+                undeformed_bond_length[iID][jID]
 
             if critical_field
                 crit_stretch = cricital_stretch[iID]
             else
-                crit_stretch = inter_block_damage ? inter_critical_stretch[block_ids[iID], block_ids[nlist[iID][jID]], block] : cricital_stretch
+                crit_stretch =
+                    inter_block_damage ?
+                    inter_critical_stretch[
+                        block_ids[iID],
+                        block_ids[nlist[iID][jID]],
+                        block,
+                    ] : cricital_stretch
             end
 
 
@@ -105,11 +120,23 @@ Compute the pre calculation for the damage.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+function compute_damage_pre_calculation(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    block::Int64,
+    synchronise_field,
+    time::Float64,
+    dt::Float64,
+)
     return datamanager
 end
 
-function init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
+function init_damage_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    damage_parameter::Dict,
+    block::Int64,
+)
     return datamanager
 end
 end

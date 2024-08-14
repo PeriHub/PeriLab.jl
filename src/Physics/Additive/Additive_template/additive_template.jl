@@ -44,7 +44,13 @@ Example:
 ```julia
   ```
 """
-function compute_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, time::Float64, dt::Float64)
+function compute_additive_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    additive_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+)
     @info "Please write a additive name in additive_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_additive_model(datamanager, nodes, additive_parameter, time, dt) function."
@@ -68,7 +74,12 @@ Inits the additive model. This template has to be copied, the file renamed and e
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, block::Int64)
+function init_additive_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    additive_parameter::Dict,
+    block::Int64,
+)
     @info "Please write a additive name in additive_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_additive_model(datamanager, nodes, additive_parameter, time, dt) function."

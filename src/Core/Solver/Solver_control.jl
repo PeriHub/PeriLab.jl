@@ -8,7 +8,8 @@ using Reexport
 
 include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
-@reexport using .Parameter_Handling: get_density, get_horizon, get_solver_name, get_solver_options, get_fem_block
+@reexport using .Parameter_Handling:
+    get_density, get_horizon, get_solver_name, get_solver_options, get_fem_block
 @reexport using .Helpers: find_indices
 include("../../Physics/Model_Factory.jl")
 include("../../Physics/Damage/Damage_Factory.jl")
@@ -46,7 +47,8 @@ Initialize the solver
 function init(params::Dict, datamanager::Module, to::TimerOutput)
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
-    block_nodes_with_neighbors = get_block_nodes(datamanager.get_field("Block_Id"), nnodes + num_responder)
+    block_nodes_with_neighbors =
+        get_block_nodes(datamanager.get_field("Block_Id"), nnodes + num_responder)
     block_nodes = get_block_nodes(datamanager.get_field("Block_Id"), nnodes)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
@@ -59,19 +61,34 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     solver_options = get_solver_options(params)
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     for iblock in eachindex(block_nodes)
-        datamanager = Influence_function.init_influence_function(block_nodes[iblock], datamanager, params["Discretization"])
+        datamanager = Influence_function.init_influence_function(
+            block_nodes[iblock],
+            datamanager,
+            params["Discretization"],
+        )
     end
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
     @debug "Read properties"
     Physics.read_properties(params, datamanager, solver_options["Material Models"])
     @debug "Init models"
-    @timeit to "init_models" datamanager = Physics.init_models(params, datamanager, block_nodes, solver_options, to)
+    @timeit to "init_models" datamanager =
+        Physics.init_models(params, datamanager, block_nodes, solver_options, to)
     @debug "Init Boundary Conditions"
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
     solver_options["Solver"] = get_solver_name(params)
     if get_solver_name(params) == "Verlet"
         @debug "Init " * get_solver_name(params)
-        @timeit to "init_solver" solver_options["Initial Time"], solver_options["dt"], solver_options["nsteps"], solver_options["Numerical Damping"], solver_options["Maximum Damage"] = Verlet.init_solver(params, datamanager, block_nodes, solver_options["Material Models"], solver_options["Thermal Models"])
+        @timeit to "init_solver" solver_options["Initial Time"],
+        solver_options["dt"],
+        solver_options["nsteps"],
+        solver_options["Numerical Damping"],
+        solver_options["Maximum Damage"] = Verlet.init_solver(
+            params,
+            datamanager,
+            block_nodes,
+            solver_options["Material Models"],
+            solver_options["Thermal Models"],
+        )
     else
         @error get_solver_name(params) * " is no valid solver."
         return nothing
@@ -184,10 +201,31 @@ Runs the solver.
 # Returns
 - `result_files`: A vector of updated result files
 """
-function solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Dict}, write_results, to, silent::Bool)
+function solver(
+    solver_options::Dict{String,Any},
+    block_nodes::Dict{Int64,Vector{Int64}},
+    bcs::Dict{Any,Any},
+    datamanager::Module,
+    outputs::Dict{Int64,Dict{}},
+    result_files::Vector{Dict},
+    write_results,
+    to,
+    silent::Bool,
+)
 
     if solver_options["Solver"] == "Verlet"
-        return Verlet.run_solver(solver_options, block_nodes, bcs, datamanager, outputs, result_files, synchronise_field, write_results, to, silent)
+        return Verlet.run_solver(
+            solver_options,
+            block_nodes,
+            bcs,
+            datamanager,
+            outputs,
+            result_files,
+            synchronise_field,
+            write_results,
+            to,
+            silent,
+        )
     end
 
 end
@@ -207,7 +245,14 @@ Synchronises field.
 # Returns
 - `nothing`
 """
-function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
+function synchronise_field(
+    comm,
+    synch_fields::Dict,
+    overlap_map,
+    get_field,
+    synch_field::String,
+    direction::String,
+)
 
     if !haskey(synch_fields, synch_field)
         @warn "Field $synch_field does not exist in synch_field dictionary"
@@ -216,7 +261,12 @@ function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, syn
     if direction == "download_from_cores"
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field)
-            return synch_responder_to_controller(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+            return synch_responder_to_controller(
+                comm,
+                overlap_map,
+                vector,
+                synch_fields[synch_field]["dof"],
+            )
         end
         return nothing
     end
@@ -224,9 +274,19 @@ function synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, syn
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field)
             if occursin("Bond", synch_field)
-                return synch_controller_bonds_to_responder_flattened(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+                return synch_controller_bonds_to_responder_flattened(
+                    comm,
+                    overlap_map,
+                    vector,
+                    synch_fields[synch_field]["dof"],
+                )
             else
-                return synch_controller_to_responder(comm, overlap_map, vector, synch_fields[synch_field]["dof"])
+                return synch_controller_to_responder(
+                    comm,
+                    overlap_map,
+                    vector,
+                    synch_fields[synch_field]["dof"],
+                )
             end
         end
         return nothing

@@ -38,40 +38,53 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
-  # global dof
-  # global rotation
-  # global angles
-  if !haskey(material_parameter, "Symmetry")
-    @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
-    return nothing
-  end
-  dof = datamanager.get_dof()
-  datamanager.create_node_field("Strain", Float64, "Matrix", dof)
-  datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
-  datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
-  datamanager.create_node_field("von Mises Stress", Float64, 1)
-  datamanager.create_constant_node_field("Angles", Float64, dof)
-  rotation::Bool = datamanager.get_rotation()
-  material_models = split(material_parameter["Material Model"], "+")
-  material_models = map(r -> strip(r), material_models)
-  #occursin("Correspondence", material_name)
-  for material_model in material_models
-
-    mod = Set_modules.create_module_specifics(material_model, module_list, "correspondence_name")
-    if isnothing(mod)
-      @error "No correspondence material of name " * material_model * " exists."
-      return nothing
+function init_material_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    material_parameter::Dict,
+)
+    # global dof
+    # global rotation
+    # global angles
+    if !haskey(material_parameter, "Symmetry")
+        @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
+        return nothing
     end
-    datamanager.set_model_module(material_model, mod)
-    datamanager = mod.init_material_model(datamanager, nodes, material_parameter)
+    dof = datamanager.get_dof()
+    datamanager.create_node_field("Strain", Float64, "Matrix", dof)
+    datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
+    datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
+    datamanager.create_node_field("von Mises Stress", Float64, 1)
+    datamanager.create_constant_node_field("Angles", Float64, dof)
+    rotation::Bool = datamanager.get_rotation()
+    material_models = split(material_parameter["Material Model"], "+")
+    material_models = map(r -> strip(r), material_models)
+    #occursin("Correspondence", material_name)
+    for material_model in material_models
 
-  end
-  if haskey(material_parameter, "Bond Associated") && material_parameter["Bond Associated"]
-    return Bond_Associated_Correspondence.init_material_model(datamanager, nodes, material_parameter)
-  end
-  material_parameter["Bond Associated"] = false
-  return datamanager
+        mod = Set_modules.create_module_specifics(
+            material_model,
+            module_list,
+            "correspondence_name",
+        )
+        if isnothing(mod)
+            @error "No correspondence material of name " * material_model * " exists."
+            return nothing
+        end
+        datamanager.set_model_module(material_model, mod)
+        datamanager = mod.init_material_model(datamanager, nodes, material_parameter)
+
+    end
+    if haskey(material_parameter, "Bond Associated") &&
+       material_parameter["Bond Associated"]
+        return Bond_Associated_Correspondence.init_material_model(
+            datamanager,
+            nodes,
+            material_parameter,
+        )
+    end
+    material_parameter["Bond Associated"] = false
+    return datamanager
 end
 
 """
@@ -91,7 +104,7 @@ println(material_name())
 ```
 """
 function material_name()
-  return "Correspondence"
+    return "Correspondence"
 end
 
 """
@@ -111,51 +124,84 @@ Example:
 ```julia
 ```
 """
-function compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
+function compute_forces(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    material_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+    to::TimerOutput,
+)
 
-  if material_parameter["Bond Associated"]
-    return Bond_Associated_Correspondence.compute_forces(datamanager, nodes, material_parameter, time, dt, to)
-  end
-
-  rotation::Bool = datamanager.get_rotation()
-  dof = datamanager.get_dof()
-  deformation_gradient = datamanager.get_field("Deformation Gradient")
-  bond_force = datamanager.get_field("Bond Forces")
-  bond_damage = datamanager.get_bond_damage("NP1")
-  rotation_tensor = datamanager.get_field("Rotation", "NP1")
-  undeformed_bond = datamanager.get_field("Bond Geometry")
-  inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
-
-  strain_N = datamanager.get_field("Strain", "N")
-  strain_NP1 = datamanager.get_field("Strain", "NP1")
-  stress_N = datamanager.get_field("Cauchy Stress", "N")
-  stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
-  strain_increment = datamanager.get_field("Strain Increment")
-  strain_NP1 = compute_strain(nodes, deformation_gradient, strain_NP1)
-  strain_increment[nodes, :, :] = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
-
-  if rotation
-    rotation_tensor = datamanager.get_field("Rotation Tensor")
-    stress_N = rotate(nodes, stress_N, rotation_tensor, false)
-    strain_increment = rotate(nodes, strain_increment, rotation_tensor, false)
-  end
-
-  material_models = split(material_parameter["Material Model"], "+")
-  material_models = map(r -> strip(r), material_models)
-  for material_model in material_models
-    mod = datamanager.get_model_module(material_model)
-
-    for iID in nodes
-      stress_NP1, datamanager = mod.compute_stresses(datamanager, iID, dof, material_parameter, time, dt, strain_increment, stress_N, stress_NP1)
+    if material_parameter["Bond Associated"]
+        return Bond_Associated_Correspondence.compute_forces(
+            datamanager,
+            nodes,
+            material_parameter,
+            time,
+            dt,
+            to,
+        )
     end
-  end
-  if rotation
-    stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
-  end
-  bond_force = calculate_bond_force(nodes, deformation_gradient, undeformed_bond, bond_damage, inverse_shape_tensor, stress_NP1, bond_force)
-  # TODO general interface, because it might be a flexbile Set_modules interface in future
-  datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
-  return datamanager
+
+    rotation::Bool = datamanager.get_rotation()
+    dof = datamanager.get_dof()
+    deformation_gradient = datamanager.get_field("Deformation Gradient")
+    bond_force = datamanager.get_field("Bond Forces")
+    bond_damage = datamanager.get_bond_damage("NP1")
+    rotation_tensor = datamanager.get_field("Rotation", "NP1")
+    undeformed_bond = datamanager.get_field("Bond Geometry")
+    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
+
+    strain_N = datamanager.get_field("Strain", "N")
+    strain_NP1 = datamanager.get_field("Strain", "NP1")
+    stress_N = datamanager.get_field("Cauchy Stress", "N")
+    stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
+    strain_increment = datamanager.get_field("Strain Increment")
+    strain_NP1 = compute_strain(nodes, deformation_gradient, strain_NP1)
+    strain_increment[nodes, :, :] = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
+
+    if rotation
+        rotation_tensor = datamanager.get_field("Rotation Tensor")
+        stress_N = rotate(nodes, stress_N, rotation_tensor, false)
+        strain_increment = rotate(nodes, strain_increment, rotation_tensor, false)
+    end
+
+    material_models = split(material_parameter["Material Model"], "+")
+    material_models = map(r -> strip(r), material_models)
+    for material_model in material_models
+        mod = datamanager.get_model_module(material_model)
+
+        for iID in nodes
+            stress_NP1, datamanager = mod.compute_stresses(
+                datamanager,
+                iID,
+                dof,
+                material_parameter,
+                time,
+                dt,
+                strain_increment,
+                stress_N,
+                stress_NP1,
+            )
+        end
+    end
+    if rotation
+        stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
+    end
+    bond_force = calculate_bond_force(
+        nodes,
+        deformation_gradient,
+        undeformed_bond,
+        bond_damage,
+        inverse_shape_tensor,
+        stress_NP1,
+        bond_force,
+    )
+    # TODO general interface, because it might be a flexbile Set_modules interface in future
+    datamanager =
+        zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
+    return datamanager
 end
 
 """
@@ -172,17 +218,30 @@ Global - J. Wan et al., "Improved method for zero-energy mode suppression in per
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
-  if !haskey(material_parameter, "Zero Energy Control")
-    if time == 0
-      @warn "No zero energy control activated for corresponcence."
+function zero_energy_mode_compensation(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    material_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+)
+    if !haskey(material_parameter, "Zero Energy Control")
+        if time == 0
+            @warn "No zero energy control activated for corresponcence."
+        end
+        return datamanager
+    end
+    if material_parameter["Zero Energy Control"] ==
+       Global_zero_energy_control.control_name()
+        datamanager = Global_zero_energy_control.compute_control(
+            datamanager,
+            nodes,
+            material_parameter,
+            time,
+            dt,
+        )
     end
     return datamanager
-  end
-  if material_parameter["Zero Energy Control"] == Global_zero_energy_control.control_name()
-    datamanager = Global_zero_energy_control.compute_control(datamanager, nodes, material_parameter, time, dt)
-  end
-  return datamanager
 end
 
 """
@@ -201,14 +260,28 @@ Calculate bond forces for specified nodes based on deformation gradients.
 # Returns
 - `bond_force::SubArray`: Bond force.
 """
-function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stress_NP1::SubArray, bond_force::SubArray)
-  for iID in nodes
+function calculate_bond_force(
+    nodes::Union{SubArray,Vector{Int64}},
+    deformation_gradient::SubArray,
+    undeformed_bond::SubArray,
+    bond_damage::SubArray,
+    inverse_shape_tensor::SubArray,
+    stress_NP1::SubArray,
+    bond_force::SubArray,
+)
+    for iID in nodes
 
-    # taken from corresponcence.cxx -> computeForcesAndStresses
-    bond_force[iID][:, :] = bond_damage[iID] .* undeformed_bond[iID] * compute_Piola_Kirchhoff_stress(stress_NP1[iID, :, :], deformation_gradient[iID, :, :]) * inverse_shape_tensor[iID, :, :]
+        # taken from corresponcence.cxx -> computeForcesAndStresses
+        bond_force[iID][:, :] =
+            bond_damage[iID] .* undeformed_bond[iID] *
+            compute_Piola_Kirchhoff_stress(
+                stress_NP1[iID, :, :],
+                deformation_gradient[iID, :, :],
+            ) *
+            inverse_shape_tensor[iID, :, :]
 
-  end
-  return bond_force
+    end
+    return bond_force
 end
 
 end
