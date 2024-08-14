@@ -23,9 +23,9 @@ using .Damage
     nlist[3] = [1]
     nlist[4] = [1, 3]
     Damage.init_damage_model_fields(test_data_manager, Dict("Blocks" => Dict("block_1" => Dict("Damage Model" => "a"), "block_2" => Dict("Damage Model" => "a"), "block_3" => Dict("Damage Model" => "a")), "Physics" => Dict("Damage Models" => Dict("a" => Dict("value" => "b")))))
-    fieldkeys = test_data_manager.get_all_field_keys()
-    @test "DamageN" in fieldkeys
-    @test "DamageNP1" in fieldkeys
+    field_keys = test_data_manager.get_all_field_keys()
+    @test "DamageN" in field_keys
+    @test "DamageNP1" in field_keys
 end
 
 @testset "damage_index" begin

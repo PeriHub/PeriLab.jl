@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-    calculate_nodelist(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, node_set::Vector{Int64})
+    calculate_nodelist(datamanager::Module, field_key::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, node_set::Vector{Int64})
 
 Calculate the global value of a field for a given set of nodes.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `fieldKey::String`: Field key.
+- `field_key::String`: Field key.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `calculation_type::String`: Calculation type.
 - `node_set::Vector{Int64}`: Node set.
@@ -17,18 +17,18 @@ Calculate the global value of a field for a given set of nodes.
 - `value::Vector`: Global value.
 - `nnodes::Int64`: Number of nodes.
 """
-function calculate_nodelist(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, node_set::Vector{Int64})
+function calculate_nodelist(datamanager::Module, field_key::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, node_set::Vector{Int64})
     # get block_nodes
     # check NP1
-    if datamanager.has_key(fieldKey * "NP1")
-        fieldKey *= "NP1"
+    if datamanager.has_key(field_key * "NP1")
+        field_key *= "NP1"
     end
-    if !datamanager.has_key(fieldKey)
-        @error "Field $fieldKey does not exists for compute sum."
+    if !datamanager.has_key(field_key)
+        @error "Field $field_key does not exists for compute sum."
         return nothing
     end
-    field = datamanager.get_field(fieldKey)
-    field_type = datamanager.get_field_type(fieldKey)
+    field = datamanager.get_field(field_key)
+    field_type = datamanager.get_field_type(field_key)
     node_list = datamanager.get_local_nodes(node_set)
 
     if calculation_type == "Sum"
@@ -63,13 +63,13 @@ function calculate_nodelist(datamanager::Module, fieldKey::String, dof::Union{In
 end
 
 """
-    calculate_block(datamanager::Module, fieldKey::String, dof::Int64, calculation_type::String, block::Int64)
+    calculate_block(datamanager::Module, field_key::String, dof::Int64, calculation_type::String, block::Int64)
 
 Calculate the global value of a field for a given block.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `fieldKey::String`: Field key.
+- `field_key::String`: Field key.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `calculation_type::String`: Calculation type.
 - `block::Int64`: Block number.
@@ -77,18 +77,18 @@ Calculate the global value of a field for a given block.
 - `value::Float64`: Global value.
 - `nnodes::Int64`: Number of nodes.
 """
-function calculate_block(datamanager::Module, fieldKey::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, block::Int64)
+function calculate_block(datamanager::Module, field_key::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, block::Int64)
     # get block_nodes
     # check NP1
-    if datamanager.has_key(fieldKey * "NP1")
-        fieldKey *= "NP1"
+    if datamanager.has_key(field_key * "NP1")
+        field_key *= "NP1"
     end
-    if !datamanager.has_key(fieldKey)
-        @error "Field $fieldKey does not exists for compute sum."
+    if !datamanager.has_key(field_key)
+        @error "Field $field_key does not exists for compute sum."
         return nothing
     end
-    field = datamanager.get_field(fieldKey)
-    field_type = datamanager.get_field_type(fieldKey)
+    field = datamanager.get_field(field_key)
+    field_type = datamanager.get_field_type(field_key)
     block_ids = datamanager.get_field("Block_Id")
     nnodes = datamanager.get_nnodes()
     block_nodes = findall(item -> item == block, block_ids[1:nnodes])

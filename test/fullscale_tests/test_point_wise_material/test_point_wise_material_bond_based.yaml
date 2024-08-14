@@ -52,7 +52,7 @@ PeriLab:
       Safety Factor: 1.0
   Outputs:
     Output1:
-      Output Filename: "test_point_wise_materialbond_based"
+      Output Filename: "test_point_wise_material_bond_based"
       Output Frequency: 1
       Output Variables:
         Displacements: True

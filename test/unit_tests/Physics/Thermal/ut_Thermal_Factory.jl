@@ -20,12 +20,12 @@ using .Thermal
     nn[4] = 2
 
     Thermal.init_thermal_model_fields(test_data_manager)
-    fieldkeys = test_data_manager.get_all_field_keys()
-    @test "TemperatureN" in fieldkeys
-    @test "TemperatureNP1" in fieldkeys
-    @test "Heat FlowN" in fieldkeys
-    @test "Heat FlowNP1" in fieldkeys
-    @test "Bond Heat Flow" in fieldkeys
+    field_keys = test_data_manager.get_all_field_keys()
+    @test "TemperatureN" in field_keys
+    @test "TemperatureNP1" in field_keys
+    @test "Heat FlowN" in field_keys
+    @test "Heat FlowNP1" in field_keys
+    @test "Bond Heat Flow" in field_keys
 
 end
 @testset "init_thermal_model" begin
