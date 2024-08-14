@@ -78,50 +78,11 @@ Calculate the global value of a field for a given block.
 - `nnodes::Int64`: Number of nodes.
 """
 function calculate_block(datamanager::Module, field_key::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, block::Int64)
-    # get block_nodes
-    # check NP1
-    if datamanager.has_key(field_key * "NP1")
-        field_key *= "NP1"
-    end
-    if !datamanager.has_key(field_key)
-        @error "Field $field_key does not exists for compute sum."
-        return nothing
-    end
-    field = datamanager.get_field(field_key)
-    field_type = datamanager.get_field_type(field_key)
+    # get block_nodes   
     block_ids = datamanager.get_field("Block_Id")
     nnodes = datamanager.get_nnodes()
-    block_nodes = findall(item -> item == block, block_ids[1:nnodes])
-
-    if calculation_type == "Sum"
-        if length(block_nodes) == 0
-            value = field_type(0)
-        else
-            value = global_value_sum(field, dof, block_nodes)
-        end
-    elseif calculation_type == "Maximum"
-        if length(block_nodes) == 0
-            value = typemin(field_type)
-        else
-            value = global_value_max(field, dof, block_nodes)
-        end
-    elseif calculation_type == "Minimum"
-        if length(block_nodes) == 0
-            value = typemax(field_type)
-        else
-            value = global_value_min(field, dof, block_nodes)
-        end
-    elseif calculation_type == "Average"
-        if length(block_nodes) == 0
-            value = field_type(0)
-        else
-            value = global_value_avg(field, dof, block_nodes)
-        end
-    else
-        @warn "Unknown calculation type $calculation_type"
-        return nothing
-    end
-    return value, Int64(length(block_nodes))
+    block_nodes = Vector{Int64}(findall(item -> item == block, block_ids[1:nnodes]))
+    return calculate_nodelist(datamanager, field_key, dof, calculation_type, block_nodes)
 end
 
 """
