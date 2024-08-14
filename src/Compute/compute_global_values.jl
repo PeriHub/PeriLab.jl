@@ -99,12 +99,7 @@ Calculate the global sum of a field for given nodes.
 """
 function global_value_sum(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
-    # returnValue = zeros(length(field[1, :]))
-    # for iID in eachindex(field[1, :])
-    #     returnValue[iID] = sum(field[nodes, iID])
-    # end
-    # return returnValue
-    if typeof(dof) == Int64
+    if dof isa Int64
         return sum(field[nodes, dof])
     else
         return sum(field[nodes, dof[1], dof[2]])

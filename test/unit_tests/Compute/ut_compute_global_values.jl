@@ -6,8 +6,8 @@ using Test
 
 include("../../../src/Compute/compute_global_values.jl")
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../src/PeriLab.jl")
+using .PeriLab
 @testset "ut_global_value_sum" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
@@ -50,6 +50,12 @@ include("../../../src/Compute/compute_global_values.jl")
     @test calculate_nodelist(test_data_manager, "Disp", 1, "Average", nodes) == (0, 0)
     @test calculate_nodelist(test_data_manager, "Disp", 1, "Minimum", nodes) == (Inf, 0)
     @test calculate_nodelist(test_data_manager, "Disp", 1, "Maximum", nodes) == (-Inf, 0)
+
+    matrix = test_data_manager.create_constant_node_field("Matrix", Float64, "Matrix", 3)
+    matrix[:, 1, 2] .= 4
+    nodes = Vector{Int64}(1:2)
+    @test calculate_nodelist(test_data_manager, "Matrix", [1, 2], "Sum", nodes) == (8, 2)
+
 end
 
 @testset "ut_global_value_max" begin
