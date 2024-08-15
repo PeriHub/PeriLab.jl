@@ -6,8 +6,8 @@ The models related functions can be found [here](@ref "Models - Functions").
 | Method | Related Model in PeriLab |
 |---|---|
 | [Bond-based](@ref "Bond-based Peridynamics") | [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/BondBased/Bondbased_Elastic.jl) |
-| [Ordinary state-based](@ref "Ordinary state-based Peridynamics") | [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Elastic.jl), [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Plastic.jl) |
-|[Non-ordinary state-based](@ref "Correspondence Peridynamics")| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Elastic.jl), [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Plastic.jl), [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_UMAT.jl)|
+| [Ordinary state-based](@ref "Ordinary state-based Peridynamics") | [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/PD_Solid_Elastic.jl), [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/PD_Solid_Plastic.jl) |
+|[Non-ordinary state-based](@ref "Correspondence Peridynamics")| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence/Correspondence_Elastic.jl), [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence/Correspondence_Plastic.jl), [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence/Correspondence_UMAT.jl)|
 
 
 | Material Model             | Bond-based Elastic | PD Solid Elastic | PD Solid Plastic | Correspondence Elastic | Correspondence Plastic |
@@ -40,7 +40,7 @@ One of theses parameters have to be defined.
 
 ## PD Solid Elastic
 
-The [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Elastic.jl) module calculates the isotropic linear elastic material law for a peridynamic solid material. The underlying theory can be found [here](@ref "Ordinary state-based Peridynamics").
+The [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/PD_Solid_Elastic.jl) module calculates the isotropic linear elastic material law for a peridynamic solid material. The underlying theory can be found [here](@ref "Ordinary state-based Peridynamics").
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -53,7 +53,7 @@ Two of these parameters have to be defined. The other two are determined automat
 
 ## PD Solid Plastic
 
-The [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Plastic.jl) material uses elastic stresses and calculate the plastic part for a peridynamic solid material. Has to be combined with a function, which provides elastic stresses.
+The [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/PD_Solid_Plastic.jl) material uses elastic stresses and calculate the plastic part for a peridynamic solid material. Has to be combined with a function, which provides elastic stresses.
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -61,7 +61,7 @@ The [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Model
 
 
 ## Correspondence Elastic
-The [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Elastic.jl) module calculates the fully anisotropic linear elastic material law. The underlying correspondence theory can be found [here](@ref "Correspondence Peridynamics").
+The [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence/Correspondence_Elastic.jl) module calculates the fully anisotropic linear elastic material law. The underlying correspondence theory can be found [here](@ref "Correspondence Peridynamics").
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -80,7 +80,7 @@ For Correspondence Elastic you can provide all 27 elastic parameters if you like
     If you define a field "Angles" for 2D or "Anglesx", "Anglesy" and "Anglesz" for 3D in the mesh file your material will be rotated. This helps to create an arbitrary material orientation.
 
 ## Correspondence Plastic
-The [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Plastic.jl) material uses elastic stresses and calculate the plastic part. Has to be combined with a function, which provides elastic stresses.
+The [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence/Correspondence_Plastic.jl) material uses elastic stresses and calculate the plastic part. Has to be combined with a function, which provides elastic stresses.
 
 | Parameter | Unit | Description |
 |---|---|---|

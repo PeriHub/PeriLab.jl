@@ -6,7 +6,7 @@ Pages = ["models_functions.md"]
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Models
+CurrentModule = PeriLab.Solver.Model_Factory
 ```
 ## Models
 ```@docs
@@ -24,7 +24,7 @@ set_heat_capacity
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Models.Additive
+CurrentModule = PeriLab.Solver.Model_Factory.Additive
 ```
 ## Additive
 ```@docs
@@ -48,7 +48,7 @@ Set_modules.Critical_Energy_Model.get_quad_horizon
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Models.Material
+CurrentModule = PeriLab.Solver.Model_Factory.Material
 ```
 ## Material
 ```@docs
@@ -83,7 +83,7 @@ Set_modules.Correspondence.Global_zero_energy_control.rotate_fourth_order_tensor
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Models.Thermal
+CurrentModule = PeriLab.Solver.Model_Factory.Thermal
 ```
 ## Thermal
 ```@docs
