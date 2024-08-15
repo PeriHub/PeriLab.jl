@@ -125,6 +125,9 @@ function get_all_elastic_moduli(
     end
 end
 
+
+
+
 """
     get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
 
@@ -285,21 +288,23 @@ function distribute_forces(
                 ) > 0
                     bond_mod[neighborID, :] .= 0
                 else
-                    bond_mod[neighborID, :] = abs.(bond_norm[iID][neighborID, :])
+                    bond_mod[neighborID, :] = abs.(@view bond_norm[iID][neighborID, :])
                 end
             end
         end
 
         force_densities[iID, :] .+= transpose(
             sum(
-                bond_damage[iID] .* bond_force[iID][:, :] .* bond_mod .* volume[nlist[iID]],
+                bond_damage[iID] .* (@view bond_force[iID][:, :]) .* bond_mod .*
+                volume[nlist[iID]],
                 dims = 1,
             ),
         )
 
         # force_densities[nlist[iID], :] .-= bond_damage[iID] .* bond_force[iID] .* bond_mod .* volume[iID]
         force_densities[nlist[iID], :] .-=
-            bond_damage[iID] .* bond_force[iID][:, :] .* bond_mod[:, :] .* volume[iID]
+            bond_damage[iID] .* (@view bond_force[iID][:, :]) .* (@view bond_mod[:, :]) .*
+            volume[iID]
     end
     return force_densities
 end

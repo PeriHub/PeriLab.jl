@@ -187,16 +187,16 @@ function compute_forces(
 
             for (jID, nID) in enumerate(nlist[iID])
                 # TODO how to make the separation if the datamager is included?
-                stress_NP1[iID][:, :, :], datamanager = mod.compute_stresses(
+                stress_NP1[iID], datamanager = mod.compute_stresses(
                     datamanager,
                     jID,
                     dof,
                     material_parameter,
                     time,
                     dt,
-                    strain_increment[iID][:, :, :],
-                    stress_N[iID][:, :, :],
-                    stress_NP1[iID][:, :, :],
+                    strain_increment[iID],
+                    stress_N[iID],
+                    stress_NP1[iID],
                     (iID, jID, nID),
                 )
             end
@@ -292,8 +292,8 @@ function compute_bond_strain(nodes, nlist, deformation_gradient, strain)
     for iID in nodes
         strain[iID][:, :, :] = compute_strain(
             eachindex(nlist[iID]),
-            deformation_gradient[iID][:, :, :],
-            strain[iID][:, :, :],
+            (@view deformation_gradient[iID][:, :, :]),
+            (@view strain[iID][:, :, :]),
         )
     end
     return strain

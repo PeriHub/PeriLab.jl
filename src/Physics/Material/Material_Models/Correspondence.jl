@@ -278,7 +278,7 @@ function calculate_bond_force(
                 stress_NP1[iID, :, :],
                 deformation_gradient[iID, :, :],
             ) *
-            inverse_shape_tensor[iID, :, :]
+            (@view inverse_shape_tensor[iID, :, :])
 
     end
     return bond_force

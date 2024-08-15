@@ -499,7 +499,7 @@ function run_solver(
             #if solver_options["Material Models"]
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
-            deformed_coorNP1[:, :] = coor[:, :] + uNP1[:, :]
+            deformed_coorNP1[:, :] .= coor .+ uNP1
 
             @timeit to "upload_to_cores" datamanager.synch_manager(
                 synchronise_field,
@@ -532,24 +532,24 @@ function run_solver(
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
                     # force density is for FEM part force
                     force_densities[find_active(fe_nodes[nodes]), :] +=
-                        external_forces[find_active(fe_nodes[nodes]), :]
+                        @view external_forces[find_active(fe_nodes[nodes]), :]
                     a[find_active(fe_nodes[nodes]), :] =
                         force_densities[find_active(fe_nodes[nodes]), :] ./
                         lumped_mass[find_active(fe_nodes[nodes])] # element wise
                     forces[find_active(fe_nodes[nodes]), :] =
-                        force_densities[find_active(fe_nodes[nodes]), :]
+                        @view force_densities[find_active(fe_nodes[nodes]), :]
 
                     # only for cases in coupling where both the FEM and PD nodes are equal
                     # TODO discuss design decission
-                    force_densities[find_active(fe_nodes[nodes]), :] ./
-                    volume[find_active(fe_nodes[nodes])]
+                    force_densities[find_active(fe_nodes[nodes]), :] ./=
+                        volume[find_active(fe_nodes[nodes])]
 
                     # toggles the value and switch the non FEM nodes to true
                     nodes = find_active(Vector{Bool}(.~fe_nodes[nodes]))
                 end
                 force_densities[nodes, :] +=
-                    external_force_densities[nodes, :] .+
-                    external_forces[nodes, :] ./ volume[nodes]
+                    (@view external_force_densities[nodes, :]) .+
+                    (@view external_forces[nodes, :]) ./ volume[nodes]
                 a[nodes, :] = force_densities[nodes, :] ./ density[nodes] # element wise
                 forces[nodes, :] = force_densities[nodes, :] .* volume[nodes]
 

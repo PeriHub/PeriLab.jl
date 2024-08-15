@@ -229,10 +229,10 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
         if !isempty(overlapnodes[rank+1][jcore]["Controller"])
             for iID in overlapnodes[rank+1][jcore]["Controller"]
                 if dof == 1
-                    send_msg = array[iID]
+                    send_msg = @view array[iID]
                 else
                     #TODO: Check if we can remove the [:,:]
-                    send_msg = array[iID][:, :]
+                    send_msg = @view array[iID][:, :]
                 end
                 MPI.Isend(send_msg, comm; dest = jcore - 1, tag = 0)
                 # @debug "Sending   $rank -> $(jcore-1)"
@@ -243,7 +243,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
                 if dof == 1
                     recv_msg = similar(array[iID])
                 else
-                    recv_msg = similar(array[iID][:, :])
+                    recv_msg = similar(@view array[iID][:, :])
                 end
                 MPI.Recv!(recv_msg, comm; source = jcore - 1, tag = 0)
                 # @debug "Receiving $(jcore-1) -> $rank"

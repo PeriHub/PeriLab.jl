@@ -68,7 +68,7 @@ function calculate_bond_length(
     nlist::Vector{Int64},
 )
 
-    bond_vectors = coor[nlist, :] .- coor[iID, :]'
+    bond_vectors = (@view coor[nlist, :]) .- (@view coor[iID, :])'
     # distances = sqrt.(sum(bond_vectors .^ 2, dims=2))[:]
 
     # Check for identical point coordinates
