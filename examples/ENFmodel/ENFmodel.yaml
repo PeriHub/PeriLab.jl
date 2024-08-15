@@ -105,7 +105,7 @@ PeriLab:
         Forces: true
         Number of Neighbors: true
         Number of Filtered Neighbors: True
-  Physics:
+  Models:
     Damage Models:
       Damage:
         Critical Value: 1.3947001394700143

@@ -6,14 +6,9 @@
 include("../../../src/IO/IO.jl")
 # using PeriLab
 using MPI
-# include("../../../src/Support/Parameters/parameter_handling.jl")
 using TimerOutputs
-# using Reexport
-# @reexport using .Parameter_Handling
 using Test
-# import .IO
-# @reexport using Exodus
-# @reexport using MPI
+
 test_data_manager = PeriLab.Data_manager
 test_data_manager.initialize_data()
 filename1 = "test1"

@@ -8,7 +8,7 @@ PeriLab:
       Node Set 3: "BCall.txt"
     Type: "Text File"
     Input Mesh File: "mesh.txt"
-  Physics:
+  Models:
     Material Models:
       Test:
         Material Model: "PD Solid Elastic"

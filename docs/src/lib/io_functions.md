@@ -157,7 +157,7 @@ rotate_second_order_tensor
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Physics.Pre_calculation
+CurrentModule = PeriLab.Solver.Models.Pre_calculation
 ```
 ## Pre_calculation
 ```@docs
@@ -197,7 +197,7 @@ get_output_fieldnames
 get_outputs
 get_output_frequency
 get_model_parameter
-get_physics_option
+get_models_option
 get_solver_name
 get_initial_time
 get_final_time
@@ -210,7 +210,7 @@ get_header
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Physics.Material.Set_modules
+CurrentModule = PeriLab.Solver.Models.Material.Set_modules
 ```
 ## Set_modules
 ```@docs

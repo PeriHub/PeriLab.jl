@@ -79,7 +79,7 @@ PeriLab:
         Strain: True
         Cauchy Stress: True
         State Variables: True
-  Physics:
+  Models:
     Damage Models:
       Damage:
         Damage Model: Critical Energy

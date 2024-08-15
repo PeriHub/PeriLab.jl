@@ -13,7 +13,7 @@ PeriLab:
       Step_Y: 0.5
       Step_Z: 1
       Number: 4
-  Physics:
+  Models:
     Material Models:
       BC:
         Material Model: PD Solid Elastic

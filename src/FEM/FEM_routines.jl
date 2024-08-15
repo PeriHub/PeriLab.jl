@@ -5,7 +5,7 @@ using LinearAlgebra
 using StaticArrays
 using FastGaussQuadrature
 using Statistics
-include("../Physics/Material/material_basis.jl")
+include("../Models/Material/material_basis.jl")
 include("../Support/helpers.jl")
 using .Helpers: invert
 function get_FE_material_model(params::Dict, name::String)

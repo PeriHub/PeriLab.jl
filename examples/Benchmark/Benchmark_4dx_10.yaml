@@ -51,7 +51,7 @@ PeriLab:
         Normal Z: 0.0
         Side Length: 2.0
         Type: Rectangular_Plane
-  Physics:
+  Models:
     Damage Models:
       Damage:
         Damage Model: Critical Energy

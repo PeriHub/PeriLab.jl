@@ -52,7 +52,7 @@ end
     filename = "test.yaml"
     fid = open(filename, "w")
     println(fid, "PeriLab:")
-    println(fid, " Physics:")
+    println(fid, " Models:")
     println(fid, "  d: 3")
     println(fid, "  a: 1")
     println(fid, " Discretization:")
@@ -65,8 +65,8 @@ end
     println(fid, "  Final Time: 1.0")
     close(fid)
     dict = PeriLab.IO.read_input_file(filename)
-    @test dict["Physics"]["d"] == 3
-    @test dict["Physics"]["a"] == 1
+    @test dict["Models"]["d"] == 3
+    @test dict["Models"]["a"] == 1
     @test dict["Discretization"]["Input Mesh File"] == "test"
     @test dict["Discretization"]["Type"] == "test"
     @test dict["Solver"]["Initial Time"] == 0.0

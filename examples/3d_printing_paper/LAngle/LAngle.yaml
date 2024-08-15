@@ -6,7 +6,7 @@ PeriLab:
   Discretization:
     Type: "Text File"
     Input Mesh File: "mesh.txt"
-  Physics:
+  Models:
     Pre Calculation:
       Deformed Bond Geometry: false
       Shape Tensor: false

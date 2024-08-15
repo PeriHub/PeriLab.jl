@@ -91,7 +91,7 @@ PeriLab:
       Output Variables:
         External_Displacement: true
         External_Force: true
-  Physics:
+  Models:
     Damage Models:
       Damage:
         Damage Model: Critical Energy

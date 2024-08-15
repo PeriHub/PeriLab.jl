@@ -9,7 +9,7 @@ PeriLab:
       Node Set 2: 4 8 12
     Type: "Text File"
     Input Mesh File: "simpleMesh_add_2D_var.txt"
-  Physics:
+  Models:
     Material Models:
       Aluminium:
         Material Model: Bond-based Elastic

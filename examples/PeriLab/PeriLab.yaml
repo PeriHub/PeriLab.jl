@@ -9,7 +9,7 @@ PeriLab:
     Node Sets:
       Node Set 1: ns_PeriLab_1.txt
       Node Set 2: ns_PeriLab_2.txt
-  Physics:
+  Models:
     Material Models:
       Material:
         Material Model: "Bond-based Elastic"

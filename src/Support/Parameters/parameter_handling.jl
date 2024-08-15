@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 module Parameter_Handling
-using Reexport
+
 include("./parameter_handling_bc.jl")
 include("./parameter_handling_blocks.jl")
-include("./parameter_handling_physics.jl")
+include("./parameter_handling_models.jl")
 include("./parameter_handling_mesh.jl")
 include("./parameter_handling_output.jl")
 include("./parameter_handling_computes.jl")
@@ -154,7 +154,7 @@ global expected_structure = Dict(
                 ),
                 false,
             ],
-            "Physics" => [
+            "Models" => [
                 Dict{Any,Any}(
                     "Damage Models" => [
                         Dict{Any,Any}(

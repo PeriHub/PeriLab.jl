@@ -92,7 +92,7 @@ PeriLab:
         External_Displacements: True
         Strain: True
         Temperature: True
-  Physics:
+  Models:
     Damage Models:
       Damage:
         Damage Model: Critical Energy

@@ -11,7 +11,7 @@ PeriLab:
       Node Set 2: ns_Rect_2.txt
       Node Set 3: ns_Rect_3.txt
       Node Set 4: ns_Rect_4.txt
-  Physics:
+  Models:
     Material Models:
       Aluminium:
         Material Model: PD Solid Elastic

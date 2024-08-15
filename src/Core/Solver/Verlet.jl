@@ -7,14 +7,14 @@ using LinearAlgebra
 using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
-using Reexport
+
 using PrettyTables
 using Logging
 
 include("../../Support/helpers.jl")
-@reexport using .Helpers: check_inf_or_nan, find_active, progress_bar
+using .Helpers: check_inf_or_nan, find_active, progress_bar
 include("../../Support/Parameters/parameter_handling.jl")
-@reexport using .Parameter_Handling:
+using .Parameter_Handling:
     get_initial_time,
     get_fixed_dt,
     get_final_time,
@@ -24,9 +24,9 @@ include("../../Support/Parameters/parameter_handling.jl")
 
 include("../../MPI_communication/MPI_communication.jl")
 include("../BC_manager.jl")
-include("../../Physics/Model_Factory.jl")
+include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")
-using .Physics
+using .Model_Factory
 using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann
 using .Helpers: matrix_style
 using .Logging_module: print_table
@@ -507,7 +507,7 @@ function run_solver(
             )
             # synch
 
-            @timeit to "compute_models" datamanager = Physics.compute_models(
+            @timeit to "compute_models" datamanager = Model_Factory.compute_models(
                 datamanager,
                 block_nodes,
                 dt,

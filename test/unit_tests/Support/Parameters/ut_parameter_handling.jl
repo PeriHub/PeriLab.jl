@@ -26,9 +26,9 @@ using Dierckx
     ) == [1, 2, 3, 5]
 end
 
-@testset "get_physics_option" begin
+@testset "get_models_option" begin
     params = Dict(
-        "Physics" => Dict(
+        "Models" => Dict(
             "Pre Calculation" => Dict{String,Bool}(
                 "Deformed Bond Geometry" => false,
                 "Deformation Gradient" => false,
@@ -43,12 +43,12 @@ end
         "Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false,
     )
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    optionTest = PeriLab.Solver.Parameter_Handling.get_models_option(params, options)
     # no material models included
-    @test optionTest == params["Physics"]["Pre Calculation"]
+    @test optionTest == params["Models"]["Pre Calculation"]
 
     params = Dict(
-        "Physics" => Dict(
+        "Models" => Dict(
             "Pre Calculation" => Dict{String,Bool}(
                 "Deformed Bond Geometry" => true,
                 "Deformation Gradient" => true,
@@ -61,44 +61,44 @@ end
             ),
         ),
     )
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    optionTest = PeriLab.Solver.Parameter_Handling.get_models_option(params, options)
 
     @test isnothing(optionTest)
 
     params = Dict(
-        "Physics" => Dict(
+        "Models" => Dict(
             "Material Models" => Dict(
                 "a" => Dict("Material Model" => "adaCoB", "value" => 1),
                 "c" => Dict("value" => [1 2], "value2" => 1),
             ),
         ),
     )
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    optionTest = PeriLab.Solver.Parameter_Handling.get_models_option(params, options)
     @test isnothing(optionTest)
     params = Dict(
-        "Physics" => Dict(
+        "Models" => Dict(
             "Material Models" => Dict(
                 "a" => Dict("value" => 1),
                 "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"),
             ),
         ),
     )
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    optionTest = PeriLab.Solver.Parameter_Handling.get_models_option(params, options)
     @test isnothing(optionTest)
 
     params = Dict(
-        "Physics" => Dict(
+        "Models" => Dict(
             "Material Models" => Dict(
                 "a" => Dict("value" => 1, "Material Model" => "adaCoB"),
                 "c" => Dict("value" => [1 2], "value2" => 1, "Material Model" => "adaCoB"),
             ),
         ),
     )
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    optionTest = PeriLab.Solver.Parameter_Handling.get_models_option(params, options)
     @test optionTest == options
 
     params = Dict(
-        "Physics" => Dict(
+        "Models" => Dict(
             "Material Models" => Dict(
                 "a" => Dict("Material Model" => "adaCorrespondence", "value" => 1),
                 "c" => Dict(
@@ -115,7 +115,7 @@ end
         "Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false,
     )
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    optionTest = PeriLab.Solver.Parameter_Handling.get_models_option(params, options)
     @test optionTest["Shape Tensor"]
     @test !optionTest["Bond Associated Deformation Gradient"]
     @test optionTest["Deformation Gradient"]
@@ -127,7 +127,7 @@ end
         "Bond Associated Deformation Gradient" => false,
     )
     params = Dict(
-        "Physics" => Dict(
+        "Models" => Dict(
             "Material Models" => Dict(
                 "aBond Correspondence" => Dict(
                     "Material Model" => "adaCoBond Correspondence",
@@ -138,14 +138,14 @@ end
             ),
         ),
     )
-    optionTest = PeriLab.Solver.Parameter_Handling.get_physics_option(params, options)
+    optionTest = PeriLab.Solver.Parameter_Handling.get_models_option(params, options)
 
     @test !optionTest["Shape Tensor"]
     @test optionTest["Bond Associated Deformation Gradient"]
     @test !optionTest["Deformation Gradient"]
     @test optionTest["Deformed Bond Geometry"]
     params = Dict(
-        "Physics" => Dict(
+        "Models" => Dict(
             "Material Models" => Dict(
                 "aCorrespondence" =>
                     Dict("Material Model" => "adaCorrespondence", "value" => 1),
@@ -306,18 +306,18 @@ end
     params = Dict{Any,Any}()
     @info "Error messages are tested and therefore okay."
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Physics" => Dict{Any,Any}()))
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}()))
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
-            "Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()),
+            "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()),
             "Discretization" => Dict{Any,Any}(),
         ),
     )
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
-            "Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()),
+            "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()),
             "Discretization" => Dict{Any,Any}(),
             "Blocks" => Dict{Any,Any}(),
         ),
@@ -325,7 +325,7 @@ end
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
-            "Physics" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()),
+            "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()),
             "Blocks" => Dict{Any,Any}(),
         ),
     )
@@ -334,7 +334,7 @@ end
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
-            "Physics" => Dict{Any,Any}(),
+            "Models" => Dict{Any,Any}(),
             "Discretization" => Dict{Any,Any}(),
             "Blocks" => Dict{Any,Any}(),
             "Solver" => Dict{Any,Any}(),
@@ -343,7 +343,7 @@ end
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
-            "Physics" => Dict{Any,Any}(
+            "Models" => Dict{Any,Any}(
                 "Material Models" => Dict{Any,Any}(
                     "mat_1" => Dict{Any,Any}("Material Model" => "a"),
                 ),
@@ -363,7 +363,7 @@ end
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
-            "Physics" => Dict{Any,Any}(
+            "Models" => Dict{Any,Any}(
                 "Material Models" => Dict{Any,Any}(
                     "mat_1" => Dict{Any,Any}("Material Model" => "a"),
                 ),
@@ -914,7 +914,7 @@ if !isfile(path * "test_data_file.txt")
     path = "./unit_tests/Support/Parameters/"
 end
 params = Dict(
-    "Physics" => Dict(
+    "Models" => Dict(
         "Material Models" => Dict(
             "A" => Dict(
                 "s" => 0,
@@ -939,30 +939,30 @@ params = Dict(
 @testset "ut_find_data_files" begin
     @test sort(
         PeriLab.Solver.Parameter_Handling.find_data_files(
-            params["Physics"]["Material Models"]["A"],
+            params["Models"]["Material Models"]["A"],
         ),
     ) == ["test_file", "test_file_2"]
     @test PeriLab.Solver.Parameter_Handling.find_data_files(
-        params["Physics"]["Material Models"]["B"],
+        params["Models"]["Material Models"]["B"],
     ) == ["test_file_B"]
     @test PeriLab.Solver.Parameter_Handling.find_data_files(
-        params["Physics"]["Damage Models"]["E"],
+        params["Models"]["Damage Models"]["E"],
     ) == []
 end
 @testset "ut_get_model_parameter" begin
-    blockModels = Dict{Int32,Dict{String,String}}()
+    block_models = Dict{Int32,Dict{String,String}}()
     for id = 1:2
-        blockModels[id] = PeriLab.Solver.Parameter_Handling.get_block_models(params, id)
+        block_models[id] = PeriLab.Solver.Parameter_Handling.get_block_models(params, id)
     end
-    @test blockModels[1]["Material Model"] == "A"
-    @test blockModels[1]["Damage Model"] == "E"
-    @test blockModels[2]["Material Model"] == "B"
+    @test block_models[1]["Material Model"] == "A"
+    @test block_models[1]["Damage Model"] == "E"
+    @test block_models[2]["Material Model"] == "B"
     testData = Dict("Material Model" => Dict(), "Damage Model" => Dict())
     @test isnothing(
         PeriLab.Solver.Parameter_Handling.get_model_parameter(
             params,
             "Does not exist Model",
-            blockModels[1]["Material Model"],
+            block_models[1]["Material Model"],
         ),
     )
     @test isnothing(
@@ -982,14 +982,14 @@ end
     testData["Material Model"] = PeriLab.Solver.Parameter_Handling.get_model_parameter(
         params,
         "Material Model",
-        blockModels[1]["Material Model"],
+        block_models[1]["Material Model"],
     )
     @test testData["Material Model"]["s"] == 0
     @test testData["Material Model"]["d"] == true
     testData["Material Model"] = PeriLab.Solver.Parameter_Handling.get_model_parameter(
         params,
         "Material Model",
-        blockModels[2]["Material Model"],
+        block_models[2]["Material Model"],
     )
     @test testData["Material Model"]["sa"] == [3.2, 2, 3]
     @test testData["Material Model"]["d"] == "true"
@@ -1001,7 +1001,7 @@ end
     testData["Damage Model"] = PeriLab.Solver.Parameter_Handling.get_model_parameter(
         params,
         "Damage Model",
-        blockModels[1]["Damage Model"],
+        block_models[1]["Damage Model"],
     )
     @test testData["Damage Model"]["ss"] == 0
     @test testData["Damage Model"]["d"] == 1.1

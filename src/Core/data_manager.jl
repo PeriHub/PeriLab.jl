@@ -29,7 +29,7 @@ export get_nnsets
 export get_nsets
 export get_nnodes
 export get_num_elements
-export get_physics_options
+export get_models_options
 export get_properties
 export get_property
 export get_rank
@@ -53,7 +53,7 @@ export set_num_controller
 export set_nset
 export set_num_elements
 export set_num_responder
-export set_physics_options
+export set_models_options
 export set_property
 export set_rank
 export set_max_rank
@@ -88,7 +88,7 @@ global inverse_nlist::Vector{Dict{Int64,Int64}}
 global model_modules::Dict{String,Module}
 global nsets::Dict{String,Vector{Int}}
 global overlap_map::Dict{Int64,Any}
-global physics_options::Dict{String,Bool}
+global models_options::Dict{String,Bool}
 global output_frequency::Vector{Dict}
 global accuracy_order::Int64
 global rank::Int64
@@ -150,8 +150,8 @@ function initialize_data()
     nsets = Dict()
     global overlap_map
     overlap_map = Dict()
-    global physics_options
-    physics_options = Dict(
+    global models_options
+    models_options = Dict(
         "Deformed Bond Geometry" => true,
         "Deformation Gradient" => false,
         "Shape Tensor" => false,
@@ -870,20 +870,20 @@ function get_synch_fields()
 end
 
 """
-    get_physics_options()
+    get_models_options()
 
-Get the physics options
+Get the models options
 """
-function get_physics_options()
-    global physics_options
-    if physics_options["Deformation Gradient"]
-        physics_options["Shape Tensor"] = true
-        physics_options["Deformed Bond Geometry"] = true
+function get_models_options()
+    global models_options
+    if models_options["Deformation Gradient"]
+        models_options["Shape Tensor"] = true
+        models_options["Deformed Bond Geometry"] = true
     end
-    if physics_options["Bond Associated Deformation Gradient"]
-        physics_options["Deformed Bond Geometry"] = true
+    if models_options["Bond Associated Deformation Gradient"]
+        models_options["Deformed Bond Geometry"] = true
     end
-    return physics_options
+    return models_options
 end
 
 """
@@ -1344,15 +1344,15 @@ function set_overlap_map(topo)
 end
 
 """
-    set_physics_options(values::Dict{String,Bool})
+    set_models_options(values::Dict{String,Bool})
 
-Sets the physics options globally.
+Sets the models options globally.
 
 # Arguments
-- `values::Dict{String,Bool}`: The physics options.
+- `values::Dict{String,Bool}`: The models options.
 """
-function set_physics_options(values::Dict{String,Bool})
-    global physics_options = values
+function set_models_options(values::Dict{String,Bool})
+    global models_options = values
 end
 
 

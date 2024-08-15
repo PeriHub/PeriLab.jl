@@ -74,7 +74,7 @@ The information is stored in the [params dictionary](@ref "Parameters")
   - **Output Variables**: Dictionary of output variables.
     - *__Own_Name__*: Boolean indicating whether to output the variable.
 
-## `Physics (optional)`
+## `Models (optional)`
 
 - **Damage Models**: Dictionary of damage models. (optional)
   - *__Own_Name__*: List of damage model configurations.
@@ -84,7 +84,7 @@ The information is stored in the [params dictionary](@ref "Parameters")
       - *__Own_Name__*: Numeric value representing interblock damage. (Float64 or Int64, required)
     - **Anisotropic Damage**: Dictionary of anisotropic damage parameters.
       - **Critical Value X/Y**: Numeric values representing critical values in X and Y directions. (Float64 or Int64, required)
-- **Material Models**: Dictionary of [material models](physics/materials.md). (optional)
+- **Material Models**: Dictionary of [material models](models/materials.md). (optional)
   - *__Own_Name__*: List of material model configurations.
     - **Material Model**: String representing the material model.
     - **Symmetry**: String representing the symmetry. (optional)
@@ -114,4 +114,3 @@ The information is stored in the [params dictionary](@ref "Parameters")
   - **Safety Factor/Fixed dt/Number of Steps**: Numeric values representing Verlet solver parameters. (Float64 or Int64, optional)
 - **External**: Dictionary of external solver parameters.
   - **Number of Steps**: Numeric value representing the number of steps. (Int64, optional)
-

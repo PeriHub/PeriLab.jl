@@ -9,7 +9,7 @@ PeriLab:
     Node Sets:
       Node Set 1: ns_simpleMesh_1.txt
       Node Set 2: ns_simpleMesh_2.txt
-  Physics:
+  Models:
     Material Models:
       Aluminium:
         Material Model: PD Solid Elastic

@@ -1,13 +1,13 @@
 # Material Models
 
 ## Existing Models
-The physics related functions can be found [here](@ref "Physics - Functions").
+The models related functions can be found [here](@ref "Models - Functions").
 
 | Method | Related Model in PeriLab |
 |---|---|
-| [Bond-based](@ref "Bond-based Peridynamics") | [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) |
-| [Ordinary state-based](@ref "Ordinary state-based Peridynamics") | [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl), [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) |
-|[Non-ordinary state-based](@ref "Correspondence Peridynamics")| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl), [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl), [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_UMAT.jl)|
+| [Bond-based](@ref "Bond-based Peridynamics") | [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/BondBased/Bondbased_Elastic.jl) |
+| [Ordinary state-based](@ref "Ordinary state-based Peridynamics") | [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Elastic.jl), [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Plastic.jl) |
+|[Non-ordinary state-based](@ref "Correspondence Peridynamics")| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Elastic.jl), [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Plastic.jl), [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_UMAT.jl)|
 
 
 | Material Model             | Bond-based Elastic | PD Solid Elastic | PD Solid Plastic | Correspondence Elastic | Correspondence Plastic |
@@ -20,12 +20,12 @@ The physics related functions can be found [here](@ref "Physics - Functions").
 
 | Parameter | Unit | Description |
 |---|---|---|
-| Density |  $\left[\frac{kg}{m^3}\right]$ | Specific heat capacity of the block  
+| Density |  $\left[\frac{kg}{m^3}\right]$ | Specific heat capacity of the block
 | Horizon |  $[m]$ | Radius of the neighborhood |
 
 ## Bond-based Elastic
 
- The [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/BondBased/Bondbased_Elastic.jl) calculates the linear elastic behavior of a simple bond-based material. The theory of the bond-based elastic material can be found [here](@ref "Bond-based Peridynamics").
+ The [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/BondBased/Bondbased_Elastic.jl) calculates the linear elastic behavior of a simple bond-based material. The theory of the bond-based elastic material can be found [here](@ref "Bond-based Peridynamics").
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -40,7 +40,7 @@ One of theses parameters have to be defined.
 
 ## PD Solid Elastic
 
-The [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Elastic.jl) module calculates the isotropic linear elastic material law for a peridynamic solid material. The underlying theory can be found [here](@ref "Ordinary state-based Peridynamics").
+The [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Elastic.jl) module calculates the isotropic linear elastic material law for a peridynamic solid material. The underlying theory can be found [here](@ref "Ordinary state-based Peridynamics").
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -53,7 +53,7 @@ Two of these parameters have to be defined. The other two are determined automat
 
 ## PD Solid Plastic
 
-The [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/PD_Solid_Plastic.jl) material uses elastic stresses and calculate the plastic part for a peridynamic solid material. Has to be combined with a function, which provides elastic stresses.
+The [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Plastic.jl) material uses elastic stresses and calculate the plastic part for a peridynamic solid material. Has to be combined with a function, which provides elastic stresses.
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -61,7 +61,7 @@ The [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physi
 
 
 ## Correspondence Elastic
-The [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Elastic.jl) module calculates the fully anisotropic linear elastic material law. The underlying correspondence theory can be found [here](@ref "Correspondence Peridynamics").
+The [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Elastic.jl) module calculates the fully anisotropic linear elastic material law. The underlying correspondence theory can be found [here](@ref "Correspondence Peridynamics").
 
 | Parameter | Unit | Description |
 |---|---|---|
@@ -71,7 +71,7 @@ The [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src
 |Poissons Ratio Modulus | $\left[-\right]$| [Poisson's ratio](https://en.wikipedia.org/wiki/Poisson%27s_ratio)
 |C11, C12, ..., C66 (optional) | $\left[N/m^2\right]$| [Parameter of the Hook matrix](https://en.wikipedia.org/wiki/Hooke%27s_law#Matrix_representation_(stiffness_tensor))
 
-For Correspondence Elastic you can provide all 27 elastic parameters if you like by adding C11,...,C66. 
+For Correspondence Elastic you can provide all 27 elastic parameters if you like by adding C11,...,C66.
 
 !!! tip "Isotropic elastic parameter"
     For the time step calculation two of the four isotropic elastic parameter have to be defined.
@@ -80,14 +80,14 @@ For Correspondence Elastic you can provide all 27 elastic parameters if you like
     If you define a field "Angles" for 2D or "Anglesx", "Anglesy" and "Anglesz" for 3D in the mesh file your material will be rotated. This helps to create an arbitrary material orientation.
 
 ## Correspondence Plastic
-The [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_Plastic.jl) material uses elastic stresses and calculate the plastic part. Has to be combined with a function, which provides elastic stresses.
+The [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Plastic.jl) material uses elastic stresses and calculate the plastic part. Has to be combined with a function, which provides elastic stresses.
 
 | Parameter | Unit | Description |
 |---|---|---|
 |Yield Stress | $\left[N/m^2\right]$| [Yield stress](https://en.wikipedia.org/wiki/Yield_(engineering))
 
 ## Correspondence UMAT
-The [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Physics/Material/Material_Models/Correspondence_UMAT.jl) can be used to include Abaqus user materials.
+The [Correspondence UMAT](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_UMAT.jl) can be used to include Abaqus user materials.
 
 !!! warning "Replace ABAQUS Functions"
     No extra Abaqus functions should be called in the user subroutine. For example `INCLUDE 'ABA_PARAM.INC'` needs to be replaced by `implicit real(8) (a-h,o-z)`
@@ -97,7 +97,7 @@ You can call the user subroutine by defining path with a compiled Fotran library
 
 | Parameter | Type and Range | Description | Optional |
 |---|---|---|---|
-| File | String | Path and filename of the UMAT, e.g. "./src/Physics/Material/UMATs/libusertest.so" | No |
+| File | String | Path and filename of the UMAT, e.g. "./src/Models/Material/UMATs/libusertest.so" | No |
 | Number of State Variables | Int $\geq$ 0 | Number of state variables; Defines the size of state variable field datamanager.create_constant_node_field("State Variables", Float64, num_state_vars)| yes |
 | Number of Properties | Int $\geq$ 1 | Properties of the material; Needed for the propterty field datamanager.create_constant_free_size_field("Properties", Float64, (num_props, 1))
  | No |
@@ -111,7 +111,7 @@ In order to compile the UMAT subroutine you need to install gfortran. Have a loo
 After installation you can compile the Fortran subroutine with the following command:
 
 ```shell
-gfortran -shared -fPIC -o libusermat.so base.f 
+gfortran -shared -fPIC -o libusermat.so base.f
 ```
 
 ## Model merging
@@ -123,5 +123,3 @@ In PeriLab you are able to combine models with each other, by simply adding a +.
 
 !!! warning "Model order"
     The order is defined by the user. Because the plastic routines need stresses to work, make sure the materials which provide these stresses are before the plastic models.
-
-

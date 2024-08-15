@@ -8,7 +8,7 @@ PeriLab:
       Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12
     Type: "Text File"
     Input Mesh File: "test_mesh.txt"
-  Physics:
+  Models:
     Pre Calculation:
       Deformed Bond Geometry: true
       Deformation Gradient: true

@@ -9,7 +9,7 @@ PeriLab:
       Node Set 2: "2 3 4"
     Type: Text File
     Input Mesh File: Zugstab.txt
-  Physics:
+  Models:
     Material Models:
       PLA:
         Material Model: PD Solid Elastic

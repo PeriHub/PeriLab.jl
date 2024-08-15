@@ -77,7 +77,7 @@ PeriLab:
       Output File Type: Exodus
       Output Variables:
         Temperature: true
-  Physics:
+  Models:
     Damage Models:
       Damage:
         Damage Model: Critical Energy

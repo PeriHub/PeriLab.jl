@@ -71,7 +71,7 @@ PeriLab:
       Variable: Displacements
       Value: "0"
       Type: Dirichlet
-  Physics:
+  Models:
     Material Models:
       Aluminium:
         Density: 2.81e-09

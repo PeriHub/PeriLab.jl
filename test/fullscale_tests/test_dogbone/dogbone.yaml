@@ -9,7 +9,7 @@ PeriLab:
       Node Set 1: ns_dogbone_1.txt
       Node Set 2: ns_dogbone_2.txt
     Type: Text File
-  Physics:
+  Models:
     Pre Calculation:
       Deformed Bond Geometry: true
       Deformation Gradient: false

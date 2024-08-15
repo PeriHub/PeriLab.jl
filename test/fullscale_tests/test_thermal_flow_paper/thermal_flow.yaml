@@ -10,7 +10,7 @@ PeriLab:
       Node Set 3: "BCall.txt"
     Type: "Text File"
     Input Mesh File: "mesh.txt"
-  Physics:
+  Models:
     Pre Calculation:
       Deformed Bond Geometry: true
       Shape Tensor: true

@@ -1,8 +1,8 @@
-# Physics
+# Models
 
 ```mermaid
 mindmap
-  root((Physics))
+  root((Models))
     Material Models
       Bond Based
         Bond-based Elastic

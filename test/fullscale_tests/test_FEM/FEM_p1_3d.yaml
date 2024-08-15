@@ -15,7 +15,7 @@ PeriLab:
     Element Type: "Lagrange"
     Degree: 1
     Material Model: "Mat_1"
-  Physics:
+  Models:
     Material Models:
       Mat_1:
         Material Model: "Correspondence Elastic"

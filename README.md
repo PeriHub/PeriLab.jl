@@ -43,9 +43,9 @@ SPDX-License-Identifier: BSD-3-Clause
 |:----:|:----:|:----:|
 | [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url] [![][cov-img]][cov-url] | [![][aqua-img]][aqua-url] |
 | **Deployment** | **License** | **Socials** |
-| [![][release-img]][release-url]  [![][docker-img]][docker-url] | [![][license-img]][license-url] [![][doi-img]][doi-url] | [![][youtube-img]][youtube-url] | 
+| [![][release-img]][release-url]  [![][docker-img]][docker-url] | [![][license-img]][license-url] [![][doi-img]][doi-url] | [![][youtube-img]][youtube-url] |
 
-Welcome to `PeriLab`, a powerful software solution designed for tackling Peridynamic problems. 
+Welcome to `PeriLab`, a powerful software solution designed for tackling Peridynamic problems.
 
 <p align="center" style="font-size:0;"><!--
   PeriLab_crack      --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/PeriLab_crack.gif" width="50%"><!--
@@ -74,7 +74,7 @@ A few basic examples of `PeriLab` can be found in the [examples](https://github.
 
 - 🔥 **Additive Manufacturing**: PeriLab supports additive manufacturing, allowing users to create custom additive models for their simulations.
 
-- 🧲 **Multiphysics**: PeriLab supports multiphysics simulations, combining different types of peridynamics and damage models to create a comprehensive simulation environment.
+- 🧲 **Multimodels**: PeriLab supports multimodels simulations, combining different types of peridynamics and damage models to create a comprehensive simulation environment.
 
 - ⚡ **MPI**: PeriLab supports parallel computing using Message Passing Interface (MPI) technology to improve simulation performance on high-performance clusters.
 
@@ -103,7 +103,7 @@ Throughout the rest of this tutorial, we will assume that you have installed the
 PeriLab package and have already typed `using PeriLab` to bring all of the
 relevant variables into your current namespace.
 
-## Getting Started with `PeriLab` 
+## Getting Started with `PeriLab`
 
 Jumpstart your exploration of the PeriLab simulation core with provided examples. Run the following commands in Julia:
 
@@ -248,7 +248,7 @@ url={https://doi.org/10.1016/j.softx.2024.101700}
 
 ## Partner
 
-       
+
 | <img src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/dlr.jpg" height="200" title="German Aerospace Center"> | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Logo_h2.svg/1280px-Logo_h2.svg.png" height="200" title="Magdeburg-Stendal University of Applied Science"> |
 |:------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------:|
 | [German Aerospace Center](http://www.dlr.de/sy)                                                                               | [Magdeburg-Stendal University of Applied Science](http://www.h2.de)                                                                  |
@@ -280,6 +280,6 @@ This measure is co-financed with tax funds on the basis of the budget passed by 
   -->
 </p>
 
-[Federal Ministry for Economic Affairs and Climate Action](https://www.bmwk.de/Navigation/DE/Home/home.html) funded project 
+[Federal Ministry for Economic Affairs and Climate Action](https://www.bmwk.de/Navigation/DE/Home/home.html) funded project
 ''Virtuelle Kennwertermittlung, Schadensprädiktion und Simulationsmethoden für geklebte Fügestellen eines LH2-Tanks in Faserverbundbauweise für die kommerzielle Luftfahrt (HYTANK)''.<br/><br/>
 Grant number: 20W2214G.

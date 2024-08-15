@@ -1,14 +1,14 @@
-# Physics - Functions
+# Models - Functions
 
 ## Index
 ```@index
-Pages = ["physics_functions.md"]
+Pages = ["models_functions.md"]
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Physics
+CurrentModule = PeriLab.Solver.Models
 ```
-## Physics
+## Models
 ```@docs
 compute_models
 compute_damage_pre_calculation
@@ -24,7 +24,7 @@ set_heat_capacity
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Physics.Additive
+CurrentModule = PeriLab.Solver.Models.Additive
 ```
 ## Additive
 ```@docs
@@ -48,7 +48,7 @@ Set_modules.Critical_Energy_Model.get_quad_horizon
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Physics.Material
+CurrentModule = PeriLab.Solver.Models.Material
 ```
 ## Material
 ```@docs
@@ -83,7 +83,7 @@ Set_modules.Correspondence.Global_zero_energy_control.rotate_fourth_order_tensor
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Physics.Thermal
+CurrentModule = PeriLab.Solver.Models.Thermal
 ```
 ## Thermal
 ```@docs

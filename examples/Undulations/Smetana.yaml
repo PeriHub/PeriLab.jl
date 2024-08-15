@@ -114,7 +114,7 @@ PeriLab:
         External_Forces: True
         External_Displacements: True
       Write After Damage: true
-  Physics:
+  Models:
     Damage Models:
       dam_1:
         Critical Value: 2.5e-2

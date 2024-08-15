@@ -6,7 +6,7 @@ PeriLab:
   Discretization:
     Input Mesh File: PeriLab.txt
     Type: Text File
-  Physics:
+  Models:
     Material Models:
       Material:
         Material Model: "Bond-based Elastic"

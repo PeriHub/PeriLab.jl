@@ -78,7 +78,7 @@ PeriLab:
         External_Displacements: True
         Strain: True
         Cauchy Stress: True
-  Physics:
+  Models:
     Damage Models:
       Damage:
         Damage Model: Critical Energy

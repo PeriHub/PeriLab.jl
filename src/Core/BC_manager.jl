@@ -7,8 +7,8 @@ export init_BCs
 export apply_bc_dirichlet
 export apply_bc_neumann
 include("../Support/Parameters/parameter_handling.jl")
-using Reexport
-@reexport using .Parameter_Handling: get_bc_definitions
+
+using .Parameter_Handling: get_bc_definitions
 """
     check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module
 

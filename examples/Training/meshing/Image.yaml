@@ -13,7 +13,7 @@ PeriLab:
       Node Set 4: ns_Image_4.txt
       Node Set 5: ns_Image_5.txt
       Node Set 6: ns_Image_6.txt
-  Physics:
+  Models:
     Material Models:
       Material:
         Material Model: "Bond-based Elastic"

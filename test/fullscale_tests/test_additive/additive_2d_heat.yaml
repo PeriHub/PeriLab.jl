@@ -6,7 +6,7 @@ PeriLab:
   Discretization:
     Type: "Text File"
     Input Mesh File: "test_mesh_2d.txt"
-  Physics:
+  Models:
     Additive Models:
       Test:
         Additive Model: "Simple"

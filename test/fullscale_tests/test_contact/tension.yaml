@@ -24,7 +24,7 @@ PeriLab:
         Side Length: 5.0
         Type: Rectangular_Plane
         Allow Contact: True
-  Physics:
+  Models:
     Material Models:
       Mat_1:
         Material Model: "PD Solid Elastic"

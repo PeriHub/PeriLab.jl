@@ -9,7 +9,7 @@ PeriLab:
       Node Set 2: 4 8 12
     Type: "Text File"
     Input Mesh File: "simpleMesh.txt"
-  Physics:
+  Models:
     Material Models:
       Aluminium:
         Material Model: "PD Solid Elastic"

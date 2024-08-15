@@ -9,7 +9,7 @@ PeriLab:
       Node Set 2: 9 10 11 12
     Type: "Text File"
     Input Mesh File: "test_mesh.txt"
-  Physics:
+  Models:
     Material Models:
       Test:
         Material Model: "PD Solid Elastic"

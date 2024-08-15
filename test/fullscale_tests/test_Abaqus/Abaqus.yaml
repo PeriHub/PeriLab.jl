@@ -7,7 +7,7 @@ PeriLab:
     Input Mesh File: plate.inp
     Type: Abaqus
     Distribution Type: Neighbor based
-  Physics:
+  Models:
     Material Models:
       Material_1:
         Material Model: PD Solid Elastic

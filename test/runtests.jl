@@ -111,87 +111,85 @@ MPI.Init()
             end
 
         end
-        @testset "Physics" begin
+        @testset "Models" begin
             @testset "ut_templates" begin
-                include("unit_tests/Physics/ut_templates.jl")
+                include("unit_tests/Models/ut_templates.jl")
             end
             @testset "Additive" begin
                 @testset "ut_Additive_Factory" begin
-                    include("unit_tests/Physics/Additive/ut_Additive_Factory.jl")
+                    include("unit_tests/Models/Additive/ut_Additive_Factory.jl")
                 end
             end
             @testset "Corrosion" begin
                 @testset "ut_Corrosion_Factory" begin
-                    include("unit_tests/Physics/Corrosion/ut_Corrosion_Factory.jl")
+                    include("unit_tests/Models/Corrosion/ut_Corrosion_Factory.jl")
                 end
             end
             @testset "Thermal" begin
                 @testset "ut_Thermal_Factory" begin
-                    include("unit_tests/Physics/Thermal/ut_Thermal_Factory.jl")
+                    include("unit_tests/Models/Thermal/ut_Thermal_Factory.jl")
                 end
                 @testset "ut_Thermal_Flow" begin
-                    include("unit_tests/Physics/Thermal/ut_Thermal_flow.jl")
+                    include("unit_tests/Models/Thermal/ut_Thermal_flow.jl")
                 end
                 @testset "ut_Thermal_Expansion" begin
-                    include("unit_tests/Physics/Thermal/ut_Thermal_expansion.jl")
+                    include("unit_tests/Models/Thermal/ut_Thermal_expansion.jl")
                 end
                 @testset "ut_Heat_transfer" begin
-                    include("unit_tests/Physics/Thermal/ut_Heat_transfer.jl")
+                    include("unit_tests/Models/Thermal/ut_Heat_transfer.jl")
                 end
             end
 
             @testset "ut_Model_Factory" begin
-                include("unit_tests/Physics/ut_Model_Factory.jl")
+                include("unit_tests/Models/ut_Model_Factory.jl")
             end
             @testset "ut_Pre_calculation" begin
-                include(
-                    "unit_tests/Physics/Pre_calculation/ut_bond_deformation_gradient.jl",
-                )
+                include("unit_tests/Models/Pre_calculation/ut_bond_deformation_gradient.jl")
             end
             @testset "ut_Damage" begin
-                include("unit_tests/Physics/Damage/ut_Damage_Factory.jl")
-                include("unit_tests/Physics/Damage/ut_Energy_release.jl")
+                include("unit_tests/Models/Damage/ut_Damage_Factory.jl")
+                include("unit_tests/Models/Damage/ut_Energy_release.jl")
             end
             @testset "ut_Material" begin
                 @testset "ut_Material_Factory" begin
-                    include("unit_tests/Physics/Material/ut_Material_Factory.jl")
+                    include("unit_tests/Models/Material/ut_Material_Factory.jl")
                 end
                 @testset "ut_control" begin
                     include(
-                        "unit_tests/Physics/Material/Zero_Energy_Control/ut_global_control.jl",
+                        "unit_tests/Models/Material/Zero_Energy_Control/ut_global_control.jl",
                     )
                 end
                 @testset "ut_material_basis" begin
-                    include("unit_tests/Physics/Material/ut_material_basis.jl")
+                    include("unit_tests/Models/Material/ut_material_basis.jl")
                 end
                 @testset "ut_bond_based" begin
                     include(
-                        "unit_tests/Physics/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl",
+                        "unit_tests/Models/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl",
                     )
                 end
                 @testset "ut_correspondence" begin
                     include(
-                        "unit_tests/Physics/Material/Material_Models/ut_Correspondence.jl",
+                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl",
                     )
                     include(
-                        "unit_tests/Physics/Material/Material_Models/ut_Correspondence_Plastic.jl",
+                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_Plastic.jl",
                     )
                     include(
-                        "unit_tests/Physics/Material/Material_Models/ut_Correspondence_UMAT.jl",
+                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_UMAT.jl",
                     )
                     include(
-                        "unit_tests/Physics/Material/Material_Models/ut_Bond_Associated_Correspondence.jl",
+                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Bond_Associated_Correspondence.jl",
                     )
                 end
                 @testset "ut_ordinary" begin
                     include(
-                        "unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary.jl",
+                        "unit_tests/Models/Material/Material_Models/Ordinary/ut_ordinary.jl",
                     )
                     include(
-                        "unit_tests/Physics/Material/Material_Models/ut_PD_Solid_Elastic.jl",
+                        "unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Elastic.jl",
                     )
                     include(
-                        "unit_tests/Physics/Material/Material_Models/ut_PD_Solid_Plastic.jl",
+                        "unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Plastic.jl",
                     )
                 end
             end

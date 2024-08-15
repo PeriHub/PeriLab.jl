@@ -77,7 +77,7 @@ end
             "Element Type" => "Lagrange",
             "Material Model" => "Elastic Model",
         ),
-        "Physics" => Dict(
+        "Models" => Dict(
             "Material Models" => Dict(
                 "Not FEM name" => Dict(
                     "Material Model" => "Correspondence Elastic",
@@ -96,7 +96,7 @@ end
             "Element Type" => "Lagrange",
             "Material Model" => "Elastic Model",
         ),
-        "Physics" => Dict(
+        "Models" => Dict(
             "Material Models" => Dict(
                 "Elastic Model" => Dict(
                     "Material Model" => "Correspondence Elastic",
@@ -204,7 +204,7 @@ end
             "Element Type" => "Lagrange",
             "Material Model" => "Elastic Model",
         ),
-        "Physics" => Dict(
+        "Models" => Dict(
             "Material Models" => Dict(
                 "Elastic Model" => Dict(
                     "Material Model" => "Correspondence Elastic",

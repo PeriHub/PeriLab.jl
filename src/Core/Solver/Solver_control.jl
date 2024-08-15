@@ -4,22 +4,19 @@
 
 module Solver
 
-using Reexport
-
 include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
-@reexport using .Parameter_Handling:
+using .Parameter_Handling:
     get_density, get_horizon, get_solver_name, get_solver_options, get_fem_block
-@reexport using .Helpers: find_indices
-include("../../Physics/Model_Factory.jl")
-include("../../Physics/Damage/Damage_Factory.jl")
+using .Helpers: find_indices
+include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../../FEM/FEM_Factory.jl")
 include("../Influence_function.jl")
 
-using .Physics
+using .Model_Factory: init_models, read_properties
 using .Boundary_conditions: init_BCs
 using .Verlet
 using .FEM
@@ -69,10 +66,10 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     end
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
     @debug "Read properties"
-    Physics.read_properties(params, datamanager, solver_options["Material Models"])
+    read_properties(params, datamanager, solver_options["Material Models"])
     @debug "Init models"
     @timeit to "init_models" datamanager =
-        Physics.init_models(params, datamanager, block_nodes, solver_options, to)
+        init_models(params, datamanager, block_nodes, solver_options, to)
     @debug "Init Boundary Conditions"
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
     solver_options["Solver"] = get_solver_name(params)

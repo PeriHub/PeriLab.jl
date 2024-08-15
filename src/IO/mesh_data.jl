@@ -918,7 +918,7 @@ function set_dof(mesh::DataFrame)
     if "z" in names(mesh)
         return Int64(3)
     end
-    @info "2d problem assumed, please define plane stress or plane strain if needed in Physics"
+    @info "2d problem assumed, please define plane stress or plane strain if needed in Models"
     return Int64(2)
 end
 

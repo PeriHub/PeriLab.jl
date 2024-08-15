@@ -6,7 +6,8 @@ include("../Core/Module_inclusion/set_Modules.jl")
 include("./FEM_routines.jl")
 # in future using set modules for material
 # test case is correspondence material
-include("./../Physics/Material/Material_Models/Correspondence_Elastic.jl")
+include("./../Models/Material/Material_Models/Correspondence/Correspondence_Elastic.jl")
+using .Correspondence_Elastic
 
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
@@ -22,14 +23,14 @@ function init_FEM(complete_params::Dict, datamanager::Module)
     end
 
     datamanager.set_properties("FEM", params)
-    if !haskey(complete_params["Physics"]["Material Models"], params["Material Model"])
+    if !haskey(complete_params["Models"]["Material Models"], params["Material Model"])
         @error "The FEM material model $(params["Material Model"]) is not defined"
         return nothing
     end
     datamanager.set_property(
         "FEM",
         "Material Model",
-        complete_params["Physics"]["Material Models"][params["Material Model"]],
+        complete_params["Models"]["Material Models"][params["Material Model"]],
     )
 
     dof = datamanager.get_dof()
