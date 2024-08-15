@@ -33,7 +33,7 @@ Set_modules.Additive_template.compute_additive_model
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Damage
+CurrentModule = PeriLab.Solver.Model_Factory.Damage
 ```
 ## Damage
 ```@docs
