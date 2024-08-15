@@ -8,6 +8,18 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2024-08-15
+
+### Fixed
+
+- Restructuring of the physics factory #168
+
+### Changed
+
+- Physics module is now the Model_Factory
+- in Yaml the definition changes from Physics to Models
+- code cleaning
+
 ## [1.2.1] - 2024-08-14
 
 ### Fixed
