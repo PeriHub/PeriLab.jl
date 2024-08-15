@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Pre_calculation_template
-export compute_Pre_calculation
+export compute
 export Pre_calculation_name
 """
     pre_calculation_name()
