@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-include("../../../../../../src/Physics/Material/Material_Models/BondBased/Bondbased_Elastic.jl")
+include(
+    "../../../../../../src/Physics/Material/Material_Models/BondBased/Bondbased_Elastic.jl",
+)
 
 using .Bondbased_Elastic
 using Test
@@ -36,33 +38,84 @@ end
     dbdN, dbdNP1 = test_data_manager.create_bond_field("Deformed Bond Length", Float64, 1)
     bg = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
     bd = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
-    for iID in 1:nodes
+    for iID = 1:nodes
         bdNP1[iID] .= 1
         bd[iID] .= 1
         dbdNP1[iID] .= 1 + (-1)^iID * 0.1
         dbNP1[iID] .= 1
     end
 
-    test_data_manager = Bondbased_Elastic.compute_forces(test_data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0), 0.0, 0.0, to)
+    test_data_manager = Bondbased_Elastic.compute_forces(
+        test_data_manager,
+        Vector{Int64}(1:nodes),
+        Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0),
+        0.0,
+        0.0,
+        to,
+    )
 
     bf = test_data_manager.get_field("Bond Forces")
-    @test isapprox(bf[1],[-0.47746482927568584 -0.47746482927568584 -0.47746482927568584; -0.47746482927568584 -0.47746482927568584 -0.47746482927568584])
-    @test isapprox(bf[2], [0.024415815133415782 0.024415815133415782 0.024415815133415782; 0.024415815133415782 0.024415815133415782 0.024415815133415782; 0.024415815133415782 0.024415815133415782 0.024415815133415782])
+    @test isapprox(
+        bf[1],
+        [
+            -0.47746482927568584 -0.47746482927568584 -0.47746482927568584
+            -0.47746482927568584 -0.47746482927568584 -0.47746482927568584
+        ],
+    )
+    @test isapprox(
+        bf[2],
+        [
+            0.024415815133415782 0.024415815133415782 0.024415815133415782
+            0.024415815133415782 0.024415815133415782 0.024415815133415782
+            0.024415815133415782 0.024415815133415782 0.024415815133415782
+        ],
+    )
 
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
 
-    test_data_manager = Bondbased_Elastic.compute_forces(test_data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "here is something"), 0.0, 0.0, to)
+    test_data_manager = Bondbased_Elastic.compute_forces(
+        test_data_manager,
+        Vector{Int64}(1:nodes),
+        Dict(
+            "Bulk Modulus" => 1.0,
+            "Young's Modulus" => 1.0,
+            "Symmetry" => "here is something",
+        ),
+        0.0,
+        0.0,
+        to,
+    )
 
     bf = test_data_manager.get_field("Bond Forces")
-    
-    @test isapprox(bf[1],[-0.47746482927568584 -0.47746482927568584 -0.47746482927568584; -0.47746482927568584 -0.47746482927568584 -0.47746482927568584])
-    @test isapprox(bf[2], [0.024415815133415782 0.024415815133415782 0.024415815133415782; 0.024415815133415782 0.024415815133415782 0.024415815133415782; 0.024415815133415782 0.024415815133415782 0.024415815133415782])
+
+    @test isapprox(
+        bf[1],
+        [
+            -0.47746482927568584 -0.47746482927568584 -0.47746482927568584
+            -0.47746482927568584 -0.47746482927568584 -0.47746482927568584
+        ],
+    )
+    @test isapprox(
+        bf[2],
+        [
+            0.024415815133415782 0.024415815133415782 0.024415815133415782
+            0.024415815133415782 0.024415815133415782 0.024415815133415782
+            0.024415815133415782 0.024415815133415782 0.024415815133415782
+        ],
+    )
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
-    test_data_manager = Bondbased_Elastic.compute_forces(test_data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane strain"), 0.0, 0.0, to)
+    test_data_manager = Bondbased_Elastic.compute_forces(
+        test_data_manager,
+        Vector{Int64}(1:nodes),
+        Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane strain"),
+        0.0,
+        0.0,
+        to,
+    )
 
     bf = test_data_manager.get_field("Bond Forces")
 
@@ -77,7 +130,14 @@ end
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
-    test_data_manager = Bondbased_Elastic.compute_forces(test_data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane stress"), 0.0, 0.0, to)
+    test_data_manager = Bondbased_Elastic.compute_forces(
+        test_data_manager,
+        Vector{Int64}(1:nodes),
+        Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane stress"),
+        0.0,
+        0.0,
+        to,
+    )
 
     bf = test_data_manager.get_field("Bond Forces")
     @test isapprox(bf[1][1, 1], -0.15915494309189532)
@@ -90,5 +150,18 @@ end
     @test isapprox(bf[2][2, 2], 0.016277210088943856)
 
     dbdNP1[1][1, end] = 0
-    @test isnothing(Bondbased_Elastic.compute_forces(test_data_manager, Vector{Int64}(1:nodes), Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane stress"), 0.0, 0.0, to))
+    @test isnothing(
+        Bondbased_Elastic.compute_forces(
+            test_data_manager,
+            Vector{Int64}(1:nodes),
+            Dict(
+                "Bulk Modulus" => 1.0,
+                "Young's Modulus" => 1.0,
+                "Symmetry" => "plane stress",
+            ),
+            0.0,
+            0.0,
+            to,
+        ),
+    )
 end

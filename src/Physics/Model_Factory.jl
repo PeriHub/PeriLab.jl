@@ -53,7 +53,15 @@ Computes the physics models
 # Returns
 - `datamanager`: The datamanager
 """
-function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
+function compute_models(
+    datamanager::Module,
+    block_nodes::Dict{Int64,Vector{Int64}},
+    dt::Float64,
+    time::Float64,
+    options::Dict,
+    synchronise_field,
+    to::TimerOutput,
+)
     fem_option = datamanager.fem_active()
     if fem_option
         fe_nodes = datamanager.get_field("FE Nodes")
@@ -61,24 +69,47 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     if options["Additive Models"]
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Additive Model")
-                @timeit to "compute_additive_model_model" datamanager = Additive.compute_additive_model(datamanager, block_nodes[block], datamanager.get_properties(block, "Additive Model"), time, dt)
+                @timeit to "compute_additive_model_model" datamanager =
+                    Additive.compute_additive_model(
+                        datamanager,
+                        block_nodes[block],
+                        datamanager.get_properties(block, "Additive Model"),
+                        time,
+                        dt,
+                    )
             end
         end
     end
 
     active = datamanager.get_field("Active")
     if options["Damage Models"]
-        @timeit to "pre_calculation in damage" datamanager = Pre_calculation.compute(datamanager, block_nodes)
-        @timeit to "pre_synchronize in damage" Pre_calculation.synchronize(datamanager, datamanager.get_physics_options(), synchronise_field)
+        @timeit to "pre_calculation in damage" datamanager =
+            Pre_calculation.compute(datamanager, block_nodes)
+        @timeit to "pre_synchronize in damage" Pre_calculation.synchronize(
+            datamanager,
+            datamanager.get_physics_options(),
+            synchronise_field,
+        )
         for block in eachindex(block_nodes)
             nodes = block_nodes[block]
             active_nodes = view(nodes, find_active(active[nodes]))
             if fem_option
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
             end
-            if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
+            if datamanager.check_property(block, "Damage Model") &&
+               datamanager.check_property(block, "Material Model")
                 datamanager = Damage.set_bond_damage(datamanager, active_nodes)
-                @timeit to "damage_pre_calculation" datamanager = compute_damage_pre_calculation(datamanager, options, active_nodes, block, synchronise_field, time, dt, to)
+                @timeit to "damage_pre_calculation" datamanager =
+                    compute_damage_pre_calculation(
+                        datamanager,
+                        options,
+                        active_nodes,
+                        block,
+                        synchronise_field,
+                        time,
+                        dt,
+                        to,
+                    )
             end
         end
         for block in eachindex(block_nodes)
@@ -87,8 +118,16 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
             if fem_option
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
             end
-            if datamanager.check_property(block, "Damage Model") && datamanager.check_property(block, "Material Model")
-                @timeit to "damage" datamanager = Damage.compute_damage(datamanager, active_nodes, datamanager.get_properties(block, "Damage Model"), block, time, dt)
+            if datamanager.check_property(block, "Damage Model") &&
+               datamanager.check_property(block, "Material Model")
+                @timeit to "damage" datamanager = Damage.compute_damage(
+                    datamanager,
+                    active_nodes,
+                    datamanager.get_properties(block, "Damage Model"),
+                    block,
+                    time,
+                    dt,
+                )
             end
         end
     end
@@ -99,39 +138,79 @@ function compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int6
     if fem_option
         nelements = datamanager.get_num_elements()
         # in future the FE analysis can be put into the block loop. Right now it is outside the block.
-        datamanager = FEM.eval(datamanager, Vector{Int64}(1:nelements), datamanager.get_properties(1, "FEM"), time, dt)
+        datamanager = FEM.eval(
+            datamanager,
+            Vector{Int64}(1:nelements),
+            datamanager.get_properties(1, "FEM"),
+            time,
+            dt,
+        )
     end
 
-    @timeit to "pre_calculation" datamanager = Pre_calculation.compute(datamanager, block_nodes)
-    @timeit to "pre_synchronize" Pre_calculation.synchronize(datamanager, datamanager.get_physics_options(), synchronise_field)
+    @timeit to "pre_calculation" datamanager =
+        Pre_calculation.compute(datamanager, block_nodes)
+    @timeit to "pre_synchronize" Pre_calculation.synchronize(
+        datamanager,
+        datamanager.get_physics_options(),
+        synchronise_field,
+    )
     for block in eachindex(block_nodes)
-        active_nodes, update_nodes = get_active_update_nodes(active, update_list, block_nodes, block)
+        active_nodes, update_nodes =
+            get_active_update_nodes(active, update_list, block_nodes, block)
         if fem_option
-            update_nodes = block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
+            update_nodes =
+                block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
         if options["Thermal Models"]
             if datamanager.check_property(block, "Thermal Model")
-                @timeit to "compute_thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, update_nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
+                @timeit to "compute_thermal_model" datamanager =
+                    Thermal.compute_thermal_model(
+                        datamanager,
+                        update_nodes,
+                        datamanager.get_properties(block, "Thermal Model"),
+                        time,
+                        dt,
+                    )
             end
         end
 
         if options["Material Models"]
             if datamanager.check_property(block, "Material Model")
                 model_param = datamanager.get_properties(block, "Material Model")
-                @timeit to "bond_forces" datamanager = Material.compute_forces(datamanager, update_nodes, model_param, time, dt, to)
+                @timeit to "bond_forces" datamanager = Material.compute_forces(
+                    datamanager,
+                    update_nodes,
+                    model_param,
+                    time,
+                    dt,
+                    to,
+                )
                 #TODO: I think this needs to stay here as we need the active_nodes not the update_nodes
-                @timeit to "distribute_force_densities" datamanager = Material.distribute_force_densities(datamanager, active_nodes)
+                @timeit to "distribute_force_densities" datamanager =
+                    Material.distribute_force_densities(datamanager, active_nodes)
                 if !occursin("Correspondence", model_param["Material Model"])
-                    if options["Calculate Cauchy"] | options["Calculate von Mises"] | options["Calculate Strain"]
+                    if options["Calculate Cauchy"] |
+                       options["Calculate von Mises"] |
+                       options["Calculate Strain"]
                         datamanager = get_partial_stresses(datamanager, active_nodes)
                     end
                     if options["Calculate von Mises"]
-                        datamanager = Material.calculate_von_mises_stress(datamanager, active_nodes)
+                        datamanager =
+                            Material.calculate_von_mises_stress(datamanager, active_nodes)
                     end
                     if options["Calculate Strain"]
-                        material_parameter = datamanager.get_properties(block, "Material Model")
-                        hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], datamanager.get_dof())
-                        datamanager = Material.calculate_strain(datamanager, active_nodes, inv(hookeMatrix))
+                        material_parameter =
+                            datamanager.get_properties(block, "Material Model")
+                        hookeMatrix = get_Hooke_matrix(
+                            material_parameter,
+                            material_parameter["Symmetry"],
+                            datamanager.get_dof(),
+                        )
+                        datamanager = Material.calculate_strain(
+                            datamanager,
+                            active_nodes,
+                            inv(hookeMatrix),
+                        )
                     end
                 end
             end
@@ -158,16 +237,46 @@ Compute the damage pre calculation
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_damage_pre_calculation(datamanager::Module, options::Dict, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64, to::TimerOutput)
+function compute_damage_pre_calculation(
+    datamanager::Module,
+    options::Dict,
+    nodes::Union{SubArray,Vector{Int64}},
+    block::Int64,
+    synchronise_field,
+    time::Float64,
+    dt::Float64,
+    to::TimerOutput,
+)
 
     if options["Thermal Models"]
-        @timeit to "thermal_model" datamanager = Thermal.compute_thermal_model(datamanager, nodes, datamanager.get_properties(block, "Thermal Model"), time, dt)
+        @timeit to "thermal_model" datamanager = Thermal.compute_thermal_model(
+            datamanager,
+            nodes,
+            datamanager.get_properties(block, "Thermal Model"),
+            time,
+            dt,
+        )
     end
 
     if options["Material Models"]
-        @timeit to "compute_forces" datamanager = Material.compute_forces(datamanager, nodes, datamanager.get_properties(block, "Material Model"), time, dt, to)
+        @timeit to "compute_forces" datamanager = Material.compute_forces(
+            datamanager,
+            nodes,
+            datamanager.get_properties(block, "Material Model"),
+            time,
+            dt,
+            to,
+        )
     end
-    datamanager = Damage.compute_damage_pre_calculation(datamanager, nodes, block, datamanager.get_properties(block, "Damage Model"), synchronise_field, time, dt)
+    datamanager = Damage.compute_damage_pre_calculation(
+        datamanager,
+        nodes,
+        block,
+        datamanager.get_properties(block, "Damage Model"),
+        synchronise_field,
+        time,
+        dt,
+    )
     update_list = datamanager.get_field("Update List")
     update_list[nodes] .= false
     return datamanager
@@ -184,15 +293,24 @@ Get block model definition
 - `prop_keys::Vector{String}`: Property keys.
 - `properties`: Properties function.
 # Returns
-- `properties`: Properties function.    
+- `properties`: Properties function.
 """
-function get_block_model_definition(params::Dict, block_id::Int64, prop_keys::Vector{String}, properties)
+function get_block_model_definition(
+    params::Dict,
+    block_id::Int64,
+    prop_keys::Vector{String},
+    properties,
+)
     # properties function from datamanager
     if haskey(params["Blocks"], "block_" * string(block_id))
         block = params["Blocks"]["block_"*string(block_id)]
         for model in prop_keys
             if haskey(block, model)
-                properties(block_id, model, get_model_parameter(params, model, block[model]))
+                properties(
+                    block_id,
+                    model,
+                    get_model_parameter(params, model, block[model]),
+                )
             end
         end
     end
@@ -212,9 +330,16 @@ Initialize models
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict, to::TimerOutput)
+function init_models(
+    params::Dict,
+    datamanager::Module,
+    block_nodes::Dict{Int64,Vector{Int64}},
+    solver_options::Dict,
+    to::TimerOutput,
+)
     dof = datamanager.get_dof()
-    deformed_coorN, deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates", Float64, dof)
+    deformed_coorN, deformed_coorNP1 =
+        datamanager.create_node_field("Deformed Coordinates", Float64, dof)
     deformed_coorN = copy(datamanager.get_field("Coordinates"))
     deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
@@ -230,41 +355,50 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
 
     if solver_options["Additive Models"]
         @info "Init additive models"
-        @timeit to "additive_model_fields" datamanager = Physics.init_additive_model_fields(datamanager)
-        heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
+        @timeit to "additive_model_fields" datamanager =
+            Physics.init_additive_model_fields(datamanager)
+        heat_capacity =
+            datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Additive Model")
-                @timeit to "init additive model" datamanager = Additive.init_additive_model(datamanager, block_nodes[block], block)
+                @timeit to "init additive model" datamanager =
+                    Additive.init_additive_model(datamanager, block_nodes[block], block)
             end
         end
     end
     if solver_options["Corrosion Models"]
         @info "Init corrosion models"
-        @timeit to "corrosion_model_fields" datamanager = Corrosion.init_corrosion_model_fields(datamanager)
+        @timeit to "corrosion_model_fields" datamanager =
+            Corrosion.init_corrosion_model_fields(datamanager)
 
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Corrosion Model")
-                @timeit to "init corrosion model" datamanager = Corrosion.init_corrosion_model(datamanager, block_nodes[block], block)
+                @timeit to "init corrosion model" datamanager =
+                    Corrosion.init_corrosion_model(datamanager, block_nodes[block], block)
             end
         end
     end
     if solver_options["Damage Models"]
         @info "Init damage models"
-        @timeit to "damage_model_fields" datamanager = Damage.init_damage_model_fields(datamanager, params)
+        @timeit to "damage_model_fields" datamanager =
+            Damage.init_damage_model_fields(datamanager, params)
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Damage Model")
-                @timeit to "init damage model" datamanager = Damage.init_damage_model(datamanager, block_nodes[block], block)
+                @timeit to "init damage model" datamanager =
+                    Damage.init_damage_model(datamanager, block_nodes[block], block)
             end
         end
 
     end
     if solver_options["Material Models"]
         @info "Init material models"
-        @timeit to "material model fields" datamanager = Material.init_material_model_fields(datamanager)
+        @timeit to "material model fields" datamanager =
+            Material.init_material_model_fields(datamanager)
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Material Model")
-                @timeit to "init material" datamanager = Material.init_material_model(datamanager, block_nodes[block], block)
+                @timeit to "init material" datamanager =
+                    Material.init_material_model(datamanager, block_nodes[block], block)
             end
         end
     end
@@ -279,12 +413,15 @@ function init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,
     end
     if solver_options["Thermal Models"]
         @info "Init thermal models"
-        @timeit to "thermal model fields" datamanager = Thermal.init_thermal_model_fields(datamanager)
-        heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
+        @timeit to "thermal model fields" datamanager =
+            Thermal.init_thermal_model_fields(datamanager)
+        heat_capacity =
+            datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Thermal Model")
-                @timeit to "init thermal model" datamanager = Thermal.init_thermal_model(datamanager, block_nodes[block], block)
+                @timeit to "init thermal model" datamanager =
+                    Thermal.init_thermal_model(datamanager, block_nodes[block], block)
             end
         end
     end
@@ -334,8 +471,14 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
     if material_model
         dof = datamanager.get_dof()
         for block in blocks
-            Material.check_material_symmetry(dof, datamanager.get_properties(block, "Material Model"))
-            Material.determine_isotropic_parameter(datamanager, datamanager.get_properties(block, "Material Model"))
+            Material.check_material_symmetry(
+                dof,
+                datamanager.get_properties(block, "Material Model"),
+            )
+            Material.determine_isotropic_parameter(
+                datamanager,
+                datamanager.get_properties(block, "Material Model"),
+            )
         end
     end
     return datamanager

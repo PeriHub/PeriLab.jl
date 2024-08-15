@@ -24,11 +24,16 @@ println(element_name())
 ```
 """
 function element_name()
-  return "element Template"
+    return "element Template"
 end
 
 
-function init_element(datamanager::Module, elements::Union{SubArray,Vector{Int64}}, element_params::Dict, p::Vector{Int64})
+function init_element(
+    datamanager::Module,
+    elements::Union{SubArray,Vector{Int64}},
+    element_params::Dict,
+    p::Vector{Int64},
+)
 
 end
 """
@@ -48,13 +53,19 @@ Example:
 ```julia
   ```
 """
-function compute_element(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, element_parameter::Dict, time::Float64, dt::Float64)
-  @info "Please write a element name in element_name()."
-  @info "You can call your routine within the yaml file."
-  @info "Fill the compute_element(datamanager, nodes, element_parameter, time, dt) function."
-  @info "The datamanager and element_parameter holds all you need to solve your problem on element level."
-  @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-  return datamanager
+function compute_element(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    element_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+)
+    @info "Please write a element name in element_name()."
+    @info "You can call your routine within the yaml file."
+    @info "Fill the compute_element(datamanager, nodes, element_parameter, time, dt) function."
+    @info "The datamanager and element_parameter holds all you need to solve your problem on element level."
+    @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+    return datamanager
 end
 
 function shape_function()

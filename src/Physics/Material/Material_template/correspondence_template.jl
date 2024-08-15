@@ -25,7 +25,7 @@ false
 ```
 """
 function fe_support()
-  return false
+    return false
 end
 
 """
@@ -41,8 +41,12 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
-  return datamanager
+function init_material_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    material_parameter::Dict,
+)
+    return datamanager
 end
 
 """
@@ -62,7 +66,7 @@ println(correspondence_name())
 ```
 """
 function correspondence_name()
-  return "Correspondence Template"
+    return "Correspondence Template"
 end
 
 """
@@ -89,13 +93,24 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(datamanager::Module, iID::Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Union{SubArray,Array{Float64,3}}, stress_N::Union{SubArray,Array{Float64,3}}, stress_NP1::Union{SubArray,Array{Float64,3}}, iID_jID_nID::Tuple=())
-  @info "Please write a material name in material_name()."
-  @info "You can call your routine within the yaml file."
-  @info "Fill the compute_forces() and init_material_model() function."
-  @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
-  @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
-  return datamanager, stress_NP1
+function compute_stresses(
+    datamanager::Module,
+    iID::Int64,
+    dof::Int64,
+    material_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+    strain_increment::Union{SubArray,Array{Float64,3}},
+    stress_N::Union{SubArray,Array{Float64,3}},
+    stress_NP1::Union{SubArray,Array{Float64,3}},
+    iID_jID_nID::Tuple = (),
+)
+    @info "Please write a material name in material_name()."
+    @info "You can call your routine within the yaml file."
+    @info "Fill the compute_forces() and init_material_model() function."
+    @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
+    @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+    return datamanager, stress_NP1
 end
 
 """
@@ -120,11 +135,20 @@ Example:
 ```
 """
 
-function compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::Vector{Float64}, stress_N::Vector{Float64}, stress_NP1::Vector{Float64})
+function compute_stresses(
+    datamanager::Module,
+    dof::Int64,
+    material_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+    strain_increment::Vector{Float64},
+    stress_N::Vector{Float64},
+    stress_NP1::Vector{Float64},
+)
 
 
 
-  return stress_NP1, datamanager
+    return stress_NP1, datamanager
 end
 
 end

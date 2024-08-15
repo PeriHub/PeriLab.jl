@@ -57,7 +57,7 @@ end
 
 @testset "get_set_functions" begin
     test_data_manager = PeriLab.Data_manager
-    for i in 1:20
+    for i = 1:20
         test_data_manager.set_dof(i)
         @test test_data_manager.get_dof() == i
         test_data_manager.set_num_controller(i)
@@ -201,7 +201,7 @@ end
 
     I = test_data_manager.get_field("INP1")
     @test typeof(I[1][1, 1]) == Int64
-    for i in 1:num_controller+num_responder
+    for i = 1:num_controller+num_responder
         @test length(I[i][:, 1]) == nn[i]
     end
     @test length(I[1][1, :]) == 7
@@ -231,15 +231,21 @@ end
     @test size(test) == (5,)
     test = test_data_manager.create_constant_node_field("BMatrix", Float64, 3)
     @test size(test) == (50, 3)
-    test = test_data_manager.create_constant_free_size_field("Test_size", Float64, (2, 3, 3))
+    test =
+        test_data_manager.create_constant_free_size_field("Test_size", Float64, (2, 3, 3))
     @test size(test) == (2, 3, 3)
-    test = test_data_manager.create_constant_free_size_field("Test_size_2", Float64, (2, 3, 3, 4))
+    test = test_data_manager.create_constant_free_size_field(
+        "Test_size_2",
+        Float64,
+        (2, 3, 3, 4),
+    )
     @test size(test) == (2, 3, 3, 4)
     test = test_data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
     @test size(test) == (5, 3, 3)
     test = test_data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
     @test size(test) == (5, 3, 3)
-    test, test2 = test_data_manager.create_free_size_field("Test_size_4", Float64, (3, 3, 1, 3))
+    test, test2 =
+        test_data_manager.create_free_size_field("Test_size_4", Float64, (3, 3, 1, 3))
     @test size(test) == (3, 3, 1, 3)
     @test size(test2) == (3, 3, 1, 3)
     @test "Test_size_4N" in test_data_manager.get_all_field_keys()
@@ -260,7 +266,8 @@ end
     nn[5] = 5
     test = test_data_manager.create_constant_node_field("test", Float64, 1)
     @test test == test_data_manager.get_field("test")
-    @test test_data_manager.create_constant_node_field("test", Float64, 1) == test_data_manager.get_field("test")
+    @test test_data_manager.create_constant_node_field("test", Float64, 1) ==
+          test_data_manager.get_field("test")
     test = test_data_manager.create_constant_node_field("test2", Float64, 3)
     @test test == test_data_manager.get_field("test2")
     test1, test2 = test_data_manager.create_node_field("test3", Float64, 1)
@@ -449,13 +456,17 @@ end
     test_data_manager.set_property(2, "Additive Model", "Qd", true)
     @test test_data_manager.get_property(2, "Additive Model", "Qd") == true
     @test isnothing(test_data_manager.get_property(2, "Additive Model", "not there"))
-    @test test_data_manager.get_properties(1, "Material Model") == Dict("C" => "Hello Test", "E" => 3)
+    @test test_data_manager.get_properties(1, "Material Model") ==
+          Dict("C" => "Hello Test", "E" => 3)
     @test test_data_manager.get_properties(1, "Thermal Model") == Dict()
     @test test_data_manager.get_properties(2, "Material Model") == Dict("E" => 1.1)
-    @test test_data_manager.get_properties(2, "Thermal Model") == Dict("E" => [3 1 2; 1 2 3; 1 3 4])
+    @test test_data_manager.get_properties(2, "Thermal Model") ==
+          Dict("E" => [3 1 2; 1 2 3; 1 3 4])
     @test test_data_manager.get_properties(1, "") == Dict()
     @test !test_data_manager.check_property(1, "This is not a property")
-    @test isnothing(test_data_manager.get_property(1, "Thermal Model", "This is not a property"))
+    @test isnothing(
+        test_data_manager.get_property(1, "Thermal Model", "This is not a property"),
+    )
     test_data_manager.set_properties("FEM", Dict("A" => 2, "C" => "Model"))
     @test test_data_manager.get_properties(1, "FEM") == Dict("A" => 2, "C" => "Model")
     @test test_data_manager.get_properties(2, "FEM") == Dict("A" => 2, "C" => "Model")
@@ -506,7 +517,10 @@ end
     # inv_nlist = test_data_manager.get_inverse_nlist()
     # @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}
     # @test length(inv_nlist) == 0
-    test_data_manager.set_inverse_nlist([Dict{Int64,Int64}(1 => 2), Dict{Int64,Int64}(1 => 2, 2 => 1)])
+    test_data_manager.set_inverse_nlist([
+        Dict{Int64,Int64}(1 => 2),
+        Dict{Int64,Int64}(1 => 2, 2 => 1),
+    ])
     inv_nlist = test_data_manager.get_inverse_nlist()
     @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}
     @test length(inv_nlist) == 2

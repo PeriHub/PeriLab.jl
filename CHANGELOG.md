@@ -8,7 +8,18 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.0] - 2024-07-08
+## [1.2.1] - 2024-08-14
+
+### Fixed
+
+- Varying material properties #175
+
+### Changed
+
+- pre-commit hooks
+- code cleaning
+
+## [1.2.0] - 2024-08-09
 
 ### Added
 
@@ -45,7 +56,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- CSV Output order 
+- CSV Output order
 - Force Boundary Condition
 - Nodeset compute class
 - Orientation
@@ -88,7 +99,7 @@ All notable changes to this project will be documented in this file.
 - Volume calculation for Abaqus
 - #137
 
-### Added 
+### Added
 
 - Abaqus Test
 

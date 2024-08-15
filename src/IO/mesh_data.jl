@@ -33,20 +33,36 @@ Initializes the data for the mesh.
 - `datamanager::Data_manager`: The data manager.
 - `params::Dict`: The parameters for the simulation.
 """
-function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm, to::TimerOutput)
+function init_data(
+    params::Dict,
+    path::String,
+    datamanager::Module,
+    comm::MPI.Comm,
+    to::TimerOutput,
+)
     @timeit to "init_data - mesh_data,jl" begin
         size = MPI.Comm_size(comm)
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
         if rank == 1
-            @timeit to "load_and_evaluate_mesh" distribution, mesh, ntype, overlap_map, nlist, nlist_filtered_ids, bond_norm, dof, nsets, topology, element_distribution = load_and_evaluate_mesh(params, path, size, to)
+            @timeit to "load_and_evaluate_mesh" distribution,
+            mesh,
+            ntype,
+            overlap_map,
+            nlist,
+            nlist_filtered_ids,
+            bond_norm,
+            dof,
+            nsets,
+            topology,
+            element_distribution = load_and_evaluate_mesh(params, path, size, to)
             if !isnothing(element_distribution)
                 fem_active = true
             end
 
             data = [
-                "Mesh input overview" "" "";
-                "Number of nodes" "."^10 length(mesh[!, "x"]);
+                "Mesh input overview" "" ""
+                "Number of nodes" "."^10 length(mesh[!, "x"])
                 "Geometrical degrees of freedoms" "."^10 dof
             ]
             if fem_active
@@ -75,8 +91,10 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
             nlist = send_value(comm, 0, nlist)
             nlist_filtered_ids = send_value(comm, 0, nlist_filtered_ids)
         end
-        num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
-        num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"], Int64)
+        num_controller::Int64 =
+            send_single_value_from_vector(comm, 0, ntype["controllers"], Int64)
+        num_responder::Int64 =
+            send_single_value_from_vector(comm, 0, ntype["responder"], Int64)
         dof = datamanager.set_dof(dof)
         datamanager.set_overlap_map(overlap_map)
         datamanager.set_num_controller(num_controller)
@@ -86,12 +104,28 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
         # defines the order of the global nodes to the local core nodes
         datamanager.set_distribution(distribution[rank])
         datamanager.set_glob_to_loc(glob_to_loc(distribution[rank]))
-        @timeit to "get_local_overlap_map" overlap_map = get_local_overlap_map(overlap_map, distribution, size)
-        @timeit to "distribution_to_cores" datamanager = distribution_to_cores(comm, datamanager, mesh, distribution, dof)
-        @timeit to "distribute_neighborhoodlist_to_cores" datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist, distribution, false)
+        @timeit to "get_local_overlap_map" overlap_map =
+            get_local_overlap_map(overlap_map, distribution, size)
+        @timeit to "distribution_to_cores" datamanager =
+            distribution_to_cores(comm, datamanager, mesh, distribution, dof)
+        @timeit to "distribute_neighborhoodlist_to_cores" datamanager =
+            distribute_neighborhoodlist_to_cores(
+                comm,
+                datamanager,
+                nlist,
+                distribution,
+                false,
+            )
 
         if !isnothing(nlist_filtered_ids)
-            create_and_distribute_bond_norm(comm, datamanager, nlist_filtered_ids, distribution, bond_norm, dof)
+            create_and_distribute_bond_norm(
+                comm,
+                datamanager,
+                nlist_filtered_ids,
+                distribution,
+                bond_norm,
+                dof,
+            )
         end
 
         datamanager.set_block_list(datamanager.get_field("Block_Id"))
@@ -103,7 +137,11 @@ function init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Co
             topology = send_value(comm, 0, topology)
             datamanager.set_num_elements(length(element_distribution[rank]))
             @debug "Set local topology vector"
-            datamanager = get_local_element_topology(datamanager, topology[element_distribution[rank]], distribution[rank])
+            datamanager = get_local_element_topology(
+                datamanager,
+                topology[element_distribution[rank]],
+                distribution[rank],
+            )
         end
         mesh = nothing
         @debug "Finish init data"
@@ -124,10 +162,23 @@ Create and distribute the bond norm
 - `bond_norm::Vector{Float64}`: The bond norm
 - `dof::Int64`: The degree of freedom
 """
-function create_and_distribute_bond_norm(comm::MPI.Comm, datamanager::Module, nlist_filtered_ids::Vector{Vector{Int64}}, distribution::Vector{Vector{Int64}}, bond_norm::Vector{Matrix{Float64}}, dof::Int64)
+function create_and_distribute_bond_norm(
+    comm::MPI.Comm,
+    datamanager::Module,
+    nlist_filtered_ids::Vector{Vector{Int64}},
+    distribution::Vector{Vector{Int64}},
+    bond_norm::Vector{Matrix{Float64}},
+    dof::Int64,
+)
     bond_norm = send_value(comm, 0, bond_norm)
     bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
-    datamanager = distribute_neighborhoodlist_to_cores(comm, datamanager, nlist_filtered_ids, distribution, true)
+    datamanager = distribute_neighborhoodlist_to_cores(
+        comm,
+        datamanager,
+        nlist_filtered_ids,
+        distribution,
+        true,
+    )
     bond_norm_field .= bond_norm
 end
 
@@ -143,7 +194,11 @@ Get the local element topology
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function get_local_element_topology(datamanager::Module, topology::Vector{Vector{Int64}}, distribution::Vector{Int64})
+function get_local_element_topology(
+    datamanager::Module,
+    topology::Vector{Vector{Int64}},
+    distribution::Vector{Int64},
+)
     if length(topology[1]) == 0
         return datamanager
     end
@@ -156,7 +211,11 @@ function get_local_element_topology(datamanager::Module, topology::Vector{Vector
             # - can be avoided right now by setting zeros in the topology vector as empty nodes
         end
     end
-    topo = datamanager.create_constant_free_size_field("FE Topology", Int64, (length(topology), master_len))
+    topo = datamanager.create_constant_free_size_field(
+        "FE Topology",
+        Int64,
+        (length(topology), master_len),
+    )
     ilocal = glob_to_loc(distribution)
     for el_id in eachindex(topology)
         topo[el_id, :] = local_nodes_from_dict(ilocal, topology[el_id])
@@ -178,19 +237,25 @@ Changes entries in the overlap map from the global numbering to the local comput
 
 Example:
 ```julia
-get_local_overlap_map(overlap_map, distribution, ranks)  # returns local nodes 
+get_local_overlap_map(overlap_map, distribution, ranks)  # returns local nodes
 ```
 """
-function get_local_overlap_map(overlap_map, distribution::Vector{Vector{Int64}}, ranks::Int64)
+function get_local_overlap_map(
+    overlap_map,
+    distribution::Vector{Vector{Int64}},
+    ranks::Int64,
+)
     if ranks == 1
         return overlap_map
     end
-    for irank in 1:ranks
+    for irank = 1:ranks
         ilocal = glob_to_loc(distribution[irank])
-        for jrank in 1:ranks
+        for jrank = 1:ranks
             if irank != jrank
-                overlap_map[irank][jrank]["Responder"] .= local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Responder"])
-                overlap_map[irank][jrank]["Controller"] .= local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Controller"])
+                overlap_map[irank][jrank]["Responder"] .=
+                    local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Responder"])
+                overlap_map[irank][jrank]["Controller"] .=
+                    local_nodes_from_dict(ilocal, overlap_map[irank][jrank]["Controller"])
             end
         end
     end
@@ -209,7 +274,10 @@ Changes entries in the overlap map from the global numbering to the local comput
 - `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
 """
 function local_nodes_from_dict(glob_to_loc::Dict{Int,Int}, global_nodes::Vector{Int64})
-    return Int64[glob_to_loc[global_node] for global_node in global_nodes if haskey(glob_to_loc, global_node)]
+    return Int64[
+        glob_to_loc[global_node] for
+        global_node in global_nodes if haskey(glob_to_loc, global_node)
+    ]
 end
 
 """
@@ -225,20 +293,30 @@ Distributes the neighborhood list to the cores.
 # Returns
 - `datamanager::Module`: data manager
 """
-function distribute_neighborhoodlist_to_cores(comm::MPI.Comm, datamanager::Module, nlist::Vector{Vector{Int64}}, distribution::Vector{Vector{Int64}}, filtered::Bool)
+function distribute_neighborhoodlist_to_cores(
+    comm::MPI.Comm,
+    datamanager::Module,
+    nlist::Vector{Vector{Int64}},
+    distribution::Vector{Vector{Int64}},
+    filtered::Bool,
+)
     send_msg = 0
     if filtered
-        length_nlist = datamanager.create_constant_node_field("Number of Filtered Neighbors", Int64, 1)
+        length_nlist =
+            datamanager.create_constant_node_field("Number of Filtered Neighbors", Int64, 1)
     else
-        length_nlist = datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
+        length_nlist =
+            datamanager.create_constant_node_field("Number of Neighbors", Int64, 1)
     end
     rank = MPI.Comm_rank(comm)
     if rank == 0
         send_msg = get_number_of_neighbornodes(nlist, filtered)
     end
-    length_nlist .= send_vector_from_root_to_core_i(comm, send_msg, length_nlist, distribution)
+    length_nlist .=
+        send_vector_from_root_to_core_i(comm, send_msg, length_nlist, distribution)
     if filtered
-        nlist_core = datamanager.create_constant_bond_field("FilteredNeighborhoodlist", Int64, 1)
+        nlist_core =
+            datamanager.create_constant_bond_field("FilteredNeighborhoodlist", Int64, 1)
     else
         nlist_core = datamanager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
     end
@@ -283,8 +361,15 @@ function get_bond_geometry(datamanager::Module)
     nlist = datamanager.get_field("Neighborhoodlist")
     coor = datamanager.get_field("Coordinates")
     undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof)
-    undeformed_bond_length = datamanager.create_constant_bond_field("Bond Length", Float64, 1)
-    undeformed_bond, undeformed_bond_length = Geometry.bond_geometry(Vector(1:nnodes), nlist, coor, undeformed_bond, undeformed_bond_length)
+    undeformed_bond_length =
+        datamanager.create_constant_bond_field("Bond Length", Float64, 1)
+    undeformed_bond, undeformed_bond_length = Geometry.bond_geometry(
+        Vector(1:nnodes),
+        nlist,
+        coor,
+        undeformed_bond,
+        undeformed_bond_length,
+    )
     return datamanager
 end
 
@@ -318,7 +403,13 @@ Distributes the mesh data to the cores
 # Returns
 - `datamanager::Module`: data manager
 """
-function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh::DataFrame, distribution::Vector{Vector{Int64}}, dof::Int64)
+function distribution_to_cores(
+    comm::MPI.Comm,
+    datamanager::Module,
+    mesh::DataFrame,
+    distribution::Vector{Vector{Int64}},
+    dof::Int64,
+)
     # init block_id field
     rank = MPI.Comm_rank(comm)
     if rank == 0
@@ -329,7 +420,11 @@ function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh::DataFr
     meshdata = send_value(comm, 0, meshdata)
     for fieldname in keys(meshdata)
         field_dof = length(meshdata[fieldname]["Mesh ID"])
-        datafield = datamanager.create_constant_node_field(fieldname, meshdata[fieldname]["Type"], field_dof)
+        datafield = datamanager.create_constant_node_field(
+            fieldname,
+            meshdata[fieldname]["Type"],
+            field_dof,
+        )
         for (localDof, mesh_id) in enumerate(meshdata[fieldname]["Mesh ID"])
             if rank == 0
                 send_msg = meshdata[fieldname]["Type"].(mesh[!, mesh_id])
@@ -339,9 +434,15 @@ function distribution_to_cores(comm::MPI.Comm, datamanager::Module, mesh::DataFr
                 send_msg = 0
             end
             if field_dof == 1
-                datafield .= send_vector_from_root_to_core_i(comm, send_msg, datafield, distribution)
+                datafield .=
+                    send_vector_from_root_to_core_i(comm, send_msg, datafield, distribution)
             else
-                datafield[:, localDof] = send_vector_from_root_to_core_i(comm, send_msg, datafield[:, localDof], distribution)
+                datafield[:, localDof] = send_vector_from_root_to_core_i(
+                    comm,
+                    send_msg,
+                    datafield[:, localDof],
+                    distribution,
+                )
             end
         end
     end
@@ -374,7 +475,9 @@ function check_mesh_elements(mesh::DataFrame, dof::Int64)
 
     for (id, mesh_entry) in enumerate(mnames)
         field_dof = 1
-        if ("y" == mesh_entry) || ("z" == mesh_entry) || (mesh_entry[1:end-1] in keys(mesh_info_dict))
+        if ("y" == mesh_entry) ||
+           ("z" == mesh_entry) ||
+           (mesh_entry[1:end-1] in keys(mesh_info_dict))
             continue
         end
 
@@ -410,8 +513,7 @@ function check_mesh_elements(mesh::DataFrame, dof::Int64)
         if mesh[1, mesh_id[1]] isa Bool
             vartype = Bool
         else
-            vartype = typeof(sum(sum(mesh[:, mid])
-                                 for mid in mesh_id))
+            vartype = typeof(sum(sum(mesh[:, mid]) for mid in mesh_id))
         end
         mesh_info_dict[name] = Dict{String,Any}("Mesh ID" => mesh_id, "Type" => vartype)
     end
@@ -461,7 +563,15 @@ Read csv and return it as a DataFrame.
 """
 function csv_reader(filename::String)
     header_line, header = get_header(filename)
-    return CSV.read(filename, DataFrame; delim=" ", ignorerepeated=true, header=header, skipto=header_line + 1, comment="#")
+    return CSV.read(
+        filename,
+        DataFrame;
+        delim = " ",
+        ignorerepeated = true,
+        header = header,
+        skipto = header_line + 1,
+        comment = "#",
+    )
 end
 
 """
@@ -489,39 +599,86 @@ function read_mesh(filename::String, params::Dict)
 
         coords = read_coordinates(exo)
         mesh_df = DataFrame(
-            x=Float64[],
-            y=Float64[],
-            z=Float64[],
-            volume=Float64[],
-            block_id=Int64[],
+            x = Float64[],
+            y = Float64[],
+            z = Float64[],
+            volume = Float64[],
+            block_id = Int64[],
         )
         block_ids = read_ids(exo, Block)
 
         for (iID, block_id) in enumerate(block_ids)
             block = read_block(exo, block_id)
-            block_id_map = Exodus.read_block_connectivity(exo, block_id, block.num_nodes_per_elem * block.num_elem)
+            block_id_map = Exodus.read_block_connectivity(
+                exo,
+                block_id,
+                block.num_nodes_per_elem * block.num_elem,
+            )
             if block.elem_type == "TETRA"
-                for i in 1:block.num_elem
+                for i = 1:block.num_elem
                     indices = block.num_nodes_per_elem*(i-1)+1:block.num_nodes_per_elem*i
                     node_ids = block_id_map[indices]
                     vertices = coords[:, node_ids]
-                    center = sum(vertices, dims=2) / size(vertices)[2]
+                    center = sum(vertices, dims = 2) / size(vertices)[2]
                     volume = tetrahedron_volume(vertices)
-                    push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=Int64(block_id)))
+                    push!(
+                        mesh_df,
+                        (
+                            x = center[1],
+                            y = center[2],
+                            z = center[3],
+                            volume = volume,
+                            block_id = Int64(block_id),
+                        ),
+                    )
                 end
             elseif block.elem_type == "HEX8"
-                for i in 1:block.num_elem
+                for i = 1:block.num_elem
                     indices = block.num_nodes_per_elem*(i-1)+1:block.num_nodes_per_elem*i
                     node_ids = block_id_map[indices]
                     vertices = coords[:, node_ids]
-                    center = sum(vertices, dims=2) / size(vertices)[2]
-                    volume1 = tetrahedron_volume([vertices[:, 1], vertices[:, 2], vertices[:, 4], vertices[:, 5]])
-                    volume2 = tetrahedron_volume([vertices[:, 2], vertices[:, 3], vertices[:, 4], vertices[:, 7]])
-                    volume3 = tetrahedron_volume([vertices[:, 2], vertices[:, 5], vertices[:, 6], vertices[:, 7]])
-                    volume4 = tetrahedron_volume([vertices[:, 4], vertices[:, 5], vertices[:, 7], vertices[:, 8]])
-                    volume5 = tetrahedron_volume([vertices[:, 2], vertices[:, 4], vertices[:, 5], vertices[:, 7]])
+                    center = sum(vertices, dims = 2) / size(vertices)[2]
+                    volume1 = tetrahedron_volume([
+                        vertices[:, 1],
+                        vertices[:, 2],
+                        vertices[:, 4],
+                        vertices[:, 5],
+                    ])
+                    volume2 = tetrahedron_volume([
+                        vertices[:, 2],
+                        vertices[:, 3],
+                        vertices[:, 4],
+                        vertices[:, 7],
+                    ])
+                    volume3 = tetrahedron_volume([
+                        vertices[:, 2],
+                        vertices[:, 5],
+                        vertices[:, 6],
+                        vertices[:, 7],
+                    ])
+                    volume4 = tetrahedron_volume([
+                        vertices[:, 4],
+                        vertices[:, 5],
+                        vertices[:, 7],
+                        vertices[:, 8],
+                    ])
+                    volume5 = tetrahedron_volume([
+                        vertices[:, 2],
+                        vertices[:, 4],
+                        vertices[:, 5],
+                        vertices[:, 7],
+                    ])
                     volume = volume1 + volume2 + volume3 + volume4 + volume5
-                    push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=Int64(block_id)))
+                    push!(
+                        mesh_df,
+                        (
+                            x = center[1],
+                            y = center[2],
+                            z = center[3],
+                            volume = volume,
+                            block_id = Int64(block_id),
+                        ),
+                    )
                 end
             else
                 @error "Element type $(block.elem_type) not supported"
@@ -536,7 +693,7 @@ function read_mesh(filename::String, params::Dict)
 
     elseif params["Discretization"]["Type"] == "Abaqus"
 
-        mesh = abaqus_read_mesh(filename; verbose=false)
+        mesh = abaqus_read_mesh(filename; verbose = false)
 
         nodes = mesh["nodes"]
         elements = mesh["elements"]
@@ -552,9 +709,10 @@ function read_mesh(filename::String, params::Dict)
         end
         @info "Abaqus mesh with $dof DOF"
 
-        mesh_df = ifelse(dof == 2,
-            DataFrame(x=[], y=[], volume=[], block_id=Int[]),
-            DataFrame(x=[], y=[], z=[], volume=[], block_id=Int[])
+        mesh_df = ifelse(
+            dof == 2,
+            DataFrame(x = [], y = [], volume = [], block_id = Int[]),
+            DataFrame(x = [], y = [], z = [], volume = [], block_id = Int[]),
         )
 
         id = 1
@@ -579,9 +737,26 @@ function read_mesh(filename::String, params::Dict)
                 volume = calculate_volume(string(element_type), vertices)
                 center = sum(vertices) / size(vertices)[1]
                 if dof == 2
-                    push!(mesh_df, (x=center[1], y=center[2], volume=volume, block_id=block_id))
+                    push!(
+                        mesh_df,
+                        (
+                            x = center[1],
+                            y = center[2],
+                            volume = volume,
+                            block_id = block_id,
+                        ),
+                    )
                 else
-                    push!(mesh_df, (x=center[1], y=center[2], z=center[3], volume=volume, block_id=block_id))
+                    push!(
+                        mesh_df,
+                        (
+                            x = center[1],
+                            y = center[2],
+                            z = center[3],
+                            volume = volume,
+                            block_id = block_id,
+                        ),
+                    )
                 end
                 push!(element_written, element_id)
                 id += 1
@@ -595,7 +770,7 @@ function read_mesh(filename::String, params::Dict)
 
         txt_file = replace(filename, ".inp" => ".txt")
         write(txt_file, "header: x y volume block_id\n")
-        CSV.write(txt_file, mesh_df; delim=' ', append=true)
+        CSV.write(txt_file, mesh_df; delim = ' ', append = true)
 
         mesh = nothing
         nodes = nothing
@@ -671,7 +846,7 @@ function hex8_volume(hex_vertices::Vector{Vector{Float64}})
         [hex_vertices[2], hex_vertices[3], hex_vertices[4], hex_vertices[7]],
         [hex_vertices[2], hex_vertices[5], hex_vertices[6], hex_vertices[7]],
         [hex_vertices[4], hex_vertices[5], hex_vertices[7], hex_vertices[8]],
-        [hex_vertices[2], hex_vertices[4], hex_vertices[5], hex_vertices[7]]
+        [hex_vertices[2], hex_vertices[4], hex_vertices[5], hex_vertices[7]],
     ]
 
     volumes = []
@@ -696,7 +871,7 @@ function wedge6_volume(wedge_vertices::Vector{Vector{Float64}})
     tets = [
         [wedge_vertices[1], wedge_vertices[2], wedge_vertices[3], wedge_vertices[4]],
         [wedge_vertices[2], wedge_vertices[3], wedge_vertices[4], wedge_vertices[5]],
-        [wedge_vertices[3], wedge_vertices[4], wedge_vertices[5], wedge_vertices[6]]
+        [wedge_vertices[3], wedge_vertices[4], wedge_vertices[5], wedge_vertices[6]],
     ]
 
     volumes = []
@@ -721,7 +896,7 @@ function area_of_polygon(vertices)
     n = length(vertices)
     area = 0.0
 
-    for i in 1:n
+    for i = 1:n
         j = mod(i, n) + 1
         area += (vertices[i][1] + vertices[j][1]) * (vertices[i][2] - vertices[j][2])
     end
@@ -802,10 +977,16 @@ Load and evaluate the mesh data.
 - `topology::Int64`::Array{Int64,nelement:nodes}`: The topology of elements.
 - `el_distribution::Array{Int64,1}`: The distribution of the finite elements.
 """
-function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
+function load_and_evaluate_mesh(
+    params::Dict,
+    path::String,
+    ranksize::Int64,
+    to::TimerOutput,
+)
 
     if params["Discretization"]["Type"] == "Abaqus"
-        mesh, nsets = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        mesh, nsets =
+            read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
         nnodes = size(mesh, 1) + 1
         mesh, surface_ns = extrude_surface_mesh(mesh, params)
         if !isnothing(surface_ns)
@@ -823,7 +1004,8 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
 
     external_topology = nothing
     if !isnothing(get_external_topology_name(params))
-        external_topology = read_external_topology(joinpath(path, get_external_topology_name(params)))
+        external_topology =
+            read_external_topology(joinpath(path, get_external_topology_name(params)))
     end
     if !isnothing(external_topology)
         @info "External topology files was read."
@@ -831,17 +1013,28 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
     dof::Int64 = set_dof(mesh)
     @timeit to "neighborhoodlist" nlist = create_neighborhoodlist(mesh, params, dof)
     @debug "Finished init Neighborhoodlist"
-    @timeit to "apply_bond_filters" nlist, nlist_filtered_ids, bond_norm = apply_bond_filters(nlist, mesh, params, dof)
+    @timeit to "apply_bond_filters" nlist, nlist_filtered_ids, bond_norm =
+        apply_bond_filters(nlist, mesh, params, dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
-        nlist, topology = create_consistent_neighborhoodlist(external_topology, params["Discretization"]["Input External Topology"], nlist, dof)
+        nlist, topology = create_consistent_neighborhoodlist(
+            external_topology,
+            params["Discretization"]["Input External Topology"],
+            nlist,
+            dof,
+        )
     end
     @debug "Start distribution"
     if haskey(params["Discretization"], "Distribution Type")
-        @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize, params["Discretization"]["Distribution Type"])
+        @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(
+            nlist,
+            ranksize,
+            params["Discretization"]["Distribution Type"],
+        )
     else
-        @timeit to "node_distribution" distribution, ptc, ntype = node_distribution(nlist, ranksize)
+        @timeit to "node_distribution" distribution, ptc, ntype =
+            node_distribution(nlist, ranksize)
     end
 
     el_distribution = nothing
@@ -853,20 +1046,35 @@ function load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to:
     @debug "Create Overlap"
     @timeit to "overlap_map" overlap_map = create_overlap_map(distribution, ptc, ranksize)
     @debug "Finished Overlap"
-    return distribution, mesh, ntype, overlap_map, nlist, nlist_filtered_ids, bond_norm, dof, nsets, topology, el_distribution
+    return distribution,
+    mesh,
+    ntype,
+    overlap_map,
+    nlist,
+    nlist_filtered_ids,
+    bond_norm,
+    dof,
+    nsets,
+    topology,
+    el_distribution
 end
 
-function create_consistent_neighborhoodlist(external_topology::DataFrame, params::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+function create_consistent_neighborhoodlist(
+    external_topology::DataFrame,
+    params::Dict,
+    nlist::Vector{Vector{Int64}},
+    dof::Int64,
+)
     pd_neighbors::Bool = false
     if haskey(params, "Add Neighbor Search")
         pd_neighbors = params["Add Neighbor Search"]
     end
     number_of_elements = length(external_topology[:, 1])
     topology::Vector{Vector{Int64}} = []
-    for i_el in 1:number_of_elements
+    for i_el = 1:number_of_elements
         push!(topology, collect(skipmissing(external_topology[i_el, :])))
     end
-    nodes_to_element = [Any[] for _ in 1:maximum(maximum(topology))]
+    nodes_to_element = [Any[] for _ = 1:maximum(maximum(topology))]
     fe_nodes = Vector{Int64}()
     for (el_id, topo) in enumerate(topology)
         for node in topo
@@ -918,7 +1126,7 @@ Get the number of neighbors for each node.
 function get_number_of_neighbornodes(nlist::Vector{Vector{Int64}}, filtered::Bool)
     len = length(nlist)
     length_nlist = zeros(Int64, len)
-    for id in 1:len
+    for id = 1:len
         if !filtered && length(nlist[id]) == 0
             @error "Node $id has no neighbors please check the horizon."
             return nothing
@@ -941,7 +1149,11 @@ Create the distribution of the finite elements. Is needed to avoid multiple elem
 - `distribution::Vector{Vector{Int64}}`: The distribution of the nodes.
 - `etc::Vector{Int64}`: The number of nodes in each rank.
 """
-function element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64}, size::Int64)
+function element_distribution(
+    topology::Vector{Vector{Int64}},
+    ptc::Vector{Int64},
+    size::Int64,
+)
     nelements = length(topology)
     if size == 1
         distribution = [collect(1:nelements)]
@@ -950,7 +1162,7 @@ function element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64
         distribution, etc = create_distribution(nelements, size)
         # check if at least one node of an element is at the same core
         temp = []
-        for i_core in 1:size
+        for i_core = 1:size
             push!(temp, Vector{Int64}([]))
             #nchunks = length(distribution[i])
             for el_id in distribution[i_core]
@@ -959,7 +1171,7 @@ function element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64
                 end
             end
         end
-        for i_core in 1:size
+        for i_core = 1:size
             if length(temp[i_core]) > 0
                 for el_id in temp[i_core]
                     # find core with the lowest number of elements on it
@@ -967,9 +1179,12 @@ function element_distribution(topology::Vector{Vector{Int64}}, ptc::Vector{Int64
                     # check the number of elements at all of these cores
                     # find the core with the lowest number of elements
                     # put the element there
-                    min_core = ptc[topology[el_id][argmin(length.(distribution[ptc[topology[el_id]]]))]]
+                    min_core = ptc[topology[el_id][argmin(
+                        length.(distribution[ptc[topology[el_id]]]),
+                    )]]
                     push!(distribution[min_core], el_id)
-                    distribution[etc[el_id]] = filter(x -> x != el_id, distribution[etc[el_id]])
+                    distribution[etc[el_id]] =
+                        filter(x -> x != el_id, distribution[etc[el_id]])
                     etc[el_id] = min_core
                 end
             end
@@ -992,7 +1207,11 @@ Create the distribution of the nodes.
 - `ptc::Vector{Int64}`: Defines at which core / rank each node lies.
 - `ntype::Dict`: The type of the nodes.
 """
-function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, distribution_type::String="Neighbor based")
+function node_distribution(
+    nlist::Vector{Vector{Int64}},
+    size::Int64,
+    distribution_type::String = "Neighbor based",
+)
 
     nnodes = length(nlist)
     ntype = Dict("controllers" => Int64[], "responder" => Int64[])
@@ -1010,12 +1229,12 @@ function node_distribution(nlist::Vector{Vector{Int64}}, size::Int64, distributi
         distribution, ptc = create_distribution(nnodes, size)
     end
     # check neighborhood & overlap -> all nodes after chunk are overlap
-    for i in 1:size
+    for i = 1:size
         nchunks = length(distribution[i])
         append!(ntype["controllers"], nchunks)
 
         tempid = Int64[]
-        for j in 1:nchunks
+        for j = 1:nchunks
             id = distribution[i][j]
             # find all nodes which are not in chunk
             # add them to list as responder nodes for data exchange
@@ -1046,11 +1265,14 @@ Initialize the overlap map.
 function _init_overlap_map_(size)
     #[[[], [[2], [1]], [[2], [5]]], [[[1], [3]], [], [[1, 2], [6, 7]]], [[], [[1, 2], [4, 5]], []]]
     overlap_map = Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}()
-    for i in 1:size
+    for i = 1:size
         overlap_map[i] = Dict{Int64,Dict{String,Vector{Int64}}}()
-        for j in 1:size
+        for j = 1:size
             if i != j
-                overlap_map[i][j] = Dict{String,Vector{Int64}}("Responder" => Int64[], "Controller" => Int64[])
+                overlap_map[i][j] = Dict{String,Vector{Int64}}(
+                    "Responder" => Int64[],
+                    "Controller" => Int64[],
+                )
             end
         end
     end
@@ -1070,17 +1292,21 @@ Create the overlap map.
 # Returns
 - `overlap_map::Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}`: The overlap map.
 """
-function create_overlap_map(distribution::Vector{Vector{Int64}}, ptc::Vector{Int64}, size::Int64)
+function create_overlap_map(
+    distribution::Vector{Vector{Int64}},
+    ptc::Vector{Int64},
+    size::Int64,
+)
 
     overlap_map = _init_overlap_map_(size)
     if size == 1
         return overlap_map
     end
-    for icoreID in 1:size
+    for icoreID = 1:size
         # distribution of nodes at core i
         vector = distribution[icoreID]
         # gives core ids of all nodes not controller at core icoreID
-        for jcoreID in 1:size
+        for jcoreID = 1:size
             if icoreID == jcoreID
                 continue
             end
@@ -1106,7 +1332,11 @@ Calculate the initial size of each chunk for a nearly equal number of nodes vs. 
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
-function create_distribution_node_based(nnodes::Int64, nlist::Vector{Vector{Int64}}, size::Int64)
+function create_distribution_node_based(
+    nnodes::Int64,
+    nlist::Vector{Vector{Int64}},
+    size::Int64,
+)
     if size > nnodes
         @error "Number of cores $size exceeds number of nodes $nnodes."
         return nothing, nothing
@@ -1117,7 +1347,7 @@ function create_distribution_node_based(nnodes::Int64, nlist::Vector{Vector{Int6
     end
     # Split the data into chunks
     distribution = Vector{Vector{Int64}}(undef, size - 1)
-    for i in 1:size-1
+    for i = 1:size-1
         distribution[i] = zeros(Int64, chunk_size)
     end
     # this leads to a coupling of elements
@@ -1128,7 +1358,7 @@ function create_distribution_node_based(nnodes::Int64, nlist::Vector{Vector{Int6
     not_included_nodes::Vector{Bool} = fill(true, nnodes)
     isize::Int64 = 1
 
-    for iID in 1:nnodes
+    for iID = 1:nnodes
         if not_included_nodes[iID]
             idx = findfirst(isequal(0), distribution[isize])
             if isnothing(idx)
@@ -1153,7 +1383,7 @@ function create_distribution_node_based(nnodes::Int64, nlist::Vector{Vector{Int6
     if sum(not_included_nodes) > 0
         @error "code must be improved"
     end
-    for i in 1:size
+    for i = 1:size
         point_to_core[distribution[i]] .= i
     end
     return distribution, point_to_core
@@ -1172,7 +1402,11 @@ Calculate the initial size of each chunk for a nearly equal number of nodes vs. 
 - `distribution::Array{Int64,1}`: The distribution of the nodes.
 - `point_to_core::Array{Int64,1}`: The number of nodes in each rank.
 """
-function create_distribution_neighbor_based(nnodes::Int64, nlist::Vector{Vector{Int64}}, size::Int64)
+function create_distribution_neighbor_based(
+    nnodes::Int64,
+    nlist::Vector{Vector{Int64}},
+    size::Int64,
+)
     if size > nnodes
         @error "Number of cores $size exceeds number of nodes $nnodes."
         return nothing, nothing
@@ -1195,7 +1429,7 @@ function create_distribution_neighbor_based(nnodes::Int64, nlist::Vector{Vector{
     not_included_nodes::Vector{Bool} = fill(true, nnodes)
     number_neighbors::Int64 = 0
 
-    for iID in 1:nnodes
+    for iID = 1:nnodes
 
         if not_included_nodes[iID]
             number_neighbors += length(nlist[iID])
@@ -1224,7 +1458,7 @@ function create_distribution_neighbor_based(nnodes::Int64, nlist::Vector{Vector{
     if sum(not_included_nodes) > 0 || length(distribution) != size
         @error "code must be improved"
     end
-    for i in 1:size
+    for i = 1:size
         point_to_core[distribution[i]] .= i
     end
     return distribution, point_to_core
@@ -1251,7 +1485,7 @@ function create_distribution(nnodes::Int64, size::Int64)
     # Split the data into chunks
     distribution = fill(Int64[], size)
     point_to_core = zeros(Int64, nnodes)
-    for i in 1:size
+    for i = 1:size
         start_idx = (i - 1) * chunk_size + 1
         end_idx = min(i * chunk_size, nnodes)
         if i == size && end_idx < nnodes
@@ -1283,12 +1517,13 @@ function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vect
     data = zeros(dof, nnodes)
     neighborList = fill(Vector{Int64}([]), nnodes)
 
-    for i in 1:dof
+    for i = 1:dof
         data[i, :] = values(mesh[!, coor[i]])
     end
     balltree = BallTree(data)
-    for i in 1:nnodes
-        neighborList[i] = inrange(balltree, data[:, i], get_horizon(params, mesh[!, "block_id"][i]), true)
+    for i = 1:nnodes
+        neighborList[i] =
+            inrange(balltree, data[:, i], get_horizon(params, mesh[!, "block_id"][i]), true)
         # avoid self reference in neighborhood
         index = findfirst(x -> x == i, neighborList[i])
         deleteat!(neighborList[i], index)
@@ -1310,7 +1545,13 @@ Check if a line segment intersects a disk.
 # Returns
 - `Bool`: True if the line segment intersects the disk, False otherwise.
 """
-function bond_intersects_disc(p0::Vector{Float64}, p1::Vector{Float64}, center::Vector{Float64}, normal::Vector{Float64}, radius::Float64)
+function bond_intersects_disc(
+    p0::Vector{Float64},
+    p1::Vector{Float64},
+    center::Vector{Float64},
+    normal::Vector{Float64},
+    radius::Float64,
+)
     numerator = dot((center - p0), normal)
     denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
@@ -1353,7 +1594,12 @@ Check if a line segment intersects an infinite plane.
 # Returns
 - `Bool`: True if the line segment intersects the plane, False otherwise.
 """
-function bond_intersect_infinite_plane(p0::Vector{Float64}, p1::Vector{Float64}, lower_left_corner::Vector{Float64}, normal::Vector{Float64})
+function bond_intersect_infinite_plane(
+    p0::Vector{Float64},
+    p1::Vector{Float64},
+    lower_left_corner::Vector{Float64},
+    normal::Vector{Float64},
+)
     denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane
@@ -1389,7 +1635,14 @@ Check if a bond intersects a rectangle plane.
 # Returns
 - `Bool`: True if the point is inside the rectangle, False otherwise.
 """
-function bond_intersect_rectangle_plane(x::Vector{Float64}, lower_left_corner::Vector{Float64}, bottom_unit_vector::Vector{Float64}, normal::Vector{Float64}, side_length::Float64, bottom_length::Float64)
+function bond_intersect_rectangle_plane(
+    x::Vector{Float64},
+    lower_left_corner::Vector{Float64},
+    bottom_unit_vector::Vector{Float64},
+    normal::Vector{Float64},
+    side_length::Float64,
+    bottom_length::Float64,
+)
     dr::Vector{Float64} = x - lower_left_corner
     bb::Float64 = dot(dr, bottom_unit_vector)
     if 0.0 <= bb && bb / bottom_length <= 1.0
@@ -1419,7 +1672,12 @@ Apply the bond filters to the neighborhood list.
 - `nlist::Vector{Vector{Int64}}`: The filtered neighborhood list.
 - `nlist_filtered_ids::Vector{Vector{Int64}}`: The filtered neighborhood list.
 """
-function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, params::Dict, dof::Int64)
+function apply_bond_filters(
+    nlist::Vector{Vector{Int64}},
+    mesh::DataFrame,
+    params::Dict,
+    dof::Int64,
+)
     bond_filters = get_bond_filters(params)
     nlist_filtered_ids = nothing
     bond_norm = nothing
@@ -1428,7 +1686,7 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
         coor = names(mesh)[1:dof]
         nnodes = length(mesh[!, coor[1]])
         data = zeros(dof, nnodes)
-        for i in 1:dof
+        for i = 1:dof
             data[i, :] = values(mesh[!, coor[i]])
         end
         #TODO to the bottom, because right now all filters have contact if true
@@ -1442,8 +1700,8 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
         if contact_enabled
             nlist_filtered_ids = fill(Vector{Int64}([]), nnodes)
             bond_norm = Matrix{Float64}[]
-            for iID in 1:nnodes
-                # bond_norm[iID] = fill(fill(1, dof), length(nlist[iID])) 
+            for iID = 1:nnodes
+                # bond_norm[iID] = fill(fill(1, dof), length(nlist[iID]))
                 append!(bond_norm, [Matrix{Float64}(undef, length(nlist[iID]), dof)])
                 fill!(bond_norm[end], Float64(1))
             end
@@ -1453,11 +1711,15 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}}, mesh::DataFrame, param
             if filter["Type"] == "Disk"
                 filter_flag, normal = disk_filter(nnodes, data, filter, nlist, dof)
             elseif filter["Type"] == "Rectangular_Plane"
-                filter_flag, normal = rectangular_plane_filter(nnodes, data, filter, nlist, dof)
+                filter_flag, normal =
+                    rectangular_plane_filter(nnodes, data, filter, nlist, dof)
             end
-            for iID in 1:nnodes
+            for iID = 1:nnodes
                 if contact_enabled && any(x -> x == false, filter_flag[iID])
-                    indices = findall(x -> x in setdiff(nlist[iID], nlist[iID][filter_flag[iID]]), nlist[iID])
+                    indices = findall(
+                        x -> x in setdiff(nlist[iID], nlist[iID][filter_flag[iID]]),
+                        nlist[iID],
+                    )
                     nlist_filtered_ids[iID] = indices
                     for jID in indices
                         bond_norm[iID][jID, :] .= normal
@@ -1487,7 +1749,13 @@ Apply the disk filter to the neighborhood list.
 - `filter_flag::Vector{Bool}`: The filter flag.
 - `normal::Vector{Float64}`: The normal vector of the disk.
 """
-function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+function disk_filter(
+    nnodes::Int64,
+    data::Matrix{Float64},
+    filter::Dict,
+    nlist::Vector{Vector{Int64}},
+    dof::Int64,
+)
 
 
     if dof == 2
@@ -1500,10 +1768,17 @@ function disk_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::
     #normalize vector
     normal = normal ./ norm(normal)
     filter_flag::Vector{Vector{Bool}} = fill([], nnodes)
-    for iID in 1:nnodes
+    for iID = 1:nnodes
         filter_flag[iID] = fill(true, length(nlist[iID]))
         for (jId, neighbor) in enumerate(nlist[iID])
-            filter_flag[iID][jId] = !bond_intersects_disc(data[:, iID], data[:, neighbor], center, normal, filter["Radius"])
+            filter_flag[iID][jId] =
+                !bond_intersects_disc(
+                    data[:, iID],
+                    data[:, neighbor],
+                    center,
+                    normal,
+                    filter["Radius"],
+                )
         end
     end
     return filter_flag, normal
@@ -1524,16 +1799,31 @@ Apply the rectangular plane filter to the neighborhood list.
 - `filter_flag::Vector{Bool}`: The filter flag.
 - `normal::Vector{Float64}`: The normal vector of the disk.
 """
-function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::Dict, nlist::Vector{Vector{Int64}}, dof::Int64)
+function rectangular_plane_filter(
+    nnodes::Int64,
+    data::Matrix{Float64},
+    filter::Dict,
+    nlist::Vector{Vector{Int64}},
+    dof::Int64,
+)
 
     if dof == 2
         normal = [filter["Normal X"], filter["Normal Y"]]
         lower_left_corner = [filter["Lower Left Corner X"], filter["Lower Left Corner Y"]]
-        bottom_unit_vector = [filter["Bottom Unit Vector X"], filter["Bottom Unit Vector Y"]]
+        bottom_unit_vector =
+            [filter["Bottom Unit Vector X"], filter["Bottom Unit Vector Y"]]
     else
         normal = [filter["Normal X"], filter["Normal Y"], filter["Normal Z"]]
-        lower_left_corner = [filter["Lower Left Corner X"], filter["Lower Left Corner Y"], filter["Lower Left Corner Z"]]
-        bottom_unit_vector = [filter["Bottom Unit Vector X"], filter["Bottom Unit Vector Y"], filter["Bottom Unit Vector Z"]]
+        lower_left_corner = [
+            filter["Lower Left Corner X"],
+            filter["Lower Left Corner Y"],
+            filter["Lower Left Corner Z"],
+        ]
+        bottom_unit_vector = [
+            filter["Bottom Unit Vector X"],
+            filter["Bottom Unit Vector Y"],
+            filter["Bottom Unit Vector Z"],
+        ]
     end
     #normalize vector
     normal = normal ./ norm(normal)
@@ -1541,13 +1831,25 @@ function rectangular_plane_filter(nnodes::Int64, data::Matrix{Float64}, filter::
     bottom_length = filter["Bottom Length"]
     side_length = filter["Side Length"]
     filter_flag::Vector{Vector{Bool}} = fill([], nnodes)
-    for iID in 1:nnodes
+    for iID = 1:nnodes
         filter_flag[iID] = fill(true, length(nlist[iID]))
         for (jID, neighborID) in enumerate(nlist[iID])
-            intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, iID], data[:, neighborID], lower_left_corner, normal)
+            intersect_inf_plane, x = bond_intersect_infinite_plane(
+                data[:, iID],
+                data[:, neighborID],
+                lower_left_corner,
+                normal,
+            )
             bond_intersect = false
             if intersect_inf_plane
-                bond_intersect = bond_intersect_rectangle_plane(x, lower_left_corner, bottom_unit_vector, normal, side_length, bottom_length)
+                bond_intersect = bond_intersect_rectangle_plane(
+                    x,
+                    lower_left_corner,
+                    bottom_unit_vector,
+                    normal,
+                    side_length,
+                    bottom_length,
+                )
             end
             filter_flag[iID][jID] = !(intersect_inf_plane && bond_intersect)
         end
@@ -1620,11 +1922,14 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
 
     node_sets = Dict("Extruded_1" => [], "Extruded_2" => [])
 
-    for i in coord_max+step_x:step_x:coord_max+step_x*number, j in row_min:step_y:row_max+step_y, k in min_z:step_z:max_z
+    for i = coord_max+step_x:step_x:coord_max+step_x*number,
+        j = row_min:step_y:row_max+step_y,
+        k = min_z:step_z:max_z
+
         if direction == "X"
-            push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
+            push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
         elseif direction == "Y"
-            push!(mesh, (x=j, y=i, z=k, volume=volume, block_id=block_id))
+            push!(mesh, (x = j, y = i, z = k, volume = volume, block_id = block_id))
         end
         append!(node_sets["Extruded_1"], [Int64(id)])
         id += 1
@@ -1632,11 +1937,14 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
 
     block_id += 1
 
-    for i in coord_min-step_x:-step_x:coord_min-step_x*number, j in row_min:step_y:row_max+step_y, k in min_z:step_z:max_z
+    for i = coord_min-step_x:-step_x:coord_min-step_x*number,
+        j = row_min:step_y:row_max+step_y,
+        k = min_z:step_z:max_z
+
         if direction == "X"
-            push!(mesh, (x=i, y=j, z=k, volume=volume, block_id=block_id))
+            push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
         elseif direction == "Y"
-            push!(mesh, (x=j, y=i, z=k, volume=volume, block_id=block_id))
+            push!(mesh, (x = j, y = i, z = k, volume = volume, block_id = block_id))
         end
         append!(node_sets["Extruded_2"], [Int64(id)])
         id += 1

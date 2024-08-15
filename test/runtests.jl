@@ -144,7 +144,9 @@ MPI.Init()
                 include("unit_tests/Physics/ut_Model_Factory.jl")
             end
             @testset "ut_Pre_calculation" begin
-                include("unit_tests/Physics/Pre_calculation/ut_bond_deformation_gradient.jl")
+                include(
+                    "unit_tests/Physics/Pre_calculation/ut_bond_deformation_gradient.jl",
+                )
             end
             @testset "ut_Damage" begin
                 include("unit_tests/Physics/Damage/ut_Damage_Factory.jl")
@@ -155,24 +157,42 @@ MPI.Init()
                     include("unit_tests/Physics/Material/ut_Material_Factory.jl")
                 end
                 @testset "ut_control" begin
-                    include("unit_tests/Physics/Material/Zero_Energy_Control/ut_global_control.jl")
+                    include(
+                        "unit_tests/Physics/Material/Zero_Energy_Control/ut_global_control.jl",
+                    )
                 end
                 @testset "ut_material_basis" begin
                     include("unit_tests/Physics/Material/ut_material_basis.jl")
                 end
                 @testset "ut_bond_based" begin
-                    include("unit_tests/Physics/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl")
+                    include(
+                        "unit_tests/Physics/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl",
+                    )
                 end
                 @testset "ut_correspondence" begin
-                    include("unit_tests/Physics/Material/Material_Models/ut_Correspondence.jl")
-                    include("unit_tests/Physics/Material/Material_Models/ut_Correspondence_Plastic.jl")
-                    include("unit_tests/Physics/Material/Material_Models/ut_Correspondence_UMAT.jl")
-                    include("unit_tests/Physics/Material/Material_Models/ut_Bond_Associated_Correspondence.jl")
+                    include(
+                        "unit_tests/Physics/Material/Material_Models/ut_Correspondence.jl",
+                    )
+                    include(
+                        "unit_tests/Physics/Material/Material_Models/ut_Correspondence_Plastic.jl",
+                    )
+                    include(
+                        "unit_tests/Physics/Material/Material_Models/ut_Correspondence_UMAT.jl",
+                    )
+                    include(
+                        "unit_tests/Physics/Material/Material_Models/ut_Bond_Associated_Correspondence.jl",
+                    )
                 end
                 @testset "ut_ordinary" begin
-                    include("unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary.jl")
-                    include("unit_tests/Physics/Material/Material_Models/ut_PD_Solid_Elastic.jl")
-                    include("unit_tests/Physics/Material/Material_Models/ut_PD_Solid_Plastic.jl")
+                    include(
+                        "unit_tests/Physics/Material/Material_Models/Ordinary/ut_ordinary.jl",
+                    )
+                    include(
+                        "unit_tests/Physics/Material/Material_Models/ut_PD_Solid_Elastic.jl",
+                    )
+                    include(
+                        "unit_tests/Physics/Material/Material_Models/ut_PD_Solid_Plastic.jl",
+                    )
                 end
             end
         end
@@ -226,16 +246,24 @@ MPI.Init()
             # include("fullscale_tests/test_thermal_flow_paper/test_thermal_flow.jl")
         end
         @testset "test_Correspondence_Elastic" begin
-            include("fullscale_tests/test_correspondence_elastic/test_correspondence_elastic.jl")
+            include(
+                "fullscale_tests/test_correspondence_elastic/test_correspondence_elastic.jl",
+            )
         end
         @testset "test_Correspondence_Elastic_Plastic" begin
-            include("fullscale_tests/test_correspondence_elastic_plastic/test_correspondence_elastic_plastic.jl")
+            include(
+                "fullscale_tests/test_correspondence_elastic_plastic/test_correspondence_elastic_plastic.jl",
+            )
         end
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
-            include("fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control.jl")
+            include(
+                "fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control.jl",
+            )
         end
         @testset "test_Correspondence_Elastic_3D" begin
-            include("fullscale_tests/test_correspondence_elastic_3D/test_correspondence_elastic_3D.jl")
+            include(
+                "fullscale_tests/test_correspondence_elastic_3D/test_correspondence_elastic_3D.jl",
+            )
         end
         @testset "test_DCB" begin
             include("fullscale_tests/test_DCB/test_DCB.jl")
@@ -260,5 +288,5 @@ end
 MPI.Finalize()
 
 #cleanup
-rm("tmp", force=true, recursive=true)
+rm("tmp", force = true, recursive = true)
 run(`find . -name "*.log" -type f -delete`)

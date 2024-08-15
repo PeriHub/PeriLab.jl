@@ -4,15 +4,30 @@
 using LinearAlgebra
 using StaticArrays
 
-function get_value(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}}, any_field_allocated::Bool, key::String, field_allocated::Bool)
+function get_value(
+    datamanager::Module,
+    parameter::Union{Dict{Any,Any},Dict{String,Any}},
+    any_field_allocated::Bool,
+    key::String,
+    field_allocated::Bool,
+)
     if field_allocated
         return datamanager.get_field(replace(key, " " => "_"))
     end
     if any_field_allocated
         if haskey(parameter, key)
-            return datamanager.create_constant_node_field(replace(key, " " => "_"), Float64, 1, parameter[key])
+            return datamanager.create_constant_node_field(
+                replace(key, " " => "_"),
+                Float64,
+                1,
+                parameter[key],
+            )
         else
-            return datamanager.create_constant_node_field(replace(key, " " => "_"), Float64, 1)
+            return datamanager.create_constant_node_field(
+                replace(key, " " => "_"),
+                Float64,
+                1,
+            )
         end
     elseif haskey(parameter, key)
         return parameter[key]
@@ -29,7 +44,10 @@ Returns the elastic moduli of the material.
 # Arguments
 - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
 """
-function get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}})
+function get_all_elastic_moduli(
+    datamanager::Module,
+    parameter::Union{Dict{Any,Any},Dict{String,Any}},
+)
     if haskey(parameter, "Computed")
         if parameter["Computed"]
             return nothing
@@ -49,9 +67,21 @@ function get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,A
     shear = haskey(parameter, "Shear Modulus") | shear_field
 
     K = get_value(datamanager, parameter, any_field_allocated, "Bulk Modulus", bulk_field)
-    E = get_value(datamanager, parameter, any_field_allocated, "Young's Modulus", Youngs_field)
+    E = get_value(
+        datamanager,
+        parameter,
+        any_field_allocated,
+        "Young's Modulus",
+        Youngs_field,
+    )
     G = get_value(datamanager, parameter, any_field_allocated, "Shear Modulus", shear_field)
-    nu = get_value(datamanager, parameter, any_field_allocated, "Poisson's Ratio", Poissons_field)
+    nu = get_value(
+        datamanager,
+        parameter,
+        any_field_allocated,
+        "Poisson's Ratio",
+        Poissons_field,
+    )
 
     if bulk && Poissons
         E = 3 .* K .* (1 .- 2 .* nu)
@@ -108,13 +138,13 @@ Returns the Hooke matrix of the material.
 # Returns
 - `matrix::Matrix{Float64}`: The Hooke matrix.
 """
-function get_Hooke_matrix(parameter::Dict, symmetry::String,dof::Int64, ID::Int64=1)
+function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64 = 1)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
     if occursin("anisotropic", symmetry)
         aniso_matrix = @MMatrix zeros(Float64, 6, 6)
-        for iID in 1:6
-            for jID in iID:6
+        for iID = 1:6
+            for jID = iID:6
                 if "C" * string(iID) * string(jID) in keys(parameter)
                     value = parameter["C"*string(iID)*string(jID)]
                 else
@@ -147,7 +177,9 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String,dof::Int64, ID::Int6
             return nothing
         end
     end
-    if !haskey(parameter, "Poisson's Ratio") || !haskey(parameter, "Young's Modulus")||!haskey(parameter, "Shear Modulus")
+    if !haskey(parameter, "Poisson's Ratio") ||
+       !haskey(parameter, "Young's Modulus") ||
+       !haskey(parameter, "Shear Modulus")
         @error "No valid definition of Hook matrix inputs."
         return nothing
     end
@@ -198,7 +230,7 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String,dof::Int64, ID::Int6
         end
     else
         matrix = @MMatrix zeros(Float64, dof + 1, dof + 1)
-        
+
         @warn "material model defintion is missing; assuming isotropic plane stress "
         nu = parameter["Poisson's Ratio"][iID]
         E = parameter["Young's Modulus"][iID]
@@ -231,13 +263,26 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::SubArray`: The force densities.
 """
-function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, nlist_filtered_ids::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, displacements::SubArray, bond_norm::SubArray, force_densities::SubArray)
+function distribute_forces(
+    nodes::Union{SubArray,Vector{Int64}},
+    nlist::SubArray,
+    nlist_filtered_ids::SubArray,
+    bond_force::SubArray,
+    volume::SubArray,
+    bond_damage::SubArray,
+    displacements::SubArray,
+    bond_norm::SubArray,
+    force_densities::SubArray,
+)
 
     for iID in nodes
         bond_mod = copy(bond_norm[iID])
         if length(nlist_filtered_ids[iID]) > 0
             for neighborID in nlist_filtered_ids[iID]
-                if dot((displacements[nlist[iID][neighborID], :] - displacements[iID, :]), bond_norm[iID][neighborID, :]) > 0
+                if dot(
+                    (displacements[nlist[iID][neighborID], :] - displacements[iID, :]),
+                    bond_norm[iID][neighborID, :],
+                ) > 0
                     bond_mod[neighborID, :] .= 0
                 else
                     bond_mod[neighborID, :] = abs.(bond_norm[iID][neighborID, :])
@@ -245,10 +290,16 @@ function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray
             end
         end
 
-        force_densities[iID, :] .+= transpose(sum(bond_damage[iID] .* bond_force[iID][:, :] .* bond_mod .* volume[nlist[iID]], dims=1))
+        force_densities[iID, :] .+= transpose(
+            sum(
+                bond_damage[iID] .* bond_force[iID][:, :] .* bond_mod .* volume[nlist[iID]],
+                dims = 1,
+            ),
+        )
 
         # force_densities[nlist[iID], :] .-= bond_damage[iID] .* bond_force[iID] .* bond_mod .* volume[iID]
-        force_densities[nlist[iID], :] .-= bond_damage[iID] .* bond_force[iID][:, :] .* bond_mod[:, :] .* volume[iID]
+        force_densities[nlist[iID], :] .-=
+            bond_damage[iID] .* bond_force[iID][:, :] .* bond_mod[:, :] .* volume[iID]
     end
     return force_densities
 end
@@ -268,11 +319,21 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::SubArray`: The force densities.
 """
-function distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
+function distribute_forces(
+    nodes::Union{SubArray,Vector{Int64}},
+    nlist::SubArray,
+    bond_force::SubArray,
+    volume::SubArray,
+    bond_damage::SubArray,
+    force_densities::SubArray,
+)
     for iID in nodes
-        force_densities[iID, :] .+= transpose(sum(bond_damage[iID] .* bond_force[iID][:, :] .* volume[nlist[iID]], dims=1))
+        force_densities[iID, :] .+= transpose(
+            sum(bond_damage[iID] .* bond_force[iID][:, :] .* volume[nlist[iID]], dims = 1),
+        )
 
-        force_densities[nlist[iID], :] .-= bond_damage[iID] .* bond_force[iID][:, :] .* volume[iID]
+        force_densities[nlist[iID], :] .-=
+            bond_damage[iID] .* bond_force[iID][:, :] .* volume[iID]
     end
     return force_densities
 end
@@ -292,7 +353,14 @@ function matrix_to_voigt(matrix)
     if size(matrix) == (2, 2)
         return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
     elseif size(matrix) == (3, 3)
-        return [matrix[1, 1]; matrix[2, 2]; matrix[3, 3]; 0.5 * (matrix[2, 3] + matrix[3, 2]); 0.5 * (matrix[1, 3] + matrix[3, 1]); 0.5 * (matrix[1, 2] + matrix[2, 1])]
+        return [
+            matrix[1, 1]
+            matrix[2, 2]
+            matrix[3, 3]
+            0.5 * (matrix[2, 3] + matrix[3, 2])
+            0.5 * (matrix[1, 3] + matrix[3, 1])
+            0.5 * (matrix[1, 2] + matrix[2, 1])
+        ]
     else
         @error "Unsupported matrix size for matrix_to_voigt"
         return nothing
@@ -313,9 +381,11 @@ function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
     if length(voigt) == 3
         return [voigt[1] voigt[3]; voigt[3] voigt[2]]
     elseif length(voigt) == 6
-        return [voigt[1] voigt[6] voigt[5]
+        return [
+            voigt[1] voigt[6] voigt[5]
             voigt[6] voigt[2] voigt[4]
-            voigt[5] voigt[4] voigt[3]]
+            voigt[5] voigt[4] voigt[3]
+        ]
     else
         @error "Unsupported matrix size for voigt_to_matrix"
         return nothing
@@ -361,7 +431,11 @@ Allows the modification of the yield stress at a specific position. This is typi
 # Returns
 - `stress`::Float64: the modified stresses.
 """
-function flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
+function flaw_function(
+    params::Dict,
+    coor::Union{Vector{Int64},Vector{Float64}},
+    stress::Float64,
+)
     if !haskey(params, "Flaw Function")
         return stress
     end
@@ -389,7 +463,14 @@ function flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}},
         if haskey(params["Flaw Function"], "Flaw location Z") && length(coor) == 3
             flaw_location[3] = params["Flaw Function"]["Flaw Location Z"]
         end
-        modified_stress = stress * (1 - flaw_magnitude * exp(-norm(coor - flaw_location) * norm(coor - flaw_location) / flaw_size / flaw_size))
+        modified_stress =
+            stress * (
+                1 -
+                flaw_magnitude * exp(
+                    -norm(coor - flaw_location) * norm(coor - flaw_location) / flaw_size /
+                    flaw_size,
+                )
+            )
 
     else
         @warn "Not very user friendly right now"
@@ -443,12 +524,17 @@ end
 - `spherical_stress_NP1::Float64`: Spherical stress
 - `deviatoric_stress_NP1::Matrix{Float64}`: Deviatoric stress
 """
-function get_von_mises_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
+function get_von_mises_stress(
+    von_Mises_stress::Float64,
+    dof::Int64,
+    stress_NP1::Matrix{Float64},
+)
 
-    spherical_stress_NP1 = sum(stress_NP1[i, i] for i in 1:dof) / 3
+    spherical_stress_NP1 = sum(stress_NP1[i, i] for i = 1:dof) / 3
     deviatoric_stress_NP1 = stress_NP1[:, :] - spherical_stress_NP1 .* I(dof)
 
-    von_Mises_stress = sqrt(3.0 / 2.0 * sum(deviatoric_stress_NP1[:, :] .* deviatoric_stress_NP1[:, :]))
+    von_Mises_stress =
+        sqrt(3.0 / 2.0 * sum(deviatoric_stress_NP1[:, :] .* deviatoric_stress_NP1[:, :]))
 
     return von_Mises_stress, spherical_stress_NP1, deviatoric_stress_NP1
 end
@@ -467,6 +553,12 @@ function get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
 end
 
 
-function compute_Piola_Kirchhoff_stress(stress::Matrix{Float64}, deformation_gradient::Matrix{Float64})
-    return det(deformation_gradient) .* stress * invert(deformation_gradient, "Deformation gradient is singular and cannot be inverted.")
+function compute_Piola_Kirchhoff_stress(
+    stress::Matrix{Float64},
+    deformation_gradient::Matrix{Float64},
+)
+    return det(deformation_gradient) .* stress * invert(
+        deformation_gradient,
+        "Deformation gradient is singular and cannot be inverted.",
+    )
 end

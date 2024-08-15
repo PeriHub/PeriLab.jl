@@ -14,5 +14,5 @@ end
     @test isdir("examples")
     @test isdir("examples/DCB")
     @test isfile("examples/DCB/DCBmodel.yaml")
-    rm("examples", recursive=true)
+    rm("examples", recursive = true)
 end

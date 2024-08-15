@@ -83,7 +83,12 @@ Get the value of a block.
 # Returns
 - `value::Float64`: The value of the block
 """
-function get_values(params::Dict, block_id::Int64, valueName::String, defaultValue::Union{Float64,Bool,Nothing}=nothing)
+function get_values(
+    params::Dict,
+    block_id::Int64,
+    valueName::String,
+    defaultValue::Union{Float64,Bool,Nothing} = nothing,
+)
     if haskey(params["Blocks"], "block_" * string(block_id))
         if haskey(params["Blocks"]["block_"*string(block_id)], valueName)
             return params["Blocks"]["block_"*string(block_id)][valueName]
@@ -139,4 +144,3 @@ function get_block_models(params::Dict, block_id::Int64)
     end
     return modelDict
 end
-

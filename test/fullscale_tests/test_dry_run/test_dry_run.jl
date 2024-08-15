@@ -6,6 +6,6 @@
 
 folder_name = basename(@__FILE__)[1:end-3]
 cd("fullscale_tests/" * folder_name) do
-    PeriLab.main("dry_run.yaml"; silent=true, dry_run=true, output_dir="temp")
-    rm("temp", recursive=true)
+    PeriLab.main("dry_run.yaml"; silent = true, dry_run = true, output_dir = "temp")
+    rm("temp", recursive = true)
 end

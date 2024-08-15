@@ -43,7 +43,13 @@ Computes the corrosion model
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_corrosion_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+function compute_corrosion_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    model_param::Dict,
+    time::Float64,
+    dt::Float64,
+)
 
     mod = datamanager.get_model_module(model_param["Corrosion Model"])
     return mod.compute_corrosion_model(datamanager, nodes, model_param, time, dt)
@@ -70,9 +76,17 @@ Initialize an corrosion model within a given data manager.
 datamanager = init_corrosion_model(my_data_manager, [1, 2, 3], 1)
 
 """
-function init_corrosion_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_corrosion_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    block::Int64,
+)
     model_param = datamanager.get_properties(block, "Corrosion Model")
-    mod = Set_modules.create_module_specifics(model_param["Corrosion Model"], module_list, "corrosion_name")
+    mod = Set_modules.create_module_specifics(
+        model_param["Corrosion Model"],
+        module_list,
+        "corrosion_name",
+    )
     if isnothing(mod)
         @error "No corrosion model of name " * model_param["Corrosion Model"] * " exists."
         return nothing

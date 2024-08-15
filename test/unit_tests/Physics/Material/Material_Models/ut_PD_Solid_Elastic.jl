@@ -9,4 +9,3 @@ include("../../../../../src/Physics/Material/Material_Models/PD_Solid_Elastic.jl
     @test PD_Solid_Elastic.material_name() == "PD Solid Elastic"
     @test !(PD_Solid_Elastic.fe_support())
 end
-

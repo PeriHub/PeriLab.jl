@@ -44,4 +44,3 @@ function get_partial_stresses(datamanager::Module, nodes::Union{SubArray,Vector{
     end
     return datamanager
 end
-

@@ -39,21 +39,18 @@ function main()
     x_values .-= offset[1]
     y_values .-= offset[2]
 
-    f = fit(x_values, y_values, 8; weights=damage[damaged_indices])
+    f = fit(x_values, y_values, 8; weights = damage[damaged_indices])
 
-    scatter(x_values, y_values, zcolor=damage[damaged_indices], label="Damage")
+    scatter(x_values, y_values, zcolor = damage[damaged_indices], label = "Damage")
 
-    plot!(f, extrema(x_values)..., label="Polynomial Fit")
+    plot!(f, extrema(x_values)..., label = "Polynomial Fit")
     savefig("plot.svg")
 
     @info f
 
     # Create a DataFrame to store the information
     range = vcat(minimum(x_values):0.1:maximum(x_values))
-    df = DataFrame(
-        x=range,
-        f=f.(range),
-    )
+    df = DataFrame(x = range, f = f.(range))
     CSV.write("plot.csv", df)
 end
 

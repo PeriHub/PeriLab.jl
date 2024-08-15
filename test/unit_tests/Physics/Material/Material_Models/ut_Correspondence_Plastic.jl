@@ -9,4 +9,3 @@ include("../../../../../src/Physics/Material/Material_Models/Correspondence_Plas
     @test Correspondence_Plastic.correspondence_name() == "Correspondence Plastic"
     @test !(Correspondence_Plastic.fe_support())
 end
-

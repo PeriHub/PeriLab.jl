@@ -24,7 +24,13 @@ include("../../../../src/Physics/Pre_calculation/bond_deformation_gradient.jl")
     dof = 2
     undeformed_bond = [1.0, 2.0]
     horizon = 3.0
-    expected_Q = [0.3333333333333333, 0.6666666666666666, 0.1111111111111111, 0.2222222222222222, 0.4444444444444444]
+    expected_Q = [
+        0.3333333333333333,
+        0.6666666666666666,
+        0.1111111111111111,
+        0.2222222222222222,
+        0.4444444444444444,
+    ]
 
     Q = Bond_Deformation_Gradient.calculate_Q(accuracy_order, dof, undeformed_bond, horizon)
 
@@ -34,7 +40,17 @@ include("../../../../src/Physics/Pre_calculation/bond_deformation_gradient.jl")
     dof = 3
     undeformed_bond = [1.0, 2.0, 5]
     horizon = 3.0
-    expected_Q = [0.3333333333333333, 0.6666666666666666, 1.6666666666666667, 0.1111111111111111, 0.2222222222222222, 0.5555555555555556, 0.4444444444444444, 1.1111111111111112, 2.777777777777778]
+    expected_Q = [
+        0.3333333333333333,
+        0.6666666666666666,
+        1.6666666666666667,
+        0.1111111111111111,
+        0.2222222222222222,
+        0.5555555555555556,
+        0.4444444444444444,
+        1.1111111111111112,
+        2.777777777777778,
+    ]
 
     Q = Bond_Deformation_Gradient.calculate_Q(accuracy_order, dof, undeformed_bond, horizon)
 
@@ -73,10 +89,18 @@ end
     bond_damage[1][:] .= 1
     omega = test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
     omega[1][:] = [1.0, 0.8, 0.6]
-    weighted_volume = test_data_manager.create_constant_node_field("Weighted Volume", Float64, 1)
+    weighted_volume =
+        test_data_manager.create_constant_node_field("Weighted Volume", Float64, 1)
 
 
-    result = Bond_Deformation_Gradient.compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+    result = Bond_Deformation_Gradient.compute_weighted_volume(
+        nodes,
+        nlist,
+        volume,
+        bond_damage,
+        omega,
+        weighted_volume,
+    )
 
     expected_weighted_volume = sum(bond_damage[1][:] .* omega[1][:] .* volume[nlist[1]])
     @test isapprox(result[1], expected_weighted_volume)
@@ -91,11 +115,28 @@ end
     horizon = [1.0, 1.0]
     bond_damage = [[0.9, 0.8, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
     omega = [[1.0, 1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
-    undeformed_bond = [[1.0 0.0; 0.0 1.0; 1.0 2.0; 0.2 1.0; 2.0 1.0], [-6.0 8.5; 6.0 1.5; 6.0 2.5; -0.9 0.8; 1.0 -0.9; 0.0 -0.9]]
+    undeformed_bond = [
+        [1.0 0.0; 0.0 1.0; 1.0 2.0; 0.2 1.0; 2.0 1.0],
+        [-6.0 8.5; 6.0 1.5; 6.0 2.5; -0.9 0.8; 1.0 -0.9; 0.0 -0.9],
+    ]
     volume = [1.0, 2.0, 1.0, 1.0, 1.0, 4.0, 1.0, 1.0]
-    gradient_weights = [[0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0], [0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0]]
+    gradient_weights = [
+        [0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0],
+        [0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0],
+    ]
 
-    gradient_weights = Bond_Deformation_Gradient.compute_Lagrangian_gradient_weights(nodes, dof, accuracy_order, volume, nlist, horizon, bond_damage, omega, undeformed_bond, gradient_weights)
+    gradient_weights = Bond_Deformation_Gradient.compute_Lagrangian_gradient_weights(
+        nodes,
+        dof,
+        accuracy_order,
+        volume,
+        nlist,
+        horizon,
+        bond_damage,
+        omega,
+        undeformed_bond,
+        gradient_weights,
+    )
 
     @test isapprox(gradient_weights[1][1, :], [0.5000000000000014, -0.24999999999999992])
     @test isapprox(gradient_weights[1][2, :], [-2.5000000000000817, -1.000000000000037])

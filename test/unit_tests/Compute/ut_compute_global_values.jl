@@ -139,9 +139,12 @@ end
     @test global_value_avg(forcesNP1, 1, nodes) == -13.8 / 4
     @test global_value_avg(forcesNP1, 2, nodes) == 7.2 / 4
     @test global_value_avg(forcesNP1, 3, nodes) == 8.2 / 4
-    @test calculate_nodelist(test_data_manager, "Forces", 1, "Average", nodes) == (-13.8 / 4, 4)
-    @test calculate_nodelist(test_data_manager, "Forces", 2, "Average", nodes) == (7.2 / 4, 4)
-    @test calculate_nodelist(test_data_manager, "Forces", 3, "Average", nodes) == (8.2 / 4, 4)
+    @test calculate_nodelist(test_data_manager, "Forces", 1, "Average", nodes) ==
+          (-13.8 / 4, 4)
+    @test calculate_nodelist(test_data_manager, "Forces", 2, "Average", nodes) ==
+          (7.2 / 4, 4)
+    @test calculate_nodelist(test_data_manager, "Forces", 3, "Average", nodes) ==
+          (8.2 / 4, 4)
     nodes = Vector{Int64}(1:2)
     @test global_value_avg(forcesNP1, 1, nodes) == 1 / 2
     @test global_value_avg(forcesNP1, 2, nodes) == 2 / 2

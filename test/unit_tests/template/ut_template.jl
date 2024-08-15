@@ -8,7 +8,7 @@ using Test
 
 """
     Final test set should be included in runtest.jl
-    Because PeriLab is initialized there it can be called inside the test. For local debugging, the upper comments have to be adapted. Before you commit, please comment these lines again 
+    Because PeriLab is initialized there it can be called inside the test. For local debugging, the upper comments have to be adapted. Before you commit, please comment these lines again
     #include("../../../src/PeriLab.jl")
     #using .PeriLab
 """

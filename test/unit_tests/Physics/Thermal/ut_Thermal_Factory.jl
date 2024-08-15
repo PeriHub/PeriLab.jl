@@ -33,7 +33,11 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_block_list([1, 2])
     test_data_manager.init_property()
-    test_data_manager.set_properties(1, "Thermal Model", Dict("Thermal Model" => "Heat Transfer"))
+    test_data_manager.set_properties(
+        1,
+        "Thermal Model",
+        Dict("Thermal Model" => "Heat Transfer"),
+    )
     Thermal.init_thermal_model(test_data_manager, [1], 1)
     test_data_manager.set_properties(2, "Thermal Model", Dict("Thermal Model" => "Missing"))
     @test isnothing(Thermal.init_thermal_model(test_data_manager, [1], 2))
@@ -57,8 +61,10 @@ end
     nlist[1][1] = 2
     nlist[2][1] = 1
 
-    (heat_flowN, heat_flowNP1) = test_data_manager.create_node_field("Heat Flow", Float64, 1)
-    bond_heat_flow = test_data_manager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
+    (heat_flowN, heat_flowNP1) =
+        test_data_manager.create_node_field("Heat Flow", Float64, 1)
+    bond_heat_flow =
+        test_data_manager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
     bond_heat_flow[1][1] = 1
     bond_heat_flow[2][1] = 1
 

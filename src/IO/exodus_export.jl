@@ -24,7 +24,15 @@ Creates a exodus file for the results
 # Returns
 - `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
 """
-function create_result_file(filename::Union{AbstractString,String}, num_nodes::Int64, num_dim::Int64, num_elem_blks::Int64, num_node_sets::Int64, num_elements::Int64=0, topology::Union{Nothing,SubArray}=nothing)
+function create_result_file(
+    filename::Union{AbstractString,String},
+    num_nodes::Int64,
+    num_dim::Int64,
+    num_elem_blks::Int64,
+    num_node_sets::Int64,
+    num_elements::Int64 = 0,
+    topology::Union{Nothing,SubArray} = nothing,
+)
 
     if isfile(filename)
         rm(filename)
@@ -41,12 +49,19 @@ function create_result_file(filename::Union{AbstractString,String}, num_nodes::I
     end
     num_side_sets = 0
     init = Initialization{
-        Int32(num_dim),Int32(num_nodes),Int32(num_elems),
-        Int32(num_elem_blks),Int32(num_node_sets),Int32(num_side_sets)
+        Int32(num_dim),
+        Int32(num_nodes),
+        Int32(num_elems),
+        Int32(num_elem_blks),
+        Int32(num_node_sets),
+        Int32(num_side_sets),
     }()
     @info "Create output " * filename
     exo_db = ExodusDatabase{maps_int_type,ids_int_type,bulk_int_type,float_type}(
-        filename, "w", init)
+        filename,
+        "w",
+        init,
+    )
     return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
 end
 
@@ -85,7 +100,8 @@ function get_paraview_coordinates(dof::Int64, refDof::Int64)
         return paraview_specifics(dof)
     end
     if refDof < 10
-        return paraview_specifics(Int(ceil(dof / 3))) * paraview_specifics(dof - Int(ceil(dof / 3 - 1) * 3))
+        return paraview_specifics(Int(ceil(dof / 3))) *
+               paraview_specifics(dof - Int(ceil(dof / 3 - 1) * 3))
     end
 
     @error "not exportable yet as one variable"
@@ -125,7 +141,19 @@ Initializes the results in exodus
 # Returns
 - `result_file::Dict{String,Any}`: The result file
 """
-function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String, fem_block::Union{Nothing,SubArray}=nothing, topology::Union{Nothing,SubArray}=nothing, elem_global_ids::Union{Nothing,Vector{Int64}}=nothing)
+function init_results_in_exodus(
+    exo::ExodusDatabase,
+    output::Dict{},
+    coords::Union{Matrix{Int64},Matrix{Float64}},
+    block_Id::Vector{Int64},
+    uniqueBlocks::Vector{Int64},
+    nsets::Dict{String,Vector{Int64}},
+    global_ids::Vector{Int64},
+    PERILAB_VERSION::String,
+    fem_block::Union{Nothing,SubArray} = nothing,
+    topology::Union{Nothing,SubArray} = nothing,
+    elem_global_ids::Union{Nothing,Vector{Int64}} = nothing,
+)
     qa = Matrix{String}(undef, 1, 4)
     qa[1] = "PeriLab"
     qa[2] = "$PERILAB_VERSION"
@@ -133,7 +161,11 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
     qa[4] = Dates.format(Dates.now(), "HH:MM:SS")
     write_qa(exo, qa)
 
-    info = ["PeriLab Version $PERILAB_VERSION, under BSD License", "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse", "compiled with Julia Version " * string(VERSION)]
+    info = [
+        "PeriLab Version $PERILAB_VERSION, under BSD License",
+        "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse",
+        "compiled with Julia Version " * string(VERSION),
+    ]
     write_info(exo, info)
 
     # check if type of coords is int or Float64
@@ -156,7 +188,7 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
     fem_active = !isnothing(topology)
 
     for block in uniqueBlocks
-        conn = get_block_nodes(block_Id, block)# virtual elements   
+        conn = get_block_nodes(block_Id, block)# virtual elements
         if fem_active
             if fem_block[conn[1]]
                 # fem_conn = topology[conn, :]'
@@ -185,8 +217,10 @@ function init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Uni
 
     # output structure var_name -> [fieldname, exodus id, field dof]
 
-    nodal_outputs = Dict(key => value for (key, value) in output["Fields"] if (!value["global_var"]))
-    global_outputs = Dict(key => value for (key, value) in output["Fields"] if (value["global_var"]))
+    nodal_outputs =
+        Dict(key => value for (key, value) in output["Fields"] if (!value["global_var"]))
+    global_outputs =
+        Dict(key => value for (key, value) in output["Fields"] if (value["global_var"]))
     nodal_output_names = collect(keys(sort!(OrderedDict(nodal_outputs))))
     global_output_names = collect(keys(sort!(OrderedDict(global_outputs))))
     # write_number_of_variables(exo, NodalVariable, length(nodal_output_names))
@@ -236,17 +270,25 @@ Writes the nodal results in the exodus file
 # Returns
 - `exo::ExodusDatabase`: The exodus file
 """
-function write_nodal_results_in_exodus(exo::ExodusDatabase, step::Int64, output::Dict, datamanager::Module)
+function write_nodal_results_in_exodus(
+    exo::ExodusDatabase,
+    step::Int64,
+    output::Dict,
+    datamanager::Module,
+)
     #write_values
     nnodes = datamanager.get_nnodes()
     for varname in keys(output)
         field = datamanager.get_field(output[varname]["fieldname"])
         #exo, timestep::Integer, id::Integer, var_index::Integer,vector
-        # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl 
+        # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl
         if haskey(output[varname], "dof")
             var = convert(Array{Float64}, field[1:nnodes, output[varname]["dof"]])
         else
-            var = convert(Array{Float64}, field[1:nnodes, output[varname]["i_dof"], output[varname]["j_dof"]])
+            var = convert(
+                Array{Float64},
+                field[1:nnodes, output[varname]["i_dof"], output[varname]["j_dof"]],
+            )
         end
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, varname, var)

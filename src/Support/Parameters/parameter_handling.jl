@@ -15,9 +15,12 @@ include("./parameter_handling_FEM.jl")
 export validate_yaml
 
 global expected_structure = Dict(
-    "PeriLab" => [Dict{Any,Any}(
-            "Blocks" => [Dict{Any,Any}(
-                    "Any" => [Dict{Any,Any}(
+    "PeriLab" => [
+        Dict{Any,Any}(
+            "Blocks" => [
+                Dict{Any,Any}(
+                    "Any" => [
+                        Dict{Any,Any}(
                             "Density" => [Union{Float64,Int64}, true],
                             "Horizon" => [Union{Float64,Int64}, true],
                             "Specific Heat Capacity" => [Union{Float64,Int64}, false],
@@ -25,61 +28,96 @@ global expected_structure = Dict(
                             "Damage Model" => [String, false],
                             "Thermal Model" => [String, false],
                             "Additive Model" => [String, false],
-                        ), true],
-                ), true],
-            "FEM" => [Dict{Any,Any}(
+                        ),
+                        true,
+                    ],
+                ),
+                true,
+            ],
+            "FEM" => [
+                Dict{Any,Any}(
                     "Element Type" => [String, true],
                     "Degree" => [Union{String,Int64}, true],
                     "Material Model" => [String, true],
-                ), false],
-            "Boundary Conditions" => [Dict{Any,Any}(
-                    "Any" => [Dict{Any,Any}(
+                ),
+                false,
+            ],
+            "Boundary Conditions" => [
+                Dict{Any,Any}(
+                    "Any" => [
+                        Dict{Any,Any}(
                             "Coordinate" => [String, false],
                             "Node Set" => [String, true],
                             "Variable" => [String, true],
                             "Type" => [String, false],
                             "Value" => [Union{Float64,Int64,String}, true],
-                        ), true],
-                ), false],
-            "Compute Class Parameters" => [Dict{Any,Any}(
-                    "Any" => [Dict{Any,Any}(
+                        ),
+                        true,
+                    ],
+                ),
+                false,
+            ],
+            "Compute Class Parameters" => [
+                Dict{Any,Any}(
+                    "Any" => [
+                        Dict{Any,Any}(
                             "Block" => [String, false],
                             "Node Set" => [Union{Int64,String}, false],
                             "Calculation Type" => [String, true],
                             "Compute Class" => [String, true],
                             "Variable" => [String, true],
-                        ), true],
-                ), false],
-            "Discretization" => [Dict{Any,Any}(
+                        ),
+                        true,
+                    ],
+                ),
+                false,
+            ],
+            "Discretization" => [
+                Dict{Any,Any}(
                     "Input Mesh File" => [String, true],
-                    "Input External Topology" => [Dict{Any,Any}(
+                    "Input External Topology" => [
+                        Dict{Any,Any}(
                             "File" => [String, true],
                             "Add Neighbor Search" => [Bool, false],
-                        ), false],
-                    "Node Sets" => [Dict{Any,Any}(
-                            "Any" => [Union{Int64,String}, true],
-                        ), false],
+                        ),
+                        false,
+                    ],
+                    "Node Sets" => [
+                        Dict{Any,Any}("Any" => [Union{Int64,String}, true]),
+                        false,
+                    ],
                     "Type" => [String, true],
                     "Distribution Type" => [String, false],
-                    "Surface Extrusion" => [Dict{Any,Any}(
+                    "Surface Extrusion" => [
+                        Dict{Any,Any}(
                             "Direction" => [String, true],
                             "Step_X" => [Union{Float64,Int64}, true],
                             "Step_Y" => [Union{Float64,Int64}, true],
                             "Step_Z" => [Union{Float64,Int64}, true],
                             "Number" => [Union{Float64,Int64}, true],
-                        ), false],
-                    "Bond Filters" => [Dict{Any,Any}(
-                            "Any" => [Dict{Any,Any}(
+                        ),
+                        false,
+                    ],
+                    "Bond Filters" => [
+                        Dict{Any,Any}(
+                            "Any" => [
+                                Dict{Any,Any}(
                                     "Type" => [String, true],
                                     "Normal X" => [Union{Float64,Int64}, true],
                                     "Normal Y" => [Union{Float64,Int64}, true],
                                     "Normal Z" => [Union{Float64,Int64}, true],
-                                    "Lower Left Corner X" => [Union{Float64,Int64}, false],
-                                    "Lower Left Corner Y" => [Union{Float64,Int64}, false],
-                                    "Lower Left Corner Z" => [Union{Float64,Int64}, false],
-                                    "Bottom Unit Vector X" => [Union{Float64,Int64}, false],
-                                    "Bottom Unit Vector Y" => [Union{Float64,Int64}, false],
-                                    "Bottom Unit Vector Z" => [Union{Float64,Int64}, false],
+                                    "Lower Left Corner X" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Lower Left Corner Y" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Lower Left Corner Z" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Bottom Unit Vector X" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Bottom Unit Vector Y" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Bottom Unit Vector Z" =>
+                                        [Union{Float64,Int64}, false],
                                     "Center X" => [Union{Float64,Int64}, false],
                                     "Center Y" => [Union{Float64,Int64}, false],
                                     "Center Z" => [Union{Float64,Int64}, false],
@@ -87,40 +125,74 @@ global expected_structure = Dict(
                                     "Bottom Length" => [Union{Float64,Int64}, false],
                                     "Side Length" => [Union{Float64,Int64}, false],
                                     "Allow Contact" => [Bool, false],
-                                ), true],
-                        ), false],
-                ), true],
-            "Outputs" => [Dict{Any,Any}(
-                    "Any" => [Dict{Any,Any}(
+                                ),
+                                true,
+                            ],
+                        ),
+                        false,
+                    ],
+                ),
+                true,
+            ],
+            "Outputs" => [
+                Dict{Any,Any}(
+                    "Any" => [
+                        Dict{Any,Any}(
                             "Flush File" => [Bool, false],
                             "Output Frequency" => [Int64, false],
                             "Number of Output Steps" => [Int64, false],
                             "Output File Type" => [String, false],
                             "Output Filename" => [String, true],
                             "Write After Damage" => [Bool, false],
-                            "Output Variables" => [Dict{Any,Any}(
-                                    "Any" => [Bool, true],
-                                ), true],
-                        ), true],
-                ), false],
-            "Physics" => [Dict{Any,Any}(
-                    "Damage Models" => [Dict{Any,Any}(
-                            "Any" => [Dict{Any,Any}(
+                            "Output Variables" => [
+                                Dict{Any,Any}("Any" => [Bool, true]),
+                                true,
+                            ],
+                        ),
+                        true,
+                    ],
+                ),
+                false,
+            ],
+            "Physics" => [
+                Dict{Any,Any}(
+                    "Damage Models" => [
+                        Dict{Any,Any}(
+                            "Any" => [
+                                Dict{Any,Any}(
                                     "Critical Value" => [Union{Float64,Int64}, true],
                                     "Damage Model" => [String, true],
-                                    "Interblock Damage" => [Dict{Any,Any}(
+                                    "Interblock Damage" => [
+                                        Dict{Any,Any}(
                                             "Any" => [Union{Float64,Int64}, true],
-                                        ), false],
+                                        ),
+                                        false,
+                                    ],
                                     # "Anisotropic Damage" => [String, false],
                                     "Thickness" => [Union{Float64,Int64}, false],
-                                    "Anisotropic Damage" => [Dict{Any,Any}(
-                                            "Critical Value X" => [Union{Float64,Int64}, true],
-                                            "Critical Value Y" => [Union{Float64,Int64}, true],
-                                        ), false],
-                                ), true],
-                        ), false],
-                    "Material Models" => [Dict{Any,Any}(
-                            "Any" => [Dict{Any,Any}(
+                                    "Anisotropic Damage" => [
+                                        Dict{Any,Any}(
+                                            "Critical Value X" => [
+                                                Union{Float64,Int64},
+                                                true,
+                                            ],
+                                            "Critical Value Y" => [
+                                                Union{Float64,Int64},
+                                                true,
+                                            ],
+                                        ),
+                                        false,
+                                    ],
+                                ),
+                                true,
+                            ],
+                        ),
+                        false,
+                    ],
+                    "Material Models" => [
+                        Dict{Any,Any}(
+                            "Any" => [
+                                Dict{Any,Any}(
                                     "Material Model" => [String, true],
                                     "Symmetry" => [String, false],
                                     "Bond Associated" => [Bool, false],
@@ -155,35 +227,65 @@ global expected_structure = Dict(
                                     "File" => [String, false],
                                     "Number of Properties" => [Int64, false],
                                     "Predefined Field Names" => [String, false],
-                                ), true],
-                        ), false],
-                    "Thermal Models" => [Dict{Any,Any}(
-                            "Any" => [Dict{Any,Any}(
+                                ),
+                                true,
+                            ],
+                        ),
+                        false,
+                    ],
+                    "Thermal Models" => [
+                        Dict{Any,Any}(
+                            "Any" => [
+                                Dict{Any,Any}(
                                     "Thermal Model" => [String, true],
                                     "Type" => [String, false],
-                                    "Heat Transfer Coefficient" => [Union{Float64,Int64}, false],
-                                    "Environmental Temperature" => [Union{Float64,Int64}, false],
-                                    "Required Specific Volume" => [Union{Float64,Int64}, false],
-                                    "Thermal Conductivity" => [Union{Float64,Int64}, false],
-                                    "Thermal Expansion Coefficient" => [Union{Float64,Int64}, false],
-                                    "Thermal Conductivity Print Bed" => [Union{Float64,Int64}, false],
-                                    "Print Bed Temperature" => [Union{Float64,Int64}, false],
-                                ), true],
-                        ), false],
-                    "Additive Models" => [Dict{Any,Any}(
-                            "Any" => [Dict{Any,Any}(
+                                    "Heat Transfer Coefficient" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Environmental Temperature" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Required Specific Volume" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Thermal Conductivity" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Thermal Expansion Coefficient" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Thermal Conductivity Print Bed" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Print Bed Temperature" =>
+                                        [Union{Float64,Int64}, false],
+                                ),
+                                true,
+                            ],
+                        ),
+                        false,
+                    ],
+                    "Additive Models" => [
+                        Dict{Any,Any}(
+                            "Any" => [
+                                Dict{Any,Any}(
                                     "Additive Model" => [String, true],
-                                    "Print Temperature" => [Union{Float64,Int64}, false],
-                                ), true],
-                        ), false],
-                    "Pre Calculation" => [Dict{Any,Any}(
+                                    "Print Temperature" =>
+                                        [Union{Float64,Int64}, false],
+                                ),
+                                true,
+                            ],
+                        ),
+                        false,
+                    ],
+                    "Pre Calculation" => [
+                        Dict{Any,Any}(
                             "Bond Associated Deformation Gradient" => [Bool, false],
                             "Deformation Gradient" => [Bool, false],
                             "Deformed Bond Geometry" => [Bool, false],
                             "Shape Tensor" => [Bool, false],
-                        ), false],
-                ), true],
-            "Solver" => [Dict{Any,Any}(
+                        ),
+                        false,
+                    ],
+                ),
+                true,
+            ],
+            "Solver" => [
+                Dict{Any,Any}(
                     "Material Models" => [Bool, false],
                     "Calculate Cauchy" => [Bool, false],
                     "Calculate von Mises" => [Bool, false],
@@ -195,16 +297,24 @@ global expected_structure = Dict(
                     "Final Time" => [Union{Float64,Int64}, true],
                     "Initial Time" => [Union{Float64,Int64}, true],
                     "Numerical Damping" => [Union{Float64,Int64}, false],
-                    "Verlet" => [Dict{Any,Any}(
+                    "Verlet" => [
+                        Dict{Any,Any}(
                             "Safety Factor" => [Union{Float64,Int64}, false],
                             "Fixed dt" => [Union{Float64,Int64}, false],
-                            "Number of Steps" => [Int64, false]
-                        ), false],
-                    "External" => [Dict{Any,Any}(
-                            "Number of Steps" => [Int64, false]
-                        ), false]
-                ), true],
-        ), true]
+                            "Number of Steps" => [Int64, false],
+                        ),
+                        false,
+                    ],
+                    "External" => [
+                        Dict{Any,Any}("Number of Steps" => [Int64, false]),
+                        false,
+                    ],
+                ),
+                true,
+            ],
+        ),
+        true,
+    ],
 )
 
 """
@@ -222,7 +332,13 @@ Validates the parameters against the expected structure
 - `validate::Bool`: The validation result
 - `checked_keys::Array`: The keys that have been checked
 """
-function validate_structure_recursive(expected::Dict, actual::Dict, validate::Bool, checked_keys::Array, path::String="")
+function validate_structure_recursive(
+    expected::Dict,
+    actual::Dict,
+    validate::Bool,
+    checked_keys::Array,
+    path::String = "",
+)
     for (key, value) in expected
         current_path = isempty(path) ? key : "$path.$key"
 
@@ -235,7 +351,13 @@ function validate_structure_recursive(expected::Dict, actual::Dict, validate::Bo
             for (any_key, any_value) in actual
                 if isa(any_value, Dict) && isa(actual[any_key], Dict)
                     # Recursive call for nested dictionaries
-                    validate, checked_keys = validate_structure_recursive(expected[key][1], actual[any_key], validate, checked_keys, current_path)
+                    validate, checked_keys = validate_structure_recursive(
+                        expected[key][1],
+                        actual[any_key],
+                        validate,
+                        checked_keys,
+                        current_path,
+                    )
                 end
                 push!(checked_keys, any_key)
             end
@@ -256,7 +378,13 @@ function validate_structure_recursive(expected::Dict, actual::Dict, validate::Bo
             push!(checked_keys, key)
             if isa(value[1], Dict) && isa(actual[key], Dict)
                 # Recursive call for nested dictionaries
-                validate, checked_keys = validate_structure_recursive(value[1], actual[key], validate, checked_keys, current_path)
+                validate, checked_keys = validate_structure_recursive(
+                    value[1],
+                    actual[key],
+                    validate,
+                    checked_keys,
+                    current_path,
+                )
             end
         else
             @error "Validation Error: Wrong type, expected - $(value[1]), got - $(typeof(actual[key])) in $current_path"
@@ -302,7 +430,8 @@ function validate_yaml(params::Dict)
     # Validate against the expected structure
     validate = true
     checked_keys = []
-    validate, checked_keys = validate_structure_recursive(expected_structure, params, validate, checked_keys)
+    validate, checked_keys =
+        validate_structure_recursive(expected_structure, params, validate, checked_keys)
     #Check if all keys have been checked
     for key in all_keys
         if !(key in checked_keys) && !contains(key, "Property_")

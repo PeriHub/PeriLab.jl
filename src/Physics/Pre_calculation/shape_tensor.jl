@@ -27,7 +27,17 @@ function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, bloc
     undeformed_bond = datamanager.get_field("Bond Geometry")
     shape_tensor = datamanager.get_field("Shape Tensor")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
-    shape_tensor, inverse_shape_tensor = Geometry.shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+    shape_tensor, inverse_shape_tensor = Geometry.shape_tensor(
+        nodes,
+        dof,
+        nlist,
+        volume,
+        omega,
+        bond_damage,
+        undeformed_bond,
+        shape_tensor,
+        inverse_shape_tensor,
+    )
     return datamanager
 end
 

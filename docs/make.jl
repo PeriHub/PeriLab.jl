@@ -7,18 +7,19 @@ using Documenter, PeriLab, DocumenterCitations, DocumenterMermaid
 bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"))
 
 makedocs(
-    plugins=[bib],
-    modules=[PeriLab],
-    authors="Christian Willberg <christian.willberg@dlr.de> and Jan-Timo Hesse <jan-timo.hesse@dlr.de>",
-    doctest=true,
-    checkdocs=:none, # :all, :exports, :none
-    sitename="PeriLab",
-    repo=Documenter.Remotes.GitHub("PeriHub", "PeriLab.jl"), format=Documenter.HTML(
-        canonical="https://github.com/PeriHub/PeriLab.jl",
-        assets=["assets/favicon.ico"],
-        edit_link="main"
+    plugins = [bib],
+    modules = [PeriLab],
+    authors = "Christian Willberg <christian.willberg@dlr.de> and Jan-Timo Hesse <jan-timo.hesse@dlr.de>",
+    doctest = true,
+    checkdocs = :none, # :all, :exports, :none
+    sitename = "PeriLab",
+    repo = Documenter.Remotes.GitHub("PeriHub", "PeriLab.jl"),
+    format = Documenter.HTML(
+        canonical = "https://github.com/PeriHub/PeriLab.jl",
+        assets = ["assets/favicon.ico"],
+        edit_link = "main",
     ),
-    pages=Any[
+    pages = Any[
         "Introduction"=>"index.md",
         "First Steps with PeriLab"=>"man/basics.md",
         "User Guide"=>Any[
@@ -63,8 +64,6 @@ makedocs(
             # "Metadata" => "lib/metadata.md",
             # hide("Internals" => "lib/internals.md"),
         ],
-    ]
+    ],
 )
-deploydocs(
-    repo="github.com/PeriHub/PeriLab.jl.git",
-)
+deploydocs(repo = "github.com/PeriHub/PeriLab.jl.git")
