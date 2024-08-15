@@ -157,7 +157,7 @@ rotate_second_order_tensor
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Models.Pre_calculation
+CurrentModule = PeriLab.Solver.Model_Factory.Pre_calculation
 ```
 ## Pre_calculation
 ```@docs
@@ -210,7 +210,7 @@ get_header
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Models.Material.Set_modules
+CurrentModule = PeriLab.Solver.Model_Factory.Material.Set_modules
 ```
 ## Set_modules
 ```@docs

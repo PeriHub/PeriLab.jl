@@ -6,7 +6,7 @@ include("../../../src/Models/Model_Factory.jl")
 # include("../../../src/PeriLab.jl")
 # using .PeriLab
 using Test
-import .Models
+
 @testset "ut_get_block_model_definition" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
