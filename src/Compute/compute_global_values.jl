@@ -139,11 +139,7 @@ function global_value_max(
     dof::Union{Int64,Vector{Int64}},
     nodes::Union{SubArray,Vector{Int64}},
 )
-    # returnValue = zeros(length(field[1, :]))
-    # for iID in eachindex(field[1, :])
-    #     returnValue[iID] = maximum(field[nodes, iID])
-    # end
-    # return returnValue
+
     return maximum(field[nodes, dof])
 end
 
@@ -165,11 +161,6 @@ function global_value_min(
     nodes::Union{SubArray,Vector{Int64}},
 )
 
-    # returnValue = zeros(length(field[1, :]))
-    # for iID in eachindex(field[1, :])
-    #     returnValue[iID] = minimum(field[nodes, iID])
-    # end
-    # return returnValue
     return minimum(field[nodes, dof])
 end
 
@@ -191,10 +182,5 @@ function global_value_avg(
     nodes::Union{SubArray,Vector{Int64}},
 )
 
-    # returnValue = zeros(length(field[1, :]))
-    # for iID in eachindex(field[1, :])
-    #     returnValue[iID] = sum(field[nodes, iID]) / length(nodes)
-    # end
-    # return returnValue
     return sum(field[nodes, dof]) / length(nodes)
 end
