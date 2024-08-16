@@ -159,7 +159,7 @@ function compute_forces(
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     strain_increment = datamanager.get_field("Strain Increment")
     strain_NP1 = compute_strain(nodes, deformation_gradient, strain_NP1)
-    strain_increment[nodes, :, :] = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
+    @views strain_increment[nodes, :, :] = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
 
     if rotation
         rotation_tensor = datamanager.get_field("Rotation Tensor")
@@ -278,7 +278,7 @@ function calculate_bond_force(
                 stress_NP1[iID, :, :],
                 deformation_gradient[iID, :, :],
             ) *
-            (@view inverse_shape_tensor[iID, :, :])
+            inverse_shape_tensor[iID, :, :]
 
     end
     return bond_force
