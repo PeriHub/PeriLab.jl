@@ -1074,6 +1074,7 @@ function create_consistent_neighborhoodlist(
     for i_el = 1:number_of_elements
         push!(topology, collect(skipmissing(external_topology[i_el, :])))
     end
+    # creates a field of length highest point number occuring in finite element
     nodes_to_element = [Any[] for _ = 1:maximum(maximum(topology))]
     fe_nodes = Vector{Int64}()
     for (el_id, topo) in enumerate(topology)
