@@ -255,6 +255,8 @@ end
     @test PeriLab.Solver.Helpers.check_inf_or_nan(a, "Testing infinite test vector")
     a = 0
     @test PeriLab.Solver.Helpers.check_inf_or_nan(a, "a") == false
+    a = NaN
+    @test PeriLab.Solver.Helpers.check_inf_or_nan(a, "a") == false
 end
 @testset "get_matrix_style" begin
     A = 1
