@@ -256,7 +256,7 @@ end
     a = 0
     @test PeriLab.Solver.Helpers.check_inf_or_nan(a, "a") == false
     a = NaN
-    @test PeriLab.Solver.Helpers.check_inf_or_nan(a, "a") == false
+    @test PeriLab.Solver.Helpers.check_inf_or_nan(a, "a") == true
 end
 @testset "get_matrix_style" begin
     A = 1
