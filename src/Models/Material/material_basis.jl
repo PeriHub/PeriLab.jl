@@ -430,7 +430,7 @@ Allows the modification of the yield stress at a specific position. This is typi
 
 # Arguments
 - `params::Dict`: A dictionary containing material information.
-- `coor::Union{Vector{Int64},Vector{Float64}}`: Coordinate of the current point.
+- `coor::Union{Vector{Int64},Vector{Float64}, SubArray}`: Coordinate of the current point.
 - `stress::Float64`: stresses to be modified.
 
 # Returns
@@ -438,7 +438,7 @@ Allows the modification of the yield stress at a specific position. This is typi
 """
 function flaw_function(
     params::Dict,
-    coor::Union{Vector{Int64},Vector{Float64}},
+    coor::Union{Vector{Int64},Vector{Float64},SubArray{Float64}},
     stress::Float64,
 )
     if !haskey(params, "Flaw Function")
@@ -559,8 +559,8 @@ end
 
 
 function compute_Piola_Kirchhoff_stress(
-    stress::Matrix{Float64},
-    deformation_gradient::Matrix{Float64},
+    stress::Union{Matrix{Float64},SubArray{Float64}},
+    deformation_gradient::Union{Matrix{Float64},SubArray{Float64}},
 )
     return det(deformation_gradient) .* stress * invert(
         deformation_gradient,

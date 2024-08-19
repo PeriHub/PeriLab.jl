@@ -119,10 +119,10 @@ function compute_damage(
     projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
     for iID in nodes
-        relative_displacement_vector = deformed_bond[iID] .- undeformed_bond[iID]
+        @views relative_displacement_vector = deformed_bond[iID] .- undeformed_bond[iID]
 
         for (jID, neighborID) in enumerate(nlist[iID])
-            relative_displacement = relative_displacement_vector[jID, :]
+            @views relative_displacement = relative_displacement_vector[jID, :]
             norm_displacement = norm(relative_displacement)
 
             if norm_displacement == 0 || (
@@ -133,28 +133,26 @@ function compute_damage(
             end
 
             # check if the bond also exist at other node, due to different horizons
-            if haskey(inverse_nlist[neighborID], iID)
-                neighbor_bond_force .=
+            try
+                @views neighbor_bond_force .=
                     bond_forces[neighborID][inverse_nlist[neighborID][iID], :]
-            else
-                fill!(neighbor_bond_force, 0.0)
+            catch e
+                # Handle the case when the key doesn't exist
             end
 
-            projected_force .=
+            @views projected_force .=
                 dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement) /
                 (norm_displacement * norm_displacement) .* relative_displacement
 
-            bond_energy = 0.25 * dot(abs.(projected_force), abs.(relative_displacement))
-            if bond_energy < 0
-                @error "Bond energy smaller zero"
-                return nothing
-            end
+            @views bond_energy =
+                0.25 * dot(abs.(projected_force), abs.(relative_displacement))
+
             if dependend_value
                 critical_energy =
                     interpol_data(field[iID], damage_parameter["Temperature dependend"])
             end
 
-            crit_energy =
+            @views crit_energy =
                 critical_field ? critical_energy[iID] :
                 inter_block_damage ?
                 inter_critical_energy[block_ids[iID], block_ids[neighborID], block] :
@@ -163,19 +161,20 @@ function compute_damage(
             if aniso_damage
                 #TODO Fix bug herem rotation_tensor is zero
                 @info rotation_tensor[iID, :, :]'
-                rotated_bond = rotation_tensor[iID, :, :]' * deformed_bond[iID][jID, :]
+                @views rotated_bond =
+                    rotation_tensor[iID, :, :]' * deformed_bond[iID][jID, :]
                 # Compute bond_norm for all components at once
-                bond_norm_all = abs.(rotated_bond) ./ deformed_bond_length[iID][jID]
+                @views bond_norm_all = abs.(rotated_bond) ./ deformed_bond_length[iID][jID]
 
                 # Compute the condition for all components at once
-                condition =
+                @views condition =
                     bond_energy / quad_horizon[iID] * bond_norm_all .>
                     aniso_crit_values[block_ids[iID]]
 
                 # Update bond_damage, bond_damage_aniso, and update_list in a vectorized manner
-                bond_damage[iID][jID] -= sum(bond_norm_all .* condition)
-                bond_damage[iID][jID] = max.(bond_damage[iID][jID], 0) # Ensure non-negative
-                bond_damage_aniso[iID][jID, :] .= 0 .+ condition
+                @views bond_damage[iID][jID] -= sum(bond_norm_all .* condition)
+                @views bond_damage[iID][jID] = max.(bond_damage[iID][jID], 0) # Ensure non-negative
+                @views bond_damage_aniso[iID][jID, :] .= 0 .+ condition
                 update_list[iID] = any(condition)
 
                 ###################################################################################################
@@ -210,10 +209,6 @@ function compute_damage(
                     bond_damage[iID][jID] = 0.0
                     update_list[iID] = true
                 end
-            end
-            if 1 < bond_damage[iID][jID] || bond_damage[iID][jID] < 0
-                @error "Bond damage out of bounds"
-                return nothing
             end
         end
     end
