@@ -301,6 +301,7 @@ function init_damage_model(
     end
     datamanager.set_model_module(model_param["Damage Model"], mod)
     datamanager = mod.init_damage_model(datamanager, nodes, model_param, block)
+    datamanager.set_damage_models(model_param["Damage Model"])
     datamanager = Damage.init_interface_crit_values(datamanager, model_param, block)
     datamanager = Damage.init_aniso_crit_values(datamanager, model_param, block)
     return datamanager

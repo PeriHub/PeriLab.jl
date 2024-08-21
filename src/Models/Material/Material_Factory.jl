@@ -92,6 +92,7 @@ function init_material_model(
         end
         datamanager.set_model_module(material_model, mod)
         datamanager = mod.init_material_model(datamanager, nodes, model_param)
+        datamanager.set_material_models(material_model)
     end
     #TODO in extra function
     # nlist = datamanager.get_nlist()

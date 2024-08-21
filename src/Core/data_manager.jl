@@ -1513,7 +1513,10 @@ Sets the damage models globally.
 - `value`: The value to set as the damage models.
 """
 function set_damage_models(value)
-    global damage_models = value
+    global damage_models
+    if !(value in damage_models)
+        push!(damage_models, value)
+    end
 end
 
 """
@@ -1525,7 +1528,10 @@ Sets the material models globally.
 - `value`: The value to set as the material models.
 """
 function set_material_models(value)
-    global material_models = value
+    global material_models
+    if !(value in material_models)
+        push!(material_models, value)
+    end
 end
 
 """

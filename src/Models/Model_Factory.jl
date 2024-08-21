@@ -392,18 +392,12 @@ function init_models(
         @info "Init damage models"
         @timeit to "damage_model_fields" datamanager =
             Damage.init_damage_model_fields(datamanager, params)
-        damage_models = []
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Damage Model")
-                push!(
-                    damage_models,
-                    datamanager.get_property(block, "Damage Model", "Damage Model"),
-                )
                 @timeit to "init damage model" datamanager =
                     Damage.init_damage_model(datamanager, block_nodes[block], block)
             end
         end
-        datamanager.set_damage_models(unique(damage_models))
     end
     if solver_options["Material Models"]
         @info "Init material models"
@@ -412,15 +406,10 @@ function init_models(
         material_models = []
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Material Model")
-                push!(
-                    material_models,
-                    datamanager.get_property(block, "Material Model", "Material Model"),
-                )
                 @timeit to "init material" datamanager =
                     Material.init_material_model(datamanager, block_nodes[block], block)
             end
         end
-        datamanager.set_material_models(unique(material_models))
     end
     if solver_options["Calculate Cauchy"] | solver_options["Calculate von Mises"]
         datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)

@@ -314,9 +314,7 @@ function synch_controller_bonds_to_responder_flattened(
             continue
         end
         if !isempty(overlapnodes[rank+1][jcore]["Controller"])
-            send_indices = overlapnodes[rank+1][jcore]["Controller"]
-            # send_msg = array[overlapnodes[rank+1][jcore]["Controller"]]
-            # send_msg = vcat(send_msg...)
+            @views send_indices = overlapnodes[rank+1][jcore]["Controller"]
             # @debug "Sending $rank -> $(jcore-1)"
             MPI.Isend(
                 vcat([reshape(array[i], :, 1) for i in send_indices]...),
@@ -326,25 +324,13 @@ function synch_controller_bonds_to_responder_flattened(
             )
         end
         if !isempty(overlapnodes[rank+1][jcore]["Responder"])
-            recv_indices = overlapnodes[rank+1][jcore]["Responder"]
+            @views recv_indices = overlapnodes[rank+1][jcore]["Responder"]
             row_nums = [length(subarr) for subarr in array[recv_indices]]
-            recv_msg = zeros(sum(row_nums))
+            @views recv_msg = zeros(sum(row_nums))
             # @debug "Receiving $(jcore-1) -> $rank"
             MPI.Recv!(recv_msg, comm; source = jcore - 1, tag = 0)
             recv_msg = split_vector(recv_msg, row_nums, dof)
             array[recv_indices] .= recv_msg
-            # if dof == 1
-            #     array[recv_indices] .= recv_msg
-            # else
-            #     array[recv_indices] .= recv_msg
-            # end
-            # recv_msg = similar(array[recv_indices])
-            # row_starts = cumsum([size(array[i], 1) for i in recv_indices])
-            # row_starts = [0; row_starts[1:end-1]]
-            # MPI.Recv!(recv_msg, comm, source=jcore - 1, tag=0)
-            # for (i, idx) in enumerate(recv_indices)
-            #     array[idx] .= recv_msg[row_starts[i]+1:row_starts[i]+size(array[idx], 1), :]
-            # end
         end
     end
     return array
