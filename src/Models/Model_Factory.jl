@@ -30,11 +30,6 @@ using TimerOutputs
 export compute_models
 export init_models
 export read_properties
-export init_additive_model_fields
-export init_corrosion_model_fields
-export init_damage_model_fields
-export init_material_model_fields
-export init_thermal_model_fields
 
 """
     compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
@@ -352,13 +347,33 @@ function init_models(
     #    end
     #end
 
+    #models = []
+    #solver_options["Models"] = Dict("Additive" => true, "Material" => true)
+    #for name in keys(solver_options["Models"])
+    #    if solver_options["Models"][name]
+    #        datamanager.set_active_model(eval(Meta.parse(name)))
+    #    end
+    #end
+
+
+    #for model in models
+    #    @info "Init $model models"
+    #    @timeit to "$model model fields" datamanager =
+    #        model.init_fields(datamanager)
+    #    for block in eachindex(block_nodes)
+    #        if datamanager.check_property(block, "Additive Model")
+    #            @timeit to "init $model model" datamanager =
+    #                model.init_model(datamanager, block_nodes[block], block)
+    #        end
+    #    end
+    #end
+
+
+
     if solver_options["Additive Models"]
         @info "Init additive models"
         @timeit to "additive_model_fields" datamanager =
             Additive.init_additive_model_fields(datamanager)
-        heat_capacity =
-            datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
-        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Additive Model")
                 @timeit to "init additive model" datamanager =
