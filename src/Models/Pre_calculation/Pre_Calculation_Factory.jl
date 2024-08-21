@@ -68,7 +68,7 @@ function compute(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}})
         end
         mod = datamanager.get_model_module(pre_calculation_model)
         for block in eachindex(block_nodes)
-            nodes = block_nodes[block]
+            @views nodes = block_nodes[block]
             active_nodes, update_nodes =
                 get_active_update_nodes(active, update_list, block_nodes, block)
             if fem_option

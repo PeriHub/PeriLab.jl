@@ -648,7 +648,7 @@ Get the bond damage
 """
 function get_bond_damage(time::String)
     bond_damage = get_field("Bond Damage", time)
-    bond_damage_aniso = get_field("Bond Damage Anisotropic", time, false)
+    # bond_damage_aniso = get_field("Bond Damage Anisotropic", time, false)
     # return isnothing(bond_damage_aniso) ? bond_damage : bond_damage_aniso
     return bond_damage
 end

@@ -90,7 +90,7 @@ function compute_models(
             synchronise_field,
         )
         for block in eachindex(block_nodes)
-            nodes = block_nodes[block]
+            @views nodes = block_nodes[block]
             active_nodes = view(nodes, find_active(active[nodes]))
             if fem_option
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
@@ -114,7 +114,7 @@ function compute_models(
         end
 
         for block in eachindex(block_nodes)
-            nodes = block_nodes[block]
+            @views nodes = block_nodes[block]
             active_nodes = view(nodes, find_active(active[nodes]))
             if fem_option
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))

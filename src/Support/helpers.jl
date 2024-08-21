@@ -109,7 +109,7 @@ function get_active_update_nodes(
     active_nodes = view(block_nodes[block], active_index)
     update_index = find_active(update_list[active_nodes])
     if !isempty(update_index)
-        update_nodes = active_nodes[update_index]
+        @views update_nodes = active_nodes[update_index]
     end
     return active_nodes, update_nodes
 end

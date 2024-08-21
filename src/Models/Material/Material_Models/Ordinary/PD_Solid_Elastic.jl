@@ -204,7 +204,6 @@ function elastic(
     # kappa::Float64 = 0
     # gamma::Float64 = 0
     # alpha::Float64 = 0
-    deviatoric_deformation = @MVector zeros(Float64, dof)
     if shear_modulus isa Float64
         alpha, gamma, kappa =
             Ordinary.calculate_symmetry_params(symmetry, shear_modulus, bulk_modulus)
@@ -221,17 +220,16 @@ function elastic(
                 bulk_modulus[iID],
             )
         end
-        deviatoric_deformation =
+        @views deviatoric_deformation =
             deformed_bond_length[iID] .- undeformed_bond_length[iID] -
             (gamma * theta[iID] / 3) .* undeformed_bond_length[iID]
-        bond_force_deviatoric_part[iID] =
+        @views bond_force_deviatoric_part[iID] =
             bond_damage[iID] .* omega[iID] .* alpha .* deviatoric_deformation ./
             weighted_volume[iID]
-        bond_force_isotropic_part[iID] =
+        @views bond_force_isotropic_part[iID] =
             bond_damage[iID] .* omega[iID] .* kappa .* theta[iID] .*
             undeformed_bond_length[iID] ./ weighted_volume[iID]
     end
-    deviatoric_deformation = nothing
     return bond_force_deviatoric_part, bond_force_isotropic_part
 end
 
