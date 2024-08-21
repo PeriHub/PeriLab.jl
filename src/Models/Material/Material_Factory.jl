@@ -117,6 +117,21 @@ function init_material_model(
 end
 
 """
+    synch_field(datamanager::Module, material_model::String, synchronise_field)
+
+Field for synchronisation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `material_model::String`: The material model
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+"""
+function synch_field(datamanager::Module, material_model::String, synchronise_field)
+    mod = datamanager.get_model_module(material_model)
+    return mod.synch_field(datamanager, synchronise_field)
+end
+
+"""
     compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
 Compute the forces.

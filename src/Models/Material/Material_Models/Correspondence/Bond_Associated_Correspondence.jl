@@ -72,7 +72,18 @@ function init_material_model(
     return datamanager
 end
 
+"""
+    synch_field(datamanager::Module, synchronise_field)
 
+Field for synchronisation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+"""
+function synch_field(datamanager::Module, synchronise_field)
+    return datamanager
+end
 
 """
 https://link.springer.com/article/10.1007/s10409-021-01055-5

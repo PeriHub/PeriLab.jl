@@ -14,6 +14,7 @@ export compute_damage_pre_calculation
 export init_interface_crit_values
 export init_damage_model
 export init_damage_model_fields
+export synch_field
 
 """
     init_damage_model_fields(datamanager::Module)
@@ -105,19 +106,26 @@ function compute_damage_pre_calculation(
     nodes::Union{SubArray,Vector{Int64}},
     block::Int64,
     model_param::Dict,
-    synchronise_field,
     time::Float64,
     dt::Float64,
 )
     mod = datamanager.get_model_module(model_param["Damage Model"])
-    return mod.compute_damage_pre_calculation(
-        datamanager,
-        nodes,
-        block,
-        synchronise_field,
-        time,
-        dt,
-    )
+    return mod.compute_damage_pre_calculation(datamanager, nodes, block, time, dt)
+end
+
+"""
+    synch_field(datamanager::Module, damage_model::String, synchronise_field)
+
+Field for synchronisation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `damage_model::String`: The damage model
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+"""
+function synch_field(datamanager::Module, damage_model::String, synchronise_field)
+    mod = datamanager.get_model_module(damage_model)
+    return mod.synch_field(datamanager, synchronise_field)
 end
 
 """

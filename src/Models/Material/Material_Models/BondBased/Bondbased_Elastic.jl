@@ -63,6 +63,19 @@ function material_name()
 end
 
 """
+    synch_field(datamanager::Module, synchronise_field)
+
+Field for synchronisation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+"""
+function synch_field(datamanager::Module, synchronise_field)
+    return datamanager
+end
+
+"""
     compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.

@@ -8,6 +8,7 @@ export fe_support
 export init_material_model
 export material_name
 export compute_forces
+export synch_field
 
 """
   fe_support()
@@ -68,6 +69,20 @@ println(material_name())
 """
 function material_name()
     return "Material Template"
+end
+
+"""
+    synch_field(datamanager::Module, synchronise_field)
+
+Field for synchronisation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+"""
+function synch_field(datamanager::Module, synchronise_field)
+    @info "Here you can add fields for synchronisation."
+    return datamanager
 end
 
 """

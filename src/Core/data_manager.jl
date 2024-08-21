@@ -39,6 +39,8 @@ export get_cancel
 export get_output_frequency
 export get_rotation
 export get_element_rotation
+export get_damage_models
+export get_material_models
 export init_property
 export set_accuracy_order
 export set_block_list
@@ -61,6 +63,8 @@ export set_cancel
 export set_output_frequency
 export set_rotation
 export set_element_rotation
+export set_damage_models
+export set_material_models
 export switch_NP1_to_N
 export synch_manager
 ##########################
@@ -98,6 +102,8 @@ global max_rank::Int64
 global silent::Bool
 global rotation::Bool
 global element_rotation::Bool
+global damage_models::Vector{String}
+global material_models::Vector{String}
 ##########################
 
 """
@@ -106,73 +112,44 @@ global element_rotation::Bool
 Initialize all parameter in the datamanager and sets them to the default values.
 """
 function initialize_data()
-    global nnodes
-    nnodes = 0
-    global num_controller
-    num_controller = 0
-    global num_responder
-    num_responder = 0
-    global num_elements
-    num_elements = 0
-    global nnsets
-    nnsets = 0
-    global dof
-    dof = 2
-    global fem_option
-    fem_option = false
-    global block_list
-    block_list = []
-    global distribution
-    distribution = []
-    global crit_values_matrix
-    crit_values_matrix = fill(-1, (1, 1, 1))
-    global aniso_crit_values
-    aniso_crit_values = Dict()
-    global properties
-    properties = Dict()
-    global glob_to_loc
-    glob_to_loc = Dict()
-    global fields
-    fields = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
-    global field_array_type
-    field_array_type = Dict()
-    global field_types
-    field_types = Dict()
-    global fields_to_synch
-    fields_to_synch = Dict()
-    global filedirectory
-    filedirectory = ""
-    global inverse_nlist
-    inverser_nlist = []
-    global model_modules
-    model_modules = Dict()
-    global nsets
-    nsets = Dict()
-    global overlap_map
-    overlap_map = Dict()
-    global models_options
-    models_options = Dict(
+    global nnodes = 0
+    global num_controller = 0
+    global num_responder = 0
+    global num_elements = 0
+    global nnsets = 0
+    global dof = 2
+    global fem_option = false
+    global block_list = []
+    global distribution = []
+    global crit_values_matrix = fill(-1, (1, 1, 1))
+    global aniso_crit_values = Dict()
+    global properties = Dict()
+    global glob_to_loc = Dict()
+    global fields = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
+    global field_array_type = Dict()
+    global field_types = Dict()
+    global fields_to_synch = Dict()
+    global filedirectory = ""
+    global inverse_nlist = []
+    global model_modules = Dict()
+    global nsets = Dict()
+    global overlap_map = Dict()
+    global models_options = Dict(
         "Deformed Bond Geometry" => true,
         "Deformation Gradient" => false,
         "Shape Tensor" => false,
         "Bond Associated Deformation Gradient" => false,
     )
-    global output_frequency
-    output_frequency = []
-    global accuracy_order
-    accuracy_order = 1
-    global rank
-    rank = 0
-    global cancel
-    cancel = false
-    global max_rank
-    max_rank = 0
-    global silent
-    silent = false
-    global rotation
-    rotation = false
-    global element_rotation
-    element_rotation = false
+    global output_frequency = []
+    global accuracy_order = 1
+    global rank = 0
+    global cancel = false
+    global max_rank = 0
+    global silent = false
+    global rotation = false
+    global element_rotation = false
+    global damage_models = []
+    global material_models = []
 
 end
 ###################################
@@ -1050,6 +1027,32 @@ function get_output_frequency()
 end
 
 """
+    get_damage_models()
+
+This function returns the `damage_models` variable.
+
+# Returns
+- `damage_models`::Any: The value of the `damage_models` variable.
+"""
+function get_damage_models()
+    global damage_models
+    return damage_models
+end
+
+"""
+    get_material_models()
+
+This function returns the `material_models` variable.
+
+# Returns
+- `material_models`::Any: The value of the `material_models` variable.
+"""
+function get_material_models()
+    global material_models
+    return material_models
+end
+
+"""
     loc_to_glob(range::UnitRange{Int64})
 
 Converts the local index to the global index.
@@ -1499,6 +1502,30 @@ Sets the output frequency globally.
 """
 function set_output_frequency(value)
     global output_frequency = value
+end
+
+"""
+    set_damage_models(value)
+
+Sets the damage models globally.
+
+# Arguments
+- `value`: The value to set as the damage models.
+"""
+function set_damage_models(value)
+    global damage_models = value
+end
+
+"""
+    set_material_models(value)
+
+Sets the material models globally.
+
+# Arguments
+- `value`: The value to set as the material models.
+"""
+function set_material_models(value)
+    global material_models = value
 end
 
 """

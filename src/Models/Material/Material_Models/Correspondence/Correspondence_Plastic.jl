@@ -81,6 +81,20 @@ end
 function correspondence_name()
     return "Correspondence Plastic"
 end
+
+"""
+    synch_field(datamanager::Module, synchronise_field)
+
+Field for synchronisation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+"""
+function synch_field(datamanager::Module, synchronise_field)
+    return datamanager
+end
+
 """
     compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
 
