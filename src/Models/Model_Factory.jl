@@ -99,13 +99,20 @@ function compute_models(
                         options,
                         active_nodes,
                         block,
-                        synchronise_field,
                         time,
                         dt,
                         to,
                     )
+
+                datamanager.get_properties(block, "Damage Model")
             end
         end
+        for damage_model in datamanager.get_damage_models()
+            @timeit to "synch_field" datamanager =
+                Damage.synch_field(datamanager, damage_model, synchronise_field)
+            #TODO: Check that same fields in seperate damage models arent being synched twice
+        end
+
         for block in eachindex(block_nodes)
             nodes = block_nodes[block]
             active_nodes = view(nodes, find_active(active[nodes]))
@@ -169,6 +176,11 @@ function compute_models(
         end
 
         if options["Material Models"]
+            for material_model in datamanager.get_material_models()
+                @timeit to "synch_field" datamanager =
+                    Material.synch_field(datamanager, material_model, synchronise_field)
+                #TODO: Check that same fields in seperate damage models arent being synched twice
+            end
             if datamanager.check_property(block, "Material Model")
                 model_param = datamanager.get_properties(block, "Material Model")
                 @timeit to "bond_forces" datamanager = Material.compute_forces(
@@ -236,7 +248,6 @@ function compute_damage_pre_calculation(
     options::Dict,
     nodes::Union{SubArray,Vector{Int64}},
     block::Int64,
-    synchronise_field,
     time::Float64,
     dt::Float64,
     to::TimerOutput,
@@ -267,7 +278,6 @@ function compute_damage_pre_calculation(
         nodes,
         block,
         datamanager.get_properties(block, "Damage Model"),
-        synchronise_field,
         time,
         dt,
     )
@@ -403,12 +413,12 @@ function init_models(
                     Damage.init_damage_model(datamanager, block_nodes[block], block)
             end
         end
-
     end
     if solver_options["Material Models"]
         @info "Init material models"
         @timeit to "material model fields" datamanager =
             Material.init_material_model_fields(datamanager)
+        material_models = []
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Material Model")
                 @timeit to "init material" datamanager =

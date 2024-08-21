@@ -6,6 +6,7 @@ module Damage_template
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
+export synch_field
 """
     damage_name()
 
@@ -94,6 +95,19 @@ function compute_damage_pre_calculation(
     return datamanager
 end
 
+"""
+    synch_field(datamanager::Module, synchronise_field)
+
+Field for synchronisation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+"""
+function synch_field(datamanager::Module, synchronise_field)
+    @info "Here you can add fields for synchronisation."
+    return datamanager
+end
 
 """
     init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)

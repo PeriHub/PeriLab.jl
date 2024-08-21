@@ -17,6 +17,7 @@ export compute_damage
 export compute_damage_pre_calculation
 export damage_name
 export init_damage_model
+export synch_field
 """
     damage_name()
 
@@ -234,10 +235,22 @@ function compute_damage_pre_calculation(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     block::Int64,
-    synchronise_field,
     time::Float64,
     dt::Float64,
 )
+    return datamanager
+end
+
+"""
+    synch_field(datamanager::Module, synchronise_field)
+
+Field for synchronisation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+"""
+function synch_field(datamanager::Module, synchronise_field)
     synchfield = Dict(
         "Bond Forces" =>
             Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),

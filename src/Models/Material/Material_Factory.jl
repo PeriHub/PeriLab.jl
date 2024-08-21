@@ -92,6 +92,7 @@ function init_material_model(
         end
         datamanager.set_model_module(material_model, mod)
         datamanager = mod.init_material_model(datamanager, nodes, model_param)
+        datamanager.set_material_models(material_model)
     end
     #TODO in extra function
     # nlist = datamanager.get_nlist()
@@ -114,6 +115,21 @@ function init_material_model(
     end
 
     return datamanager
+end
+
+"""
+    synch_field(datamanager::Module, material_model::String, synchronise_field)
+
+Field for synchronisation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `material_model::String`: The material model
+- `synchronise_field`: Synchronise function to distribute parameter through cores.
+"""
+function synch_field(datamanager::Module, material_model::String, synchronise_field)
+    mod = datamanager.get_model_module(material_model)
+    return mod.synch_field(datamanager, synchronise_field)
 end
 
 """

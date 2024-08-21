@@ -44,6 +44,7 @@ function init_additive_model_fields(datamanager::Module)
     end
     nlist = datamanager.get_field("Neighborhoodlist")
     inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
+
     return datamanager
 end
 
