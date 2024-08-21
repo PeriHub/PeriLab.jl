@@ -5,6 +5,7 @@
 module Data_manager
 using MPI
 
+export add_active_model
 export create_bond_field
 export create_constant_free_size_field
 export create_constant_bond_field
@@ -12,6 +13,7 @@ export create_constant_node_field
 export create_node_field
 export fem_active
 export initialize_data
+export get_active_models
 export get_all_field_keys
 export has_key
 export get_accuracy_order
@@ -66,6 +68,7 @@ export synch_manager
 ##########################
 # Variables
 ##########################
+global active_models::Vector{Any}
 global nnodes::Int64
 global num_controller::Int64
 global num_responder::Int64
@@ -173,12 +176,26 @@ function initialize_data()
     rotation = false
     global element_rotation
     element_rotation = false
-
+    global active_models
+    active_models = []
 end
 ###################################
 
 
+"""
+    add_active_model(module_name::Module)
 
+Add the main modules to an array which are active.
+
+# Arguments
+- `active_module::Module`: Module of the active models.
+"""
+function add_active_model(active_module::Module)
+    global active_models
+    if !(active_module in active_models)
+        push!(active_models, active_module)
+    end
+end
 
 
 """
@@ -545,6 +562,19 @@ Returns if FEM is active (true) or not (false).
 """
 function fem_active()
     return fem_option
+end
+
+
+
+
+"""
+    get_active_models()
+
+Returns a list active model modules.
+"""
+function get_active_models()
+    global active_models
+    return active_models
 end
 
 """
@@ -1130,6 +1160,7 @@ Sets the critical values matrix globally.
 function set_crit_values_matrix(crit_values::Array{Float64,3})
     global crit_values_matrix = crit_values
 end
+
 
 """
 set_aniso_crit_values(crit_values::Dict{Int64,Any})

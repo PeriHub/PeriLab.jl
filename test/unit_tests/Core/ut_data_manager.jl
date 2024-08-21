@@ -5,8 +5,8 @@
 using MPI
 using Test
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../src/PeriLab.jl")
+using .PeriLab
 
 @testset "set_comm" begin
     # MPI.Init()
@@ -18,6 +18,25 @@ using Test
     @test comm == b
     # MPI.Finalize()
 end
+
+@testset "add_and_get_models" begin
+
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.initialize_data()
+    @test test_data_manager.get_active_models() == []
+    test_data_manager.add_active_model(Test)
+    test_data_manager.add_active_model(PeriLab)
+    test_list = test_data_manager.get_active_models()
+    @test test_list[1] == Test
+    @test test_list[2] == PeriLab
+    test_data_manager.add_active_model(PeriLab)
+    test_list = test_data_manager.get_active_models()
+    @test length(test_list) == 2
+    @test test_list[1] == Test
+    @test test_list[2] == PeriLab
+
+end
+
 
 @testset "ut_set_get_accuracy_order" begin
     test_data_manager = PeriLab.Data_manager
