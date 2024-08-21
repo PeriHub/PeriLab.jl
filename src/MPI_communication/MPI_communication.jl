@@ -111,8 +111,9 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
             else
                 send_buffers[jcore] = vector[send_index, :]
             end
-            MPI.Isend(send_buffers[jcore], comm, dest = jcore - 1, tag = 0)
             # @debug "Sending $rank -> $(jcore-1)"
+            # @debug size(send_buffers[jcore])
+            MPI.Isend(send_buffers[jcore], comm, dest = jcore - 1, tag = 0)
         end
 
         if !isempty(overlapnodes[rank+1][jcore]["Controller"])
@@ -122,8 +123,9 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
             else
                 recv_buffers[jcore] = similar(vector[recv_index, :])
             end
-            MPI.Recv!(recv_buffers[jcore], comm, source = jcore - 1, tag = 0)
             # @debug "Receiving $(jcore-1) -> $rank"
+            # @debug size(recv_buffers[jcore])
+            MPI.Recv!(recv_buffers[jcore], comm, source = jcore - 1, tag = 0)
             if recv_buffers[jcore][1, 1] isa Bool
                 continue
             end
@@ -229,10 +231,10 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
         if !isempty(overlapnodes[rank+1][jcore]["Controller"])
             for iID in overlapnodes[rank+1][jcore]["Controller"]
                 if dof == 1
-                    send_msg = @view array[iID]
+                    @views send_msg = array[iID]
                 else
                     #TODO: Check if we can remove the [:,:]
-                    send_msg = @view array[iID][:, :]
+                    @views send_msg = array[iID][:, :]
                 end
                 MPI.Isend(send_msg, comm; dest = jcore - 1, tag = 0)
                 # @debug "Sending   $rank -> $(jcore-1)"
@@ -241,9 +243,9 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
         if !isempty(overlapnodes[rank+1][jcore]["Responder"])
             for iID in overlapnodes[rank+1][jcore]["Responder"]
                 if dof == 1
-                    recv_msg = similar(array[iID])
+                    @views recv_msg = similar(array[iID])
                 else
-                    recv_msg = similar(@view array[iID][:, :])
+                    @views recv_msg = similar(array[iID][:, :])
                 end
                 MPI.Recv!(recv_msg, comm; source = jcore - 1, tag = 0)
                 # @debug "Receiving $(jcore-1) -> $rank"
