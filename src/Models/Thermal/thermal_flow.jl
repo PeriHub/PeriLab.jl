@@ -178,7 +178,7 @@ function compute_heat_flow_state_correspondence(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
     nlist::SubArray,
-    lambda::Union{Matrix{Float64},StaticArraysCore.MMatrix},
+    lambda::Union{Matrix{Float64},MMatrix},
     bond_damage::SubArray,
     undeformed_bond::SubArray,
     Kinv::SubArray,

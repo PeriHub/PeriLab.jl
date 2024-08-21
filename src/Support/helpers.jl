@@ -9,6 +9,7 @@ using Dierckx
 using ProgressBars
 using LinearAlgebra
 using TensorOperations
+using StaticArrays
 export qdim
 export check_inf_or_nan
 export find_active
@@ -266,7 +267,7 @@ Invert a n x n matrix. Throws an error if A is singular.
 - inverted matrix or nothing if not inverable.
 """
 function invert(
-    A::Union{Matrix{Float64},Matrix{Int64},SubArray{Float64},SubArray{Int64}},
+    A::Union{Matrix{Union{Float64,Int64}},SubArray{Union{Float64,Int64}},MMatrix},
     error_message::String = "Matrix is singular",
 )
     try

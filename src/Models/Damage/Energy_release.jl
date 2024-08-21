@@ -122,8 +122,8 @@ function compute_damage(
         @views relative_displacement_vector = deformed_bond[iID] .- undeformed_bond[iID]
 
         for (jID, neighborID) in enumerate(nlist[iID])
-            @views relative_displacement = relative_displacement_vector[jID, :]
-            norm_displacement = norm(relative_displacement)
+            # @views relative_displacement = relative_displacement_vector[jID, :]
+            norm_displacement = norm(relative_displacement_vector[jID, :])
 
             if norm_displacement == 0 || (
                 tension &&
@@ -141,11 +141,15 @@ function compute_damage(
             end
 
             @views projected_force .=
-                dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement) /
-                (norm_displacement * norm_displacement) .* relative_displacement
+                dot(
+                    bond_forces[iID][jID, :] - neighbor_bond_force,
+                    relative_displacement_vector[jID, :],
+                ) / (norm_displacement * norm_displacement) .*
+                relative_displacement_vector[jID, :]
 
             @views bond_energy =
-                0.25 * dot(abs.(projected_force), abs.(relative_displacement))
+                0.25 *
+                dot(abs.(projected_force), abs.(relative_displacement_vector[jID, :]))
 
             if dependend_value
                 critical_energy =
