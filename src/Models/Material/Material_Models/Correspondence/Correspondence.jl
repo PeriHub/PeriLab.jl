@@ -22,7 +22,7 @@ Set_modules.include_files(module_list)
 
 export init_material_model
 export material_name
-export compute_forces
+export compute_model
 export init_material_model
 
 """
@@ -121,7 +121,7 @@ function synch_field(datamanager::Module, synchronise_field)
 end
 
 """
-    compute_forces(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
+    compute_model(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -137,7 +137,7 @@ Example:
 ```julia
 ```
 """
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
@@ -147,7 +147,7 @@ function compute_forces(
 )
 
     if material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.compute_forces(
+        return Bond_Associated_Correspondence.compute_model(
             datamanager,
             nodes,
             material_parameter,

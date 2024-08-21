@@ -8,7 +8,7 @@ using TimerOutputs
 export init_material_model
 export fe_support
 export material_name
-export compute_forces
+export compute_model
 
 """
   fe_support()
@@ -76,7 +76,7 @@ function synch_field(datamanager::Module, synchronise_field)
 end
 
 """
-    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
@@ -89,7 +89,7 @@ Calculate the elastic bond force for each node.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,

@@ -17,7 +17,7 @@ using .Bond_Deformation_Gradient: compute_weighted_volume
 using TimerOutputs
 
 export init_material_model
-export compute_forces
+export compute_model
 
 """
     correspondence_name()
@@ -98,7 +98,7 @@ https://link.springer.com/article/10.1007/s10409-021-01055-5
   -> numbers are correct and it allows a change in size -> local ID is correct
 """
 
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,

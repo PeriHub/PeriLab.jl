@@ -12,15 +12,15 @@ global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
 Set_modules.include_files(module_list)
 include("./Material_Models/Correspondence/Correspondence.jl")
 using .Correspondence
-export init_material_model
-export compute_forces
+export init_model
+export compute_model
 export determine_isotropic_parameter
 export distribute_force_densities
-export init_material_model_fields
+export init_fields
 
 
 """
-    init_material_model_fields(datamanager::Module)
+    init_fields(datamanager::Module)
 
 Initialize material model fields
 
@@ -29,7 +29,7 @@ Initialize material model fields
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model_fields(datamanager::Module)
+function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Forces", Float64, dof) #-> only if it is an output
     # tbd later in the compute class
@@ -39,6 +39,12 @@ function init_material_model_fields(datamanager::Module)
     datamanager.create_constant_node_field("Acceleration", Float64, dof)
     datamanager.create_node_field("Velocity", Float64, dof)
     datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
+    dof = datamanager.get_dof()
+    deformed_coorN, deformed_coorNP1 =
+        datamanager.create_node_field("Deformed Coordinates", Float64, dof)
+    deformed_coorN = copy(datamanager.get_field("Coordinates"))
+    deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
+    datamanager.create_node_field("Displacements", Float64, dof)
     # datamanager.set_synch("Bond Forces", false, false)
     datamanager.set_synch("Force Densities", true, false)
     datamanager.set_synch("Velocity", false, true)
@@ -51,7 +57,7 @@ end
 
 
 """
-    init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
 
 Initializes the material model.
 
@@ -62,11 +68,7 @@ Initializes the material model.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Material Model")
     if !haskey(model_param, "Material Model")
         @error "Block " * string(block) * " has no material model defined."
@@ -75,7 +77,7 @@ function init_material_model(
 
     if occursin("Correspondence", model_param["Material Model"])
         datamanager.set_model_module("Correspondence", Correspondence)
-        return Correspondence.init_material_model(datamanager, nodes, model_param)
+        return Correspondence.init_model(datamanager, nodes, model_param)
     end
 
     material_models = split(model_param["Material Model"], "+")
@@ -91,7 +93,7 @@ function init_material_model(
             @error "No material of name " * material_model * " exists."
         end
         datamanager.set_model_module(material_model, mod)
-        datamanager = mod.init_material_model(datamanager, nodes, model_param)
+        datamanager = mod.init_model(datamanager, nodes, model_param)
         datamanager.set_material_models(material_model)
     end
     #TODO in extra function
@@ -133,7 +135,7 @@ function synch_field(datamanager::Module, material_model::String, synchronise_fi
 end
 
 """
-    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
 Compute the forces.
 
@@ -146,7 +148,7 @@ Compute the forces.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
@@ -158,12 +160,12 @@ function compute_forces(
     material_models = map(r -> strip(r), material_models)
     if occursin("Correspondence", model_param["Material Model"])
         mod = datamanager.get_model_module("Correspondence")
-        datamanager = mod.compute_forces(datamanager, nodes, model_param, time, dt, to)
+        datamanager = mod.compute_model(datamanager, nodes, model_param, time, dt, to)
         return datamanager
     end
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
-        datamanager = mod.compute_forces(datamanager, nodes, model_param, time, dt, to)
+        datamanager = mod.compute_model(datamanager, nodes, model_param, time, dt, to)
     end
     return datamanager
 end

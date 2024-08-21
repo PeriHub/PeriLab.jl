@@ -11,12 +11,12 @@ include("../../Support/helpers.jl")
 
 using .Helpers: find_inverse_bond_id
 export compute_additive_model
-export init_additive_model
-export init_additive_model_fields
+export init_model
+export init_fields
 
 
 """
-    init_additive_model_fields(datamanager::Module)
+    init_fields(datamanager::Module)
 
 Initialize additive model fields
 
@@ -25,13 +25,15 @@ Initialize additive model fields
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_additive_model_fields(datamanager::Module)
+function init_fields(datamanager::Module)
     if !datamanager.has_key("Activation_Time")
         @error "'Activation_Time' is missing. Please define an 'Activation_Time' for each point in the mesh file."
     end
     # must be specified, because it might be that no temperature model has been defined
     datamanager.create_node_field("Temperature", Float64, 1)
     datamanager.create_node_field("Heat Flow", Float64, 1)
+    datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
+
     bond_damageN = datamanager.get_bond_damage("N")
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
     nnodes = datamanager.get_nnodes()
@@ -77,7 +79,7 @@ end
 
 
 """
-    init_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, block::Int64)
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, additive_parameter::Dict, block::Int64)
 
 Initialize an additive model within a given data manager.
 
@@ -92,14 +94,10 @@ Initialize an additive model within a given data manager.
 
 # Example
 ```julia
-datamanager = init_additive_model(my_data_manager, [1, 2, 3], 1)
+datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 
 """
-function init_additive_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Additive Model")
     mod = Set_modules.create_module_specifics(
         model_param["Additive Model"],
@@ -111,7 +109,7 @@ function init_additive_model(
         return nothing
     end
     datamanager.set_model_module(model_param["Additive Model"], mod)
-    datamanager = mod.init_additive_model(datamanager, nodes, model_param, block)
+    datamanager = mod.init_model(datamanager, nodes, model_param, block)
     return datamanager
 end
 

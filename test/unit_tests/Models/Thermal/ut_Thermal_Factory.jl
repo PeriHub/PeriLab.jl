@@ -8,7 +8,7 @@ using .Thermal
 # include("../../../../src/Core/data_manager.jl")
 
 
-@testset "init_thermal_model_fields" begin
+@testset "init_fields" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_dof(3)
@@ -19,7 +19,7 @@ using .Thermal
     nn[3] = 1
     nn[4] = 2
 
-    Thermal.init_thermal_model_fields(test_data_manager)
+    Thermal.init_fields(test_data_manager)
     field_keys = test_data_manager.get_all_field_keys()
     @test "TemperatureN" in field_keys
     @test "TemperatureNP1" in field_keys

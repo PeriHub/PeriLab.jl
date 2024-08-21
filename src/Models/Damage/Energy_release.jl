@@ -16,7 +16,7 @@ using StaticArrays
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
-export init_damage_model
+export init_model
 export synch_field
 """
     damage_name()
@@ -284,7 +284,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
     end
     return Float64(4 / (pi * horizon^4))
 end
-function init_damage_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     damage_parameter::Dict,

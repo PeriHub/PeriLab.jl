@@ -16,7 +16,7 @@ import .Material
     test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1:4] = 1:4
-    Material.init_material_model_fields(test_data_manager)
+    Material.init_fields(test_data_manager)
     field_keys = test_data_manager.get_all_field_keys()
     @test "ForcesN" in field_keys
     @test "ForcesNP1" in field_keys

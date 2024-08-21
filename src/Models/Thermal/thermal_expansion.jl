@@ -15,7 +15,7 @@ include("../Pre_calculation/bond_deformation_gradient.jl")
 using .Deformation_Gradient
 using .Bond_Deformation_Gradient
 
-export compute_thermal_model
+export compute_model
 export thermal_model_name
 export init_thermal_model
 """
@@ -63,7 +63,7 @@ function init_thermal_model(
 end
 
 """
-    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_model(datamanager, nodes, thermal_parameter, time, dt)
 
 Calculates the thermal expansion of the material.
 
@@ -79,7 +79,7 @@ Example:
 ```julia
 ```
 """
-function compute_thermal_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,

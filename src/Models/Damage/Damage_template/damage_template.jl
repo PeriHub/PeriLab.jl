@@ -110,7 +110,7 @@ function synch_field(datamanager::Module, synchronise_field)
 end
 
 """
-    init_damage_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
 
 Inits the damage model. Should be used to init damage specific fields, etc.
 
@@ -126,7 +126,7 @@ Example:
 ```julia
 ```
 """
-function init_damage_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     damage_parameter::Dict,

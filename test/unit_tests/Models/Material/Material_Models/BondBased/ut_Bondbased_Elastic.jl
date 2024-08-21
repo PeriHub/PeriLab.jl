@@ -17,7 +17,7 @@ const to = TimerOutput()
     @test Bondbased_Elastic.material_name() == "Bond-based Elastic"
     @test !(Bondbased_Elastic.fe_support())
 end
-@testset "compute_forces" begin
+@testset "compute_model" begin
     nodes = 2
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
@@ -45,7 +45,7 @@ end
         dbNP1[iID] .= 1
     end
 
-    test_data_manager = Bondbased_Elastic.compute_forces(
+    test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0),
@@ -75,7 +75,7 @@ end
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
 
-    test_data_manager = Bondbased_Elastic.compute_forces(
+    test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict(
@@ -108,7 +108,7 @@ end
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
-    test_data_manager = Bondbased_Elastic.compute_forces(
+    test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane strain"),
@@ -130,7 +130,7 @@ end
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
-    test_data_manager = Bondbased_Elastic.compute_forces(
+    test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane stress"),
@@ -151,7 +151,7 @@ end
 
     dbdNP1[1][1, end] = 0
     @test isnothing(
-        Bondbased_Elastic.compute_forces(
+        Bondbased_Elastic.compute_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict(

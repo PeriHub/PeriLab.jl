@@ -5,7 +5,7 @@
 module Bondbased_Corrosion
 export compute_corrosion_model
 export corrosion_name
-export init_corrosion_model
+export init_model
 
 """
     corrosion_name()
@@ -62,7 +62,7 @@ end
 
 
 """
-    init_corrosion_model(datamanager, nodes, corrosion_parameter)
+    init_model(datamanager, nodes, corrosion_parameter)
 
 Inits the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -75,7 +75,7 @@ Inits the bond-based corrosion model. This template has to be copied, the file r
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_corrosion_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     corrosion_parameter::Dict,

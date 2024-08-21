@@ -164,14 +164,13 @@ function compute_models(
         end
         if options["Thermal Models"]
             if datamanager.check_property(block, "Thermal Model")
-                @timeit to "compute_thermal_model" datamanager =
-                    Thermal.compute_thermal_model(
-                        datamanager,
-                        update_nodes,
-                        datamanager.get_properties(block, "Thermal Model"),
-                        time,
-                        dt,
-                    )
+                @timeit to "compute_model" datamanager = Thermal.compute_model(
+                    datamanager,
+                    update_nodes,
+                    datamanager.get_properties(block, "Thermal Model"),
+                    time,
+                    dt,
+                )
             end
         end
 
@@ -183,7 +182,7 @@ function compute_models(
             end
             if datamanager.check_property(block, "Material Model")
                 model_param = datamanager.get_properties(block, "Material Model")
-                @timeit to "bond_forces" datamanager = Material.compute_forces(
+                @timeit to "bond_forces" datamanager = Material.compute_model(
                     datamanager,
                     update_nodes,
                     model_param,
@@ -254,7 +253,7 @@ function compute_damage_pre_calculation(
 )
 
     if options["Thermal Models"]
-        @timeit to "thermal_model" datamanager = Thermal.compute_thermal_model(
+        @timeit to "thermal_model" datamanager = Thermal.compute_model(
             datamanager,
             nodes,
             datamanager.get_properties(block, "Thermal Model"),
@@ -264,7 +263,7 @@ function compute_damage_pre_calculation(
     end
 
     if options["Material Models"]
-        @timeit to "compute_forces" datamanager = Material.compute_forces(
+        @timeit to "compute_model" datamanager = Material.compute_model(
             datamanager,
             nodes,
             datamanager.get_properties(block, "Material Model"),
@@ -341,12 +340,6 @@ function init_models(
     solver_options::Dict,
     to::TimerOutput,
 )
-    dof = datamanager.get_dof()
-    deformed_coorN, deformed_coorNP1 =
-        datamanager.create_node_field("Deformed Coordinates", Float64, dof)
-    deformed_coorN = copy(datamanager.get_field("Coordinates"))
-    deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
-    datamanager.create_node_field("Displacements", Float64, dof)
     # TODO integrate this correctly
     rotation = datamanager.get_rotation()
     #if rotation
@@ -358,73 +351,27 @@ function init_models(
     #end
 
     #models = []
-    #solver_options["Models"] = Dict("Additive" => true, "Material" => true)
-    #for name in keys(solver_options["Models"])
-    #    if solver_options["Models"][name]
-    #        datamanager.set_active_model(eval(Meta.parse(name)))
-    #    end
-    #end
+    for name in keys(solver_options["Models"])
+        if solver_options["Models"][name]
+            datamanager.set_active_model(eval(Meta.parse(name)))
+        end
+    end
+    # TODO order of models
 
-
-    #for model in models
-    #    @info "Init $model models"
-    #    @timeit to "$model model fields" datamanager =
-    #        model.init_fields(datamanager)
-    #    for block in eachindex(block_nodes)
-    #        if datamanager.check_property(block, "Additive Model")
-    #            @timeit to "init $model model" datamanager =
-    #                model.init_model(datamanager, block_nodes[block], block)
-    #        end
-    #    end
-    #end
-
-
-
-    if solver_options["Additive Models"]
-        @info "Init additive models"
-        @timeit to "additive_model_fields" datamanager =
-            Additive.init_additive_model_fields(datamanager)
+    for model in datamanager.get_active_models()
+        @info "Init $model models"
+        @timeit to "$model model fields" datamanager = model.init_fields(datamanager)
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, "Additive Model")
-                @timeit to "init additive model" datamanager =
-                    Additive.init_additive_model(datamanager, block_nodes[block], block)
+                @timeit to "init $model model" datamanager =
+                    model.init_model(datamanager, block_nodes[block], block)
             end
         end
     end
-    if solver_options["Corrosion Models"]
-        @info "Init corrosion models"
-        @timeit to "corrosion_model_fields" datamanager =
-            Corrosion.init_corrosion_model_fields(datamanager)
+    if solver_options["Models"]["Additive"] || solver_options["Models"]["Thermal"]
+        heat_capacity = datamanager.get_field("Specific Heat Capacity")
+        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
 
-        for block in eachindex(block_nodes)
-            if datamanager.check_property(block, "Corrosion Model")
-                @timeit to "init corrosion model" datamanager =
-                    Corrosion.init_corrosion_model(datamanager, block_nodes[block], block)
-            end
-        end
-    end
-    if solver_options["Damage Models"]
-        @info "Init damage models"
-        @timeit to "damage_model_fields" datamanager =
-            Damage.init_damage_model_fields(datamanager, params)
-        for block in eachindex(block_nodes)
-            if datamanager.check_property(block, "Damage Model")
-                @timeit to "init damage model" datamanager =
-                    Damage.init_damage_model(datamanager, block_nodes[block], block)
-            end
-        end
-    end
-    if solver_options["Material Models"]
-        @info "Init material models"
-        @timeit to "material model fields" datamanager =
-            Material.init_material_model_fields(datamanager)
-        material_models = []
-        for block in eachindex(block_nodes)
-            if datamanager.check_property(block, "Material Model")
-                @timeit to "init material" datamanager =
-                    Material.init_material_model(datamanager, block_nodes[block], block)
-            end
-        end
     end
     if solver_options["Calculate Cauchy"] | solver_options["Calculate von Mises"]
         datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
@@ -435,21 +382,9 @@ function init_models(
     if solver_options["Calculate von Mises"]
         datamanager.create_node_field("von Mises Stress", Float64, 1)
     end
-    if solver_options["Thermal Models"]
-        @info "Init thermal models"
-        @timeit to "thermal model fields" datamanager =
-            Thermal.init_thermal_model_fields(datamanager)
-        heat_capacity =
-            datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
-        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
-        for block in eachindex(block_nodes)
-            if datamanager.check_property(block, "Thermal Model")
-                @timeit to "init thermal model" datamanager =
-                    Thermal.init_thermal_model(datamanager, block_nodes[block], block)
-            end
-        end
-    end
+
     @debug "Init pre calculation models"
+    Pre_calculation.init_fields()
     return init_pre_calculation(datamanager, datamanager.get_models_options())
 end
 

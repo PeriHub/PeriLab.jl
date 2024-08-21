@@ -574,7 +574,7 @@ Returns a list active model modules.
 """
 function get_active_models()
     global active_models
-    return active_models
+    return @view active_models
 end
 
 """

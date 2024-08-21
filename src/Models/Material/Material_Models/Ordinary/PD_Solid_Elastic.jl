@@ -12,7 +12,7 @@ using .Ordinary:
 export fe_support
 export init_material_model
 export material_name
-export compute_forces
+export compute_model
 export init_material_model
 """
   fe_support()
@@ -86,7 +86,7 @@ function synch_field(datamanager::Module, synchronise_field)
 end
 
 """
-    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
 Computes the forces.
 
@@ -99,7 +99,7 @@ Computes the forces.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,

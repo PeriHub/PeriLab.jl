@@ -734,13 +734,13 @@ end
             "Thermal Models" => true,
         ),
     )
-    solver_options = PeriLab.Solver.Parameter_Handling.get_solver_options(params)
+    solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
     @test solver_options["Additive Models"]
     @test solver_options["Damage Models"]
     @test solver_options["Material Models"]
     @test solver_options["Thermal Models"]
     params = Dict("Solver" => Dict())
-    solver_options = PeriLab.Solver.Parameter_Handling.get_solver_options(params)
+    solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
     @test solver_options["Additive Models"] == false
     @test solver_options["Damage Models"] == false
     @test solver_options["Material Models"]
@@ -753,7 +753,7 @@ end
             "Thermal Models" => true,
         ),
     )
-    solver_options = PeriLab.Solver.Parameter_Handling.get_solver_options(params)
+    solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
     @test solver_options["Additive Models"] == false
     @test solver_options["Damage Models"]
     @test solver_options["Material Models"] == false

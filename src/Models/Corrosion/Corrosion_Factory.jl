@@ -8,13 +8,13 @@ using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "corrosion_name")
 Set_modules.include_files(module_list)
 export compute_corrosion_model
-export init_corrosion_model
-export init_corrosion_model_fields
+export init_model
+export init_fields
 
 
 
 """
-init_corrosion_model_fields(datamanager::Module)
+init_fields(datamanager::Module)
 
 Initialize concentration model fields
 
@@ -23,7 +23,7 @@ Initialize concentration model fields
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_corrosion_model_fields(datamanager::Module)
+function init_fields(datamanager::Module)
     datamanager.create_node_field("Concentration", Float64, 1)
     datamanager.create_node_field("Concentration Flux", Float64, 1)
     return datamanager
@@ -58,7 +58,7 @@ end
 
 
 """
-    init_corrosion_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, corrosion_parameter::Dict, block::Int64)
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, corrosion_parameter::Dict, block::Int64)
 
 Initialize an corrosion model within a given data manager.
 
@@ -73,14 +73,10 @@ Initialize an corrosion model within a given data manager.
 
 # Example
 ```julia
-datamanager = init_corrosion_model(my_data_manager, [1, 2, 3], 1)
+datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 
 """
-function init_corrosion_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Corrosion Model")
     mod = Set_modules.create_module_specifics(
         model_param["Corrosion Model"],
@@ -92,7 +88,7 @@ function init_corrosion_model(
         return nothing
     end
     datamanager.set_model_module(model_param["Corrosion Model"], mod)
-    datamanager = mod.init_corrosion_model(datamanager, nodes, model_param, block)
+    datamanager = mod.init_model(datamanager, nodes, model_param, block)
     return datamanager
 end
 

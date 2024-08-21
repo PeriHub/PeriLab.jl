@@ -5,7 +5,7 @@
 module simple_additive
 export compute_additive_model
 export additive_name
-export init_additive_model
+export init_model
 """
     additive_name()
 
@@ -82,7 +82,7 @@ function compute_additive_model(
 end
 
 """
-    init_additive_model(datamanager, nodes, additive_parameter)
+    init_model(datamanager, nodes, additive_parameter)
 
 Inits the simple additive model.
 
@@ -95,7 +95,7 @@ Inits the simple additive model.
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_additive_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     additive_parameter::Dict,

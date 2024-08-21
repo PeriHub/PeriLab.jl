@@ -10,7 +10,7 @@ using .Global_zero_energy_control: global_zero_energy_mode_stiffness
 export fe_support
 export init_material_model
 export correspondence_name
-# export compute_forces
+# export compute_model
 
 """
   fe_support()

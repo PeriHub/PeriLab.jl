@@ -8,7 +8,7 @@ using .Pre_calculation
 export compute_damage
 export compute_damage_pre_calculation
 export damage_name
-export init_damage_model
+export init_model
 export synch_field
 """
     damage_name()
@@ -144,7 +144,7 @@ function synch_field(datamanager::Module, synchronise_field)
     return datamanager
 end
 
-function init_damage_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     damage_parameter::Dict,

@@ -105,7 +105,7 @@ end
     test_data_manager.create_constant_node_field("Specific Volume", Float64, 1)
     test_data_manager.create_constant_node_field("Surface_Nodes", Bool, 1)
     test_data_manager.create_bond_field("Bond Damage", Float64, 1)
-    @test Heat_transfer.compute_thermal_model(
+    @test Heat_transfer.compute_model(
         test_data_manager,
         Vector{Int64}(1:10),
         Dict("Heat Transfer Coefficient" => 1, "Environmental Temperature" => 1.2),

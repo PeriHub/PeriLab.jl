@@ -5,7 +5,7 @@
 module Short_Range
 export contact_model_name
 export init_contact_model
-export compute_forces
+export compute_model
 
 """
     contact_model_name()
@@ -51,7 +51,7 @@ function init_contact_model(
 end
 
 """
-    compute_thermal_model(datamanager, nodes, contact_parameter, time, dt)
+    compute_model(datamanager, nodes, contact_parameter, time, dt)
 
 Calculates the contact behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -67,7 +67,7 @@ Example:
 ```julia
 ```
 """
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     contact_parameter::Dict,
@@ -76,7 +76,7 @@ function compute_forces(
 )
     @info "Please write a contact model name in thermal_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_thermal_model(datamanager, nodes, contact_parameter, time, dt) function."
+    @info "Fill the compute_model(datamanager, nodes, contact_parameter, time, dt) function."
     @info "The datamanager and contact_parameter holds all you need to solve your problem on contact flow level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager

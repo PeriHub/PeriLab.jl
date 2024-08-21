@@ -18,6 +18,17 @@ export init_pre_calculation
 export synchronize
 include("../../Support/helpers.jl")
 using .Helpers: find_active, get_active_update_nodes
+
+
+function init_fields(datamanager::Module)
+    dof = datamanager.get_dof()
+    deformed_coorN, deformed_coorNP1 =
+        datamanager.create_node_field("Deformed Coordinates", Float64, dof)
+    deformed_coorN = copy(datamanager.get_field("Coordinates"))
+    deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
+    datamanager.create_node_field("Displacements", Float64, dof)
+end
+
 function synchronize(datamanager::Module, options::Dict, synchronise_field)
     if options["Bond Associated Deformation Gradient"]
         synchfield = Dict(

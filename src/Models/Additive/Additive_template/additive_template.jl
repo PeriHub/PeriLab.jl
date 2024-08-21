@@ -5,7 +5,7 @@
 module Additive_template
 export compute_additive_model
 export additive_name
-export init_additive_model
+export init_model
 
 """
     additive_name()
@@ -61,7 +61,7 @@ end
 
 
 """
-    init_additive_model(datamanager, nodes, additive_parameter)
+    init_model(datamanager, nodes, additive_parameter)
 
 Inits the additive model. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -74,7 +74,7 @@ Inits the additive model. This template has to be copied, the file renamed and e
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_additive_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     additive_parameter::Dict,

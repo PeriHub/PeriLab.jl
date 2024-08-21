@@ -12,12 +12,12 @@ using .Helpers: find_inverse_bond_id
 export compute_damage
 export compute_damage_pre_calculation
 export init_interface_crit_values
-export init_damage_model
-export init_damage_model_fields
+export init_model
+export init_fields
 export synch_field
 
 """
-    init_damage_model_fields(datamanager::Module)
+    init_fields(datamanager::Module)
 
 Initialize damage model fields
 
@@ -27,7 +27,7 @@ Initialize damage model fields
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_damage_model_fields(datamanager::Module, params::Dict)
+function init_fields(datamanager::Module, params::Dict)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Damage", Float64, 1)
     block_list = datamanager.get_block_list()
@@ -283,11 +283,7 @@ function init_aniso_crit_values(
     return datamanager
 end
 
-function init_damage_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Damage Model")
     mod = Set_modules.create_module_specifics(
         model_param["Damage Model"],
@@ -300,7 +296,7 @@ function init_damage_model(
         return nothing
     end
     datamanager.set_model_module(model_param["Damage Model"], mod)
-    datamanager = mod.init_damage_model(datamanager, nodes, model_param, block)
+    datamanager = mod.init_model(datamanager, nodes, model_param, block)
     datamanager.set_damage_models(model_param["Damage Model"])
     datamanager = Damage.init_interface_crit_values(datamanager, model_param, block)
     datamanager = Damage.init_aniso_crit_values(datamanager, model_param, block)

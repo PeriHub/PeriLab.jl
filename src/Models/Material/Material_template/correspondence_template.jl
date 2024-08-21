@@ -6,7 +6,7 @@ module Correspondence_template
 export fe_support
 export init_material_model
 export correspondence_name
-export compute_forces
+export compute_model
 export synch_field
 
 """
@@ -122,7 +122,7 @@ function compute_stresses(
 )
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_forces() and init_material_model() function."
+    @info "Fill the compute_model() and init_material_model() function."
     @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager, stress_NP1

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 export get_initial_time
-export get_solver_options
+export get_model_options
 export get_solver_name
 export get_safety_factor
 export get_final_time
@@ -140,7 +140,7 @@ function get_max_damage(params::Dict)
 end
 
 """
-    get_solver_options(params::Dict)
+    get_model_options(params::Dict)
 
 Get the solver options
 
@@ -149,7 +149,7 @@ Get the solver options
 # Returns
 - `solver_options::Dict`: The solver options
 """
-function get_solver_options(params::Dict)
+function get_model_options(params::Dict)
     additive::Bool = get(params["Solver"], "Additive Models", false)
     corrosion::Bool = get(params["Solver"], "Corrosion Models", false)
     damage::Bool = get(params["Solver"], "Damage Models", false)
@@ -158,14 +158,15 @@ function get_solver_options(params::Dict)
     von_mises::Bool = get(params["Solver"], "Calculate von Mises", false)
     strain::Bool = get(params["Solver"], "Calculate Strain", false)
     thermal::Bool = get(params["Solver"], "Thermal Models", false)
+    # TODO here is the order predefined. Wrong place.
     return Dict{String,Any}(
-        "Additive Models" => additive,
-        "Corrosion Models" => corrosion,
-        "Damage Models" => damage,
-        "Material Models" => mechanical,
+        "Additive" => additive,
+        "Damage" => damage,
+        "Thermal" => thermal,
+        "Corrosion" => corrosion,
+        "Material" => mechanical,
         "Calculate Cauchy" => cauchy,
         "Calculate von Mises" => von_mises,
         "Calculate Strain" => strain,
-        "Thermal Models" => thermal,
     )
 end

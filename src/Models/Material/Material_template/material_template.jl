@@ -7,7 +7,7 @@ using TimerOutputs
 export fe_support
 export init_material_model
 export material_name
-export compute_forces
+export compute_model
 export synch_field
 
 """
@@ -86,7 +86,7 @@ function synch_field(datamanager::Module, synchronise_field)
 end
 
 """
-    compute_forces(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
+    compute_model(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -102,7 +102,7 @@ Example:
 ```julia
 ```
 """
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
@@ -112,7 +112,7 @@ function compute_forces(
 )
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_forces() and init_material_model() function."
+    @info "Fill the compute_model() and init_material_model() function."
     @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager

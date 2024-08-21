@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Heat_transfer
-export compute_thermal_model
+export compute_model
 export thermal_model_name
 export init_thermal_model
 """
@@ -51,7 +51,7 @@ function init_thermal_model(
 end
 
 """
-    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_model(datamanager, nodes, thermal_parameter, time, dt)
 
 Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
@@ -67,7 +67,7 @@ Example:
 ```julia
 ```
 """
-function compute_thermal_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,

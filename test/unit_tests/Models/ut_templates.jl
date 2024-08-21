@@ -32,12 +32,8 @@ test_data_manager.set_num_controller(3)
         0.0,
         0.0,
     ) == test_data_manager
-    @test Additive_template.init_additive_model(
-        test_data_manager,
-        Vector{Int64}(1:3),
-        Dict(),
-        1,
-    ) == test_data_manager
+    @test Additive_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
+          test_data_manager
 end
 
 @testset "ut_additive_template" begin
@@ -49,12 +45,8 @@ end
         0.0,
         0.0,
     ) == test_data_manager
-    @test Corrosion_template.init_corrosion_model(
-        test_data_manager,
-        Vector{Int64}(1:3),
-        Dict(),
-        1,
-    ) == test_data_manager
+    @test Corrosion_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
+          test_data_manager
 end
 
 @testset "ut_damage_template" begin
@@ -75,12 +67,8 @@ end
         0.0,
         0.0,
     ) == test_data_manager
-    @test Damage_template.init_damage_model(
-        test_data_manager,
-        Vector{Int64}(1:3),
-        Dict(),
-        1,
-    ) == test_data_manager
+    @test Damage_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
+          test_data_manager
 end
 
 @testset "ut_material_template" begin
@@ -92,7 +80,7 @@ end
         Vector{Int64}(1:3),
         Dict(),
     ) == test_data_manager
-    @test Material_template.compute_forces(
+    @test Material_template.compute_model(
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
@@ -161,7 +149,7 @@ end
 
 @testset "ut_thermal_template" begin
     @test Thermal_template.thermal_model_name() == "Thermal Template"
-    @test Thermal_template.compute_thermal_model(
+    @test Thermal_template.compute_model(
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
