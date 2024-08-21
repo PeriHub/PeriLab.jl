@@ -112,11 +112,6 @@ function compute_models(
                 datamanager.get_properties(block, "Damage Model")
             end
         end
-        for damage_model in datamanager.get_damage_models()
-            @timeit to "synch_field" datamanager =
-                Damage.synch_field(datamanager, damage_model, synchronise_field)
-            #TODO: Check that same fields in seperate damage models arent being synched twice
-        end
 
         for block in eachindex(block_nodes)
             nodes = block_nodes[block]
@@ -181,11 +176,6 @@ function compute_models(
         end
 
         if options["Material Models"]
-            for material_model in datamanager.get_material_models()
-                @timeit to "synch_field" datamanager =
-                    Material.synch_field(datamanager, material_model, synchronise_field)
-                #TODO: Check that same fields in seperate damage models arent being synched twice
-            end
             if datamanager.check_property(block, "Material Model")
                 model_param = datamanager.get_properties(block, "Material Model")
                 @timeit to "bond_forces" datamanager = Material.compute_forces(

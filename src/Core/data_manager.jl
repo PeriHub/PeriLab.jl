@@ -1544,18 +1544,23 @@ Sets the synchronization dictionary globally.
 - `download_from_cores`::Bool: Whether to download the field from the cores.
 - `upload_to_cores`::Bool: Whether to upload the field to the cores.
 """
-function set_synch(name, download_from_cores, upload_to_cores)
+function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
     global fields_to_synch
-
     if name in get_all_field_keys()
         field = get_field(name)
+        if dof == 0
+            dof = length(field[1, :])
+        end
         fields_to_synch[name] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,
-            "dof" => length(field[1, :]),
+            "dof" => dof,
         )
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name * "NP1")
+        if dof == 0
+            dof = length(field[1, :])
+        end
         fields_to_synch[name*"NP1"] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,

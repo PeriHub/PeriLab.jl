@@ -72,19 +72,6 @@ function correspondence_name()
 end
 
 """
-    synch_field(datamanager::Module, synchronise_field)
-
-Field for synchronisation.
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `synchronise_field`: Synchronise function to distribute parameter through cores.
-"""
-function synch_field(datamanager::Module, synchronise_field)
-    return datamanager
-end
-
-"""
     compute_stresses(datamanager::Module, iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.

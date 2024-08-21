@@ -9,7 +9,6 @@ export compute_damage
 export compute_damage_pre_calculation
 export damage_name
 export init_damage_model
-export synch_field
 """
     damage_name()
 
@@ -128,19 +127,6 @@ function compute_damage_pre_calculation(
     time::Float64,
     dt::Float64,
 )
-    return datamanager
-end
-
-"""
-    synch_field(datamanager::Module, synchronise_field)
-
-Field for synchronisation.
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `synchronise_field`: Synchronise function to distribute parameter through cores.
-"""
-function synch_field(datamanager::Module, synchronise_field)
     return datamanager
 end
 
