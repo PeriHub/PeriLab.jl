@@ -264,12 +264,12 @@ function main(
                 output_dir = filedirectory
             end
 
-            Data_manager.set_silent(silent)
             if !reload
                 Data_manager.initialize_data()
             else
                 @info "PeriLab started in the reload mode"
             end
+            Data_manager.set_silent(silent)
             @timeit to "IO.initialize_data" datamanager, params =
                 IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
             @info "Init solver"
