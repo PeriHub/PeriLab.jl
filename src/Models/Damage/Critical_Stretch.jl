@@ -5,7 +5,7 @@
 module Critical_stretch
 include("../Pre_calculation/Pre_Calculation_Factory.jl")
 using .Pre_calculation
-export compute_damage
+export compute_model
 export compute_damage_pre_calculation
 export damage_name
 export init_model
@@ -31,7 +31,7 @@ function damage_name()
 end
 
 """
-    compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
+    compute_model(datamanager, nodes, damage_parameter, block, time, dt)
 
 Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 
@@ -48,7 +48,7 @@ Example:
 ```julia
 ```
 """
-function compute_damage(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     damage_parameter::Dict,
@@ -132,16 +132,29 @@ function compute_damage_pre_calculation(
 end
 
 """
-    synch_field(datamanager::Module, synchronise_field)
+    fields_for_local_synchronization()
 
-Field for synchronisation.
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `synchronise_field`: Synchronise function to distribute parameter through cores.
+
 """
-function synch_field(datamanager::Module, synchronise_field)
-    return datamanager
+function fields_for_local_synchronization()
+    return Dict()
 end
 
 function init_model(

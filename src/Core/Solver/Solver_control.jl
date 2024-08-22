@@ -42,6 +42,7 @@ Initialize the solver
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
 function init(params::Dict, datamanager::Module, to::TimerOutput)
+    solver_options = Dict()
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
     block_nodes_with_neighbors =

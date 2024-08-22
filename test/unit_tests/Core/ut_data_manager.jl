@@ -24,8 +24,8 @@ end
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     @test test_data_manager.get_active_models() == []
-    test_data_manager.add_active_model(Test)
-    test_data_manager.add_active_model(PeriLab)
+    test_data_manager.add_active_model("Test", Test)
+    test_data_manager.add_active_model("PeriLab", PeriLab)
     test_list = test_data_manager.get_active_models()
     @test test_list[1] == Test
     @test test_list[2] == PeriLab

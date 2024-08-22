@@ -25,7 +25,7 @@ test_data_manager.set_num_controller(3)
 
 @testset "ut_additive_template" begin
     @test Additive_template.additive_name() == "Additive Template"
-    @test Additive_template.compute_additive_model(
+    @test Additive_template.compute_model(
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
@@ -51,7 +51,7 @@ end
 
 @testset "ut_damage_template" begin
     @test Damage_template.damage_name() == "Damage Template"
-    @test Damage_template.compute_damage(
+    @test Damage_template.compute_model(
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),

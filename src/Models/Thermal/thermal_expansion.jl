@@ -214,4 +214,24 @@ function thermal_strain(
     return alpha .* temperature
 end
 
+"""
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => false/true, "download_from_cores" => false/true),
+    )
+
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    return Dict()
+end
+
 end # Module end

@@ -71,15 +71,28 @@ function correspondence_name()
 end
 
 """
-    synch_field(datamanager::Module, synchronise_field)
+    fields_for_local_synchronization()
 
-Field for synchronisation.
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `synchronise_field`: Synchronise function to distribute parameter through cores.
+
 """
-function synch_field(datamanager::Module, synchronise_field)
+function fields_for_local_synchronization()
     @info "Here you can add fields for synchronisation."
     return datamanager
 end
@@ -164,6 +177,33 @@ function compute_stresses(
 
 
     return stress_NP1, datamanager
+end
+
+
+"""
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    return Dict()
 end
 
 end

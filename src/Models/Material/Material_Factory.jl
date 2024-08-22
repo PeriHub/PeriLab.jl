@@ -120,18 +120,40 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
 end
 
 """
-    synch_field(datamanager::Module, material_model::String, synchronise_field)
+    fields_for_local_synchronization(model_param::Dict)
 
-Field for synchronisation.
+Finds all synchronization fields from the model class
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `material_model::String`: The material model
-- `synchronise_field`: Synchronise function to distribute parameter through cores.
+- `model_param::Dict`: model parameter.
+# Returns
+- `synch_dict::Dict`: Synchronization Dictionary.
 """
-function synch_field(datamanager::Module, material_model::String, synchronise_field)
-    mod = datamanager.get_model_module(material_model)
-    return mod.synch_field(datamanager, synchronise_field)
+function fields_for_local_synchronization(model_param::Dict)
+    synch_dict = Dict()
+    material_models = split(model_param["Material Model"], "+")
+    material_models = map(r -> strip(r), material_models)
+    if occursin("Correspondence", model_param["Material Model"])
+        mod = datamanager.get_model_module("Correspondence")
+        merge(
+            synch_dict,
+            filter(
+                kv -> !(kv[1] in keys(synch_dict)),
+                mod.fields_for_local_synchronization(),
+            ),
+        )
+    end
+    for material_model in material_models
+        mod = datamanager.get_model_module(material_model)
+        merge(
+            synch_dict,
+            filter(
+                kv -> !(kv[1] in keys(synch_dict)),
+                mod.fields_for_local_synchronization(),
+            ),
+        )
+    end
+    return synch_dict
 end
 
 """

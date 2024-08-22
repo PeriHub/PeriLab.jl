@@ -26,7 +26,7 @@ CurrentModule = PeriLab.Solver.Model_Factory.Additive
 ## Additive
 ```@docs
 Set_modules.Additive_template.additive_name
-Set_modules.Additive_template.compute_additive_model
+Set_modules.Additive_template.compute_model
 ```
 
 ```@meta
@@ -35,7 +35,7 @@ CurrentModule = PeriLab.Solver.Model_Factory.Damage
 ## Damage
 ```@docs
 Set_modules.Damage_template.damage_name
-Set_modules.Damage_template.compute_damage
+Set_modules.Damage_template.compute_model
 Set_modules.Damage_template.compute_damage_pre_calculation
 damage_index
 set_bond_damage

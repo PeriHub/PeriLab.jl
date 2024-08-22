@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Additive_template
-export compute_additive_model
+export compute_model
 export additive_name
 export init_model
 
@@ -28,7 +28,7 @@ function additive_name()
 end
 
 """
-    compute_additive_model(datamanager, nodes, additive_parameter, time, dt)
+    compute_model(datamanager, nodes, additive_parameter, time, dt)
 
 Calculates the additive model. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -44,7 +44,7 @@ Example:
 ```julia
   ```
 """
-function compute_additive_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     additive_parameter::Dict,
@@ -53,7 +53,7 @@ function compute_additive_model(
 )
     @info "Please write a additive name in additive_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_additive_model(datamanager, nodes, additive_parameter, time, dt) function."
+    @info "Fill the compute_model(datamanager, nodes, additive_parameter, time, dt) function."
     @info "The datamanager and additive_parameter holds all you need to solve your problem on additive level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
@@ -82,7 +82,7 @@ function init_model(
 )
     @info "Please write a additive name in additive_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_additive_model(datamanager, nodes, additive_parameter, time, dt) function."
+    @info "Fill the compute_model(datamanager, nodes, additive_parameter, time, dt) function."
     @info "The datamanager and additive_parameter holds all you need to solve your problem on additive level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager

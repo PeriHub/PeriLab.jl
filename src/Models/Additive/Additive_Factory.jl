@@ -10,7 +10,7 @@ Set_modules.include_files(module_list)
 include("../../Support/helpers.jl")
 
 using .Helpers: find_inverse_bond_id
-export compute_additive_model
+export compute_model
 export init_model
 export init_fields
 
@@ -51,7 +51,7 @@ function init_fields(datamanager::Module)
 end
 
 """
-    compute_additive_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
 
 Computes the additive model
 
@@ -64,7 +64,7 @@ Computes the additive model
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_additive_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
@@ -73,7 +73,7 @@ function compute_additive_model(
 )
 
     mod = datamanager.get_model_module(model_param["Additive Model"])
-    return mod.compute_additive_model(datamanager, nodes, model_param, time, dt)
+    return mod.compute_model(datamanager, nodes, model_param, time, dt)
 
 end
 

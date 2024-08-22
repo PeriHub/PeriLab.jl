@@ -9,7 +9,7 @@ global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
 Set_modules.include_files(module_list)
 include("../../Support/helpers.jl")
 using .Helpers: find_inverse_bond_id
-export compute_damage
+export compute_model
 export compute_damage_pre_calculation
 export init_interface_crit_values
 export init_model
@@ -53,7 +53,7 @@ end
 
 
 """
-    compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
 Computes the damage model
 
@@ -67,7 +67,7 @@ Computes the damage model
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_damage(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
@@ -77,7 +77,7 @@ function compute_damage(
 )
 
     mod = datamanager.get_model_module(model_param["Damage Model"])
-    datamanager = mod.compute_damage(datamanager, nodes, model_param, block, time, dt)
+    datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt)
 
     if isnothing(datamanager.get_filtered_nlist())
         return damage_index(datamanager, nodes)

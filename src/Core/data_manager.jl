@@ -68,7 +68,7 @@ export synch_manager
 ##########################
 # Variables
 ##########################
-global active_models::Vector{Any}
+global active_models::Dict{String,Module}
 global nnodes::Int64
 global num_controller::Int64
 global num_responder::Int64
@@ -190,10 +190,10 @@ Add the main modules to an array which are active.
 # Arguments
 - `active_module::Module`: Module of the active models.
 """
-function add_active_model(active_module::Module)
+function add_active_model(key::String, active_module::Module)
     global active_models
-    if !(active_module in active_models)
-        push!(active_models, active_module)
+    if !(key in keys(active_models))
+        active_models[key] = active_module
     end
 end
 

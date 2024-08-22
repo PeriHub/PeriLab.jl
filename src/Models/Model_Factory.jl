@@ -31,6 +31,75 @@ export compute_models
 export init_models
 export read_properties
 
+
+"""
+    init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+
+Initialize models
+
+# Arguments
+- `params::Dict`: Parameters.
+- `datamanager::Module`: Datamanager.
+- `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
+- `solver_options::Dict`: Solver options.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
+function init_models(
+    params::Dict,
+    datamanager::Module,
+    block_nodes::Dict{Int64,Vector{Int64}},
+    solver_options::Dict,
+    to::TimerOutput,
+)
+    # TODO integrate this correctly
+    rotation = datamanager.get_rotation()
+    #if rotation
+    rotN, rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
+    #    for iID in nodes
+    #        rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
+    #        rotNP1 = copy(rotN)
+    #    end
+    #end
+
+    for (model_name, valid_model) in pairs(solver_options["Models"])
+        if valid_model
+            datamanager.set_active_model(
+                model_name * " Model",
+                eval(Meta.parse(model_name)),
+            )
+        end
+    end
+    # TODO order of models
+
+    for (active_model_name, active_model) in pairs(datamanager.get_active_models())
+        @info "Init $active_model_name models"
+        @timeit to "$active_model_name model fields" datamanager =
+            active_model.init_fields(datamanager)
+        for block in eachindex(block_nodes)
+            if datamanager.check_property(block, active_model_name)
+                @timeit to "init $active_model_name model" datamanager =
+                    active_model.init_model(datamanager, block_nodes[block], block)
+                # TODO active_model.fields_for_local_synchronization()
+                # put it in datamanager
+            end
+        end
+    end
+
+
+
+
+    if solver_options["Models"]["Additive"] || solver_options["Models"]["Thermal"]
+        heat_capacity = datamanager.get_field("Specific Heat Capacity")
+        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
+    end
+
+
+    @debug "Init pre calculation models"
+    Pre_calculation.init_fields(datamanager)
+    return init_pre_calculation(datamanager, datamanager.get_models_options())
+end
+
 """
     compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
 
@@ -58,85 +127,8 @@ function compute_models(
 )
     fem_option = datamanager.fem_active()
     if fem_option
+        # no damage occur here. Therefore, it runs one time
         fe_nodes = datamanager.get_field("FE Nodes")
-    end
-    if options["Additive Models"]
-        for block in eachindex(block_nodes)
-            if datamanager.check_property(block, "Additive Model")
-                @timeit to "compute_additive_model_model" datamanager =
-                    Additive.compute_additive_model(
-                        datamanager,
-                        block_nodes[block],
-                        datamanager.get_properties(block, "Additive Model"),
-                        time,
-                        dt,
-                    )
-            end
-        end
-    end
-
-    active = datamanager.get_field("Active")
-    if options["Damage Models"]
-        @timeit to "pre_calculation in damage" datamanager =
-            Pre_calculation.compute(datamanager, block_nodes)
-        @timeit to "pre_synchronize in damage" Pre_calculation.synchronize(
-            datamanager,
-            datamanager.get_models_options(),
-            synchronise_field,
-        )
-        for block in eachindex(block_nodes)
-            nodes = block_nodes[block]
-            active_nodes = view(nodes, find_active(active[nodes]))
-            if fem_option
-                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
-            end
-            if datamanager.check_property(block, "Damage Model") &&
-               datamanager.check_property(block, "Material Model")
-                datamanager = Damage.set_bond_damage(datamanager, active_nodes)
-                @timeit to "damage_pre_calculation" datamanager =
-                    compute_damage_pre_calculation(
-                        datamanager,
-                        options,
-                        active_nodes,
-                        block,
-                        time,
-                        dt,
-                        to,
-                    )
-
-                datamanager.get_properties(block, "Damage Model")
-            end
-        end
-        for damage_model in datamanager.get_damage_models()
-            @timeit to "synch_field" datamanager =
-                Damage.synch_field(datamanager, damage_model, synchronise_field)
-            #TODO: Check that same fields in seperate damage models arent being synched twice
-        end
-
-        for block in eachindex(block_nodes)
-            nodes = block_nodes[block]
-            active_nodes = view(nodes, find_active(active[nodes]))
-            if fem_option
-                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
-            end
-            if datamanager.check_property(block, "Damage Model") &&
-               datamanager.check_property(block, "Material Model")
-                @timeit to "damage" datamanager = Damage.compute_damage(
-                    datamanager,
-                    active_nodes,
-                    datamanager.get_properties(block, "Damage Model"),
-                    block,
-                    time,
-                    dt,
-                )
-            end
-        end
-    end
-    update_list = datamanager.get_field("Update List")
-    # nodes::Vector{Int64} = []
-    # active_nodes::Vector{Int64} = []
-    # update_nodes::Vector{Int64} = []
-    if fem_option
         nelements = datamanager.get_num_elements()
         # in future the FE analysis can be put into the block loop. Right now it is outside the block.
         datamanager = FEM.eval(
@@ -146,7 +138,63 @@ function compute_models(
             time,
             dt,
         )
+
     end
+
+    active = datamanager.get_field("Active")
+    for (active_model_name, active_model) in pairs(datamanager.get_active_models())
+        #synchronise_field(datamanager.local_synch_fiels(active_model_name))
+        for block in eachindex(block_nodes)
+            nodes = block_nodes[block]
+            active_nodes = view(nodes, find_active(active[nodes]))
+            if fem_option
+                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
+            end
+            if datamanager.check_property(block, active_model_name)
+
+                @timeit to "compute $active_model_name model" datamanager =
+                    active_model.compute_model(
+                        datamanager,
+                        active_nodes,
+                        datamanager.get_properties(block, active_model_name),
+                        time,
+                        dt,
+                    )
+            end
+        end
+    end
+
+    update_nodes = datamanager.get_field("Update List")
+    for (active_model_name, active_model) in pairs(datamanager.get_active_models())
+        if active_model_name == "Additve Model" || active_model_name == "Damage Model"
+            continue
+        end
+        #synchronise_field(datamanager.local_synch_fiels(active_model_name))
+        for block in eachindex(block_nodes)
+            nodes = block_nodes[block]
+            active_nodes = view(nodes, find_active(active[nodes]))
+            if fem_option
+                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
+            end
+            active_nodes, update_nodes =
+                get_active_update_nodes(active, update_list, block_nodes, block)
+            if datamanager.check_property(block, active_model_name)
+
+                @timeit to "compute $active_model_name model" datamanager =
+                    active_model.compute_model(
+                        datamanager,
+                        active_nodes,
+                        datamanager.get_properties(block, active_model_name),
+                        time,
+                        dt,
+                    )
+            end
+        end
+    end
+
+    # active_nodes::Vector{Int64} = []
+    # update_nodes::Vector{Int64} = []
+
 
     @timeit to "pre_calculation" datamanager =
         Pre_calculation.compute(datamanager, block_nodes)
@@ -193,6 +241,8 @@ function compute_models(
                 #TODO: I think this needs to stay here as we need the active_nodes not the update_nodes
                 @timeit to "distribute_force_densities" datamanager =
                     Material.distribute_force_densities(datamanager, active_nodes)
+
+
                 if !occursin("Correspondence", model_param["Material Model"])
                     if options["Calculate Cauchy"] |
                        options["Calculate von Mises"] |
@@ -320,73 +370,6 @@ function get_block_model_definition(
     return properties
 end
 
-"""
-    init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
-
-Initialize models
-
-# Arguments
-- `params::Dict`: Parameters.
-- `datamanager::Module`: Datamanager.
-- `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
-- `solver_options::Dict`: Solver options.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-"""
-function init_models(
-    params::Dict,
-    datamanager::Module,
-    block_nodes::Dict{Int64,Vector{Int64}},
-    solver_options::Dict,
-    to::TimerOutput,
-)
-    # TODO integrate this correctly
-    rotation = datamanager.get_rotation()
-    #if rotation
-    rotN, rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
-    #    for iID in nodes
-    #        rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
-    #        rotNP1 = copy(rotN)
-    #    end
-    #end
-
-    #models = []
-    for name in keys(solver_options["Models"])
-        if solver_options["Models"][name]
-            datamanager.set_active_model(eval(Meta.parse(name)))
-        end
-    end
-    # TODO order of models
-
-    for model in datamanager.get_active_models()
-        @info "Init $model models"
-        @timeit to "$model model fields" datamanager = model.init_fields(datamanager)
-        for block in eachindex(block_nodes)
-            if datamanager.check_property(block, "Additive Model")
-                @timeit to "init $model model" datamanager =
-                    model.init_model(datamanager, block_nodes[block], block)
-            end
-        end
-    end
-    if solver_options["Models"]["Additive"] || solver_options["Models"]["Thermal"]
-        heat_capacity = datamanager.get_field("Specific Heat Capacity")
-        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
-
-    end
-    if solver_options["Calculate Cauchy"] | solver_options["Calculate von Mises"]
-        datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
-    end
-    if solver_options["Calculate Strain"]
-        datamanager.create_node_field("Strain", Float64, "Matrix", dof)
-    end
-    if solver_options["Calculate von Mises"]
-        datamanager.create_node_field("von Mises Stress", Float64, 1)
-    end
-
-    @debug "Init pre calculation models"
-    Pre_calculation.init_fields()
-    return init_pre_calculation(datamanager, datamanager.get_models_options())
-end
 
 
 """
