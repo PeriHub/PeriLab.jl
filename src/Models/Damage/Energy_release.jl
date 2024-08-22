@@ -118,12 +118,12 @@ function compute_damage(
     neighbor_bond_force::Vector{Float64} = @SVector zeros(Float64, dof)
     projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
+    relative_displacement_vector = deformed_bond .- undeformed_bond
     for iID in nodes
-        @views relative_displacement_vector = deformed_bond[iID] .- undeformed_bond[iID]
-
         for (jID, neighborID) in enumerate(nlist[iID])
-            # @views relative_displacement = relative_displacement_vector[jID, :]
-            norm_displacement = norm(relative_displacement_vector[jID, :])
+            @views relative_displacement = relative_displacement_vector[iID][jID, :]
+
+            norm_displacement = norm(relative_displacement)
 
             if norm_displacement == 0 || (
                 tension &&
@@ -141,15 +141,11 @@ function compute_damage(
             end
 
             @views projected_force .=
-                dot(
-                    bond_forces[iID][jID, :] - neighbor_bond_force,
-                    relative_displacement_vector[jID, :],
-                ) / (norm_displacement * norm_displacement) .*
-                relative_displacement_vector[jID, :]
+                dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement) /
+                (norm_displacement * norm_displacement) .* relative_displacement
 
             @views bond_energy =
-                0.25 *
-                dot(abs.(projected_force), abs.(relative_displacement_vector[jID, :]))
+                0.25 * dot(abs.(projected_force), abs.(relative_displacement))
 
             if dependend_value
                 critical_energy =
@@ -262,6 +258,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
     end
     return Float64(4 / (pi * horizon^4))
 end
+
 function init_damage_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
