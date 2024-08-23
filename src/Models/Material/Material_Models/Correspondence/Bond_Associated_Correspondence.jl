@@ -16,7 +16,7 @@ include("../../../Pre_calculation/bond_deformation_gradient.jl")
 using .Bond_Deformation_Gradient: compute_weighted_volume
 using TimerOutputs
 
-export init_material_model
+export init_model
 export compute_model
 
 """
@@ -39,7 +39,7 @@ function correspondence_name()
     return "Correspondence Bond-Associated"
 end
 
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,

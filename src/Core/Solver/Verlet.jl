@@ -426,7 +426,7 @@ function run_solver(
     comm = datamanager.get_comm()
 
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
-    if solver_options["Material Models"]
+    if solver_options["Models"]["Material"]
         forces = datamanager.get_field("Forces", "NP1")
         external_forces = datamanager.get_field("External Forces")
         force_densities = datamanager.get_field("Force Densities", "NP1")
@@ -438,7 +438,7 @@ function run_solver(
         coor = datamanager.get_field("Coordinates")
         deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
     end
-    if solver_options["Thermal Models"]
+    if solver_options["Models"]["Thermal"]
         flowN = datamanager.get_field("Heat Flow", "N")
         flowNP1 = datamanager.get_field("Heat Flow", "NP1")
         temperatureN = datamanager.get_field("Temperature", "N")
@@ -447,7 +447,7 @@ function run_solver(
         ## TODO field creation not in run
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
-    if solver_options["Corrosion Models"]
+    if solver_options["Models"]["Corrosion"]
         concentrationN = datamanager.get_field("Concentration", "N")
         concentrationNP1 = datamanager.get_field("Concentration", "NP1")
         concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
@@ -462,7 +462,7 @@ function run_solver(
         lumped_mass = datamanager.get_field("Lumped Mass Matrix")
         fe_nodes = datamanager.get_field("FE Nodes")
     end
-    if solver_options["Damage Models"]
+    if solver_options["Models"]["Models"]
         damage = datamanager.get_damage("NP1")
     end
     active = datamanager.get_field("Active")
@@ -483,15 +483,15 @@ function run_solver(
         @timeit to "Verlet" begin
             nodes = find_active(active[1:nnodes])
             # one step more, because of init step (time = 0)
-            if solver_options["Material Models"]
+            if solver_options["Models"]["Material"]
                 vNP1[nodes, :] =
                     (1 - numerical_damping) .* vN[nodes, :] + 0.5 * dt .* a[nodes, :]
                 uNP1[nodes, :] = uN[nodes, :] + dt .* vNP1[nodes, :]
             end
-            if solver_options["Thermal Models"]
+            if solver_options["Models"]["Thermal"]
                 temperatureNP1[nodes] = temperatureN[nodes] + deltaT[nodes]
             end
-            if solver_options["Corrosion Models"]
+            if solver_options["Models"]["Corrosion"]
                 concentrationNP1[nodes] = concentrationN[nodes] + delta_concentration[nodes]
             end
             @timeit to "apply_bc_dirichlet" datamanager =
@@ -526,7 +526,7 @@ function run_solver(
                 Boundary_conditions.apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, step_time) #-> von neumann
 
-            if solver_options["Material Models"]
+            if solver_options["Models"]["Material"]
                 check_inf_or_nan(force_densities, "Forces")
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
@@ -554,7 +554,7 @@ function run_solver(
                 forces[nodes, :] = force_densities[nodes, :] .* volume[nodes]
 
             end
-            if solver_options["Thermal Models"]
+            if solver_options["Models"]["Thermal"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
                 # heat capacity check. if it is zero deltaT = 0
                 deltaT[find_active(active[1:nnodes])] =
@@ -566,11 +566,11 @@ function run_solver(
                     @warn "Thermal models are not supported for FEM yet."
                 end
             end
-            if solver_options["Corrosion Models"]
+            if solver_options["Models"]["Corrosion"]
                 delta_concentration[find_active(active[1:nnodes])] =
                     -concentration_fluxNP1[find_active(active[1:nnodes])] .* dt
             end
-            if rank == 0 && solver_options["Damage Models"] #TODO gather value
+            if rank == 0 && solver_options["Models"]["Damage"] #TODO gather value
                 max_damage = maximum(damage[find_active(active[1:nnodes])])
                 if max_damage > max_cancel_damage
                     if !silent

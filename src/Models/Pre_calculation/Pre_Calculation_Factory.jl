@@ -13,9 +13,13 @@ using .Bond_Deformation
 using .Bond_Deformation_Gradient
 using .Deformation_Gradient
 using .Shape_Tensor
+
+
 export compute
-export init_pre_calculation
+export init_model
 export synchronize
+export init_fields
+
 include("../../Support/helpers.jl")
 using .Helpers: find_active, get_active_update_nodes
 
@@ -29,84 +33,22 @@ function init_fields(datamanager::Module)
     datamanager.create_node_field("Displacements", Float64, dof)
 end
 
-function synchronize(datamanager::Module, options::Dict, synchronise_field)
-    if options["Bond Associated Deformation Gradient"]
-        synchfield = Dict(
-            "Deformation Gradient" => Dict(
-                "upload_to_cores" => true,
-                "dof" => datamanager.get_dof() * datamanager.get_dof(),
-            ),
-            "Weighted Volume" => Dict("upload_to_cores" => true, "dof" => 1),
-        )
-        synchronise_field(
-            datamanager.get_comm(),
-            synchfield,
-            datamanager.get_overlap_map(),
-            datamanager.get_field,
-            "Deformation Gradient",
-            "upload_to_cores",
-        )
-        synchronise_field(
-            datamanager.get_comm(),
-            synchfield,
-            datamanager.get_overlap_map(),
-            datamanager.get_field,
-            "Weighted Volume",
-            "upload_to_cores",
-        )
-    end
-end
-
 """
-    compute(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}})
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
 
-Compute the pre-calculation.
+Initializes the model.
 
 # Arguments
-- `datamanager`: Datamanager.
-- `block_nodes::Dict{Int64,Vector{Int64}}`: List of block nodes.
+- `datamanager::Data_manager`: Datamanager
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `block::Int64`: Block.
 # Returns
-- `datamanager`: Datamanager.
+- `datamanager::Data_manager`: Datamanager.
 """
-function compute(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}})
-    active = datamanager.get_field("Active")
-    update_list = datamanager.get_field("Update List")
-    fem_option = datamanager.fem_active()
-    models_options = datamanager.get_models_options()
-    for pre_calculation_model in keys(models_options)
-        if !(models_options[pre_calculation_model])
-            continue
-        end
-        mod = datamanager.get_model_module(pre_calculation_model)
-        for block in eachindex(block_nodes)
-            nodes = block_nodes[block]
-            active_nodes, update_nodes =
-                get_active_update_nodes(active, update_list, block_nodes, block)
-            if fem_option
-                fe_nodes = datamanager.get_field("FE Nodes")
-                update_nodes =
-                    block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
-            end
-            datamanager = mod.compute(datamanager, update_nodes, block)
-        end
-    end
-
-    return datamanager
-end
-
-"""
-    init_pre_calculation(datamanager::Module, options::Dict)
-
-Initialize the pre-calculation.
-
-# Arguments
-- `datamanager`: Datamanager.
-- `options::Dict`: Options.
-# Returns
-- `datamanager`: Datamanager.
-"""
-function init_pre_calculation(datamanager::Module, options::Dict)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     dof = datamanager.get_dof()
+    ## TODO options change
+    #model_param = datamanager.get_properties(block, "Material Model") ??
     if options["Deformed Bond Geometry"]
         datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
         datamanager.create_bond_field("Deformed Bond Length", Float64, 1)
@@ -170,5 +112,54 @@ function init_pre_calculation(datamanager::Module, options::Dict)
     end
     return datamanager
 end
+
+"""
+    fields_for_local_synchronization(model_param::Dict)
+
+Finds all synchronization fields from the model class
+
+# Arguments
+- `model_param::Dict`: model parameter.
+# Returns
+- `synch_dict::Dict`: Synchronization Dictionary.
+"""
+
+function fields_for_local_synchronization((model_param::Dict))
+    synch_dict = Dict()
+
+    return synch_dict
+end
+
+"""
+    compute(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}})
+
+Compute the pre-calculation.
+
+# Arguments
+- `datamanager`: Datamanager.
+- `block_nodes::Dict{Int64,Vector{Int64}}`: List of block nodes.
+# Returns
+- `datamanager`: Datamanager.
+"""
+function compute_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    model_param::Dict,
+    time::Float64,
+    dt::Float64,
+    to::TimerOutput,
+)
+    models_options = datamanager.get_models_options()
+    for (pre_calculation_model, active) in pairs(models_options)
+        if !active
+            continue
+        end
+        mod = datamanager.get_model_module(pre_calculation_model)
+        datamanager = mod.compute(datamanager, nodes)
+    end
+
+    return datamanager
+end
+
 
 end

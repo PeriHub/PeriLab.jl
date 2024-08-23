@@ -23,7 +23,7 @@ Compute the bond deformation gradient.
 """
 
 
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block_id::Int64)
+function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()

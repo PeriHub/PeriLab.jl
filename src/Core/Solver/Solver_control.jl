@@ -67,7 +67,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     end
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
     @debug "Read properties"
-    read_properties(params, datamanager, solver_options["Material Models"])
+    read_properties(params, datamanager, solver_options["Models"]["Material"])
     @debug "Init models"
     @timeit to "init_models" datamanager =
         init_models(params, datamanager, block_nodes, solver_options, to)
@@ -84,8 +84,8 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
             params,
             datamanager,
             block_nodes,
-            solver_options["Material Models"],
-            solver_options["Thermal Models"],
+            solver_options["Models"]["Material"],
+            solver_options["Models"]["Thermal"],
         )
     else
         @error get_solver_name(params) * " is no valid solver."

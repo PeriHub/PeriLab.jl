@@ -13,7 +13,7 @@ include(
     @test !(PD_Solid_Plastic.fe_support())
 end
 
-@testset "ut_init_material_model" begin
+@testset "ut_init_model" begin
 
     nodes = 2
     test_data_manager = PeriLab.Data_manager
@@ -30,14 +30,10 @@ end
 
     nn .= 1
     @test isnothing(
-        PD_Solid_Plastic.init_material_model(
-            test_data_manager,
-            Vector{Int64}(1:nodes),
-            Dict(),
-        ),
+        PD_Solid_Plastic.init_model(test_data_manager, Vector{Int64}(1:nodes), Dict()),
     )
 
-    test_data_manager = PD_Solid_Plastic.init_material_model(
+    test_data_manager = PD_Solid_Plastic.init_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict("Yield Stress" => 5.3),
@@ -47,7 +43,7 @@ end
     @test isapprox(yield[1], 25 * 5.3 * 5.3 / (8 * pi * 3^5))
     @test isapprox(yield[2], 25 * 5.3 * 5.3 / (8 * pi * 2^5))
 
-    test_data_manager = PD_Solid_Plastic.init_material_model(
+    test_data_manager = PD_Solid_Plastic.init_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict("Yield Stress" => 2.2, "Symmetry" => "plane stress"),

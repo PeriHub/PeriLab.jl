@@ -20,13 +20,13 @@ using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "correspondence_name")
 Set_modules.include_files(module_list)
 
-export init_material_model
+export init_model
 export material_name
 export compute_model
-export init_material_model
+export init_model
 
 """
-  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
 Initializes the material model.
 
@@ -38,7 +38,7 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
@@ -72,12 +72,12 @@ function init_material_model(
             return nothing
         end
         datamanager.set_model_module(material_model, mod)
-        datamanager = mod.init_material_model(datamanager, nodes, material_parameter)
+        datamanager = mod.init_model(datamanager, nodes, material_parameter)
 
     end
     if haskey(material_parameter, "Bond Associated") &&
        material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.init_material_model(
+        return Bond_Associated_Correspondence.init_model(
             datamanager,
             nodes,
             material_parameter,

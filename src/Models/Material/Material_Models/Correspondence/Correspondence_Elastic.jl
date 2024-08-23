@@ -7,8 +7,8 @@ include("../../material_basis.jl")
 export compute_stresses
 export correspondence_name
 export fe_support
-export init_material_model
-export init_material_model
+export init_model
+export init_model
 
 """
   fe_support()
@@ -32,7 +32,7 @@ end
 
 
 """
-  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
 Initializes the material model.
 
@@ -44,7 +44,7 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,

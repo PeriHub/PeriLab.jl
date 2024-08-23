@@ -177,7 +177,7 @@ function initialize_data()
     global element_rotation
     element_rotation = false
     global active_models
-    active_models = []
+    active_models = Dict{String,Module}()
 end
 ###################################
 
@@ -574,7 +574,7 @@ Returns a list active model modules.
 """
 function get_active_models()
     global active_models
-    return @view active_models
+    return active_models
 end
 
 """

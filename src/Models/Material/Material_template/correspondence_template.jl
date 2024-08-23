@@ -4,7 +4,7 @@
 
 module Correspondence_template
 export fe_support
-export init_material_model
+export init_model
 export correspondence_name
 export compute_model
 export synch_field
@@ -30,7 +30,7 @@ function fe_support()
 end
 
 """
-  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
 Initializes the material model.
 
@@ -42,7 +42,7 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
@@ -135,7 +135,7 @@ function compute_stresses(
 )
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model() and init_material_model() function."
+    @info "Fill the compute_model() and init_model() function."
     @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager, stress_NP1

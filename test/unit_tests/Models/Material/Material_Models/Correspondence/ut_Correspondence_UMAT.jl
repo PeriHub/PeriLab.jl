@@ -25,7 +25,7 @@ end
     end
 
     @test !isnothing(
-        Correspondence_UMAT.init_material_model(
+        Correspondence_UMAT.init_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict{String,Any}(
@@ -39,14 +39,14 @@ end
         ),
     )
     @test isnothing(
-        Correspondence_UMAT.init_material_model(
+        Correspondence_UMAT.init_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict{String,Any}("File" => file * "_not_there"),
         ),
     )
     @test isnothing(
-        Correspondence_UMAT.init_material_model(
+        Correspondence_UMAT.init_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict{String,Any}("File" => file),
@@ -54,14 +54,14 @@ end
     )
 
     @test isnothing(
-        Correspondence_UMAT.init_material_model(
+        Correspondence_UMAT.init_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict{String,Any}(),
         ),
     )
     @test isnothing(
-        Correspondence_UMAT.init_material_model(
+        Correspondence_UMAT.init_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict{String,Any}(
@@ -73,7 +73,7 @@ end
         ),
     )
     @test isnothing(
-        Correspondence_UMAT.init_material_model(
+        Correspondence_UMAT.init_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict{String,Any}(
@@ -87,7 +87,7 @@ end
     )
 
     @test isnothing(
-        Correspondence_UMAT.init_material_model(
+        Correspondence_UMAT.init_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict{String,Any}(
@@ -101,7 +101,7 @@ end
         ),
     )
     @test !isnothing(
-        Correspondence_UMAT.init_material_model(
+        Correspondence_UMAT.init_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict{String,Any}(
@@ -122,7 +122,7 @@ end
     @test properties[3] == 2.4
 
     @test isnothing(
-        Correspondence_UMAT.init_material_model(
+        Correspondence_UMAT.init_model(
             test_data_manager,
             Vector{Int64}(1:nodes),
             Dict{String,Any}(
@@ -149,11 +149,7 @@ end
         "Property_3" => 2.4,
         "Predefined Field Names" => "test_field_2 test_field_3",
     )
-    Correspondence_UMAT.init_material_model(
-        test_data_manager,
-        Vector{Int64}(1:nodes),
-        mat_dict,
-    )
+    Correspondence_UMAT.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
     fields = test_data_manager.get_field("Predefined Fields")
     inc = test_data_manager.get_field("Predefined Fields Increment")
     @test size(fields) == (2, 2)
@@ -172,11 +168,7 @@ end
         "Predefined Field Names" => "test_field_2 test_field_3",
     )
     @test !haskey(mat_dict, "UMAT name")
-    Correspondence_UMAT.init_material_model(
-        test_data_manager,
-        Vector{Int64}(1:nodes),
-        mat_dict,
-    )
+    Correspondence_UMAT.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
     @test haskey(mat_dict, "UMAT name")
     @test mat_dict["UMAT name"] == "UMAT"
 end

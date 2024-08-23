@@ -8,7 +8,7 @@ include("../../../../src/Models/Material/Material_Factory.jl")
 using Test
 import .Material
 
-@testset "ut_init_material_model_fields" begin
+@testset "ut_init_model_fields" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_dof(3)

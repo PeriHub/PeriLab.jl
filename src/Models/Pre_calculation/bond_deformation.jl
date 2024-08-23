@@ -19,7 +19,7 @@ Compute the bond deformation.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block_id::Int64)
+function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     nlist = datamanager.get_nlist()
     deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")

@@ -154,19 +154,22 @@ function get_model_options(params::Dict)
     corrosion::Bool = get(params["Solver"], "Corrosion Models", false)
     damage::Bool = get(params["Solver"], "Damage Models", false)
     mechanical::Bool = get(params["Solver"], "Material Models", true)
-    cauchy::Bool = get(params["Solver"], "Calculate Cauchy", false)
-    von_mises::Bool = get(params["Solver"], "Calculate von Mises", false)
-    strain::Bool = get(params["Solver"], "Calculate Strain", false)
     thermal::Bool = get(params["Solver"], "Thermal Models", false)
-    # TODO here is the order predefined. Wrong place.
-    return Dict{String,Any}(
-        "Additive" => additive,
-        "Damage" => damage,
-        "Thermal" => thermal,
-        "Corrosion" => corrosion,
-        "Material" => mechanical,
-        "Calculate Cauchy" => cauchy,
-        "Calculate von Mises" => von_mises,
-        "Calculate Strain" => strain,
-    )
+    ###
+    # TODO here, the order is predefined. Wrong place!
+    ###
+    return [
+        "Additive" if additive
+        end
+        "Pre_calculation" if true
+        end  # immer true
+        "Damage" if damage
+        end
+        "Thermal" if thermal
+        end
+        "Corrosion" if corrosion
+        end
+        "Material" if mechanical
+        end
+    ]
 end

@@ -75,11 +75,8 @@ end
     test_data_manager = PeriLab.Data_manager
     @test !(Material_template.fe_support())
     @test Material_template.material_name() == "Material Template"
-    @test Material_template.init_material_model(
-        test_data_manager,
-        Vector{Int64}(1:3),
-        Dict(),
-    ) == test_data_manager
+    @test Material_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict()) ==
+          test_data_manager
     @test Material_template.compute_model(
         test_data_manager,
         Vector{Int64}(1:3),
@@ -94,7 +91,7 @@ end
     test_data_manager = PeriLab.Data_manager
     @test !(Correspondence_template.fe_support())
     @test Correspondence_template.correspondence_name() == "Correspondence Template"
-    @test Correspondence_template.init_material_model(
+    @test Correspondence_template.init_model(
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),

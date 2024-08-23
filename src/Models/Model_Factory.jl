@@ -55,20 +55,17 @@ function init_models(
     # TODO integrate this correctly
     rotation = datamanager.get_rotation()
     #if rotation
-    rotN, rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
+
+    rotN, rotNP1 =
+        datamanager.create_node_field("Rotation", Float64, "Matrix", datamanager.get_dof())
     #    for iID in nodes
     #        rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
     #        rotNP1 = copy(rotN)
     #    end
     #end
 
-    for (model_name, valid_model) in pairs(solver_options["Models"])
-        if valid_model
-            datamanager.set_active_model(
-                model_name * " Model",
-                eval(Meta.parse(model_name)),
-            )
-        end
+    for model_name in solver_options["Models"]
+        datamanager = add_model(datamanager, model_name)
     end
     # TODO order of models
 
@@ -85,9 +82,6 @@ function init_models(
             end
         end
     end
-
-
-
 
     if solver_options["Models"]["Additive"] || solver_options["Models"]["Thermal"]
         heat_capacity = datamanager.get_field("Specific Heat Capacity")
@@ -371,22 +365,6 @@ function get_block_model_definition(
 end
 
 
-
-"""
-    init_pre_calculation(datamanager::Module, options)
-
-Initialize pre-calculation
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `options`: Options.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-"""
-function init_pre_calculation(datamanager::Module, options)
-    return Pre_calculation.init_pre_calculation(datamanager, options)
-end
-
 """
     read_properties(params::Dict, datamanager::Module, material_model::Bool)
 
@@ -445,4 +423,26 @@ function set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::SubAr
     return heat_capacity
 end
 
+"""
+    add_model(datamanager::Module, model_name::String)
+
+Includes the models in the datamanager and checks if the model definition is correct or not.
+
+# Arguments
+- `datamanager::Module`: Datamanager
+- `model_name::String`: The block nodes
+
+# Returns
+- `datamanager::Module`: Datamanager
+"""
+function add_model(datamanager::Module, model_name::String)
+    # TODO test missing
+    try
+        datamanager.add_active_model(model_name * " Model", eval(Meta.parse(model_name)))
+        return datamanager
+    catch
+        @error "Model $model_name is not specified and cannot be included."
+        return nothing
+    end
+end
 end
