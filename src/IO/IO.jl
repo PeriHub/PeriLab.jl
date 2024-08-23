@@ -224,7 +224,7 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                     compute_params = computes[key]
                     global_var = true
                     if computes[key]["Compute Class"] == "Node_Set_Data"
-                        nodeset = datamanager.get_nsets()[computes[key]]
+                        nodeset = computes[key]["Node Set"]
                     end
                 end
             end

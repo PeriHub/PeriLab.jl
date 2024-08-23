@@ -160,7 +160,7 @@ function compute_damage(
 
             if aniso_damage
                 #TODO Fix bug herem rotation_tensor is zero
-                @info rotation_tensor[iID, :, :]'
+                # @info rotation_tensor[iID, :, :]'
                 @views rotated_bond =
                     rotation_tensor[iID, :, :]' * deformed_bond[iID][jID, :]
                 # Compute bond_norm for all components at once
@@ -275,9 +275,8 @@ function init_damage_model(
     end
 
     if haskey(damage_parameter, "Anisotropic Damage")
-        rotation::Bool, angles = datamanager.rotation_data()
+        rotation::Bool = datamanager.get_rotation()
         if !rotation
-            # TODO is this necassary? If you have no angles, you can use the global ones.
             @error "Anisotropic damage requires Angles field"
             return nothing
         end

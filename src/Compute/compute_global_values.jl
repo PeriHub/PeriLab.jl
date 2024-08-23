@@ -22,7 +22,7 @@ function calculate_nodelist(
     field_key::String,
     dof::Union{Int64,Vector{Int64}},
     calculation_type::String,
-    node_set::Vector{Int64},
+    node_set::Union{Int64,Vector{Int64}},
 )
     # get block_nodes
     # check NP1
