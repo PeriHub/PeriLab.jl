@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-    calculate_nodelist(datamanager::Module, field_key::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, node_set::Vector{Int64})
+    calculate_nodelist(datamanager::Module, field_key::String, dof::Union{Int64,Vector{Int64}}, calculation_type::String, local_nodes::Vector{Int64})
 
 Calculate the global value of a field for a given set of nodes.
 
@@ -12,7 +12,7 @@ Calculate the global value of a field for a given set of nodes.
 - `field_key::String`: Field key.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `calculation_type::String`: Calculation type.
-- `node_set::Vector{Int64}`: Node set.
+- `local_nodes::Vector{Int64}`: Node set.
 # Returns
 - `value::Vector`: Global value.
 - `nnodes::Int64`: Number of nodes.
@@ -22,7 +22,7 @@ function calculate_nodelist(
     field_key::String,
     dof::Union{Int64,Vector{Int64}},
     calculation_type::String,
-    node_set::Union{Int64,Vector{Int64}},
+    local_nodes::Union{Int64,Vector{Int64}},
 )
     # get block_nodes
     # check NP1
@@ -35,37 +35,36 @@ function calculate_nodelist(
     end
     field = datamanager.get_field(field_key)
     field_type = datamanager.get_field_type(field_key)
-    node_list = datamanager.get_local_nodes(node_set)
 
     if calculation_type == "Sum"
-        if length(node_list) == 0
+        if length(local_nodes) == 0
             value = field_type(0)
         else
-            value = global_value_sum(field, dof, node_list)
+            value = global_value_sum(field, dof, local_nodes)
         end
     elseif calculation_type == "Maximum"
-        if length(node_list) == 0
+        if length(local_nodes) == 0
             value = typemin(field_type)
         else
-            value = global_value_max(field, dof, node_list)
+            value = global_value_max(field, dof, local_nodes)
         end
     elseif calculation_type == "Minimum"
-        if length(node_list) == 0
+        if length(local_nodes) == 0
             value = typemax(field_type)
         else
-            value = global_value_min(field, dof, node_list)
+            value = global_value_min(field, dof, local_nodes)
         end
     elseif calculation_type == "Average"
-        if length(node_list) == 0
+        if length(local_nodes) == 0
             value = field_type(0)
         else
-            value = global_value_avg(field, dof, node_list)
+            value = global_value_avg(field, dof, local_nodes)
         end
     else
         @warn "Unknown calculation type $calculation_type"
         return nothing
     end
-    return value, Int64(length(node_list))
+    return value, Int64(length(local_nodes))
 end
 
 """

@@ -665,8 +665,9 @@ function get_global_values(output::Dict, datamanager::Module)
                 calculate_block(datamanager, fieldname, dof, calculation_type, block_id)
         elseif compute_class == "Node_Set_Data"
             node_set = output[varname]["nodeset"]
+            node_list = datamanager.get_local_nodes(node_set)
             global_value, nnodes =
-                calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_set)
+                calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_list)
         end
         if datamanager.get_max_rank() > 1
             global_value =
