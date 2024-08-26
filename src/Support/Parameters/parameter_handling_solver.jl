@@ -153,23 +153,35 @@ function get_model_options(params::Dict)
     additive::Bool = get(params["Solver"], "Additive Models", false)
     corrosion::Bool = get(params["Solver"], "Corrosion Models", false)
     damage::Bool = get(params["Solver"], "Damage Models", false)
-    mechanical::Bool = get(params["Solver"], "Material Models", true)
+    material::Bool = get(params["Solver"], "Material Models", true)
     thermal::Bool = get(params["Solver"], "Thermal Models", false)
     ###
     # TODO here, the order is predefined. Wrong place!
     ###
-    return [
-        "Additive" if additive
-        end
-        "Pre_calculation" if true
-        end  # immer true
-        "Damage" if damage
-        end
-        "Thermal" if thermal
-        end
-        "Corrosion" if corrosion
-        end
-        "Material" if mechanical
-        end
-    ]
+    return Vector{String}(
+        filter(
+            !isnothing,
+            [
+                if additive
+                    "Additive"
+                end
+                if true
+                    "Pre_calculation"
+                end  # immer true
+                if damage
+                    "Damage"
+                end
+                if thermal
+                    "Thermal"
+                end
+                if corrosion
+                    "Corrosion"
+                end
+                if material
+                    "Material"
+                end
+            ],
+        ),
+    )
+
 end
