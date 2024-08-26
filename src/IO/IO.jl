@@ -788,7 +788,7 @@ function show_block_summary(
     for id in eachindex(block_list)
         row = [block_list[id]]
         for name in headers[2:6]
-            if !solver_options[name*" Models"]
+            if !(name in solver_options["Models"])
                 push!(row, "")
             elseif haskey(params["Blocks"][block_list[id]], name * " Model")
                 push!(row, params["Blocks"][block_list[id]][name*" Model"])
