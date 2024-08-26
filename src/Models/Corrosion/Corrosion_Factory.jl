@@ -7,7 +7,7 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "corrosion_name")
 Set_modules.include_files(module_list)
-export compute_corrosion_model
+export compute_model
 export init_model
 export init_fields
 
@@ -30,7 +30,7 @@ function init_fields(datamanager::Module)
 end
 
 """
-    compute_corrosion_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
 Computes the corrosion model
 
@@ -43,12 +43,13 @@ Computes the corrosion model
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_corrosion_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
 
     mod = datamanager.get_model_module(model_param["Corrosion Model"])

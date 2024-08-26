@@ -70,9 +70,10 @@ function init_models(
     # TODO order of models
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
-        @info "Init $active_model_name models"
+        @info "Init $active_model_name "
         @timeit to "$active_model_name model fields" datamanager =
             active_model.init_fields(datamanager)
+
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, active_model_name)
                 @timeit to "init $active_model_name model" datamanager =
@@ -83,15 +84,12 @@ function init_models(
         end
     end
 
-    if solver_options["Models"]["Additive"] || solver_options["Models"]["Thermal"]
+    if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
         heat_capacity = datamanager.get_field("Specific Heat Capacity")
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
     end
-
-
-    @debug "Init pre calculation models"
-    Pre_calculation.init_fields(datamanager)
-    return init_pre_calculation(datamanager, datamanager.get_models_options())
+    @info "Finalize Init Models"
+    return datamanager
 end
 
 """
@@ -153,6 +151,7 @@ function compute_models(
                         datamanager.get_properties(block, active_model_name),
                         time,
                         dt,
+                        to,
                     )
             end
         end
@@ -368,7 +367,7 @@ end
 """
     read_properties(params::Dict, datamanager::Module, material_model::Bool)
 
-Read properties
+Read properties of material.
 
 # Arguments
 - `params::Dict`: Parameters.

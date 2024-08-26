@@ -31,6 +31,7 @@ function init_fields(datamanager::Module)
     deformed_coorN = copy(datamanager.get_field("Coordinates"))
     deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
+    return datamanager
 end
 
 """

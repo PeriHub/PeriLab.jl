@@ -67,10 +67,10 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     end
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
     @debug "Read properties"
-    read_properties(params, datamanager, solver_options["Models"]["Material"])
+    read_properties(params, datamanager, "Material" in solver_options["Models"])
     @debug "Init models"
     @timeit to "init_models" datamanager =
-        init_models(params, datamanager, block_nodes, solver_options, to)
+        Model_Factory.init_models(params, datamanager, block_nodes, solver_options, to)
     @debug "Init Boundary Conditions"
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
     solver_options["Solver"] = get_solver_name(params)
@@ -84,8 +84,8 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
             params,
             datamanager,
             block_nodes,
-            solver_options["Models"]["Material"],
-            solver_options["Models"]["Thermal"],
+            "Material" in solver_options["Models"],
+            "Thermal" in solver_options["Models"],
         )
     else
         @error get_solver_name(params) * " is no valid solver."
@@ -200,7 +200,7 @@ Runs the solver.
 - `result_files`: A vector of updated result files
 """
 function solver(
-    solver_options::Dict{String,Any},
+    solver_options::Dict{Any,Any},
     block_nodes::Dict{Int64,Vector{Int64}},
     bcs::Dict{Any,Any},
     datamanager::Module,

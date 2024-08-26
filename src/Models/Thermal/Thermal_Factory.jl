@@ -36,7 +36,7 @@ end
 
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64,    to::TimerOutput)
 
 Compute the thermal model
 
@@ -55,6 +55,7 @@ function compute_model(
     model_param::Dict,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
 
     thermal_models = split(model_param["Thermal Model"], "+")

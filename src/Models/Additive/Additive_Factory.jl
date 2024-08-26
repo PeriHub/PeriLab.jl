@@ -51,7 +51,7 @@ function init_fields(datamanager::Module)
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64,     to::TimerOutput)
 
 Computes the additive model
 
@@ -70,6 +70,7 @@ function compute_model(
     model_param::Dict,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
 
     mod = datamanager.get_model_module(model_param["Additive Model"])

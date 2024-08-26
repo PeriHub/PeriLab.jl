@@ -38,6 +38,8 @@ export get_rank
 export get_num_responder
 export get_max_rank
 export get_cancel
+export get_damage_models
+export get_material_model
 export get_output_frequency
 export get_rotation
 export get_element_rotation
@@ -50,6 +52,8 @@ export set_directory
 export set_inverse_nlist
 export set_fem
 export set_glob_to_loc
+export set_damage_models
+export set_material_model
 export set_model_module
 export set_num_controller
 export set_nset
@@ -101,6 +105,8 @@ global max_rank::Int64
 global silent::Bool
 global rotation::Bool
 global element_rotation::Bool
+global damage_models::Vector{String}
+global material_models::Vector{String}
 ##########################
 
 """
@@ -178,6 +184,8 @@ function initialize_data()
     element_rotation = false
     global active_models
     active_models = Dict{String,Module}()
+    global material_models = []
+    global damage_models = []
 end
 ###################################
 
@@ -1080,6 +1088,32 @@ function get_output_frequency()
 end
 
 """
+    get_damage_models()
+
+This function returns the `damage_models` variable.
+
+# Returns
+- `damage_models`::Any: The value of the `damage_models` variable.
+"""
+function get_damage_models()
+    global damage_models
+    return damage_models
+end
+
+"""
+    get_material_models()
+
+This function returns the `material_models` variable.
+
+# Returns
+- `material_models`::Any: The value of the `material_models` variable.
+"""
+function get_material_models()
+    global material_models
+    return material_models
+end
+
+"""
     loc_to_glob(range::UnitRange{Int64})
 
 Converts the local index to the global index.
@@ -1530,6 +1564,36 @@ Sets the output frequency globally.
 """
 function set_output_frequency(value)
     global output_frequency = value
+end
+
+"""
+    set_damage_models(value)
+
+Sets the damage models globally.
+
+# Arguments
+- `value`: The value to set as the damage models.
+"""
+function set_damage_models(value)
+    global damage_models
+    if !(value in damage_models)
+        push!(damage_models, value)
+    end
+end
+
+"""
+    set_material_models(value)
+
+Sets the material models globally.
+
+# Arguments
+- `value`: The value to set as the material models.
+"""
+function set_material_models(value)
+    global material_models
+    if !(value in material_models)
+        push!(material_models, value)
+    end
 end
 
 """

@@ -27,24 +27,12 @@ Initialize damage model fields
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_fields(datamanager::Module, params::Dict)
+function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Damage", Float64, 1)
-    block_list = datamanager.get_block_list()
+
     anisotropic_damage = false
 
-    for block_id in block_list
-        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
-            continue
-        end
-        damage_name = params["Blocks"]["block_$block_id"]["Damage Model"]
-        damage_parameter = params["Models"]["Damage Models"][damage_name]
-        anisotropic_damage = haskey(damage_parameter, "Anisotropic Damage")
-    end
-    if anisotropic_damage
-        datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
-        # datamanager.create_node_field("Damage Anisotropic", Float64, dof)
-    end
     nlist = datamanager.get_field("Neighborhoodlist")
     inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     return datamanager
@@ -74,6 +62,7 @@ function compute_model(
     block::Int64,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
 
     mod = datamanager.get_model_module(model_param["Damage Model"])
@@ -285,6 +274,9 @@ end
 
 function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Damage Model")
+    if haskey(model_param, "Anisotropic Damage")
+        datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
+    end
     mod = Set_modules.create_module_specifics(
         model_param["Damage Model"],
         module_list,
