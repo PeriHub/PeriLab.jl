@@ -3,17 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Pre_calculation
-include("bond_deformation.jl")
-include("bond_deformation_gradient.jl")
-include("deformation_gradient.jl")
-include("shape_tensor.jl")
+
+include("../../Core/Module_inclusion/set_Modules.jl")
+using .Set_modules
+global module_list = Set_modules.find_module_files(@__DIR__, "pre_calculation_name")
+Set_modules.include_files(module_list)
 
 using TimerOutputs
-using .Bond_Deformation
-using .Bond_Deformation_Gradient
-using .Deformation_Gradient
-using .Shape_Tensor
-
 
 export compute
 export init_model
@@ -30,6 +26,8 @@ function init_fields(datamanager::Module)
         datamanager.create_node_field("Deformed Coordinates", Float64, dof)
     deformed_coorN = copy(datamanager.get_field("Coordinates"))
     deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
+    datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
+    datamanager.create_bond_field("Deformed Bond Length", Float64, 1)
     datamanager.create_node_field("Displacements", Float64, dof)
     return datamanager
 end
@@ -51,18 +49,11 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     ## TODO options change
     #model_param = datamanager.get_properties(block, "Material Model") ??
     if options["Deformed Bond Geometry"]
-        datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
-        datamanager.create_bond_field("Deformed Bond Length", Float64, 1)
-        datamanager.set_model_module("Deformed Bond Geometry", Bond_Deformation)
+
     end
 
     if options["Deformation Gradient"]
-        datamanager.create_constant_node_field(
-            "Deformation Gradient",
-            Float64,
-            "Matrix",
-            dof,
-        )
+
         options["Shape Tensor"] = true
         options["Deformed Bond Geometry"] = true
         # order is important
@@ -72,25 +63,7 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     end
 
     if options["Bond Associated Deformation Gradient"]
-        datamanager.create_constant_bond_field(
-            "Bond Associated Deformation Gradient",
-            Float64,
-            "Matrix",
-            dof,
-        )
-        datamanager.create_constant_node_field(
-            "Deformation Gradient",
-            Float64,
-            "Matrix",
-            dof,
-        )
-        datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
-        datamanager.create_constant_node_field(
-            "Weighted Deformation Gradient",
-            Float64,
-            "Matrix",
-            dof,
-        )
+
         options["Deformed Bond Geometry"] = true
         # order is important
         datamanager.set_model_module("Deformed Bond Geometry", Bond_Deformation)
@@ -100,13 +73,7 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
         )
     end
     if options["Shape Tensor"]
-        datamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
-        datamanager.create_constant_node_field(
-            "Inverse Shape Tensor",
-            Float64,
-            "Matrix",
-            dof,
-        )
+
         # order is important
         datamanager.set_model_module("Deformed Bond Geometry", Bond_Deformation)
         datamanager.set_model_module("Shape Tensor", Shape_Tensor)

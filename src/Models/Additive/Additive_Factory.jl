@@ -8,7 +8,7 @@ using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "additive_name")
 Set_modules.include_files(module_list)
 include("../../Support/helpers.jl")
-
+using TimerOutputs
 using .Helpers: find_inverse_bond_id
 export compute_model
 export init_model

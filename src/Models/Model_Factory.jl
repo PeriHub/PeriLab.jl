@@ -134,6 +134,8 @@ function compute_models(
     end
 
     active = datamanager.get_field("Active")
+    # TODO check if pre calculation should run block wise. For mixed model applications it makes sense.
+    # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
         for block in eachindex(block_nodes)
@@ -143,7 +145,6 @@ function compute_models(
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
             end
             if datamanager.check_property(block, active_model_name)
-
                 @timeit to "compute $active_model_name model" datamanager =
                     active_model.compute_model(
                         datamanager,
@@ -203,7 +204,7 @@ function compute_models(
             update_nodes =
                 block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
         end
-        if options["Thermal Models"]
+        if "Thermal" in options["Models"]
             if datamanager.check_property(block, "Thermal Model")
                 @timeit to "compute_model" datamanager = Thermal.compute_model(
                     datamanager,
@@ -215,7 +216,7 @@ function compute_models(
             end
         end
 
-        if options["Material Models"]
+        if "Material" in options["Models"]
             for material_model in datamanager.get_material_models()
                 @timeit to "synch_field" datamanager =
                     Material.synch_field(datamanager, material_model, synchronise_field)
@@ -381,7 +382,7 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
     blocks = datamanager.get_block_list()
     prop_keys = datamanager.init_property()
     models_options = datamanager.get_models_options()
-
+    ## TODO Pre calculation must be improved
     datamanager.set_models_options(get_models_option(params, models_options))
 
     for block in blocks

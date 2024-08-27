@@ -5,6 +5,7 @@
 module Axissymmetric
 export compute
 export Pre_calculation_name
+
 """
     pre_calculation_name()
 
@@ -18,7 +19,7 @@ Gives the pre_calculation name. It is needed for comparison with the yaml input 
 Example:
 ```julia
 println(pre_calculation_name())
-"Pre_calculation Template"
+"Axis Symmetric"
 ```
 """
 function pre_calculation_name()
@@ -26,7 +27,32 @@ function pre_calculation_name()
 end
 
 """
-    pre_calculation(datamanager, nodes, Pre_calculation_parameter, time, dt)
+    init_model(datamanager, nodes, corrosion_parameter)
+
+Inits the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `corrosion parameter::Dict(String, Any)`: Dictionary with corrosion parameter.
+- `block::Int64`: The current block.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+
+"""
+function init_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    corrosion_parameter::Dict,
+    block::Int64,
+)
+
+    return datamanager
+end
+
+
+"""
+    compute(datamanager, nodes, Pre_calculation_parameter, time, dt)
 
 This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 

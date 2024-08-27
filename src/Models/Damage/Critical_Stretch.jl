@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_stretch
-include("../Pre_calculation/Pre_Calculation_Factory.jl")
-using .Pre_calculation
+
 export compute_model
 export compute_damage_pre_calculation
 export damage_name
