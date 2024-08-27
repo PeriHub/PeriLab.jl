@@ -4,6 +4,7 @@
 
 module Data_manager
 using MPI
+using DataStructures: OrderedDict
 
 export add_active_model
 export create_bond_field
@@ -72,7 +73,7 @@ export synch_manager
 ##########################
 # Variables
 ##########################
-global active_models::Dict{String,Module}
+global active_models::OrderedDict{String,Module}
 global nnodes::Int64
 global num_controller::Int64
 global num_responder::Int64
