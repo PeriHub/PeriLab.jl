@@ -111,19 +111,19 @@ function compute_damage(
     end
 
     bond_energy::Float64 = 0.0
-    norm_displacement::Float64 = 0.0
     x_vector::Vector{Float64} = @SVector zeros(Float64, dof)
     x_vector[1] = 1.0
 
     neighbor_bond_force::Vector{Float64} = @SVector zeros(Float64, dof)
     projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
-    relative_displacement_vector = deformed_bond .- undeformed_bond
+    relative_displacement_matrix = deformed_bond .- undeformed_bond
     for iID in nodes
-        for (jID, neighborID) in enumerate(nlist[iID])
-            @views relative_displacement = relative_displacement_vector[iID][jID, :]
-
-            norm_displacement = norm(relative_displacement)
+        @views relative_displacement_vector = relative_displacement_matrix[iID]
+        @views norm_displacement_vector = norm.(relative_displacement_vector)
+        @views nlist_temp = nlist[iID]
+        for jID in eachindex(nlist_temp)
+            @views norm_displacement = norm_displacement_vector[jID]
 
             if norm_displacement == 0 || (
                 tension &&
@@ -131,6 +131,9 @@ function compute_damage(
             )
                 continue
             end
+
+            @views neighborID = nlist_temp[jID]
+            @views relative_displacement = relative_displacement_vector[jID, :]
 
             # check if the bond also exist at other node, due to different horizons
             try
