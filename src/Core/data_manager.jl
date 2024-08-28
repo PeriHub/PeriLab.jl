@@ -1150,6 +1150,8 @@ function init_property()
             "Damage Model" => Dict{String,Any}(),
             "Material Model" => Dict{String,Any}(),
             "Additive Model" => Dict{String,Any}(),
+            "Corrosion Model" => Dict{String,Any}(),
+            "Pre Calculation Model" => Dict{String,Any}(),
         )
     end
     return collect(keys(properties[block_list[1]]))
