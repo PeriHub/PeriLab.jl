@@ -44,7 +44,7 @@ get_max_rank
 get_rotation
 get_element_rotation
 loc_to_glob
-init_property
+init_properties
 set_block_list
 set_crit_values_matrix
 set_aniso_crit_values

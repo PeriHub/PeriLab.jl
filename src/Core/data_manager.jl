@@ -44,7 +44,7 @@ export get_material_model
 export get_output_frequency
 export get_rotation
 export get_element_rotation
-export init_property
+export init_properties
 export set_accuracy_order
 export set_block_list
 export set_crit_values_matrix
@@ -85,7 +85,7 @@ global block_list::Vector{Int64}
 global distribution::Vector{Int64}
 global crit_values_matrix::Array{Float64,3}
 global aniso_crit_values::Dict{Int64,Vector{Float64}}
-global properties::Dict{Int64,Dict{String,Any}}
+global properties::OrderedDict{Int64,OrderedDict{String,Any}}
 global glob_to_loc::Dict{Int64,Int64}
 global fields::Dict{DataType,Dict{String,Any}}
 global field_array_type::Dict{String,Dict{String,Any}}
@@ -1133,25 +1133,25 @@ function loc_to_glob(range::UnitRange{Int64})
 end
 
 """
-    init_property()
+    init_properties()
 
-This function initializes the properties dictionary.
+This function initializes the properties dictionary. Order of dictionary defines, in which order the models are called later on.
 
 # Returns
-- `keys(properties[1])`: The keys of the properties dictionary.
+- `keys(properties[1])`: The keys of the properties dictionary in defined order for the Model_Factory.jl.
 """
-function init_property()
+function init_properties()
     global properties
 
     block_list = get_block_list()
     for iblock in block_list
-        properties[iblock] = Dict{String,Dict}(
-            "Thermal Model" => Dict{String,Any}(),
-            "Damage Model" => Dict{String,Any}(),
-            "Material Model" => Dict{String,Any}(),
+        properties[iblock] = OrderedDict{String,Dict}(
             "Additive Model" => Dict{String,Any}(),
-            "Corrosion Model" => Dict{String,Any}(),
+            "Damage Model" => Dict{String,Any}(),
             "Pre Calculation Model" => Dict{String,Any}(),
+            "Thermal Model" => Dict{String,Any}(),
+            "Corrosion Model" => Dict{String,Any}(),
+            "Material Model" => Dict{String,Any}(),
         )
     end
     return collect(keys(properties[block_list[1]]))
