@@ -95,13 +95,13 @@ Compute the pre-calculation.
 function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    model_param::Dict,
+    model_param::Union{Dict,OrderedDict},
     time::Float64,
     dt::Float64,
     to::TimerOutput,
 )
 
-    for (pre_calculation_model, active) in pairs(models_options)
+    for (pre_calculation_model, active) in pairs(model_param)
         if !active
             continue
         end
