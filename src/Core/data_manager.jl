@@ -32,7 +32,7 @@ export get_nnsets
 export get_nsets
 export get_nnodes
 export get_num_elements
-export get_models_options
+export get_pre_calculation_order
 export get_properties
 export get_property
 export get_rank
@@ -60,7 +60,7 @@ export set_num_controller
 export set_nset
 export set_num_elements
 export set_num_responder
-export set_models_options
+export set_pre_calculation_order
 export set_property
 export set_rank
 export set_max_rank
@@ -93,10 +93,10 @@ global field_types::Dict{String,DataType}
 global fields_to_synch::Dict{String,Any}
 global filedirectory::String
 global inverse_nlist::Vector{Dict{Int64,Int64}}
-global model_modules::Dict{String,Module}
+global model_modules::OrderedDict{String,Module}
 global nsets::Dict{String,Vector{Int}}
 global overlap_map::Dict{Int64,Any}
-global models_options::Dict{String,Bool}
+global pre_calculation_order::Vector{String}
 global output_frequency::Vector{Dict}
 global accuracy_order::Int64
 global rank::Int64
@@ -154,19 +154,16 @@ function initialize_data()
     filedirectory = ""
     global inverse_nlist
     inverser_nlist = []
-    global model_modules
-    model_modules = Dict()
-    global nsets
-    nsets = Dict()
-    global overlap_map
-    overlap_map = Dict()
-    global models_options
-    models_options = Dict(
-        "Deformed Bond Geometry" => true,
-        "Deformation Gradient" => false,
-        "Shape Tensor" => false,
-        "Bond Associated Deformation Gradient" => false,
-    )
+
+    global model_modules = OrderedDict{String,Module}()
+    global nsets = Dict()
+    global overlap_map = Dict()
+    global pre_calculation_order = [
+        "Deformed Bond Geometry",
+        "Shape Tensor",
+        "Deformation Gradient",
+        "Bond Associated Deformation Gradient",
+    ]
     global output_frequency
     output_frequency = []
     global accuracy_order
@@ -909,20 +906,14 @@ function get_synch_fields()
 end
 
 """
-    get_models_options()
+    get_pre_calculation_order()
 
-Get the models options
+return the order of the pre calculation.
 """
-function get_models_options()
-    global models_options
-    if models_options["Deformation Gradient"]
-        models_options["Shape Tensor"] = true
-        models_options["Deformed Bond Geometry"] = true
-    end
-    if models_options["Bond Associated Deformation Gradient"]
-        models_options["Deformed Bond Geometry"] = true
-    end
-    return models_options
+function get_pre_calculation_order()
+    global pre_calculation_order
+
+    return pre_calculation_order
 end
 
 """
@@ -1412,15 +1403,15 @@ function set_overlap_map(topo)
 end
 
 """
-    set_models_options(values::Dict{String,Bool})
+    set_pre_calculation_order(values::Vector{String})
 
-Sets the models options globally.
+Sets the order of the pre calculation options globally.
 
 # Arguments
-- `values::Dict{String,Bool}`: The models options.
+- `values::Vector{String}`: The order of models.
 """
-function set_models_options(values::Dict{String,Bool})
-    global models_options = values
+function set_pre_calculation_order(values::Vector{String})
+    global pre_calculation_order = values
 end
 
 

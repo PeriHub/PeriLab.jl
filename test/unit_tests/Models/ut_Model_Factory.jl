@@ -12,7 +12,7 @@ using Test
     test_data_manager.initialize_data()
     block_list = [1, 2, 3]
     test_data_manager.set_block_list(block_list)
-    prop_keys = test_data_manager.init_property()
+    prop_keys = test_data_manager.init_properties()
     params = Dict(
         "Blocks" => Dict(
             "block_1" => Dict("Material Model" => "a"),

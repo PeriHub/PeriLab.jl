@@ -18,7 +18,7 @@ Gives the pre_calculation name. It is needed for comparison with the yaml input 
 # Arguments
 
 # Returns
-- `name::String`: The name of the Pre_calculation.
+- `name::String`: The name of the Pre_Calculation.
 
 Example:
 ```julia

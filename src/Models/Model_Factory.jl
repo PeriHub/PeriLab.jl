@@ -22,7 +22,7 @@ using .Additive
 using .Corrosion
 using .Damage
 using .Material
-using .Pre_calculation
+using .Pre_Calculation
 using .Thermal
 # in future FEM will be outside of the Model_Factory
 using .FEM
@@ -63,11 +63,12 @@ function init_models(
     #        rotNP1 = copy(rotN)
     #    end
     #end
+    @info "Check pre calculation models are initialized for material models."
+    datamanager = Pre_Calculation.check_dependencies(datamanager, block_nodes)
 
     for model_name in solver_options["Models"]
         datamanager = add_model(datamanager, model_name)
     end
-    # TODO order of models
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         @info "Init $active_model_name "
@@ -138,6 +139,9 @@ function compute_models(
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
+        if active_model_name == "Damage Model"
+            continue
+        end
         for block in eachindex(block_nodes)
             nodes = block_nodes[block]
             active_nodes = view(nodes, find_active(active[nodes]))
@@ -159,8 +163,10 @@ function compute_models(
     end
 
     update_nodes = datamanager.get_field("Update List")
+    update_list = datamanager.get_field("Update List")
+
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
-        if active_model_name == "Additve Model" || active_model_name == "Damage Model"
+        if active_model_name == "Additve Model"
             continue
         end
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
@@ -172,6 +178,10 @@ function compute_models(
             end
             active_nodes, update_nodes =
                 get_active_update_nodes(active, update_list, block_nodes, block)
+
+            if active_model_name == "Damage Model"
+                update_list[nodes] .= false
+            end
             if datamanager.check_property(block, active_model_name)
 
                 @timeit to "compute $active_model_name model" datamanager =
@@ -191,8 +201,8 @@ function compute_models(
 
 
     @timeit to "pre_calculation" datamanager =
-        Pre_calculation.compute(datamanager, block_nodes)
-    @timeit to "pre_synchronize" Pre_calculation.synchronize(
+        Pre_Calculation.compute(datamanager, block_nodes)
+    @timeit to "pre_synchronize" Pre_Calculation.synchronize(
         datamanager,
         datamanager.get_models_options(),
         synchronise_field,
@@ -212,6 +222,7 @@ function compute_models(
                     datamanager.get_properties(block, "Thermal Model"),
                     time,
                     dt,
+                    to,
                 )
             end
         end
@@ -271,72 +282,15 @@ function compute_models(
 end
 
 """
-    compute_damage_pre_calculation(datamanager::Module, options::Dict, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
-
-Compute the damage pre calculation
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `block::Int64`: Block number
-- `synchronise_field`: Synchronise function to distribute parameter through cores.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-- `to::TimerOutput`: The timer output.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-"""
-function compute_damage_pre_calculation(
-    datamanager::Module,
-    options::Dict,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
-
-    if options["Thermal Models"]
-        @timeit to "thermal_model" datamanager = Thermal.compute_model(
-            datamanager,
-            nodes,
-            datamanager.get_properties(block, "Thermal Model"),
-            time,
-            dt,
-        )
-    end
-
-    if options["Material Models"]
-        @timeit to "compute_model" datamanager = Material.compute_model(
-            datamanager,
-            nodes,
-            datamanager.get_properties(block, "Material Model"),
-            time,
-            dt,
-            to,
-        )
-    end
-    datamanager = Damage.compute_damage_pre_calculation(
-        datamanager,
-        nodes,
-        block,
-        datamanager.get_properties(block, "Damage Model"),
-        time,
-        dt,
-    )
-    update_list = datamanager.get_field("Update List")
-    update_list[nodes] .= false
-    return datamanager
-end
-
-"""
     get_block_model_definition(params::Dict, block_id::Int64, prop_keys::Vector{String}, properties)
 
-Get block model definition
+Get block model definition.
+
+Special case for pre calculation. It is set to all blocks, if no block definition is defined, but pre calculation is.
 
 # Arguments
 - `params::Dict`: Parameters.
-- `block_id::Int64`: Block id.
+- `blocks::Vector{Int64}`: List of block id's.
 - `prop_keys::Vector{String}`: Property keys.
 - `properties`: Properties function.
 # Returns
@@ -344,12 +298,16 @@ Get block model definition
 """
 function get_block_model_definition(
     params::Dict,
-    block_id::Int64,
+    blocks::Vector{Int64},
     prop_keys::Vector{String},
     properties,
 )
     # properties function from datamanager
-    if haskey(params["Blocks"], "block_" * string(block_id))
+    pre_calculation_all_blocks::Bool = true
+    for block_id in blocks
+        if !haskey(params["Blocks"], "block_" * string(block_id))
+            continue
+        end
         block = params["Blocks"]["block_"*string(block_id)]
         for model in prop_keys
             if haskey(block, model)
@@ -358,7 +316,23 @@ function get_block_model_definition(
                     model,
                     get_model_parameter(params, model, block[model]),
                 )
+                if model == "Pre Calculation Model"
+                    pre_calculation_all_blocks = false
+                end
             end
+        end
+    end
+    # makes sure that pre calculation exists everywhere
+    # material needs are set elsewhere
+    # maybe not important and can be thrown away
+    # TODO check if realy needed
+    if haskey(params["Models"], "Pre Calculation Models") && pre_calculation_all_blocks
+        for block_id in blocks
+            properties(
+                block_id,
+                model,
+                get_model_parameter(params, model, "Pre Calculation Model"),
+            )
         end
     end
     return properties
@@ -378,16 +352,10 @@ Read properties of material.
 - `datamanager::Data_manager`: Datamanager.
 """
 function read_properties(params::Dict, datamanager::Module, material_model::Bool)
-    datamanager.init_property()
+    datamanager.init_properties()
     blocks = datamanager.get_block_list()
-    prop_keys = datamanager.init_property()
-    models_options = datamanager.get_models_options()
-    ## TODO Pre calculation must be improved
-    datamanager.set_models_options(get_models_option(params, models_options))
-
-    for block in blocks
-        get_block_model_definition(params, block, prop_keys, datamanager.set_properties)
-    end
+    prop_keys = datamanager.init_properties()
+    get_block_model_definition(params, blocks, prop_keys, datamanager.set_properties)
     if material_model
         dof = datamanager.get_dof()
         for block in blocks
@@ -438,11 +406,111 @@ Includes the models in the datamanager and checks if the model definition is cor
 function add_model(datamanager::Module, model_name::String)
     # TODO test missing
     try
-        datamanager.add_active_model(model_name * " Model", eval(Meta.parse(model_name)))
+        # to catch "Pre_Calculation"
+        datamanager.add_active_model(
+            replace(model_name, "_" => " ") * " Model",
+            eval(Meta.parse(model_name)),
+        )
         return datamanager
     catch
         @error "Model $model_name is not specified and cannot be included."
         return nothing
     end
 end
+
+
+"""
+    get_models_option(params, options)
+
+Process models-related options based on the provided parameters.
+
+This function processes models-related options based on the parameters dictionary and updates the options dictionary accordingly.
+
+## Arguments
+
+- `params::Dict`: A dictionary containing various parameters, including models-related information.
+
+- `options::Dict`: A dictionary containing options to be updated based on the models parameters.
+
+## Returns
+
+- `updated_options::Dict`: A dictionary containing updated options based on the models parameters.
+
+## Errors
+
+- If the 'Pre Calculation' section exists in the 'Models' block but does not contain required options, an error message is logged.
+
+- If a material model is missing the 'Material Model' specification, an error message is logged.
+
+## Example
+
+```julia
+params = Dict(
+    "Models" => Dict(
+        "Pre Calculation" => Dict(
+            "Option1" => true,
+            "Option2" => false
+        ),
+        "Material Models" => Dict(
+            1 => Dict(
+                "Material Model" => "Correspondence"
+            ),
+            2 => Dict(
+                "Material Model" => "Bond Associated"
+            )
+        )
+    )
+)
+
+options = Dict(
+    "Option1" => false,
+    "Option2" => true
+)
+
+updated_options = get_models_option(params, options)
+println("Updated Options: ", updated_options)
+# TODO block wise check Pre Calculation
+# check must be here, because of the mixed nature (pre calculation and material or thermal)
+
+"""
+
+
+#function get_models_option(params::Dict, options::Dict)
+#    if haskey(params["Models"], "Pre Calculation")
+#        for option in keys(options)
+#            if haskey(params["Models"]["Pre Calculation"], option)
+#                options[option] = params["Models"]["Pre Calculation"][option]
+#            end
+#        end
+#    end
+#    if !haskey(params["Models"], "Material Models")
+#        @warn "Material Models are missing!"
+#        return options
+#    end
+#    materials = params["Models"]["Material Models"]
+#    for material in eachindex(materials)
+#        if haskey(materials[material], "Material Model")
+#            options["Deformed Bond Geometry"] = true
+#            if occursin("Correspondence", materials[material]["Material Model"])
+#                if haskey(materials[material], "Bond Associated") &&
+#                   !(options["Bond Associated Deformation Gradient"])
+#                    # if its activated it stays that way
+#                    options["Bond Associated Deformation Gradient"] =
+#                        materials[material]["Bond Associated"]
+#                end
+#                if !(options["Bond Associated Deformation Gradient"])
+#                    options["Shape Tensor"] = true
+#                    options["Deformation Gradient"] = true
+#                end
+#            end
+#        else
+#            @error "No Material Model: '$material' has been defined"
+#            return nothing
+#        end
+#
+#    end
+#    return options
+#end
+
+
 end

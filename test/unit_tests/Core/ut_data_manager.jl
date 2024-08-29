@@ -459,7 +459,7 @@ end
 
 @testset "ut_properties" begin
     test_data_manager.set_block_list([2, 3, 1, 1])
-    test_data_manager.init_property()
+    test_data_manager.init_properties()
     @test length(test_data_manager.properties) == 3
     @test isnothing(test_data_manager.get_property(1, "Material Model", "E"))
     test_data_manager.set_property(1, "Material Model", "E", 3)

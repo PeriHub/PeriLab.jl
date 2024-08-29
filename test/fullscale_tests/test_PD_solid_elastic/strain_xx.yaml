@@ -18,11 +18,15 @@ PeriLab:
         Material Model: "PD Solid Elastic"
         Bulk Modulus: 3.5e+3
         Shear Modulus: 2.15e3
+    Pre Calculation Models:
+      Pre_1:
+        Deformed Bond Geometry: true
   Blocks:
     block_1:
       Material Model: "Mat_1"
       Density: 2.7e-9
       Horizon: 2.1
+      Pre Calculation Model: "Pre_1"
     block_2:
       Material Model: "Mat_2"
       Density: 2.7e-9

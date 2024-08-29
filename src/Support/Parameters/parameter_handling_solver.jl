@@ -166,7 +166,7 @@ function get_model_options(params::Dict)
                     "Additive"
                 end
                 if true
-                    "Pre_calculation"
+                    "Pre_Calculation"
                 end  # immer true
                 if damage
                     "Damage"

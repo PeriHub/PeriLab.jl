@@ -25,7 +25,10 @@ using Dierckx
         Dict("Degree" => [1, 2, 3, 5]),
     ) == [1, 2, 3, 5]
 end
-
+###
+# correct spot
+###
+"""
 @testset "get_models_option" begin
     params = Dict(
         "Models" => Dict(
@@ -164,7 +167,7 @@ end
         "Bond Associated Deformation Gradient" => false,
     )
 end
-
+"""
 @testset "ut_get_element_type" begin
     @test isnothing(PeriLab.Solver.Parameter_Handling.get_element_type(Dict()))
     @test PeriLab.Solver.Parameter_Handling.get_element_type(
