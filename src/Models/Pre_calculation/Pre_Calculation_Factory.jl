@@ -57,7 +57,10 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
                 module_list,
                 "pre_calculation_name",
             )
+
             datamanager.set_model_module(active_model_name, mod)
+            datamanager = mod.init_model(datamanager, nodes, model_param)
+
         end
     end
 
