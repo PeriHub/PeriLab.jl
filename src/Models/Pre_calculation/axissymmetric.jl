@@ -26,15 +26,16 @@ function pre_calculation_name()
     return "Axis Symmetric"
 end
 
+
 """
-    init_model(datamanager, nodes, corrosion_parameter)
+    init_model(datamanager, nodes, parameter)
 
 Inits the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `corrosion parameter::Dict(String, Any)`: Dictionary with corrosion parameter.
+- `parameter::Dict(String, Any)`: Dictionary with parameter.
 - `block::Int64`: The current block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
@@ -43,7 +44,7 @@ Inits the bond-based corrosion model. This template has to be copied, the file r
 function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    corrosion_parameter::Dict,
+    parameter::Dict,
     block::Int64,
 )
 

@@ -8,7 +8,7 @@ export compute_stresses
 export correspondence_name
 export fe_support
 export init_model
-export init_model
+
 
 """
   fe_support()

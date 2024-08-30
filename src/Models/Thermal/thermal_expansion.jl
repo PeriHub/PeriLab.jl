@@ -17,7 +17,7 @@ using .Bond_Deformation_Gradient
 
 export compute_model
 export thermal_model_name
-export init_thermal_model
+export init_model
 """
     thermal_model_name()
 
@@ -40,7 +40,7 @@ end
 
 
 """
-    init_thermal_model(datamanager, nodes, thermal_parameter)
+    init_model(datamanager, nodes, thermal_parameter)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -53,7 +53,7 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_thermal_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,
@@ -83,6 +83,7 @@ function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
 )

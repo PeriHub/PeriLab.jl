@@ -40,8 +40,6 @@ function init_fields(datamanager::Module)
     return datamanager
 end
 
-
-
 """
     compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 

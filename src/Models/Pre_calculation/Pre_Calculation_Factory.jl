@@ -59,7 +59,13 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
             )
 
             datamanager.set_model_module(active_model_name, mod)
-            datamanager = mod.init_model(datamanager, nodes, model_param)
+            # TODO right now no additional information is needed
+            # the parameter Dict is a kind of placeholder
+            datamanager = mod.init_model(
+                datamanager,
+                nodes,
+                Dict(datamanager.get_properties(block, "Pre Calculation Model")),
+            )
 
         end
     end

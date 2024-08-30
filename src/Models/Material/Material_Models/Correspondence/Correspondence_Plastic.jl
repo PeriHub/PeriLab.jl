@@ -8,7 +8,7 @@ using LinearAlgebra
 using StaticArrays
 export fe_support
 export init_model
-export init_model
+
 """
   fe_support()
 
