@@ -159,23 +159,25 @@ function fields_for_local_synchronization(model_param::Dict)
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
-Compute the forces.
+Computes the material models
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
-- `model_param::Dict`: The material parameter.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
+- `datamanager::Module`: The datamanager
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `model_param::Dict`: The model parameters
+- `block::Int64`: The block
+- `time::Float64`: The current time
+- `dt::Float64`: The time step
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Module`: The datamanager
 """
 function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
     to::TimerOutput,

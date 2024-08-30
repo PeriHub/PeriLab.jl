@@ -45,6 +45,7 @@ export get_output_frequency
 export get_rotation
 export get_element_rotation
 export init_properties
+export remove_active_model
 export set_accuracy_order
 export set_block_list
 export set_crit_values_matrix
@@ -180,8 +181,7 @@ function initialize_data()
     rotation = false
     global element_rotation
     element_rotation = false
-    global active_models
-    active_models = Dict{String,Module}()
+    global active_models = OrderedDict{String,Module}()
     global material_models = []
     global damage_models = []
 end
@@ -189,11 +189,12 @@ end
 
 
 """
-    add_active_model(module_name::Module)
+    add_active_model(key::String, module_name::Module)
 
-Add the main modules to an array which are active.
+Add the main modules to an OrderedDict which are active.
 
 # Arguments
+- `key::String`: Name of the model.
 - `active_module::Module`: Module of the active models.
 """
 function add_active_model(key::String, active_module::Module)
@@ -1146,6 +1147,19 @@ function init_properties()
         )
     end
     return collect(keys(properties[block_list[1]]))
+end
+
+"""
+    remove_active_model(module_name::Module)
+
+Removes main modules from OrderedDict.
+
+# Arguments
+- `key::String`: Key of the entry.
+"""
+function remove_active_model(key::String)
+    global active_models
+    delete!(active_models, key)
 end
 
 """

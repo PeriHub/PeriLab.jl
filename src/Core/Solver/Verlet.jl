@@ -468,7 +468,6 @@ function run_solver(
     end
     active = datamanager.get_field("Active")
 
-
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     start_time::Float64 = solver_options["Initial Time"]
@@ -513,7 +512,7 @@ function run_solver(
                 block_nodes,
                 dt,
                 step_time,
-                solver_options,
+                solver_options["Models"],
                 synchronise_field,
                 to,
             )

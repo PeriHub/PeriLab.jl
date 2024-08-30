@@ -91,20 +91,25 @@ function fields_for_local_synchronization((model_param::Dict))
 end
 
 """
-    compute(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}})
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
-Compute the pre-calculation.
+Computes the pre calculation models
 
 # Arguments
-- `datamanager`: Datamanager.
-- `block_nodes::Dict{Int64,Vector{Int64}}`: List of block nodes.
+- `datamanager::Module`: The datamanager
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `model_param::Dict`: The model parameters
+- `block::Int64`: The block
+- `time::Float64`: The current time
+- `dt::Float64`: The time step
 # Returns
-- `datamanager`: Datamanager.
+- `datamanager::Module`: The datamanager
 """
 function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Union{Dict,OrderedDict},
+    block::Int64,
     time::Float64,
     dt::Float64,
     to::TimerOutput,

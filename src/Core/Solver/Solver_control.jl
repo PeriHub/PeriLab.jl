@@ -101,6 +101,9 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     else
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)
     end
+
+    datamanager = remove_models(datamanager, solver_options["Models"])
+
     @debug "Finished Init Solver"
     return block_nodes, bcs, datamanager, solver_options
 end
@@ -291,6 +294,28 @@ function synchronise_field(
     end
     @error "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
     return nothing
+end
+
+"""
+    remove_models(datamanager::Module, solver_options::Vector{String})
+
+Sets the active models to false if they are deactivated in the solver. They can be active, because they are defined as model and in the blocks.
+
+# Arguments
+- `datamanager::Module`: The MPI communicator
+- `solver_options::Vector{String}`: A dictionary of fields
+# Returns
+- `datamanager`
+"""
+function remove_models(datamanager::Module, solver_options::Vector{String})
+
+    check = replace.(solver_options .* " Model", "_" => " ")
+    for active_model_name in keys(datamanager.get_active_models())
+        if !(active_model_name in check)
+            datamanager.remove_active_model(active_model_name)
+        end
+    end
+    return datamanager
 end
 
 end

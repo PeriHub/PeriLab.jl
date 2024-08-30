@@ -94,7 +94,7 @@ function init_models(
 end
 
 """
-    compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Dict, synchronise_field, to::TimerOutput)
+    compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field, to::TimerOutput)
 
 Computes the models models
 
@@ -102,8 +102,8 @@ Computes the models models
 - `datamanager::Module`: The datamanager
 - `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
 - `dt::Float64`: The time step
-- `time::Float64`: The current time
-- `options::Dict`: The options
+- `time::Float64`: The current time of the solver
+- `options::Vector{String}`: The options
 - `synchronise_field`: The synchronise field
 - `to::TimerOutput`: The timer output
 # Returns
@@ -114,7 +114,7 @@ function compute_models(
     block_nodes::Dict{Int64,Vector{Int64}},
     dt::Float64,
     time::Float64,
-    options::Dict,
+    options::Vector{String},
     synchronise_field,
     to::TimerOutput,
 )
@@ -139,6 +139,7 @@ function compute_models(
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
+
         if active_model_name == "Damage Model"
             continue
         end
@@ -155,6 +156,7 @@ function compute_models(
                         datamanager,
                         active_nodes,
                         datamanager.get_properties(block, active_model_name),
+                        block,
                         time,
                         dt,
                         to,
@@ -190,6 +192,7 @@ function compute_models(
                         datamanager,
                         active_nodes,
                         datamanager.get_properties(block, active_model_name),
+                        block,
                         time,
                         dt,
                         to,
@@ -198,7 +201,7 @@ function compute_models(
         end
     end
 
-    if "Material" in options["Models"]
+    if "Material" in options
         @timeit to "distribute_force_densities" datamanager =
             Material.distribute_force_densities(datamanager, active_nodes)
     end

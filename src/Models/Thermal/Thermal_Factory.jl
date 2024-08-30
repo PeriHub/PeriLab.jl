@@ -37,14 +37,15 @@ end
 
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64,    to::TimerOutput)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
-Compute the thermal model
+Computes the thermal models
 
 # Arguments
 - `datamanager::Module`: The datamanager
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
 - `model_param::Dict`: The model parameters
+- `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 # Returns
@@ -54,6 +55,7 @@ function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
     to::TimerOutput,
