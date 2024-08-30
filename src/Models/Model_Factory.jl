@@ -149,6 +149,7 @@ function compute_models(
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
             end
             if datamanager.check_property(block, active_model_name)
+                # synch
                 @timeit to "compute $active_model_name model" datamanager =
                     active_model.compute_model(
                         datamanager,
@@ -183,7 +184,7 @@ function compute_models(
                 update_list[nodes] .= false
             end
             if datamanager.check_property(block, active_model_name)
-
+                # TODO synch
                 @timeit to "compute $active_model_name model" datamanager =
                     active_model.compute_model(
                         datamanager,
@@ -191,91 +192,45 @@ function compute_models(
                         datamanager.get_properties(block, active_model_name),
                         time,
                         dt,
+                        to,
                     )
             end
         end
     end
 
-    # active_nodes::Vector{Int64} = []
-    # update_nodes::Vector{Int64} = []
-
-
-    @timeit to "pre_calculation" datamanager =
-        Pre_Calculation.compute(datamanager, block_nodes)
-    @timeit to "pre_synchronize" Pre_Calculation.synchronize(
-        datamanager,
-        datamanager.get_models_options(),
-        synchronise_field,
-    )
-    for block in eachindex(block_nodes)
-        active_nodes, update_nodes =
-            get_active_update_nodes(active, update_list, block_nodes, block)
-        if fem_option
-            update_nodes =
-                block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
-        end
-        if "Thermal" in options["Models"]
-            if datamanager.check_property(block, "Thermal Model")
-                @timeit to "compute_model" datamanager = Thermal.compute_model(
-                    datamanager,
-                    update_nodes,
-                    datamanager.get_properties(block, "Thermal Model"),
-                    time,
-                    dt,
-                    to,
-                )
-            end
-        end
-
-        if "Material" in options["Models"]
-            for material_model in datamanager.get_material_models()
-                @timeit to "synch_field" datamanager =
-                    Material.synch_field(datamanager, material_model, synchronise_field)
-                #TODO: Check that same fields in seperate damage models arent being synched twice
-            end
-            if datamanager.check_property(block, "Material Model")
-                model_param = datamanager.get_properties(block, "Material Model")
-                @timeit to "bond_forces" datamanager = Material.compute_model(
-                    datamanager,
-                    update_nodes,
-                    model_param,
-                    time,
-                    dt,
-                    to,
-                )
-                #TODO: I think this needs to stay here as we need the active_nodes not the update_nodes
-                @timeit to "distribute_force_densities" datamanager =
-                    Material.distribute_force_densities(datamanager, active_nodes)
-
-
-                if !occursin("Correspondence", model_param["Material Model"])
-                    if options["Calculate Cauchy"] |
-                       options["Calculate von Mises"] |
-                       options["Calculate Strain"]
-                        datamanager = get_partial_stresses(datamanager, active_nodes)
-                    end
-                    if options["Calculate von Mises"]
-                        datamanager =
-                            Material.calculate_von_mises_stress(datamanager, active_nodes)
-                    end
-                    if options["Calculate Strain"]
-                        material_parameter =
-                            datamanager.get_properties(block, "Material Model")
-                        hookeMatrix = get_Hooke_matrix(
-                            material_parameter,
-                            material_parameter["Symmetry"],
-                            datamanager.get_dof(),
-                        )
-                        datamanager = Material.calculate_strain(
-                            datamanager,
-                            active_nodes,
-                            invert(hookeMatrix, "Hook matrix not invertable"),
-                        )
-                    end
-                end
-            end
-        end
+    if "Material" in options["Models"]
+        @timeit to "distribute_force_densities" datamanager =
+            Material.distribute_force_densities(datamanager, active_nodes)
     end
+
+
+    # if !occursin("Correspondence", model_param["Material Model"])
+    #     if options["Calculate Cauchy"] |
+    #        options["Calculate von Mises"] |
+    #        options["Calculate Strain"]
+    #         datamanager = get_partial_stresses(datamanager, active_nodes)
+    #     end
+    #     if options["Calculate von Mises"]
+    #         datamanager =
+    #             Material.calculate_von_mises_stress(datamanager, active_nodes)
+    #     end
+    #     if options["Calculate Strain"]
+    #         material_parameter =
+    #             datamanager.get_properties(block, "Material Model")
+    #         hookeMatrix = get_Hooke_matrix(
+    #             material_parameter,
+    #             material_parameter["Symmetry"],
+    #             datamanager.get_dof(),
+    #         )
+    #         datamanager = Material.calculate_strain(
+    #             datamanager,
+    #             active_nodes,
+    #             invert(hookeMatrix, "Hook matrix not invertable"),
+    #         )
+    #     end
+    # end
+
+
     update_list .= true
     return datamanager
 
