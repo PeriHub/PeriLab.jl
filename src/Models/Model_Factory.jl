@@ -200,12 +200,14 @@ function compute_models(
             end
         end
     end
-
+    # must be here to avoid double distributions
     if "Material" in options
         @timeit to "distribute_force_densities" datamanager =
-            Material.distribute_force_densities(datamanager, active_nodes)
+            Material.distribute_force_densities(
+                datamanager,
+                find_active(1:datamanager.get_nnodes()),
+            )
     end
-
 
     # if !occursin("Correspondence", model_param["Material Model"])
     #     if options["Calculate Cauchy"] |
