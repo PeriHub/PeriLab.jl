@@ -138,8 +138,7 @@ function check_dependencies(datamanager::Module, block_nodes::Dict{Int64,Vector{
             merge(params_dict, Dict("Deformed Bond Geometry" => true)),
         )
         if occursin("Correspondence", model_param["Material Model"])
-            if haskey(model_param["Material Model"], "Bond Associated") &&
-               model_param["Material Model"]["Bond Associated"]
+            if haskey(model_param, "Bond Associated") && model_param["Bond Associated"]
                 params_dict = datamanager.get_properties(block_id, "Pre Calculation Model")
                 datamanager.set_properties(
                     block_id,
