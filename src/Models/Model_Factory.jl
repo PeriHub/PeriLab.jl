@@ -143,6 +143,15 @@ function compute_models(
         if active_model_name == "Damage Model"
             continue
         end
+        ## TODO @jan-timo synchronisation is missing
+
+        #for synch_key in active_model.fields_for_local_synchronization(datamanager.get_properties(block, active_model_name))
+        #synchronise_field
+        #@timeit to "upload_to_cores" datamanager.synch_manager(
+        #    synchronise_field,
+        #    "upload_to_cores",
+        #)
+        #end
         for block in eachindex(block_nodes)
             nodes = block_nodes[block]
             active_nodes = view(nodes, find_active(active[nodes]))
