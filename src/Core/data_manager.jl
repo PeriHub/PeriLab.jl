@@ -811,7 +811,7 @@ Retrieves the number of nodes.
 
 Example:
 ```julia
-get_nnodes()  # returns the current number of nodes
+get_nnodes()  # returns the current number of controler nodes. The neighbors are not included
 ```
 """
 function get_nnodes()
