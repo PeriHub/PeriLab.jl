@@ -876,7 +876,7 @@ function show_mpi_summary(
     size = MPI.Comm_size(comm)
 
     if size == 1
-        return
+        return size
     end
 
     rank = MPI.Comm_rank(comm)

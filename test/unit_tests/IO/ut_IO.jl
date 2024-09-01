@@ -4,7 +4,8 @@
 
 #TODO: Remove include
 include("../../../src/IO/IO.jl")
-# using PeriLab
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 using MPI
 using TimerOutputs
 using Test
@@ -301,6 +302,6 @@ end
 end
 
 @testset "ut_show_mpi_summary" begin
-    # Not tested yet because MPI.size=1
-    PeriLab.IO.show_mpi_summary("", false, comm, test_data_manager)
+    # Not fully tested yet because MPI.size=1
+    @test PeriLab.IO.show_mpi_summary("", false, comm, test_data_manager) == 1
 end
