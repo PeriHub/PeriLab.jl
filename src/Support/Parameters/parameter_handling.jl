@@ -291,14 +291,15 @@ global expected_structure = Dict(
             ],
             "Solver" => [
                 Dict{Any,Any}(
+                    "Additive Models" => [Bool, false],
+                    "Corrosion Models" => [Bool, false],
+                    "Damage Models" => [Bool, false],
                     "Material Models" => [Bool, false],
+                    "Thermal Models" => [Bool, false],
                     "Calculate Cauchy" => [Bool, false],
                     "Calculate von Mises" => [Bool, false],
                     "Calculate Strain" => [Bool, false],
-                    "Damage Models" => [Bool, false],
                     "Maximum Damage" => [Float64, false],
-                    "Thermal Models" => [Bool, false],
-                    "Additive Models" => [Bool, false],
                     "Final Time" => [Union{Float64,Int64}, true],
                     "Initial Time" => [Union{Float64,Int64}, true],
                     "Numerical Damping" => [Union{Float64,Int64}, false],
@@ -444,6 +445,7 @@ function validate_yaml(params::Dict)
         end
     end
     if !validate
+        @error "Yaml file is not valid."
         return nothing
     end
 

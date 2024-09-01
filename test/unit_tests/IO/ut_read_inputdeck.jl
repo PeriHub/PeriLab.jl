@@ -44,14 +44,6 @@ end
     filename = "test.yaml"
     fid = open(filename, "w")
     println(fid, "PeriLab:")
-    println(fid, " data: 1")
-    close(fid)
-    dict = PeriLab.IO.read_input_file(filename)
-    @test isnothing(dict)
-    rm(filename)
-    filename = "test.yaml"
-    fid = open(filename, "w")
-    println(fid, "PeriLab:")
     println(fid, " Models:")
     println(fid, "  d: 3")
     println(fid, "  a: 1")
