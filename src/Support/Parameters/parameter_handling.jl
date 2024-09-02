@@ -438,6 +438,11 @@ function validate_yaml(params::Dict)
     # Validate against the expected structure
     validate = true
     checked_keys = []
+    if !haskey(params, "PeriLab") || length(params["PeriLab"] < 2)
+        @error "Yaml file is not valid."
+        return nothing
+    end
+
     validate, checked_keys =
         validate_structure_recursive(expected_structure, params, validate, checked_keys)
     #Check if all keys have been checked

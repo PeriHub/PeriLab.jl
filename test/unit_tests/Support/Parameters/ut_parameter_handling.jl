@@ -135,6 +135,11 @@ end
     )
 
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+
+    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}()))
+
+    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
             "Models" => Dict{Any,Any}(
