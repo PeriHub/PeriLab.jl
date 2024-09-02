@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal_template
+using TimerOutputs
 export compute_model
 export init_model
 export thermal_model_name
@@ -47,10 +48,10 @@ Example:
 function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    thermal_parameter::Dict,
-    block::Int64,
+    material_parameter::Dict,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
     @info "Please write a thermal model name in thermal_name()."
     @info "You can call your routine within the yaml file."

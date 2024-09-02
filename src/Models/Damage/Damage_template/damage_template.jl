@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Damage_template
+using TimerOutputs
 export compute_model
 export compute_damage_pre_calculation
 export damage_name
@@ -52,6 +53,7 @@ function compute_model(
     block::Int64,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
     @info "Please write a damage model name in damage_name()."
     @info "You can call your routine within the yaml file."

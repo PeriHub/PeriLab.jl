@@ -16,11 +16,12 @@ include(
 
 using Test
 using TimerOutputs
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../src/PeriLab.jl")
+using .PeriLab
 const to = TimerOutput()
 
 test_data_manager = PeriLab.Data_manager
+test_data_manager.initialize_data()
 test_data_manager.set_num_controller(3)
 
 @testset "ut_additive_template" begin
@@ -36,9 +37,9 @@ test_data_manager.set_num_controller(3)
           test_data_manager
 end
 
-@testset "ut_additive_template" begin
+@testset "ut_corrosion_template" begin
     @test Corrosion_template.corrosion_name() == "Corrosion Template"
-    @test Corrosion_template.compute_corrosion_model(
+    @test Corrosion_template.compute_model(
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
@@ -58,6 +59,7 @@ end
         1,
         0.0,
         0.0,
+        to,
     ) == test_data_manager
     @test Damage_template.compute_damage_pre_calculation(
         test_data_manager,
@@ -85,6 +87,20 @@ end
         0.0,
         to,
     ) == test_data_manager
+end
+
+@testset "ut_thermal_template" begin
+    @test Thermal_template.thermal_model_name() == "Thermal Template"
+    @test Thermal_template.compute_model(
+        test_data_manager,
+        Vector{Int64}(1:3),
+        Dict(),
+        0.0,
+        0.0,
+        to,
+    ) == test_data_manager
+    @test Thermal_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
+          test_data_manager
 end
 
 @testset "ut_correspondence_template" begin
@@ -144,21 +160,6 @@ end
 
 end
 
-@testset "ut_thermal_template" begin
-    @test Thermal_template.thermal_model_name() == "Thermal Template"
-    @test Thermal_template.compute_model(
-        test_data_manager,
-        Vector{Int64}(1:3),
-        Dict(),
-        0.0,
-        0.0,
-    ) == test_data_manager
-    @test Thermal_template.init_thermal_model(
-        test_data_manager,
-        Vector{Int64}(1:3),
-        Dict(),
-    ) == test_data_manager
-end
 
 @testset "ut_pre_calculation_template" begin
     @test Pre_calculation_template.pre_calculation_name() == "pre_calculation Template"

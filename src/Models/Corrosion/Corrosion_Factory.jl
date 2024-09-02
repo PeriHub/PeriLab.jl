@@ -56,7 +56,7 @@ function compute_model(
 )
 
     mod = datamanager.get_model_module(model_param["Corrosion Model"])
-    return mod.compute_corrosion_model(datamanager, nodes, model_param, time, dt)
+    return mod.compute_model(datamanager, nodes, model_param, time, dt)
 
 end
 
