@@ -28,7 +28,7 @@ using .Thermal
     @test "Bond Heat Flow" in field_keys
 
 end
-@testset "init_thermal_model" begin
+@testset "init_model" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_block_list([1, 2])
@@ -38,9 +38,9 @@ end
         "Thermal Model",
         Dict("Thermal Model" => "Heat Transfer"),
     )
-    Thermal.init_thermal_model(test_data_manager, [1], 1)
+    Thermal.init_model(test_data_manager, [1], 1)
     test_data_manager.set_properties(2, "Thermal Model", Dict("Thermal Model" => "Missing"))
-    @test isnothing(Thermal.init_thermal_model(test_data_manager, [1], 2))
+    @test isnothing(Thermal.init_model(test_data_manager, [1], 2))
 end
 
 @testset "ut_distribute_heat_flows" begin
