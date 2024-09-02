@@ -65,6 +65,7 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
                 datamanager,
                 nodes,
                 Dict(datamanager.get_properties(block, "Pre Calculation Model")),
+                block,
             )
 
         end
@@ -120,7 +121,7 @@ function compute_model(
             continue
         end
         mod = datamanager.get_model_module(pre_calculation_model)
-        datamanager = mod.compute(datamanager, nodes, model_param)
+        datamanager = mod.compute(datamanager, nodes, model_param, block)
     end
 
     return datamanager

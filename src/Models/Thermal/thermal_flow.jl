@@ -24,7 +24,7 @@ end
 
 
 """
-    init_model(datamanager, nodes, thermal_parameter)
+    init_model(datamanager, nodes, thermal_parameter, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -73,7 +73,8 @@ Calculates the thermal behavior of the material. This template has to be copied,
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `thermal_parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `block::Int64`: Current block
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
@@ -85,7 +86,7 @@ Example:
 function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
+    thermal_parameter::Dict,
     block::Int64,
     time::Float64,
     dt::Float64,
@@ -142,7 +143,6 @@ function compute_model(
         return datamanager
 
     elseif thermal_parameter["Type"] == "Correspondence"
-
         lambda_matrix = @MMatrix zeros(Float64, dof, dof)
         Kinv = datamanager.get_field("Inverse Shape Tensor")
         if length(lambda) == 1

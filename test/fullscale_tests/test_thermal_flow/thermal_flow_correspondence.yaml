@@ -10,9 +10,10 @@ PeriLab:
     Type: "Text File"
     Input Mesh File: "test_mesh.txt"
   Models:
-    Pre Calculation:
-      Deformed Bond Geometry: true
-      Shape Tensor: true
+    Pre Calculation Models:
+      Pre:
+        Deformed Bond Geometry: true
+        Shape Tensor: true
     Thermal Models:
       Thermal test:
         Thermal Model: "Thermal Flow"
@@ -22,11 +23,13 @@ PeriLab:
   Blocks:
     block_1:
       Thermal Model: "Thermal test"
+      Pre Calculation Model: "Pre"
       Density: 1.24e-03
       Horizon: 1.1005e-3
       Specific Heat Capacity: 1800000000.0
     block_2:
       Thermal Model: "Thermal test"
+      Pre Calculation Model: "Pre"
       Density: 1.24e-03
       Horizon: 1.1005e-3
       Specific Heat Capacity: 1800000000.0

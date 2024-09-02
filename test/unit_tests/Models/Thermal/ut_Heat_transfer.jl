@@ -109,8 +109,8 @@ end
         test_data_manager,
         Vector{Int64}(1:10),
         Dict("Heat Transfer Coefficient" => 1, "Environmental Temperature" => 1.2),
+        1,
         1.0,
         1.0,
-        to,
     ) == test_data_manager
 end

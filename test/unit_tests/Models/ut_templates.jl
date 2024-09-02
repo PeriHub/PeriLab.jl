@@ -16,8 +16,8 @@ include(
 
 using Test
 using TimerOutputs
-include("../../../src/PeriLab.jl")
-using .PeriLab
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 const to = TimerOutput()
 
 test_data_manager = PeriLab.Data_manager
@@ -30,6 +30,7 @@ test_data_manager.set_num_controller(3)
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
+        1,
         0.0,
         0.0,
     ) == test_data_manager
@@ -43,11 +44,13 @@ end
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
+        1,
         0.0,
         0.0,
     ) == test_data_manager
     @test Corrosion_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
           test_data_manager
+    @test Corrosion_template.fields_for_local_synchronization() == Dict()
 end
 
 @testset "ut_damage_template" begin
@@ -71,6 +74,7 @@ end
     ) == test_data_manager
     @test Damage_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
           test_data_manager
+    @test Damage_template.fields_for_local_synchronization() == Dict()
 end
 
 @testset "ut_material_template" begin
@@ -83,10 +87,12 @@ end
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
+        1,
         0.0,
         0.0,
         to,
     ) == test_data_manager
+    @test Material_template.fields_for_local_synchronization() == Dict()
 end
 
 @testset "ut_thermal_template" begin
@@ -95,22 +101,26 @@ end
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
+        1,
         0.0,
         0.0,
         to,
     ) == test_data_manager
     @test Thermal_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
           test_data_manager
+    @test Thermal_template.fields_for_local_synchronization() == Dict()
 end
 
 @testset "ut_correspondence_template" begin
     test_data_manager = PeriLab.Data_manager
     @test !(Correspondence_template.fe_support())
     @test Correspondence_template.correspondence_name() == "Correspondence Template"
+
     @test Correspondence_template.init_model(
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
+        1,
     ) == test_data_manager
 
     dat, vec = Correspondence_template.compute_stresses(
@@ -163,11 +173,17 @@ end
 
 @testset "ut_pre_calculation_template" begin
     @test Pre_calculation_template.pre_calculation_name() == "pre_calculation Template"
-    @test Pre_calculation_template.pre_calculation(
+    println()
+    @test Pre_calculation_template.compute_model(
         test_data_manager,
         Vector{Int64}(1:3),
         Dict(),
-        0.0,
-        0.0,
+        1,
+    ) == test_data_manager
+    @test Pre_calculation_template.init_model(
+        test_data_manager,
+        Vector{Int64}(1:3),
+        Dict(),
+        1,
     ) == test_data_manager
 end

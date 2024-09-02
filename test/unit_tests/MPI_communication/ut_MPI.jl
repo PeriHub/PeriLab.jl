@@ -399,6 +399,7 @@ if ncores == 3
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0),
+        1,
         0.0,
         0.0,
         to,

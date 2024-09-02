@@ -139,8 +139,7 @@ function initialize_data()
     crit_values_matrix = fill(-1, (1, 1, 1))
     global aniso_crit_values
     aniso_crit_values = Dict()
-    global properties
-    properties = Dict()
+    global properties = OrderedDict()
     global glob_to_loc
     glob_to_loc = Dict()
     global fields

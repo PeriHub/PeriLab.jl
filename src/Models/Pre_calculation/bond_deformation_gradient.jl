@@ -52,6 +52,7 @@ function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     parameter::Union{Dict,OrderedDict},
+    block::Int64,
 )
     dof = datamanager.get_dof()
     datamanager.create_constant_bond_field(
@@ -87,6 +88,7 @@ function compute(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     parameter::Union{Dict,OrderedDict},
+    block::Int64,
 )
 
     dof = datamanager.get_dof()

@@ -70,7 +70,7 @@ Example:
 function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
+    thermal_parameter::Dict,
     block::Int64,
     time::Float64,
     dt::Float64,

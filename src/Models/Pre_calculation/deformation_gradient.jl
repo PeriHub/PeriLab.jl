@@ -48,6 +48,7 @@ function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     parameter::Union{Dict,OrderedDict},
+    block::Int64,
 )
     dof = datamanager.get_dof()
     datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
@@ -69,6 +70,7 @@ function compute(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     parameter::Union{Dict,OrderedDict},
+    block::Int64,
 )
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()

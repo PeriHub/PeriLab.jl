@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../src/Models/Model_Factory.jl")
-# include("../../../src/PeriLab.jl")
-# using .PeriLab
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 using Test
 
 @testset "ut_get_block_model_definition" begin
@@ -38,14 +38,13 @@ using Test
         ),
     )
 
-    for block in block_list
-        Model_Factory.get_block_model_definition(
-            params,
-            block,
-            prop_keys,
-            test_data_manager.set_properties,
-        )
-    end
+    Model_Factory.get_block_model_definition(
+        params,
+        block_list,
+        prop_keys,
+        test_data_manager.set_properties,
+    )
+
     @test test_data_manager.get_property(1, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
     @test test_data_manager.get_property(2, "Material Model", "value") ==

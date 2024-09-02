@@ -267,11 +267,13 @@ end
     block_Id[end] = 2
     test_data_manager.set_block_list([1, 1, 1, 1, 2])
     solver_options = Dict(
-        "Material Models" => true,
-        "Damage Models" => true,
-        "Additive Models" => true,
-        "Thermal Models" => true,
-        "Corrosion Models" => true,
+        "Models" => (
+            "Material Models" => true,
+            "Damage Models" => true,
+            "Additive Models" => true,
+            "Thermal Models" => true,
+            "Corrosion Models" => true,
+        ),
     )
     params = Dict(
         "Blocks" => Dict(

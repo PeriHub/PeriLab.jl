@@ -28,6 +28,8 @@ global expected_structure = Dict(
                             "Damage Model" => [String, false],
                             "Thermal Model" => [String, false],
                             "Additive Model" => [String, false],
+                            "Pre Calculation Model" => [String, false],
+                            "Corrosion_template Model" => [String, false],
                         ),
                         true,
                     ],

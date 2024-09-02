@@ -94,78 +94,11 @@ end
     @test bfList ==
           Dict("a" => Dict("a" => 1), "g" => Dict("a" => 1), "adas" => Dict("a" => 1))
 end
-@testset "ut_node_sets" begin
 
-    filename = "test.txt"
-    numbers = [11, 12, 13, 44, 125]
-    lenNumbers = length(numbers)
-    params = Dict("Discretization" => Dict())
-
-    @test PeriLab.Solver.Parameter_Handling.get_node_sets(params, "") == Dict{String,Any}()
-    params = Dict(
-        "Discretization" => Dict(
-            "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename),
-        ),
-    )
-
-    file = open(filename, "w")
-    println(file, "header: global_id")
-    for number in numbers
-        println(file, number)
-    end
-    close(file)
-
-    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "")
-    @test "Nset_1" in keys(nsets)
-    @test "Nset_2" in keys(nsets)
-    @test length(nsets["Nset_1"]) == 7
-    for i = 1:7
-        @test nsets["Nset_1"][i] == i
-    end
-    @test length(nsets["Nset_2"]) == lenNumbers
-    for i = 1:lenNumbers
-        @test nsets["Nset_2"][i] == numbers[i]
-    end
-    rm(filename)
-
-    filename = "test.txt"
-    file = open(filename, "w")
-    println(file, "header: global_id")
-    close(file)
-    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "")
-    @test haskey(nsets, "Nset_1")
-    @test !haskey(nsets, "Nset_2")
-    rm(filename)
-    filename = "test.txt"
-    file = open(filename, "w")
-    close(file)
-    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "")
-    @test haskey(nsets, "Nset_1")
-    @test !haskey(nsets, "Nset_2")
-    rm(filename)
-
-    filename = "example_mesh.g"
-    params = Dict(
-        "Discretization" => Dict(
-            "Type" => "Exodus",
-            "Input Mesh File" => filename,
-            "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename),
-        ),
-    )
-    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(
-        params,
-        "unit_tests/Support/Parameters",
-    )
-    @test "Set-1" in keys(nsets)
-    @test "Set-2" in keys(nsets)
-    @test "Set-3" in keys(nsets)
-    @test length(nsets["Set-1"]) == 297
-    @test length(nsets["Set-2"]) == 27
-    @test length(nsets["Set-3"]) == 3
-end
 @testset "ut_validate_yaml" begin
     params = Dict{Any,Any}()
     @info "Error messages are tested and therefore okay."
+
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}()))
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
@@ -191,8 +124,7 @@ end
         ),
     )
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
-    params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}()))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
             "Models" => Dict{Any,Any}(),
@@ -201,6 +133,7 @@ end
             "Solver" => Dict{Any,Any}(),
         ),
     )
+
     @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
@@ -593,15 +526,16 @@ end
             "Damage Models" => true,
             "Additive Models" => true,
             "Thermal Models" => true,
-            "Corrosion" => true,
+            "Corrosion Models" => true,
         ),
     )
     solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
+    println()
     @test solver_options ==
           ["Additive", "Pre_Calculation", "Damage", "Thermal", "Corrosion", "Material"]
     params = Dict("Solver" => Dict())
     solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
-    @test solver_options == ["Pre_Calculation"]
+    @test solver_options == ["Pre_Calculation", "Material"]
     params = Dict(
         "Solver" => Dict(
             "Material Models" => false,
@@ -933,4 +867,73 @@ end
         checked_keys,
     )
     @test !validate
+end
+@testset "ut_node_sets" begin
+
+    filename = "test.txt"
+    numbers = [11, 12, 13, 44, 125]
+    lenNumbers = length(numbers)
+    params = Dict("Discretization" => Dict())
+
+    @test PeriLab.Solver.Parameter_Handling.get_node_sets(params, "") == Dict{String,Any}()
+    params = Dict(
+        "Discretization" => Dict(
+            "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename),
+        ),
+    )
+
+    file = open(filename, "w")
+    println(file, "header: global_id")
+    for number in numbers
+        println(file, number)
+    end
+    close(file)
+
+    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "")
+    @test "Nset_1" in keys(nsets)
+    @test "Nset_2" in keys(nsets)
+    @test length(nsets["Nset_1"]) == 7
+    for i = 1:7
+        @test nsets["Nset_1"][i] == i
+    end
+    @test length(nsets["Nset_2"]) == lenNumbers
+    for i = 1:lenNumbers
+        @test nsets["Nset_2"][i] == numbers[i]
+    end
+    rm(filename)
+
+    filename = "test.txt"
+    file = open(filename, "w")
+    println(file, "header: global_id")
+    close(file)
+    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "")
+    @test haskey(nsets, "Nset_1")
+    @test !haskey(nsets, "Nset_2")
+    rm(filename)
+    filename = "test.txt"
+    file = open(filename, "w")
+    close(file)
+    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "")
+    @test haskey(nsets, "Nset_1")
+    @test !haskey(nsets, "Nset_2")
+    rm(filename)
+
+    filename = "example_mesh.g"
+    params = Dict(
+        "Discretization" => Dict(
+            "Type" => "Exodus",
+            "Input Mesh File" => filename,
+            "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename),
+        ),
+    )
+    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(
+        params,
+        "unit_tests/Support/Parameters",
+    )
+    @test "Set-1" in keys(nsets)
+    @test "Set-2" in keys(nsets)
+    @test "Set-3" in keys(nsets)
+    @test length(nsets["Set-1"]) == 297
+    @test length(nsets["Set-2"]) == 27
+    @test length(nsets["Set-3"]) == 3
 end

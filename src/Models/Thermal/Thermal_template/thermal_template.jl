@@ -52,6 +52,7 @@ function compute_model(
     block::Int64,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
     @info "Please write a thermal model name in thermal_name()."
     @info "You can call your routine within the yaml file."

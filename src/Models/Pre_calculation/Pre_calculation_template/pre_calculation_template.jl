@@ -44,10 +44,11 @@ Example:
 ```julia
   ```
 """
-function pre_calculation(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     Pre_calculation_parameter::Dict,
+    block::Int64,
 )
     @info "Please write a possible precalculation routines in pre_calculation_name()."
     @info "You can call your routine within the yaml file."
@@ -74,6 +75,7 @@ function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     parameter::Union{Dict,OrderedDict},
+    block::Int64,
 )
 
     return datamanager

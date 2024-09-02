@@ -30,7 +30,8 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict,
+    block::Int64)
 
 Initializes the material model.
 
@@ -38,6 +39,7 @@ Initializes the material model.
   - `datamanager::Data_manager`: Datamanager.
   - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `block::Int64`: Current block
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
@@ -46,6 +48,7 @@ function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
+    block::Int64,
 )
     return datamanager
 end
@@ -94,7 +97,7 @@ or
 """
 function fields_for_local_synchronization()
     @info "Here you can add fields for synchronisation."
-    return datamanager
+    return Dict()
 end
 
 """
