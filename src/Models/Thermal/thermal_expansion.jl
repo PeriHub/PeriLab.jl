@@ -63,7 +63,7 @@ function init_model(
 end
 
 """
-    compute_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_model(datamanager, nodes, thermal_parameter, block::Int64, time, dt)
 
 Calculates the thermal expansion of the material.
 

@@ -77,7 +77,7 @@ function init_models(
 
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, active_model_name)
-                @timeit to "init $active_model_name model" datamanager =
+                @timeit to "init $active_model_name models" datamanager =
                     active_model.init_model(datamanager, block_nodes[block], block)
                 # TODO active_model.fields_for_local_synchronization()
                 # put it in datamanager

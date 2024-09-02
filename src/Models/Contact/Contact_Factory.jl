@@ -29,14 +29,15 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64, to::TimerOutput)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64, to::TimerOutput)
 
-Compute the forces.
+Compute the forces of the contact model.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
-- `model_param::Dict`: The material parameter.
+- `model_param::Dict`: The contact parameter.
+- `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
@@ -46,21 +47,12 @@ function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
     to::TimerOutput,
 )
-    material_models = split(model_param["Material Model"], "+")
-    material_models = map(r -> strip(r), material_models)
-    if occursin("Correspondence", model_param["Material Model"])
-        mod = datamanager.get_model_module("Correspondence")
-        datamanager = mod.compute_model(datamanager, nodes, model_param, time, dt, to)
-        return datamanager
-    end
-    for material_model in material_models
-        mod = datamanager.get_model_module(material_model)
-        datamanager = mod.compute_model(datamanager, nodes, model_param, time, dt, to)
-    end
+
     return datamanager
 end
 end

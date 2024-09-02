@@ -272,6 +272,24 @@ function init_aniso_crit_values(
     return datamanager
 end
 
+"""
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+
+Initialize the damage models.
+
+# Arguments
+- `datamanager::Module`: The data manager module where the corrosion model will be initialized.
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the corrosion model.
+- `block::Int64`: Block identifier for the corrosion model.
+
+# Returns
+- `datamanager`: The modified data manager module with the initialized corrosion model.
+
+# Example
+```julia
+datamanager = init_model(my_data_manager, [1, 2, 3], 1)
+
+"""
 function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Damage Model")
     if haskey(model_param, "Anisotropic Damage")

@@ -62,14 +62,13 @@ end
 
 
 """
-    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, corrosion_parameter::Dict, block::Int64)
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
 
-Initialize an corrosion model within a given data manager.
+Initialize a corrosion models.
 
 # Arguments
 - `datamanager::Module`: The data manager module where the corrosion model will be initialized.
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the corrosion model.
-- `corrosion_parameter::Dict`: Corrosion parameters
 - `block::Int64`: Block identifier for the corrosion model.
 
 # Returns

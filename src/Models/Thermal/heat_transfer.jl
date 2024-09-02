@@ -70,10 +70,11 @@ Example:
 function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    thermal_parameter::Dict,
+    material_parameter::Dict,
     block::Int64,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
     dof = datamanager.get_dof()
     volume = datamanager.get_field("Volume")

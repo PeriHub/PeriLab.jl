@@ -28,9 +28,16 @@ function additive_name()
 end
 
 """
-    compute_model(datamanager, nodes, additive_parameter, time, dt)
+    compute_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    additive_parameter::Dict,
+    block::Int64,
+    time::Float64,
+    dt::Float64,
+)
 
-Calculates the additive model. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the force densities of the additive. This template has to be copied, the file renamed and edited by the user to create a new additive. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
@@ -42,12 +49,13 @@ Calculates the additive model. This template has to be copied, the file renamed 
 - `datamanager::Data_manager`: Datamanager.
 Example:
 ```julia
-  ```
+```
 """
 function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     additive_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
 )

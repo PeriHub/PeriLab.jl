@@ -58,7 +58,6 @@ function compute_model(
     block::Int64,
     time::Float64,
     dt::Float64,
-    to::TimerOutput,
 )
 
     thermal_models = split(model_param["Thermal Model"], "+")
@@ -72,20 +71,18 @@ function compute_model(
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
 
-Compute the thermal model
+Initializes the thermal model.
 
 # Arguments
-- `datamanager::Module`: The datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
-- `model_param::Dict`: The model parameters
-- `time::Float64`: The current time
-- `dt::Float64`: The time step
+- `datamanager::Data_manager`: Datamanager
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `block::Int64`: Block.
 # Returns
-- `datamanager::Module`: The datamanager
+- `datamanager::Data_manager`: Datamanager.
 """
-function init(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Thermal Model")
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
