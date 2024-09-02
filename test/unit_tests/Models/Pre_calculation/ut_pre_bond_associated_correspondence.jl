@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-include("../../../../src/Models/Pre_calculation/bond_deformation_gradient.jl")
+include("../../../../src/Models/Pre_calculation/pre_bond_associated_correspondence.jl")
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
 
@@ -16,7 +16,12 @@ include("../../../../src/Models/Pre_calculation/bond_deformation_gradient.jl")
     horizon = 3.0
     expected_Q = [1.0 / 3.0, 2.0 / 3.0]
 
-    Q = Bond_Deformation_Gradient.calculate_Q(accuracy_order, dof, undeformed_bond, horizon)
+    Q = Pre_Bond_Associated_Correspondence.calculate_Q(
+        accuracy_order,
+        dof,
+        undeformed_bond,
+        horizon,
+    )
 
     @test isapprox(Q, expected_Q)
 
@@ -32,7 +37,12 @@ include("../../../../src/Models/Pre_calculation/bond_deformation_gradient.jl")
         0.4444444444444444,
     ]
 
-    Q = Bond_Deformation_Gradient.calculate_Q(accuracy_order, dof, undeformed_bond, horizon)
+    Q = Pre_Bond_Associated_Correspondence.calculate_Q(
+        accuracy_order,
+        dof,
+        undeformed_bond,
+        horizon,
+    )
 
     @test isapprox(Q, expected_Q)
 
@@ -52,16 +62,24 @@ include("../../../../src/Models/Pre_calculation/bond_deformation_gradient.jl")
         2.777777777777778,
     ]
 
-    Q = Bond_Deformation_Gradient.calculate_Q(accuracy_order, dof, undeformed_bond, horizon)
+    Q = Pre_Bond_Associated_Correspondence.calculate_Q(
+        accuracy_order,
+        dof,
+        undeformed_bond,
+        horizon,
+    )
 
     @test isapprox(Q, expected_Q)
 
     undeformed_bond = [1.0, 0.0, 0]
-    @test Bond_Deformation_Gradient.calculate_Q(1, dof, undeformed_bond, 1.0) == [1, 0, 0]
+    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0) ==
+          [1, 0, 0]
     undeformed_bond = [0.0, 1.0, 0]
-    @test Bond_Deformation_Gradient.calculate_Q(1, dof, undeformed_bond, 1.0) == [0, 1, 0]
+    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0) ==
+          [0, 1, 0]
     undeformed_bond = [0.0, 0.0, 1.0]
-    @test Bond_Deformation_Gradient.calculate_Q(1, dof, undeformed_bond, 1.0) == [0, 0, 1]
+    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0) ==
+          [0, 0, 1]
 end
 
 
@@ -93,7 +111,7 @@ end
         test_data_manager.create_constant_node_field("Weighted Volume", Float64, 1)
 
 
-    result = Bond_Deformation_Gradient.compute_weighted_volume(
+    result = Pre_Bond_Associated_Correspondence.compute_weighted_volume(
         nodes,
         nlist,
         volume,
@@ -125,18 +143,19 @@ end
         [0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0],
     ]
 
-    gradient_weights = Bond_Deformation_Gradient.compute_Lagrangian_gradient_weights(
-        nodes,
-        dof,
-        accuracy_order,
-        volume,
-        nlist,
-        horizon,
-        bond_damage,
-        omega,
-        undeformed_bond,
-        gradient_weights,
-    )
+    gradient_weights =
+        Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(
+            nodes,
+            dof,
+            accuracy_order,
+            volume,
+            nlist,
+            horizon,
+            bond_damage,
+            omega,
+            undeformed_bond,
+            gradient_weights,
+        )
 
     @test isapprox(gradient_weights[1][1, :], [0.5000000000000014, -0.24999999999999992])
     @test isapprox(gradient_weights[1][2, :], [-2.5000000000000817, -1.000000000000037])

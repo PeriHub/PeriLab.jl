@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Bond_Deformation_Gradient
+module Pre_Bond_Associated_Correspondence
 using DataStructures: OrderedDict
 include("../../Support/geometry.jl")
 using .Geometry: calculate_bond_length, compute_weighted_deformation_gradient
@@ -27,11 +27,11 @@ Gives the pre_calculation name. It is needed for comparison with the yaml input 
 Example:
 ```julia
 println(pre_calculation_name())
-"Bond Deformation Gradient"
+"Bond Associated Correspondence"
 ```
 """
 function pre_calculation_name()
-    return "Bond Deformation Gradient"
+    return "Bond Associated Correspondence"
 end
 
 

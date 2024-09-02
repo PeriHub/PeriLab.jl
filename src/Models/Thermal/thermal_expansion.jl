@@ -11,9 +11,7 @@ module Thermal_expansion
 using LinearAlgebra
 using StaticArrays
 include("../Pre_calculation/deformation_gradient.jl")
-include("../Pre_calculation/bond_deformation_gradient.jl")
 using .Deformation_Gradient
-using .Bond_Deformation_Gradient
 
 export compute_model
 export thermal_model_name
@@ -117,7 +115,7 @@ function compute_model(
     end
 
     if datamanager.has_key("Deformation Gradient")
-        datamanager = Deformation_Gradient.compute(datamanager, nodes, Dict())
+        datamanager = Deformation_Gradient.compute(datamanager, nodes, Dict(), block)
     end
 
     return datamanager

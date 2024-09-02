@@ -12,14 +12,10 @@ Set_modules.include_files(module_list)
 
 using TimerOutputs
 
-export compute
+export compute_model
 export init_model
 export synchronize
 export init_fields
-
-include("../../Support/helpers.jl")
-using .Helpers: find_active, get_active_update_nodes
-
 
 function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
@@ -85,7 +81,7 @@ Finds all synchronization fields from the model class
 - `synch_dict::Dict`: Synchronization Dictionary.
 """
 
-function fields_for_local_synchronization((model_param::Dict))
+function fields_for_local_synchronization(model_param::Dict)
     synch_dict = Dict()
 
     return synch_dict
@@ -158,10 +154,7 @@ function check_dependencies(datamanager::Module, block_nodes::Dict{Int64,Vector{
                 datamanager.set_properties(
                     block_id,
                     "Pre Calculation Model",
-                    merge(
-                        params_dict,
-                        Dict("Bond Associated Deformation Gradient" => true),
-                    ),
+                    merge(params_dict, Dict("Bond Associated Correspondence" => true)),
                 )
                 continue
             end
@@ -210,7 +203,7 @@ function check_dependencies(datamanager::Module, block_nodes::Dict{Int64,Vector{
                 )
                 continue
             end
-            if active_model_name == "Bond Associated Deformation Gradient"
+            if active_model_name == "Bond Associated Correspondence"
                 # Makes sure, that the neighbor information exists
                 for local_block_id in eachindex(block_nodes)
                     params_dict =
@@ -222,7 +215,7 @@ function check_dependencies(datamanager::Module, block_nodes::Dict{Int64,Vector{
                             params_dict,
                             Dict(
                                 "Deformed Bond Geometry" => true,
-                                "Bond Associated Deformation Gradient" => true,
+                                "Bond Associated Correspondence" => true,
                             ),
                         ),
                     )

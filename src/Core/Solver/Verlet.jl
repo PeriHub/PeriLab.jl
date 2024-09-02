@@ -51,7 +51,6 @@ This function iterates over a collection of nodes and computes the critical time
 
 # Dependencies
 This function depends on the following data fields from the `datamanager` module:
-- `get_dof()`: Returns the degree of freedom.
 - `get_nlist()`: Returns the neighbor list.
 - `get_field("Density")`: Returns the density field.
 - `get_field("Bond Length")`: Returns the bond distance field.
@@ -65,12 +64,10 @@ function compute_thermodynamic_critical_time_step(
 )
 
     critical_time_step::Float64 = 1.0e50
-    dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
     undeformed_bond_length = datamanager.get_field("Bond Length")
     volume = datamanager.get_field("Volume")
-    nneighbors = datamanager.get_field("Number of Neighbors")
     Cv = datamanager.get_field("Specific Heat Capacity")
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
@@ -418,7 +415,6 @@ function run_solver(
     atexit(() -> datamanager.set_cancel(true))
 
     @info "Run Verlet Solver"
-    dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     volume = datamanager.get_field("Volume")
     density = datamanager.get_field("Density")

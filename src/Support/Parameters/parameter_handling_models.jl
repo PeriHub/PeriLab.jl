@@ -173,12 +173,12 @@ function get_models_option(params::Dict, options::Dict)
             options["Deformed Bond Geometry"] = true
             if occursin("Correspondence", materials[material]["Material Model"])
                 if haskey(materials[material], "Bond Associated") &&
-                   !(options["Bond Associated Deformation Gradient"])
+                   !(options["Bond Associated Correspondence"])
                     # if its activated it stays that way
-                    options["Bond Associated Deformation Gradient"] =
+                    options["Bond Associated Correspondence"] =
                         materials[material]["Bond Associated"]
                 end
-                if !(options["Bond Associated Deformation Gradient"])
+                if !(options["Bond Associated Correspondence"])
                     options["Shape Tensor"] = true
                     options["Deformation Gradient"] = true
                 end

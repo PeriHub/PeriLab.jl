@@ -156,6 +156,7 @@ function compute_models(
             nodes = block_nodes[block]
             active_nodes = view(nodes, find_active(active[nodes]))
             if fem_option
+                # find all non-FEM nodes
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
             end
             if datamanager.check_property(block, active_model_name)
@@ -186,11 +187,12 @@ function compute_models(
             nodes = block_nodes[block]
             active_nodes = view(nodes, find_active(active[nodes]))
             if fem_option
+                # find all non-FEM nodes
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
             end
             active_nodes, update_nodes =
                 get_active_update_nodes(active, update_list, block_nodes, block)
-
+            # active or all, or does it not matter?
             if active_model_name == "Damage Model"
                 update_list[nodes] .= false
             end
@@ -387,100 +389,6 @@ function add_model(datamanager::Module, model_name::String)
         return nothing
     end
 end
-
-
-"""
-    get_models_option(params, options)
-
-Process models-related options based on the provided parameters.
-
-This function processes models-related options based on the parameters dictionary and updates the options dictionary accordingly.
-
-## Arguments
-
-- `params::Dict`: A dictionary containing various parameters, including models-related information.
-
-- `options::Dict`: A dictionary containing options to be updated based on the models parameters.
-
-## Returns
-
-- `updated_options::Dict`: A dictionary containing updated options based on the models parameters.
-
-## Errors
-
-- If the 'Pre Calculation' section exists in the 'Models' block but does not contain required options, an error message is logged.
-
-- If a material model is missing the 'Material Model' specification, an error message is logged.
-
-## Example
-
-```julia
-params = Dict(
-    "Models" => Dict(
-        "Pre Calculation" => Dict(
-            "Option1" => true,
-            "Option2" => false
-        ),
-        "Material Models" => Dict(
-            1 => Dict(
-                "Material Model" => "Correspondence"
-            ),
-            2 => Dict(
-                "Material Model" => "Bond Associated"
-            )
-        )
-    )
-)
-
-options = Dict(
-    "Option1" => false,
-    "Option2" => true
-)
-
-updated_options = get_models_option(params, options)
-println("Updated Options: ", updated_options)
-# TODO block wise check Pre Calculation
-# check must be here, because of the mixed nature (pre calculation and material or thermal)
-
-"""
-
-
-#function get_models_option(params::Dict, options::Dict)
-#    if haskey(params["Models"], "Pre Calculation")
-#        for option in keys(options)
-#            if haskey(params["Models"]["Pre Calculation"], option)
-#                options[option] = params["Models"]["Pre Calculation"][option]
-#            end
-#        end
-#    end
-#    if !haskey(params["Models"], "Material Models")
-#        @warn "Material Models are missing!"
-#        return options
-#    end
-#    materials = params["Models"]["Material Models"]
-#    for material in eachindex(materials)
-#        if haskey(materials[material], "Material Model")
-#            options["Deformed Bond Geometry"] = true
-#            if occursin("Correspondence", materials[material]["Material Model"])
-#                if haskey(materials[material], "Bond Associated") &&
-#                   !(options["Bond Associated Deformation Gradient"])
-#                    # if its activated it stays that way
-#                    options["Bond Associated Deformation Gradient"] =
-#                        materials[material]["Bond Associated"]
-#                end
-#                if !(options["Bond Associated Deformation Gradient"])
-#                    options["Shape Tensor"] = true
-#                    options["Deformation Gradient"] = true
-#                end
-#            end
-#        else
-#            @error "No Material Model: '$material' has been defined"
-#            return nothing
-#        end
-#
-#    end
-#    return options
-#end
 
 
 end

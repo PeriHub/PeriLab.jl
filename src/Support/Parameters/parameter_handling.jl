@@ -278,8 +278,7 @@ global expected_structure = Dict(
                         Dict{Any,Any}(
                             "Any" => [
                                 Dict{Any,Any}(
-                                    "Bond Associated Deformation Gradient" =>
-                                        [Bool, false],
+                                    "Bond Associated Correspondence" => [Bool, false],
                                     "Deformation Gradient" => [Bool, false],
                                     "Deformed Bond Geometry" => [Bool, false],
                                     "Shape Tensor" => [Bool, false],

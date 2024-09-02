@@ -162,7 +162,7 @@ function initialize_data()
         "Deformed Bond Geometry",
         "Shape Tensor",
         "Deformation Gradient",
-        "Bond Associated Deformation Gradient",
+        "Bond Associated Correspondence",
     ]
     global output_frequency
     output_frequency = []

@@ -12,8 +12,8 @@ using .Geometry:
     compute_strain,
     compute_bond_level_rotation_tensor,
     compute_bond_level_deformation_gradient
-include("../../../Pre_calculation/bond_deformation_gradient.jl")
-using .Bond_Deformation_Gradient: compute_weighted_volume
+include("../../../Pre_calculation/pre_bond_associated_correspondence.jl")
+using .Pre_Bond_Associated_Correspondence: compute_weighted_volume
 using TimerOutputs
 
 export init_model
@@ -36,7 +36,7 @@ println(correspondence_name())
 ```
 """
 function correspondence_name()
-    return "Correspondence Bond-Associated"
+    return "Bond Associated Correspondence"
 end
 
 function init_model(

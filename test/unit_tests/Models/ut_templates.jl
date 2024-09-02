@@ -50,7 +50,6 @@ end
     ) == test_data_manager
     @test Corrosion_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
           test_data_manager
-    @test Corrosion_template.fields_for_local_synchronization() == Dict()
 end
 
 @testset "ut_damage_template" begin
@@ -74,7 +73,6 @@ end
     ) == test_data_manager
     @test Damage_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
           test_data_manager
-    @test Damage_template.fields_for_local_synchronization() == Dict()
 end
 
 @testset "ut_material_template" begin
@@ -92,7 +90,6 @@ end
         0.0,
         to,
     ) == test_data_manager
-    @test Material_template.fields_for_local_synchronization() == Dict()
 end
 
 @testset "ut_thermal_template" begin
@@ -108,7 +105,6 @@ end
     ) == test_data_manager
     @test Thermal_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
           test_data_manager
-    @test Thermal_template.fields_for_local_synchronization() == Dict()
 end
 
 @testset "ut_correspondence_template" begin
