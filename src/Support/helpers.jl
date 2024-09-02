@@ -75,7 +75,7 @@ Returns the indices of `active` that are true.
 # Returns
 - `indices::Vector`: The indices of `active` that are true.
 """
-function find_active(active::Vector{Bool})
+function find_active(active::Union{Vector{Bool},BitVector})
     return [i for (i, is_active) in enumerate(active) if is_active]
 end
 
