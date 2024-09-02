@@ -153,7 +153,11 @@ function compute_models(
         #end
         for (block, nodes) in pairs(block_nodes)
             #active_nodes = view(nodes, find_active(active[nodes]))
-            active_nodes = view(nodes, find_active(active[nodes]))
+            if !(active_model_name == "Additive Model")
+                active_nodes = view(nodes, find_active(active[nodes]))
+            else
+                active_nodes = @view nodes[:]
+            end
             if fem_option
                 # find all non-FEM nodes
                 active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
@@ -180,19 +184,17 @@ function compute_models(
     end
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
-        if active_model_name == "Additve Model"
+        if active_model_name == "Additive Model"
             continue
         end
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
         for block in eachindex(block_nodes)
-            nodes = block_nodes[block]
-            active_nodes = view(nodes, find_active(active[nodes]))
-            if fem_option
-                # find all non-FEM nodes
-                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
-            end
             active_nodes, update_nodes =
                 get_active_update_nodes(active, update_list, block_nodes, block)
+            if fem_option
+                update_nodes =
+                    block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
+            end
             # active or all, or does it not matter?
             if !(active_model_name == "Damage Model")
                 update_nodes = active_nodes

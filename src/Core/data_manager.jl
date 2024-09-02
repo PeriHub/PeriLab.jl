@@ -271,6 +271,7 @@ function check_property(block_id::Int64, property::String)
     if haskey(properties[block_id], property)
         return length(properties[block_id][property]) > 0
     end
+    @error "Property $property does not exist in block $block_id."
     return false
 end
 
