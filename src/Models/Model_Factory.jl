@@ -197,7 +197,7 @@ function compute_models(
             end
             # active or all, or does it not matter?
             if !(active_model_name == "Damage Model")
-                update_nodes = active_nodes
+                update_nodes = @view active_nodes[:]
             end
             if datamanager.check_property(block, active_model_name)
                 # TODO synch
