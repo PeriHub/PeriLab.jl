@@ -350,11 +350,11 @@ function main(
             end
         end
     end
-    @info "PeriLab finished"
     if verbose
         TimerOutputs.complement!(to)
         @info to
     end
+    @info "PeriLab finished"
 end
 
 # PrecompileTools.@compile_workload begin

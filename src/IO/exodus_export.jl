@@ -207,7 +207,7 @@ function init_results_in_exodus(
     end
 
     # write element id map
-    # @info global_ids
+    # @debug global_ids
     write_id_map(exo, NodeMap, Int32.(global_ids))
     if fem_active
         write_id_map(exo, ElementMap, Int32.(elem_global_ids))
