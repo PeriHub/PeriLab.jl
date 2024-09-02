@@ -139,7 +139,6 @@ function compute_models(
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
-
         if active_model_name == "Damage Model"
             continue
         end
@@ -152,8 +151,8 @@ function compute_models(
         #    "upload_to_cores",
         #)
         #end
-        for block in eachindex(block_nodes)
-            nodes = block_nodes[block]
+        for (block, nodes) in pairs(block_nodes)
+            #active_nodes = view(nodes, find_active(active[nodes]))
             active_nodes = view(nodes, find_active(active[nodes]))
             if fem_option
                 # find all non-FEM nodes
@@ -174,9 +173,11 @@ function compute_models(
             end
         end
     end
-
-    update_nodes = datamanager.get_field("Update List")
+    # No update is needed, if no damage occur
     update_list = datamanager.get_field("Update List")
+    for (block, nodes) in pairs(block_nodes)
+        update_list[nodes] .= false
+    end
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         if active_model_name == "Additve Model"
@@ -193,15 +194,15 @@ function compute_models(
             active_nodes, update_nodes =
                 get_active_update_nodes(active, update_list, block_nodes, block)
             # active or all, or does it not matter?
-            if active_model_name == "Damage Model"
-                update_list[nodes] .= false
+            if !(active_model_name == "Damage Model")
+                update_nodes = active_nodes
             end
             if datamanager.check_property(block, active_model_name)
                 # TODO synch
                 @timeit to "compute $active_model_name model" datamanager =
                     active_model.compute_model(
                         datamanager,
-                        active_nodes,
+                        update_nodes,
                         datamanager.get_properties(block, active_model_name),
                         block,
                         time,

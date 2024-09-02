@@ -208,7 +208,7 @@ MPI.Init()
         @testset "test_additive_simple" begin
             include("fullscale_tests/test_additive/test_additive.jl")
         end
-        @testset "test_test_bond_based_elastic" begin
+        @testset "test_bond_based_elastic" begin
             include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")
         end
         @testset "test_heat_transfer" begin
