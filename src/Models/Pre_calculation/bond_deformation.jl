@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bond_Deformation
+using DataStructures: OrderedDict
 include("../../Support/geometry.jl")
 using .Geometry
 export pre_calculation_name
@@ -34,13 +35,12 @@ end
 """
     init_model(datamanager, nodes, parameter)
 
-Inits the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the bond deformation calculation.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
-- `block::Int64`: The current block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 
@@ -48,7 +48,7 @@ Inits the bond-based corrosion model. This template has to be copied, the file r
 function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    parameter::Dict,
+    parameter::Union{Dict,OrderedDict},
 )
     dof = datamanager.get_dof()
     datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
@@ -58,18 +58,22 @@ function init_model(
 end
 
 """
-    compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+    compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}), parameter::Dict
 
 Compute the bond deformation.
 
 # Arguments
 - `datamanager`: Datamanager.
 - `nodes`: List of nodes.
-- `time`: Time.
+- `parameter::Dict(String, Any)`: Dictionary with parameter.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+function compute(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    parameter::Union{Dict,OrderedDict},
+)
     nlist = datamanager.get_nlist()
     deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")

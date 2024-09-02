@@ -74,7 +74,6 @@ function compute_model(
     block::Int64,
     time::Float64,
     dt::Float64,
-    to::TimerOutput,
 )
     dof = datamanager.get_dof()
     volume = datamanager.get_field("Volume")

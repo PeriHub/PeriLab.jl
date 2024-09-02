@@ -117,9 +117,7 @@ function compute_model(
     end
 
     if datamanager.has_key("Deformation Gradient")
-        block_id = datamanager.get_field("Block_Id")
-        # is a work around to get the block ID information. Because all points in this routine are in the same block, the first node give the information
-        datamanager = Deformation_Gradient.compute(datamanager, nodes, block_id[nodes[1]])
+        datamanager = Deformation_Gradient.compute(datamanager, nodes, Dict())
     end
 
     return datamanager

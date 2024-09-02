@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Axissymmetric
+using DataStructures: OrderedDict
 export compute
+export init_model
 export Pre_calculation_name
 
 """
@@ -44,8 +46,7 @@ Inits the bond-based corrosion model. This template has to be copied, the file r
 function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    parameter::Dict,
-    block::Int64,
+    parameter::Union{Dict,OrderedDict},
 )
 
     return datamanager
@@ -72,9 +73,7 @@ Example:
 function compute(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    Pre_calculation_parameter::Dict,
-    time::Float64,
-    dt::Float64,
+    parameter::Union{Dict,OrderedDict},
 )
     @info "Please write a possible precalculation routines in pre_calculation_name()."
     @info "You can call your routine within the yaml file."

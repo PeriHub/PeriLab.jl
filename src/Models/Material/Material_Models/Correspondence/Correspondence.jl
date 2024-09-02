@@ -165,6 +165,7 @@ function compute_model(
             datamanager,
             nodes,
             material_parameter,
+            block,
             time,
             dt,
             to,

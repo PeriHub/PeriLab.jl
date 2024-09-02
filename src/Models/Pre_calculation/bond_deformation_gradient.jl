@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bond_Deformation_Gradient
-
+using DataStructures: OrderedDict
 include("../../Support/geometry.jl")
 using .Geometry: calculate_bond_length, compute_weighted_deformation_gradient
 export pre_calculation_name
@@ -38,13 +38,12 @@ end
 """
     init_model(datamanager, nodes, parameter)
 
-Inits the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the bond deformation gradient calculation.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
-- `block::Int64`: The current block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 
@@ -52,7 +51,7 @@ Inits the bond-based corrosion model. This template has to be copied, the file r
 function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    parameter::Dict,
+    parameter::Union{Dict,OrderedDict},
 )
     dof = datamanager.get_dof()
     datamanager.create_constant_bond_field(
@@ -84,8 +83,11 @@ Compute the bond deformation gradient.
 - `datamanager`: Datamanager.
 """
 
-
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+function compute(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    parameter::Union{Dict,OrderedDict},
+)
 
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()

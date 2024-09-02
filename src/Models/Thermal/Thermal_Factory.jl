@@ -58,13 +58,14 @@ function compute_model(
     block::Int64,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
 
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
         mod = datamanager.get_model_module(thermal_model)
-        datamanager = mod.compute_model(datamanager, nodes, model_param, time, dt)
+        datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt)
     end
     #datamanager = distribute_heat_flows(datamanager, nodes)
     return datamanager

@@ -186,12 +186,14 @@ function compute_model(
     material_models = map(r -> strip(r), material_models)
     if occursin("Correspondence", model_param["Material Model"])
         mod = datamanager.get_model_module("Correspondence")
-        datamanager = mod.compute_model(datamanager, nodes, model_param, time, dt, to)
+        datamanager =
+            mod.compute_model(datamanager, nodes, model_param, block, time, dt, to)
         return datamanager
     end
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
-        datamanager = mod.compute_model(datamanager, nodes, model_param, time, dt, to)
+        datamanager =
+            mod.compute_model(datamanager, nodes, model_param, block, time, dt, to)
     end
     return datamanager
 end

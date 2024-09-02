@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Pre_Calculation
-
+using DataStructures: OrderedDict
 include("../../Core/Module_inclusion/set_Modules.jl")
 using DataStructures: OrderedDict
 using .Set_modules
@@ -120,7 +120,7 @@ function compute_model(
             continue
         end
         mod = datamanager.get_model_module(pre_calculation_model)
-        datamanager = mod.compute(datamanager, nodes)
+        datamanager = mod.compute(datamanager, nodes, model_param)
     end
 
     return datamanager
