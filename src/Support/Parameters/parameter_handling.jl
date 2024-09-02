@@ -438,7 +438,7 @@ function validate_yaml(params::Dict)
     # Validate against the expected structure
     validate = true
     checked_keys = []
-    if !haskey(params, "PeriLab") || length(params["PeriLab"] < 2)
+    if !haskey(params, "PeriLab") || length(params["PeriLab"]) < 2
         @error "Yaml file is not valid."
         return nothing
     end
