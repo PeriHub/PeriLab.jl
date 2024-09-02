@@ -107,7 +107,7 @@ function close_result_file(result_file::Dict)
     return false
 end
 
-function close_result_files(result_files::Vector{Dict})
+function close_result_files(result_files::Union{Vector{Dict},Vector{Dict{String,IOStream}}})
     for result_file in result_files
         try
             close_result_file(result_file)
