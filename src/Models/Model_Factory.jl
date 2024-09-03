@@ -179,9 +179,9 @@ function compute_models(
     end
     # No update is needed, if no damage occur
     update_list = datamanager.get_field("Update List")
-    for (block, nodes) in pairs(block_nodes)
-        update_list[nodes] .= false
-    end
+    # for (block, nodes) in pairs(block_nodes)
+    #     update_list[nodes] .= false
+    # end
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         if active_model_name == "Additive Model"
@@ -196,9 +196,9 @@ function compute_models(
                     block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
             end
             # active or all, or does it not matter?
-            if !(active_model_name == "Damage Model")
-                update_nodes = @view active_nodes[:]
-            end
+            # if !(active_model_name == "Damage Model")
+            #     update_nodes = @view active_nodes[:]
+            # end
             if datamanager.check_property(block, active_model_name)
                 # TODO synch
                 @timeit to "compute $active_model_name model" datamanager =
