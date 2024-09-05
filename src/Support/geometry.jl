@@ -54,10 +54,10 @@ function bond_geometry(
     for iID in nodes
         undeformed_bond[iID], undeformed_bond_length[iID] =
             calculate_bond_length(iID, coor, nlist[iID])
-        if any(undeformed_bond_length[iID] .== 0)
-            @error "Identical point coordinates with no distance $iID"
-            return nothing
-        end
+    end
+    if any(any.(x -> x == 0, [lengths for lengths in undeformed_bond_length]))
+        @error "Identical point coordinates with no distance"
+        return nothing
     end
     return undeformed_bond, undeformed_bond_length
 end
@@ -68,7 +68,7 @@ function calculate_bond_length(
     nlist::Vector{Int64},
 )
 
-    bond_vectors = (@view coor[nlist, :]) .- (@view coor[iID, :])'
+    @views bond_vectors = coor[nlist, :] .- coor[iID, :]'
     # distances = sqrt.(sum(bond_vectors .^ 2, dims=2))[:]
 
     # Check for identical point coordinates
