@@ -67,7 +67,7 @@ function compute_model(
         mod = datamanager.get_model_module(thermal_model)
         datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt)
     end
-    #datamanager = distribute_heat_flows(datamanager, nodes)
+
     return datamanager
 end
 

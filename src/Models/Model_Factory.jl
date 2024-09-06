@@ -224,6 +224,13 @@ function compute_models(
             )
     end
 
+    if "Thermal" in options
+        @timeit to "distribute_heat_flows" datamanager = Thermal.distribute_heat_flows(
+            datamanager,
+            find_active(active[1:datamanager.get_nnodes()]),
+        )
+    end
+
     # if !occursin("Correspondence", model_param["Material Model"])
     #     if options["Calculate Cauchy"] |
     #        options["Calculate von Mises"] |
