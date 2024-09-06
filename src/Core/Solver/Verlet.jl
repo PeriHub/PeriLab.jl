@@ -541,7 +541,7 @@ function run_solver(
                         volume[find_active(fe_nodes[nodes])]
 
                     # toggles the value and switch the non FEM nodes to true
-                    nodes = find_active(Vector{Bool}(.~fe_nodes[nodes]))
+                    nodes = find_active(.~fe_nodes[nodes])
                 end
                 force_densities[nodes, :] +=
                     (@view external_force_densities[nodes, :]) .+
