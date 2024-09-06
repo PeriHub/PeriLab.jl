@@ -166,11 +166,11 @@ function get_model_options(params::Dict)
                 if additive
                     "Additive"
                 end
-                if pre_calculation
-                    "Pre_Calculation"
-                end
                 if damage
                     "Damage"
+                end
+                if pre_calculation
+                    "Pre_Calculation"
                 end
                 if thermal
                     "Thermal"

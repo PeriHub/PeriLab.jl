@@ -537,7 +537,7 @@ end
     solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
     println()
     @test solver_options ==
-          ["Additive", "Pre_Calculation", "Damage", "Thermal", "Corrosion", "Material"]
+          ["Additive", "Damage", "Pre_Calculation", "Thermal", "Corrosion", "Material"]
     params = Dict("Solver" => Dict())
     solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
     @test solver_options == ["Pre_Calculation", "Material"]
@@ -550,7 +550,7 @@ end
     )
 
     solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
-    @test solver_options == ["Pre_Calculation", "Damage", "Thermal"]
+    @test solver_options == ["Damage", "Pre_Calculation", "Thermal"]
 end
 @testset "ut_get_number_of_blocks" begin
     @test isnothing(PeriLab.Solver.Parameter_Handling.get_number_of_blocks(Dict()))
