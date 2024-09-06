@@ -222,10 +222,7 @@ Checks if the specified `property` exists for the given `block_id`.
 function check_property(block_id::Int64, property::String)
     global properties
 
-    if haskey(properties[block_id], property)
-        return length(properties[block_id][property]) > 0
-    end
-    return false
+    haskey(properties[block_id], property) && !isempty(properties[block_id][property])
 end
 
 """
@@ -918,12 +915,10 @@ This function retrieves a specific `value_name` associated with a specified `pro
 function get_property(block_id::Int64, property::String, value_name::String)
     global properties
 
-    if check_property(block_id, property)
-        if value_name in keys(properties[block_id][property])
-            return properties[block_id][property][value_name]
-        end
+    if check_property(block_id, property) &&
+       haskey(properties[block_id][property], value_name)
+        return properties[block_id][property][value_name]
     end
-
     return nothing
 end
 

@@ -55,7 +55,7 @@ function bond_geometry(
         undeformed_bond[iID], undeformed_bond_length[iID] =
             calculate_bond_length(iID, coor, nlist[iID])
     end
-    if any(any.(x -> x == 0, [lengths for lengths in undeformed_bond_length]))
+    if any(any.(x -> x == 0, [lengths for lengths in undeformed_bond_length[nodes]]))
         @error "Identical point coordinates with no distance"
         return nothing
     end
