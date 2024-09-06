@@ -5,8 +5,7 @@
 using LinearAlgebra
 using AbaqusReader
 using DataFrames
-using NearestNeighbors: BallTree
-using NearestNeighbors: inrange
+using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 using OrderedCollections: OrderedDict
 using PrettyTables
 include("./logging.jl")
@@ -1521,13 +1520,25 @@ function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vect
     for i = 1:dof
         data[i, :] = values(mesh[!, coor[i]])
     end
-    balltree = BallTree(data)
-    for i = 1:nnodes
-        neighborList[i] =
-            inrange(balltree, data[:, i], get_horizon(params, mesh[!, "block_id"][i]), true)
-        # avoid self reference in neighborhood
-        index = findfirst(x -> x == i, neighborList[i])
-        deleteat!(neighborList[i], index)
+    block_ids = unique(mesh[!, "block_id"])
+    max_horizon = maximum(get_horizon(params, block_id) for block_id in block_ids)
+    nhs = GridNeighborhoodSearch{dof}(search_radius = max_horizon, n_points = nnodes)
+    initialize_grid!(nhs, data)
+
+    for iID = 1:nnodes
+        neighbors = []
+        foreach_neighbor(
+            data,
+            data,
+            nhs,
+            iID,
+            search_radius = get_horizon(params, mesh[!, "block_id"][iID]),
+        ) do i, j, _, L
+            if i != j
+                push!(neighbors, j)
+            end
+        end
+        neighborList[iID] = neighbors
     end
     return neighborList
 end

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Helpers
-using NearestNeighbors: BallTree, inrange
+using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 using Tensors
 using Dierckx
 using ProgressBars
@@ -289,13 +289,18 @@ function find_local_neighbors(
     # excludes right now iID node in the coordinates list. Because it is an abritrary sublist it should be fine.
     # saving faster than recalculation?
     nlist_without_neighbor = view(nlist[nlist.!=nID], :)
-    balltree = BallTree(transpose(coordinates[nlist_without_neighbor, :]))
-    return nlist_without_neighbor[inrange(
-        balltree,
-        coordinates[nID, :],
-        bond_horizon,
-        true,
-    )]
+    data = transpose(coordinates[nlist_without_neighbor, :])
+    nnodes = length(nlist_without_neighbor)
+    nhs = GridNeighborhoodSearch{size(coordinates)[2]}(
+        search_radius = bond_horizon,
+        n_points = nnodes,
+    )
+    initialize_grid!(nhs, data)
+    neighborList = []
+    foreach_neighbor(coordinates[nID, :], data, nhs, 1) do i, j, _, L
+        push!(neighborList, nlist_without_neighbor[j])
+    end
+    return neighborList
 end
 
 
