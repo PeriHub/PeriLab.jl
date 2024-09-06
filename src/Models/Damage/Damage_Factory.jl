@@ -12,7 +12,6 @@ using TimerOutputs
 using .Helpers: find_inverse_bond_id
 
 export compute_model
-export compute_damage_pre_calculation
 export init_interface_crit_values
 export init_model
 export init_fields
@@ -73,33 +72,6 @@ function compute_model(
     end
 
     return damage_index(datamanager, nodes, datamanager.get_filtered_nlist())
-end
-
-"""
-    compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
-
-Compute the pre calculation for the damage.
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `block::Int64`: Block number
-- `synchronise_field`: Synchronise function to distribute parameter through cores.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-"""
-function compute_damage_pre_calculation(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-    model_param::Dict,
-    time::Float64,
-    dt::Float64,
-)
-    mod = datamanager.get_model_module(model_param["Damage Model"])
-    return mod.compute_damage_pre_calculation(datamanager, nodes, block, time, dt)
 end
 
 """

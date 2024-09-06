@@ -63,14 +63,7 @@ end
         0.0,
         to,
     ) == test_data_manager
-    @test Damage_template.compute_damage_pre_calculation(
-        test_data_manager,
-        Vector{Int64}(1:3),
-        1,
-        "dummy for function",
-        0.0,
-        0.0,
-    ) == test_data_manager
+
     @test Damage_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
           test_data_manager
 end
