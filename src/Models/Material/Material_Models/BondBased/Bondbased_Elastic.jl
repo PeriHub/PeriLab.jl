@@ -145,7 +145,7 @@ function compute_model(
             ) .* deformed_bond[iID] ./ deformed_bond_length[iID]
 
     end
-    bond_force .*= E
+    bond_force[nodes] .*= E
     return datamanager
 end
 

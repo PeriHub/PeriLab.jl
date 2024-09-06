@@ -137,6 +137,7 @@ function compute_models(
     active = datamanager.get_field("Active")
     # TODO check if pre calculation should run block wise. For mixed model applications it makes sense.
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
+    # TODO check for loop order?
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
         if active_model_name == "Damage Model"
@@ -153,10 +154,10 @@ function compute_models(
         #end
         for (block, nodes) in pairs(block_nodes)
             #active_nodes = view(nodes, find_active(active[nodes]))
-            if !(active_model_name == "Additive Model")
-                active_nodes = view(nodes, find_active(active[nodes]))
-            else
+            if active_model_name == "Additive Model"
                 active_nodes = @view nodes[:]
+            else
+                active_nodes = view(nodes, find_active(active[nodes]))
             end
             if fem_option
                 # find all non-FEM nodes
@@ -189,6 +190,7 @@ function compute_models(
         end
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
         for block in eachindex(block_nodes)
+            # TODO not optimal
             active_nodes, update_nodes =
                 get_active_update_nodes(active, update_list, block_nodes, block)
             if fem_option
@@ -224,12 +226,16 @@ function compute_models(
             )
     end
 
-    if "Thermal" in options
-        @timeit to "distribute_heat_flows" datamanager = Thermal.distribute_heat_flows(
-            datamanager,
-            find_active(active[1:datamanager.get_nnodes()]),
-        )
-    end
+
+
+
+    # TODO Does not do anything, yet?
+    #if "Thermal" in options
+    #    @timeit to "distribute_heat_flows" datamanager = Thermal.distribute_heat_flows(
+    #        datamanager,
+    #        find_active(active[1:datamanager.get_nnodes()]),
+    #    )
+    #end
 
     # if !occursin("Correspondence", model_param["Material Model"])
     #     if options["Calculate Cauchy"] |
