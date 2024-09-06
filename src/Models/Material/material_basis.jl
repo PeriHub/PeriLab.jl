@@ -334,11 +334,11 @@ function distribute_forces(
 )
     for iID in nodes
         force_densities[iID, :] .+= transpose(
-            sum(bond_damage[iID] .* bond_force[iID][:, :] .* volume[nlist[iID]], dims = 1),
+            sum(bond_damage[iID] .* bond_force[iID] .* volume[nlist[iID]], dims = 1),
         )
 
         force_densities[nlist[iID], :] .-=
-            bond_damage[iID] .* bond_force[iID][:, :] .* volume[iID]
+            bond_damage[iID] .* bond_force[iID] .* volume[iID]
     end
     return force_densities
 end
