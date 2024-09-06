@@ -122,16 +122,15 @@ function compute_model(
     bond_damage = datamanager.get_bond_damage("NP1")
     bond_force = datamanager.get_field("Bond Forces")
 
-
     E = material_parameter["Young's Modulus"]
 
     for iID in nodes
         if symmetry == "plane stress"
-            constant = 9.0 / (pi * horizon[iID]^3)
+            constant = 12 / (2 * (1 - 1 / 3)) / (pi * horizon[iID]^3) # from EQ 2.9 +2.9 D=2 in Handbook of PD
         elseif symmetry == "plane strain"
-            constant = 48 / (5 * pi * horizon[iID]^3)
+            constant = 12 / (2 * (1 - 0.25 + 0.25 * 0.25)) / (pi * horizon[iID]^3) # from EQ 2.12 + 2.9 D=2 in Handbook of PD
         else
-            constant = 27.0 / (pi * horizon[iID]^4)
+            constant = 18 / (3 - 2 / 3) / (pi * horizon[iID]^4) # from EQ 2.12 D=3 in Handbook of PD
         end
         if any(deformed_bond_length[iID] .== 0)
             @error "Length of bond is zero due to its deformation."

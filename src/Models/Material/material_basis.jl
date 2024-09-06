@@ -85,7 +85,7 @@ function get_all_elastic_moduli(
 
     if bulk && Poissons
         E = 3 .* K .* (1 .- 2 .* nu)
-        G = 3 .* K .* (1 .- nu ./ (2 .+ 2 .* nu))
+        G = 3 .* K .* (1 .- 2 .* nu) ./ (2 .+ 2 .* nu)
     end
     if shear && Poissons
         E = 2 .* G .* (1 .+ nu)
@@ -111,6 +111,7 @@ function get_all_elastic_moduli(
     # tbd non isotropic material check
     if bulk + Youngs + shear + Poissons < 2
         @error "Minimum of two parameters are needed for isotropic material"
+        return nothing
     end
     parameter["Bulk Modulus"] = K
     parameter["Young's Modulus"] = E
