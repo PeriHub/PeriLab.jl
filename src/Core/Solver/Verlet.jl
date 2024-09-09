@@ -135,7 +135,7 @@ function compute_mechanical_critical_time_step(
 
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
-
+        # TODO Adapt to 2D applications
         springConstant =
             18.0 * maximum(bulk_modulus) /
             (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
