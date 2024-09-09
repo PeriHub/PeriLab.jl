@@ -145,7 +145,8 @@ function compute_model(
             ) .* deformed_bond[iID] ./ deformed_bond_length[iID]
 
     end
-    bond_force[nodes] .*= E
+    # checks if E is scalar or a vector. Is needed for point wise definition
+    bond_force[nodes] .*= isa(E, Float64) ? E : E[nodes]
     return datamanager
 end
 
