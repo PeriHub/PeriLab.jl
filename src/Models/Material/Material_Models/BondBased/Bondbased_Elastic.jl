@@ -146,7 +146,12 @@ function compute_model(
 
     end
     # checks if E is scalar or a vector. Is needed for point wise definition
-    bond_force[nodes] .*= isa(E, Float64) ? E : E[nodes]
+    #bond_force[nodes] .*= isa(E, Float64) ? E : E[nodes]
+    if isa(E, Float64) # faster than the on line solution
+        bond_force[nodes] .*= E
+    else
+        bond_force[nodes] .*= E[nodes]
+    end
     return datamanager
 end
 
