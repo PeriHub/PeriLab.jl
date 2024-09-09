@@ -14,7 +14,6 @@ PeriLab:
         Material Model: "Bond-based Elastic"
         Symmetry: "isotropic plane stress"
         Young's Modulus: 7.0e+10
-        Poisson's Ratio: 0.3
         Zero Energy Control: "Global"
     Thermal Models:
       Thermal test:

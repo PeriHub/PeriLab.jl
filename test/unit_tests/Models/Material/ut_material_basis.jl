@@ -129,24 +129,37 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(3)
     ref_parameter = Dict(
+        "Material Model" => "PD Solid Elastic",
         "Bulk Modulus" => 0,
         "Computed" => true,
         "Young's Modulus" => 0,
         "Shear Modulus" => 0,
         "Poisson's Ratio" => 0,
     )
-    test = get_all_elastic_moduli(test_data_manager, Dict{String,Any}())
+    test = get_all_elastic_moduli(
+        test_data_manager,
+        Dict{String,Any}("Material Model" => "PD Solid Elastic"),
+    )
     @test isnothing(test)
 
-    parameter = Dict{String,Any}("Bulk Modulus" => 1000, "Young's Modulus" => 10)
-    get_all_elastic_moduli(test_data_manager, parameter)
-    @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
-
-    parameter = Dict{String,Any}("Bulk Modulus" => 1, "Shear Modulus" => 10)
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Bulk Modulus" => 1000,
+        "Young's Modulus" => 10,
+    )
     get_all_elastic_moduli(test_data_manager, parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
     parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Bulk Modulus" => 1,
+        "Shear Modulus" => 10,
+    )
+    get_all_elastic_moduli(test_data_manager, parameter)
+    @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
+
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
         "Bulk Modulus" => 1,
         "Shear Modulus" => 10,
         "Poisson's Ratio" => 0.2,
@@ -154,41 +167,85 @@ end
     get_all_elastic_moduli(test_data_manager, parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
-    parameter = Dict{String,Any}("Bulk Modulus" => 10, "Shear Modulus" => 10)
+    parameter =
+        Dict{String,Any}("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 10)
+    @test isnothing(get_all_elastic_moduli(test_data_manager, parameter))
+
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Bulk Modulus" => 10,
+        "Shear Modulus" => 10,
+    )
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Young's Modulus"] == Float64(22.5)
     @test parameter["Poisson's Ratio"] == Float64(0.125)
     @test parameter["Bulk Modulus"] == 10
     @test parameter["Shear Modulus"] == 10
 
-    parameter = Dict{String,Any}("Bulk Modulus" => 5, "Shear Modulus" => 1.25)
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Bulk Modulus" => 5,
+        "Shear Modulus" => 1.25,
+    )
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Young's Modulus"] / 3.4615384615384617 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] / 0.45454545454545453 - 1 < 1e-7
     @test parameter["Bulk Modulus"] == 5
     @test parameter["Shear Modulus"] == Float64(1.25)
 
-    parameter = Dict{String,Any}("Bulk Modulus" => 5, "Young's Modulus" => 1.25)
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Bulk Modulus" => 5,
+        "Young's Modulus" => 1.25,
+    )
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Shear Modulus"] / 4.2857142857142855e-1 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] / 0.4583333333333333 - 1 < 1e-7
 
-    parameter = Dict{String,Any}("Poisson's Ratio" => 0.45, "Shear Modulus" => 1.25)
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Poisson's Ratio" => 0.45,
+        "Shear Modulus" => 1.25,
+    )
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Young's Modulus"] / 3.625e+0 - 1 < 1e-8
     @test parameter["Bulk Modulus"] / 1.2083333333333336e+1 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] == Float64(0.45)
     @test parameter["Shear Modulus"] == Float64(1.25)
 
-    parameter = Dict{String,Any}("Young's Modulus" => 5, "Poisson's Ratio" => 0.125)
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Young's Modulus" => 5,
+        "Poisson's Ratio" => 0.125,
+    )
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Bulk Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
     @test parameter["Shear Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] == Float64(0.125)
     @test parameter["Young's Modulus"] == 5
 
+    parameter =
+        Dict{String,Any}("Material Model" => "Bond-based Elastic", "Young's Modulus" => 5)
+    get_all_elastic_moduli(test_data_manager, parameter)
+    @test parameter["Bulk Modulus"] == 5
+    @test parameter["Shear Modulus"] == 1.875
+    @test parameter["Poisson's Ratio"] == Float64(1 / 3)
+    @test parameter["Young's Modulus"] == 5
+
+    parameter = Dict{String,Any}(
+        "Material Model" => "Bond-based Elastic",
+        "Young's Modulus" => 5,
+        "Poisson's Ratio" => 0.125,
+    )
+    get_all_elastic_moduli(test_data_manager, parameter)
+    @test parameter["Bulk Modulus"] == 5
+    @test parameter["Shear Modulus"] == 1.875
+    @test parameter["Poisson's Ratio"] == Float64(1 / 3)
+    @test parameter["Young's Modulus"] == 5
+
     test_data_manager.create_constant_node_field("Bulk_Modulus", Float64, 1, 10)
-    parameter = Dict{String,Any}("Shear Modulus" => 10)
+    parameter =
+        Dict{String,Any}("Material Model" => "PD Solid Elastic", "Shear Modulus" => 10)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Young's Modulus"] == [22.5, 22.5, 22.5]
     @test parameter["Poisson's Ratio"] == [0.125, 0.125, 0.125]
@@ -200,6 +257,7 @@ end
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
         "Bulk Modulus" => 5,
         "Shear Modulus" => 1.25,
         "Poisson's Ratio" => 0.2,

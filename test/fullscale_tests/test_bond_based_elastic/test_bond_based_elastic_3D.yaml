@@ -20,12 +20,10 @@ PeriLab:
         Material Model: "Bond-based Elastic"
         Symmetry: "isotropic plane strain"
         Bulk Modulus: 2.5e+3
-        Shear Modulus: 1.15e3
       Mat_2:
         Material Model: "Bond-based Elastic"
         Symmetry: "isotropic plane strain"
         Bulk Modulus: 3.5e+3
-        Shear Modulus: 2.15e3
   Blocks:
     block_1:
       Material Model: "Mat_1"
