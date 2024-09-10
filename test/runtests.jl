@@ -248,6 +248,9 @@ MPI.Init()
             include("fullscale_tests/test_thermal_flow/test_thermal_flow.jl")
             # include("fullscale_tests/test_thermal_flow_paper/test_thermal_flow.jl")
         end
+        @testset "test_hetval" begin
+            include("fullscale_tests/test_hetval/test_hetval.jl")
+        end
         @testset "test_Correspondence_Elastic" begin
             include(
                 "fullscale_tests/test_correspondence_elastic/test_correspondence_elastic.jl",

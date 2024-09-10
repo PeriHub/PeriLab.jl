@@ -548,6 +548,7 @@ function compute_stresses(
 
     return hookeMatrix * strain_increment + stress_N, datamanager
 end
+
 """
 
   function is taken from here
