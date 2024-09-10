@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 export get_initial_time
-export get_solver_options
+export get_model_options
 export get_solver_name
 export get_safety_factor
 export get_final_time
@@ -140,7 +140,7 @@ function get_max_damage(params::Dict)
 end
 
 """
-    get_solver_options(params::Dict)
+    get_model_options(params::Dict)
 
 Get the solver options
 
@@ -149,23 +149,40 @@ Get the solver options
 # Returns
 - `solver_options::Dict`: The solver options
 """
-function get_solver_options(params::Dict)
+function get_model_options(params::Dict)
     additive::Bool = get(params["Solver"], "Additive Models", false)
     corrosion::Bool = get(params["Solver"], "Corrosion Models", false)
     damage::Bool = get(params["Solver"], "Damage Models", false)
-    mechanical::Bool = get(params["Solver"], "Material Models", true)
-    cauchy::Bool = get(params["Solver"], "Calculate Cauchy", false)
-    von_mises::Bool = get(params["Solver"], "Calculate von Mises", false)
-    strain::Bool = get(params["Solver"], "Calculate Strain", false)
+    material::Bool = get(params["Solver"], "Material Models", true)
     thermal::Bool = get(params["Solver"], "Thermal Models", false)
-    return Dict{String,Any}(
-        "Additive Models" => additive,
-        "Corrosion Models" => corrosion,
-        "Damage Models" => damage,
-        "Material Models" => mechanical,
-        "Calculate Cauchy" => cauchy,
-        "Calculate von Mises" => von_mises,
-        "Calculate Strain" => strain,
-        "Thermal Models" => thermal,
+    pre_calculation::Bool = get(params["Solver"], "Pre Calculation", true)
+    ###
+    # TODO here, the order is predefined. Wrong place!
+    ###
+    return Vector{String}(
+        filter(
+            !isnothing,
+            [
+                if additive
+                    "Additive"
+                end
+                if damage
+                    "Damage"
+                end
+                if pre_calculation
+                    "Pre_Calculation"
+                end
+                if thermal
+                    "Thermal"
+                end
+                if corrosion
+                    "Corrosion"
+                end
+                if material
+                    "Material"
+                end
+            ],
+        ),
     )
+
 end

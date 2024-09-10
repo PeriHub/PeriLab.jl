@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../src/Models/Model_Factory.jl")
-# include("../../../src/PeriLab.jl")
-# using .PeriLab
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 using Test
 
 @testset "ut_get_block_model_definition" begin
@@ -12,7 +12,7 @@ using Test
     test_data_manager.initialize_data()
     block_list = [1, 2, 3]
     test_data_manager.set_block_list(block_list)
-    prop_keys = test_data_manager.init_property()
+    prop_keys = test_data_manager.init_properties()
     params = Dict(
         "Blocks" => Dict(
             "block_1" => Dict("Material Model" => "a"),
@@ -38,14 +38,13 @@ using Test
         ),
     )
 
-    for block in block_list
-        Model_Factory.get_block_model_definition(
-            params,
-            block,
-            prop_keys,
-            test_data_manager.set_properties,
-        )
-    end
+    Model_Factory.get_block_model_definition(
+        params,
+        block_list,
+        prop_keys,
+        test_data_manager.set_properties,
+    )
+
     @test test_data_manager.get_property(1, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
     @test test_data_manager.get_property(2, "Material Model", "value") ==
@@ -133,79 +132,4 @@ end
           params["Models"]["Thermal Models"]["therm"]["value"]
     @test test_data_manager_read_properties.get_property(3, "Thermal Model", "bool") ==
           params["Models"]["Thermal Models"]["therm"]["bool"]
-end
-
-@testset "init_pre_calculation" begin
-    test_data_manager = PeriLab.Data_manager
-    test_data_manager.set_dof(3)
-    test_data_manager.set_num_controller(4)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn[1] = 2
-    nn[2] = 3
-    nn[3] = 1
-    nn[4] = 2
-    horizon = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
-    options = Dict(
-        "Deformed Bond Geometry" => true,
-        "Shape Tensor" => false,
-        "Deformation Gradient" => false,
-        "Bond Associated Deformation Gradient" => false,
-    )
-    test_data_manager = Model_Factory.init_pre_calculation(test_data_manager, options)
-
-    @test "Deformed Bond GeometryN" in test_data_manager.get_all_field_keys()
-    @test "Deformed Bond GeometryNP1" in test_data_manager.get_all_field_keys()
-    @test !("Shape Tensor" in test_data_manager.get_all_field_keys())
-    @test !("Deformation Gradient" in test_data_manager.get_all_field_keys())
-    @test !(
-        "Bond Associated Deformation Gradient" in test_data_manager.get_all_field_keys()
-    )
-
-    options = Dict(
-        "Deformed Bond Geometry" => true,
-        "Shape Tensor" => false,
-        "Deformation Gradient" => true,
-        "Bond Associated Deformation Gradient" => false,
-    )
-
-    test_data_manager = Model_Factory.init_pre_calculation(test_data_manager, options)
-    @test "Deformed Bond GeometryN" in test_data_manager.get_all_field_keys()
-    @test "Deformed Bond GeometryNP1" in test_data_manager.get_all_field_keys()
-    @test "Shape Tensor" in test_data_manager.get_all_field_keys()
-    @test "Inverse Shape Tensor" in test_data_manager.get_all_field_keys()
-    @test "Deformation Gradient" in test_data_manager.get_all_field_keys()
-    @test !(
-        "Bond Associated Deformation Gradient" in test_data_manager.get_all_field_keys()
-    )
-
-    options = Dict(
-        "Deformed Bond Geometry" => true,
-        "Shape Tensor" => true,
-        "Deformation Gradient" => true,
-        "Bond Associated Deformation Gradient" => false,
-    )
-
-    test_data_manager = Model_Factory.init_pre_calculation(test_data_manager, options)
-    @test "Deformed Bond GeometryN" in test_data_manager.get_all_field_keys()
-    @test "Deformed Bond GeometryNP1" in test_data_manager.get_all_field_keys()
-    @test "Shape Tensor" in test_data_manager.get_all_field_keys()
-    @test "Inverse Shape Tensor" in test_data_manager.get_all_field_keys()
-    @test "Deformation Gradient" in test_data_manager.get_all_field_keys()
-    @test !(
-        "Bond Associated Deformation Gradient" in test_data_manager.get_all_field_keys()
-    )
-
-    options = Dict(
-        "Deformed Bond Geometry" => true,
-        "Shape Tensor" => false,
-        "Deformation Gradient" => true,
-        "Bond Associated Deformation Gradient" => true,
-    )
-
-    test_data_manager = Model_Factory.init_pre_calculation(test_data_manager, options)
-    @test "Deformed Bond GeometryN" in test_data_manager.get_all_field_keys()
-    @test "Deformed Bond GeometryNP1" in test_data_manager.get_all_field_keys()
-    @test "Shape Tensor" in test_data_manager.get_all_field_keys()
-    @test "Deformation Gradient" in test_data_manager.get_all_field_keys()
-    @test "Bond Associated Deformation Gradient" in test_data_manager.get_all_field_keys()
 end

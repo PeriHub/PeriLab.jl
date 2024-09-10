@@ -5,10 +5,10 @@
 module Bondbased_Elastic
 include("../../material_basis.jl")
 using TimerOutputs
-export init_material_model
+export init_model
 export fe_support
 export material_name
-export compute_forces
+export compute_model
 
 """
   fe_support()
@@ -32,7 +32,7 @@ end
 
 
 """
-  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
 Initializes the material model.
 
@@ -44,7 +44,7 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
@@ -63,7 +63,33 @@ function material_name()
 end
 
 """
-    compute_forces(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    return Dict()
+end
+
+"""
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
@@ -76,10 +102,11 @@ Calculate the elastic bond force for each node.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
     to::TimerOutput,
@@ -95,16 +122,15 @@ function compute_forces(
     bond_damage = datamanager.get_bond_damage("NP1")
     bond_force = datamanager.get_field("Bond Forces")
 
-
     E = material_parameter["Young's Modulus"]
 
     for iID in nodes
         if symmetry == "plane stress"
-            constant = 9.0 / (pi * horizon[iID]^3)
+            constant = 12 / (2 * (1 - 1 / 3)) / (pi * horizon[iID]^3) # from EQ 2.9 +2.9 D=2 in Handbook of PD
         elseif symmetry == "plane strain"
-            constant = 48 / (5 * pi * horizon[iID]^3)
+            constant = 12 / (2 * (1 - 0.25 + 0.25 * 0.25)) / (pi * horizon[iID]^3) # from EQ 2.12 + 2.9 D=2 in Handbook of PD
         else
-            constant = 27.0 / (pi * horizon[iID]^4)
+            constant = 18 / (3 - 2 / 3) / (pi * horizon[iID]^4) # from EQ 2.12 D=3 in Handbook of PD
         end
         if any(deformed_bond_length[iID] .== 0)
             @error "Length of bond is zero due to its deformation."
@@ -119,7 +145,13 @@ function compute_forces(
             ) .* deformed_bond[iID] ./ deformed_bond_length[iID]
 
     end
-    bond_force .*= E
+    # checks if E is scalar or a vector. Is needed for point wise definition
+    #bond_force[nodes] .*= isa(E, Float64) ? E : E[nodes]
+    if isa(E, Float64) # faster than the on line solution
+        bond_force[nodes] .*= E
+    else
+        bond_force[nodes] .*= E[nodes]
+    end
     return datamanager
 end
 

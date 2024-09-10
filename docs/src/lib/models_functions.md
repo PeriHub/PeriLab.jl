@@ -13,11 +13,8 @@ CurrentModule = PeriLab.Solver.Model_Factory
 compute_models
 compute_damage_pre_calculation
 get_block_model_definition
-init_material_model_fields
-init_damage_model_fields
 init_models
-init_thermal_model_fields
-init_additive_model_fields
+init_fields
 init_pre_calculation
 read_properties
 set_heat_capacity
@@ -29,7 +26,7 @@ CurrentModule = PeriLab.Solver.Model_Factory.Additive
 ## Additive
 ```@docs
 Set_modules.Additive_template.additive_name
-Set_modules.Additive_template.compute_additive_model
+Set_modules.Additive_template.compute_model
 ```
 
 ```@meta
@@ -38,7 +35,7 @@ CurrentModule = PeriLab.Solver.Model_Factory.Damage
 ## Damage
 ```@docs
 Set_modules.Damage_template.damage_name
-Set_modules.Damage_template.compute_damage
+Set_modules.Damage_template.compute_model
 Set_modules.Damage_template.compute_damage_pre_calculation
 damage_index
 set_bond_damage
@@ -52,9 +49,9 @@ CurrentModule = PeriLab.Solver.Model_Factory.Material
 ```
 ## Material
 ```@docs
-Set_modules.Material_template.init_material_model
+Set_modules.Material_template.init_model
 Set_modules.Material_template.material_name
-Set_modules.Material_template.compute_forces
+Set_modules.Material_template.compute_model
 determine_isotropic_parameter
 check_material_symmetry
 distribute_force_densities
@@ -88,7 +85,7 @@ CurrentModule = PeriLab.Solver.Model_Factory.Thermal
 ## Thermal
 ```@docs
 Set_modules.Thermal_template.thermal_model_name
-Set_modules.Thermal_template.compute_thermal_model
+Set_modules.Thermal_template.compute_model
 distribute_heat_flows
 Thermal.Set_modules.Heat_transfer.calculate_specific_volume
 Thermal.Set_modules.Thermal_expansion.thermal_deformation

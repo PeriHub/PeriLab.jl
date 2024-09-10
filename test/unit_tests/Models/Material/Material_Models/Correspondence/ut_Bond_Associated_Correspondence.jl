@@ -10,9 +10,9 @@ using Test
 #using .PeriLab
 
 
-@testset "ut_correspondence_name" begin
+@testset "ut_ba_correspondence_name" begin
     @test Bond_Associated_Correspondence.correspondence_name() ==
-          "Correspondence Bond-Associated"
+          "Bond Associated Correspondence"
 end
 
 @testset "ut_compute_bond_strain" begin
@@ -100,15 +100,11 @@ end
     test_data_manager.create_bond_field("Bond Damage", Float64, 1)
 
     @test isnothing(
-        Bond_Associated_Correspondence.init_material_model(
-            test_data_manager,
-            nodes,
-            Dict(),
-        ),
+        Bond_Associated_Correspondence.init_model(test_data_manager, nodes, Dict()),
     )
 
     material_parameter = Dict{String,Any}("Symmetry" => "isotropic")
-    test_data_manager = Bond_Associated_Correspondence.init_material_model(
+    test_data_manager = Bond_Associated_Correspondence.init_model(
         test_data_manager,
         nodes,
         material_parameter,
@@ -117,7 +113,7 @@ end
     @test test_data_manager.get_accuracy_order() == 1
 
     material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
-    test_data_manager = Bond_Associated_Correspondence.init_material_model(
+    test_data_manager = Bond_Associated_Correspondence.init_model(
         test_data_manager,
         nodes,
         material_parameter,

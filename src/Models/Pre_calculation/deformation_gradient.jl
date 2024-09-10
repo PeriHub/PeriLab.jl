@@ -3,9 +3,58 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Deformation_Gradient
+using DataStructures: OrderedDict
 include("../../Support/geometry.jl")
 using .Geometry: compute_deformation_gradient
+export pre_calculation_name
+export init_model
 export compute
+
+
+"""
+    pre_calculation_name()
+
+Gives the pre_calculation name. It is needed for comparison with the yaml input deck.
+
+# Arguments
+
+# Returns
+- `name::String`: The name of the Pre_Calculation.
+
+Example:
+```julia
+println(pre_calculation_name())
+"Deformation Gradient"
+```
+"""
+function pre_calculation_name()
+    return "Deformation Gradient"
+end
+
+"""
+    init_model(datamanager, nodes, parameter)
+
+Inits the deformation gradient calculation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `parameter::Dict(String, Any)`: Dictionary with parameter.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+
+"""
+function init_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    parameter::Union{Dict,OrderedDict},
+    block::Int64,
+)
+    dof = datamanager.get_dof()
+    datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+    return datamanager
+end
+
 """
     compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 
@@ -17,7 +66,12 @@ Compute the deformation gradient.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block_id::Int64)
+function compute(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    parameter::Union{Dict,OrderedDict},
+    block::Int64,
+)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")

@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Heat_transfer
-export compute_thermal_model
+export compute_model
 export thermal_model_name
-export init_thermal_model
+export init_model
 """
     thermal_model_name()
 
@@ -28,7 +28,7 @@ end
 
 
 """
-    init_thermal_model(datamanager, nodes, thermal_parameter)
+    init_model(datamanager, nodes, thermal_parameter)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -41,7 +41,7 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_thermal_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,
@@ -51,7 +51,7 @@ function init_thermal_model(
 end
 
 """
-    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_model(datamanager, nodes, thermal_parameter, time, dt)
 
 Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
@@ -67,10 +67,11 @@ Example:
 ```julia
 ```
 """
-function compute_thermal_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
 )
@@ -168,4 +169,31 @@ function calculate_specific_volume(
 
     return specific_volume
 end
+
+"""
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    return Dict()
+end
+
 end

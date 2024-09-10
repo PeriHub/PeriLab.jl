@@ -265,11 +265,13 @@ end
     block_Id[end] = 2
     test_data_manager.set_block_list([1, 1, 1, 1, 2])
     solver_options = Dict(
-        "Material Models" => true,
-        "Damage Models" => true,
-        "Additive Models" => true,
-        "Thermal Models" => true,
-        "Corrosion Models" => true,
+        "Models" => (
+            "Material Models" => true,
+            "Damage Models" => true,
+            "Additive Models" => true,
+            "Thermal Models" => true,
+            "Corrosion Models" => true,
+        ),
     )
     params = Dict(
         "Blocks" => Dict(
@@ -300,6 +302,6 @@ end
 end
 
 @testset "ut_show_mpi_summary" begin
-    # Not tested yet because MPI.size=1
-    PeriLab.IO.show_mpi_summary("", false, comm, test_data_manager)
+    # Not fully tested yet because MPI.size=1
+    @test PeriLab.IO.show_mpi_summary("", false, comm, test_data_manager) == 1
 end

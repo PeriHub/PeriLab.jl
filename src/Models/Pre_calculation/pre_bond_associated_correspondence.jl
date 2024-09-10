@@ -2,13 +2,75 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Bond_Deformation_Gradient
-
+module Pre_Bond_Associated_Correspondence
+using DataStructures: OrderedDict
 include("../../Support/geometry.jl")
 using .Geometry: calculate_bond_length, compute_weighted_deformation_gradient
+export pre_calculation_name
+export init_model
 export compute
+
 include("../../Support/helpers.jl")
 using .Helpers: invert, qdim
+
+
+"""
+    pre_calculation_name()
+
+Gives the pre_calculation name. It is needed for comparison with the yaml input deck.
+
+# Arguments
+
+# Returns
+- `name::String`: The name of the Pre_Calculation.
+
+Example:
+```julia
+println(pre_calculation_name())
+"Bond Associated Correspondence"
+```
+"""
+function pre_calculation_name()
+    return "Bond Associated Correspondence"
+end
+
+
+"""
+    init_model(datamanager, nodes, parameter)
+
+Inits the bond deformation gradient calculation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `parameter::Dict(String, Any)`: Dictionary with parameter.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+
+"""
+function init_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    parameter::Union{Dict,OrderedDict},
+    block::Int64,
+)
+    dof = datamanager.get_dof()
+    datamanager.create_constant_bond_field(
+        "Bond Associated Deformation Gradient",
+        Float64,
+        "Matrix",
+        dof,
+    )
+    datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+    datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
+    datamanager.create_constant_node_field(
+        "Weighted Deformation Gradient",
+        Float64,
+        "Matrix",
+        dof,
+    )
+    return datamanager
+end
 
 """
     compute(datamanager, nodes)
@@ -22,8 +84,12 @@ Compute the bond deformation gradient.
 - `datamanager`: Datamanager.
 """
 
-
-function compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block_id::Int64)
+function compute(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    parameter::Union{Dict,OrderedDict},
+    block::Int64,
+)
 
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()

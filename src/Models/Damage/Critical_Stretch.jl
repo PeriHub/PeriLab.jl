@@ -3,12 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_stretch
-include("../Pre_calculation/Pre_Calculation_Factory.jl")
-using .Pre_calculation
-export compute_damage
-export compute_damage_pre_calculation
+
+export compute_model
 export damage_name
-export init_damage_model
+export init_model
+export synch_field
 """
     damage_name()
 
@@ -30,7 +29,7 @@ function damage_name()
 end
 
 """
-    compute_damage(datamanager, nodes, damage_parameter, block, time, dt)
+    compute_model(datamanager, nodes, damage_parameter, block, time, dt)
 
 Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 
@@ -47,7 +46,7 @@ Example:
 ```julia
 ```
 """
-function compute_damage(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     damage_parameter::Dict,
@@ -106,31 +105,32 @@ function compute_damage(
 end
 
 """
-    compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+    fields_for_local_synchronization()
 
-Compute the pre calculation for the damage.
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `block::Int64`: Block number
-- `synchronise_field`: Synchronise function to distribute parameter through cores.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
+
 """
-function compute_damage_pre_calculation(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-)
-    return datamanager
+function fields_for_local_synchronization()
+    return Dict()
 end
 
-function init_damage_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     damage_parameter::Dict,

@@ -50,7 +50,7 @@ function compute_coupling(
     coupling_model = complete_params["FEM"]["Coupling"]["Coupling Type"]
 
     mod = datamanager.get_model_module(coupling_model)
-    return mod.compute_thermal_model(datamanager, elements, nodes, complete_params)
+    return mod.compute_model(datamanager, elements, nodes, complete_params)
 
 end
 

@@ -37,7 +37,7 @@ Reads the input deck from a yaml file
 # Arguments
 - `filename::String`: The name of the yaml file
 # Returns
-- `params::Dict{String,Any}`: The parameters read from the yaml file
+- `Dict{String,Any}`: The validated parameters read from the yaml file.
 """
 function read_input_file(filename::String)
     params = Dict{String,Any}()
@@ -45,13 +45,10 @@ function read_input_file(filename::String)
         @error "$filename does not exist."
         return nothing
     end
-    if occursin("yaml", filename)
-        @info "Read input file $filename"
-        params = read_input(filename)
-    else
-        @error "Not a supported filetype  $filename"
+    if !occursin("yaml", filename)
+        @error "Not a supported filetype $filename"
         return nothing
     end
-    return validate_yaml(params)
-
+    @info "Read input file $filename"
+    return validate_yaml(read_input(filename))
 end

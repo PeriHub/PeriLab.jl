@@ -12,12 +12,12 @@ using .Geometry:
     compute_strain,
     compute_bond_level_rotation_tensor,
     compute_bond_level_deformation_gradient
-include("../../../Pre_calculation/bond_deformation_gradient.jl")
-using .Bond_Deformation_Gradient: compute_weighted_volume
+include("../../../Pre_calculation/pre_bond_associated_correspondence.jl")
+using .Pre_Bond_Associated_Correspondence: compute_weighted_volume
 using TimerOutputs
 
-export init_material_model
-export compute_forces
+export init_model
+export compute_model
 
 """
     correspondence_name()
@@ -36,10 +36,10 @@ println(correspondence_name())
 ```
 """
 function correspondence_name()
-    return "Correspondence Bond-Associated"
+    return "Bond Associated Correspondence"
 end
 
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
@@ -73,6 +73,32 @@ function init_material_model(
 end
 
 """
+    fields_to_local_synchronize()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_to_local_synchronize()
+    return Dict()
+end
+
+"""
 https://link.springer.com/article/10.1007/s10409-021-01055-5
 
 
@@ -85,10 +111,11 @@ https://link.springer.com/article/10.1007/s10409-021-01055-5
   -> numbers are correct and it allows a change in size -> local ID is correct
 """
 
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
     to::TimerOutput,

@@ -4,7 +4,9 @@
 
 module Data_manager
 using MPI
+using DataStructures: OrderedDict
 
+export add_active_model
 export create_bond_field
 export create_constant_free_size_field
 export create_constant_bond_field
@@ -12,6 +14,7 @@ export create_constant_node_field
 export create_node_field
 export fem_active
 export initialize_data
+export get_active_models
 export get_all_field_keys
 export has_key
 export get_accuracy_order
@@ -29,19 +32,20 @@ export get_nnsets
 export get_nsets
 export get_nnodes
 export get_num_elements
-export get_models_options
+export get_pre_calculation_order
 export get_properties
 export get_property
 export get_rank
 export get_num_responder
 export get_max_rank
 export get_cancel
+export get_damage_models
+export get_material_model
 export get_output_frequency
 export get_rotation
 export get_element_rotation
-export get_damage_models
-export get_material_models
-export init_property
+export init_properties
+export remove_active_model
 export set_accuracy_order
 export set_block_list
 export set_crit_values_matrix
@@ -50,12 +54,14 @@ export set_directory
 export set_inverse_nlist
 export set_fem
 export set_glob_to_loc
+export set_damage_models
+export set_material_model
 export set_model_module
 export set_num_controller
 export set_nset
 export set_num_elements
 export set_num_responder
-export set_models_options
+export set_pre_calculation_order
 export set_property
 export set_rank
 export set_max_rank
@@ -63,13 +69,12 @@ export set_cancel
 export set_output_frequency
 export set_rotation
 export set_element_rotation
-export set_damage_models
-export set_material_models
 export switch_NP1_to_N
 export synch_manager
 ##########################
 # Variables
 ##########################
+global active_models::OrderedDict{String,Module}
 global nnodes::Int64
 global num_controller::Int64
 global num_responder::Int64
@@ -81,7 +86,7 @@ global block_list::Vector{Int64}
 global distribution::Vector{Int64}
 global crit_values_matrix::Array{Float64,3}
 global aniso_crit_values::Dict{Int64,Vector{Float64}}
-global properties::Dict{Int64,Dict{String,Any}}
+global properties::OrderedDict{Int64,OrderedDict{String,Any}}
 global glob_to_loc::Dict{Int64,Int64}
 global fields::Dict{DataType,Dict{String,Any}}
 global field_array_type::Dict{String,Dict{String,Any}}
@@ -89,10 +94,10 @@ global field_types::Dict{String,DataType}
 global fields_to_synch::Dict{String,Any}
 global filedirectory::String
 global inverse_nlist::Vector{Dict{Int64,Int64}}
-global model_modules::Dict{String,Module}
+global model_modules::OrderedDict{String,Module}
 global nsets::Dict{String,Vector{Int}}
 global overlap_map::Dict{Int64,Any}
-global models_options::Dict{String,Bool}
+global pre_calculation_order::Vector{String}
 global output_frequency::Vector{Dict}
 global accuracy_order::Int64
 global rank::Int64
@@ -112,50 +117,91 @@ global material_models::Vector{String}
 Initialize all parameter in the datamanager and sets them to the default values.
 """
 function initialize_data()
-    global nnodes = 0
-    global num_controller = 0
-    global num_responder = 0
-    global num_elements = 0
-    global nnsets = 0
-    global dof = 2
-    global fem_option = false
-    global block_list = []
-    global distribution = []
-    global crit_values_matrix = fill(-1, (1, 1, 1))
-    global aniso_crit_values = Dict()
-    global properties = Dict()
-    global glob_to_loc = Dict()
-    global fields = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
-    global field_array_type = Dict()
-    global field_types = Dict()
-    global fields_to_synch = Dict()
-    global filedirectory = ""
-    global inverse_nlist = []
-    global model_modules = Dict()
+    global nnodes
+    nnodes = 0
+    global num_controller
+    num_controller = 0
+    global num_responder
+    num_responder = 0
+    global num_elements
+    num_elements = 0
+    global nnsets
+    nnsets = 0
+    global dof
+    dof = 2
+    global fem_option
+    fem_option = false
+    global block_list
+    block_list = []
+    global distribution
+    distribution = []
+    global crit_values_matrix
+    crit_values_matrix = fill(-1, (1, 1, 1))
+    global aniso_crit_values
+    aniso_crit_values = Dict()
+    global properties = OrderedDict()
+    global glob_to_loc
+    glob_to_loc = Dict()
+    global fields
+    fields = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
+    global field_array_type
+    field_array_type = Dict()
+    global field_types
+    field_types = Dict()
+    global fields_to_synch
+    fields_to_synch = Dict()
+    global filedirectory
+    filedirectory = ""
+    global inverse_nlist
+    inverser_nlist = []
+
+    global model_modules = OrderedDict{String,Module}()
     global nsets = Dict()
     global overlap_map = Dict()
-    global models_options = Dict(
-        "Deformed Bond Geometry" => true,
-        "Deformation Gradient" => false,
-        "Shape Tensor" => false,
-        "Bond Associated Deformation Gradient" => false,
-    )
-    global output_frequency = []
-    global accuracy_order = 1
-    global rank = 0
-    global cancel = false
-    global max_rank = 0
-    global silent = false
-    global rotation = false
-    global element_rotation = false
-    global damage_models = []
+    global pre_calculation_order = [
+        "Deformed Bond Geometry",
+        "Shape Tensor",
+        "Deformation Gradient",
+        "Bond Associated Correspondence",
+    ]
+    global output_frequency
+    output_frequency = []
+    global accuracy_order
+    accuracy_order = 1
+    global rank
+    rank = 0
+    global cancel
+    cancel = false
+    global max_rank
+    max_rank = 0
+    global silent
+    silent = false
+    global rotation
+    rotation = false
+    global element_rotation
+    element_rotation = false
+    global active_models = OrderedDict{String,Module}()
     global material_models = []
-
+    global damage_models = []
 end
 ###################################
 
 
+"""
+    add_active_model(key::String, module_name::Module)
 
+Add the main modules to an OrderedDict which are active.
+
+# Arguments
+- `key::String`: Name of the model.
+- `active_module::Module`: Module of the active models.
+"""
+function add_active_model(key::String, active_module::Module)
+    global active_models
+    if !(key in keys(active_models))
+        active_models[key] = active_module
+    end
+end
 
 
 """
@@ -521,6 +567,19 @@ function fem_active()
     return fem_option
 end
 
+
+
+
+"""
+    get_active_models()
+
+Returns a list active model modules.
+"""
+function get_active_models()
+    global active_models
+    return active_models
+end
+
 """
     get_all_field_keys()
 
@@ -748,7 +807,7 @@ Retrieves the number of nodes.
 
 Example:
 ```julia
-get_nnodes()  # returns the current number of nodes
+get_nnodes()  # returns the current number of controler nodes. The neighbors are not included
 ```
 """
 function get_nnodes()
@@ -844,20 +903,14 @@ function get_synch_fields()
 end
 
 """
-    get_models_options()
+    get_pre_calculation_order()
 
-Get the models options
+return the order of the pre calculation.
 """
-function get_models_options()
-    global models_options
-    if models_options["Deformation Gradient"]
-        models_options["Shape Tensor"] = true
-        models_options["Deformed Bond Geometry"] = true
-    end
-    if models_options["Bond Associated Deformation Gradient"]
-        models_options["Deformed Bond Geometry"] = true
-    end
-    return models_options
+function get_pre_calculation_order()
+    global pre_calculation_order
+
+    return pre_calculation_order
 end
 
 """
@@ -1066,26 +1119,41 @@ function loc_to_glob(range::UnitRange{Int64})
 end
 
 """
-    init_property()
+    init_properties()
 
-This function initializes the properties dictionary.
+This function initializes the properties dictionary. Order of dictionary defines, in which order the models are called later on.
 
 # Returns
-- `keys(properties[1])`: The keys of the properties dictionary.
+- `keys(properties[1])`: The keys of the properties dictionary in defined order for the Model_Factory.jl.
 """
-function init_property()
+function init_properties()
     global properties
 
     block_list = get_block_list()
     for iblock in block_list
-        properties[iblock] = Dict{String,Dict}(
-            "Thermal Model" => Dict{String,Any}(),
-            "Damage Model" => Dict{String,Any}(),
-            "Material Model" => Dict{String,Any}(),
+        properties[iblock] = OrderedDict{String,Dict}(
             "Additive Model" => Dict{String,Any}(),
+            "Damage Model" => Dict{String,Any}(),
+            "Pre Calculation Model" => Dict{String,Any}(),
+            "Thermal Model" => Dict{String,Any}(),
+            "Corrosion Model" => Dict{String,Any}(),
+            "Material Model" => Dict{String,Any}(),
         )
     end
     return collect(keys(properties[block_list[1]]))
+end
+
+"""
+    remove_active_model(module_name::Module)
+
+Removes main modules from OrderedDict.
+
+# Arguments
+- `key::String`: Key of the entry.
+"""
+function remove_active_model(key::String)
+    global active_models
+    delete!(active_models, key)
 end
 
 """
@@ -1128,6 +1196,7 @@ Sets the critical values matrix globally.
 function set_crit_values_matrix(crit_values::Array{Float64,3})
     global crit_values_matrix = crit_values
 end
+
 
 """
 set_aniso_crit_values(crit_values::Dict{Int64,Any})
@@ -1342,15 +1411,15 @@ function set_overlap_map(topo)
 end
 
 """
-    set_models_options(values::Dict{String,Bool})
+    set_pre_calculation_order(values::Vector{String})
 
-Sets the models options globally.
+Sets the order of the pre calculation options globally.
 
 # Arguments
-- `values::Dict{String,Bool}`: The models options.
+- `values::Vector{String}`: The order of models.
 """
-function set_models_options(values::Dict{String,Bool})
-    global models_options = values
+function set_pre_calculation_order(values::Vector{String})
+    global pre_calculation_order = values
 end
 
 

@@ -144,7 +144,9 @@ MPI.Init()
                 include("unit_tests/Models/ut_Model_Factory.jl")
             end
             @testset "ut_Pre_calculation" begin
-                include("unit_tests/Models/Pre_calculation/ut_bond_deformation_gradient.jl")
+                include(
+                    "unit_tests/Models/Pre_calculation/ut_pre_bond_associated_correspondence.jl",
+                )
             end
             @testset "ut_Damage" begin
                 include("unit_tests/Models/Damage/ut_Damage_Factory.jl")
@@ -206,7 +208,7 @@ MPI.Init()
         @testset "test_additive_simple" begin
             include("fullscale_tests/test_additive/test_additive.jl")
         end
-        @testset "test_test_bond_based_elastic" begin
+        @testset "test_bond_based_elastic" begin
             include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")
         end
         @testset "test_heat_transfer" begin

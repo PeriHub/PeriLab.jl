@@ -7,7 +7,7 @@ include("../../../../src/Models/Damage/Damage_Factory.jl")
 using Test
 using .Damage
 
-@testset "init_damage_model_fields" begin
+@testset "init_fields" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_dof(3)
@@ -22,17 +22,7 @@ using .Damage
     nlist[2] = [1, 3]
     nlist[3] = [1]
     nlist[4] = [1, 3]
-    Damage.init_damage_model_fields(
-        test_data_manager,
-        Dict(
-            "Blocks" => Dict(
-                "block_1" => Dict("Damage Model" => "a"),
-                "block_2" => Dict("Damage Model" => "a"),
-                "block_3" => Dict("Damage Model" => "a"),
-            ),
-            "Models" => Dict("Damage Models" => Dict("a" => Dict("value" => "b"))),
-        ),
-    )
+    Damage.init_fields(test_data_manager)
     field_keys = test_data_manager.get_all_field_keys()
     @test "DamageN" in field_keys
     @test "DamageNP1" in field_keys
@@ -124,7 +114,7 @@ end
     test_data_manager = PeriLab.Data_manager
     test_data_manager.properties[1] =
         Dict("Damage Model" => Dict("Damage Model" => "not there"))
-    @test isnothing(Damage.init_damage_model(test_data_manager, Vector{Int64}(1:3), 1))
+    @test isnothing(Damage.init_model(test_data_manager, Vector{Int64}(1:3), 1))
 end
 
 @testset "ut_init_interface_crit_values" begin

@@ -7,8 +7,8 @@ include("../../material_basis.jl")
 using LinearAlgebra
 using StaticArrays
 export fe_support
-export init_material_model
-export init_material_model
+export init_model
+
 """
   fe_support()
 
@@ -30,7 +30,7 @@ function fe_support()
 end
 
 """
-  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
 Initializes the material model.
 
@@ -42,7 +42,7 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
@@ -80,6 +80,32 @@ end
    """
 function correspondence_name()
     return "Correspondence Plastic"
+end
+
+"""
+    fields_to_local_synchronize()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_to_local_synchronize()
+    return Dict()
 end
 
 """

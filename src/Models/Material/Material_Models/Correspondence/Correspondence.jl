@@ -20,13 +20,13 @@ using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "correspondence_name")
 Set_modules.include_files(module_list)
 
-export init_material_model
+export init_model
 export material_name
-export compute_forces
-export init_material_model
+export compute_model
+export init_model
 
 """
-  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
 Initializes the material model.
 
@@ -38,7 +38,7 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
@@ -72,12 +72,12 @@ function init_material_model(
             return nothing
         end
         datamanager.set_model_module(material_model, mod)
-        datamanager = mod.init_material_model(datamanager, nodes, material_parameter)
+        datamanager = mod.init_model(datamanager, nodes, material_parameter)
 
     end
     if haskey(material_parameter, "Bond Associated") &&
        material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.init_material_model(
+        return Bond_Associated_Correspondence.init_model(
             datamanager,
             nodes,
             material_parameter,
@@ -108,7 +108,33 @@ function material_name()
 end
 
 """
-    compute_forces(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
+    fields_to_local_synchronize()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_to_local_synchronize()
+    return Dict()
+end
+
+"""
+    compute_model(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -124,20 +150,22 @@ Example:
 ```julia
 ```
 """
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
     to::TimerOutput,
 )
 
     if material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.compute_forces(
+        return Bond_Associated_Correspondence.compute_model(
             datamanager,
             nodes,
             material_parameter,
+            block,
             time,
             dt,
             to,

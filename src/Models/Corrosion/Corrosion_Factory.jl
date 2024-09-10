@@ -7,14 +7,15 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "corrosion_name")
 Set_modules.include_files(module_list)
-export compute_corrosion_model
-export init_corrosion_model
-export init_corrosion_model_fields
+using TimerOutputs
+export compute_model
+export init_model
+export init_fields
 
 
 
 """
-init_corrosion_model_fields(datamanager::Module)
+init_fields(datamanager::Module)
 
 Initialize concentration model fields
 
@@ -23,49 +24,51 @@ Initialize concentration model fields
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_corrosion_model_fields(datamanager::Module)
+function init_fields(datamanager::Module)
     datamanager.create_node_field("Concentration", Float64, 1)
     datamanager.create_node_field("Concentration Flux", Float64, 1)
     return datamanager
 end
 
 """
-    compute_corrosion_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
-Computes the corrosion model
+Computes the corrosion models
 
 # Arguments
 - `datamanager::Module`: The datamanager
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
 - `model_param::Dict`: The model parameters
+- `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_corrosion_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
 
     mod = datamanager.get_model_module(model_param["Corrosion Model"])
-    return mod.compute_corrosion_model(datamanager, nodes, model_param, time, dt)
+    return mod.compute_model(datamanager, nodes, model_param, time, dt)
 
 end
 
 
 """
-    init_corrosion_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, corrosion_parameter::Dict, block::Int64)
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
 
-Initialize an corrosion model within a given data manager.
+Initialize a corrosion models.
 
 # Arguments
 - `datamanager::Module`: The data manager module where the corrosion model will be initialized.
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the corrosion model.
-- `corrosion_parameter::Dict`: Corrosion parameters
 - `block::Int64`: Block identifier for the corrosion model.
 
 # Returns
@@ -73,14 +76,10 @@ Initialize an corrosion model within a given data manager.
 
 # Example
 ```julia
-datamanager = init_corrosion_model(my_data_manager, [1, 2, 3], 1)
+datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 
 """
-function init_corrosion_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Corrosion Model")
     mod = Set_modules.create_module_specifics(
         model_param["Corrosion Model"],
@@ -92,8 +91,34 @@ function init_corrosion_model(
         return nothing
     end
     datamanager.set_model_module(model_param["Corrosion Model"], mod)
-    datamanager = mod.init_corrosion_model(datamanager, nodes, model_param, block)
+    datamanager = mod.init_model(datamanager, nodes, model_param, block)
     return datamanager
+end
+
+"""
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    return Dict()
 end
 
 end

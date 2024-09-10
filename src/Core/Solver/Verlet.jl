@@ -51,7 +51,6 @@ This function iterates over a collection of nodes and computes the critical time
 
 # Dependencies
 This function depends on the following data fields from the `datamanager` module:
-- `get_dof()`: Returns the degree of freedom.
 - `get_nlist()`: Returns the neighbor list.
 - `get_field("Density")`: Returns the density field.
 - `get_field("Bond Length")`: Returns the bond distance field.
@@ -65,12 +64,10 @@ function compute_thermodynamic_critical_time_step(
 )
 
     critical_time_step::Float64 = 1.0e50
-    dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
     undeformed_bond_length = datamanager.get_field("Bond Length")
     volume = datamanager.get_field("Volume")
-    nneighbors = datamanager.get_field("Number of Neighbors")
     Cv = datamanager.get_field("Specific Heat Capacity")
     lambda = matrix_style(lambda)
     eigLam = maximum(eigvals(lambda))
@@ -138,7 +135,7 @@ function compute_mechanical_critical_time_step(
 
     for iID in nodes
         denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
-
+        # TODO Adapt to 2D applications
         springConstant =
             18.0 * maximum(bulk_modulus) /
             (pi * horizon[iID] * horizon[iID] * horizon[iID] * horizon[iID])
@@ -231,6 +228,7 @@ function compute_crititical_time_step(
                 critical_time_step = test_timestep(t, critical_time_step)
             else
                 @error "No time step for material is determined because of missing properties."
+                return nothing
             end
 
         end
@@ -361,7 +359,7 @@ end
 
 """
     run_solver(
-        solver_options::Dict{String,Any},
+        solver_options::Dict{Any,Any},
         block_nodes::Dict{Int64,Vector{Int64}},
         bcs::Dict{Any,Any},
         datamanager::Module,
@@ -402,7 +400,7 @@ This function depends on various data fields and properties from the `datamanage
 4. Write simulation results using the `write_results` function.
 """
 function run_solver(
-    solver_options::Dict{String,Any},
+    solver_options::Dict{Any,Any},
     block_nodes::Dict{Int64,Vector{Int64}},
     bcs::Dict{Any,Any},
     datamanager::Module,
@@ -417,7 +415,6 @@ function run_solver(
     atexit(() -> datamanager.set_cancel(true))
 
     @info "Run Verlet Solver"
-    dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     volume = datamanager.get_field("Volume")
     density = datamanager.get_field("Density")
@@ -426,7 +423,7 @@ function run_solver(
     comm = datamanager.get_comm()
 
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
-    if solver_options["Material Models"]
+    if "Material" in solver_options["Models"]
         forces = datamanager.get_field("Forces", "NP1")
         external_forces = datamanager.get_field("External Forces")
         force_densities = datamanager.get_field("Force Densities", "NP1")
@@ -438,7 +435,7 @@ function run_solver(
         coor = datamanager.get_field("Coordinates")
         deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
     end
-    if solver_options["Thermal Models"]
+    if "Thermal" in solver_options["Models"]
         flowN = datamanager.get_field("Heat Flow", "N")
         flowNP1 = datamanager.get_field("Heat Flow", "NP1")
         temperatureN = datamanager.get_field("Temperature", "N")
@@ -447,7 +444,7 @@ function run_solver(
         ## TODO field creation not in run
         deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
-    if solver_options["Corrosion Models"]
+    if "Corrosion" in solver_options["Models"]
         concentrationN = datamanager.get_field("Concentration", "N")
         concentrationNP1 = datamanager.get_field("Concentration", "NP1")
         concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
@@ -462,11 +459,10 @@ function run_solver(
         lumped_mass = datamanager.get_field("Lumped Mass Matrix")
         fe_nodes = datamanager.get_field("FE Nodes")
     end
-    if solver_options["Damage Models"]
+    if "Damage" in solver_options["Models"]
         damage = datamanager.get_damage("NP1")
     end
     active = datamanager.get_field("Active")
-
 
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
@@ -483,15 +479,15 @@ function run_solver(
         @timeit to "Verlet" begin
             nodes = find_active(active[1:nnodes])
             # one step more, because of init step (time = 0)
-            if solver_options["Material Models"]
+            if "Material" in solver_options["Models"]
                 vNP1[nodes, :] =
                     (1 - numerical_damping) .* vN[nodes, :] + 0.5 * dt .* a[nodes, :]
                 uNP1[nodes, :] = uN[nodes, :] + dt .* vNP1[nodes, :]
             end
-            if solver_options["Thermal Models"]
+            if "Thermal" in solver_options["Models"]
                 temperatureNP1[nodes] = temperatureN[nodes] + deltaT[nodes]
             end
-            if solver_options["Corrosion Models"]
+            if "Corrosion" in solver_options["Models"]
                 concentrationNP1[nodes] = concentrationN[nodes] + delta_concentration[nodes]
             end
             @timeit to "apply_bc_dirichlet" datamanager =
@@ -512,7 +508,7 @@ function run_solver(
                 block_nodes,
                 dt,
                 step_time,
-                solver_options,
+                solver_options["Models"],
                 synchronise_field,
                 to,
             )
@@ -526,7 +522,7 @@ function run_solver(
                 Boundary_conditions.apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, step_time) #-> von neumann
 
-            if solver_options["Material Models"]
+            if "Material" in solver_options["Models"]
                 check_inf_or_nan(force_densities, "Forces")
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
@@ -545,7 +541,7 @@ function run_solver(
                         volume[find_active(fe_nodes[nodes])]
 
                     # toggles the value and switch the non FEM nodes to true
-                    nodes = find_active(Vector{Bool}(.~fe_nodes[nodes]))
+                    nodes = find_active(.~fe_nodes[nodes])
                 end
                 force_densities[nodes, :] +=
                     (@view external_force_densities[nodes, :]) .+
@@ -554,7 +550,7 @@ function run_solver(
                 forces[nodes, :] = force_densities[nodes, :] .* volume[nodes]
 
             end
-            if solver_options["Thermal Models"]
+            if "Thermal" in solver_options["Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
                 # heat capacity check. if it is zero deltaT = 0
                 deltaT[find_active(active[1:nnodes])] =
@@ -566,11 +562,11 @@ function run_solver(
                     @warn "Thermal models are not supported for FEM yet."
                 end
             end
-            if solver_options["Corrosion Models"]
+            if "Corrosion" in solver_options["Models"]
                 delta_concentration[find_active(active[1:nnodes])] =
                     -concentration_fluxNP1[find_active(active[1:nnodes])] .* dt
             end
-            if rank == 0 && solver_options["Damage Models"] #TODO gather value
+            if rank == 0 && "Damage" in solver_options["Models"] #TODO gather value
                 max_damage = maximum(damage[find_active(active[1:nnodes])])
                 if max_damage > max_cancel_damage
                     if !silent

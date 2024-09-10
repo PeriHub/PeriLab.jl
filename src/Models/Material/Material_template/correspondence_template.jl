@@ -4,9 +4,10 @@
 
 module Correspondence_template
 export fe_support
-export init_material_model
+export init_model
 export correspondence_name
-export compute_forces
+export compute_model
+export synch_field
 
 """
   fe_support()
@@ -29,7 +30,8 @@ function fe_support()
 end
 
 """
-  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict,
+    block::Int64)
 
 Initializes the material model.
 
@@ -37,14 +39,16 @@ Initializes the material model.
   - `datamanager::Data_manager`: Datamanager.
   - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `block::Int64`: Current block
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
+    block::Int64,
 )
     return datamanager
 end
@@ -67,6 +71,33 @@ println(correspondence_name())
 """
 function correspondence_name()
     return "Correspondence Template"
+end
+
+"""
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    @info "Here you can add fields for synchronisation."
+    return Dict()
 end
 
 """
@@ -107,7 +138,7 @@ function compute_stresses(
 )
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_forces() and init_material_model() function."
+    @info "Fill the compute_model() and init_model() function."
     @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager, stress_NP1
@@ -134,7 +165,6 @@ Example:
 ```julia
 ```
 """
-
 function compute_stresses(
     datamanager::Module,
     dof::Int64,

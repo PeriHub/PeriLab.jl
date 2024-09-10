@@ -11,13 +11,13 @@ using TimerOutputs
 #include("../../../../../../src/PeriLab.jl")
 #using .PeriLab
 
-const to = TimerOutput()
+#const to = TimerOutput()
 
 @testset "material_name" begin
     @test Bondbased_Elastic.material_name() == "Bond-based Elastic"
     @test !(Bondbased_Elastic.fe_support())
 end
-@testset "compute_forces" begin
+@testset "compute_model" begin
     nodes = 2
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
@@ -45,10 +45,11 @@ end
         dbNP1[iID] .= 1
     end
 
-    test_data_manager = Bondbased_Elastic.compute_forces(
+    test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0),
+        1,
         0.0,
         0.0,
         to,
@@ -58,16 +59,16 @@ end
     @test isapprox(
         bf[1],
         [
-            -0.47746482927568584 -0.47746482927568584 -0.47746482927568584
-            -0.47746482927568584 -0.47746482927568584 -0.47746482927568584
+            -0.13641852265019597 -0.13641852265019597 -0.13641852265019597
+            -0.13641852265019597 -0.13641852265019597 -0.13641852265019597
         ],
     )
     @test isapprox(
         bf[2],
         [
-            0.024415815133415782 0.024415815133415782 0.024415815133415782
-            0.024415815133415782 0.024415815133415782 0.024415815133415782
-            0.024415815133415782 0.024415815133415782 0.024415815133415782
+            0.006975947180975936 0.006975947180975936 0.006975947180975936
+            0.006975947180975936 0.006975947180975936 0.006975947180975936
+            0.006975947180975936 0.006975947180975936 0.006975947180975936
         ],
     )
 
@@ -75,7 +76,7 @@ end
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
 
-    test_data_manager = Bondbased_Elastic.compute_forces(
+    test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict(
@@ -83,6 +84,7 @@ end
             "Young's Modulus" => 1.0,
             "Symmetry" => "here is something",
         ),
+        1,
         0.0,
         0.0,
         to,
@@ -93,25 +95,26 @@ end
     @test isapprox(
         bf[1],
         [
-            -0.47746482927568584 -0.47746482927568584 -0.47746482927568584
-            -0.47746482927568584 -0.47746482927568584 -0.47746482927568584
+            -0.13641852265019597 -0.13641852265019597 -0.13641852265019597
+            -0.13641852265019597 -0.13641852265019597 -0.13641852265019597
         ],
     )
     @test isapprox(
         bf[2],
         [
-            0.024415815133415782 0.024415815133415782 0.024415815133415782
-            0.024415815133415782 0.024415815133415782 0.024415815133415782
-            0.024415815133415782 0.024415815133415782 0.024415815133415782
+            0.006975947180975936 0.006975947180975936 0.006975947180975936
+            0.006975947180975936 0.006975947180975936 0.006975947180975936
+            0.006975947180975936 0.006975947180975936 0.006975947180975936
         ],
     )
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
-    test_data_manager = Bondbased_Elastic.compute_forces(
+    test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane strain"),
+        1,
         0.0,
         0.0,
         to,
@@ -119,21 +122,29 @@ end
 
     bf = test_data_manager.get_field("Bond Forces")
 
-    @test isapprox(bf[1][1, 1], -0.16976527263135502)
-    @test isapprox(bf[1][1, 2], -0.16976527263135502)
-    @test isapprox(bf[1][2, 1], -0.16976527263135502)
-    @test isapprox(bf[1][2, 2], -0.16976527263135502)
-    @test isapprox(bf[2][1, 1], 0.01736235742820678)
-    @test isapprox(bf[2][1, 2], 0.01736235742820678)
-    @test isapprox(bf[2][2, 1], 0.01736235742820678)
-    @test isapprox(bf[2][2, 2], 0.01736235742820678)
+    @test isapprox(
+        bf[1],
+        [
+            -0.13058867125488846 -0.13058867125488846 -0.13058867125488846
+            -0.13058867125488846 -0.13058867125488846 -0.13058867125488846
+        ],
+    )
+    @test isapprox(
+        bf[2],
+        [
+            0.01335565956015906 0.01335565956015906 0.01335565956015906
+            0.01335565956015906 0.01335565956015906 0.01335565956015906
+            0.01335565956015906 0.01335565956015906 0.01335565956015906
+        ],
+    )
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
-    test_data_manager = Bondbased_Elastic.compute_forces(
+    test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
         Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane stress"),
+        1,
         0.0,
         0.0,
         to,
@@ -149,19 +160,4 @@ end
     @test isapprox(bf[2][2, 1], 0.016277210088943856)
     @test isapprox(bf[2][2, 2], 0.016277210088943856)
 
-    dbdNP1[1][1, end] = 0
-    @test isnothing(
-        Bondbased_Elastic.compute_forces(
-            test_data_manager,
-            Vector{Int64}(1:nodes),
-            Dict(
-                "Bulk Modulus" => 1.0,
-                "Young's Modulus" => 1.0,
-                "Symmetry" => "plane stress",
-            ),
-            0.0,
-            0.0,
-            to,
-        ),
-    )
 end

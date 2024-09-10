@@ -8,7 +8,7 @@ using .Thermal
 # include("../../../../src/Core/data_manager.jl")
 
 
-@testset "init_thermal_model_fields" begin
+@testset "init_fields" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_dof(3)
@@ -19,7 +19,7 @@ using .Thermal
     nn[3] = 1
     nn[4] = 2
 
-    Thermal.init_thermal_model_fields(test_data_manager)
+    Thermal.init_fields(test_data_manager)
     field_keys = test_data_manager.get_all_field_keys()
     @test "TemperatureN" in field_keys
     @test "TemperatureNP1" in field_keys
@@ -28,19 +28,19 @@ using .Thermal
     @test "Bond Heat Flow" in field_keys
 
 end
-@testset "init_thermal_model" begin
+@testset "init_model" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_block_list([1, 2])
-    test_data_manager.init_property()
+    test_data_manager.init_properties()
     test_data_manager.set_properties(
         1,
         "Thermal Model",
         Dict("Thermal Model" => "Heat Transfer"),
     )
-    Thermal.init_thermal_model(test_data_manager, [1], 1)
+    Thermal.init_model(test_data_manager, [1], 1)
     test_data_manager.set_properties(2, "Thermal Model", Dict("Thermal Model" => "Missing"))
-    @test isnothing(Thermal.init_thermal_model(test_data_manager, [1], 2))
+    @test isnothing(Thermal.init_model(test_data_manager, [1], 2))
 end
 
 @testset "ut_distribute_heat_flows" begin

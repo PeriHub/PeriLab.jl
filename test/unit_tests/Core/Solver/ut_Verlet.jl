@@ -113,7 +113,7 @@ end
 
 end
 
-# test_data_manager.init_property()
+# test_data_manager.init_properties()
 # test_data_manager.set_property(1, "Material Model", "Bulk Modulus", Float64(140.0))
 # test_data_manager.set_property(2, "Material Model", "Bulk Modulus", Float64(140.0))
 # @testset "ut_init_Verlet" begin

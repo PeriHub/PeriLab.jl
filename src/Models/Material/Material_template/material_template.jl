@@ -5,9 +5,10 @@
 module Material_template
 using TimerOutputs
 export fe_support
-export init_material_model
+export init_model
 export material_name
-export compute_forces
+export compute_model
+export synch_field
 
 """
   fe_support()
@@ -30,7 +31,7 @@ function fe_support()
 end
 
 """
-  init_material_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
 Initializes the material model.
 
@@ -42,7 +43,7 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_material_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
@@ -71,7 +72,34 @@ function material_name()
 end
 
 """
-    compute_forces(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    @info "Here you can add fields for synchronisation."
+    return Dict()
+end
+
+"""
+    compute_model(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -87,19 +115,21 @@ Example:
 ```julia
 ```
 """
-function compute_forces(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     material_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
     to::TimerOutput,
 )
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_forces() and init_material_model() function."
+    @info "Fill the compute_model() and init_model() function."
     @info "The datamanager and material_parameter holds all you need to solve your problem on material level."
     @info "Add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
 end
+
 end

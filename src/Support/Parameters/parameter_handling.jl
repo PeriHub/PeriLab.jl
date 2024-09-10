@@ -28,6 +28,8 @@ global expected_structure = Dict(
                             "Damage Model" => [String, false],
                             "Thermal Model" => [String, false],
                             "Additive Model" => [String, false],
+                            "Pre Calculation Model" => [String, false],
+                            "Corrosion_template Model" => [String, false],
                         ),
                         true,
                     ],
@@ -272,28 +274,33 @@ global expected_structure = Dict(
                         ),
                         false,
                     ],
-                    "Pre Calculation" => [
+                    "Pre Calculation Models" => [
                         Dict{Any,Any}(
-                            "Bond Associated Deformation Gradient" => [Bool, false],
-                            "Deformation Gradient" => [Bool, false],
-                            "Deformed Bond Geometry" => [Bool, false],
-                            "Shape Tensor" => [Bool, false],
+                            "Any" => [
+                                Dict{Any,Any}(
+                                    "Bond Associated Correspondence" => [Bool, false],
+                                    "Deformation Gradient" => [Bool, false],
+                                    "Deformed Bond Geometry" => [Bool, false],
+                                    "Shape Tensor" => [Bool, false],
+                                ),
+                                true,
+                            ],
                         ),
                         false,
                     ],
                 ),
-                true,
             ],
             "Solver" => [
                 Dict{Any,Any}(
+                    "Additive Models" => [Bool, false],
+                    "Corrosion Models" => [Bool, false],
+                    "Damage Models" => [Bool, false],
                     "Material Models" => [Bool, false],
+                    "Thermal Models" => [Bool, false],
                     "Calculate Cauchy" => [Bool, false],
                     "Calculate von Mises" => [Bool, false],
                     "Calculate Strain" => [Bool, false],
-                    "Damage Models" => [Bool, false],
                     "Maximum Damage" => [Float64, false],
-                    "Thermal Models" => [Bool, false],
-                    "Additive Models" => [Bool, false],
                     "Final Time" => [Union{Float64,Int64}, true],
                     "Initial Time" => [Union{Float64,Int64}, true],
                     "Numerical Damping" => [Union{Float64,Int64}, false],
@@ -430,6 +437,11 @@ function validate_yaml(params::Dict)
     # Validate against the expected structure
     validate = true
     checked_keys = []
+    if !haskey(params, "PeriLab") || length(params["PeriLab"]) < 2
+        @error "Yaml file is not valid."
+        return nothing
+    end
+
     validate, checked_keys =
         validate_structure_recursive(expected_structure, params, validate, checked_keys)
     #Check if all keys have been checked
@@ -439,6 +451,7 @@ function validate_yaml(params::Dict)
         end
     end
     if !validate
+        @error "Yaml file is not valid."
         return nothing
     end
 

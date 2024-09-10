@@ -5,9 +5,9 @@
 module Thermal_Flow
 using LinearAlgebra
 using StaticArrays
-export compute_thermal_model
+export compute_model
 export thermal_model_name
-export init_thermal_model
+export init_model
 """
     thermal_model_name()
 
@@ -24,7 +24,7 @@ end
 
 
 """
-    init_thermal_model(datamanager, nodes, thermal_parameter)
+    init_model(datamanager, nodes, thermal_parameter, block)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -37,7 +37,7 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_thermal_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,
@@ -66,14 +66,15 @@ function init_thermal_model(
 end
 
 """
-    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_model(datamanager, nodes, thermal_parameter, time, dt)
 
 Calculates the thermal behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `thermal_parameter::Dict(String, Any)`: Dictionary with flow parameter.
+- `block::Int64`: Current block
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
@@ -82,10 +83,11 @@ Example:
 ```julia
 ```
 """
-function compute_thermal_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
 )
@@ -141,7 +143,6 @@ function compute_thermal_model(
         return datamanager
 
     elseif thermal_parameter["Type"] == "Correspondence"
-
         lambda_matrix = @MMatrix zeros(Float64, dof, dof)
         Kinv = datamanager.get_field("Inverse Shape Tensor")
         if length(lambda) == 1
@@ -301,4 +302,31 @@ function compute_heat_flow_state_bond_based(
     end
     return heat_flow
 end
+
+"""
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    return Dict()
+end
+
 end

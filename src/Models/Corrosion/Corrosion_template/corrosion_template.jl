@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Corrosion_template
-export compute_corrosion_model
+export compute_model
 export corrosion_name
-export init_corrosion_model
+export init_model
 
 """
     corrosion_name()
@@ -28,7 +28,7 @@ function corrosion_name()
 end
 
 """
-    compute_corrosion_model(datamanager, nodes, corrosion_parameter, time, dt)
+    compute_model(datamanager, nodes, corrosion_parameter, block::Int64, time, dt)
 
 Calculates the corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -44,16 +44,17 @@ Example:
 ```julia
   ```
 """
-function compute_corrosion_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     corrosion_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
 )
     @info "Please write a corrosion name in corrosion_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_corrosion_model(datamanager, nodes, corrosion_parameter, time, dt) function."
+    @info "Fill the compute_model(datamanager, nodes, corrosion_parameter, time, dt) function."
     @info "The datamanager and corrosion_parameter holds all you need to solve your problem on corrosion level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
@@ -61,7 +62,7 @@ end
 
 
 """
-    init_corrosion_model(datamanager, nodes, corrosion_parameter)
+    init_model(datamanager, nodes, corrosion_parameter)
 
 Inits the corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -74,7 +75,7 @@ Inits the corrosion model. This template has to be copied, the file renamed and 
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_corrosion_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     corrosion_parameter::Dict,
@@ -82,7 +83,7 @@ function init_corrosion_model(
 )
     @info "Please write a corrosion name in corrosion_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_corrosion_model(datamanager, nodes, corrosion_parameter, time, dt) function."
+    @info "Fill the compute_model(datamanager, nodes, corrosion_parameter, time, dt) function."
     @info "The datamanager and corrosion_parameter holds all you need to solve your problem on corrosion level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager

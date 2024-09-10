@@ -3,17 +3,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal
-
+using TimerOutputs
 include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "thermal_model_name")
 Set_modules.include_files(module_list)
-export init_thermal_model
-export compute_thermal_model
-export init_thermal_model_fields
+using TimerOutputs
+export init_model
+export compute_model
+export init_fields
 
 """
-    init_thermal_model_fields(datamanager::Module)
+    init_fields(datamanager::Module)
 
 Initialize thermal model fields
 
@@ -22,68 +23,67 @@ Initialize thermal model fields
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_thermal_model_fields(datamanager::Module)
+function init_fields(datamanager::Module)
     datamanager.create_node_field("Temperature", Float64, 1)
     datamanager.create_node_field("Heat Flow", Float64, 1)
     datamanager.create_constant_node_field("Specific Volume", Float64, 1)
     datamanager.create_constant_bond_field("Bond Heat Flow", Float64, 1)
     # if it is already initialized via mesh file no new field is created here
     datamanager.create_constant_node_field("Surface_Nodes", Bool, 1, true)
+    datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
+
     return datamanager
 end
 
 
 """
-    compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
-Compute the thermal model
+Computes the thermal models
 
 # Arguments
 - `datamanager::Module`: The datamanager
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
 - `model_param::Dict`: The model parameters
+- `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_thermal_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
 
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
         mod = datamanager.get_model_module(thermal_model)
-        datamanager = mod.compute_thermal_model(datamanager, nodes, model_param, time, dt)
+        datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt)
     end
-    #datamanager = distribute_heat_flows(datamanager, nodes)
+
     return datamanager
 end
 
 """
-    compute_thermal_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, time::Float64, dt::Float64)
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
 
-Compute the thermal model
+Initializes the thermal model.
 
 # Arguments
-- `datamanager::Module`: The datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
-- `model_param::Dict`: The model parameters
-- `time::Float64`: The current time
-- `dt::Float64`: The time step
+- `datamanager::Data_manager`: Datamanager
+- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `block::Int64`: Block.
 # Returns
-- `datamanager::Module`: The datamanager
+- `datamanager::Data_manager`: Datamanager.
 """
-function init_thermal_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Thermal Model")
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
@@ -98,7 +98,7 @@ function init_thermal_model(
             return nothing
         end
         datamanager.set_model_module(thermal_model, mod)
-        datamanager = mod.init_thermal_model(datamanager, nodes, model_param)
+        datamanager = mod.init_model(datamanager, nodes, model_param)
     end
     return datamanager
 end

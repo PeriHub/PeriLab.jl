@@ -7,7 +7,7 @@ module Solver
 include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
 using .Parameter_Handling:
-    get_density, get_horizon, get_solver_name, get_solver_options, get_fem_block
+    get_density, get_horizon, get_solver_name, get_model_options, get_fem_block
 using .Helpers: find_indices
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
@@ -42,6 +42,7 @@ Initialize the solver
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
 function init(params::Dict, datamanager::Module, to::TimerOutput)
+    solver_options = Dict()
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
     block_nodes_with_neighbors =
@@ -55,7 +56,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
-    solver_options = get_solver_options(params)
+    solver_options["Models"] = get_model_options(params)
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     for iblock in eachindex(block_nodes)
         datamanager = Influence_function.init_influence_function(
@@ -66,10 +67,10 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     end
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
     @debug "Read properties"
-    read_properties(params, datamanager, solver_options["Material Models"])
+    read_properties(params, datamanager, "Material" in solver_options["Models"])
     @debug "Init models"
     @timeit to "init_models" datamanager =
-        init_models(params, datamanager, block_nodes, solver_options, to)
+        Model_Factory.init_models(params, datamanager, block_nodes, solver_options, to)
     @debug "Init Boundary Conditions"
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
     solver_options["Solver"] = get_solver_name(params)
@@ -83,8 +84,8 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
             params,
             datamanager,
             block_nodes,
-            solver_options["Material Models"],
-            solver_options["Thermal Models"],
+            "Material" in solver_options["Models"],
+            "Thermal" in solver_options["Models"],
         )
     else
         @error get_solver_name(params) * " is no valid solver."
@@ -100,6 +101,9 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     else
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)
     end
+
+    datamanager = remove_models(datamanager, solver_options["Models"])
+
     @debug "Finished Init Solver"
     return block_nodes, bcs, datamanager, solver_options
 end
@@ -199,7 +203,7 @@ Runs the solver.
 - `result_files`: A vector of updated result files
 """
 function solver(
-    solver_options::Dict{String,Any},
+    solver_options::Dict{Any,Any},
     block_nodes::Dict{Int64,Vector{Int64}},
     bcs::Dict{Any,Any},
     datamanager::Module,
@@ -290,6 +294,28 @@ function synchronise_field(
     end
     @error "Wrong direction key word $direction in function synchronise_field; it should be download_from_cores or upload_to_cores"
     return nothing
+end
+
+"""
+    remove_models(datamanager::Module, solver_options::Vector{String})
+
+Sets the active models to false if they are deactivated in the solver. They can be active, because they are defined as model and in the blocks.
+
+# Arguments
+- `datamanager::Module`: The MPI communicator
+- `solver_options::Vector{String}`: A dictionary of fields
+# Returns
+- `datamanager`
+"""
+function remove_models(datamanager::Module, solver_options::Vector{String})
+
+    check = replace.(solver_options .* " Model", "_" => " ")
+    for active_model_name in keys(datamanager.get_active_models())
+        if !(active_model_name in check)
+            datamanager.remove_active_model(active_model_name)
+        end
+    end
+    return datamanager
 end
 
 end

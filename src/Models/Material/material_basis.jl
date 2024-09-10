@@ -105,7 +105,7 @@ function get_all_elastic_moduli(
 
     if bulk && poissons
         E = 3 .* K .* (1 .- 2 .* nu)
-        G = 3 .* K .* (1 .- nu ./ (2 .+ 2 .* nu))
+        G = 3 .* K .* (1 .- 2 .* nu) ./ (2 .+ 2 .* nu)
     end
     if shear && poissons
         E = 2 .* G .* (1 .+ nu)
@@ -350,11 +350,11 @@ function distribute_forces(
 )
     for iID in nodes
         force_densities[iID, :] .+= transpose(
-            sum(bond_damage[iID] .* bond_force[iID][:, :] .* volume[nlist[iID]], dims = 1),
+            sum(bond_damage[iID] .* bond_force[iID] .* volume[nlist[iID]], dims = 1),
         )
 
         force_densities[nlist[iID], :] .-=
-            bond_damage[iID] .* bond_force[iID][:, :] .* volume[iID]
+            bond_damage[iID] .* bond_force[iID] .* volume[iID]
     end
     return force_densities
 end

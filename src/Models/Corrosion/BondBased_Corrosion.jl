@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bondbased_Corrosion
-export compute_corrosion_model
+export compute_model
 export corrosion_name
-export init_corrosion_model
+export init_model
 
 """
     corrosion_name()
@@ -28,7 +28,7 @@ function corrosion_name()
 end
 
 """
-    compute_corrosion_model(datamanager, nodes, corrosion_parameter, time, dt)
+    compute_model(datamanager, nodes, corrosion_parameter, block::Int64, time, dt)
 
 Calculates the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -44,10 +44,11 @@ Example:
 ```julia
   ```
 """
-function compute_corrosion_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     corrosion_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
 )
@@ -62,7 +63,7 @@ end
 
 
 """
-    init_corrosion_model(datamanager, nodes, corrosion_parameter)
+    init_model(datamanager, nodes, block::Int64, corrosion_parameter)
 
 Inits the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -75,7 +76,7 @@ Inits the bond-based corrosion model. This template has to be copied, the file r
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_corrosion_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     corrosion_parameter::Dict,
@@ -85,5 +86,31 @@ function init_corrosion_model(
     return datamanager
 end
 
+
+"""
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+or
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
+    )
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    return Dict()
+end
 
 end

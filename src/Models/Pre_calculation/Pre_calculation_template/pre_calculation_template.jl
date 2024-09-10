@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Pre_calculation_template
+using DataStructures: OrderedDict
 export compute
+export init_model
 export Pre_calculation_name
 """
     pre_calculation_name()
@@ -13,7 +15,7 @@ Gives the pre_calculation name. It is needed for comparison with the yaml input 
 # Arguments
 
 # Returns
-- `name::String`: The name of the Pre_calculation.
+- `name::String`: The name of the Pre_Calculation.
 
 Example:
 ```julia
@@ -42,18 +44,40 @@ Example:
 ```julia
   ```
 """
-function pre_calculation(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     Pre_calculation_parameter::Dict,
-    time::Float64,
-    dt::Float64,
+    block::Int64,
 )
     @info "Please write a possible precalculation routines in pre_calculation_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_forces(datamanager, nodes, Pre_calculation_parameter, time, dt) function."
+    @info "Fill the compute_model(datamanager, nodes, Pre_calculation_parameter, time, dt) function."
     @info "The datamanager and Pre_calculation_parameter holds all you need to solve your problem on material level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
+    return datamanager
+end
+
+"""
+    init_model(datamanager, nodes, parameter)
+
+Inits the calculation.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager.
+- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `parameter::Dict(String, Any)`: Dictionary with parameter.
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+
+"""
+function init_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    parameter::Union{Dict,OrderedDict},
+    block::Int64,
+)
+
     return datamanager
 end
 

@@ -272,7 +272,7 @@ function main(
             Data_manager.set_silent(silent)
             @timeit to "IO.initialize_data" datamanager, params =
                 IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
-            @info "Init solver"
+            @info "Init Solver"
             @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options =
                 Solver.init(params, datamanager, to)
             IO.show_block_summary(

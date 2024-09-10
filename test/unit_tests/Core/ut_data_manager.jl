@@ -19,6 +19,28 @@ using Test
     # MPI.Finalize()
 end
 
+@testset "add_and_get_models" begin
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.initialize_data()
+    @test length(keys(test_data_manager.get_active_models())) == 0
+    test_data_manager.add_active_model("Test", Test)
+    test_data_manager.add_active_model("PeriLab", PeriLab)
+    test_list = test_data_manager.get_active_models()
+    @test collect(keys(test_list)) == ["Test", "PeriLab"]
+    @test test_list["Test"] == Test
+    @test test_list["PeriLab"] == PeriLab
+    test_data_manager.add_active_model("PeriLab", PeriLab)
+    test_list = test_data_manager.get_active_models()
+    @test collect(keys(test_list)) == ["Test", "PeriLab"]
+    @test test_list["Test"] == Test
+    @test test_list["PeriLab"] == PeriLab
+    test_data_manager.initialize_data()
+    test_data_manager.add_active_model("PeriLab", PeriLab)
+    test_data_manager.add_active_model("Test", Test)
+    test_list = test_data_manager.get_active_models()
+    @test collect(keys(test_list)) == ["PeriLab", "Test"]
+end
+
 @testset "ut_set_get_accuracy_order" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
@@ -435,7 +457,7 @@ end
 
 @testset "ut_properties" begin
     test_data_manager.set_block_list([2, 3, 1, 1])
-    test_data_manager.init_property()
+    test_data_manager.init_properties()
     @test length(test_data_manager.properties) == 3
     @test isnothing(test_data_manager.get_property(1, "Material Model", "E"))
     test_data_manager.set_property(1, "Material Model", "E", 3)
@@ -471,46 +493,6 @@ end
     @test test_data_manager.get_properties(1, "FEM") == Dict("A" => 2, "C" => "Model")
     @test test_data_manager.get_properties(2, "FEM") == Dict("A" => 2, "C" => "Model")
     @test test_data_manager.get_properties(3, "FEM") == Dict("A" => 2, "C" => "Model")
-end
-
-@testset "get_models_options" begin
-    test_data_manager = PeriLab.Data_manager
-    models_options = test_data_manager.get_models_options()
-    @test models_options["Deformed Bond Geometry"]
-    @test !models_options["Bond Associated Deformation Gradient"]
-    @test !models_options["Deformation Gradient"]
-    @test !models_options["Shape Tensor"]
-    test_data_manager.models_options["Deformed Bond Geometry"] = false
-    models_options = test_data_manager.get_models_options()
-    @test !models_options["Deformed Bond Geometry"]
-    @test !models_options["Bond Associated Deformation Gradient"]
-    @test !models_options["Deformation Gradient"]
-    @test !models_options["Shape Tensor"]
-    test_data_manager.models_options["Bond Associated Deformation Gradient"] = true
-    models_options = test_data_manager.get_models_options()
-    @test models_options["Deformed Bond Geometry"]
-    @test models_options["Bond Associated Deformation Gradient"]
-    @test !models_options["Deformation Gradient"]
-    @test !models_options["Shape Tensor"]
-    test_data_manager.models_options["Deformed Bond Geometry"] = false
-    test_data_manager.models_options["Shape Tensor"] = false
-    test_data_manager.models_options["Deformation Gradient"] = false
-    test_data_manager.models_options["Bond Associated Deformation Gradient"] = false
-    test_data_manager.models_options["Deformation Gradient"] = true
-    models_options = test_data_manager.get_models_options()
-    @test models_options["Deformed Bond Geometry"]
-    @test !models_options["Bond Associated Deformation Gradient"]
-    @test models_options["Deformation Gradient"]
-    @test models_options["Shape Tensor"]
-    test_data_manager.models_options["Deformed Bond Geometry"] = false
-    test_data_manager.models_options["Shape Tensor"] = false
-    test_data_manager.models_options["Deformation Gradient"] = true
-    test_data_manager.models_options["Bond Associated Deformation Gradient"] = true
-    models_options = test_data_manager.get_models_options()
-    @test models_options["Deformed Bond Geometry"]
-    @test models_options["Bond Associated Deformation Gradient"]
-    @test models_options["Deformation Gradient"]
-    @test models_options["Shape Tensor"]
 end
 
 @testset "ut_get_and_set_inverse_nlist" begin

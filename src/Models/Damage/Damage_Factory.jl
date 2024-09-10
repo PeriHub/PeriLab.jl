@@ -8,15 +8,17 @@ using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
 Set_modules.include_files(module_list)
 include("../../Support/helpers.jl")
+using TimerOutputs
 using .Helpers: find_inverse_bond_id
-export compute_damage
-export compute_damage_pre_calculation
+
+export compute_model
 export init_interface_crit_values
-export init_damage_model
-export init_damage_model_fields
+export init_model
+export init_fields
+export synch_field
 
 """
-    init_damage_model_fields(datamanager::Module)
+    init_fields(datamanager::Module)
 
 Initialize damage model fields
 
@@ -26,33 +28,19 @@ Initialize damage model fields
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_damage_model_fields(datamanager::Module, params::Dict)
+function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
     datamanager.create_node_field("Damage", Float64, 1)
-    block_list = datamanager.get_block_list()
+
     anisotropic_damage = false
 
-    for block_id in block_list
-        if !haskey(params["Blocks"]["block_$block_id"], "Damage Model")
-            continue
-        end
-        damage_name = params["Blocks"]["block_$block_id"]["Damage Model"]
-        damage_parameter = params["Models"]["Damage Models"][damage_name]
-        anisotropic_damage = haskey(damage_parameter, "Anisotropic Damage")
-    end
-    if anisotropic_damage
-        datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
-        # datamanager.create_node_field("Damage Anisotropic", Float64, dof)
-    end
     nlist = datamanager.get_field("Neighborhoodlist")
     inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     return datamanager
 end
 
-
-
 """
-    compute_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
 Computes the damage model
 
@@ -66,17 +54,18 @@ Computes the damage model
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_damage(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     model_param::Dict,
     block::Int64,
     time::Float64,
     dt::Float64,
+    to::TimerOutput,
 )
 
     mod = datamanager.get_model_module(model_param["Damage Model"])
-    datamanager = mod.compute_damage(datamanager, nodes, model_param, block, time, dt)
+    datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt)
 
     if isnothing(datamanager.get_filtered_nlist())
         return damage_index(datamanager, nodes)
@@ -86,30 +75,18 @@ function compute_damage(
 end
 
 """
-    compute_damage_pre_calculation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64, synchronise_field, time::Float64, dt::Float64)
+    synch_field(datamanager::Module, damage_model::String, synchronise_field)
 
-Compute the pre calculation for the damage.
+Field for synchronisation.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `block::Int64`: Block number
+- `damage_model::String`: The damage model
 - `synchronise_field`: Synchronise function to distribute parameter through cores.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
 """
-function compute_damage_pre_calculation(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-    model_param::Dict,
-    time::Float64,
-    dt::Float64,
-)
-    mod = datamanager.get_model_module(model_param["Damage Model"])
-    return mod.compute_damage_pre_calculation(datamanager, nodes, block, time, dt)
+function synch_field(datamanager::Module, damage_model::String, synchronise_field)
+    mod = datamanager.get_model_module(damage_model)
+    return mod.synch_field(datamanager, synchronise_field)
 end
 
 """
@@ -267,12 +244,29 @@ function init_aniso_crit_values(
     return datamanager
 end
 
-function init_damage_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    block::Int64,
-)
+"""
+    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+
+Initialize the damage models.
+
+# Arguments
+- `datamanager::Module`: The data manager module where the corrosion model will be initialized.
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the corrosion model.
+- `block::Int64`: Block identifier for the corrosion model.
+
+# Returns
+- `datamanager`: The modified data manager module with the initialized corrosion model.
+
+# Example
+```julia
+datamanager = init_model(my_data_manager, [1, 2, 3], 1)
+
+"""
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Damage Model")
+    if haskey(model_param, "Anisotropic Damage")
+        datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
+    end
     mod = Set_modules.create_module_specifics(
         model_param["Damage Model"],
         module_list,
@@ -284,7 +278,7 @@ function init_damage_model(
         return nothing
     end
     datamanager.set_model_module(model_param["Damage Model"], mod)
-    datamanager = mod.init_damage_model(datamanager, nodes, model_param, block)
+    datamanager = mod.init_model(datamanager, nodes, model_param, block)
     datamanager.set_damage_models(model_param["Damage Model"])
     datamanager = Damage.init_interface_crit_values(datamanager, model_param, block)
     datamanager = Damage.init_aniso_crit_values(datamanager, model_param, block)

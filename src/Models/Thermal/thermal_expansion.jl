@@ -11,13 +11,11 @@ module Thermal_expansion
 using LinearAlgebra
 using StaticArrays
 include("../Pre_calculation/deformation_gradient.jl")
-include("../Pre_calculation/bond_deformation_gradient.jl")
 using .Deformation_Gradient
-using .Bond_Deformation_Gradient
 
-export compute_thermal_model
+export compute_model
 export thermal_model_name
-export init_thermal_model
+export init_model
 """
     thermal_model_name()
 
@@ -40,7 +38,7 @@ end
 
 
 """
-    init_thermal_model(datamanager, nodes, thermal_parameter)
+    init_model(datamanager, nodes, thermal_parameter)
 
 Inits the thermal model. This template has to be copied, the file renamed and edited by the user to create a new thermal. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -53,7 +51,7 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_thermal_model(
+function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,
@@ -63,7 +61,7 @@ function init_thermal_model(
 end
 
 """
-    compute_thermal_model(datamanager, nodes, thermal_parameter, time, dt)
+    compute_model(datamanager, nodes, thermal_parameter, block::Int64, time, dt)
 
 Calculates the thermal expansion of the material.
 
@@ -79,10 +77,11 @@ Example:
 ```julia
 ```
 """
-function compute_thermal_model(
+function compute_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,
+    block::Int64,
     time::Float64,
     dt::Float64,
 )
@@ -116,9 +115,7 @@ function compute_thermal_model(
     end
 
     if datamanager.has_key("Deformation Gradient")
-        block_id = datamanager.get_field("Block_Id")
-        # is a work around to get the block ID information. Because all points in this routine are in the same block, the first node give the information
-        datamanager = Deformation_Gradient.compute(datamanager, nodes, block_id[nodes[1]])
+        datamanager = Deformation_Gradient.compute(datamanager, nodes, Dict(), block)
     end
 
     return datamanager
@@ -212,6 +209,26 @@ function thermal_strain(
     temperature::Union{Float64,Int64},
 )
     return alpha .* temperature
+end
+
+"""
+    fields_for_local_synchronization()
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+The structure of the Dict must because
+
+    synchfield = Dict(
+        "Field name" =>
+            Dict("upload_to_cores" => false/true, "download_from_cores" => false/true),
+    )
+
+
+# Arguments
+
+"""
+function fields_for_local_synchronization()
+    return Dict()
 end
 
 end # Module end
