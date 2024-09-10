@@ -112,14 +112,14 @@ function get_zero_energy_mode_force(
 end
 
 """
-    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, angles::Vector{Float64}, Kinv::SubArray, zStiff::SubArray, rotation::Bool)
+    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Vector{Float64}, Kinv::SubArray, zStiff::SubArray, rotation::Bool)
 
 Creates the zero energy mode stiffness
 
 # Arguments
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
 - `dof::Int64`: The degree of freedom
-- `CVoigt::Union{StaticArraysCore.MMatrix, Matrix{Float64}}`: The Voigt matrix
+- `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
 - `angles::Vector{Float64}`: The angles
 - `Kinv::SubArray`: The inverse shape tensor
 - `zStiff::SubArray`: The zero energy stiffness
@@ -130,7 +130,7 @@ Creates the zero energy mode stiffness
 function create_zero_energy_mode_stiffness(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
-    CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}},
+    CVoigt::Union{MMatrix,Matrix{Float64}},
     angles::Union{SubArray,Nothing},
     Kinv::SubArray,
     zStiff::SubArray,
@@ -150,7 +150,7 @@ Creates the zero energy mode stiffness
 # Arguments
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
 - `dof::Int64`: The degree of freedom
-- `CVoigt::Union{StaticArraysCore.MMatrix, Matrix{Float64}}`: The Voigt matrix
+- `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
 - `Kinv::SubArray`: The inverse shape tensor
 - `zStiff::SubArray`: The zero energy stiffness
 # Returns
@@ -159,7 +159,7 @@ Creates the zero energy mode stiffness
 function create_zero_energy_mode_stiffness(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
-    CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}},
+    CVoigt::Union{MMatrix,Matrix{Float64}},
     Kinv::SubArray,
     zStiff::SubArray,
 )
@@ -178,7 +178,7 @@ Creates the zero energy mode stiffness, based on the UMAT interface
 # Arguments
 - `ID::Int64` : ID of the node
 - `dof::Int64`: The degree of freedom
-- `CVoigt::Union{StaticArraysCore.MMatrix, Matrix{Float64}}`: The Voigt matrix
+- `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
 - `Kinv::SubArray`: The inverse shape tensor
 - `zStiff::SubArray`: The zero energy stiffness
 # Returns
@@ -187,7 +187,7 @@ Creates the zero energy mode stiffness, based on the UMAT interface
 function global_zero_energy_mode_stiffness(
     ID::Int64,
     dof::Int64,
-    CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}},
+    CVoigt::Union{MMatrix,Matrix{Float64}},
     Kinv::SubArray,
     zStiff::SubArray,
 )
@@ -198,14 +198,14 @@ function global_zero_energy_mode_stiffness(
 end
 
 """
-    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}}, angles::SubArray, Kinv::SubArray, zStiff::SubArray)
+    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::SubArray, Kinv::SubArray, zStiff::SubArray)
 
 Creates the zero energy mode stiffness
 
 # Arguments
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
 - `dof::Int64`: The degree of freedom
-- `CVoigt::Union{StaticArraysCore.MMatrix, Matrix{Float64}}`: The Voigt matrix
+- `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
 - `angles::SubArray`: The angles
 - `Kinv::SubArray`: The inverse shape tensor
 - `zStiff::SubArray`: The zero energy stiffness
@@ -215,7 +215,7 @@ Creates the zero energy mode stiffness
 function create_zero_energy_mode_stiffness(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
-    CVoigt::Union{StaticArraysCore.MMatrix,Matrix{Float64}},
+    CVoigt::Union{MMatrix,Matrix{Float64}},
     angles::SubArray,
     Kinv::SubArray,
     zStiff::SubArray,

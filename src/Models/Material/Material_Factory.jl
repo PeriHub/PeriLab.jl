@@ -7,6 +7,7 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 include("material_basis.jl")
 using .Set_modules
 using TimerOutputs
+using StaticArrays
 
 global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
 Set_modules.include_files(module_list)
@@ -316,7 +317,7 @@ Calculate the von Mises stress.
 function calculate_strain(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    hooke_matrix::Matrix{Float64},
+    hooke_matrix::Union{Matrix{Float64},MMatrix},
 )
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     strain = datamanager.get_field("Strain", "NP1")

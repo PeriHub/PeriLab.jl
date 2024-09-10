@@ -224,7 +224,7 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                     compute_params = computes[key]
                     global_var = true
                     if computes[key]["Compute Class"] == "Node_Set_Data"
-                        nodeset = datamanager.get_nsets()[computes[key]]
+                        nodeset = computes[key]["Node Set"]
                     end
                 end
             end
@@ -358,9 +358,9 @@ function initialize_data(
         datamanager.set_max_rank(MPI.Comm_size(comm))
         datamanager.set_comm(comm)
     end
-    datamanager, params =
+    @timeit to "init_data" datamanager, params =
         init_data(read_input_file(filename), filedirectory, datamanager, comm, to)
-    datamanager = init_orientations(datamanager)
+    @timeit to "init orientations" datamanager = init_orientations(datamanager)
     return datamanager, params
 end
 
@@ -389,18 +389,17 @@ function init_orientations(datamanager::Module)
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     orientations = datamanager.create_constant_node_field("Orientations", Float64, 3)
-    rotation_tensor_N, rotation_tensor_NP1 =
-        datamanager.create_node_field("Rotation Tensor", Float64, "Matrix", dof)
+    rotation_tensor =
+        datamanager.create_constant_node_field("Rotation Tensor", Float64, "Matrix", dof)
     angles = datamanager.get_field("Angles")
 
     for iID = 1:nnodes
-        rotation_tensor_N[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
-        rotation_tensor_NP1[iID, :, :] = rotation_tensor_N[iID, :, :]
+        rotation_tensor[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
 
         if dof == 2
-            orientations[iID, :] = vcat(rotation_tensor_NP1[iID, :, 1], 0)
+            orientations[iID, :] = vcat(rotation_tensor[iID, :, 1], 0)
         elseif dof == 3
-            orientations[iID, :] = rotation_tensor_NP1[iID, :, 1]
+            orientations[iID, :] = rotation_tensor[iID, :, 1]
         end
 
     end
@@ -665,8 +664,9 @@ function get_global_values(output::Dict, datamanager::Module)
                 calculate_block(datamanager, fieldname, dof, calculation_type, block_id)
         elseif compute_class == "Node_Set_Data"
             node_set = output[varname]["nodeset"]
+            node_list = datamanager.get_local_nodes(node_set)
             global_value, nnodes =
-                calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_set)
+                calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_list)
         end
         if datamanager.get_max_rank() > 1
             global_value =

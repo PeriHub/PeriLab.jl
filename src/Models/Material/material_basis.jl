@@ -54,17 +54,18 @@ function get_all_elastic_moduli(
         end
     end
 
+    bond_based = occursin("Bond-based", parameter["Material Model"])
     bulk_field = datamanager.has_key("Bulk_Modulus")
-    Youngs_field = datamanager.has_key("Young's_Modulus")
-    Poissons_field = datamanager.has_key("Poisson's_Ratio")
+    youngs_field = datamanager.has_key("Young's_Modulus")
+    poissons_field = datamanager.has_key("Poisson's_Ratio")
     shear_field = datamanager.has_key("Shear_Modulus")
 
-    any_field_allocated = bulk_field | Youngs_field | Poissons_field | shear_field
+    any_field_allocated = bulk_field | youngs_field | poissons_field | shear_field
 
     bulk = haskey(parameter, "Bulk Modulus") | bulk_field
-    Youngs = haskey(parameter, "Young's Modulus") | Youngs_field
-    Poissons = haskey(parameter, "Poisson's Ratio") | Poissons_field
+    youngs = haskey(parameter, "Young's Modulus") | youngs_field
     shear = haskey(parameter, "Shear Modulus") | shear_field
+    poissons = haskey(parameter, "Poisson's Ratio") | poissons_field
 
     K = get_value(datamanager, parameter, any_field_allocated, "Bulk Modulus", bulk_field)
     E = get_value(
@@ -72,22 +73,41 @@ function get_all_elastic_moduli(
         parameter,
         any_field_allocated,
         "Young's Modulus",
-        Youngs_field,
+        youngs_field,
     )
     G = get_value(datamanager, parameter, any_field_allocated, "Shear Modulus", shear_field)
+
     nu = get_value(
         datamanager,
         parameter,
         any_field_allocated,
         "Poisson's Ratio",
-        Poissons_field,
+        poissons_field,
     )
 
-    if bulk && Poissons
+    if bond_based
+        nu_fixed = datamanager.get_dof() == 2 ? 1 / 3 : 1 / 4
+        if nu != 0.0 && nu != nu_fixed
+            @warn "Bond-based model only supports a fixed poisson's ratio of " *
+                  string(nu_fixed)
+        end
+        nu = nu_fixed
+        poissons = true
+    end
+
+    # tbd non isotropic material check
+    if bulk + youngs + shear + poissons < 2
+        @error "Minimum of two parameters are needed for isotropic material"
+        return nothing
+    elseif bulk + youngs + shear + poissons > 2
+        @warn "Only two parameters are needed for isotropic material, ignoring additional parameters"
+    end
+
+    if bulk && poissons
         E = 3 .* K .* (1 .- 2 .* nu)
         G = 3 .* K .* (1 .- 2 .* nu) ./ (2 .+ 2 .* nu)
     end
-    if shear && Poissons
+    if shear && poissons
         E = 2 .* G .* (1 .+ nu)
         K = 2 .* G .* (1 .+ nu) ./ (3 .- 6 .* nu)
     end
@@ -95,23 +115,18 @@ function get_all_elastic_moduli(
         E = 9 .* K .* G ./ (3 .* K .+ G)
         nu = (3 .* K .- 2 .* G) ./ (6 .* K .+ 2 .* G)
     end
-    if Youngs && shear
+    if youngs && shear
         K = E .* G ./ (9 .* G .- 3 .* E)
         nu = E ./ (2 .* G) .- 1
     end
 
-    if Youngs && bulk
+    if youngs && bulk
         G = 3 .* K .* E ./ (9 .* K .- E)
         nu = (3 .* K .- E) ./ (6 .* K)
     end
-    if Youngs && Poissons
+    if youngs && poissons
         K = E ./ (3 .- 6 .* nu)
         G = E ./ (2 .+ 2 .* nu)
-    end
-    # tbd non isotropic material check
-    if bulk + Youngs + shear + Poissons < 2
-        @error "Minimum of two parameters are needed for isotropic material"
-        return nothing
     end
     parameter["Bulk Modulus"] = K
     parameter["Young's Modulus"] = E
@@ -554,7 +569,10 @@ end
 # returns
 - `strain::Matrix{Float64}`: Strain
 """
-function get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
+function get_strain(
+    stress_NP1::Matrix{Float64},
+    hooke_matrix::Union{Matrix{Float64},MMatrix},
+)
     return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
 end
 

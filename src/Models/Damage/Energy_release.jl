@@ -105,7 +105,7 @@ function compute_model(
         aniso_crit_values = datamanager.get_aniso_crit_values()
         bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
         bond_norm::Float64 = 0.0
-        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
+        rotation_tensor = datamanager.get_field("Rotation Tensor")
     end
 
     bond_energy::Float64 = 0.0
@@ -116,12 +116,12 @@ function compute_model(
     neighbor_bond_force::Vector{Float64} = @SVector zeros(Float64, dof)
     projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
+    relative_displacement_matrix = deformed_bond .- undeformed_bond
     for iID in nodes
-        @views relative_displacement_vector = deformed_bond[iID] .- undeformed_bond[iID]
-
-        for (jID, neighborID) in enumerate(nlist[iID])
-            @views relative_displacement = relative_displacement_vector[jID, :]
-            norm_displacement = norm(relative_displacement)
+        @views nlist_temp = nlist[iID]
+        for jID in eachindex(nlist_temp)
+            @views relative_displacement = relative_displacement_matrix[iID][jID, :]
+            @views norm_displacement = norm(relative_displacement)
 
             if norm_displacement == 0 || (
                 tension &&
@@ -129,6 +129,8 @@ function compute_model(
             )
                 continue
             end
+
+            @views neighborID = nlist_temp[jID]
 
             # check if the bond also exist at other node, due to different horizons
             try
@@ -157,10 +159,12 @@ function compute_model(
                 critical_energy
 
             if aniso_damage
-                #TODO Fix bug herem rotation_tensor is zero
-                @info rotation_tensor[iID, :, :]'
-                @views rotated_bond =
-                    rotation_tensor[iID, :, :]' * deformed_bond[iID][jID, :]
+                if all(rotation_tensor[iID, :, :] .== 0)
+                    @views rotated_bond = deformed_bond[iID][jID, :]
+                else
+                    @views rotated_bond =
+                        rotation_tensor[iID, :, :]' * deformed_bond[iID][jID, :]
+                end
                 # Compute bond_norm for all components at once
                 @views bond_norm_all = abs.(rotated_bond) ./ deformed_bond_length[iID][jID]
 
@@ -170,9 +174,9 @@ function compute_model(
                     aniso_crit_values[block_ids[iID]]
 
                 # Update bond_damage, bond_damage_aniso, and update_list in a vectorized manner
-                @views bond_damage[iID][jID] -= sum(bond_norm_all .* condition)
-                @views bond_damage[iID][jID] = max.(bond_damage[iID][jID], 0) # Ensure non-negative
-                @views bond_damage_aniso[iID][jID, :] .= 0 .+ condition
+                bond_damage[iID][jID] -= sum(bond_norm_all .* condition)
+                bond_damage[iID][jID] = max.(bond_damage[iID][jID], 0) # Ensure non-negative
+                bond_damage_aniso[iID][jID, :] .= 0 .+ condition
                 update_list[iID] = any(condition)
 
                 ###################################################################################################
@@ -278,13 +282,14 @@ function init_model(
     end
 
     if haskey(damage_parameter, "Anisotropic Damage")
-        rotation::Bool, angles = datamanager.rotation_data()
+        rotation::Bool = datamanager.get_rotation()
         if !rotation
-            # TODO is this necassary? If you have no angles, you can use the global ones.
             @error "Anisotropic damage requires Angles field"
             return nothing
         end
     end
+
+    datamanager.set_synch("Bond Forces", false, true, datamanager.get_dof())
 
     return datamanager
 end

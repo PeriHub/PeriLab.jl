@@ -3,12 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Helpers
-using NearestNeighbors: BallTree, inrange
+using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 using Tensors
 using Dierckx
 using ProgressBars
 using LinearAlgebra
 using TensorOperations
+using StaticArrays
 export qdim
 export check_inf_or_nan
 export find_active
@@ -109,7 +110,7 @@ function get_active_update_nodes(
     active_nodes = view(block_nodes[block], active_index)
     update_index = find_active(update_list[active_nodes])
     if !isempty(update_index)
-        update_nodes = active_nodes[update_index]
+        @views update_nodes = active_nodes[update_index]
     end
     return active_nodes, update_nodes
 end
@@ -266,7 +267,7 @@ Invert a n x n matrix. Throws an error if A is singular.
 - inverted matrix or nothing if not inverable.
 """
 function invert(
-    A::Union{Matrix{Float64},Matrix{Int64},SubArray{Float64},SubArray{Int64}},
+    A::Union{Matrix{Float64},Matrix{Int64},SubArray{Float64},SubArray{Int64},MMatrix},
     error_message::String = "Matrix is singular",
 )
     try
@@ -288,13 +289,18 @@ function find_local_neighbors(
     # excludes right now iID node in the coordinates list. Because it is an abritrary sublist it should be fine.
     # saving faster than recalculation?
     nlist_without_neighbor = view(nlist[nlist.!=nID], :)
-    balltree = BallTree(transpose(coordinates[nlist_without_neighbor, :]))
-    return nlist_without_neighbor[inrange(
-        balltree,
-        coordinates[nID, :],
-        bond_horizon,
-        true,
-    )]
+    data = transpose(coordinates[nlist_without_neighbor, :])
+    nnodes = length(nlist_without_neighbor)
+    nhs = GridNeighborhoodSearch{size(coordinates)[2]}(
+        search_radius = bond_horizon,
+        n_points = nnodes,
+    )
+    initialize_grid!(nhs, data)
+    neighborList = []
+    foreach_neighbor(coordinates[nID, :], data, nhs, 1) do i, j, _, L
+        push!(neighborList, nlist_without_neighbor[j])
+    end
+    return neighborList
 end
 
 

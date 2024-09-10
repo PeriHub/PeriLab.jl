@@ -59,6 +59,7 @@ makedocs(
             # "Types" => "lib/types.md",
             "Functions"=>"lib/functions.md",
             "IO Functions"=>"lib/io_functions.md",
+            "MPI Functions"=>"lib/mpi_functions.md",
             "Models Functions"=>"lib/models_functions.md",
             # "Indexing" => "lib/indexing.md",
             # "Metadata" => "lib/metadata.md",

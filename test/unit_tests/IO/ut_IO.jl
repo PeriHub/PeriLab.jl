@@ -2,10 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-#TODO: Remove include
-include("../../../src/IO/IO.jl")
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+# include("../../../src/IO/IO.jl")
+# using PeriLab
 using MPI
 using TimerOutputs
 using Test
@@ -71,7 +69,7 @@ block_Id .+= 1
 block_Id[end] = 2
 
 @testset "ut_get_results_mapping" begin
-    output = IO.get_results_mapping(params, "", test_data_manager)
+    output = PeriLab.IO.get_results_mapping(params, "", test_data_manager)
     @test sort(collect(keys(output[2]["Fields"]))) ==
           ["Forcesxx", "Forcesxy", "Forcesxz", "Forcesyx", "Forcesyy", "Forcesyz"]
     @test sort(collect(keys(output[3]["Fields"]))) == [

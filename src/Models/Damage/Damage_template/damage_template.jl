@@ -6,7 +6,6 @@ module Damage_template
 using TimerOutputs
 export compute_model
 export damage_name
-export synch_field
 """
     damage_name()
 

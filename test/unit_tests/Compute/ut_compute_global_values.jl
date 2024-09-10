@@ -46,10 +46,10 @@ include("../../../src/Compute/compute_global_values.jl")
     test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2))
     nodes = Vector{Int64}(3:4)
 
-    @test calculate_nodelist(test_data_manager, "Disp", 1, "Sum", nodes) == (0, 0)
-    @test calculate_nodelist(test_data_manager, "Disp", 1, "Average", nodes) == (0, 0)
-    @test calculate_nodelist(test_data_manager, "Disp", 1, "Minimum", nodes) == (Inf, 0)
-    @test calculate_nodelist(test_data_manager, "Disp", 1, "Maximum", nodes) == (-Inf, 0)
+    @test calculate_nodelist(test_data_manager, "Disp", 1, "Sum", nodes) == (7, 2)
+    @test calculate_nodelist(test_data_manager, "Disp", 1, "Average", nodes) == (3.5, 2)
+    @test calculate_nodelist(test_data_manager, "Disp", 1, "Minimum", nodes) == (3, 2)
+    @test calculate_nodelist(test_data_manager, "Disp", 1, "Maximum", nodes) == (4, 2)
 
     matrix = test_data_manager.create_constant_node_field("Matrix", Float64, "Matrix", 3)
     matrix[:, 1, 2] .= 4

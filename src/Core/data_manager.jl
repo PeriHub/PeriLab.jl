@@ -268,11 +268,7 @@ Checks if the specified `property` exists for the given `block_id`.
 function check_property(block_id::Int64, property::String)
     global properties
 
-    if haskey(properties[block_id], property)
-        return length(properties[block_id][property]) > 0
-    end
-    @error "Property $property does not exist in block $block_id."
-    return false
+    haskey(properties[block_id], property) && !isempty(properties[block_id][property])
 end
 
 """
@@ -708,7 +704,7 @@ Get the bond damage
 """
 function get_bond_damage(time::String)
     bond_damage = get_field("Bond Damage", time)
-    bond_damage_aniso = get_field("Bond Damage Anisotropic", time, false)
+    # bond_damage_aniso = get_field("Bond Damage Anisotropic", time, false)
     # return isnothing(bond_damage_aniso) ? bond_damage : bond_damage_aniso
     return bond_damage
 end
@@ -972,12 +968,10 @@ This function retrieves a specific `value_name` associated with a specified `pro
 function get_property(block_id::Int64, property::String, value_name::String)
     global properties
 
-    if check_property(block_id, property)
-        if value_name in keys(properties[block_id][property])
-            return properties[block_id][property][value_name]
-        end
+    if check_property(block_id, property) &&
+       haskey(properties[block_id][property], value_name)
+        return properties[block_id][property][value_name]
     end
-
     return nothing
 end
 
@@ -1614,18 +1608,23 @@ Sets the synchronization dictionary globally.
 - `download_from_cores`::Bool: Whether to download the field from the cores.
 - `upload_to_cores`::Bool: Whether to upload the field to the cores.
 """
-function set_synch(name, download_from_cores, upload_to_cores)
+function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
     global fields_to_synch
-
     if name in get_all_field_keys()
         field = get_field(name)
+        if dof == 0
+            dof = length(field[1, :])
+        end
         fields_to_synch[name] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,
-            "dof" => length(field[1, :]),
+            "dof" => dof,
         )
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name * "NP1")
+        if dof == 0
+            dof = length(field[1, :])
+        end
         fields_to_synch[name*"NP1"] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,

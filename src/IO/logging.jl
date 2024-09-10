@@ -107,9 +107,13 @@ function close_result_file(result_file::Dict)
     return false
 end
 
-function close_result_files(result_files::Vector{Dict{String,IOStream}})
+function close_result_files(result_files::Union{Vector{Dict},Vector{Dict{String,IOStream}}})
     for result_file in result_files
-        close_result_file(result_file)
+        try
+            close_result_file(result_file)
+        catch
+            @warn "File already closed"
+        end
     end
     return true
 end

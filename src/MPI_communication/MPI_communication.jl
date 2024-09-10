@@ -445,9 +445,8 @@ function find_and_set_core_value_avg(
     value::Union{Float64,Int64},
     nnodes::Int64,
 )
-    #TODO unnecessary MPI call
-    nnodes = MPI.Allreduce(nnodes, MPI.SUM, comm)
-    return MPI.Allreduce(value, MPI.SUM, comm) / nnodes
+    average = value / nnodes
+    return MPI.Allreduce(average, MPI.SUM, comm) / MPI.Comm_size(comm)
 end
 
 """
