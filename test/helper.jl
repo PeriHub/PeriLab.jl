@@ -40,6 +40,20 @@ function run_perilab(filename, cores, compare, folder_name = ""; reload = false)
     end
 end
 
+function run_perilab(filename1, filename2, folder_name = "")
+    PeriLab.main(filename1 * ".yaml"; silent = true)
+    PeriLab.main(filename2 * ".yaml"; silent = true)
+    same = exodiff(filename1 * ".e", filename2 * ".e"; command_file = folder_name * ".cmd")
+    @test same
+    if same
+        rm("exodiff.log")
+        rm(filename1 * ".e")
+        rm(filename2 * ".e")
+    else
+        mv("exodiff.log", filename1 * "_" * filename2 * "_exodiff.log", force = true)
+    end
+end
+
 function run_mpi_test(filename, cores, check, folder_name = "")
     command = `$(Base.julia_cmd()) $(folder_name)/$(filename)`
 

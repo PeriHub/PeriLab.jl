@@ -205,6 +205,9 @@ MPI.Init()
         @testset "test_dry_run" begin
             include("fullscale_tests/test_dry_run/test_dry_run.jl")
         end
+        @testset "test_two_block" begin
+            include("fullscale_tests/test_two_block/test_two_block.jl")
+        end
         @testset "test_additive_simple" begin
             include("fullscale_tests/test_additive/test_additive.jl")
         end
