@@ -426,17 +426,17 @@ The field with the given `name` and specified characteristics.
 function create_field(
     name::String,
     vartype::Type,
-    bondOrNode::String,
+    bond_or_node::String,
     dof::Int64,
     default_value::Union{Int64,Float64,Bool},
 )
-    create_field(name, vartype, bondOrNode, "Vector", dof, default_value)
+    create_field(name, vartype, bond_or_node, "Vector", dof, default_value)
 end
 
 function create_field(
     name::String,
     vartype::Type,
-    bondOrNode::String,
+    bond_or_node::String,
     VectorOrArray::String,
     dof::Int64,
     default_value::Union{Int64,Float64,Bool},
@@ -462,7 +462,7 @@ function create_field(
     if VectorOrArray == "Matrix"
         field_dof *= dof
     end
-    if bondOrNode == "Node_Field"
+    if bond_or_node == "Node_Field"
         if dof == 1
             fields[vartype][name] = fill(vartype(default_value), nnodes)
             get_function = () -> view(fields[vartype][name], :)
@@ -475,7 +475,7 @@ function create_field(
                 get_function = () -> view(fields[vartype][name], :, :)
             end
         end
-    elseif bondOrNode == "Bond_Field"
+    elseif bond_or_node == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
         if dof == 1
             fields[vartype][name] = Vector{vartype}[]
