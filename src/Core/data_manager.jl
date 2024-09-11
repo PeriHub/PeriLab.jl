@@ -243,16 +243,6 @@ Set the MPI communicator
 function set_comm(comm::MPI.Comm)
     global commMPi = comm
 end
-##########################
-# Material information
-##########################
-global material_type::Dict{String,Bool} = Dict(
-    "Bond-Based" => false,
-    "Ordinary" => false,
-    "Correspondence" => true,
-    "Bond-Associated" => false,
-)
-##########################
 
 """
     check_property(block_id::Int64, property::String)
