@@ -40,17 +40,37 @@ function run_perilab(filename, cores, compare, folder_name = ""; reload = false)
     end
 end
 
-function run_perilab(filename1, filename2, folder_name = "")
+function run_perilab(filename1, filename2)
     PeriLab.main(filename1 * ".yaml"; silent = true)
     PeriLab.main(filename2 * ".yaml"; silent = true)
-    same = exodiff(filename1 * ".e", filename2 * ".e"; command_file = folder_name * ".cmd")
-    @test same
-    if same
-        rm("exodiff.log")
+    exo1 = ExodusDatabase(filename1 * ".e", "r")
+    exo2 = ExodusDatabase(filename2 * ".e", "r")
+
+    n_steps1 = read_number_of_time_steps(exo1)
+    displ_x_1 = read_values(exo1, NodalVariable, n_steps1, 1, "Displacementsx")
+    displ_y_1 = read_values(exo1, NodalVariable, n_steps1, 1, "Displacementsy")
+    force_x_1 = read_values(exo1, NodalVariable, n_steps1, 1, "Forcesx")
+    force_y_1 = read_values(exo1, NodalVariable, n_steps1, 1, "Forcesy")
+
+    n_steps2 = read_number_of_time_steps(exo2)
+    displ_x_2 = read_values(exo2, NodalVariable, n_steps2, 1, "Displacementsx")
+    displ_y_2 = read_values(exo2, NodalVariable, n_steps2, 1, "Displacementsy")
+    force_x_2 = read_values(exo2, NodalVariable, n_steps2, 1, "Forcesx")
+    force_y_2 = read_values(exo2, NodalVariable, n_steps2, 1, "Forcesy")
+
+    @test n_steps1 == n_steps2
+    @test displ_x_1 == displ_x_2
+    @test displ_y_1 == displ_y_2
+    @test force_x_1 == force_x_2
+    @test force_y_1 == force_y_2
+
+    if n_steps1 == n_steps2 &&
+       displ_x_1 == displ_x_2 &&
+       displ_y_1 == displ_y_2 &&
+       force_x_1 == force_x_2 &&
+       force_y_1 == force_y_2
         rm(filename1 * ".e")
         rm(filename2 * ".e")
-    else
-        mv("exodiff.log", filename1 * "_" * filename2 * "_exodiff.log", force = true)
     end
 end
 
