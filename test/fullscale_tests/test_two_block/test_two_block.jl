@@ -6,5 +6,5 @@
 
 folder_name = basename(@__FILE__)[1:end-3]
 cd("fullscale_tests/" * folder_name) do
-    # run_perilab("one_block", "two_block", folder_name)
+    run_and_compare("one_block", "two_block")
 end

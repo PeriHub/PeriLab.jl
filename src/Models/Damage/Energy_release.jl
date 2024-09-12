@@ -95,7 +95,7 @@ function compute_model(
     # for anisotropic damage models
     rotation::Bool = datamanager.get_rotation()
 
-    tension::Bool = get(damage_parameter, "Only Tension", true)
+    tension::Bool = get(damage_parameter, "Only Tension", false)
     inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
     if inter_block_damage
         inter_critical_energy::Array{Float64,3} = datamanager.get_crit_values_matrix()
@@ -122,7 +122,6 @@ function compute_model(
         for jID in eachindex(nlist_temp)
             @views relative_displacement = relative_displacement_matrix[iID][jID, :]
             @views norm_displacement = norm(relative_displacement)
-
             if norm_displacement == 0 || (
                 tension &&
                 deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
@@ -207,6 +206,8 @@ function compute_model(
                 # end
 
             else
+                @info "bond_energy: " * string(bond_energy)
+                @info "crit_energy: " * string(crit_energy)
                 if (bond_energy / quad_horizon[iID]) > crit_energy
                     bond_damage[iID][jID] = 0.0
                     update_list[iID] = true

@@ -6,3 +6,4 @@ NODAL VARIABLES absolute 1.0E-12
 	DisplacementsY   absolute 1.0E-8
 	ForcesX          absolute 1.0E-7
 	ForcesY          absolute 1.0E-7
+	Damage 			 absolute 1.0E-9

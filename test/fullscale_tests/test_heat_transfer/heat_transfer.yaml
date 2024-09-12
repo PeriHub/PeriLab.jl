@@ -9,8 +9,6 @@ PeriLab:
     Type: "Text File"
     Input Mesh File: "mesh.txt"
   Models:
-    Pre Calculation:
-      Deformed Bond Geometry: false
     Thermal Models:
       Thermal test:
         Thermal Model: "Thermal Flow + Heat Transfer"

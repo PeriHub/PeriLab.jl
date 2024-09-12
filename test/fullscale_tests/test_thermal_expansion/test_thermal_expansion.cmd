@@ -4,4 +4,4 @@ TIME STEPS absolute 1.0E-14
 NODAL VARIABLES absolute 1.0E-12
 	DisplacementsX   absolute 1.0E-8
 	DisplacementsY   absolute 1.0E-8
-	DisplacementsZ   absolute 1.0E-8
+	Temperature   	 absolute 1.0E-8
