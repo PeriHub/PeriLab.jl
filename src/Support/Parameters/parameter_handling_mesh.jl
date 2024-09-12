@@ -161,6 +161,9 @@ function get_node_sets(params::Dict, path::String)
                 continue
             end
             nsets[entry] = nodes.Column1
+        elseif occursin(":", nodesets[entry])
+            nodes = eval(Meta.parse(nodesets[entry]))
+            nsets[entry] = collect(nodes)
         else
             nodes = split(nodesets[entry])
             nsets[entry] = parse.(Int, nodes)
