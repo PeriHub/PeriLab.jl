@@ -271,8 +271,14 @@ function compute_stresses(
     strain_N = datamanager.get_field("Strain", "N")
     temp = datamanager.get_field("Temperature", "N")
     dtemp = datamanager.get_field("Delta Temperature")
-    PREDEF = datamanager.get_field("Predefined Fields")
-    DPRED = datamanager.get_field("Predefined Fields Increment")
+    PREDEF = datamanager.get_field("Predefined Fields", false)
+    DPRED = datamanager.get_field("Predefined Fields Increment", false)
+
+    if isnothing(PREDEF)
+        PREDEF = zeros(size(temp_N))
+        DPRED = zeros(size(temp_N))
+    end
+
     # only 80 charakters are supported
     CMNAME::Cstring = malloc_cstring(material_parameter["UMAT Material Name"])
     coords = datamanager.get_field("Coordinates")

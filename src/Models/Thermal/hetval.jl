@@ -60,21 +60,23 @@ function compute_model(
     statev = datamanager.get_field("State Variables")
     flux_N = datamanager.get_field("Heat Flow", "N")
     flux_NP1 = datamanager.get_field("Heat Flow", "NP1")
-    PREDEF = datamanager.get_field("Predefined Fields")
-    DPRED = datamanager.get_field("Predefined Fields Increment")
+    PREDEF = datamanager.get_field("Predefined Fields", false)
+    DPRED = datamanager.get_field("Predefined Fields Increment", false)
+
+    if isnothing(PREDEF)
+        PREDEF = zeros(size(temp_N))
+        DPRED = zeros(size(temp_N))
+    end
 
     for iID in nodes
         HETVAL_interface(
             thermal_parameter["File"],
             CMNAME,
-            temp_N[iID],
-            # temp_NP1[iID],
-            time,
-            # time + dt,
+            [temp_N[iID], temp_NP1[iID] - temp_N[iID]],
+            [time, time + dt],
             dt,
             statev[iID, :],
-            flux_N[iID],
-            # flux_NP1[iID],
+            [flux_N[iID], flux_NP1[iID]],
             PREDEF[iID, :],
             DPRED[iID, :],
         )
@@ -105,11 +107,11 @@ UMAT interface
 function HETVAL_interface(
     filename::String,
     CMNAME::Cstring,
-    TEMP::Float64,
-    TIME::Float64,
+    TEMP::Vector{Float64},
+    TIME::Vector{Float64},
     DTIME::Float64,
     STATEV::Vector{Float64},
-    FLUX::Float64,
+    FLUX::Vector{Float64},
     PREDEF::Vector{Float64},
     DPRED::Vector{Float64},
 )
@@ -118,11 +120,11 @@ function HETVAL_interface(
         Cvoid,
         (
             Cstring,
-            Ref{Float64},
-            Ref{Float64},
-            Ref{Float64},
+            Ptr{Float64},
             Ptr{Float64},
             Ref{Float64},
+            Ptr{Float64},
+            Ptr{Float64},
             Ptr{Float64},
             Ptr{Float64},
         ),
@@ -175,23 +177,6 @@ function init_model(
     # State variables are used to transfer additional information to the next step
     datamanager.create_constant_node_field("State Variables", Float64, num_state_vars)
 
-    if !haskey(thermal_parameter, "Number of Properties")
-        @error "Number of Properties must be at least equal 1"
-        return nothing
-    end
-    # properties include the material properties, etc.
-    num_props = thermal_parameter["Number of Properties"]
-    properties =
-        datamanager.create_constant_free_size_field("Properties", Float64, (num_props, 1))
-
-    for iID = 1:num_props
-        if !haskey(thermal_parameter, "Property_$iID")
-            @error "Property_$iID is missing. Number of properties is $num_props and properties have to be in order without a missing number."
-            return nothing
-        end
-        properties[iID] = thermal_parameter["Property_$iID"]
-    end
-
     if !haskey(thermal_parameter, "HETVAL Material Name")
         @warn "No HETVAL Material Name is defined. Please check if you use it as method to check different material in your HETVAL."
         thermal_parameter["HETVAL Material Name"] = ""
@@ -207,38 +192,7 @@ function init_model(
 
 
     dof = datamanager.get_dof()
-    sse =
-        datamanager.create_constant_node_field("Specific Elastic Strain Energy", Float64, 1)
-    spd = datamanager.create_constant_node_field("Specific Plastic Dissipation", Float64, 1)
-    scd = datamanager.create_constant_node_field(
-        "Specific Creep Dissipation Energy",
-        Float64,
-        1,
-    )
-    rpl = datamanager.create_constant_node_field(
-        "Volumetric heat generation per unit time",
-        Float64,
-        1,
-    )
-    DDSDDT = datamanager.create_constant_node_field(
-        "Variation of the stress increments with respect to the temperature",
-        Float64,
-        3 * dof - 3,
-    )
-    DRPLDE = datamanager.create_constant_node_field(
-        "Variation of RPL with respect to the strain increment",
-        Float64,
-        3 * dof - 3,
-    )
-    DRPLDT = datamanager.create_constant_node_field(
-        "Variation of RPL with respect to the temperature",
-        Float64,
-        1,
-    )
-    DFGRD0 = datamanager.create_constant_node_field("DFGRD0", Float64, "Matrix", dof)
-    # is already initialized if thermal problems are adressed
-    temperature = datamanager.create_node_field("Temperature", Float64, 1)
-    deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
+
     if haskey(thermal_parameter, "Predefined Field Names")
         field_names = split(thermal_parameter["Predefined Field Names"], " ")
         fields = datamanager.create_constant_node_field(
@@ -262,14 +216,6 @@ function init_model(
             length(field_names),
         )
     end
-
-    rot_N, rot_NP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
-    zStiff = datamanager.create_constant_node_field(
-        "Zero Energy Stiffness",
-        Float64,
-        "Matrix",
-        dof,
-    )
 
     return datamanager
 end

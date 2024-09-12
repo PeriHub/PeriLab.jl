@@ -247,6 +247,7 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                         "type" => typeof(datafield[1, 1]),
                     )
                 end
+                continue
             end
 
             if length(sizedatafield) == 1
