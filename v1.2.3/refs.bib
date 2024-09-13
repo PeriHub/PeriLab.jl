@@ -1,0 +1,243 @@
+
+@article{HesseJA2023,
+author = {Hesse, Jan-Timo and Willberg, Christian and Hein, Robert and Winkelmann, Felix},
+title = {Peridynamic framework to model additive manufacturing processes},
+journal = {PAMM},
+volume = {n/a},
+year = {2023},
+number = {n/a},
+pages = {e202300033},
+doi = {10.1002/pamm.202300033},
+url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/pamm.202300033},
+eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/pamm.202300033},
+abstract = {Abstract This paper introduces a novel framework for analyzing additive manufacturing processes. By employing a peridynamic mesh-free implementation, it overcomes certain limitations encountered with finite element-based approaches in regard to defects and fractures. The framework includes the implementation of thermodynamical material behavior and a novel boundary detection algorithm, as the outer surface area will undergo changes during the manufacturing process. The proposed methods are thoroughly validated, and a comprehensive example is provided as a demonstration.}
+}
+
+
+@Book{WillbergC2013,
+  title     = {{Development of a new isogeometric finite element and its application for Lamb wave based structural health monitoring}},
+  publisher = {VDI Verlag, ISBN: 978-3-18-344620-9},
+  year      = {2013},
+  author    = {Willberg, Christian},
+  address   = {D\"{u}sseldorf},
+  edition   = {Fortschrit},
+  abstract  = {Structural Health Monitoring (SHM) is a new, rapidly developing technology
+	for the mon- itoring of engineering structures. The main features
+	are permanent and automatic as- sessment of the structural integrity
+	by built-in devices such that non-destructive testing becomes an
+	integral part of the structure. Therefore, SHM aims at damage detection
+	and loads monitoring by intrinsic means of the structure. The tasks
+	can be defined similar to those of conventional non-destructive testing:
+	damage detection, localisation and further characterisation. Consequently,
+	this leads in an increased safety and a reduction of the maintenance
+	costs. Among different approaches, the use of ultrasonic Lamb waves
+	is an attractive method for structural health monitoring. Lamb waves
+	are able to propagate over large distances, thus wide areas of a
+	structure can be monitored. Because Lamb waves sensitively interact
+	with defects, they offer a chance for defect detection and further
+	characterization. The use of embedded or surface-attached piezoceramic
+	elements as actuators and sensors for generation and reception of
+	Lamb waves is an attractive way for designing smart SHM structures.
+	To gain a better understanding of the models of Lamb wave, e.g.
+	interaction, damages, excitation process, efficient models are needed.
+	Furthermore, in future these models can be used to develop and optimize
+	an actuator-sensor grid for SHM systems in complex structures, e.g.
+	airplanes. Therefore, SHM applications call for both efficient and
+	powerful numerical tools to predict the behavior of Lamb waves. The
+	mesh density required to obtain good quality solutions has to be
+	rather fine both spatial and temporal. This results in enormous computational
+	costs (computational time and memory storage requirements) when ultrasonic
+	wave propagation problems are solved in the time domain. Furthermore,
+	in future design process one has to deal with complex structures.
+	To resolve the issue of complex structures the thesis utilize the
+	idea of the isogeometric element concept. The isogeometric approach
+	utilizes the non-uniform rational B-spline (NURBS) functions of the
+	geometrical description of the computer aided design (CAD) software.
+	Therefore, no meshing in the todays common way is needed. To model
+	the complete SHM structure including actuators and sensors, in this
+	thesis a three-dimensional isogeometric piezoelectric finite element
+	is developed, tested in several benchmarks and compared to other
+	numerical higher order approaches with respect to their ability to
+	model Lamb wave propagation problems. The research results are used
+	to recommend an optimal discretization scheme. To illustrate the
+	advantage of the new iso- geometric finite element two SHM specific
+	problems are investigated, namely the dynamic behavior of a piezoceramic
+	actuator and the material induced continuous mode conversion. Both
+	problems are studied numerically as well as experimentally.},
+  doi       = {10.25673/3921},
+  keywords  = {own},
+  school    = {Otto-von-Guericke-University of Magdeburg, Fortschritt-Berichte VDI Reihe 20, Nr. 446, D\"{u}sseldorf: VDI Verlag, ISBN: 978-3-18-344620-9},
+  url       = {http://dx.doi.org/10.25673/3921},
+}
+
+@article{WillbergC2024,
+title = {PeriLab},
+journal = {SoftwareX},
+volume = {},
+pages = {},
+year = {2024},
+issn = {2352-7110},
+doi = {h},
+url = {},
+author = {Christian Willberg and Jan-Timo Hesse and Anna Pernatii},
+keywords = {},
+abstract = {}
+}
+
+
+@article{WillbergC2023,
+title = {A user material interface for the Peridynamic Peridigm framework},
+journal = {SoftwareX},
+volume = {21},
+pages = {101322},
+year = {2023},
+issn = {2352-7110},
+doi = {10.1016/j.softx.2023.101322},
+url = {https://www.sciencedirect.com/science/article/pii/S2352711023000183},
+author = {Christian Willberg and Jan-Timo Hesse and Marc Garbade and Martin Rädel and Falk Heinecke and Andreas Schuster and Anna Pernatii},
+keywords = {Peridynamics, User material, UMAT, Interface, Material modeling, Damage model},
+abstract = {User materials (UMAT) in finite element codes allow the researchers or engineers to apply their own material routines. Simple software interfaces are specified to represent the material behavior in software. In order to use these already existing and often validated models to Peridynamics a UMAT interface is presented. It allows the simplified use of already existing material routines in the peridynamic framework Peridigm. The interface is based on the Abaqus UMAT definition and allows the integration of Fortran routines directly into Peridigm. The integration of already existing UMAT routines based in Peridigm eliminates the need for redevelopment and reprogramming material models from classical continuum mechanics theory. In addition, the same material model implementations are applicable in finite element as well as peridynamic simulations. This opens up new possibilities for analysis, verification and comparison. With this interface many material routines can be reused and applied to progressive failure analysis. The source code is stored in a GitHub repository.}
+}
+@article{WillbergC2019,
+  author  = {Christian Willberg and Lasse Wiedemann and Martin R{\"a}del},
+  title   = {A mode-dependent energy-based damage model for peridynamics and its implementation},
+  journal = {Journal of Mechanics of Materials and Structures},
+  year    = {2019},
+  volume  = {14},
+  number  = {2},
+  pages   = {193--217},
+  doi     = {10.2140/jomms.2019.14.193},
+  issn    = {1559-3959},
+}
+@article{FosterJT2011,
+  author  = {John T. Foster and Stewart A. Silling and Weinong Chen},
+  title   = {An Energy based Failure Criterion for use with Peridynamic States},
+  journal = {International Journal for Multiscale Computational Engineering},
+  year    = {2011},
+  volume  = {9},
+  number  = {6},
+  pages   = {675--688},
+  doi     = {10.1615/IntJMultCompEng.2011002407},
+  issn    = {0020-7683},
+}
+@article{OterkusS2014,
+title = {Fully coupled peridynamic thermomechanics},
+journal = {Journal of the Mechanics and Models of Solids},
+volume = {64},
+pages = {1-23},
+year = {2014},
+issn = {0022-5096},
+doi = {10.1016/j.jmps.2013.10.011},
+url = {https://www.sciencedirect.com/science/article/pii/S0022509613002196},
+author = {Selda Oterkus and Erdogan Madenci and Abigail Agwai},
+keywords = {Peridynamics, Thermal, Deformation, Coupled, Thermomechanics},
+abstract = {This study concerns the derivation of the coupled peridynamic (PD) thermomechanics equations based on thermodynamic considerations. The generalized peridynamic model for fully coupled thermomechanics is derived using the conservation of energy and the free-energy function. Subsequently, the bond-based coupled PD thermomechanics equations are obtained by reducing the generalized formulation. These equations are also cast into their nondimensional forms. After describing the numerical solution scheme, solutions to certain coupled thermomechanical problems with known previous solutions are presented.}
+}
+@article{OterkusS2014b,
+title = {Peridynamic thermal diffusion},
+journal = {Journal of Computational Models},
+volume = {265},
+pages = {71-96},
+year = {2014},
+issn = {0021-9991},
+doi = {10.1016/j.jcp.2014.01.027},
+url = {https://www.sciencedirect.com/science/article/pii/S0021999114000540},
+author = {Selda Oterkus and Erdogan Madenci and Abigail Agwai},
+keywords = {Thermal, Conduction, Diffusion, Peridynamics, Nonlocal},
+abstract = {This study presents the derivation of ordinary state-based peridynamic heat conduction equation based on the Lagrangian formalism. The peridynamic heat conduction parameters are related to those of the classical theory. An explicit time stepping scheme is adopted for numerical solution of various benchmark problems with known solutions. It paves the way for applying the peridynamic theory to other physical fields such as neutronic diffusion and electrical potential distribution.}
+}
+
+@book{MadenciE2014,
+  author = {Madenci, E. and Oterkus, E.},
+  title = {Peridynamic Theory and Its Applications},
+  publisher = {Springer New York},
+  year      = {2014},
+  doi    = {10.1007/978-1-4614-8465-3},
+}
+
+@article{BrighentiR2021,
+  author   = {Roberto Brighenti and Migbar Assefa Zeleke and Mesfin Belayneh Ageze},
+  journal  = {Journal of Engineering},
+  title    = {{A Review of Peridynamics (PD) Theory of Diffusion Based Problems}},
+  year     = {2021},
+  pages    = {20},
+  doi      = {10.1155/2021/7782326},
+}
+
+@article{TrageserJ2020,
+author={Trageser, Jeremy
+and Seleson, Pablo},
+title={{Bond-Based Peridynamics: a Tale of Two Poisson's Ratios}},
+journal={Journal of Peridynamics and Nonlocal Modeling},
+year={2020},
+month={Sep},
+day={01},
+volume={2},
+number={3},
+pages={278-288},
+issn={2522-8978},
+doi={10.1007/s42102-019-00021-x},
+url={https://doi.org/10.1007/s42102-019-00021-x}
+}
+
+
+
+@inproceedings{LittlewoodDJ2013,
+  title={Estimation of the Critical Time Step for Peridynamic Models.},
+  author={David J. Littlewood and Jesse D. Thomas and Timothy Shelton},
+  year={2013},
+  booktitle = {Proceedings of the 12th U.S. National Congress on Computational Mechanics},
+  url={https://api.semanticscholar.org/CorpusID:123932678}
+}
+
+@book{BobaruF2016,
+  Title                    = {Handbook of Peridynamic Modeling},
+  Author                   = {Bobaru, Florin and Foster, John T. and Geubelle, P. H. and Silling, Stewart A.},
+  Series                   = {Advances in Applied Mathematics},
+  Publisher                = {CRC Press},
+  ISBN                     = {978-1315355948},
+  Year                     = {2016},
+}
+
+@Article{SillingSA2007,
+  Title                    = {Peridynamic States and Constitutive Modeling},
+  Author                   = {Silling, Stewart A. and Epton, M. and Weckner, Olaf and Xu, J. and Askari, Ebrahim},
+  Journal                  = {Journal of Elasticity},
+  Year                     = {2007},
+  Volume                   = {88},
+  Pages                    = {151--184},
+  Doi                      = {10.1007/s10659-007-9125-1},
+}
+
+
+@Article{SillingSA2000,
+  author   = {Silling, Stewart A.},
+  journal  = {Journal of the Mechanics and Models of Solids},
+  title    = {Reformulation of elasticity theory for discontinuities and long-range forces},
+  year     = {2000},
+  issn     = {00225096},
+  number   = {1},
+  pages    = {175--209},
+  volume   = {48},
+  doi      = {10.1016/S0022-5096(99)00029-0},
+  keywords = {dynamics, elastic material, fracture, stability and bifurcation, stress waves},
+}
+
+
+
+@Article{LittlewoodDJ2023,
+author={Littlewood, David J.
+and Parks, Michael L.
+and Foster, John T.
+and Mitchell, John A.
+and Diehl, Patrick},
+title={The Peridigm Meshfree Peridynamics Code},
+journal={Journal of Peridynamics and Nonlocal Modeling},
+year={2023},
+month={May},
+day={08},
+abstract={Peridigm is a meshfree peridynamics code written in C++ for use on large-scale parallel computers. It was originally developed at Sandia National Laboratories and is currently managed as an open-source, community driven software project. Its primary features include bond-based, state-based, and non-ordinary state-based constitutive models, bond failure laws, contact, and support for explicit and implicit time integration. To date, Peridigm has been used primarily by methods developers focused on solid mechanics and material failure. Peridigm utilizes foundational software components from Sandia's Trilinos project and was designed for extensibility. This paper provides an overview of the solution methods implemented in Peridigm, a discussion of its software infrastructure, and demonstrates the use of Peridigm for the solution of several example problems.},
+issn={2522-8978},
+doi={10.1007/s42102-023-00100-0},
+url={https://doi.org/10.1007/s42102-023-00100-0}
+}
