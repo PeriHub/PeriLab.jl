@@ -312,7 +312,7 @@ function compute_stresses(
         DRPLDT[iID],
         matrix_to_voigt(strain_N[iID, :, :]),
         matrix_to_voigt(strain_increment[iID, :, :]),
-        time,
+        [time, time + dt],
         dt,
         temp[iID],
         dtemp[iID],
@@ -352,7 +352,7 @@ function compute_stresses(
 end
 
 """
-    UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Float64, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
+    UMAT_interface(filename::String, STRESS::Vector{Float64}, STATEV::Vector{Float64}, DDSDDE::Matrix{Float64}, SSE::Float64, SPD::Float64, SCD::Float64, RPL::Float64, DDSDDT::Vector{Float64}, DRPLDE::Vector{Float64}, DRPLDT::Float64, STRAN::Vector{Float64}, DSTRAN::Vector{Float64}, TIME::Vector{Float64}, DTIME::Float64, TEMP::Float64, DTEMP::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64}, CMNAME::Cstring, NDI::Int64, NSHR::Int64, NTENS::Int64, NSTATEV::Int64, PROPS::Vector{Float64}, NPROPS::Int64, COORDS::Vector{Float64}, DROT::Matrix{Float64}, PNEWDT::Float64, CELENT::Float64, DFGRD0::Matrix{Float64}, DFGRD1::Matrix{Float64}, NOEL::Int64, NPT::Int64, LAYER::Int64, KSPT::Int64, JSTEP::Int64, KINC::Int64)
 
 UMAT interface
 
@@ -370,7 +370,7 @@ UMAT interface
 - `DRPLDT::Float64`: DRPLDT
 - `STRAN::Vector{Float64}`: Strain
 - `DSTRAN::Vector{Float64}`: Strain increment
-- `TIME::Float64`: Time
+- `TIME::Vector{Float64}`: Time
 - `DTIME::Float64`: Time increment
 - `TEMP::Float64`: Temperature
 - `DTEMP::Float64`: Temperature increment
@@ -413,7 +413,7 @@ function UMAT_interface(
     DRPLDT::Float64,
     STRAN::Vector{Float64},
     DSTRAN::Vector{Float64},
-    TIME::Float64,
+    TIME::Vector{Float64},
     DTIME::Float64,
     TEMP::Float64,
     DTEMP::Float64,
@@ -455,7 +455,7 @@ function UMAT_interface(
             Ref{Float64},
             Ptr{Float64},
             Ptr{Float64},
-            Ref{Float64},
+            Ptr{Float64},
             Ref{Float64},
             Ref{Float64},
             Ref{Float64},

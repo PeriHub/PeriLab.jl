@@ -86,7 +86,7 @@ function compute_model(
 end
 
 """
-    HETVAL_interface(filename::String, CMNAME::Cstring, TEMP::Float64, TIME::Float64, DTIME::Float64, STATEV::Vector{Float64}, FLUX::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64})
+    HETVAL_interface(filename::String, CMNAME::Cstring, TEMP::Float64, TIME::Vector{Float64}, DTIME::Float64, STATEV::Vector{Float64}, FLUX::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64})
 
 UMAT interface
 
@@ -94,7 +94,7 @@ UMAT interface
 - `filename::String`: Filename
 - `CMNAME::Cstring`: Material name
 - `TEMP::Float64`: Temperature
-- `TIME::Float64`: Time
+- `TIME::Vector{Float64}`: Time
 - `DTIME::Float64`: Time increment
 - `STATEV::Vector{Float64}`: State variables
 - `FLUX::Float64`: Heat flux
