@@ -197,7 +197,7 @@ MPI.Init()
             end
         end
     end
-
+    Logging.disable_logging(Logging.Debug - 2000)
     @testset "fullscale_tests" begin
         @testset "test_reload" begin
             include("fullscale_tests/test_reload/test_reload.jl")
