@@ -6,4 +6,3 @@ NODAL VARIABLES absolute 1.0E-12
 	DisplacementsY   absolute 1.0E-9
 	DisplacementsZ   absolute 1.0E-9
 	Damage 			 absolute 1.0E-9
-	Critical_Value   absolute 1.0E-9
