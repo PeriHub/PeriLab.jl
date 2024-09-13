@@ -12,11 +12,22 @@ Set_modules.include_files(module_list)
 
 using TimerOutputs
 
-export compute_model
-export init_model
-export synchronize
 export init_fields
+export init_model
+export fields_for_local_synchronization
+export compute_model
+export check_dependencies
 
+"""
+    init_fields(datamanager::Module)
+
+Initializes the fields.
+
+# Arguments
+- `datamanager::Data_manager`: Datamanager
+# Returns
+- `datamanager::Data_manager`: Datamanager.
+"""
 function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
     deformed_coorN, deformed_coorNP1 =
@@ -80,7 +91,6 @@ Finds all synchronization fields from the model class
 # Returns
 - `synch_dict::Dict`: Synchronization Dictionary.
 """
-
 function fields_for_local_synchronization(model_param::Dict)
     synch_dict = Dict()
 

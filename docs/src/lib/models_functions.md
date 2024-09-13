@@ -11,11 +11,8 @@ CurrentModule = PeriLab.Solver.Model_Factory
 ## Models
 ```@docs
 compute_models
-compute_damage_pre_calculation
 get_block_model_definition
 init_models
-init_fields
-init_pre_calculation
 read_properties
 set_heat_capacity
 ```
@@ -36,7 +33,6 @@ CurrentModule = PeriLab.Solver.Model_Factory.Damage
 ```@docs
 Set_modules.Damage_template.damage_name
 Set_modules.Damage_template.compute_model
-Set_modules.Damage_template.compute_damage_pre_calculation
 damage_index
 set_bond_damage
 init_interface_crit_values
@@ -55,7 +51,6 @@ Set_modules.Material_template.compute_model
 determine_isotropic_parameter
 check_material_symmetry
 distribute_force_densities
-calculate_von_mises_stress
 get_all_elastic_moduli
 get_Hooke_matrix
 distribute_forces

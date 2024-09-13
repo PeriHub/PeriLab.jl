@@ -137,15 +137,15 @@ rotate_second_order_tensor
 ```
 
 ```@meta
-CurrentModule = PeriLab.Solver.Model_Factory.Pre_calculation
+CurrentModule = PeriLab.Solver.Model_Factory.Pre_Calculation
 ```
-## Pre_calculation
+## Pre_Calculation
 ```@docs
-compute
-init_pre_calculation
-Bond_Deformation.compute
-Deformation_Gradient.compute
-Shape_Tensor.compute
+init_fields
+init_model
+fields_for_local_synchronization
+compute_model
+check_dependencies
 ```
 
 ```@meta
