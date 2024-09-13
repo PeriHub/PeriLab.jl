@@ -4,6 +4,8 @@
 
 using .Helpers: get_active_update_nodes
 using StaticArrays: MMatrix
+using .Helpers: invert
+include("../Models/Material/material_basis.jl")
 
 """
     get_forces_from_force_density(datamanager::Module)

@@ -13,7 +13,6 @@ include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
-include("../Compute/compute_field_values.jl")
 using .Parameter_Handling: get_models_option, get_model_parameter, get_heat_capacity
 # in future FEM will be outside of the Model_Factory
 include("../FEM/FEM_Factory.jl")
