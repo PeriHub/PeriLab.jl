@@ -8,17 +8,28 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.2] - 2024-08-15
+## [1.2.2] - 2024-09-13
+
+### Added
+
+- HEATVAL fortran routine
+- Two block test #195
 
 ### Fixed
 
-- Restructuring of the physics factory #168
+- Test cmd config files
+- calculate_nodelist
+- Logging
+- Fix Poisson's ratio #196
 
 ### Changed
 
-- Physics module is now the Model_Factory
-- in Yaml the definition changes from Physics to Models
-- code cleaning
+- Physics module is now the Model_Factory #198
+- Inputdeck: Definition changes from Physics to Models
+- Restructuring of the physics factory #168
+- Block Wise Defintion of pre calculation #193
+- Move pre calculation in models #191
+- Optimized damage models and geometry routines #188
 
 ## [1.2.1] - 2024-08-14
 
