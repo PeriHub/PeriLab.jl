@@ -206,8 +206,6 @@ function compute_model(
                 # end
 
             else
-                @info "bond_energy: " * string(bond_energy)
-                @info "crit_energy: " * string(crit_energy)
                 if (bond_energy / quad_horizon[iID]) > crit_energy
                     bond_damage[iID][jID] = 0.0
                     update_list[iID] = true
