@@ -25,6 +25,7 @@ Initialize thermal model fields
 """
 function init_fields(datamanager::Module)
     datamanager.create_node_field("Temperature", Float64, 1)
+    datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     datamanager.create_node_field("Heat Flow", Float64, 1)
     datamanager.create_constant_node_field("Specific Volume", Float64, 1)
     datamanager.create_constant_bond_field("Bond Heat Flow", Float64, 1)

@@ -52,7 +52,6 @@ function compute_model(
     block::Int64,
     time::Float64,
     dt::Float64,
-    to::TimerOutput,
 )
     @info "Please write a thermal model name in thermal_name()."
     @info "You can call your routine within the yaml file."
@@ -71,7 +70,6 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
 - `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
-- `block::Int64`: The current block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 
@@ -80,7 +78,6 @@ function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
     thermal_parameter::Dict,
-    block::Int64,
 )
 
     return datamanager

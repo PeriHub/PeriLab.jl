@@ -10,6 +10,7 @@ using Logging
 using PeriLab
 
 export run_perilab
+export run_and_compare
 export run_mpi_test
 export push_test!
 
@@ -40,7 +41,7 @@ function run_perilab(filename, cores, compare, folder_name = ""; reload = false)
     end
 end
 
-function run_perilab(filename1, filename2)
+function run_and_compare(filename1, filename2)
     PeriLab.main(filename1 * ".yaml"; silent = true)
     PeriLab.main(filename2 * ".yaml"; silent = true)
     exo1 = ExodusDatabase(filename1 * ".e", "r")

@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1 2 3 4
+      Node Set 2: 9 10 11 12
+    Type: "Text File"
+    Input Mesh File: "test_mesh.txt"
+  Models:
+    Material Models:
+      Test:
+        Material Model: "PD Solid Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 3.45e+09
+        Poisson's Ratio: 0.33
+        Zero Energy Control: "Global"
+    Thermal Models:
+      HETVAL:
+        Thermal Model: "HETVAL"
+        Type: "Bond based"
+        Thermal Expansion Coefficient: 0.22
+        Thermal Conductivity: 2000.0
+        File: "hetval.so"
+        Number of State Variables: 1
+        Number of Properties: 3
+        Property_1: 15
+        Property_2: 1.1
+        Property_3: 0.2
+        Predefined Field Names: "Volume"
+  Blocks:
+    block_1:
+      Material Model: "Test"
+      Thermal Model: "HETVAL"
+      Density: 1.24e03
+      Horizon: 1.1005e-3
+      Specific Heat Capacity: 18000.0
+    block_2:
+      Material Model: "Test"
+      Thermal Model: "HETVAL"
+      Density: 1.24e03
+      Horizon: 1.1005e-3
+      Specific Heat Capacity: 18000.0
+  Boundary Conditions:
+    BC_1:
+      Variable: "Temperature"
+      Node Set: "Node Set 1"
+      Value: "100"
+    BC_2:
+      Variable: "Temperature"
+      Node Set: "Node Set 2"
+      Value: "0.0"
+  Solver:
+    Material Models: False
+    Thermal Models: True
+    Initial Time: 0.0
+    Final Time: 5e-4
+    Verlet:
+      Safety Factor: 1.00
+      Fixed dt: 1e-5
+  Outputs:
+    Output1:
+      Output Filename: "hetval"
+      Output File Type: Exodus
+      Number of Output Steps: 10
+      Output Variables:
+        Temperature: True
+        Heat Flow: True

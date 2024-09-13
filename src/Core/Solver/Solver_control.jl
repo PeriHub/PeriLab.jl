@@ -7,7 +7,12 @@ module Solver
 include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/helpers.jl")
 using .Parameter_Handling:
-    get_density, get_horizon, get_solver_name, get_model_options, get_fem_block
+    get_density,
+    get_horizon,
+    get_solver_name,
+    get_model_options,
+    get_fem_block,
+    get_calculation_options
 using .Helpers: find_indices
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
@@ -57,6 +62,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
     solver_options["Models"] = get_model_options(params)
+    solver_options["Calculation"] = get_calculation_options(params)
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     for iblock in eachindex(block_nodes)
         datamanager = Influence_function.init_influence_function(

@@ -94,9 +94,8 @@ end
         1,
         0.0,
         0.0,
-        to,
     ) == test_data_manager
-    @test Thermal_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
+    @test Thermal_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict()) ==
           test_data_manager
 end
 
