@@ -34,7 +34,7 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
         valid = false
 
         if !haskey(bcs[bc], "Type") ||
-           bcs[bc]["Type"] != "Dirichlet" && bcs[bc]["Type"] != "Neumann"
+           !(bcs[bc]["Type"] in ["Initial", "Dirichlet", "Neumann"])
             bcs[bc]["Type"] = "Dirichlet"
             @warn "Missing boundary condition type for $bc. Assuming Dirichlet."
         end
@@ -42,9 +42,9 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
         for data_entry in datamanager.get_all_field_keys()
             if (occursin(bcs[bc]["Variable"], data_entry) && occursin("NP1", data_entry)) ||
                bcs[bc]["Variable"] == data_entry
-                working_bcs[bc] = bcs[bc]
+                bcs[bc]["Initial"] = bcs[bc]["Type"] == "Initial"
                 bcs[bc]["Variable"] = data_entry
-                bcs[bc]["Initial"] = bcs[bc]["Type"] == "Initial" ? true : false
+                working_bcs[bc] = bcs[bc]
                 valid = true
                 break
             end
@@ -71,8 +71,8 @@ Initialize the boundary conditions
 """
 function init_BCs(params::Dict, datamanager)
     bcs = boundary_condition(params, datamanager)
-    bcs = check_valid_bcs(bcs, datamanager)
-    return bcs
+    valid_bcs = check_valid_bcs(bcs, datamanager)
+    return valid_bcs
 end
 
 """
@@ -133,7 +133,7 @@ function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
     coordinates = datamanager.get_field("Coordinates")
     for name in keys(bcs)
         bc = bcs[name]
-        if bc["Type"] != "Dirichlet" ||
+        if !(bc["Type"] in ["Initial", "Dirichlet"]) ||
            bc["Variable"] == "Force DensitiesNP1" ||
            bc["Variable"] == "ForcesNP1"
             continue

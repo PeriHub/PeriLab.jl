@@ -171,6 +171,7 @@ global expected_structure = Dict(
                                         false,
                                     ],
                                     # "Anisotropic Damage" => [String, false],
+                                    "Only Tension" => [Bool, false],
                                     "Thickness" => [Union{Float64,Int64}, false],
                                     "Anisotropic Damage" => [
                                         Dict{Any,Any}(
@@ -227,6 +228,7 @@ global expected_structure = Dict(
                                     "C56" => [Union{Float64,Int64}, false],
                                     "C66" => [Union{Float64,Int64}, false],
                                     "File" => [String, false],
+                                    "Number of State Variables" => [Int64, false],
                                     "Number of Properties" => [Int64, false],
                                     "Predefined Field Names" => [String, false],
                                 ),
@@ -255,6 +257,9 @@ global expected_structure = Dict(
                                         [Union{Float64,Int64}, false],
                                     "Print Bed Temperature" =>
                                         [Union{Float64,Int64}, false],
+                                    "File" => [String, false],
+                                    "Number of State Variables" => [Int64, false],
+                                    "Predefined Field Names" => [String, false],
                                 ),
                                 true,
                             ],

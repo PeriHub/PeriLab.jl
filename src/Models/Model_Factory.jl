@@ -13,7 +13,6 @@ include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
 include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("../Support/Parameters/parameter_handling.jl")
-include("../Compute/compute_field_values.jl")
 using .Parameter_Handling: get_models_option, get_model_parameter, get_heat_capacity
 # in future FEM will be outside of the Model_Factory
 include("../FEM/FEM_Factory.jl")
@@ -88,6 +87,22 @@ function init_models(
     if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
         heat_capacity = datamanager.get_field("Specific Heat Capacity")
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
+    end
+
+    if solver_options["Calculation"]["Calculate Cauchy"] |
+       solver_options["Calculation"]["Calculate von Mises"]
+        datamanager.create_node_field(
+            "Cauchy Stress",
+            Float64,
+            "Matrix",
+            datamanager.get_dof(),
+        )
+    end
+    if solver_options["Calculation"]["Calculate Strain"]
+        datamanager.create_node_field("Strain", Float64, "Matrix", datamanager.get_dof())
+    end
+    if solver_options["Calculation"]["Calculate von Mises"]
+        datamanager.create_node_field("von Mises Stress", Float64, 1)
     end
     @info "Finalize Init Models"
     return datamanager
@@ -226,43 +241,13 @@ function compute_models(
             )
     end
 
-
-
-
     # TODO Does not do anything, yet?
-    #if "Thermal" in options
+    # if "Thermal" in options
     #    @timeit to "distribute_heat_flows" datamanager = Thermal.distribute_heat_flows(
     #        datamanager,
     #        find_active(active[1:datamanager.get_nnodes()]),
     #    )
-    #end
-
-    # if !occursin("Correspondence", model_param["Material Model"])
-    #     if options["Calculate Cauchy"] |
-    #        options["Calculate von Mises"] |
-    #        options["Calculate Strain"]
-    #         datamanager = get_partial_stresses(datamanager, active_nodes)
-    #     end
-    #     if options["Calculate von Mises"]
-    #         datamanager =
-    #             Material.calculate_von_mises_stress(datamanager, active_nodes)
-    #     end
-    #     if options["Calculate Strain"]
-    #         material_parameter =
-    #             datamanager.get_properties(block, "Material Model")
-    #         hookeMatrix = get_Hooke_matrix(
-    #             material_parameter,
-    #             material_parameter["Symmetry"],
-    #             datamanager.get_dof(),
-    #         )
-    #         datamanager = Material.calculate_strain(
-    #             datamanager,
-    #             active_nodes,
-    #             invert(hookeMatrix, "Hook matrix not invertable"),
-    #         )
-    #     end
     # end
-
 
     update_list .= true
     return datamanager

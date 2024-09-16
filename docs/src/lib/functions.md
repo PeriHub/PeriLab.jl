@@ -36,7 +36,6 @@ get_nsets
 get_num_responder
 get_overlap_map
 get_synch_fields
-get_models_options
 get_properties
 get_property
 get_rank
@@ -58,7 +57,6 @@ set_nnsets
 set_nset
 set_num_responder
 set_overlap_map
-set_models_options
 set_property
 set_properties
 set_rank

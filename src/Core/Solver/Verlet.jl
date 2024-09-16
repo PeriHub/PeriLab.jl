@@ -26,6 +26,7 @@ include("../../MPI_communication/MPI_communication.jl")
 include("../BC_manager.jl")
 include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")
+include("../../Compute/compute_field_values.jl")
 using .Model_Factory
 using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann
 using .Helpers: matrix_style
@@ -439,9 +440,8 @@ function run_solver(
         flowNP1 = datamanager.get_field("Heat Flow", "NP1")
         temperatureN = datamanager.get_field("Temperature", "N")
         temperatureNP1 = datamanager.get_field("Temperature", "NP1")
+        deltaT = datamanager.get_field("Delta Temperature")
         heat_capacity = datamanager.get_field("Specific Heat Capacity")
-        ## TODO field creation not in run
-        deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     end
     if "Corrosion" in solver_options["Models"]
         concentrationN = datamanager.get_field("Concentration", "N")
@@ -511,6 +511,14 @@ function run_solver(
                 synchronise_field,
                 to,
             )
+
+            if "Material" in solver_options["Models"]
+                @timeit to "calculate_stresses" datamanager = calculate_stresses(
+                    datamanager,
+                    block_nodes,
+                    solver_options["Calculation"],
+                )
+            end
 
             @timeit to "download_from_cores" datamanager.synch_manager(
                 synchronise_field,

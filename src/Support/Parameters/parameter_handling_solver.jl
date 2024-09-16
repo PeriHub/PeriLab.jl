@@ -11,6 +11,7 @@ export get_fixed_dt
 export get_max_damage
 export get_numerical_damping
 export get_nsteps
+export get_calculation_options
 """
     get_solver_name(params::Dict)
 
@@ -185,4 +186,25 @@ function get_model_options(params::Dict)
         ),
     )
 
+end
+
+"""
+    get_calculation_options(params::Dict)
+
+Get the calculation options
+
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `solver_options::Dict`: The solver options
+"""
+function get_calculation_options(params::Dict)
+    cauchy::Bool = get(params["Solver"], "Calculate Cauchy", false)
+    von_mises::Bool = get(params["Solver"], "Calculate von Mises", false)
+    strain::Bool = get(params["Solver"], "Calculate Strain", false)
+    return Dict{String,Any}(
+        "Calculate Cauchy" => cauchy,
+        "Calculate von Mises" => von_mises,
+        "Calculate Strain" => strain,
+    )
 end

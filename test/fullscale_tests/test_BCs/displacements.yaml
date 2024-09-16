@@ -20,14 +20,17 @@ PeriLab:
     block_1:
       Density: 2.7e-9
       Horizon: 2.1
+      Specific Heat Capacity: 0.1
       Material Model: Mat_1
     block_2:
       Density: 2.7e-9
       Horizon: 2.1
+      Specific Heat Capacity: 0.1
       Material Model: Mat_1
     block_3:
       Density: 2.7e-9
       Horizon: 2.1
+      Specific Heat Capacity: 0.1
       Material Model: Mat_1
   Boundary Conditions:
     BC_1:
@@ -47,7 +50,7 @@ PeriLab:
       Value: "if t>0.00001 0 else 0.1 end"
   Solver:
     Material Models: False
-
+    Thermal Models: True
     Initial Time: 0.0
     Final Time: 5.0e-5
     Verlet:
@@ -59,3 +62,4 @@ PeriLab:
       Output Frequency: 1
       Output Variables:
         Displacements: True
+        Temperature: True

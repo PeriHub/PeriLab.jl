@@ -197,7 +197,7 @@ end
     DRPLDT::Float64 = 0.0  # Adjust as needed
     STRAN::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
     DSTRAN::Vector{Float64} = zeros(Float64, 6)  # Adjust as needed
-    TIME::Float64 = 0.0
+    TIME::Vector{Float64} = [0.0, 0.1]
     DTIME::Float64 = 0.1
     TEMP::Float64 = 25.0
     DTEMP::Float64 = 0.1
