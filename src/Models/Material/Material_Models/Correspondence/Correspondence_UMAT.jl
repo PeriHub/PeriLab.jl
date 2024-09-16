@@ -298,18 +298,27 @@ function compute_stresses(
     DFGRD1 = datamanager.get_field("Deformation Gradient")
     not_supported_int::Int64 = 0
 
+    STATEV_temp = statev[iID, :]
+    SSE_temp = SSE[iID]
+    SPD_temp = SPD[iID]
+    SCD_temp = SCD[iID]
+    RPL_temp = RPL[iID]
+    DDSDDT_temp = DDSDDT[iID, :]
+    DRPLDE_temp = DRPLDE[iID, :]
+    DRPLDT_temp = DRPLDT[iID]
+
     UMAT_interface(
         material_parameter["File"],
         stress_temp,
-        statev[iID, :],
+        STATEV_temp,
         DDSDDE,
-        SSE[iID],
-        SPD[iID],
-        SCD[iID],
-        RPL[iID],
-        DDSDDT[iID, :],
-        DRPLDE[iID, :],
-        DRPLDT[iID],
+        SSE_temp,
+        SPD_temp,
+        SCD_temp,
+        RPL_temp,
+        DDSDDT_temp,
+        DRPLDE_temp,
+        DRPLDT_temp,
         matrix_to_voigt(strain_N[iID, :, :]),
         matrix_to_voigt(strain_increment[iID, :, :]),
         [time, time + dt],
@@ -338,6 +347,16 @@ function compute_stresses(
         not_supported_int,
         not_supported_int,
     )
+
+    statev[iID, :] = STATEV_temp
+    SSE[iID] = SSE_temp
+    SPD[iID] = SPD_temp
+    SCD[iID] = SCD_temp
+    RPL[iID] = RPL_temp
+    DDSDDT[iID, :] = DDSDDT_temp
+    DRPLDE[iID, :] = DRPLDE_temp
+    DRPLDT[iID] = DRPLDT_temp
+
     Global_zero_energy_control.global_zero_energy_mode_stiffness(
         iID,
         dof,
