@@ -602,7 +602,7 @@ function run_solver(
                 set_multiline_postfix(iter, "Simulation canceled!")
                 break
             end
-            @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
+            @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N(idt)
 
             step_time += dt
             if idt % ceil(nsteps / 100) == 0

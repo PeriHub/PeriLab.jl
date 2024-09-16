@@ -342,7 +342,7 @@ end
 end
 
 
-testNP1NDict = test_data_manager.get_NP1_to_N_Dict()
+testNP1NDict = test_data_manager.get_NP1_to_N_Dict(1)
 
 @testset "get_NP1_to_N_Dict" begin
     @test testNP1NDict["BNP1"] == "BN"
@@ -386,7 +386,7 @@ bd = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
     # extra test, because Bond Damage is set to one, to avoid unneccessary operations
     bd = test_data_manager.get_field("Bond Damage", "NP1")
     @test sum(maximum(bd)) == 0
-    test_data_manager.switch_NP1_to_N()
+    test_data_manager.switch_NP1_to_N(1)
 
     @test DN[2, 3] == 5
     @test nmatrixN[1, 1, 1] == 2

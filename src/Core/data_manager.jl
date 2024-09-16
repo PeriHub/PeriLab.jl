@@ -109,6 +109,7 @@ global rotation::Bool
 global element_rotation::Bool
 global damage_models::Vector{String}
 global material_models::Vector{String}
+global NP1_to_N = Dict{String,String}
 ##########################
 
 """
@@ -183,6 +184,7 @@ function initialize_data()
     global active_models = OrderedDict{String,Module}()
     global material_models = []
     global damage_models = []
+    global NP1_to_N = Dict{String,String}()
 end
 ###################################
 
@@ -810,11 +812,14 @@ end
 
 Get the NP1 to N dictionary
 """
-function get_NP1_to_N_Dict()
-    NP1_to_N = Dict{String,String}()
-    for key in get_all_field_keys()
-        if occursin("NP1", key)
-            NP1_to_N[key] = key[1:end-2]
+function get_NP1_to_N_Dict(nstep)
+    global NP1_to_N
+
+    if nstep == 1
+        for key in get_all_field_keys()
+            if occursin("NP1", key)
+                NP1_to_N[key] = key[1:end-2]
+            end
         end
     end
     return NP1_to_N
@@ -1629,11 +1634,11 @@ end
 
 Switches the fields from NP1 to N.
 """
-function switch_NP1_to_N()
+function switch_NP1_to_N(nstep::Int64)
     global field_types
     global field_array_type
 
-    NP1_to_N = get_NP1_to_N_Dict()
+    NP1_to_N = get_NP1_to_N_Dict(nstep)
     for NP1 in keys(NP1_to_N)
         if field_array_type[NP1]["Type"] == "Matrix"
             field_array_type[NP1]["Type"] = "Vector"
