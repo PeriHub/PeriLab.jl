@@ -133,7 +133,7 @@ function compute_stresses(
     iID_jID_nID::Tuple = (),
 )
 
-    hookeMatrix =
+    @views hookeMatrix =
         get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID)
 
     @views stress_NP1[iID, :, :] =

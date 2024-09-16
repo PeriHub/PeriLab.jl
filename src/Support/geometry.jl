@@ -127,12 +127,14 @@ function shape_tensor(
 )
 
     for iID in nodes
+
         shape_tensor[iID, :, :] = calculate_shape_tensor(
             dof,
             volume[nlist[iID]],
             omega[iID],
             bond_damage[iID],
             undeformed_bond[iID],
+            shape_tensor[iID, :, :],
         )
         inverse_shape_tensor[iID, :, :] .= invert(
             shape_tensor[iID, :, :],
@@ -144,8 +146,15 @@ function shape_tensor(
 end
 
 
-function calculate_shape_tensor(dof::Int64, volume, omega, bond_damage, undeformed_bond)
-    shape_tensor = zeros(Float64, dof, dof)
+function calculate_shape_tensor(
+    dof::Int64,
+    volume,
+    omega,
+    bond_damage,
+    undeformed_bond,
+    shape_tensor,
+)
+
     # Compute the element-wise product once
     weighted_bond_damage = bond_damage .* volume .* omega
 
@@ -170,7 +179,7 @@ function bond_associated_deformation_gradient(
     deformed_bond,
     deformation_gradient,
 )
-    # bond deformation -> zwischen nachbar und seinen nachbarn
+
     return calculate_deformation_gradient(
         deformation_gradient,
         dof,
@@ -246,6 +255,7 @@ function compute_deformation_gradient(
             volume[nlist[iID]],
             omega[iID],
         )
+
         deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]
     end
     return deformation_gradient
