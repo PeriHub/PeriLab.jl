@@ -1417,8 +1417,6 @@ function set_pre_calculation_order(values::Vector{String})
     global pre_calculation_order = values
 end
 
-
-
 """
     set_property(block_id, property, value_name, value)
 
@@ -1641,13 +1639,9 @@ function switch_NP1_to_N(nstep::Int64)
     NP1_to_N = get_NP1_to_N_Dict(nstep)
     for NP1 in keys(NP1_to_N)
         if field_array_type[NP1]["Type"] == "Matrix"
-            field_array_type[NP1]["Type"] = "Vector"
             field_NP1 = get_field(NP1)
-            field_array_type[NP1]["Type"] = "Matrix"
             N = NP1_to_N[NP1]
-            field_array_type[N]["Type"] = "Vector"
             field_N = get_field(N)
-            field_array_type[N]["Type"] = "Matrix"
         else
             field_NP1 = get_field(NP1)
             N = NP1_to_N[NP1]
@@ -1655,7 +1649,6 @@ function switch_NP1_to_N(nstep::Int64)
         end
 
         if size(field_NP1[1]) == () # vector
-
             copyto!(field_N, field_NP1)
             fill!(field_NP1, field_types[NP1](0))
         else # matrix
