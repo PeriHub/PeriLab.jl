@@ -84,7 +84,6 @@ function compute_model(
     temperature = datamanager.get_field("Temperature", "NP1")
     surface_nodes = datamanager.get_field("Surface_Nodes")
     specific_volume = datamanager.get_field("Specific Volume")
-    bond_damage = datamanager.get_bond_damage("NP1")
     active = datamanager.get_field("Active")
     horizon = datamanager.get_field("Horizon")
     nlist = datamanager.get_nlist()
