@@ -433,7 +433,6 @@ function run_solver(
         vN = datamanager.get_field("Velocity", "N")
         vNP1 = datamanager.get_field("Velocity", "NP1")
         a = datamanager.get_field("Acceleration")
-        coor = datamanager.get_field("Coordinates")
         deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
     end
     if "Thermal" in solver_options["Models"]
