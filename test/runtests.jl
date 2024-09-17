@@ -138,6 +138,9 @@ MPI.Init()
                 @testset "ut_Heat_transfer" begin
                     include("unit_tests/Models/Thermal/ut_Heat_transfer.jl")
                 end
+                @testset "ut_HETVAL" begin
+                    include("unit_tests/Models/Thermal/ut_HETVAL.jl")
+                end
             end
 
             @testset "ut_Model_Factory" begin

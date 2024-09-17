@@ -57,6 +57,7 @@ function compute_model(
     CMNAME::Cstring = malloc_cstring(thermal_parameter["HETVAL Material Name"])
     temp_N = datamanager.get_field("Temperature", "N")
     temp_NP1 = datamanager.get_field("Temperature", "NP1")
+    deltaT = datamanager.get_field("Delta Temperature")
     statev = datamanager.get_field("State Variables")
     flux_N = datamanager.get_field("Heat Flow", "N")
     flux_NP1 = datamanager.get_field("Heat Flow", "NP1")
@@ -67,19 +68,22 @@ function compute_model(
         PREDEF = zeros(size(temp_N))
         DPRED = zeros(size(temp_N))
     end
-
     for iID in nodes
+        STATEV_temp = statev[iID, :]
+        FLUX_temp = [flux_N[iID], flux_NP1[iID]]
         HETVAL_interface(
             thermal_parameter["File"],
             CMNAME,
-            [temp_N[iID], temp_NP1[iID] - temp_N[iID]],
+            [temp_N[iID], deltaT[iID]],
             [time, time + dt],
             dt,
-            statev[iID, :],
-            [flux_N[iID], flux_NP1[iID]],
+            STATEV_temp,
+            FLUX_temp,
             PREDEF[iID, :],
             DPRED[iID, :],
         )
+        statev[iID, :] = STATEV_temp
+        flux_NP1[iID] = FLUX_temp[2]
     end
 
     return datamanager
