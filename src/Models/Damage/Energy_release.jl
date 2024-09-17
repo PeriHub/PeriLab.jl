@@ -62,10 +62,8 @@ function compute_model(
 )
     dof::Int64 = datamanager.get_dof()
     nlist = datamanager.get_nlist()
-    block_list = datamanager.get_block_list()
     block_ids = datamanager.get_field("Block_Id")
     update_list = datamanager.get_field("Update List")
-    horizon = datamanager.get_field("Horizon")
     bond_damage = datamanager.get_bond_damage("NP1")
     aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
 
@@ -119,9 +117,10 @@ function compute_model(
     relative_displacement_matrix = deformed_bond .- undeformed_bond
     for iID in nodes
         @views nlist_temp = nlist[iID]
+
         for jID in eachindex(nlist_temp)
             @views relative_displacement = relative_displacement_matrix[iID][jID, :]
-            @views norm_displacement = norm(relative_displacement)
+            @views norm_displacement = dot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (
                 tension &&
                 deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
@@ -141,7 +140,7 @@ function compute_model(
 
             @views projected_force .=
                 dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement) /
-                (norm_displacement * norm_displacement) .* relative_displacement
+                (norm_displacement) .* relative_displacement
 
             @views bond_energy =
                 0.25 * dot(abs.(projected_force), abs.(relative_displacement))
@@ -169,8 +168,8 @@ function compute_model(
 
                 # Compute the condition for all components at once
                 @views condition =
-                    bond_energy / quad_horizon[iID] * bond_norm_all .>
-                    aniso_crit_values[block_ids[iID]]
+                    bond_energy * bond_norm_all .>
+                    aniso_crit_values[block_ids[iID]] * quad_horizon[iID]
 
                 # Update bond_damage, bond_damage_aniso, and update_list in a vectorized manner
                 bond_damage[iID][jID] -= sum(bond_norm_all .* condition)
@@ -206,7 +205,7 @@ function compute_model(
                 # end
 
             else
-                if (bond_energy / quad_horizon[iID]) > crit_energy
+                if bond_energy > crit_energy * quad_horizon[iID]
                     bond_damage[iID][jID] = 0.0
                     update_list[iID] = true
                 end
