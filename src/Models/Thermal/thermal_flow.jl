@@ -5,6 +5,8 @@
 module Thermal_Flow
 using LinearAlgebra
 using StaticArrays
+include("../../Support/helpers.jl")
+using .Helpers: rotate_second_order_tensor
 export compute_model
 export thermal_model_name
 export init_model
@@ -102,6 +104,11 @@ function compute_model(
     volume = datamanager.get_field("Volume")
     temperature = datamanager.get_field("Temperature", "NP1")
     lambda = thermal_parameter["Thermal Conductivity"]
+    rotation::Bool = datamanager.get_element_rotation()
+    rotation_tensor = nothing
+    if rotation
+        rotation_tensor = datamanager.get_field("Rotation Tensor")
+    end
     apply_print_bed = false
 
     t_bed = 0.0
@@ -159,6 +166,7 @@ function compute_model(
             dof,
             nlist,
             lambda_matrix,
+            rotation_tensor,
             bond_damage,
             undeformed_bond,
             Kinv,
@@ -180,6 +188,7 @@ function compute_heat_flow_state_correspondence(
     dof::Int64,
     nlist::SubArray,
     lambda::Union{Matrix{Float64},MMatrix},
+    rotation_tensor,
     bond_damage::SubArray,
     undeformed_bond::SubArray,
     Kinv::SubArray,
@@ -200,8 +209,12 @@ function compute_heat_flow_state_correspondence(
             H .+= temp_state .* undeformed_bond[iID][jID, 1:dof]
         end
         nablaT = Kinv[iID, :, :] * H
-        # -> rotation must be included sometime #144
-        q = lambda * nablaT
+
+        if isnothing(rotation_tensor)
+            q = lambda * nablaT
+        else
+            q = rotate_second_order_tensor(rotation_tensor[iID, :, :], lamba[:, :], false)
+        end
         for (jID, neighborID) in enumerate(nlist[iID])
             temp = Kinv[iID, :, :] * undeformed_bond[iID][jID, 1:dof]
             heat_flow[iID] -= dot(temp, q) * volume[neighborID]
