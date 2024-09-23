@@ -119,13 +119,13 @@ function get_write_after_damage(outputs::Dict, output::String)
 end
 
 """
-    get_output_fieldnames(outputs::Dict, variables::Vector{String}, computes::Vector{String}, output_type::String)
+    get_output_fieldnames(outputs::Dict, variables::Base.KeySet, computes::Vector{String}, output_type::String)
 
 Gets the output fieldnames.
 
 # Arguments
 - `outputs::Dict`: The outputs
-- `variables::Vector{String}`: The variables
+- `variables::Base.KeySet`: The variables
 - `computes::Vector{String}`: The computes
 - `output_type::String`: The output type
 # Returns
@@ -133,7 +133,7 @@ Gets the output fieldnames.
 """
 function get_output_fieldnames(
     outputs::Dict,
-    variables::Vector{String},
+    variables::Base.KeySet,
     computes::Vector{String},
     output_type::String,
 )
@@ -165,18 +165,18 @@ function get_output_fieldnames(
 end
 
 """
-    get_outputs(params::Dict, variables::Vector{String}, compute_names::Vector{String})
+    get_outputs(params::Dict, variables::Base.KeySet, compute_names::Vector{String})
 
 Gets the outputs.
 
 # Arguments
 - `params::Dict`: The parameters
-- `variables::Vector{String}`: The variables
+- `variables::Base.KeySet`: The variables
 - `compute_names::Vector{String}`: The compute names
 # Returns
 - `outputs::Dict`: The outputs
 """
-function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vector{String})
+function get_outputs(params::Dict, variables::Base.KeySet, compute_names::Vector{String})
     num = 0
     outputs = Dict()
     if haskey(params, "Outputs")

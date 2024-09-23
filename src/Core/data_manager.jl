@@ -444,7 +444,6 @@ function create_field(
     default_value::Union{Int64,Float64,Bool},
 )
     global nnodes
-    global num_controller
     global fields
     global field_array_type
     global field_types
@@ -480,33 +479,19 @@ function create_field(
     elseif bond_or_node == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
         if dof == 1
-            fields[vartype][name] = Vector{vartype}[]
+            fields[vartype][name] = fill.(vartype(default_value), nBonds)
+            get_function = () -> view(fields[vartype][name], :)
         else
-            fields[vartype][name] = Matrix{vartype}[]
-        end
-        for i = 1:num_controller+num_responder
-            if dof == 1
-                append!(fields[vartype][name], [Vector{vartype}(undef, nBonds[i])])
-                fill!(fields[vartype][name][end], vartype(default_value))
-                get_function = () -> view(fields[vartype][name], :)
+            fields[vartype][name] =
+                [fill(vartype(default_value), (n, field_dof)) for n in nBonds]
+            if VectorOrArray == "Matrix"
+                get_function =
+                    () -> view(
+                        [reshape(field, (:, dof, dof)) for field in fields[vartype][name]],
+                        :,
+                    )
             else
-                append!(
-                    fields[vartype][name],
-                    [Matrix{vartype}(undef, nBonds[i], field_dof)],
-                )
-                fill!(fields[vartype][name][end], vartype(default_value))
-                if VectorOrArray == "Matrix"
-                    get_function =
-                        () -> view(
-                            [
-                                reshape(field, (:, dof, dof)) for
-                                field in fields[vartype][name]
-                            ],
-                            :,
-                        )
-                else
-                    get_function = () -> view(fields[vartype][name], :, :)
-                end
+                get_function = () -> view(fields[vartype][name], :, :)
             end
         end
     end
@@ -579,7 +564,7 @@ Returns a list of all field keys.
 """
 function get_all_field_keys()
     global field_types
-    return collect(keys(field_types))
+    return keys(field_types)
 end
 
 """

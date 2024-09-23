@@ -10,7 +10,8 @@ using Test
 using TimerOutputs
 
 using Exodus
-Data_manager.initialize_data()
+test_data_manager = PeriLab.Data_manager
+test_data_manager.initialize_data()
 @testset "ut_get_block_nodes" begin
     block_Id = [1, 1, 2, 2, 2, 3, 3, 3, 1, 3, 3, 4]
     test = get_block_nodes(block_Id, 1)
@@ -51,7 +52,6 @@ if !isdir("tmp")
     mkdir("tmp")
 end
 
-test_data_manager = Data_manager
 topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64, (2, 4))
 topology[1, 1] = 1
 topology[1, 2] = 2

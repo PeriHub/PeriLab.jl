@@ -373,15 +373,15 @@ function get_bond_geometry(datamanager::Module)
 end
 
 """
-    define_nsets(nsets::Dict{String,Vector{Any,Int64}}, datamanager::Module)
+    define_nsets(nsets::Dict{String,Vector{Int64}}, datamanager::Module)
 
 Defines the node sets
 
 # Arguments
-- `nsets::Dict{String,Vector{Any,Int64}}`: Node sets read from files
+- `nsets::Dict{String,Vector{Int64}}`: Node sets read from files
 - `datamanager::Module`: Data manager
 """
-function define_nsets(nsets::Dict{String,Any}, datamanager::Module)
+function define_nsets(nsets::Dict{String,Vector{Int64}}, datamanager::Module)
     for nset in keys(nsets)
         datamanager.set_nset(nset, nsets[nset])
     end
@@ -708,56 +708,52 @@ function read_mesh(filename::String, params::Dict)
         end
         @info "Abaqus mesh with $dof DOF"
 
+        num_elements = length(elements)
         mesh_df = ifelse(
             dof == 2,
-            DataFrame(x = [], y = [], volume = [], block_id = Int[]),
-            DataFrame(x = [], y = [], z = [], volume = [], block_id = Int[]),
+            DataFrame(
+                x = Array{Float64,1}(undef, num_elements),
+                y = Array{Float64,1}(undef, num_elements),
+                volume = Array{Float64,1}(undef, num_elements),
+                block_id = Array{Int64,1}(undef, num_elements),
+            ),
+            DataFrame(
+                x = Array{Float64,1}(undef, num_elements),
+                y = Array{Float64,1}(undef, num_elements),
+                z = Array{Float64,1}(undef, num_elements),
+                volume = Array{Float64,1}(undef, num_elements),
+                block_id = Array{Int64,1}(undef, num_elements),
+            ),
         )
 
         id = 1
         block_id = 1
-        element_written = []
-        nsets = Dict{String,Any}()
+        element_written = Array{Int64,1}(undef, num_elements)
+        nsets = Dict{String,Vector{Int64}}()
 
         # sort element_sets by length
         # element_sets_keys = sort(collect(keys(element_sets)), by=x -> length(element_sets[x]), rev=true)
         element_sets_keys = collect(keys(element_sets))
         for key in element_sets_keys
-            ns_nodes = Int64[]
-            for (i, element_id) in enumerate(element_sets[key])
+            element_set = element_sets[key]
+            ns_nodes = Array{Int64,1}(undef, length(element_set))
+            for (jID, element_id) in enumerate(element_set)
                 if element_id in element_written
                     push!(ns_nodes, findfirst(x -> x == element_id, element_written))
                     continue
                 end
-                push!(ns_nodes, id)
+                ns_nodes[jID] = id
                 node_ids = elements[element_id]
                 element_type = element_types[element_id]
                 vertices = [nodes[node_id] for node_id in node_ids]
                 volume = calculate_volume(string(element_type), vertices)
-                center = sum(vertices) / size(vertices)[1]
+                center = sum(vertices) / length(vertices)
                 if dof == 2
-                    push!(
-                        mesh_df,
-                        (
-                            x = center[1],
-                            y = center[2],
-                            volume = volume,
-                            block_id = block_id,
-                        ),
-                    )
+                    mesh_df[id, :] = [center[1], center[2], volume, block_id]
                 else
-                    push!(
-                        mesh_df,
-                        (
-                            x = center[1],
-                            y = center[2],
-                            z = center[3],
-                            volume = volume,
-                            block_id = block_id,
-                        ),
-                    )
+                    mesh_df[id, :] = [center[1], center[2], center[3], volume, block_id]
                 end
-                push!(element_written, element_id)
+                element_written[id] = element_id
                 id += 1
             end
             nsets[key] = ns_nodes
@@ -766,10 +762,6 @@ function read_mesh(filename::String, params::Dict)
         @info "Found $(maximum(mesh_df.block_id)) block(s)"
         @info "Found $(length(nsets)) node sets"
         @info "NodeSets: $element_sets_keys"
-
-        txt_file = replace(filename, ".inp" => ".txt")
-        write(txt_file, "header: x y volume block_id\n")
-        CSV.write(txt_file, mesh_df; delim = ' ', append = true)
 
         mesh = nothing
         nodes = nothing
@@ -984,8 +976,8 @@ function load_and_evaluate_mesh(
 )
 
     if params["Discretization"]["Type"] == "Abaqus"
-        mesh, nsets =
-            read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        filename = joinpath(path, Parameter_Handling.get_mesh_name(params))
+        @timeit to "read_mesh" mesh, nsets = read_mesh(filename, params)
         nnodes = size(mesh, 1) + 1
         mesh, surface_ns = extrude_surface_mesh(mesh, params)
         if !isnothing(surface_ns)
@@ -995,7 +987,8 @@ function load_and_evaluate_mesh(
         end
     else
         @debug "Read node sets"
-        mesh = read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        @timeit to "read_mesh" mesh =
+            read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
         nsets = get_node_sets(params, path)
     end
     check_for_duplicate_in_dataframe(mesh)

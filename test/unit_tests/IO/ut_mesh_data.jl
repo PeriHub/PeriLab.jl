@@ -486,7 +486,7 @@ end
 
 @testset "ut_define_nsets" begin
 
-    nsets_predef = Dict{String,Any}(
+    nsets_predef = Dict{String,Vector{Int64}}(
         "Nset_2" => [11, 12, 13, 44, 125],
         "Nset_1" => [1, 2, 3, 4, 5, 6, 7],
     )

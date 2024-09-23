@@ -206,7 +206,7 @@ function compute_models(
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
         for block in eachindex(block_nodes)
             # TODO not optimal
-            active_nodes, update_nodes =
+            active_nodes::Vector{Int64}, update_nodes =
                 get_active_update_nodes(active, update_list, block_nodes, block)
             if fem_option
                 update_nodes =

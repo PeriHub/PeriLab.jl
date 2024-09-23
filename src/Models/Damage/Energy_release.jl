@@ -60,7 +60,7 @@ function compute_model(
     time::Float64,
     dt::Float64,
 )
-    dof::Int64 = datamanager.get_dof()
+    dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     block_ids = datamanager.get_field("Block_Id")
     update_list = datamanager.get_field("Update List")
@@ -114,7 +114,7 @@ function compute_model(
     neighbor_bond_force::Vector{Float64} = @SVector zeros(Float64, dof)
     projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
-    relative_displacement_matrix = deformed_bond .- undeformed_bond
+    relative_displacement_matrix::Matrix{Matrix{Float64}} = deformed_bond .- undeformed_bond
     for iID in nodes
         @views nlist_temp = nlist[iID]
 

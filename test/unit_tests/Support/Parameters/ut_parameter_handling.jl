@@ -227,8 +227,8 @@ end
 @testset "ut_get_output_fieldnames" begin
     outputs =
         Dict("Displacements" => true, "Forces" => true, "External_Displacements" => true)
-    variables = ["DisplacementsNP1", "Forces"]
-    computes = ["External_Displacements"]
+    variables = keys(Dict("DisplacementsNP1" => true, "Forces" => true))
+    computes = collect(keys(Dict("External_Displacements" => true)))
     output_type = "Exodus"
     fieldnames = PeriLab.Solver.Parameter_Handling.get_output_fieldnames(
         outputs,
@@ -343,8 +343,8 @@ test_data_manager = PeriLab.Data_manager
         ),
     )
 
-    outputs =
-        PeriLab.Solver.Parameter_Handling.get_outputs(params, testfield_keys, String[])
+    vector::Vector{String} = []
+    outputs = PeriLab.Solver.Parameter_Handling.get_outputs(params, testfield_keys, vector)
 
     @test "A" in outputs["Output1"]["fieldnames"]
     @test ("BNP1" in outputs["Output1"]["fieldnames"]) == false
@@ -472,16 +472,16 @@ end
 @testset "ut_get_output_variables" begin
     @test PeriLab.Solver.Parameter_Handling.get_output_variables(
         "Force",
-        ["Force", "DisplacementsNP1"],
+        keys(Dict("Force" => true, "DisplacementsNP1" => true)),
     ) == "Force"
     @test PeriLab.Solver.Parameter_Handling.get_output_variables(
         "Displacements",
-        ["Force", "DisplacementsNP1"],
+        keys(Dict("Force" => true, "DisplacementsNP1" => true)),
     ) == "DisplacementsNP1"
     @test isnothing(
         PeriLab.Solver.Parameter_Handling.get_output_variables(
             "Stress",
-            ["Force", "DisplacementsNP1"],
+            keys(Dict("Force" => true, "DisplacementsNP1" => true)),
         ),
     )
 end

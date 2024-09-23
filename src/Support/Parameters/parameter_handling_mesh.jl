@@ -106,7 +106,7 @@ Returns the node sets from the parameters
 - `nsets::Dict{String,Any}`: The node sets
 """
 function get_node_sets(params::Dict, path::String)
-    nsets = Dict{String,Any}()
+    nsets = Dict{String,Vector{Int64}}()
     type = get(params["Discretization"], "Type", "Text File")
     if type == "Exodus"
         exo = ExodusDatabase(joinpath(path, get_mesh_name(params)), "r")
