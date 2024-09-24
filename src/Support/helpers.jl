@@ -76,9 +76,21 @@ Returns the indices of `active` that are true.
 # Returns
 - `indices::Vector`: The indices of `active` that are true.
 """
+
 function find_active(active::Union{Vector{Bool},BitVector})
-    return [i for (i, is_active) in enumerate(active) if is_active]
+    temp = zeros(Int64, sum(active))
+    count::Int64 = 1
+    for (i, is_active) in enumerate(active)
+        if is_active
+            temp[count] = i
+            count += 1
+        end
+
+    end
+    return temp
+    #return [i for (i, is_active) in enumerate(active) if is_active]
 end
+
 
 """
     get_active_update_nodes(active::SubArray, update_list::SubArray, block_nodes::Dict{Int64,Vector{Int64}}, block::Int64)

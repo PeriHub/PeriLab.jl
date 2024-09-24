@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
+
+
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
-
 
 @testset "ut_compute_bond_level_deformation_gradient" begin
     nodes = [1]
@@ -314,8 +315,7 @@ end
         undeformed_bond_length,
     )
     shape_tensor, inverse_shape_tensor = PeriLab.IO.Geometry.shape_tensor(
-        view(nodes, eachindex(nodes)),
-        dof,
+        nodes,
         nlist,
         volume,
         omega,
@@ -328,13 +328,12 @@ end
     deformed_coor = copy(coor)
 
     deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
-        view(nodes, eachindex(nodes)),
-        dof,
+        nodes,
         nlist,
         volume,
         omega,
         bond_damage,
-        undeformed_bond,
+        deformed_bond,
         undeformed_bond,
         inverse_shape_tensor,
         deformation_gradient,
@@ -358,8 +357,7 @@ end
         deformed_bond_length,
     )
     deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
-        view(nodes, eachindex(nodes)),
-        dof,
+        nodes,
         nlist,
         volume,
         omega,
@@ -393,8 +391,7 @@ end
         deformed_bond_length,
     )
     deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
-        view(nodes, eachindex(nodes)),
-        dof,
+        nodes,
         nlist,
         volume,
         omega,
@@ -432,8 +429,7 @@ end
         deformed_bond_length,
     )
     deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
-        view(nodes, eachindex(nodes)),
-        dof,
+        nodes,
         nlist,
         volume,
         omega,
@@ -484,10 +480,8 @@ end
         dof,
     )
 
-
     deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
-        view(nodes, eachindex(nodes)),
-        dof,
+        nodes,
         nlist,
         volume,
         omega,

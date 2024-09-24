@@ -84,7 +84,6 @@ function compute(
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
     shape_tensor, inverse_shape_tensor = Geometry.shape_tensor(
         nodes,
-        dof,
         nlist,
         volume,
         omega,

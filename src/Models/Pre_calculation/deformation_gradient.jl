@@ -72,7 +72,6 @@ function compute(
     parameter::Union{Dict,OrderedDict},
     block::Int64,
 )
-    dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
@@ -84,7 +83,6 @@ function compute(
 
     deformation_gradient = compute_deformation_gradient(
         nodes,
-        dof,
         nlist,
         volume,
         omega,
