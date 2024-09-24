@@ -132,52 +132,12 @@ function compute_stresses(
     stress_NP1::Union{SubArray,Array{Float64,3}},
     iID_jID_nID::Tuple = (),
 )
-
     @views hookeMatrix =
         get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID)
-
     @views stress_NP1[iID, :, :] =
         voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) +
         stress_N[iID, :, :]
     return stress_NP1, datamanager
 end
-
-"""
-    compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
-
-Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
-
-# Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `dof::Int64`: Degrees of freedom
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
-- `time::Float64`: The current time.
-- `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
-# Returns
-- `datamanager::Data_manager`: Datamanager.
-- `stress_NP1::SubArray`: updated stresses
-Example:
-```julia
-```
-"""
-function compute_stresses(
-    datamanager::Module,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Vector{Float64},
-    stress_N::Vector{Float64},
-    stress_NP1::Vector{Float64},
-)
-    # TODO include element wise material defintion
-    hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
-
-    return hookeMatrix * strain_increment + stress_N, datamanager
-end
-
 
 end

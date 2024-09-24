@@ -371,10 +371,10 @@ Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
 - `voigt::Vector{Float64}`: The Voigt notation.
 """
 function matrix_to_voigt(matrix)
-    if size(matrix) == (2, 2)
-        return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
-    elseif size(matrix) == (3, 3)
-        return [
+    if length(matrix) == 4
+        return @SVector [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
+    elseif length(matrix) == 9
+        return @SVector [
             matrix[1, 1]
             matrix[2, 2]
             matrix[3, 3]
@@ -400,9 +400,9 @@ Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
 """
 function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
     if length(voigt) == 3
-        return [voigt[1] voigt[3]; voigt[3] voigt[2]]
+        return @SMatrix [voigt[1] voigt[3]; voigt[3] voigt[2]]
     elseif length(voigt) == 6
-        return [
+        return @SMatrix [
             voigt[1] voigt[6] voigt[5]
             voigt[6] voigt[2] voigt[4]
             voigt[5] voigt[4] voigt[3]
@@ -581,8 +581,17 @@ function compute_Piola_Kirchhoff_stress(
     stress::Union{Matrix{Float64},SubArray{Float64}},
     deformation_gradient::Union{Matrix{Float64},SubArray{Float64}},
 )
+    #50% less memory
     return det(deformation_gradient) .* stress * invert(
         deformation_gradient,
         "Deformation gradient is singular and cannot be inverted.",
     )
+    # 30% computation time
+    #try
+    #    return det(deformation_gradient) .* stress /
+    #           deformation_gradient
+    #catch
+    #    "Deformation gradient is singular and cannot be inverted."
+    # return nothing
+    #end
 end

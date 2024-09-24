@@ -283,7 +283,7 @@ function invert(
     error_message::String = "Matrix is singular",
 )
     try
-        return inv(A)
+        return inv(A[:, :])
     catch
         @error error_message
         return nothing
