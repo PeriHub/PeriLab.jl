@@ -700,10 +700,8 @@ function read_mesh(filename::String, params::Dict)
         element_types = mesh["element_types"]
 
         dof = 2
-
         nodes_vector = collect(values(nodes))
-        node_z = [node[end] for node in nodes_vector]
-        if length(unique(node_z)) > 2
+        if size(nodes_vector[1])[1] == 3
             dof = 3
         end
         @info "Abaqus mesh with $dof DOF"
@@ -791,7 +789,7 @@ Calculate the volume of a element.
 - `volume`: The volume of the element.
 """
 function calculate_volume(element_type::String, vertices::Vector{Vector{Float64}})
-    if element_type == "Quad4"
+    if element_type in ["Quad4", "CPS3"]
         return area_of_polygon(vertices)
     elseif element_type == "Tet4"
         return tetrahedron_volume(vertices)
@@ -1904,8 +1902,10 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     min_y, max_y = extrema(mesh.y)
     min_z = 0.0
     max_z = 0.0
+    dof = 2
     if "z" in names(mesh)
         min_z, max_z = extrema(mesh.z)
+        dof = 3
     end
 
     if direction == "X"
@@ -1932,9 +1932,17 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
         k = min_z:step_z:max_z
 
         if direction == "X"
-            push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
+            if dof == 2
+                push!(mesh, (x = i, y = j, volume = volume, block_id = block_id))
+            else
+                push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
+            end
         elseif direction == "Y"
-            push!(mesh, (x = j, y = i, z = k, volume = volume, block_id = block_id))
+            if dof == 2
+                push!(mesh, (x = j, y = i, volume = volume, block_id = block_id))
+            else
+                push!(mesh, (x = j, y = i, z = k, volume = volume, block_id = block_id))
+            end
         end
         append!(node_sets["Extruded_1"], [Int64(id)])
         id += 1
@@ -1947,9 +1955,17 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
         k = min_z:step_z:max_z
 
         if direction == "X"
-            push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
+            if dof == 2
+                push!(mesh, (x = i, y = j, volume = volume, block_id = block_id))
+            else
+                push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
+            end
         elseif direction == "Y"
-            push!(mesh, (x = j, y = i, z = k, volume = volume, block_id = block_id))
+            if dof == 2
+                push!(mesh, (x = j, y = i, volume = volume, block_id = block_id))
+            else
+                push!(mesh, (x = j, y = i, z = k, volume = volume, block_id = block_id))
+            end
         end
         append!(node_sets["Extruded_2"], [Int64(id)])
         id += 1
