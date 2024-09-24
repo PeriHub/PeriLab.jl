@@ -76,7 +76,7 @@ function calculate_bond_length(
 end
 
 """
-    shape_tensor(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+    shape_tensor(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
 Calculate the shape tensor and its inverse for a set of nodes in a computational mechanics context.
 
@@ -112,11 +112,10 @@ undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 shape_tensor = zeros(Float64, length(nodes), dof, dof)
 inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 
-shape_tensor(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+shape_tensor(nodes, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 """
 function shape_tensor(
     nodes::Union{SubArray,Vector{Int64}},
-    dof::Int64,
     nlist,
     volume,
     omega,
@@ -129,12 +128,10 @@ function shape_tensor(
     for iID in nodes
 
         shape_tensor[iID, :, :] = calculate_shape_tensor(
-            dof,
             volume[nlist[iID]],
             omega[iID],
             bond_damage[iID],
             undeformed_bond[iID],
-            shape_tensor[iID, :, :],
         )
         inverse_shape_tensor[iID, :, :] .= invert(
             shape_tensor[iID, :, :],
@@ -146,28 +143,11 @@ function shape_tensor(
 end
 
 
-function calculate_shape_tensor(
-    dof::Int64,
-    volume,
-    omega,
-    bond_damage,
-    undeformed_bond,
-    shape_tensor,
-)
+function calculate_shape_tensor(volume, omega, bond_damage, undeformed_bond)
 
-    # Compute the element-wise product once
-    weighted_bond_damage = bond_damage .* volume .* omega
+    return (bond_damage .* volume .* omega .* undeformed_bond)' * undeformed_bond
 
-    @views Threads.@threads for i = 1:dof
-        for j = 1:dof
-            shape_tensor[i, j] =
-                sum(weighted_bond_damage .* undeformed_bond[:, i] .* undeformed_bond[:, j])
-        end
-    end
-
-    return shape_tensor
 end
-
 
 
 function bond_associated_deformation_gradient(
@@ -181,8 +161,6 @@ function bond_associated_deformation_gradient(
 )
 
     return calculate_deformation_gradient(
-        deformation_gradient,
-        dof,
         bond_damage,
         deformed_bond,
         undeformed_bond,
@@ -193,7 +171,7 @@ function bond_associated_deformation_gradient(
 end
 
 """
-    compute_deformation_gradient(nodes::Union{SubArray, Vector{Int64}}, dof::Int64, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
+    compute_deformation_gradient(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 
 Calculate the deformation gradient tensor for a set of nodes in a computational mechanics context.
 
@@ -230,11 +208,10 @@ deformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 inverse_shape_tensor = rand(Float64, length(nodes), dof, dof)
 deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 
-compute_deformation_gradient(nodes, dof, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
+compute_deformation_gradient(nodes, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 """
 function compute_deformation_gradient(
     nodes::Union{SubArray,Vector{Int64}},
-    dof::Int64,
     nlist::SubArray,
     volume::SubArray,
     omega::SubArray,
@@ -244,11 +221,8 @@ function compute_deformation_gradient(
     inverse_shape_tensor::SubArray,
     deformation_gradient::SubArray,
 )
-    deformation_gradient[nodes, :, :] .= 0
     for iID in nodes
         deformation_gradient[iID, :, :] = calculate_deformation_gradient(
-            deformation_gradient[iID, :, :],
-            dof,
             bond_damage[iID],
             deformed_bond[iID],
             undeformed_bond[iID],
@@ -290,23 +264,14 @@ function compute_left_stretch_tensor(deformation_gradient::Matrix{Float64})
 end
 
 function calculate_deformation_gradient(
-    deformation_gradient,
-    dof::Int64,
     bond_damage,
     deformed_bond,
     undeformed_bond,
     volume::Union{Vector{Int64},Vector{Float64}},
     omega,
 )
-    for i = 1:dof
-        for j = 1:dof
-            deformation_gradient[i, j] = sum(
-                bond_damage .* deformed_bond[:, i] .* undeformed_bond[:, j] .* volume .*
-                omega,
-            )
-        end
-    end
-    return deformation_gradient
+    return (bond_damage .* volume .* omega .* deformed_bond)' * undeformed_bond
+
 end
 
 

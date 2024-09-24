@@ -298,9 +298,8 @@ function calculate_bond_force(
     bond_force::SubArray,
 )
     for iID in nodes
-
         # taken from corresponcence.cxx -> computeForcesAndStresses
-        bond_force[iID][:, :] =
+        @views bond_force[iID][:, :] =
             bond_damage[iID] .* undeformed_bond[iID] *
             compute_Piola_Kirchhoff_stress(
                 stress_NP1[iID, :, :],

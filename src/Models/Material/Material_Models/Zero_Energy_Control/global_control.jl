@@ -97,16 +97,18 @@ Computes the zero energy mode force
 """
 function get_zero_energy_mode_force(
     nodes::Union{SubArray,Vector{Int64}},
-    zStiff::SubArray,
-    deformation_gradient::SubArray,
-    undeformed_bond::SubArray,
-    deformed_bond::SubArray,
-    bond_force::SubArray,
+    zStiff,
+    deformation_gradient,
+    undeformed_bond,
+    deformed_bond,
+    bond_force,
 )
     for iID in nodes
-        bond_force[iID][:, :] .-=
-            (undeformed_bond[iID] * deformation_gradient[iID, :, :] - deformed_bond[iID]) *
-            zStiff[iID, :, :]
+        mul!(
+            bond_force[iID][:, :],
+            -(undeformed_bond[iID] * deformation_gradient[iID, :, :] - deformed_bond[iID]),
+            zStiff[iID, :, :],
+        )
     end
     return bond_force
 end
