@@ -230,7 +230,7 @@ function compute_deformation_gradient(
             omega[iID],
         )
 
-        deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]
+        @views deformation_gradient[iID, :, :] *= inverse_shape_tensor[iID, :, :]
     end
     return deformation_gradient
 end
@@ -286,16 +286,12 @@ function compute_weighted_deformation_gradient(
 )
 
     for iID in nodes
-        deformation_gradient[iID, :, :] = Matrix{Float64}(I(dof))
-        for (jID, nID) in enumerate(nlist[iID])
-            deformation_gradient[iID, :, :] +=
-                (
-                    (displacement[nlist[iID][jID], :] .- displacement[iID, :]) *
-                    gradient_weight[iID][jID, :]'
-                ) .* volume[nID]
-        end
+        deformation_gradient[iID, :, :] = @views I(dof) +
+               (displacement[nlist[iID], :]' .- displacement[iID, :]) *
+               (gradient_weight[iID][:, :] .* volume[nlist[iID]])
     end
     return deformation_gradient
+
 end
 
 
