@@ -342,11 +342,9 @@ function compute_strain(
 
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     for iID in nodes
-        strain[iID, :, :] =
-            0.5 * (
-                transpose(deformation_gradient[iID, :, :]) *
-                deformation_gradient[iID, :, :] - I
-            )
+        strain[iID, :, :] = @views 0.5 .* (
+            transpose(deformation_gradient[iID, :, :]) * deformation_gradient[iID, :, :] - I
+        )
     end
     return strain
 end
