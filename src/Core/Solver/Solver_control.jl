@@ -13,7 +13,7 @@ using .Parameter_Handling:
     get_model_options,
     get_fem_block,
     get_calculation_options
-using .Helpers: find_indices
+using .Helpers: find_indices, fastdot
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
 include("../BC_manager.jl")

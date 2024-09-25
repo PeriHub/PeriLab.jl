@@ -6,7 +6,7 @@ module Thermal_Flow
 using LinearAlgebra
 using StaticArrays
 include("../../Support/helpers.jl")
-using .Helpers: rotate_second_order_tensor
+using .Helpers: rotate_second_order_tensor, fastdot
 export compute_model
 export thermal_model_name
 export init_model
@@ -217,8 +217,8 @@ function compute_heat_flow_state_correspondence(
         end
         for (jID, neighborID) in enumerate(nlist[iID])
             temp = Kinv[iID, :, :] * undeformed_bond[iID][jID, 1:dof]
-            heat_flow[iID] -= dot(temp, q) * volume[neighborID]
-            heat_flow[neighborID] += dot(temp, q) * volume[iID]
+            heat_flow[iID] -= fastdot(temp, q) * volume[neighborID]
+            heat_flow[neighborID] += fastdot(temp, q) * volume[iID]
         end
     end
     return heat_flow

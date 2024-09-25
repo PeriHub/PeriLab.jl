@@ -8,6 +8,8 @@ using DataFrames
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 using OrderedCollections: OrderedDict
 using PrettyTables
+include("../Support/helpers.jl")
+using .Helpers: fastdot
 include("./logging.jl")
 using .Logging_module: print_table
 
@@ -1557,8 +1559,8 @@ function bond_intersects_disc(
     normal::Vector{Float64},
     radius::Float64,
 )
-    numerator = dot((center - p0), normal)
-    denominator = dot((p1 - p0), normal)
+    numerator = fastdot((center - p0), normal)
+    denominator = fastdot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane, may or may not lie on the plane
         # If it does lie on the plane, then the numerator will be zero
@@ -1605,7 +1607,7 @@ function bond_intersect_infinite_plane(
     lower_left_corner::Vector{Float64},
     normal::Vector{Float64},
 )
-    denominator = dot((p1 - p0), normal)
+    denominator = fastdot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane
         # It may or may not lie on the plane
@@ -1615,7 +1617,7 @@ function bond_intersect_infinite_plane(
     end
     # The line intersects the plane
 
-    t = dot((lower_left_corner - p0), normal) / denominator
+    t = fastdot((lower_left_corner - p0), normal) / denominator
 
     # Determine if the line segment intersects the plane
     if 0.0 <= t <= 1.0
@@ -1655,7 +1657,7 @@ function bond_intersect_rectangle_plane(
             return true
         end
         ua = cross(bottom_unit_vector, normal)
-        aa = dot(dr, ua)
+        aa = fastdot(dr, ua)
         if 0.0 <= aa && aa / side_length <= 1.0
             return true
         end

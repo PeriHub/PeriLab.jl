@@ -8,7 +8,7 @@ include("../../Support/geometry.jl")
 include("../../Support/helpers.jl")
 using .Material
 using .Geometry
-using .Helpers: rotate
+using .Helpers: rotate, fastdot
 using LinearAlgebra
 using StaticArrays
 export compute_model
@@ -120,7 +120,7 @@ function compute_model(
 
         for jID in eachindex(nlist_temp)
             @views relative_displacement = relative_displacement_matrix[iID][jID, :]
-            @views norm_displacement = dot(relative_displacement, relative_displacement)
+            @views norm_displacement = fastdot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (
                 tension &&
                 deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
@@ -139,11 +139,13 @@ function compute_model(
             end
 
             @views projected_force .=
-                dot(bond_forces[iID][jID, :] - neighbor_bond_force, relative_displacement) /
-                (norm_displacement) .* relative_displacement
+                fastdot(
+                    (bond_forces[iID][jID, :] - neighbor_bond_force),
+                    relative_displacement,
+                ) / (norm_displacement) .* relative_displacement
 
             @views bond_energy =
-                0.25 * dot(abs.(projected_force), abs.(relative_displacement))
+                0.25 * fastdot((abs.(projected_force)), (abs.(relative_displacement)))
 
             if dependend_value
                 critical_energy =

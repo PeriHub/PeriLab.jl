@@ -10,6 +10,7 @@ using ProgressBars
 using LinearAlgebra
 using TensorOperations
 using StaticArrays
+using LoopVectorization
 export qdim
 export check_inf_or_nan
 export find_active
@@ -24,6 +25,18 @@ export interpol_data
 export progress_bar
 export invert
 export rotate
+export fastdot
+
+
+function fastdot(a, b)
+    s = 0.0
+    @inbounds @simd for i ∈ eachindex(a, b)
+        s += a[i] * b[i]
+    end
+    s
+end
+
+
 """
     qdim(order::Int64, dof::Int64)
 

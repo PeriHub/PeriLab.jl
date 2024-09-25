@@ -4,7 +4,7 @@
 
 using Test
 using ProgressBars
-
+using LinearAlgebra
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
 
@@ -62,6 +62,15 @@ end
         bond_horizon,
     ) == [3, 4, 5]
 end
+@testset "ut_fastdot" begin
+    a = rand(3)
+    b = rand(3)
+    PeriLab.Solver.Helpers.fastdot(a, b) == dot(a, b)
+
+
+end
+
+
 @testset "ut_qdim" begin
     @test isnothing(PeriLab.Solver.Helpers.qdim(0, 2))
     @test isnothing(PeriLab.Solver.Helpers.qdim(0, 3))

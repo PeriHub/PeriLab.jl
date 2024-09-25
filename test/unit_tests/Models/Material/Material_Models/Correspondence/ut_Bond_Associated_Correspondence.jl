@@ -68,19 +68,23 @@ end
             deformation_gradient * deformation_gradient_dot +
             (deformation_gradient * deformation_gradient_dot)'
         )
-    computed_strain = Bond_Associated_Correspondence.update_Green_Langrange_strain(
+    computed_strain = zeros(3, 3)
+    Bond_Associated_Correspondence.update_Green_Langrange_strain(
         dt,
         deformation_gradient,
         deformation_gradient_dot,
+        computed_strain,
     )
     @test isapprox(computed_strain, expected_strain)
     deformation_gradient = zeros(3, 3)
     deformation_gradient_dot = zeros(3, 3)
     expected_strain = zeros(3, 3)
+
     computed_strain = Bond_Associated_Correspondence.update_Green_Langrange_strain(
         dt,
         deformation_gradient,
         deformation_gradient_dot,
+        computed_strain,
     )
     @test computed_strain == expected_strain
 end
