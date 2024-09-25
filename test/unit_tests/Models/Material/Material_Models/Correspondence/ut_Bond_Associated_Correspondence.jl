@@ -205,36 +205,3 @@ end
     @test isapprox(stress_integral[1, :, :], expected_stress_integral[1][:, :])
     @test isapprox(stress_integral[2, :, :], expected_stress_integral[2][:, :])
 end
-
-@testset "ut_compute_bond_associated_weighted_volume" begin
-    # Initialize input arrays
-    nodes = [1, 2, 3]
-    nlist = [[2, 3], [1, 3], [1, 2]]
-    coordinates = [0.0 0.0; 1.0 0.0; 0.0 1.0]
-    bond_damage = [[1.0, 1.0], [0.0, 1.0], [1.0, 1.0]]
-    omega = [[0.5, 0.8], [0.7, 0.9], [0.6, 0.4]]
-    volume = [1.0, 2.0, 3.0]
-    weighted_volume = [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
-    bond_horizon = 2.2
-    # Call the function under test
-    weighted_volume =
-        Bond_Associated_Correspondence.compute_bond_associated_weighted_volume(
-            nodes,
-            nlist,
-            coordinates,
-            bond_damage,
-            omega,
-            volume,
-            bond_horizon,
-            weighted_volume,
-        )
-    # Check the expected output
-    @test isapprox(
-        weighted_volume,
-        [
-            [0.7058823529411765, 0.2941176470588235],
-            [1.0, 0.0],
-            [0.5714285714285715, 0.4285714285714286],
-        ],
-    )
-end

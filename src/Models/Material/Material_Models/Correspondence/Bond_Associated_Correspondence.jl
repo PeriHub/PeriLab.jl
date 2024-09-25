@@ -332,55 +332,6 @@ end
 
 
 
-"""
-function compute_bond_associated_weighted_volume(nodes::Union{SubArray, Vector{Int64}}, nlist::SubArray, coordinates::Union{SubArray,Vector{Float64}}, bond_damage::Union{SubArray,Vector{Float64}}, omega::Union{SubArray,Vector{Float64}}, volume::Union{SubArray,Vector{Float64}}, bond_horizon::Float64,
-bond_horizon::Float64, weighted_volume::SubArray)
-
-Compute the bond-associated weighted volume for given nodes. This function computes the bond-associated weighted volume for a given set of nodes. It iterates over each node in `nodes` and calculates the weighted volume associated with each bond connected to the node.
-
-The function first computes the neighborhood volume of the node, which is the sum of the product of volume, bond damage, and omega for each neighboring node. Then, for each neighboring node, it calculates the local neighborhood list excluding the current neighbor, and computes the weighted volume for the bond between the current node and the neighbor. The weighted volume is calculated as the sum of the product of volume, bond damage, and omega for all bonds in the local neighborhood, divided by the neighborhood volume.
-
-# Arguments
-- `nodes::Union{SubArray, Vector{Int64}}`: A vector of integers representing node IDs.
-- `nlist::SubArray`: Neighborhood list.
-- `coordinates::Union{SubArray, Vector{Float64}}`: Node coordinates.
-- `bond_damage::Union{SubArray, Vector{Float64}}`: Damage values for bonds.
-- `omega::Union{SubArray, Vector{Float64}}`: Influence function values for bonds.
-- `volume::Union{SubArray, Vector{Float64}}`: Volumes of nodes.
-- `bond_horizon::Float64`: Local horizon around the neighbor
-- `weighted_volume::SubArray`: Array to store the computed weighted volumes.
-
-# Output
-- `weighted_volume::SubArray`: Updated array containing the computed weighted volumes.
-
-"""
-
-function compute_bond_associated_weighted_volume(
-    nodes::Union{SubArray,Vector{Int64}},
-    nlist::Union{Vector{Vector{Int64}},SubArray},
-    coordinates::Union{SubArray,Matrix{Float64}},
-    bond_damage::Union{SubArray,Vector{Vector{Float64}}},
-    omega::Union{SubArray,Vector{Vector{Float64}}},
-    volume::Union{SubArray,Vector{Float64}},
-    bond_horizon::Float64,
-    weighted_volume::Union{SubArray,Vector{Vector{Float64}}},
-)
-    neighborhood_volume::Float64 = 0
-    for iID in nodes
-
-        neighborhood_volume = sum(volume[nlist[iID]] .* bond_damage[iID] .* omega[iID])
-
-        for (jID, nID) in enumerate(nlist[iID])
-            local_nlist = find_local_neighbors(nID, coordinates, nlist[iID], bond_horizon)
-            sub_bond_list = [findfirst(x -> x == elem, nlist[iID]) for elem in local_nlist]
-            weighted_volume[iID][jID] = sum(
-                volume[local_nlist] .* bond_damage[iID][sub_bond_list] .*
-                omega[iID][sub_bond_list] / neighborhood_volume,
-            )
-        end
-    end
-    return weighted_volume
-end
 
 function update_Green_Langrange_nodal_strain_increment(
     nodes::Union{SubArray,Vector{Int64}},
@@ -395,6 +346,7 @@ function update_Green_Langrange_nodal_strain_increment(
             dt,
             deformation_gradient[iID, :, :],
             deformation_gradient_dot[iID, :, :],
+            strain_increment[iID, :, :],
         )
     end
 
