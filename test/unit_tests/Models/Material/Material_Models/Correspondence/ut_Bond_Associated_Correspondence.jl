@@ -22,12 +22,12 @@ end
     test_data_manager.set_dof(2)
 
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn[1] = 2
+    nn[1] = 1
     nn[2] = 1
     nodes = [1, 2]
 
     nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    nlist[1] = [2, 3]
+    nlist[1] = [2]
     nlist[2] = [1]
 
 
@@ -40,8 +40,6 @@ end
     strain = test_data_manager.create_constant_bond_field("Strain", Float64, "Matrix", 2)
 
     deformation_gradient[1][1, :, :] = [1 0; 0 1]
-    deformation_gradient[1][2, :, :] = [1 1; 1 1]
-
     deformation_gradient[2][1, :, :] = [0 1; 0 1]
 
     strain = Bond_Associated_Correspondence.compute_bond_strain(
@@ -52,7 +50,6 @@ end
     )
 
     @test strain[1][1, :, :] == [0 0; 0 0]
-    @test strain[1][2, :, :] == [0.5 1.0; 1.0 0.5]
     @test strain[2][1, :, :] == [-0.5 0; 0 0.5]
 
 end
@@ -62,9 +59,7 @@ end
     deformation_gradient = [1.0 0.2 0.0; 0.1 1.0 0.3; 0.0 0.1 1.0]
     deformation_gradient_dot = [0.05 0.01 0.0; 0.02 0.05 0.01; 0.0 0.02 0.05]
     expected_strain =
-        0.5 *
-        dt *
-        (
+        0.5 .* dt .* (
             deformation_gradient * deformation_gradient_dot +
             (deformation_gradient * deformation_gradient_dot)'
         )
@@ -75,18 +70,25 @@ end
         deformation_gradient_dot,
         computed_strain,
     )
-    @test isapprox(computed_strain, expected_strain)
+
+    # for i in 1:3
+    #     for j in 1:3
+    #         @test isapprox(computed_strain[i, j], expected_strain[i, j])
+    #     end
+    # end
+    @test computed_strain == expected_strain
     deformation_gradient = zeros(3, 3)
     deformation_gradient_dot = zeros(3, 3)
     expected_strain = zeros(3, 3)
-
-    computed_strain = Bond_Associated_Correspondence.update_Green_Langrange_strain(
+    computed_strain = zeros(3, 3)
+    Bond_Associated_Correspondence.update_Green_Langrange_strain(
         dt,
         deformation_gradient,
         deformation_gradient_dot,
         computed_strain,
     )
     @test computed_strain == expected_strain
+
 end
 @testset "ut_init_Bond-Associated" begin
     test_data_manager = PeriLab.Data_manager

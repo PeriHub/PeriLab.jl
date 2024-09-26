@@ -298,6 +298,7 @@ function compute_stress_integral(
             temp =
                 (one - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./
                 (bond_length[iID][jID] * bond_length[iID][jID])
+
             factor =
                 volume[nID] *
                 omega[iID][jID] *
@@ -328,9 +329,6 @@ function compute_bond_strain(nodes, nlist, deformation_gradient, strain)
     end
     return strain
 end
-
-
-
 
 
 function update_Green_Langrange_nodal_strain_increment(
@@ -389,8 +387,8 @@ function update_Green_Langrange_strain(
         for k ∈ axes(deformation_gradient, 2)
             strain_mn += deformation_gradient[m, k] * deformation_gradient_dot[k, n]
         end
-        strain[m, n] = strain_mn * dt * 0.5
-        strain[n, m] = strain_mn
+        strain[m, n] += strain_mn * dt * 0.5
+        strain[n, m] += strain_mn * dt * 0.5
     end
 
 end
