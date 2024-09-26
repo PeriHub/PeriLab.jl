@@ -150,7 +150,7 @@ function valid_models(params::Dict)
         return nothing
     else
         # in future -> FE support -> check with set modules
-        if Correspondence_Elastic.fe_support()
+        if !Correspondence_Elastic.fe_support()
             @error "No FEM support for " * params["Material Model"]
             return nothing
         end

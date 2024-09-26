@@ -298,7 +298,7 @@ function distribute_forces(
         bond_mod = copy(bond_norm[iID])
         if length(nlist_filtered_ids[iID]) > 0
             for neighborID in nlist_filtered_ids[iID]
-                if fastdot(
+                if dot(
                     (displacements[nlist[iID][neighborID], :] - displacements[iID, :]),
                     bond_norm[iID][neighborID, :],
                 ) > 0

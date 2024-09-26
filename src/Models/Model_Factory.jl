@@ -5,7 +5,7 @@
 module Model_Factory
 include("../Support/helpers.jl")
 include("./Material/material_basis.jl")
-using .Helpers: check_inf_or_nan, find_active, get_active_update_nodes, invert, fastdot
+using .Helpers: check_inf_or_nan, find_active, get_active_update_nodes, invert
 include("./Additive/Additive_Factory.jl")
 include("./Corrosion/Corrosion_Factory.jl")
 include("./Damage/Damage_Factory.jl")

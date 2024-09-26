@@ -7,7 +7,7 @@ using LinearAlgebra
 using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
-
+using LoopVectorization
 using PrettyTables
 using Logging
 
@@ -474,7 +474,7 @@ function run_solver(
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     nodes::Vector{Int64} = []
-    for idt in iter
+    @inbounds @fastmath for idt in iter
         @timeit to "Verlet" begin
             nodes = find_active(active[1:nnodes])
             # one step more, because of init step (time = 0)
