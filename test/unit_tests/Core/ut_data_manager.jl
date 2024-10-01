@@ -582,23 +582,41 @@ end
     nn[4] = 2
     nn[5] = 5
 
-    test_data_manager.create_constant_node_field("A", Float64, 1)
-    test_data_manager.create_node_field("B", Bool, 1)
-    test_data_manager.create_constant_node_field("C", Float64, 4)
-    test_data_manager.create_node_field("D", Int64, 7)
-    test_data_manager.create_constant_bond_field("E", Float64, 1)
-    test_data_manager.create_bond_field("G", Bool, 1)
-    test_data_manager.create_constant_bond_field("H", Float64, 4)
-    test_data_manager.create_bond_field("I", Int64, 7)
-    test_data_manager.create_constant_free_size_field("J", Float64, (2, 3))
-    test_data_manager.create_constant_node_field("K", Float64, 3)
-    test_data_manager.create_constant_free_size_field("L", Float64, (2, 3, 3))
-    test_data_manager.create_constant_free_size_field("M", Float64, (2, 3, 3, 4))
-    test_data_manager.create_constant_node_field("N", Float64, "Matrix", 3)
-    test_data_manager.create_constant_node_field("O", Float64, "Matrix", 3)
-    test_data_manager.create_free_size_field("P", Float64, (3, 3, 1, 3))
-    test_data_manager.create_node_field("Q", Float64, "Matrix", 3)
-    test_data_manager.create_constant_free_size_field("R", Int8, (50, 3))
+    alloc = 0
+    alloc += @allocated test_data_manager.create_constant_node_field("A", Float64, 1)
+    alloc += @allocated test_data_manager.create_node_field("B", Bool, 1)
+    alloc += @allocated test_data_manager.create_constant_node_field("C", Float64, 4)
+    alloc += @allocated test_data_manager.create_node_field("D", Int64, 7)
+    alloc += @allocated test_data_manager.create_constant_bond_field("E", Float64, 1)
+    alloc += @allocated test_data_manager.create_bond_field("G", Bool, 1)
+    alloc += @allocated test_data_manager.create_constant_bond_field("H", Float64, 4)
+    alloc += @allocated test_data_manager.create_bond_field("I", Int64, 7)
+    alloc +=
+        @allocated test_data_manager.create_constant_free_size_field("J", Float64, (2, 3))
+    alloc += @allocated test_data_manager.create_constant_node_field("K", Float64, 3)
+    alloc += @allocated test_data_manager.create_constant_free_size_field(
+        "L",
+        Float64,
+        (2, 3, 3),
+    )
+    alloc += @allocated test_data_manager.create_constant_free_size_field(
+        "M",
+        Float64,
+        (2, 3, 3, 4),
+    )
+    alloc +=
+        @allocated test_data_manager.create_constant_node_field("N", Float64, "Matrix", 3)
+    alloc +=
+        @allocated test_data_manager.create_constant_node_field("O", Float64, "Matrix", 3)
+    alloc += @allocated test_data_manager.create_free_size_field("P", Float64, (3, 3, 1, 3))
+    alloc += @allocated test_data_manager.create_node_field("Q", Float64, "Matrix", 3)
+    alloc +=
+        @allocated test_data_manager.create_constant_free_size_field("R", Int64, (50, 3))
+    alloc +=
+        @allocated test_data_manager.create_constant_bond_field("S", Float64, "Matrix", 3)
+    alloc += @allocated test_data_manager.create_bond_field("T", Float64, "Matrix", 3)
+
+    @test alloc < 10947441 # 1.3684 MB
 
     alloc = 0
     alloc += @allocated dof = test_data_manager.get_dof()
@@ -619,6 +637,8 @@ end
     alloc += @allocated p = test_data_manager.get_field("PNP1")
     alloc += @allocated q = test_data_manager.get_field("QNP1")
     alloc += @allocated r = test_data_manager.get_field("R")
+    alloc += @allocated s = test_data_manager.get_field("S")
+    alloc += @allocated t = test_data_manager.get_field("TNP1")
 
-    @test alloc < 50000
+    @test alloc == 0
 end
