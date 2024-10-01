@@ -571,7 +571,7 @@ end
 """
 function get_strain(
     stress_NP1::Matrix{Float64},
-    hooke_matrix::Union{Matrix{Float64},MMatrix},
+    hooke_matrix::Union{Matrix{Float64},MMatrix,SMatrix},
 )
     return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
 end

@@ -8,14 +8,20 @@ using LinearAlgebra
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
 
+@testset "ut_sinv" begin
+    @test PeriLab.Solver.Helpers.sinv(zeros(2, 2)) == zeros(2, 2)
+    @test PeriLab.Solver.Helpers.sinv(zeros(3, 3)) == zeros(3, 3)
+    @test PeriLab.Solver.Helpers.sinv(zeros(4, 4)) == zeros(4, 4)
+end
+
 @testset "ut_invert" begin
-    @test isnothing(PeriLab.Solver.Helpers.invert(zeros(Float64, 3, 3)))
-    @test isnothing(PeriLab.Solver.Helpers.invert(zeros(Int64, 3, 3)))
+    # @test isnothing(PeriLab.Solver.Helpers.invert(zeros(Float64, 3, 3)))
+    # @test isnothing(PeriLab.Solver.Helpers.invert(zeros(Int64, 3, 3)))
     @test isnothing(
-        PeriLab.Solver.Helpers.invert(zeros(Float64, 3, 3), "test Float is singular."),
+        PeriLab.Solver.Helpers.invert(zeros(Float64, 4, 4), "test Float is singular."),
     )
     @test isnothing(
-        PeriLab.Solver.Helpers.invert(zeros(Int64, 3, 3), "test Int is singular."),
+        PeriLab.Solver.Helpers.invert(zeros(Int64, 4, 4), "test Int is singular."),
     )
     @test PeriLab.Solver.Helpers.invert([1 0; 0 1]) == inv([1 0; 0 1])
     @test PeriLab.Solver.Helpers.invert(

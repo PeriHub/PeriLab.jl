@@ -294,7 +294,7 @@ function invert(
     error_message::String = "Matrix is singular",
 )
     try
-        return inv(A[:, :])
+        return inv(sinv(A))
     catch
         @error error_message
         return nothing
@@ -302,6 +302,14 @@ function invert(
 
 end
 
+function sinv(A)
+    if length(A) == 4
+        return SMatrix{2,2}(A)
+    elseif length(A) == 9
+        return SMatrix{3,3}(A)
+    end
+    return A
+end
 
 function find_local_neighbors(
     nID::Int64,

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using .Helpers: get_active_update_nodes
-using StaticArrays: MMatrix
+using StaticArrays: MMatrix, SMatrix
 using .Helpers: invert
 include("../Models/Material/material_basis.jl")
 
@@ -88,7 +88,7 @@ Calculate the von Mises stress.
 function calculate_strain(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    hooke_matrix::Union{Matrix{Float64},MMatrix},
+    hooke_matrix::Union{Matrix{Float64},MMatrix,SMatrix},
 )
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     strain = datamanager.get_field("Strain", "NP1")
