@@ -144,9 +144,10 @@ function init_data(
                 distribution[rank],
             )
         end
-        mesh = nothing
         @debug "Finish init data"
     end
+    MPI.Barrier(comm)
+    mesh = nothing
     return datamanager, params
 end
 
