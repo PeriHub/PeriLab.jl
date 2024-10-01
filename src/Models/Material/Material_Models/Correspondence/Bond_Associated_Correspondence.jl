@@ -8,7 +8,7 @@ using StaticArrays
 include("../../../../Support/helpers.jl")
 include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
-using .Helpers: find_local_neighbors, invert, rotate, fastdot, determinant
+using .Helpers: find_local_neighbors, invert, rotate, fastdot, determinant, smat
 using .Geometry:
     compute_strain,
     compute_bond_level_rotation_tensor,
@@ -417,7 +417,7 @@ function compute_bond_forces(
 
             bond_forces[iID][jID, :] =
                 integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
-
+            # mul!(bond_forces[iID][jID, :], integral_nodal_stress[iID, :, :], gradient_weights[iID][jID, :])
             bond_forces[iID][jID, :] +=
                 bond_damage[iID][jID] * omega[iID][jID] /
                 (weighted_volume[iID] * bond_length[iID][jID] * bond_length[iID][jID]) .*

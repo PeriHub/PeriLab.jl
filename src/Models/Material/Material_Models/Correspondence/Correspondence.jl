@@ -11,7 +11,7 @@ include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 include("../../material_basis.jl")
 include("../../../../Support/helpers.jl")
-using .Helpers: invert, rotate, determinant
+using .Helpers: invert, rotate, determinant, smat
 include("../../../../Support/geometry.jl")
 using .Geometry: compute_strain
 using .Global_zero_energy_control

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Helpers
+
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 using Tensors
 using Dierckx
@@ -36,6 +37,16 @@ function fastdot(a, b)
     s
 end
 
+
+function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
+
+    @inbounds @simd for i = 1:dof
+        for j = 1:dof
+            s1[i, j] = s3[i, j] + fastdot(C[i, j, :, :], s2[:, :])
+        end
+    end
+
+end
 
 """
     qdim(order::Int64, dof::Int64)

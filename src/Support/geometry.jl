@@ -133,6 +133,9 @@ function shape_tensor(
             bond_damage[iID],
             undeformed_bond[iID],
         )
+
+        #mul!(shape_tensor[iID, :, :], (bond_damage[iID] .* volume[nlist[iID]] .* omega[iID] .* undeformed_bond[iID])', undeformed_bond[iID])
+
         inverse_shape_tensor[iID, :, :] .= invert(
             shape_tensor[iID, :, :],
             "Shape Tensor is singular and cannot be inverted).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.",
