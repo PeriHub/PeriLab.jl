@@ -224,7 +224,7 @@ function create_bond_field(
     name::String,
     type::Type,
     dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
 )
 
     return create_field(name * "N", type, "Bond_Field", dof, default_value),
@@ -236,11 +236,11 @@ function create_bond_field(
     type::Type,
     VectorOrArray::String,
     dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
 )
 
-    return create_field(name * "N", type, "Bond_Field", VectorOrArray, dof, default_value),
-    create_field(name * "NP1", type, "Bond_Field", VectorOrArray, dof, default_value)
+    return create_field(name * "N", type, "Bond_Field", dof, default_value, VectorOrArray),
+    create_field(name * "NP1", type, "Bond_Field", dof, default_value, VectorOrArray)
 end
 
 """
@@ -266,7 +266,7 @@ function create_constant_bond_field(
     name::String,
     type::Type,
     dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
 )
     return create_field(name, type, "Bond_Field", dof, default_value)
 end
@@ -276,35 +276,28 @@ function create_constant_bond_field(
     type::Type,
     VectorOrArray::String,
     dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
 )
-    return create_field(name, type, "Bond_Field", VectorOrArray, dof, default_value)
+    return create_field(name, type, "Bond_Field", dof, default_value, VectorOrArray)
 end
 
-function create_constant_free_size_field(name::String, vartype::Type, dof::Tuple)
-    return create_field(name, vartype, dof)
+function create_constant_free_size_field(
+    name::String,
+    vartype::Type,
+    dof::Tuple,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
+)
+    return create_field(name, vartype, "Free_Size_Field", dof, default_value)
 end
 
-function create_free_size_field(name::String, vartype::Type, dof::Tuple)
-    return create_field(name * "N", vartype, dof), create_field(name * "NP1", vartype, dof)
-end
-
-function create_field(name::String, vartype::Type, dof::Tuple)
-    if !haskey(fields, vartype)
-        fields[vartype] = Dict{String,Any}()
-    end
-    if has_key(name)
-        if size(get_field(name)) != dof
-            @warn "Field $name exists already with different size. Predefined field is returned"
-        end
-        return get_field(name)
-    end
-    fields[vartype][name] = Array{vartype}(zeros(dof))
-    data["field_types"][name] = vartype
-    get_function = () -> fields[vartype][name]
-    data["field_array_type"][name] =
-        Dict("Type" => "Field", "Dof" => dof, "get_function" => get_function)
-    return get_function()
+function create_free_size_field(
+    name::String,
+    vartype::Type,
+    dof::Tuple,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
+)
+    return create_field(name * "N", vartype, "Free_Size_Field", dof, default_value),
+    create_field(name * "NP1", vartype, "Free_Size_Field", dof, default_value)
 end
 
 """
@@ -330,7 +323,7 @@ function create_constant_node_field(
     name::String,
     type::Type,
     dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
 )
     return create_field(name, type, "Node_Field", dof, default_value)
 end
@@ -339,9 +332,50 @@ function create_constant_node_field(
     type::Type,
     VectorOrArray::String,
     dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
 )
-    return create_field(name, type, "Node_Field", VectorOrArray, dof, default_value)
+    return create_field(name, type, "Node_Field", dof, default_value, VectorOrArray)
+end
+
+"""
+    create_node_field(name::String, type::Type, dof::Int64)
+
+Creates a node field with the given name, data type, and degree of freedom.
+
+# Arguments
+- `name::String`: The name of the node field.
+- `type::Type`: The data type of the node field.
+- `dof::Int64`: The degree of freedom of each node.
+- `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
+# Returns
+- `node_field::Field`: The created node field for the current time step.
+- `node_field_np1::Field`: The created node field for the next time step.
+
+Example:
+```julia
+create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
+```
+"""
+function create_node_field(
+    name::String,
+    type::Type,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
+)
+
+    return create_field(name * "N", type, "Node_Field", dof, default_value),
+    create_field(name * "NP1", type, "Node_Field", dof, default_value)
+end
+
+function create_node_field(
+    name::String,
+    type::Type,
+    VectorOrArray::String,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
+)
+    return create_field(name * "N", type, "Node_Field", dof, default_value, VectorOrArray),
+    create_field(name * "NP1", type, "Node_Field", dof, default_value, VectorOrArray)
 end
 
 """
@@ -362,103 +396,48 @@ function create_field(
     name::String,
     vartype::Type,
     bond_or_node::String,
-    dof::Int64,
+    dof::Union{Int64,Tuple},
     default_value::Union{Int64,Float64,Bool},
+    VectorOrArray::String = "Vector",
 )
-    create_field(name, vartype, bond_or_node, "Vector", dof, default_value)
-end
-
-function create_field(
-    name::String,
-    vartype::Type,
-    bond_or_node::String,
-    VectorOrArray::String,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool},
-)
-    field_dof = dof
-    get_function = nothing
-
-    # if !haskey(fields, vartype)
-    #     fields[vartype] = Dict{String,Any}()
-    # end
     if has_key(name)
         if size(get_field(name))[1] != data["nnodes"]
             @warn "Field $name exists already with different size. Predefined field is returned"
         end
         return get_field(name)
     end
-    if VectorOrArray == "Matrix"
-        field_dof *= dof
-    end
+    value = vartype(default_value)
     if bond_or_node == "Node_Field"
         if dof == 1
-            fields[vartype][name] = fill(vartype(default_value), data["nnodes"])
-            get_function = () -> fields[vartype][name]
+            fields[vartype][name] = fill(value, data["nnodes"])
         else
-            fields[vartype][name] = fill(vartype(default_value), data["nnodes"], field_dof)
             if VectorOrArray == "Matrix"
-                get_function = () -> reshape(fields[vartype][name], (:, dof, dof))
+                fields[vartype][name] = fill(value, (data["nnodes"], dof, dof))
             else
-                get_function = () -> fields[vartype][name]
+                fields[vartype][name] = fill(value, data["nnodes"], dof)
             end
         end
     elseif bond_or_node == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
         if dof == 1
-            fields[vartype][name] = fill.(vartype(default_value), nBonds)
-            get_function = () -> fields[vartype][name]
+            fields[vartype][name] = [fill(value, n) for n in nBonds]
         else
-            fields[vartype][name] =
-                [fill(vartype(default_value), (n, field_dof)) for n in nBonds]
             if VectorOrArray == "Matrix"
-                get_function =
-                    () -> [reshape(field, (:, dof, dof)) for field in fields[vartype][name]]
+                fields[vartype][name] = [fill(value, (n, dof, dof)) for n in nBonds]
             else
-                get_function = () -> fields[vartype][name]
+                fields[vartype][name] = [fill(value, (n, dof)) for n in nBonds]
             end
         end
+    elseif bond_or_node == "Free_Size_Field"
+        fields[vartype][name] = Array{vartype}(zeros(dof))
     end
+    get_function = () -> fields[vartype][name]
     data["field_types"][name] = vartype
     data["field_array_type"][name] =
         Dict("Type" => VectorOrArray, "Dof" => dof, "get_function" => get_function)
     return get_function()
 end
-"""
-    create_node_field(name::String, type::Type, dof::Int64)
 
-Creates a node field with the given name, data type, and degree of freedom.
-
-# Arguments
-- `name::String`: The name of the node field.
-- `type::Type`: The data type of the node field.
-- `dof::Int64`: The degree of freedom of each node.
-- `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
-# Returns
-- `node_field::Field`: The created node field for the current time step.
-- `node_field_np1::Field`: The created node field for the next time step.
-
-Example:
-```julia
-create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
-```
-"""
-function create_node_field(name::String, type::Type, dof::Int64, default_value::Any = 0)
-
-    return create_field(name * "N", type, "Node_Field", dof, default_value),
-    create_field(name * "NP1", type, "Node_Field", dof, default_value)
-end
-
-function create_node_field(
-    name::String,
-    type::Type,
-    VectorOrArray::String,
-    dof::Int64,
-    default_value::Any = 0,
-)
-    return create_field(name * "N", type, "Node_Field", VectorOrArray, dof, default_value),
-    create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof, default_value)
-end
 """
 fem_active()
 
@@ -467,9 +446,6 @@ Returns if FEM is active (true) or not (false).
 function fem_active()
     return data["fem_option"]
 end
-
-
-
 
 """
     get_active_models()
