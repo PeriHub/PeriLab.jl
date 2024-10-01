@@ -7,7 +7,7 @@ using FastGaussQuadrature
 using Statistics
 include("../Models/Material/material_basis.jl")
 include("../Support/helpers.jl")
-using .Helpers: invert
+using .Helpers: invert, determinant
 function get_FE_material_model(params::Dict, name::String)
     if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
         @error "Material model " *
@@ -243,9 +243,9 @@ function get_Jacobian(
                 end
             end
 
-            determinant_jacobian[id_el, id_int] = det(jacobian[id_el, id_int, :, :])
+            determinant_jacobian[id_el, id_int] = determinant(jacobian[id_el, id_int, :, :])
             if determinant_jacobian[id_el, id_int] <= 0
-                @error "The determinat of the Jacobian is " *
+                @error "The determinant of the Jacobian is " *
                        string(determinant_jacobian[id_el, id_int]) *
                        " in local element $id_el, and must be greater zero."
                 return nothing, nothing

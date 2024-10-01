@@ -302,6 +302,10 @@ function invert(
 
 end
 
+function determinant(A)
+    return det(sinv(A))
+end
+
 function sinv(A)
     if length(A) == 4
         return SMatrix{2,2}(A)

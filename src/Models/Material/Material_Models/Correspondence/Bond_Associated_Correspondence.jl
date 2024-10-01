@@ -8,7 +8,7 @@ using StaticArrays
 include("../../../../Support/helpers.jl")
 include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
-using .Helpers: find_local_neighbors, invert, rotate, fastdot
+using .Helpers: find_local_neighbors, invert, rotate, fastdot, determinant
 using .Geometry:
     compute_strain,
     compute_bond_level_rotation_tensor,

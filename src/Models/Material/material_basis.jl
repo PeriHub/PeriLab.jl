@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 using LinearAlgebra
 using StaticArrays
-
+#include("../../Support/helpers.jl")
+#using .Helpers: determinant
 function get_value(
     datamanager::Module,
     parameter::Union{Dict{Any,Any},Dict{String,Any}},
@@ -140,9 +141,6 @@ function get_all_elastic_moduli(
         datamanager.get_field("Poisson's_Ratio") .= nu
     end
 end
-
-
-
 
 """
     get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
@@ -582,7 +580,7 @@ function compute_Piola_Kirchhoff_stress(
     deformation_gradient::Union{Matrix{Float64},SubArray{Float64}},
 )
     #50% less memory
-    return det(deformation_gradient) .* stress * invert(
+    return determinant(deformation_gradient) .* stress * invert(
         deformation_gradient,
         "Deformation gradient is singular and cannot be inverted.",
     )

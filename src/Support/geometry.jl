@@ -157,7 +157,6 @@ function bond_associated_deformation_gradient(
     bond_damage,
     undeformed_bond,
     deformed_bond,
-    deformation_gradient,
 )
 
     return calculate_deformation_gradient(
@@ -447,7 +446,7 @@ function compute_bond_level_unrotated_rate_of_deformation_and_rotation_tensor_fr
                     (velocity_state[i] - scalar_temp) .* bond_geometry[iID][jID, i] /
                     bond_length[iID][jID]
             end
-            jacobian[iID] = det(deformation_gradient[iID, :, :])
+            jacobian[iID] = determinant(deformation_gradient[iID, :, :])
 
             # Compute the Eulerian velocity gradient L = Fdot * Finv
             eulerian_vel_grad =

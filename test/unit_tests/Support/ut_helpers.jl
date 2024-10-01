@@ -14,6 +14,13 @@ using LinearAlgebra
     @test PeriLab.Solver.Helpers.sinv(zeros(4, 4)) == zeros(4, 4)
 end
 
+@testset "ut_determinant" begin
+    @test PeriLab.Solver.Helpers.determinant(zeros(2, 2)) == 0
+    @test PeriLab.Solver.Helpers.determinant(zeros(3, 3)) == 0
+    @test PeriLab.Solver.Helpers.determinant(zeros(4, 4)) == 0
+    @test PeriLab.Solver.Helpers.determinant(Matrix(I(3))) == det(Matrix(I(3)))
+end
+
 @testset "ut_invert" begin
     # @test isnothing(PeriLab.Solver.Helpers.invert(zeros(Float64, 3, 3)))
     # @test isnothing(PeriLab.Solver.Helpers.invert(zeros(Int64, 3, 3)))
