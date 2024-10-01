@@ -133,11 +133,11 @@ Calculates the specific volume.
 function calculate_specific_volume(
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Union{SubArray,Vector{Vector{Int64}}},
-    volume::SubArray,
-    active::SubArray,
-    specific_volume::SubArray,
+    volume::Vector{Float64},
+    active::Vector{Bool},
+    specific_volume::Vector{Float64},
     dof::Int64,
-    horizon::SubArray,
+    horizon::Vector{Float64},
 )
 
     for iID in nodes

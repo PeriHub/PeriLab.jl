@@ -112,7 +112,7 @@ end
 end
 @testset "ut_Damage_factory_exceptions" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.properties[1] =
+    test_data_manager.data["properties"][1] =
         Dict("Damage Model" => Dict("Damage Model" => "not there"))
     @test isnothing(Damage.init_model(test_data_manager, Vector{Int64}(1:3), 1))
 end

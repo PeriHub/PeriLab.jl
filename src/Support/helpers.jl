@@ -25,15 +25,23 @@ export interpol_data
 export progress_bar
 export invert
 export rotate
+export fastsubtract!
 export fastdot
 
+function fastsubtract!(c, a, b)
+    for i = 1:lastindex(a)
+        for j = 1:lastindex(a[i])
+            c[i][j] = a[i][j] .- b[i][j]
+        end
+    end
+end
 
 function fastdot(a, b)
-    s = 0.0
+    c = 0.0
     @inbounds @simd for i ∈ eachindex(a, b)
-        s += a[i] * b[i]
+        c += a[i] * b[i]
     end
-    s
+    c
 end
 
 
@@ -104,13 +112,13 @@ function find_active(active::Union{Vector{Bool},BitVector})
 end
 
 """
-    get_active_update_nodes(active::SubArray, update_list::SubArray, block_nodes::Dict{Int64,Vector{Int64}}, block::Int64)
+    get_active_update_nodes(active::Vector{Bool}, update_list::Vector{Bool}, block_nodes::Dict{Int64,Vector{Int64}}, block::Int64)
 
 Returns the active nodes and the update nodes.
 
 # Arguments
-- `active::SubArray`: The active vector.
-- `update_list::SubArray`: The update vector.
+- `active::Vector{Bool}`: The active vector.
+- `update_list::Vector{Bool}`: The update vector.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: The vector to search in.
 - `block::Int64`: The block_id.
 # Returns
@@ -118,8 +126,8 @@ Returns the active nodes and the update nodes.
 - `update_nodes::Vector{Int64}`: The nodes of `update` that are true.
 """
 function get_active_update_nodes(
-    active::SubArray,
-    update_list::SubArray,
+    active::Vector{Bool},
+    update_list::Vector{Bool},
     block_nodes::Dict{Int64,Vector{Int64}},
     block::Int64,
 )
@@ -227,16 +235,16 @@ function get_fourth_order(CVoigt, dof::Int64)
 end
 
 """
-    find_inverse_bond_id(nlist::SubArray)
+    find_inverse_bond_id(nlist::Vector{Vector{Int64}})
 
 Finds the inverse of the bond id in the nlist.
 
 # Arguments
-- `nlist::SubArray`: The nlist to find the inverse of.
+- `nlist::Vector{Vector{Int64}}`: The nlist to find the inverse of.
 # Returns
 - `inverse_nlist::Vector{Dict{Int64,Int64}}`: The inverse nlist.
 """
-function find_inverse_bond_id(nlist::SubArray)
+function find_inverse_bond_id(nlist::Vector{Vector{Int64}})
     inverse_nlist = [Dict{Int64,Int64}() for _ in eachindex(nlist)]
     for iID in eachindex(nlist)
         neighbors = nlist[iID]

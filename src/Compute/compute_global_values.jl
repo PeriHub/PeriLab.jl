@@ -97,19 +97,19 @@ function calculate_block(
 end
 
 """
-    global_value_sum(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
+    global_value_sum(field::Union{Vector{Float64},Matrix{Float64}}, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
 Calculate the global sum of a field for given nodes.
 
 # Arguments
-- `field::SubArray`: Field.
+- `field::Union{Vector{Float64},Matrix{Float64}}`: Field.
 - `dof::Union{Int64,Vector{Int64}`: Degree of freedom
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
 function global_value_sum(
-    field::SubArray,
+    field::Union{Vector{Float64},Matrix{Float64},Array{Float64,3}},
     dof::Union{Int64,Vector{Int64}},
     nodes::Union{SubArray,Vector{Int64}},
 )
@@ -122,19 +122,19 @@ function global_value_sum(
 end
 
 """
-    global_value_max(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
+    global_value_max(field::Union{Vector{Float64},Matrix{Float64}}, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
 Calculate the global maximum of a field for given nodes.
 
 # Arguments
-- `field::SubArray`: Field.
+- `field::Union{Vector{Float64},Matrix{Float64}}`: Field.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
 function global_value_max(
-    field::SubArray,
+    field::Union{Vector{Float64},Matrix{Float64}},
     dof::Union{Int64,Vector{Int64}},
     nodes::Union{SubArray,Vector{Int64}},
 )
@@ -143,19 +143,19 @@ function global_value_max(
 end
 
 """
-    global_value_min(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
+    global_value_min(field::Union{Vector{Float64},Matrix{Float64}}, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
 Calculate the global minimum of a field for given nodes.
 
 # Arguments
-- `field::SubArray`: Field.
+- `field::Union{Vector{Float64},Matrix{Float64}}`: Field.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
 function global_value_min(
-    field::SubArray,
+    field::Union{Vector{Float64},Matrix{Float64}},
     dof::Union{Int64,Vector{Int64}},
     nodes::Union{SubArray,Vector{Int64}},
 )
@@ -164,19 +164,19 @@ function global_value_min(
 end
 
 """
-    global_value_avg(field::SubArray, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
+    global_value_avg(field::Union{Vector{Float64},Matrix{Float64}}, dof::Union{Int64,Vector{Int64}}, nodes::Union{SubArray,Vector{Int64}})
 
 Calculate the global average of a field for given nodes.
 
 # Arguments
-- `field::SubArray`: Field.
+- `field::Union{Vector{Float64},Matrix{Float64}}`: Field.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `nodes::Union{SubArray,Vector{Int64}}`: Nodes.
 # Returns
 - `returnValue::Vector`: Global value.
 """
 function global_value_avg(
-    field::SubArray,
+    field::Union{Vector{Float64},Matrix{Float64}},
     dof::Union{Int64,Vector{Int64}},
     nodes::Union{SubArray,Vector{Int64}},
 )

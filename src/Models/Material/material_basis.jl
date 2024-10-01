@@ -265,33 +265,33 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
 end
 
 """
-    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, nlist_filtered_ids::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, displacements::SubArray, bond_norm::SubArray, force_densities::SubArray)
+    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
-- `nlist::SubArray`: The neighbor list.
-- `nlist_filtered_ids::SubArray`:  The filtered neighbor list.
-- `bond_force::SubArray`: The bond forces.
-- `volume::SubArray`: The volumes.
-- `bond_damage::SubArray`: The bond damage.
-- `displacements::SubArray`: The displacements.
-- `bond_norm::SubArray`: The pre defined bond normal.
-- `force_densities::SubArray`: The force densities.
+- `nlist::Vector{Vector{Int64}}`: The neighbor list.
+- `nlist_filtered_ids::Vector{Vector{Int64}},`:  The filtered neighbor list.
+- `bond_force::Vector{Matrix{Float64}}`: The bond forces.
+- `volume::Vector{Float64}`: The volumes.
+- `bond_damage::Vector{Vector{Float64}}`: The bond damage.
+- `displacements::Matrix{Float64}`: The displacements.
+- `bond_norm::Vector{Matrix{Float64}}`: The pre defined bond normal.
+- `force_densities::Matrix{Float64}`: The force densities.
 # Returns
-- `force_densities::SubArray`: The force densities.
+- `force_densities::Matrix{Float64}`: The force densities.
 """
 function distribute_forces(
     nodes::Union{SubArray,Vector{Int64}},
-    nlist::SubArray,
-    nlist_filtered_ids::SubArray,
-    bond_force::SubArray,
-    volume::SubArray,
-    bond_damage::SubArray,
-    displacements::SubArray,
-    bond_norm::SubArray,
-    force_densities::SubArray,
+    nlist::Vector{Vector{Int64}},
+    nlist_filtered_ids::Vector{Vector{Int64}},
+    bond_force::Vector{Matrix{Float64}},
+    volume::Vector{Float64},
+    bond_damage::Vector{Vector{Float64}},
+    displacements::Matrix{Float64},
+    bond_norm::Vector{Matrix{Float64}},
+    force_densities::Matrix{Float64},
 )
 
     for iID in nodes
@@ -326,27 +326,27 @@ function distribute_forces(
 end
 
 """
-    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::SubArray, bond_force::SubArray, volume::SubArray, bond_damage::SubArray, force_densities::SubArray)
+    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
-- `nlist::SubArray`: The neighbor list.
-- `bond_force::SubArray`: The bond forces.
-- `volume::SubArray`: The volumes.
-- `bond_damage::SubArray`: The bond damage.
-- `force_densities::SubArray`: The force densities.
+- `nlist::Vector{Vector{Int64}}`: The neighbor list.
+- `bond_force::Vector{Matrix{Float64}}`: The bond forces.
+- `volume::Vector{Float64}`: The volumes.
+- `bond_damage::Vector{Vector{Float64}}`: The bond damage.
+- `force_densities::Matrix{Float64}`: The force densities.
 # Returns
-- `force_densities::SubArray`: The force densities.
+- `force_densities::Matrix{Float64}`: The force densities.
 """
 function distribute_forces(
     nodes::Union{SubArray,Vector{Int64}},
-    nlist::SubArray,
-    bond_force::SubArray,
-    volume::SubArray,
-    bond_damage::SubArray,
-    force_densities::SubArray,
+    nlist::Vector{Vector{Int64}},
+    bond_force::Vector{Matrix{Float64}},
+    volume::Vector{Float64},
+    bond_damage::Vector{Vector{Float64}},
+    force_densities::Matrix{Float64},
 )
     for iID in nodes
         force_densities[iID, :] .+= transpose(
