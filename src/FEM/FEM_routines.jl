@@ -113,11 +113,11 @@ end
 function get_lumped_mass(
     elements::Vector{Int64},
     dof::Int64,
-    topology::SubArray{Int64},
-    N::SubArray{Float64},
-    determinant_jacobian::SubArray{Float64},
-    rho::SubArray{Float64},
-    lumped_mass::SubArray{Float64},
+    topology::Matrix{Int64},
+    N::Array{Float64,3},
+    determinant_jacobian::Matrix{Float64},
+    rho::Vector{Float64},
+    lumped_mass::Vector{Float64},
 )
     for id_int in eachindex(N[:, 1, 1])
         temp = N[id_int, :, :] * N[id_int, :, :]'
@@ -223,11 +223,11 @@ end
 function get_Jacobian(
     elements::Vector{Int64},
     dof::Int64,
-    topology::SubArray{Int64},
-    coordinates::Union{SubArray{Float64},SubArray{Float64}},
-    B::Union{Array{Float64},SubArray},
-    jacobian::SubArray{Float64},
-    determinant_jacobian::SubArray{Float64},
+    topology::Matrix{Int64},
+    coordinates::Matrix{Float64},
+    B::Array{Float64,3},
+    jacobian::Array{Float64,4},
+    determinant_jacobian::Matrix{Float64},
 )
 
     mapping = Vector{Int64}(1:dof:length(B[1, :, 1]))
@@ -340,8 +340,8 @@ function create_B_matrix(
     elements::Vector{Int64},
     dof::Int64,
     B_elem::Array,
-    jacobian::SubArray,
-    B::SubArray,
+    jacobian::Array{Float64,4},
+    B::Array{Float64,4},
 )
     # size of B (num_elem, num_integration_points, dof*nodes, 3*dof-2)
     nnodes::Int64 = length(B[1, 1, :, 1]) / dof

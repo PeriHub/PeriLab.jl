@@ -134,18 +134,18 @@ function get_block_nodes(block_ids, nnodes)
 end
 
 """
-    set_density(params::Dict, block_nodes::Dict, density::SubArray)
+    set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
 
 Sets the density of the nodes in the dictionary.
 
 # Arguments
 - `params::Dict`: The parameters
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
-- `density::SubArray`: The density
+- `density::Vector{Float64}`: The density
 # Returns
-- `density::SubArray`: The density
+- `density::Vector{Float64}`: The density
 """
-function set_density(params::Dict, block_nodes::Dict, density::SubArray)
+function set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
     for block in eachindex(block_nodes)
         density[block_nodes[block]] .= get_density(params, block)
     end
@@ -153,18 +153,18 @@ function set_density(params::Dict, block_nodes::Dict, density::SubArray)
 end
 
 """
-    set_fem_block(params::Dict, block_nodes::Dict, fem_block::SubArray)
+    set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
 
 Sets the fem_block of the nodes in the dictionary.
 
 # Arguments
 - `params::Dict`: The parameters
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
-- `fem_block::SubArray`: The fem_block
+- `fem_block::Vector{Bool}`: The fem_block
 # Returns
-- `fem_block::SubArray`: The fem_block
+- `fem_block::Vector{Bool}`: The fem_block
 """
-function set_fem_block(params::Dict, block_nodes::Dict, fem_block::SubArray)
+function set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
     for block in eachindex(block_nodes)
         fem_block[block_nodes[block]] .= get_fem_block(params, block)
     end
@@ -172,18 +172,18 @@ function set_fem_block(params::Dict, block_nodes::Dict, fem_block::SubArray)
 end
 
 """
-    set_horizon(params::Dict, block_nodes::Dict, horizon::SubArray)
+    set_horizon(params::Dict, block_nodes::Dict, horizon::Vector{Float64})
 
 Sets the horizon of the nodes in the dictionary.
 
 # Arguments
 - `params::Dict`: The parameters
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
-- `horizon::SubArray`: The horizon
+- `horizon::Vector{Float64}`: The horizon
 # Returns
-- `horizon::SubArray`: The horizon
+- `horizon::Vector{Float64}`: The horizon
 """
-function set_horizon(params::Dict, block_nodes::Dict, horizon::SubArray)
+function set_horizon(params::Dict, block_nodes::Dict, horizon::Vector{Float64})
     for block in eachindex(block_nodes)
         horizon[block_nodes[block]] .= get_horizon(params, block)
     end

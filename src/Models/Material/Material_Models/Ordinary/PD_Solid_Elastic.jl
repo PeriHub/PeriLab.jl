@@ -214,15 +214,15 @@ for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page
 function elastic(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
-    undeformed_bond_length::SubArray,
-    deformed_bond_length::SubArray,
-    bond_damage::SubArray,
+    undeformed_bond_length::Vector{Vector{Float64}},
+    deformed_bond_length::Vector{Vector{Float64}},
+    bond_damage::Vector{Vector{Float64}},
     theta::Vector{Float64},
     weighted_volume::Vector{Float64},
-    omega::SubArray,
+    omega::Vector{Vector{Float64}},
     material::Dict,
-    bond_force_deviatoric_part::SubArray,
-    bond_force_isotropic_part::SubArray,
+    bond_force_deviatoric_part::Vector{Vector{Float64}},
+    bond_force_isotropic_part::Vector{Vector{Float64}},
 )
 
     shear_modulus = material["Shear Modulus"]

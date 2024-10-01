@@ -114,7 +114,7 @@ function compute_model(
     neighbor_bond_force::Vector{Float64} = @SVector zeros(Float64, dof)
     projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
-    relative_displacement_matrix::Matrix{Matrix{Float64}} = deformed_bond .- undeformed_bond
+    relative_displacement_matrix::Vector{Matrix{Float64}} = deformed_bond .- undeformed_bond
     for iID in nodes
         @views nlist_temp = nlist[iID]
 

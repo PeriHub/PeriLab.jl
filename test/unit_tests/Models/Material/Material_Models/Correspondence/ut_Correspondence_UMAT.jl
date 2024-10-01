@@ -209,7 +209,7 @@ end
     NTENS::Int64 = 6
     NSTATEV::Int64 = length(STATEV)
     NPROPS::Int64 = 1
-    PROPS::SubArray = test_data_manager.create_constant_free_size_field(
+    PROPS::Matrix{Float64} = test_data_manager.create_constant_free_size_field(
         "Properties",
         Float64,
         (NPROPS, 1),

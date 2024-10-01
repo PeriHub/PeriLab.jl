@@ -74,42 +74,8 @@ export synch_manager
 ##########################
 # Variables
 ##########################
-global active_models::OrderedDict{String,Module}
-global nnodes::Int64
-global num_controller::Int64
-global num_responder::Int64
-global num_elements::Int64
-global nnsets::Int64
-global dof::Int64
-global fem_option::Bool
-global block_list::Vector{Int64}
-global distribution::Vector{Int64}
-global crit_values_matrix::Array{Float64,3}
-global aniso_crit_values::Dict{Int64,Vector{Float64}}
-global properties::OrderedDict{Int64,OrderedDict{String,Any}}
-global glob_to_loc::Dict{Int64,Int64}
-global fields::Dict{DataType,Dict{String,Any}}
-global field_array_type::Dict{String,Dict{String,Any}}
-global field_types::Dict{String,DataType}
-global fields_to_synch::Dict{String,Any}
-global filedirectory::String
-global inverse_nlist::Vector{Dict{Int64,Int64}}
-global model_modules::OrderedDict{String,Module}
-global nsets::Dict{String,Vector{Int}}
-global overlap_map::Dict{Int64,Any}
-global pre_calculation_order::Vector{String}
-global output_frequency::Vector{Dict}
-global accuracy_order::Int64
-global rank::Int64
-global commMPi::Any
-global cancel::Bool
-global max_rank::Int64
-global silent::Bool
-global rotation::Bool
-global element_rotation::Bool
-global damage_models::Vector{String}
-global material_models::Vector{String}
-global NP1_to_N = Dict{String,String}
+const fields = Dict()
+const data = Dict()
 ##########################
 
 """
@@ -118,73 +84,49 @@ global NP1_to_N = Dict{String,String}
 Initialize all parameter in the datamanager and sets them to the default values.
 """
 function initialize_data()
-    global nnodes
-    nnodes = 0
-    global num_controller
-    num_controller = 0
-    global num_responder
-    num_responder = 0
-    global num_elements
-    num_elements = 0
-    global nnsets
-    nnsets = 0
-    global dof
-    dof = 2
-    global fem_option
-    fem_option = false
-    global block_list
-    block_list = []
-    global distribution
-    distribution = []
-    global crit_values_matrix
-    crit_values_matrix = fill(-1, (1, 1, 1))
-    global aniso_crit_values
-    aniso_crit_values = Dict()
-    global properties = OrderedDict()
-    global glob_to_loc
-    glob_to_loc = Dict()
-    global fields
-    fields = Dict(Int64 => Dict(), Float64 => Dict(), Bool => Dict())
-    global field_array_type
-    field_array_type = Dict()
-    global field_types
-    field_types = Dict()
-    global fields_to_synch
-    fields_to_synch = Dict()
-    global filedirectory
-    filedirectory = ""
-    global inverse_nlist
-    inverser_nlist = []
-
-    global model_modules = OrderedDict{String,Module}()
-    global nsets = Dict()
-    global overlap_map = Dict()
-    global pre_calculation_order = [
+    data["nnodes"] = 0
+    data["num_controller"] = 0
+    data["num_responder"] = 0
+    data["num_elements"] = 0
+    data["nnsets"] = 0
+    data["dof"] = 2
+    data["fem_option"] = false
+    data["block_list"] = []
+    data["distribution"] = []
+    data["crit_values_matrix"] = fill(-1, (1, 1, 1))
+    data["aniso_crit_values"] = Dict()
+    data["properties"] = OrderedDict()
+    data["glob_to_loc"] = Dict()
+    data["field_array_type"] = Dict()
+    data["field_types"] = Dict()
+    data["fields_to_synch"] = Dict()
+    data["filedirectory"] = ""
+    data["inverse_nlist"] = []
+    data["model_modules"] = OrderedDict{String,Module}()
+    data["nsets"] = Dict{String,Vector{Int64}}()
+    data["overlap_map"] = Dict()
+    data["pre_calculation_order"] = [
         "Deformed Bond Geometry",
         "Shape Tensor",
         "Deformation Gradient",
         "Bond Associated Correspondence",
     ]
-    global output_frequency
-    output_frequency = []
-    global accuracy_order
-    accuracy_order = 1
-    global rank
-    rank = 0
-    global cancel
-    cancel = false
-    global max_rank
-    max_rank = 0
-    global silent
-    silent = false
-    global rotation
-    rotation = false
-    global element_rotation
-    element_rotation = false
-    global active_models = OrderedDict{String,Module}()
-    global material_models = []
-    global damage_models = []
-    global NP1_to_N = Dict{String,String}()
+    data["output_frequency"] = []
+    data["accuracy_order"] = 1
+    data["rank"] = 0
+    data["cancel"] = false
+    data["max_rank"] = 0
+    data["silent"] = false
+    data["rotation"] = false
+    data["element_rotation"] = false
+    data["active_models"] = OrderedDict{String,Module}()
+    data["material_models"] = []
+    data["damage_models"] = []
+    data["NP1_to_N"] = Dict{String,String}()
+
+    fields[Int64] = Dict()
+    fields[Float64] = Dict()
+    fields[Bool] = Dict()
 end
 ###################################
 
@@ -199,9 +141,8 @@ Add the main modules to an OrderedDict which are active.
 - `active_module::Module`: Module of the active models.
 """
 function add_active_model(key::String, active_module::Module)
-    global active_models
-    if !(key in keys(active_models))
-        active_models[key] = active_module
+    if !(key in keys(data["active_models"]))
+        data["active_models"][key] = active_module
     end
 end
 
@@ -215,8 +156,7 @@ Returns the accuracy order for the "bond associated correspondence" implementati
 - `value::Int64`: The value of the accuracy_order.
 """
 function get_accuracy_order()
-    global accuracy_order
-    return accuracy_order
+    return data["accuracy_order"]
 end
 
 """
@@ -225,13 +165,11 @@ end
 Get the MPI communicator
 """
 function get_comm()
-    global commMPi
-    return commMPi
+    return data["commMPi"]
 end
 
 function get_directory()
-    global filedirectory
-    return filedirectory
+    return data["filedirectory"]
 end
 
 """
@@ -243,7 +181,7 @@ Set the MPI communicator
 - `comm::MPI.Comm`: MPI communicator
 """
 function set_comm(comm::MPI.Comm)
-    global commMPi = comm
+    data["commMPi"] = comm
 end
 
 """
@@ -258,9 +196,8 @@ Checks if the specified `property` exists for the given `block_id`.
 - `Bool`: `true` if the property exists, `false` otherwise.
 """
 function check_property(block_id::Int64, property::String)
-    global properties
-
-    haskey(properties[block_id], property) && !isempty(properties[block_id][property])
+    haskey(data["properties"][block_id], property) &&
+        !isempty(data["properties"][block_id][property])
 end
 
 """
@@ -324,7 +261,7 @@ Example:
 ```julia
 create_constant_bond_field("density", Float64, 1)  # creates a density constant bond field
 ```
-   """
+"""
 function create_constant_bond_field(
     name::String,
     type::Type,
@@ -356,22 +293,18 @@ function create_field(name::String, vartype::Type, dof::Tuple)
     if !haskey(fields, vartype)
         fields[vartype] = Dict{String,Any}()
     end
-    if name in get_all_field_keys()
+    if has_key(name)
         if size(get_field(name)) != dof
             @warn "Field $name exists already with different size. Predefined field is returned"
         end
         return get_field(name)
     end
     fields[vartype][name] = Array{vartype}(zeros(dof))
-    field_types[name] = vartype
-    code::String =
-        "view(fields[$vartype][\"$name\"]" *
-        join(repeat(", :", length(size(fields[vartype][name])))) *
-        ")"
-    get_function() = eval(Meta.parse(code))
-    field_array_type[name] =
-        Dict("Type" => "Field", "Dof" => dof, "get_function" => get_function())
-    return get_field(name)
+    data["field_types"][name] = vartype
+    get_function = () -> fields[vartype][name]
+    data["field_array_type"][name] =
+        Dict("Type" => "Field", "Dof" => dof, "get_function" => get_function)
+    return get_function()
 end
 
 """
@@ -443,19 +376,14 @@ function create_field(
     dof::Int64,
     default_value::Union{Int64,Float64,Bool},
 )
-    global nnodes
-    global fields
-    global field_array_type
-    global field_types
-
     field_dof = dof
     get_function = nothing
 
-    if !haskey(fields, vartype)
-        fields[vartype] = Dict{String,Any}()
-    end
-    if name in get_all_field_keys()
-        if size(get_field(name))[1] != nnodes
+    # if !haskey(fields, vartype)
+    #     fields[vartype] = Dict{String,Any}()
+    # end
+    if has_key(name)
+        if size(get_field(name))[1] != data["nnodes"]
             @warn "Field $name exists already with different size. Predefined field is returned"
         end
         return get_field(name)
@@ -465,40 +393,36 @@ function create_field(
     end
     if bond_or_node == "Node_Field"
         if dof == 1
-            fields[vartype][name] = fill(vartype(default_value), nnodes)
-            get_function = () -> view(fields[vartype][name], :)
+            fields[vartype][name] = fill(vartype(default_value), data["nnodes"])
+            get_function = () -> fields[vartype][name]
         else
-            fields[vartype][name] = fill(vartype(default_value), nnodes, field_dof)
+            fields[vartype][name] = fill(vartype(default_value), data["nnodes"], field_dof)
             if VectorOrArray == "Matrix"
-                get_function =
-                    () -> view(reshape(fields[vartype][name], (:, dof, dof)), :, :, :)
+                get_function = () -> reshape(fields[vartype][name], (:, dof, dof))
             else
-                get_function = () -> view(fields[vartype][name], :, :)
+                get_function = () -> fields[vartype][name]
             end
         end
     elseif bond_or_node == "Bond_Field"
         nBonds = get_field("Number of Neighbors")
         if dof == 1
             fields[vartype][name] = fill.(vartype(default_value), nBonds)
-            get_function = () -> view(fields[vartype][name], :)
+            get_function = () -> fields[vartype][name]
         else
             fields[vartype][name] =
                 [fill(vartype(default_value), (n, field_dof)) for n in nBonds]
             if VectorOrArray == "Matrix"
                 get_function =
-                    () -> view(
-                        [reshape(field, (:, dof, dof)) for field in fields[vartype][name]],
-                        :,
-                    )
+                    () -> [reshape(field, (:, dof, dof)) for field in fields[vartype][name]]
             else
-                get_function = () -> view(fields[vartype][name], :, :)
+                get_function = () -> fields[vartype][name]
             end
         end
     end
-    field_types[name] = vartype
-    field_array_type[name] =
-        Dict("Type" => VectorOrArray, "Dof" => dof, "get_function" => get_function())
-    return get_field(name)
+    data["field_types"][name] = vartype
+    data["field_array_type"][name] =
+        Dict("Type" => VectorOrArray, "Dof" => dof, "get_function" => get_function)
+    return get_function()
 end
 """
     create_node_field(name::String, type::Type, dof::Int64)
@@ -536,12 +460,12 @@ function create_node_field(
     create_field(name * "NP1", type, "Node_Field", VectorOrArray, dof, default_value)
 end
 """
-   fem_active()
+fem_active()
 
 Returns if FEM is active (true) or not (false).
 """
 function fem_active()
-    return fem_option
+    return data["fem_option"]
 end
 
 
@@ -553,8 +477,7 @@ end
 Returns a list active model modules.
 """
 function get_active_models()
-    global active_models
-    return active_models
+    return data["active_models"]
 end
 
 """
@@ -563,8 +486,7 @@ end
 Returns a list of all field keys.
 """
 function get_all_field_keys()
-    global field_types
-    return keys(field_types)
+    return keys(data["field_types"])
 end
 
 """
@@ -573,8 +495,7 @@ end
 Control if a key exists.
 """
 function has_key(field_name::String)
-    global field_types
-    return haskey(field_types, field_name)
+    return haskey(data["field_types"], field_name)
 end
 
 """
@@ -583,8 +504,7 @@ end
 Returns a list of all block IDs.
 """
 function get_block_list()
-    global block_list
-    return block_list
+    return data["block_list"]
 end
 
 """
@@ -593,8 +513,7 @@ end
 Retrieves the critical values matrix.
 """
 function get_crit_values_matrix()
-    global crit_values_matrix
-    return crit_values_matrix
+    return data["crit_values_matrix"]
 end
 
 """
@@ -603,8 +522,7 @@ end
 Retrieves the critical values matrix.
 """
 function get_aniso_crit_values()
-    global aniso_crit_values
-    return aniso_crit_values
+    return data["aniso_crit_values"]
 end
 
 """
@@ -621,8 +539,7 @@ get_dof()  # returns the current degree of freedom
 ```
 """
 function get_dof()
-    global dof
-    return dof
+    return data["dof"]
 end
 
 """
@@ -657,10 +574,8 @@ Returns the field with the given name.
 - `field::Field`: The field with the given name.
 """
 function get_field(name::String, throw_error::Bool = true)
-    global field_array_type
-
-    if name in get_all_field_keys()
-        return field_array_type[name]["get_function"]
+    if has_key(name)
+        return data["field_array_type"][name]["get_function"]()
     end
     if throw_error
         @error "Field ''" *
@@ -709,13 +624,11 @@ Get the type of a field
 - `get_field_type` (string): returns the type of a field
 """
 function get_field_type(name::String)
-    global field_types
-
-    if !haskey(field_types, name)
+    if !haskey(data["field_types"], name)
         @error "Field ''" * name * "'' does not exist."
         return nothing
     end
-    return field_types[name]
+    return data["field_types"][name]
 end
 
 """
@@ -724,8 +637,7 @@ end
 Get the inverse of the neighborhood list.
 """
 function get_inverse_nlist()
-    global inverse_nlist
-    return inverse_nlist
+    return data["inverse_nlist"]
 end
 
 """
@@ -742,18 +654,15 @@ get_local_nodes()  # returns local nodes or if they do not exist at the core an 
 ```
 """
 function get_local_nodes(global_nodes)
-    global glob_to_loc
-
     return [
-        glob_to_loc[global_node] for
-        global_node in global_nodes if global_node in keys(glob_to_loc)
+        data["glob_to_loc"][global_node] for
+        global_node in global_nodes if global_node in keys(data["glob_to_loc"])
     ]
 
 end
 
 function get_model_module(entry::Union{String,SubString})
-    global model_modules
-    return model_modules[entry]
+    return data["model_modules"][entry]
 end
 
 """
@@ -788,8 +697,7 @@ get_nnodes()  # returns the current number of controler nodes. The neighbors are
 ```
 """
 function get_nnodes()
-    global num_controller
-    return num_controller
+    return data["num_controller"]
 end
 
 """
@@ -798,16 +706,15 @@ end
 Get the NP1 to N dictionary
 """
 function get_NP1_to_N_Dict(nstep)
-    global NP1_to_N
 
     if nstep == 1
         for key in get_all_field_keys()
             if occursin("NP1", key)
-                NP1_to_N[key] = key[1:end-2]
+                data["NP1_to_N"][key] = key[1:end-2]
             end
         end
     end
-    return NP1_to_N
+    return data["NP1_to_N"]
 end
 
 """
@@ -819,8 +726,7 @@ Get the number of node sets.
 - `nnsets::Int`: The number of node sets.
 """
 function get_nnsets()
-    global nnsets
-    return nnsets
+    return data["nnsets"]
 end
 
 """
@@ -832,8 +738,7 @@ Get the node sets
 - `nsets::Dict{String,Vector{Int64}}`: The node sets dictionary.
 """
 function get_nsets()
-    global nsets
-    return nsets
+    return data["nsets"]
 end
 
 """
@@ -845,8 +750,7 @@ Get the the number of finite elements
 - `get_num_elements::Int64`: The number of finite elements
 """
 function get_num_elements()
-    global num_elements
-    return num_elements
+    return data["num_elements"]
 end
 
 """
@@ -858,8 +762,7 @@ Get the the number of responder nodes
 - `num_responder::Int64`: The number of responder nodes
 """
 function get_num_responder()
-    global num_responder
-    return num_responder
+    return data["num_responder"]
 end
 
 """
@@ -868,8 +771,7 @@ end
 Get the overlap map
 """
 function get_overlap_map()
-    global overlap_map
-    return overlap_map
+    return data["overlap_map"]
 end
 
 """
@@ -878,8 +780,7 @@ end
 Get the fields to synchronize
 """
 function get_synch_fields()
-    global fields_to_synch
-    return fields_to_synch
+    return data["fields_to_synch"]
 end
 
 """
@@ -888,9 +789,7 @@ end
 return the order of the pre calculation.
 """
 function get_pre_calculation_order()
-    global pre_calculation_order
-
-    return pre_calculation_order
+    return data["pre_calculation_order"]
 end
 
 """
@@ -920,10 +819,8 @@ color_value = get_properties(1, "color")  # Returns "red"
 non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
 """
 function get_properties(block_id::Int64, property::String)
-    global properties
-
     if check_property(block_id, property)
-        return properties[block_id][property]
+        return data["properties"][block_id][property]
     end
     return Dict()
 end
@@ -946,11 +843,9 @@ This function retrieves a specific `value_name` associated with a specified `pro
 
 """
 function get_property(block_id::Int64, property::String, value_name::String)
-    global properties
-
     if check_property(block_id, property) &&
-       haskey(properties[block_id][property], value_name)
-        return properties[block_id][property][value_name]
+       haskey(data["properties"][block_id][property], value_name)
+        return data["properties"][block_id][property][value_name]
     end
     return nothing
 end
@@ -968,8 +863,7 @@ This function returns the rank of the core.
 current_rank = get_rank()
 """
 function get_rank()
-    global rank
-    return rank
+    return data["rank"]
 end
 
 """
@@ -985,8 +879,7 @@ This function returns the maximal rank of MPI the `max_rank`.
 rank = get_max_rank()
 """
 function get_max_rank()
-    global max_rank
-    return max_rank
+    return data["max_rank"]
 end
 
 """
@@ -998,8 +891,7 @@ This function returns the `cancel` flag.
 - `cancel`::Bool: The value of the `cancel` variable.
 """
 function get_cancel()
-    global cancel
-    return cancel
+    return data["cancel"]
 end
 
 """
@@ -1011,8 +903,7 @@ This function returns the `silent` flag.
 - `silent`::Bool: The value of the `silent` variable.
 """
 function get_silent()
-    global silent
-    return silent
+    return data["silent"]
 end
 
 """
@@ -1024,8 +915,7 @@ This function returns the `rotation` flag.
 - `rotation`::Bool: The value of the `rotation` variable.
 """
 function get_rotation()
-    global rotation
-    return rotation
+    return data["rotation"]
 end
 
 """
@@ -1037,8 +927,7 @@ This function returns the `element_rotation` flag.
 - `element_rotation`::Bool: The value of the `element_rotation` variable.
 """
 function get_element_rotation()
-    global element_rotation
-    return element_rotation
+    return data["element_rotation"]
 end
 
 """
@@ -1050,8 +939,7 @@ This function returns the `output_frequency` variable.
 - `output_frequency`::Any: The value of the `output_frequency` variable.
 """
 function get_output_frequency()
-    global output_frequency
-    return output_frequency
+    return data["output_frequency"]
 end
 
 """
@@ -1063,8 +951,7 @@ This function returns the `damage_models` variable.
 - `damage_models`::Any: The value of the `damage_models` variable.
 """
 function get_damage_models()
-    global damage_models
-    return damage_models
+    return data["damage_models"]
 end
 
 """
@@ -1076,8 +963,7 @@ This function returns the `material_models` variable.
 - `material_models`::Any: The value of the `material_models` variable.
 """
 function get_material_models()
-    global material_models
-    return material_models
+    return data["material_models"]
 end
 
 """
@@ -1094,8 +980,7 @@ loc_to_glob(1:10)  # converts the local index to the global index
 ```
 """
 function loc_to_glob(range::UnitRange{Int64})
-    global distribution
-    return distribution[range]
+    return data["distribution"][range]
 end
 
 """
@@ -1107,11 +992,10 @@ This function initializes the properties dictionary. Order of dictionary defines
 - `keys(properties[1])`: The keys of the properties dictionary in defined order for the Model_Factory.jl.
 """
 function init_properties()
-    global properties
 
     block_list = get_block_list()
     for iblock in block_list
-        properties[iblock] = OrderedDict{String,Dict}(
+        data["properties"][iblock] = OrderedDict{String,Dict}(
             "Additive Model" => Dict{String,Any}(),
             "Damage Model" => Dict{String,Any}(),
             "Pre Calculation Model" => Dict{String,Any}(),
@@ -1120,7 +1004,7 @@ function init_properties()
             "Material Model" => Dict{String,Any}(),
         )
     end
-    return collect(keys(properties[block_list[1]]))
+    return collect(keys(data["properties"][block_list[1]]))
 end
 
 """
@@ -1132,8 +1016,7 @@ Removes main modules from OrderedDict.
 - `key::String`: Key of the entry.
 """
 function remove_active_model(key::String)
-    global active_models
-    delete!(active_models, key)
+    delete!(data["active_models"], key)
 end
 
 """
@@ -1149,7 +1032,7 @@ function set_accuracy_order(value::Int64)
         @error "Accuracy order must be greater than zero."
         return nothing
     end
-    global accuracy_order = value
+    data["accuracy_order"] = value
 end
 
 
@@ -1162,7 +1045,7 @@ Sets the block list globally.
 - `blocks::Union{SubArray,Vector{Int64}}`: The block list.
 """
 function set_block_list(blocks::Union{SubArray,Vector{Int64}})
-    global block_list = sort!(unique(blocks))
+    data["block_list"] = sort!(unique(blocks))
 end
 
 """
@@ -1174,7 +1057,7 @@ Sets the critical values matrix globally.
 - `crit_values::Array{Float64,3}`: The critical values matrix.
 """
 function set_crit_values_matrix(crit_values::Array{Float64,3})
-    global crit_values_matrix = crit_values
+    data["crit_values_matrix"] = crit_values
 end
 
 
@@ -1187,11 +1070,11 @@ Sets the anisotropic critical values globally.
 - `crit_values::Dict{Int64,Any}`: The critical values.
 """
 function set_aniso_crit_values(crit_values::Dict{Int64,Any})
-    global aniso_crit_values = crit_values
+    data["aniso_crit_values"] = crit_values
 end
 
 function set_directory(directory::String)
-    global filedirectory = directory
+    data["filedirectory"] = directory
 end
 
 """
@@ -1203,7 +1086,7 @@ Sets the distribution globally.
 - `values::Vector{Int64}`: The distribution.
 """
 function set_distribution(values::Vector{Int64})
-    global distribution = values
+    data["distribution"] = values
 end
 
 """
@@ -1220,7 +1103,7 @@ set_dof(3)  # sets the degree of freedom to 3
 ```
 """
 function set_dof(n::Int64)
-    global dof = n
+    data["dof"] = n
 end
 
 """
@@ -1240,7 +1123,7 @@ function set_fem(value::Bool)
     if value
         @info "FEM is enabled"
     end
-    global fem_option = value
+    data["fem_option"] = value
 end
 
 """
@@ -1257,7 +1140,7 @@ set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping dict
 ```
 """
 function set_glob_to_loc(dict::Dict)
-    global glob_to_loc = dict
+    data["glob_to_loc"] = dict
 end
 
 """
@@ -1269,7 +1152,7 @@ Sets the inverse nlist globally.
 - `inv_nlist::Vector{Dict{Int64,Int64}}`: The inverse nlist.
 """
 function set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
-    global inverse_nlist = inv_nlist
+    data["inverse_nlist"] = inv_nlist
 end
 
 """
@@ -1283,9 +1166,9 @@ Example:
 ```
 """
 function set_nnodes()
-    global num_controller
-    global num_responder
-    global nnodes = num_controller + num_responder
+    data["num_controller"]
+    data["num_responder"]
+    data["nnodes"] = data["num_controller"] + data["num_responder"]
 end
 
 """
@@ -1302,7 +1185,7 @@ set_num_controller(10)  # sets the number of nodes to 10
 ```
 """
 function set_num_controller(n::Int64)
-    global num_controller = n
+    data["num_controller"] = n
     set_nnodes()
 end
 
@@ -1316,7 +1199,7 @@ Set the number of node sets.
 """
 function set_nnsets(n::Int64)
 
-    global nnsets = n
+    data["nnsets"] = n
 end
 
 """
@@ -1328,14 +1211,12 @@ Set the nodes associated with a named node set.
 - `nodes::Vector{Int}`: The node indices associated with the node set.
 """
 function set_nset(name::String, nodes::Vector{Int64})
-    global nsets
-
-    if name in keys(nsets)
+    if name in keys(data["nsets"])
         @warn "Node set " * name * " already defined and it is overwritten"
     end
-    nsets[name] = nodes
+    data["nsets"][name] = nodes
     # set the number of node sets
-    set_nnsets(length(nsets))
+    set_nnsets(length(data["nsets"]))
 end
 
 """
@@ -1357,7 +1238,7 @@ function set_num_elements(n::Int64)
         @error "Number of elements must be positive or zero."
         return nothing
     end
-    global num_elements = n
+    data["num_elements"] = n
 end
 
 """
@@ -1374,7 +1255,7 @@ set_num_responder(10)  # sets the number of responder nodes to 10
 ```
 """
 function set_num_responder(n::Int64)
-    global num_responder = n
+    data["num_responder"] = n
     set_nnodes()
 end
 
@@ -1387,7 +1268,7 @@ Sets the overlap map globally.
 - `topo`: The overlap map.
 """
 function set_overlap_map(topo)
-    global overlap_map = topo
+    data["overlap_map"] = topo
 end
 
 """
@@ -1399,7 +1280,7 @@ Sets the order of the pre calculation options globally.
 - `values::Vector{String}`: The order of models.
 """
 function set_pre_calculation_order(values::Vector{String})
-    global pre_calculation_order = values
+    data["pre_calculation_order"] = values
 end
 
 """
@@ -1414,14 +1295,12 @@ Sets the value of a specified `property` for a given `block_id`.
 - `value`::Any: The value to set for the specified `value_name`.
 """
 function set_property(block_id::Int64, property::String, value_name::String, value)
-    global properties
-    properties[block_id][property][value_name] = value
+    data["properties"][block_id][property][value_name] = value
 end
 
 function set_property(property::String, value_name::String, value)
-    global properties
-    for block_id in eachindex(properties)
-        properties[block_id][property][value_name] = value
+    for block_id in eachindex(data["properties"])
+        data["properties"][block_id][property][value_name] = value
     end
 end
 
@@ -1437,8 +1316,7 @@ Sets the values of a specified `property` for a given `block_id`.
 - `values`::Any: The values to set for the specified `property`.
 """
 function set_properties(block_id, property, values)
-    global properties
-    properties[block_id][property] = values
+    data["properties"][block_id][property] = values
 end
 
 """
@@ -1451,9 +1329,8 @@ Sets the values of a specified `property` for a all `blocks`. E.g. for FEM, beca
 - `values`::Any: The values to set for the specified `property`.
 """
 function set_properties(property, values)
-    global properties
-    for id in eachindex(properties)
-        properties[id][property] = values
+    for id in eachindex(data["properties"])
+        data["properties"][id][property] = values
     end
 end
 
@@ -1466,12 +1343,12 @@ Sets the rank globally.
 - `value::Int64`: The value to set as the rank.
 """
 function set_rank(value::Int64)
-    global rank = value
+    data["rank"] = value
 end
 
 
 function set_model_module(entry::Union{String,SubString}, mod::Module)
-    global model_modules[entry] = mod
+    data["model_modules"][entry] = mod
 end
 
 """
@@ -1483,7 +1360,7 @@ Sets the maximum rank globally.
 - `value::Int64`: The value to set as the maximum rank.
 """
 function set_max_rank(value::Int64)
-    global max_rank = value
+    data["max_rank"] = value
 end
 
 """
@@ -1495,7 +1372,7 @@ Sets the cancel flag.
 - `value::Bool`: The cancel flag.
 """
 function set_cancel(value::Bool)
-    global cancel = value
+    data["cancel"] = value
 end
 
 """
@@ -1507,7 +1384,7 @@ Sets the silent flag.
 - `value::Bool`: The silent flag.
 """
 function set_silent(value::Bool)
-    global silent = value
+    data["silent"] = value
 end
 
 """
@@ -1519,7 +1396,7 @@ Sets the rotation flag.
 - `value::Bool`: The rotation flag.
 """
 function set_rotation(value::Bool)
-    global rotation = value
+    data["rotation"] = value
 end
 
 """
@@ -1531,7 +1408,7 @@ Sets the element_rotation flag.
 - `value::Bool`: The element_rotation flag.
 """
 function set_element_rotation(value::Bool)
-    global element_rotation = value
+    data["element_rotation"] = value
 end
 
 """
@@ -1543,7 +1420,7 @@ Sets the output frequency globally.
 - `value`: The value to set as the output frequency.
 """
 function set_output_frequency(value)
-    global output_frequency = value
+    data["output_frequency"] = value
 end
 
 """
@@ -1555,9 +1432,8 @@ Sets the damage models globally.
 - `value`: The value to set as the damage models.
 """
 function set_damage_models(value)
-    global damage_models
-    if !(value in damage_models)
-        push!(damage_models, value)
+    if !(value in data["damage_models"])
+        push!(data["damage_models"], value)
     end
 end
 
@@ -1570,9 +1446,8 @@ Sets the material models globally.
 - `value`: The value to set as the material models.
 """
 function set_material_models(value)
-    global material_models
-    if !(value in material_models)
-        push!(material_models, value)
+    if !(value in data["material_models"])
+        push!(data["material_models"], value)
     end
 end
 
@@ -1587,13 +1462,12 @@ Sets the synchronization dictionary globally.
 - `upload_to_cores`::Bool: Whether to upload the field to the cores.
 """
 function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
-    global fields_to_synch
     if name in get_all_field_keys()
         field = get_field(name)
         if dof == 0
             dof = length(field[1, :])
         end
-        fields_to_synch[name] = Dict{String,Any}(
+        data["fields_to_synch"][name] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,
             "dof" => dof,
@@ -1603,7 +1477,7 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         if dof == 0
             dof = length(field[1, :])
         end
-        fields_to_synch[name*"NP1"] = Dict{String,Any}(
+        data["fields_to_synch"][name*"NP1"] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,
             "dof" => length(field[1, :]),
@@ -1618,12 +1492,9 @@ end
 Switches the fields from NP1 to N.
 """
 function switch_NP1_to_N(nstep::Int64)
-    global field_types
-    global field_array_type
-
     NP1_to_N = get_NP1_to_N_Dict(nstep)
     for NP1 in keys(NP1_to_N)
-        if field_array_type[NP1]["Type"] == "Matrix"
+        if data["field_array_type"][NP1]["Type"] == "Matrix"
             field_NP1 = get_field(NP1)
             N = NP1_to_N[NP1]
             field_N = get_field(N)
@@ -1635,14 +1506,14 @@ function switch_NP1_to_N(nstep::Int64)
 
         if size(field_NP1[1]) == () # vector
             copyto!(field_N, field_NP1)
-            fill!(field_NP1, field_types[NP1](0))
+            fill!(field_NP1, data["field_types"][NP1](0))
         else # matrix
             value = 0
             for fieldID in eachindex(field_NP1)
                 copyto!(field_N[fieldID], field_NP1[fieldID])
                 if "Bond DamageNP1" != NP1
                     # value = 1
-                    fill!(field_NP1[fieldID], field_types[NP1](value))
+                    fill!(field_NP1[fieldID], data["field_types"][NP1](value))
                 end
             end
         end
@@ -1659,14 +1530,12 @@ Synchronises the fields.
 - `direction::String`: The direction of the synchronisation.
 """
 function synch_manager(synchronise_field, direction::String)
-    global overlap_map
-
     synch_fields = get_synch_fields()
     for synch_field in keys(synch_fields)
         synchronise_field(
             get_comm(),
             synch_fields,
-            overlap_map,
+            data["overlap_map"],
             get_field,
             synch_field,
             direction,

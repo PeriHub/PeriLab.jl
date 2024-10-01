@@ -114,7 +114,7 @@ function get_zero_energy_mode_force(
 end
 
 """
-    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Vector{Float64}, Kinv::SubArray, zStiff::SubArray, rotation::Bool)
+    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Vector{Float64}, Kinv::Array{Float64, 3}, zStiff::Array{Float64, 3}, rotation::Bool)
 
 Creates the zero energy mode stiffness
 
@@ -123,8 +123,8 @@ Creates the zero energy mode stiffness
 - `dof::Int64`: The degree of freedom
 - `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
 - `angles::Vector{Float64}`: The angles
-- `Kinv::SubArray`: The inverse shape tensor
-- `zStiff::SubArray`: The zero energy stiffness
+- `Kinv::Array{Float64, 3}`: The inverse shape tensor
+- `zStiff::Array{Float64, 3}`: The zero energy stiffness
 - `rotation::Bool`: The rotation
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
@@ -133,9 +133,9 @@ function create_zero_energy_mode_stiffness(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
     CVoigt::Union{MMatrix,Matrix{Float64}},
-    angles::Union{SubArray,Nothing},
-    Kinv::SubArray,
-    zStiff::SubArray,
+    angles::Union{Matrix{Float64},Nothing},
+    Kinv::Array{Float64,3},
+    zStiff::Array{Float64,3},
     rotation::Bool,
 )
     if rotation
@@ -153,8 +153,8 @@ Creates the zero energy mode stiffness
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
 - `dof::Int64`: The degree of freedom
 - `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
-- `Kinv::SubArray`: The inverse shape tensor
-- `zStiff::SubArray`: The zero energy stiffness
+- `Kinv::Array{Float64, 3}`: The inverse shape tensor
+- `zStiff::Array{Float64, 3}`: The zero energy stiffness
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
@@ -162,8 +162,8 @@ function create_zero_energy_mode_stiffness(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
     CVoigt::Union{MMatrix,Matrix{Float64}},
-    Kinv::SubArray,
-    zStiff::SubArray,
+    Kinv::Array{Float64,3},
+    zStiff::Array{Float64,3},
 )
 
     for iID in nodes
@@ -187,8 +187,8 @@ Creates the zero energy mode stiffness, based on the UMAT interface
 - `ID::Int64` : ID of the node
 - `dof::Int64`: The degree of freedom
 - `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
-- `Kinv::SubArray`: The inverse shape tensor
-- `zStiff::SubArray`: The zero energy stiffness
+- `Kinv::Array{Float64, 3}`: The inverse shape tensor
+- `zStiff::Array{Float64, 3}`: The zero energy stiffness
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
@@ -196,8 +196,8 @@ function global_zero_energy_mode_stiffness(
     ID::Int64,
     dof::Int64,
     C,
-    Kinv::SubArray,
-    zStiff::SubArray,
+    Kinv::Array{Float64,3},
+    zStiff::Array{Float64,3},
 )
     Kinv_ID = @view Kinv[ID, :, :]
 
@@ -210,7 +210,7 @@ function global_zero_energy_mode_stiffness(
 end
 
 """
-    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::SubArray, Kinv::SubArray, zStiff::SubArray)
+    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Matrix{Float64}, Kinv::Array{Float64, 3}, zStiff::Array{Float64, 3})
 
 Creates the zero energy mode stiffness
 
@@ -218,9 +218,9 @@ Creates the zero energy mode stiffness
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes
 - `dof::Int64`: The degree of freedom
 - `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
-- `angles::SubArray`: The angles
-- `Kinv::SubArray`: The inverse shape tensor
-- `zStiff::SubArray`: The zero energy stiffness
+- `angles::Matrix{Float64}`: The angles
+- `Kinv::Array{Float64, 3}`: The inverse shape tensor
+- `zStiff::Array{Float64, 3}`: The zero energy stiffness
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
@@ -228,9 +228,9 @@ function create_zero_energy_mode_stiffness(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
     CVoigt::Union{MMatrix,Matrix{Float64}},
-    angles::SubArray,
-    Kinv::SubArray,
-    zStiff::SubArray,
+    angles::Matrix{Float64},
+    Kinv::Array{Float64,3},
+    zStiff::Array{Float64,3},
 )
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes

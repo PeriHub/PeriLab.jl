@@ -139,10 +139,10 @@ end
 function compute_weighted_volume(
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Union{Vector{Vector{Int64}},SubArray},
-    volume::SubArray,
-    bond_damage::SubArray,
-    omega::SubArray,
-    weighted_volume::SubArray,
+    volume::Vector{Float64},
+    bond_damage::Vector{Vector{Float64}},
+    omega::Vector{Vector{Float64}},
+    weighted_volume::Vector{Float64},
 )
     for iID in nodes
         weighted_volume[iID] =
