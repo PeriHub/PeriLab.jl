@@ -25,15 +25,31 @@ export interpol_data
 export progress_bar
 export invert
 export rotate
+export fastadd!
 export fastdot
+export fastdot!
 
+function fastadd!(c, a, b)
+    for i = 1:lastindex(a)
+        for j = 1:lastindex(a[i])
+            c[i][j] = a[i][j] .+ b[i][j]
+        end
+    end
+end
 
 function fastdot(a, b)
-    s = 0.0
+    c = 0.0
     @inbounds @simd for i ∈ eachindex(a, b)
-        s += a[i] * b[i]
+        c += a[i] * b[i]
     end
-    s
+    c
+end
+
+function fastdot!(c, a, b)
+    c = 0.0
+    @inbounds @simd for i ∈ eachindex(a, b)
+        c += a[i] * b[i]
+    end
 end
 
 

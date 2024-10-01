@@ -8,7 +8,7 @@ include("../../Support/geometry.jl")
 include("../../Support/helpers.jl")
 using .Material
 using .Geometry
-using .Helpers: rotate, fastdot
+using .Helpers: rotate, fastdot, fastdot!, fastadd!
 using LinearAlgebra
 using StaticArrays
 export compute_model
@@ -72,6 +72,7 @@ function compute_model(
     bond_forces = datamanager.get_field("Bond Forces")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
+    bond_displacements = datamanager.get_field("Bond Displacements")
     critical_field = datamanager.has_key("Critical_Value")
     critical_energy =
         critical_field ? datamanager.get_field("Critical_Value") :
@@ -114,13 +115,11 @@ function compute_model(
     neighbor_bond_force::Vector{Float64} = @SVector zeros(Float64, dof)
     projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
 
-    relative_displacement_matrix::Vector{Matrix{Float64}} = deformed_bond .- undeformed_bond
+    fastadd!(bond_displacements, undeformed_bond, deformed_bond)
     for iID in nodes
-        @views nlist_temp = nlist[iID]
-
-        for jID in eachindex(nlist_temp)
-            @views relative_displacement = relative_displacement_matrix[iID][jID, :]
-            @views norm_displacement = fastdot(relative_displacement, relative_displacement)
+        for jID in eachindex(nlist[iID])
+            @views relative_displacement = bond_displacements[iID][jID, :]
+            fastdot!(norm_displacement, relative_displacement, relative_displacement)
             if norm_displacement == 0 || (
                 tension &&
                 deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
@@ -274,6 +273,7 @@ function init_model(
 )
 
     quad_horizon = datamanager.create_constant_node_field("Quad Horizon", Float64, 1)
+    datamanager.create_constant_bond_field("Bond Displacements", Float64, 2)
     horizon = datamanager.get_field("Horizon")
     dof = datamanager.get_dof()
     thickness::Float64 = get(damage_parameter, "Thickness", 1)
