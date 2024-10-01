@@ -9,9 +9,9 @@ using LinearAlgebra
 #using .PeriLab
 
 @testset "ut_sinv" begin
-    @test PeriLab.Solver.Helpers.sinv(zeros(2, 2)) == zeros(2, 2)
-    @test PeriLab.Solver.Helpers.sinv(zeros(3, 3)) == zeros(3, 3)
-    @test PeriLab.Solver.Helpers.sinv(zeros(4, 4)) == zeros(4, 4)
+    @test PeriLab.Solver.Helpers.smat(zeros(2, 2)) == zeros(2, 2)
+    @test PeriLab.Solver.Helpers.smat(zeros(3, 3)) == zeros(3, 3)
+    @test PeriLab.Solver.Helpers.smat(zeros(4, 4)) == zeros(4, 4)
 end
 
 @testset "ut_determinant" begin

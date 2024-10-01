@@ -8,7 +8,7 @@ using TensorOperations
 using Combinatorics: levicivita
 using Rotations
 include("helpers.jl")
-using .Helpers: invert
+using .Helpers: invert, smat
 export bond_geometry
 export shape_tensor
 
@@ -337,9 +337,8 @@ function compute_strain(
 
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     for iID in nodes
-        strain[iID, :, :] = @views 0.5 .* (
-            transpose(deformation_gradient[iID, :, :]) * deformation_gradient[iID, :, :] - I
-        )
+        def_grad = smat(deformation_gradient[iID, :, :])
+        strain[iID, :, :] = 0.5 .* (def_grad' * def_grad - I)
     end
     return strain
 end

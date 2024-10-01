@@ -294,7 +294,7 @@ function invert(
     error_message::String = "Matrix is singular",
 )
     try
-        return inv(sinv(A))
+        return inv(smat(A))
     catch
         @error error_message
         return nothing
@@ -303,10 +303,10 @@ function invert(
 end
 
 function determinant(A)
-    return det(sinv(A))
+    return det(smat(A))
 end
 
-function sinv(A)
+function smat(A)
     if length(A) == 4
         return SMatrix{2,2}(A)
     elseif length(A) == 9
