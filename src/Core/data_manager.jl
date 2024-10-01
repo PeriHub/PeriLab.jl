@@ -99,6 +99,7 @@ function initialize_data()
     data["glob_to_loc"] = Dict()
     data["field_array_type"] = Dict()
     data["field_types"] = Dict()
+    data["field_names"] = Vector{String}([])
     data["fields_to_synch"] = Dict()
     data["filedirectory"] = ""
     data["inverse_nlist"] = []
@@ -401,7 +402,7 @@ function create_field(
     VectorOrArray::String = "Vector",
 )
     if has_key(name)
-        if size(get_field(name))[1] != data["nnodes"]
+        if size(get_field(name), 1) != data["nnodes"]
             @warn "Field $name exists already with different size. Predefined field is returned"
         end
         return get_field(name)
@@ -435,6 +436,7 @@ function create_field(
     data["field_types"][name] = vartype
     data["field_array_type"][name] =
         Dict("Type" => VectorOrArray, "Dof" => dof, "get_function" => get_function)
+    data["field_names"] = Vector{String}(collect(keys(data["field_types"])))
     return get_function()
 end
 
@@ -462,7 +464,7 @@ end
 Returns a list of all field keys.
 """
 function get_all_field_keys()
-    return keys(data["field_types"])
+    return data["field_names"]
 end
 
 """
@@ -471,7 +473,7 @@ end
 Control if a key exists.
 """
 function has_key(field_name::String)
-    return haskey(data["field_types"], field_name)
+    return field_name in data["field_names"]
 end
 
 """
@@ -529,36 +531,34 @@ Returns the field with the given name and time.
 # Returns
 - `field::Field`: The field with the given name and time.
 """
-function get_field(name::String, time::String, throw_error::Bool = true)
+function get_field(name::String, time::String)
 
     if time == "Constant" || time == "CONSTANT"
         return get_field(name)
     end
-    return get_field(name * time, throw_error)
+    return get_field(name * time)
 
 end
 
 """
-    get_field(name::String, throw_error::Bool=true)
+    get_field(name::String)
 
 Returns the field with the given name.
 
 # Arguments
 - `name::String`: The name of the field.
-- `throw_error::Bool=true`: Whether to throw an error if the field does not exist.
 # Returns
 - `field::Field`: The field with the given name.
 """
-function get_field(name::String, throw_error::Bool = true)
-    if has_key(name)
+function get_field(name::String)
+    try
         return data["field_array_type"][name]["get_function"]()
-    end
-    if throw_error
+    catch
         @error "Field ''" *
                name *
                "'' does not exist. Check if it is initialized as constant."
+        return nothing
     end
-    return nothing
 end
 
 """
@@ -587,9 +587,12 @@ Get the damage
 - `damage::Field`: The damage field.
 """
 function get_damage(time::String)
+    if "Damage Anisotropic" in get_all_field_keys()
+        damage_aniso = get_field("Damage Anisotropic", time)
+        return damage_aniso
+    end
     damage = get_field("Damage", time)
-    damage_aniso = get_field("Damage Anisotropic", time, false)
-    return isnothing(damage_aniso) ? damage : damage_aniso
+    return damage
 end
 
 """
@@ -600,11 +603,11 @@ Get the type of a field
 - `get_field_type` (string): returns the type of a field
 """
 function get_field_type(name::String)
-    if !haskey(data["field_types"], name)
-        @error "Field ''" * name * "'' does not exist."
-        return nothing
+    if name in data["field_names"]
+        return data["field_types"][name]
     end
-    return data["field_types"][name]
+    @error "Field ''" * name * "'' does not exist."
+    return nothing
 end
 
 """
@@ -656,7 +659,10 @@ end
 Get the neighborhood list.
 """
 function get_filtered_nlist()
-    return get_field("FilteredNeighborhoodlist", false)
+    if !has_key("FilteredNeighborhoodlist")
+        return nothing
+    end
+    return get_field("FilteredNeighborhoodlist")
 end
 
 """

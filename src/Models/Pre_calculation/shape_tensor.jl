@@ -82,6 +82,7 @@ function compute(
     undeformed_bond = datamanager.get_field("Bond Geometry")
     shape_tensor = datamanager.get_field("Shape Tensor")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
+
     shape_tensor, inverse_shape_tensor = Geometry.shape_tensor(
         nodes,
         nlist,
@@ -92,6 +93,7 @@ function compute(
         shape_tensor,
         inverse_shape_tensor,
     )
+
     return datamanager
 end
 

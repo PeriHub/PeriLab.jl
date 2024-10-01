@@ -134,7 +134,11 @@ function shape_tensor(
             undeformed_bond[iID],
         )
 
-        #mul!(shape_tensor[iID, :, :], (bond_damage[iID] .* volume[nlist[iID]] .* omega[iID] .* undeformed_bond[iID])', undeformed_bond[iID])
+        mul!(
+            shape_tensor[iID, :, :],
+            (bond_damage[iID] .* volume[nlist[iID]] .* omega[iID] .* undeformed_bond[iID])',
+            undeformed_bond[iID],
+        )
 
         inverse_shape_tensor[iID, :, :] .= invert(
             shape_tensor[iID, :, :],

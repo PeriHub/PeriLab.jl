@@ -27,17 +27,17 @@ function get_computes_names(params::Dict)
 end
 
 """
-    get_output_variables(output::String, variables::Base.KeySet)
+    get_output_variables(output::String, variables::Vector{String})
 
 Get the output variable.
 
 # Arguments
 - `output::String`: The output variable.
-- `variables::Base.KeySet`: The variables.
+- `variables::Vector{String}`: The variables.
 # Returns
 - `output::String`: The output variable.
 """
-function get_output_variables(output::String, variables::Base.KeySet)
+function get_output_variables(output::String, variables::Vector{String})
     if output in variables
         return output
     elseif output * "NP1" in variables
@@ -48,17 +48,17 @@ function get_output_variables(output::String, variables::Base.KeySet)
 end
 
 """
-    get_computes(params::Dict, variables::Base.KeySet)
+    get_computes(params::Dict, variables::Vector{String})
 
 Get the computes.
 
 # Arguments
 - `params::Dict`: The parameters dictionary.
-- `variables::Base.KeySet`: The variables.
+- `variables::Vector{String}`: The variables.
 # Returns
 - `computes::Dict{String,Dict{Any,Any}}`: The computes.
 """
-function get_computes(params::Dict, variables::Base.KeySet)
+function get_computes(params::Dict, variables::Vector{String})
     computes = Dict{String,Dict{Any,Any}}()
     if !haskey(params, "Compute Class Parameters")
         return computes
