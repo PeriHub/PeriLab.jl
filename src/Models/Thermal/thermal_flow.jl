@@ -186,15 +186,15 @@ is a prototype with some errors
 function compute_heat_flow_state_correspondence(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
-    nlist::SubArray,
+    nlist::Vector{Vector{Int64}},
     lambda::Union{Matrix{Float64},MMatrix},
     rotation_tensor,
-    bond_damage::SubArray,
-    undeformed_bond::SubArray,
-    Kinv::SubArray,
-    temperature::SubArray,
-    volume::SubArray,
-    heat_flow::SubArray,
+    bond_damage::Vector{Vector{Float64}},
+    undeformed_bond::Vector{Matrix{Float64}},
+    Kinv::Array{Float64,3},
+    temperature::Vector{Float64},
+    volume::Vector{Float64},
+    heat_flow::Vector{Float64},
 )
 
     nablaT = @MVector zeros(Float64, dof)
@@ -226,26 +226,26 @@ function compute_heat_flow_state_correspondence(
 end
 
 """
-    compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::SubArray,
-      lambda::Union{Float64, Int64}, bond_damage::SubArray, undeformed_bond::SubArray, horizon::SubArray,
-      temperature::SubArray, heat_flow::SubArray)
+    compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::Vector{Vector{Int64},
+      lambda::Union{Float64, Int64}, bond_damage::Vector{Vector{Float64}}, undeformed_bond::Vector{Matrix{Float64}}, horizon::Vector{Float64},
+      temperature::Vector{Float64}, heat_flow::Vector{Float64})
 
 Calculate heat flow based on a bond-based model for thermal analysis.
 
 # Arguments
 - `nodes::Union{SubArray,Vector{Int64}}`: An array of node indices for which heat flow should be computed.
 - `dof::Int64`: The degree of freedom, either 2 or 3, indicating whether the analysis is 2D or 3D.
-- `nlist::SubArray`: A SubArray representing the neighbor list for each node.
+- `nlist::Vector{Vector{Int64}`: A Vector representing the neighbor list for each node.
 - `lambda::Union{Float64, Int64}`: The thermal conductivity.
 - `apply_print_bed::Bool`: A boolean indicating whether the print bed should be applied to the thermal conductivity.
 - `t_bed::Float64`: The thickness of the print bed.
 - `lambda_bed::Float64`: The thermal conductivity of the print bed.
-- `bond_damage::SubArray`: A SubArray representing the damage state of bonds between nodes.
-- `undeformed_bond::SubArray`: A SubArray representing the geometry of the bonds.
-- `undeformed_bond_length::SubArray`: A SubArray representing the undeformed bond length for each bond.
-- `horizon::SubArray`: A SubArray representing the horizon for each node.
-- `temperature::SubArray`: A SubArray representing the temperature at each node.
-- `heat_flow::SubArray`: A SubArray where the computed heat flow values will be stored.
+- `bond_damage::Vector{Vector{Float64}}`: A Vector representing the damage state of bonds between nodes.
+- `undeformed_bond::Vector{Matrix{Float64}}`: A Vector representing the geometry of the bonds.
+- `undeformed_bond_length::Vector{Vector{Float64}}`: A Vector representing the undeformed bond length for each bond.
+- `horizon::Vector{Float64}`: A Vector representing the horizon for each node.
+- `temperature::Vector{Float64}`: A Vector representing the temperature at each node.
+- `heat_flow::Vector{Float64}`: A Vector where the computed heat flow values will be stored.
 
 ## Returns
 - `heat_flow`: updated bond heat flow values will be stored.
@@ -257,20 +257,20 @@ This function calculates the heat flow between neighboring nodes based on a bond
 function compute_heat_flow_state_bond_based(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
-    nlist::SubArray,
+    nlist::Vector{Vector{Int64}},
     lambda::Union{Float64,Int64},
     apply_print_bed::Bool,
     t_bed::Float64,
     lambda_bed::Float64,
     print_bed,
-    coordinates::SubArray,
-    bond_damage::SubArray,
-    undeformed_bond::SubArray,
-    undeformed_bond_length::SubArray,
-    horizon::SubArray,
-    temperature::SubArray,
-    volume::SubArray,
-    heat_flow::SubArray,
+    coordinates::Matrix{Float64},
+    bond_damage::Vector{Vector{Float64}},
+    undeformed_bond::Vector{Matrix{Float64}},
+    undeformed_bond_length::Vector{Vector{Float64}},
+    horizon::Vector{Float64},
+    temperature::Vector{Float64},
+    volume::Vector{Float64},
+    heat_flow::Vector{Float64},
 )
     kernel::Float64 = 0.0
     for iID in nodes

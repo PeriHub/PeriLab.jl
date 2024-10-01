@@ -45,7 +45,7 @@ Calculate bond geometries between nodes based on their coordinates.
 """
 function bond_geometry(
     nodes::Union{SubArray,Vector{Int64}},
-    nlist::Union{SubArray,Vector{Int64}},
+    nlist::Vector{Vector{Int64}},
     coor::Union{SubArray,Matrix{Float64},Matrix{Int64}},
     undeformed_bond,
     undeformed_bond_length,
@@ -210,18 +210,17 @@ deformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 inverse_shape_tensor = rand(Float64, length(nodes), dof, dof)
 deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 
-compute_deformation_gradient(nodes, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 """
 function compute_deformation_gradient(
     nodes::Union{SubArray,Vector{Int64}},
-    nlist::SubArray,
-    volume::SubArray,
-    omega::SubArray,
-    bond_damage::SubArray,
-    deformed_bond::Union{SubArray,Vector{Matrix{Float64}}},
-    undeformed_bond::SubArray,
-    inverse_shape_tensor::SubArray,
-    deformation_gradient::SubArray,
+    nlist::Vector{Vector{Int64}},
+    volume::Vector{Float64},
+    omega::Vector{Vector{Float64}},
+    bond_damage::Vector{Vector{Float64}},
+    deformed_bond::Vector{Matrix{Float64}},
+    undeformed_bond::Vector{Matrix{Float64}},
+    inverse_shape_tensor::Array{Float64,3},
+    deformation_gradient::Array{Float64,3},
 )
     for iID in nodes
         deformation_gradient[iID, :, :] = calculate_deformation_gradient(

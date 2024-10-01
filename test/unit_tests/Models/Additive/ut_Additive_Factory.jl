@@ -38,7 +38,7 @@ end
 
 @testset "init_additive" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.properties[23] =
+    test_data_manager.data["properties"][23] =
         Dict("Additive Model" => Dict("Additive Model" => "does not exist"))
     @test isnothing(Additive.init_model(test_data_manager, Vector{Int64}([1, 2, 3]), 23))
 end

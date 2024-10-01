@@ -273,29 +273,29 @@ function zero_energy_mode_compensation(
 end
 
 """
-    calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::SubArray, undeformed_bond::SubArray, bond_damage::SubArray, inverse_shape_tensor::SubArray, stress_NP1::SubArray, bond_force::SubArray)
+    calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::Array{Float64, 3}, undeformed_bond::Vector{Matrix{Float64}}, bond_damage::Vector{Vector{Float64}}, inverse_shape_tensor::Array{Float64, 3}, stress_NP1::Array{Float64, 3}, bond_force::Vector{Matrix{Float64}})
 
 Calculate bond forces for specified nodes based on deformation gradients.
 
 # Arguments
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
 - `deformation_gradient::SubArray`: Deformation gradient.
-- `undeformed_bond::SubArray`: Undeformed bond geometry.
-- `bond_damage::SubArray`: Bond damage.
-- `inverse_shape_tensor::SubArray`: Inverse shape tensor.
-- `stress_NP1::SubArray`: Stress at time step n+1.
-- `bond_force::SubArray`: Bond force.
+- `undeformed_bond::Vector{Matrix{Float64}}`: Undeformed bond geometry.
+- `bond_damage::Vector{Vector{Float64}}`: Bond damage.
+- `inverse_shape_tensor::Array{Float64, 3}`: Inverse shape tensor.
+- `stress_NP1::Array{Float64, 3}`: Stress at time step n+1.
+- `bond_force::Vector{Matrix{Float64}}`: Bond force.
 # Returns
-- `bond_force::SubArray`: Bond force.
+- `bond_force::Vector{Matrix{Float64}}`: Bond force.
 """
 function calculate_bond_force(
     nodes::Union{SubArray,Vector{Int64}},
-    deformation_gradient::SubArray,
-    undeformed_bond::SubArray,
-    bond_damage::SubArray,
-    inverse_shape_tensor::SubArray,
-    stress_NP1::SubArray,
-    bond_force::SubArray,
+    deformation_gradient::Array{Float64,3},
+    undeformed_bond::Vector{Matrix{Float64}},
+    bond_damage::Vector{Vector{Float64}},
+    inverse_shape_tensor::Array{Float64,3},
+    stress_NP1::Array{Float64,3},
+    bond_force::Vector{Matrix{Float64}},
 )
     for iID in nodes
         # taken from corresponcence.cxx -> computeForcesAndStresses

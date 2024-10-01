@@ -31,7 +31,7 @@ function create_result_file(
     num_elem_blks::Int64,
     num_node_sets::Int64,
     num_elements::Int64 = 0,
-    topology::Union{Nothing,SubArray} = nothing,
+    topology::Union{Nothing,Matrix{Int64}} = nothing,
 )
 
     if isfile(filename)
@@ -150,8 +150,8 @@ function init_results_in_exodus(
     nsets::Dict{String,Vector{Int64}},
     global_ids::Vector{Int64},
     PERILAB_VERSION::String,
-    fem_block::Union{Nothing,SubArray} = nothing,
-    topology::Union{Nothing,SubArray} = nothing,
+    fem_block::Union{Nothing,Vector{Bool}} = nothing,
+    topology::Union{Nothing,Matrix{Int64}} = nothing,
     elem_global_ids::Union{Nothing,Vector{Int64}} = nothing,
 )
     qa = Matrix{String}(undef, 1, 4)

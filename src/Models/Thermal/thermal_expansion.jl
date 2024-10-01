@@ -136,13 +136,13 @@ This function calculates thermal deformation for a specified set of nodes based 
 
 - `temperature::SubArray`: A SubArray containing nodal temperatures for the specified nodes.
 
-- `undeformed_bond::SubArray`: A SubArray containing information about the undeformed bond geometry.
+- `undeformed_bond::Vector{Matrix{Float64}}`: A Vector containing information about the undeformed bond geometry.
 
-- `thermal_deformation::SubArray`: A SubArray to store the calculated thermal deformation for each node.
+- `thermal_deformation::Vector{Matrix{Float64}}`: A Vector to store the calculated thermal deformation for each node.
 
 ## Returns
 
-- `thermal_deformation::SubArray`: A SubArray containing the calculated thermal deformation for the specified nodes.
+- `thermal_deformation::Vector{Matrix{Float64}}`: A Vector containing the calculated thermal deformation for the specified nodes.
 
 ## Notes
 
@@ -154,8 +154,8 @@ This function calculates thermal deformation for a specified set of nodes based 
 nodes = [1, 2, 3]
 alpha = [1.3 0.0; 0.0 1.3] # Example thermal expansion coefficient
 temperature = SubArray(...) # Provide temperature data
-undeformed_bond = SubArray(...) # Provide undeformed bond geometry data
-thermal_deformation = SubArray(zeros(3, 3)) # Initialize thermal_deformation with zeros
+undeformed_bond = Vector{Matrix{Float64}}(...) # Provide undeformed bond geometry data
+thermal_deformation = Vector{Matrix{Float64}}(zeros(3, 3)) # Initialize thermal_deformation with zeros
 
 result = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_deformation)
 """
@@ -163,8 +163,8 @@ function thermal_deformation(
     nodes::Union{SubArray,Vector{Int64}},
     alpha::Union{Matrix{Float64},Matrix{Int64}},
     temperature::Union{Vector{Float64},SubArray},
-    undeformed_bond::SubArray,
-    thermal_deformation::SubArray,
+    undeformed_bond::Vector{Matrix{Float64}},
+    thermal_deformation::Vector{Matrix{Float64}},
 )
     for iID in nodes
         for jID in eachindex(undeformed_bond[iID][:, 1])

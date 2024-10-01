@@ -105,7 +105,7 @@ end
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_num_responder(0)
     test_data_manager.set_dof(dof)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int32, 1)
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn .= [2, 2, 2, 1]
     coor = test_data_manager.create_constant_node_field("Coordinates", Float64, 2)
     undeformed_bond =
@@ -252,7 +252,7 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_dof(dof)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int32, 1)
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn .= [3, 3, 3, 3]
 
     coor = test_data_manager.create_constant_node_field("Coordinates", Float64, 2)

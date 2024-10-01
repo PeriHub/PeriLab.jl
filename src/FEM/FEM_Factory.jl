@@ -176,7 +176,7 @@ function eval(
     )
 end
 
-function get_FEM_nodes(datamanager::Module, topology::SubArray{Int64})
+function get_FEM_nodes(datamanager::Module, topology::Matrix{Int64})
     fem_nodes = datamanager.create_constant_node_field("FE Nodes", Bool, 1)
     for el_topo in eachrow(topology)
         fem_nodes[el_topo] .= true
