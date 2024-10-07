@@ -99,62 +99,50 @@ function find_indices(vector, what)
 end
 
 """
-    find_active(active::Vector{Bool})
+    find_active(active::Vector{Bool}, index::Vector{Int64})
 
 Returns the indices of `active` that are true.
 
 # Arguments
 - `active::Vector{Bool}`: The vector to search in.
+- `index::Vector{Int64}`: pre-allocated index field to avoid to much memory allocation
 # Returns
 - `indices::Vector`: The indices of `active` that are true.
 """
-function find_active(active::Union{Vector{Bool},BitVector})
-    temp = zeros(Int64, sum(active))
-    count::Int64 = 1
+function find_active(active, index::Vector{Int64})
+    count::Int64 = 0
     for (i, is_active) in enumerate(active)
         if is_active
-            temp[count] = i
             count += 1
-        end
+            index[count] = i
 
+        end
     end
-    return temp
-    #return [i for (i, is_active) in enumerate(active) if is_active]
+    return view(index, 1:count)
 end
 
 """
-    get_active_update_nodes(active::Vector{Bool}, update_list::Vector{Bool}, block_nodes::Dict{Int64,Vector{Int64}}, block::Int64)
+    get_active_update_nodes(active::Vector{Bool}, update_list::Vector{Bool}, nodes::Vector{Int64}, index::Vector{Int64})
 
 Returns the active nodes and the update nodes.
 
 # Arguments
 - `active::Vector{Bool}`: The active vector.
 - `update_list::Vector{Bool}`: The update vector.
-- `block_nodes::Dict{Int64,Vector{Int64}}`: The vector to search in.
-- `block::Int64`: The block_id.
+- `nodes::Vector{Int64}`: The vector of nodes.
+- `index::Vector{Int64}`: Pre allocated Vector.
 # Returns
-- `active_nodes::Vector{Int64}`: The nodes of `active` that are true.
 - `update_nodes::Vector{Int64}`: The nodes of `update` that are true.
 """
-function get_active_update_nodes(
-    active::Vector{Bool},
-    update_list::Vector{Bool},
-    block_nodes::Dict{Int64,Vector{Int64}},
-    block::Int64,
-)
-    active_nodes::Vector{Int64} = []
-    update_nodes::Vector{Int64} = []
-    active_index = find_active(active[block_nodes[block]])
-
-    if isempty(active_index)
-        return active_nodes, update_nodes
+function get_active_update_nodes(active, update, nodes, index)
+    count::Int64 = 0
+    for node in nodes
+        if active[node] && update[node]
+            count += 1
+            index[count] = node
+        end
     end
-    active_nodes = view(block_nodes[block], active_index)
-    update_index = find_active(update_list[active_nodes])
-    if !isempty(update_index)
-        @views update_nodes = active_nodes[update_index]
-    end
-    return active_nodes, update_nodes
+    return view(index, 1:count)
 end
 
 """

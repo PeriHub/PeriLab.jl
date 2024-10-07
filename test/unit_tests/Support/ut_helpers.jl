@@ -231,23 +231,26 @@ end
 
 # Define a test case for the find_active function
 @testset "ut_find_active" begin
+    index = [0, 0, 0, 0, 0]
     # Test case 1: Empty input
-    @test isempty(PeriLab.Solver.Helpers.find_active(Bool[]))
+    @test isempty(PeriLab.Solver.Helpers.find_active(Bool[], index))
     # Test case 2: All elements are active
-    @test PeriLab.Solver.Helpers.find_active([true, true, true]) == [1, 2, 3]
+    @test PeriLab.Solver.Helpers.find_active([true, true, true], index) == [1, 2, 3]
     # Test case 3: No elements are active
-    @test isempty(PeriLab.Solver.Helpers.find_active([false, false, false]))
+    @test isempty(PeriLab.Solver.Helpers.find_active([false, false, false], index))
     # Test case 4: Mix of active and inactive elements
-    @test PeriLab.Solver.Helpers.find_active([false, true, false, true, true]) == [2, 4, 5]
+    @test PeriLab.Solver.Helpers.find_active([false, true, false, true, true], index) ==
+          [2, 4, 5]
     # Test case 5: SubList of active and inactive elements
     list = [false, true, false, true, true]
-    @test PeriLab.Solver.Helpers.find_active(list[[2, 3, 5]]) == [1, 3]
+    @test PeriLab.Solver.Helpers.find_active(list[[2, 3, 5]], index) == [1, 3]
 end
 
 @testset "ut_find_inverse_bond_id" begin
     test_data_manager = PeriLab.Data_manager
     nnodes = 2
     num_responder = 1
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_num_responder(num_responder)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
@@ -344,59 +347,80 @@ end
 @testset "get_active_update_nodes" begin
     nnodes = 4
     test_data_manager = PeriLab.Data_manager
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     update_list = test_data_manager.create_constant_node_field("Update List", Bool, 1, true)
     active = test_data_manager.create_constant_node_field("Active List", Bool, 1, true)
+    index = test_data_manager.create_constant_node_field("Index", Int64, 1)
     block_nodes = Dict(1 => [1, 2], 2 => [3, 4])
     block = 1
     @test PeriLab.Solver.Helpers.get_active_update_nodes(
         active,
         update_list,
-        block_nodes,
-        block,
-    ) == ([1, 2], [1, 2])
+        block_nodes[block],
+        index,
+    ) == [1, 2]
     block = 2
     @test PeriLab.Solver.Helpers.get_active_update_nodes(
         active,
         update_list,
-        block_nodes,
-        block,
-    ) == ([3, 4], [3, 4])
+        block_nodes[block],
+        index,
+    ) == [3, 4]
     update_list[3] = false
+    block = 1
     @test PeriLab.Solver.Helpers.get_active_update_nodes(
         active,
         update_list,
-        block_nodes,
-        block,
-    ) == ([3, 4], [4])
+        block_nodes[block],
+        index,
+    ) == [1, 2]
+    block = 2
+    @test PeriLab.Solver.Helpers.get_active_update_nodes(
+        active,
+        update_list,
+        block_nodes[block],
+        index,
+    ) == [4]
+
     active[3] = false
+    block = 1
     @test PeriLab.Solver.Helpers.get_active_update_nodes(
         active,
         update_list,
-        block_nodes,
-        block,
-    ) == ([4], [4])
+        block_nodes[block],
+        index,
+    ) == [1, 2]
+    block = 2
+    @test PeriLab.Solver.Helpers.get_active_update_nodes(
+        active,
+        update_list,
+        block_nodes[block],
+        index,
+    ) == [4]
     update_list[3] = true
     @test PeriLab.Solver.Helpers.get_active_update_nodes(
         active,
         update_list,
-        block_nodes,
-        block,
-    ) == ([4], [4])
+        block_nodes[block],
+        index,
+    ) == [4]
+    block = 1
     update_list[3] = false
     update_list[4] = false
     @test PeriLab.Solver.Helpers.get_active_update_nodes(
         active,
         update_list,
-        block_nodes,
-        block,
-    ) == ([4], [])
+        block_nodes[block],
+        index,
+    ) == [1, 2]
+    block = 2
     active[3] = false
     active[4] = false
     @test PeriLab.Solver.Helpers.get_active_update_nodes(
         active,
         update_list,
-        block_nodes,
-        block,
-    ) == ([], [])
+        block_nodes[block],
+        index,
+    ) == []
 end

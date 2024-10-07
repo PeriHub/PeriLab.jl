@@ -126,8 +126,14 @@ function calculate_stresses(
                options["Calculate Strain"]
                 active = datamanager.get_field("Active")
                 update_list = datamanager.get_field("Update List")
-                active_nodes, update_nodes =
-                    get_active_update_nodes(active, update_list, block_nodes, block)
+                active_nodes, update_nodes = get_active_update_nodes(
+                    active,
+                    update_list,
+                    block_nodes,
+                    block,
+                    active_nodes,
+                    update_nodes,
+                )
                 datamanager = get_partial_stresses(datamanager, active_nodes)
             end
             if options["Calculate von Mises"]

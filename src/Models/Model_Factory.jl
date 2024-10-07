@@ -133,6 +133,7 @@ function compute_models(
     synchronise_field,
     to::TimerOutput,
 )
+    index = datamanager.get_field("Index")
     fem_option = datamanager.fem_active()
     if fem_option
         # no damage occur here. Therefore, it runs one time
@@ -168,15 +169,14 @@ function compute_models(
         #)
         #end
         for (block, nodes) in pairs(block_nodes)
-            #active_nodes = view(nodes, find_active(active[nodes]))
             if active_model_name == "Additive Model"
                 active_nodes = @view nodes[:]
             else
-                active_nodes = view(nodes, find_active(active[nodes]))
+                active_nodes = view(nodes, find_active(active[nodes], index))
             end
             if fem_option
                 # find all non-FEM nodes
-                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes]))
+                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes], index))
             end
             if datamanager.check_property(block, active_model_name)
                 # synch
@@ -207,10 +207,11 @@ function compute_models(
         for block in eachindex(block_nodes)
             # TODO not optimal
             active_nodes::Vector{Int64}, update_nodes =
-                get_active_update_nodes(active, update_list, block_nodes, block)
+                get_active_update_nodes(active, update_list, block_nodes, index, block)
             if fem_option
-                update_nodes =
-                    block_nodes[block][find_active(Vector{Bool}(.~fe_nodes[update_nodes]))]
+                update_nodes = block_nodes[block][find_active(
+                    Vector{Bool}(.~fe_nodes[update_nodes], index),
+                )]
             end
             # active or all, or does it not matter?
             if active_model_name == "Damage Model"
@@ -237,17 +238,9 @@ function compute_models(
         @timeit to "distribute_force_densities" datamanager =
             Material.distribute_force_densities(
                 datamanager,
-                find_active(active[1:datamanager.get_nnodes()]),
+                find_active(active[1:datamanager.get_nnodes()], index),
             )
     end
-
-    # TODO Does not do anything, yet?
-    # if "Thermal" in options
-    #    @timeit to "distribute_heat_flows" datamanager = Thermal.distribute_heat_flows(
-    #        datamanager,
-    #        find_active(active[1:datamanager.get_nnodes()]),
-    #    )
-    # end
 
     update_list .= true
     return datamanager

@@ -320,7 +320,6 @@ function distribute_forces(
             bond_damage[iID] .* (@view bond_force[iID][:, :]) .* (@view bond_mod[:, :]) .*
             volume[iID]
     end
-    return force_densities
 end
 
 """
@@ -347,14 +346,13 @@ function distribute_forces(
     force_densities::Matrix{Float64},
 )
     for iID in nodes
-        force_densities[iID, :] .+= transpose(
+        @views force_densities[iID, :] .+= transpose(
             sum(bond_damage[iID] .* bond_force[iID] .* volume[nlist[iID]], dims = 1),
         )
 
-        force_densities[nlist[iID], :] .-=
+        @views force_densities[nlist[iID], :] .-=
             bond_damage[iID] .* bond_force[iID] .* volume[iID]
     end
-    return force_densities
 end
 
 

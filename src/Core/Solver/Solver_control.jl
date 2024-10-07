@@ -56,6 +56,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
     fem_block = datamanager.create_constant_node_field("FEM Block", Bool, 1, false)
+    datamanager.create_constant_node_field("Index", Int64, 1)
 
     datamanager.create_constant_node_field("Update List", Bool, 1, true)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors

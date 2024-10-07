@@ -421,6 +421,7 @@ function run_solver(
     density = datamanager.get_field("Density")
     coor = datamanager.get_field("Coordinates")
     uNP1 = datamanager.get_field("Displacements", "NP1")
+    index = datamanager.get_field("Index")
     comm = datamanager.get_comm()
 
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
@@ -476,7 +477,7 @@ function run_solver(
     nodes::Vector{Int64} = []
     @inbounds @fastmath for idt in iter
         @timeit to "Verlet" begin
-            nodes = find_active(active[1:nnodes])
+            nodes = find_active(active[1:nnodes], index)
             # one step more, because of init step (time = 0)
             if "Material" in solver_options["Models"]
                 vNP1[nodes, :] =
@@ -534,21 +535,21 @@ function run_solver(
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
                     # force density is for FEM part force
-                    force_densities[find_active(fe_nodes[nodes]), :] +=
-                        @view external_forces[find_active(fe_nodes[nodes]), :]
-                    a[find_active(fe_nodes[nodes]), :] =
-                        force_densities[find_active(fe_nodes[nodes]), :] ./
-                        lumped_mass[find_active(fe_nodes[nodes])] # element wise
-                    forces[find_active(fe_nodes[nodes]), :] =
-                        @view force_densities[find_active(fe_nodes[nodes]), :]
+                    force_densities[find_active(fe_nodes[nodes], index), :] +=
+                        @view external_forces[find_active(fe_nodes[nodes], index), :]
+                    a[find_active(fe_nodes[nodes], index), :] =
+                        force_densities[find_active(fe_nodes[nodes], index), :] ./
+                        lumped_mass[find_active(fe_nodes[nodes], index)] # element wise
+                    forces[find_active(fe_nodes[nodes], index), :] =
+                        @view force_densities[find_active(fe_nodes[nodes], index), :]
 
                     # only for cases in coupling where both the FEM and PD nodes are equal
                     # TODO discuss design decission
-                    force_densities[find_active(fe_nodes[nodes]), :] ./=
-                        volume[find_active(fe_nodes[nodes])]
+                    force_densities[find_active(fe_nodes[nodes], index), :] ./=
+                        volume[find_active(fe_nodes[nodes], index)]
 
                     # toggles the value and switch the non FEM nodes to true
-                    nodes = find_active(.~fe_nodes[nodes])
+                    nodes = find_active(.~fe_nodes[nodes], index)
                 end
                 force_densities[nodes, :] +=
                     (@view external_force_densities[nodes, :]) .+
@@ -560,21 +561,21 @@ function run_solver(
             if "Thermal" in solver_options["Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
                 # heat capacity check. if it is zero deltaT = 0
-                deltaT[find_active(active[1:nnodes])] =
-                    -flowNP1[find_active(active[1:nnodes])] .* dt ./ (
-                        density[find_active(active[1:nnodes])] .*
-                        heat_capacity[find_active(active[1:nnodes])]
+                deltaT[find_active(active[1:nnodes], index)] =
+                    -flowNP1[find_active(active[1:nnodes], index)] .* dt ./ (
+                        density[find_active(active[1:nnodes], index)] .*
+                        heat_capacity[find_active(active[1:nnodes], index)]
                     )
                 if fem_option && time == 0
                     @warn "Thermal models are not supported for FEM yet."
                 end
             end
             if "Corrosion" in solver_options["Models"]
-                delta_concentration[find_active(active[1:nnodes])] =
-                    -concentration_fluxNP1[find_active(active[1:nnodes])] .* dt
+                delta_concentration[find_active(active[1:nnodes], index)] =
+                    -concentration_fluxNP1[find_active(active[1:nnodes], index)] .* dt
             end
             if rank == 0 && "Damage" in solver_options["Models"] #TODO gather value
-                max_damage = maximum(damage[find_active(active[1:nnodes])])
+                max_damage = maximum(damage[find_active(active[1:nnodes], index)])
                 if max_damage > max_cancel_damage
                     if !silent
                         set_multiline_postfix(iter, "Maximum damage reached!")
