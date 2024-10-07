@@ -109,7 +109,6 @@ end
     PREDEF::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
     DPRED::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
     HETVAL.HETVAL_interface(file, CMNAME, TEMP, TIME, DTIME, STATEV, FLUX, PREDEF, DPRED)
-    println()
     @test FLUX[1] == 100
     @test FLUX[2] == 100
     @test TEMP[1] == 2.5

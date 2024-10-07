@@ -270,7 +270,6 @@ end
         JSTEP,
         KINC,
     )
-    println()
     @test STRESS[1] == 0
     @test STRAN[1] == 4.2
     @test isapprox(DSTRAN[1], 12.6)

@@ -376,7 +376,6 @@ end
         disp,
         [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5],
     )
-    println()
     PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.2)
     force = test_data_manager.get_field("Forces")
     disp = test_data_manager.get_field("Displacements", "NP1")

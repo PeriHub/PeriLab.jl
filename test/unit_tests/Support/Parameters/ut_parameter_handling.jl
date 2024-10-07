@@ -227,8 +227,8 @@ end
 @testset "ut_get_output_fieldnames" begin
     outputs =
         Dict("Displacements" => true, "Forces" => true, "External_Displacements" => true)
-    variables = keys(Dict("DisplacementsNP1" => true, "Forces" => true))
-    computes = collect(keys(Dict("External_Displacements" => true)))
+    variables = ["DisplacementsNP1", "Forces"]
+    computes = ["External_Displacements"]
     output_type = "Exodus"
     fieldnames = PeriLab.Solver.Parameter_Handling.get_output_fieldnames(
         outputs,
@@ -472,16 +472,16 @@ end
 @testset "ut_get_output_variables" begin
     @test PeriLab.Solver.Parameter_Handling.get_output_variables(
         "Force",
-        keys(Dict("Force" => true, "DisplacementsNP1" => true)),
+        ["Force", "DisplacementsNP1"],
     ) == "Force"
     @test PeriLab.Solver.Parameter_Handling.get_output_variables(
         "Displacements",
-        keys(Dict("Force" => true, "DisplacementsNP1" => true)),
+        ["Force", "DisplacementsNP1"],
     ) == "DisplacementsNP1"
     @test isnothing(
         PeriLab.Solver.Parameter_Handling.get_output_variables(
             "Stress",
-            keys(Dict("Force" => true, "DisplacementsNP1" => true)),
+            ["Force", "DisplacementsNP1"],
         ),
     )
 end
@@ -535,7 +535,6 @@ end
         ),
     )
     solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
-    println()
     @test solver_options ==
           ["Additive", "Damage", "Pre_Calculation", "Thermal", "Corrosion", "Material"]
     params = Dict("Solver" => Dict())

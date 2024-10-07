@@ -161,7 +161,6 @@ end
 
 @testset "ut_pre_calculation_template" begin
     @test Pre_calculation_template.pre_calculation_name() == "pre_calculation Template"
-    println()
     @test Pre_calculation_template.compute_model(
         test_data_manager,
         Vector{Int64}(1:3),
