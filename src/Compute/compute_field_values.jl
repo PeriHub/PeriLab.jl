@@ -125,15 +125,10 @@ function calculate_stresses(
                options["Calculate von Mises"] |
                options["Calculate Strain"]
                 active = datamanager.get_field("Active")
-                update_list = datamanager.get_field("Update List")
-                active_nodes, update_nodes = get_active_update_nodes(
-                    active,
-                    update_list,
-                    block_nodes,
-                    block,
-                    active_nodes,
-                    update_nodes,
-                )
+                update_list = datamanager.get_field("Update")
+                index = datamanager.get_field("Index")
+                active_nodes, update_nodes =
+                    get_active_update_nodes(active, update_list, block_nodes, index, block)
                 datamanager = get_partial_stresses(datamanager, active_nodes)
             end
             if options["Calculate von Mises"]

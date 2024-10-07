@@ -63,7 +63,7 @@ function compute_model(
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     block_ids = datamanager.get_field("Block_Id")
-    update_list = datamanager.get_field("Update List")
+    update_list = datamanager.get_field("Update")
     bond_damage = datamanager.get_bond_damage("NP1")
     aniso_damage::Bool = haskey(damage_parameter, "Anisotropic Damage")
 

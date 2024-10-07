@@ -48,7 +48,7 @@ using .Heat_transfer
         test_data_manager.create_constant_node_field("specific_volume", Float64, 1)
     horizon = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
     horizon .= 0.55
-    active = test_data_manager.create_constant_node_field("Active List", Bool, 1)
+    active = test_data_manager.create_constant_node_field("Active", Bool, 1)
     active .= true
     result = Heat_transfer.calculate_specific_volume(
         nodes,

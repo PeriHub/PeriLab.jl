@@ -355,8 +355,8 @@ end
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
-    update_list = test_data_manager.create_constant_node_field("Update List", Bool, 1, true)
-    active = test_data_manager.create_constant_node_field("Active List", Bool, 1, true)
+    update_list = test_data_manager.create_constant_node_field("Update", Bool, 1, true)
+    active = test_data_manager.create_constant_node_field("Active", Bool, 1, true)
     index = test_data_manager.create_constant_node_field("Index", Int64, 1)
     block_nodes = Dict(1 => [1, 2], 2 => [3, 4])
     block = 1

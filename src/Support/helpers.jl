@@ -14,7 +14,7 @@ using StaticArrays
 using LoopVectorization
 export qdim
 export check_inf_or_nan
-export find_active
+export find_active_nodes
 export get_active_update_nodes
 export find_indices
 export find_inverse_bond_id
@@ -98,28 +98,6 @@ function find_indices(vector, what)
     return findall(item -> item == what, vector)
 end
 
-"""
-    find_active(active::Vector{Bool}, index::Vector{Int64})
-
-Returns the indices of `active` that are true.
-
-# Arguments
-- `active::Vector{Bool}`: The vector to search in.
-- `index::Vector{Int64}`: pre-allocated index field to avoid to much memory allocation
-# Returns
-- `indices::Vector`: The indices of `active` that are true.
-"""
-function find_active(active, index::Vector{Int64})
-    count::Int64 = 0
-    for (i, is_active) in enumerate(active)
-        if is_active
-            count += 1
-            index[count] = i
-
-        end
-    end
-    return view(index, 1:count)
-end
 
 """
     get_active_update_nodes(active::Vector{Bool}, update_list::Vector{Bool}, nodes::Vector{Int64}, index::Vector{Int64})
@@ -144,6 +122,19 @@ function get_active_update_nodes(active, update, nodes, index)
     end
     return view(index, 1:count)
 end
+
+
+function find_active_nodes(active, active_nodes::Vector{Int64}, nodes)
+    count::Int64 = 0
+    for node in nodes
+        if active[node]
+            count += 1
+            active_nodes[count] = node
+        end
+    end
+    return view(active_nodes, 1:count)
+end
+
 
 """
     find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)

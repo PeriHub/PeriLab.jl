@@ -153,8 +153,8 @@ Set the bond damage field to the bond damage field
 function set_bond_damage(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     bond_damageN = datamanager.get_bond_damage("N")
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
-    aniso_bond_damageN = datamanager.get_field("Bond Damage Anisotropic", "N", false)
-    aniso_bond_damageNP1 = datamanager.get_field("Bond Damage Anisotropic", "NP1", false)
+    aniso_bond_damageN = datamanager.get_field("Bond Damage Anisotropic", "N")
+    aniso_bond_damageNP1 = datamanager.get_field("Bond Damage Anisotropic", "NP1")
     for iID in nodes
         bond_damageNP1[iID] .= bond_damageN[iID]
         if !isnothing(aniso_bond_damageN)

@@ -12,7 +12,7 @@ using PrettyTables
 using Logging
 
 include("../../Support/helpers.jl")
-using .Helpers: check_inf_or_nan, find_active, progress_bar
+using .Helpers: check_inf_or_nan, find_active_nodes, progress_bar
 include("../../Support/Parameters/parameter_handling.jl")
 using .Parameter_Handling:
     get_initial_time,
@@ -418,10 +418,11 @@ function run_solver(
     @info "Run Verlet Solver"
     nnodes = datamanager.get_nnodes()
     volume = datamanager.get_field("Volume")
+    active_list = datamanager.get_field("Active")
     density = datamanager.get_field("Density")
     coor = datamanager.get_field("Coordinates")
     uNP1 = datamanager.get_field("Displacements", "NP1")
-    index = datamanager.get_field("Index")
+    # index = datamanager.get_field("Index")
     comm = datamanager.get_comm()
 
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
@@ -474,21 +475,27 @@ function run_solver(
     damage_init::Bool = false
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
-    nodes::Vector{Int64} = []
+    nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
     @inbounds @fastmath for idt in iter
         @timeit to "Verlet" begin
-            nodes = find_active(active[1:nnodes], index)
+            active_nodes = datamanager.get_field("Active Nodes")
+            active_nodes =
+                find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
             # one step more, because of init step (time = 0)
             if "Material" in solver_options["Models"]
-                vNP1[nodes, :] =
-                    (1 - numerical_damping) .* vN[nodes, :] + 0.5 * dt .* a[nodes, :]
-                uNP1[nodes, :] = uN[nodes, :] + dt .* vNP1[nodes, :]
+                @views vNP1[active_nodes, :] =
+                    (1 - numerical_damping) .* vN[active_nodes, :] +
+                    0.5 * dt .* a[active_nodes, :]
+                @views uNP1[active_nodes, :] =
+                    uN[active_nodes, :] + dt .* vNP1[active_nodes, :]
             end
             if "Thermal" in solver_options["Models"]
-                temperatureNP1[nodes] = temperatureN[nodes] + deltaT[nodes]
+                temperatureNP1[active_nodes] =
+                    temperatureN[active_nodes] + deltaT[active_nodes]
             end
             if "Corrosion" in solver_options["Models"]
-                concentrationNP1[nodes] = concentrationN[nodes] + delta_concentration[nodes]
+                concentrationNP1[active_nodes] =
+                    concentrationN[active_nodes] + delta_concentration[active_nodes]
             end
             @timeit to "apply_bc_dirichlet" datamanager =
                 Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
@@ -532,6 +539,7 @@ function run_solver(
 
             if "Material" in solver_options["Models"]
                 check_inf_or_nan(force_densities, "Forces")
+                #=
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
                     # force density is for FEM part force
@@ -551,31 +559,32 @@ function run_solver(
                     # toggles the value and switch the non FEM nodes to true
                     nodes = find_active(.~fe_nodes[nodes], index)
                 end
-                force_densities[nodes, :] +=
-                    (@view external_force_densities[nodes, :]) .+
-                    (@view external_forces[nodes, :]) ./ volume[nodes]
-                a[nodes, :] = force_densities[nodes, :] ./ density[nodes] # element wise
-                forces[nodes, :] = force_densities[nodes, :] .* volume[nodes]
+                =#
+                force_densities[active_nodes, :] +=
+                    (@view external_force_densities[active_nodes, :]) .+
+                    (@view external_forces[active_nodes, :]) ./ volume[active_nodes]
+                a[active_nodes, :] =
+                    force_densities[active_nodes, :] ./ density[active_nodes] # element wise
+                forces[active_nodes, :] =
+                    force_densities[active_nodes, :] .* volume[active_nodes]
 
             end
             if "Thermal" in solver_options["Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
                 # heat capacity check. if it is zero deltaT = 0
-                deltaT[find_active(active[1:nnodes], index)] =
-                    -flowNP1[find_active(active[1:nnodes], index)] .* dt ./ (
-                        density[find_active(active[1:nnodes], index)] .*
-                        heat_capacity[find_active(active[1:nnodes], index)]
-                    )
+                deltaT[active_nodes] =
+                    -flowNP1[active_nodes] .* dt ./
+                    (density[active_nodes] .* heat_capacity[active_nodes])
                 if fem_option && time == 0
                     @warn "Thermal models are not supported for FEM yet."
                 end
             end
             if "Corrosion" in solver_options["Models"]
-                delta_concentration[find_active(active[1:nnodes], index)] =
-                    -concentration_fluxNP1[find_active(active[1:nnodes], index)] .* dt
+                delta_concentration[active_nodes] =
+                    -concentration_fluxNP1[active_nodes] .* dt
             end
             if rank == 0 && "Damage" in solver_options["Models"] #TODO gather value
-                max_damage = maximum(damage[find_active(active[1:nnodes], index)])
+                max_damage = maximum(damage[active_nodes])
                 if max_damage > max_cancel_damage
                     if !silent
                         set_multiline_postfix(iter, "Maximum damage reached!")

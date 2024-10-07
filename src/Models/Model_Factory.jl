@@ -5,7 +5,8 @@
 module Model_Factory
 include("../Support/helpers.jl")
 include("./Material/material_basis.jl")
-using .Helpers: check_inf_or_nan, find_active, get_active_update_nodes, invert, determinant
+using .Helpers:
+    check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert, determinant
 include("./Additive/Additive_Factory.jl")
 include("./Corrosion/Corrosion_Factory.jl")
 include("./Damage/Damage_Factory.jl")
@@ -133,7 +134,6 @@ function compute_models(
     synchronise_field,
     to::TimerOutput,
 )
-    index = datamanager.get_field("Index")
     fem_option = datamanager.fem_active()
     if fem_option
         # no damage occur here. Therefore, it runs one time
@@ -147,10 +147,10 @@ function compute_models(
             time,
             dt,
         )
-
     end
 
-    active = datamanager.get_field("Active")
+    active_list = datamanager.get_field("Active")
+
     # TODO check if pre calculation should run block wise. For mixed model applications it makes sense.
     # TODO add for pre calculation a whole model option, to get the neighbors as well, e.g. for bond associated
     # TODO check for loop order?
@@ -162,21 +162,24 @@ function compute_models(
         ## TODO @jan-timo synchronisation is missing
 
         #for synch_key in active_model.fields_for_local_synchronization(datamanager.get_properties(block, active_model_name))
-        #synchronise_field
+        #synchronise_field"Active"
         #@timeit to "upload_to_cores" datamanager.synch_manager(
         #    synchronise_field,
         #    "upload_to_cores",
         #)
         #end
         for (block, nodes) in pairs(block_nodes)
+            # "delete" the view of active nodes
+            active_nodes = datamanager.get_field("Active Nodes")
             if active_model_name == "Additive Model"
                 active_nodes = @view nodes[:]
             else
-                active_nodes = view(nodes, find_active(active[nodes], index))
+                active_nodes = find_active_nodes(active_list, active_nodes, nodes)
             end
-            if fem_option
+            if fem_option # not correct I think
                 # find all non-FEM nodes
-                active_nodes = view(nodes, find_active(.~fe_nodes[active_nodes], index))
+                active_nodes = find_active_nodes(fe_nodes, active_nodes, nodes)
+                #active_nodes = view(nodes, find_active(.~view(fe_nodes, active_nodes), active_nodes))
             end
             if datamanager.check_property(block, active_model_name)
                 # synch
@@ -193,25 +196,34 @@ function compute_models(
             end
         end
     end
-    # No update is needed, if no damage occur
-    update_list = datamanager.get_field("Update List")
+    # No update is needed, if no damage occur ???
+    # Why not update_list.=false -> avoid neighbors
+
+    update_list = datamanager.get_field("Update")
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
+
+    # update_list.=false
+
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         if active_model_name == "Additive Model"
             continue
         end
         #synchronise_field(datamanager.local_synch_fiels(active_model_name))
-        for block in eachindex(block_nodes)
-            # TODO not optimal
-            active_nodes::Vector{Int64}, update_nodes =
-                get_active_update_nodes(active, update_list, block_nodes, index, block)
+        for (block, nodes) in pairs(block_nodes)
+            active_nodes = datamanager.get_field("Active Nodes")
+            update_nodes = datamanager.get_field("Update Nodes")
+            active_nodes = find_active_nodes(active_list, active_nodes, nodes)
+            update_nodes =
+                get_active_update_nodes(active_list, update_list, nodes, update_nodes)
             if fem_option
-                update_nodes = block_nodes[block][find_active(
-                    Vector{Bool}(.~fe_nodes[update_nodes], index),
-                )]
+                # FEM active means FEM nodes
+                active_nodes = find_active_nodes(fe_nodes, active_nodes, nodes)
+                # update are the nodes to run a second time
+                update_nodes =
+                    get_active_update_nodes(fe_nodes, update_list, nodes, update_nodes)
             end
             # active or all, or does it not matter?
             if active_model_name == "Damage Model"
@@ -235,11 +247,13 @@ function compute_models(
     # must be here to avoid double distributions
     # distributes ones over all nodes
     if "Material" in options
+        active_nodes = datamanager.get_field("Active Nodes")
         @timeit to "distribute_force_densities" datamanager =
             Material.distribute_force_densities(
                 datamanager,
-                find_active(active[1:datamanager.get_nnodes()], index),
+                find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes()),
             )
+
     end
 
     update_list .= true

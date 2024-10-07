@@ -57,8 +57,9 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
     fem_block = datamanager.create_constant_node_field("FEM Block", Bool, 1, false)
     datamanager.create_constant_node_field("Index", Int64, 1)
-
-    datamanager.create_constant_node_field("Update List", Bool, 1, true)
+    active_nodes = datamanager.create_constant_node_field("Active Nodes", Int64, 1)
+    update_nodes = datamanager.create_constant_node_field("Update Nodes", Int64, 1)
+    datamanager.create_constant_node_field("Update", Bool, 1, true)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors

@@ -57,7 +57,7 @@ function compute_model(
 
     nlist = datamanager.get_nlist()
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
-    update_list = datamanager.get_field("Update List")
+    update_list = datamanager.get_field("Update")
     undeformed_bond_length = datamanager.get_field("Bond Length")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     nneighbors = datamanager.get_field("Number of Neighbors")
