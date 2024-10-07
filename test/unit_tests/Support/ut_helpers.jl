@@ -5,8 +5,8 @@
 using Test
 using ProgressBars
 using LinearAlgebra
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../src/PeriLab.jl")
+using .PeriLab
 
 @testset "ut_sinv" begin
     @test PeriLab.Solver.Helpers.smat(zeros(2, 2)) == zeros(2, 2)
@@ -229,21 +229,27 @@ end
     @test PeriLab.Solver.Helpers.find_indices([1, 1, 2, 3, 3, 4, 4, 4, 1], 5) == []
 end
 
-# Define a test case for the find_active function
-@testset "ut_find_active" begin
+# Define a test case for the find_active_nodes function
+@testset "ut_find_active_nodes" begin
     index = [0, 0, 0, 0, 0]
     # Test case 1: Empty input
-    @test isempty(PeriLab.Solver.Helpers.find_active(Bool[], index))
+    @test isempty(PeriLab.Solver.Helpers.find_active_nodes(Bool[], index, 1:0))
     # Test case 2: All elements are active
-    @test PeriLab.Solver.Helpers.find_active([true, true, true], index) == [1, 2, 3]
+    @test PeriLab.Solver.Helpers.find_active_nodes([true, true, true], index, 1:3) ==
+          [1, 2, 3]
     # Test case 3: No elements are active
-    @test isempty(PeriLab.Solver.Helpers.find_active([false, false, false], index))
+    @test isempty(
+        PeriLab.Solver.Helpers.find_active_nodes([false, false, false], index, 1:3),
+    )
     # Test case 4: Mix of active and inactive elements
-    @test PeriLab.Solver.Helpers.find_active([false, true, false, true, true], index) ==
-          [2, 4, 5]
+    @test PeriLab.Solver.Helpers.find_active_nodes(
+        [false, true, false, true, true],
+        index,
+        1:5,
+    ) == [2, 4, 5]
     # Test case 5: SubList of active and inactive elements
     list = [false, true, false, true, true]
-    @test PeriLab.Solver.Helpers.find_active(list[[2, 3, 5]], index) == [1, 3]
+    @test PeriLab.Solver.Helpers.find_active_nodes(list[[2, 3, 5]], index, 1:3) == [1, 3]
 end
 
 @testset "ut_find_inverse_bond_id" begin
