@@ -8,6 +8,23 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.4] - 2024-10-08
+
+### Added
+
+- Include lambda rotation in Thermal flow #134
+- Int support for solver params
+
+### Fixed
+
+- Many performance improvements
+- Fix high abaqus mesh memory usage
+- Fix OutOfMemory MPI Error
+
+### Changed
+
+- Removed view from get_field method and streamlined it
+
 ## [1.2.3] - 2024-09-13
 
 ### Added
@@ -158,7 +175,6 @@ All notable changes to this project will be documented in this file.
 
 - MPI Issue
 - Logging
-
 
 ## [1.0.7] - 2024-03-12
 
