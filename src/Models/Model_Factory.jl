@@ -241,14 +241,6 @@ function compute_models(
             )
     end
 
-    # TODO Does not do anything, yet?
-    # if "Thermal" in options
-    #    @timeit to "distribute_heat_flows" datamanager = Thermal.distribute_heat_flows(
-    #        datamanager,
-    #        find_active(active[1:datamanager.get_nnodes()]),
-    #    )
-    # end
-
     update_list .= true
     return datamanager
 

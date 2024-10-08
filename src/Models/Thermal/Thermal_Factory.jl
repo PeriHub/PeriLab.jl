@@ -103,29 +103,4 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     end
     return datamanager
 end
-
-"""
-    distribute_heat_flows(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
-
-Distribute the heat flow
-Note: is included, because also additional heat flow influences can be included as well here and it might be important for bond-associated formulations.
-
-# Arguments
-- `datamanager::Module`: The datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
-# Returns
-- `datamanager::Module`: The datamanager
-"""
-function distribute_heat_flows(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
-    bond_heat_flow = datamanager.get_field("Bond Heat Flow")
-    heat_flow = datamanager.get_field("Heat Flow", "NP1")
-    volume = datamanager.get_field("Volume")
-    nlist = datamanager.get_nlist()
-    for iID in nodes
-        for (jID, neighborID) in enumerate(nlist[iID])
-            heat_flow[iID] -= bond_heat_flow[iID][jID] * volume[neighborID]
-        end
-    end
-    return datamanager
-end
 end
