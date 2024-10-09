@@ -1476,16 +1476,9 @@ Switches the fields from NP1 to N.
 function switch_NP1_to_N(nstep::Int64)
     NP1_to_N = get_NP1_to_N_Dict(nstep)
     for NP1 in keys(NP1_to_N)
-        if data["field_array_type"][NP1]["Type"] == "Matrix"
-            field_NP1 = get_field(NP1)
-            N = NP1_to_N[NP1]
-            field_N = get_field(N)
-        else
-            field_NP1 = get_field(NP1)
-            N = NP1_to_N[NP1]
-            field_N = get_field(N)
-        end
-
+        field_NP1 = get_field(NP1)
+        N = NP1_to_N[NP1]
+        field_N = get_field(N)
         if size(field_NP1[1]) == () # vector
             copyto!(field_N, field_NP1)
             fill!(field_NP1, data["field_types"][NP1](0))
