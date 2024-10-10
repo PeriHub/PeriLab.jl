@@ -6,7 +6,27 @@ using Test
 #include("../../../../src/Models/Material/material_basis.jl")
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
+@testset "ut_distribute_forces" begin
+    nodes = [1, 2]
+    nlist = [[2, 3], [1, 3]]
+    bond_force = [rand(2, 2), rand(2, 2)]
+    volume = [1.0, 1.0, 1.0]
+    bond_damage = [[0.5, 0.5], [0.5, 0.5]]
+    force_densities = zeros(3, 2)
 
+    expected_force_densities = copy(force_densities)
+    for iID in nodes
+        expected_force_densities[iID, :] .+= transpose(
+            sum(bond_damage[iID] .* bond_force[iID] .* volume[nlist[iID]], dims = 1),
+        )
+        expected_force_densities[nlist[iID], :] .-=
+            bond_damage[iID] .* bond_force[iID] .* volume[iID]
+    end
+
+    result =
+        distribute_forces(nodes, nlist, bond_force, volume, bond_damage, force_densities)
+    @test result ≈ expected_force_densities
+end
 @testset "ut_flaw_function" begin
 
     stress::Float64 = 5.3
