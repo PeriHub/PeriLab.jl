@@ -171,11 +171,14 @@ function compute_models(
         for (block, nodes) in pairs(block_nodes)
             # "delete" the view of active nodes
             active_nodes = datamanager.get_field("Active Nodes")
-            if active_model_name == "Additive Model"
-                active_nodes = @view nodes[:]
-            else
-                active_nodes = find_active_nodes(active_list, active_nodes, nodes)
-            end
+
+            active_nodes = find_active_nodes(
+                active_list,
+                active_nodes,
+                nodes,
+                active_model_name != "Additive Model",
+            )
+
             if fem_option # not correct I think
                 # find all non-FEM nodes
                 active_nodes = find_active_nodes(fe_nodes, active_nodes, nodes)
@@ -196,16 +199,14 @@ function compute_models(
             end
         end
     end
-    # No update is needed, if no damage occur ???
-    # Why not update_list.=false -> avoid neighbors
 
+    # Why not update_list.=false -> avoid neighbors
     update_list = datamanager.get_field("Update")
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
 
-    # update_list.=false
-
+    #update_list .= false
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         if active_model_name == "Additive Model"
@@ -216,8 +217,15 @@ function compute_models(
             active_nodes = datamanager.get_field("Active Nodes")
             update_nodes = datamanager.get_field("Update Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes, nodes)
-            update_nodes =
-                get_active_update_nodes(active_list, update_list, nodes, update_nodes)
+            update_nodes = get_update_nodes(
+                active_list,
+                update_list,
+                nodes,
+                update_nodes,
+                active_nodes,
+                active_model_name,
+            )
+
             if fem_option
                 # FEM active means FEM nodes
                 active_nodes = find_active_nodes(fe_nodes, active_nodes, nodes)
@@ -226,9 +234,7 @@ function compute_models(
                     get_active_update_nodes(fe_nodes, update_list, nodes, update_nodes)
             end
             # active or all, or does it not matter?
-            if active_model_name == "Damage Model"
-                update_nodes = @view active_nodes[:]
-            end
+
             if datamanager.check_property(block, active_model_name)
                 # TODO synch
                 @timeit to "compute $active_model_name model" datamanager =
@@ -246,8 +252,10 @@ function compute_models(
     end
     # must be here to avoid double distributions
     # distributes ones over all nodes
+
     if "Material" in options
         active_nodes = datamanager.get_field("Active Nodes")
+
         @timeit to "distribute_force_densities" datamanager =
             Material.distribute_force_densities(
                 datamanager,
@@ -255,10 +263,22 @@ function compute_models(
             )
 
     end
-
-    update_list .= true
     return datamanager
+end
 
+function get_update_nodes(
+    active_list,
+    update_list,
+    nodes,
+    update_nodes,
+    active_nodes,
+    active_model_name,
+)
+    if active_model_name == "Damage Model"
+        return @view active_nodes[:]
+    else
+        return get_active_update_nodes(active_list, update_list, nodes, update_nodes)
+    end
 end
 
 """
