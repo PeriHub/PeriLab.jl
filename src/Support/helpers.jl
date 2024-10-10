@@ -53,7 +53,7 @@ function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
             s1[i, j] = s3[i, j] + fastdot(C[i, j, :, :], s2[:, :])
         end
     end
-
+    return s1
 end
 
 """
@@ -124,10 +124,15 @@ function get_active_update_nodes(active, update, nodes, index)
 end
 
 
-function find_active_nodes(active, active_nodes::Vector{Int64}, nodes)
+function find_active_nodes(
+    active,
+    active_nodes::Vector{Int64},
+    nodes,
+    false_or_true::Bool = true,
+)
     count::Int64 = 0
     for node in nodes
-        if active[node]
+        if active[node] == false_or_true
             count += 1
             active_nodes[count] = node
         end

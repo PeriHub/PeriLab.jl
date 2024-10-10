@@ -5,8 +5,8 @@
 using Test
 using ProgressBars
 using LinearAlgebra
-include("../../../src/PeriLab.jl")
-using .PeriLab
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 
 @testset "ut_sinv" begin
     @test PeriLab.Solver.Helpers.smat(zeros(2, 2)) == zeros(2, 2)
@@ -241,6 +241,13 @@ end
     @test isempty(
         PeriLab.Solver.Helpers.find_active_nodes([false, false, false], index, 1:3),
     )
+
+    @test PeriLab.Solver.Helpers.find_active_nodes(
+        [false, false, false],
+        index,
+        1:3,
+        false,
+    ) == [1, 2, 3]
     # Test case 4: Mix of active and inactive elements
     @test PeriLab.Solver.Helpers.find_active_nodes(
         [false, true, false, true, true],
