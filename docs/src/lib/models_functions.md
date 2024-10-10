@@ -1,6 +1,7 @@
 # Models - Functions
 
 ## Index
+
 ```@index
 Pages = ["models_functions.md"]
 ```
@@ -8,7 +9,9 @@ Pages = ["models_functions.md"]
 ```@meta
 CurrentModule = PeriLab.Solver.Model_Factory
 ```
+
 ## Models
+
 ```@docs
 compute_models
 get_block_model_definition
@@ -20,7 +23,9 @@ set_heat_capacity
 ```@meta
 CurrentModule = PeriLab.Solver.Model_Factory.Additive
 ```
+
 ## Additive
+
 ```@docs
 Set_modules.Additive_template.additive_name
 Set_modules.Additive_template.compute_model
@@ -29,7 +34,9 @@ Set_modules.Additive_template.compute_model
 ```@meta
 CurrentModule = PeriLab.Solver.Model_Factory.Damage
 ```
+
 ## Damage
+
 ```@docs
 Set_modules.Damage_template.damage_name
 Set_modules.Damage_template.compute_model
@@ -43,7 +50,9 @@ Set_modules.Critical_Energy_Model.get_quad_horizon
 ```@meta
 CurrentModule = PeriLab.Solver.Model_Factory.Material
 ```
+
 ## Material
+
 ```@docs
 Set_modules.Material_template.init_model
 Set_modules.Material_template.material_name
@@ -77,11 +86,12 @@ Set_modules.Correspondence.Global_zero_energy_control.rotate_fourth_order_tensor
 ```@meta
 CurrentModule = PeriLab.Solver.Model_Factory.Thermal
 ```
+
 ## Thermal
+
 ```@docs
 Set_modules.Thermal_template.thermal_model_name
 Set_modules.Thermal_template.compute_model
-distribute_heat_flows
 Thermal.Set_modules.Heat_transfer.calculate_specific_volume
 Thermal.Set_modules.Thermal_expansion.thermal_deformation
 Thermal.Set_modules.Thermal_Flow.compute_heat_flow_state_correspondence

@@ -25,7 +25,6 @@ using .Thermal
     @test "TemperatureNP1" in field_keys
     @test "Heat FlowN" in field_keys
     @test "Heat FlowNP1" in field_keys
-    @test "Bond Heat Flow" in field_keys
 
 end
 @testset "init_model" begin

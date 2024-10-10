@@ -263,6 +263,8 @@ function compute_models(
             )
 
     end
+
+    update_list .= true
     return datamanager
 end
 

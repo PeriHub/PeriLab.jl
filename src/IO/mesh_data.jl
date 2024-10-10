@@ -979,18 +979,18 @@ function load_and_evaluate_mesh(
     if params["Discretization"]["Type"] == "Abaqus"
         filename = joinpath(path, Parameter_Handling.get_mesh_name(params))
         @timeit to "read_mesh" mesh, nsets = read_mesh(filename, params)
-        nnodes = size(mesh, 1) + 1
-        mesh, surface_ns = extrude_surface_mesh(mesh, params)
-        if !isnothing(surface_ns)
-            for (key, values) in surface_ns
-                nsets[key] = Vector{Int64}(values .+ nnodes)
-            end
-        end
     else
         @debug "Read node sets"
         @timeit to "read_mesh" mesh =
             read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
         nsets = get_node_sets(params, path)
+    end
+    nnodes = size(mesh, 1) + 1
+    mesh, surface_ns = extrude_surface_mesh(mesh, params)
+    if !isnothing(surface_ns)
+        for (key, values) in surface_ns
+            nsets[key] = Vector{Int64}(values .+ nnodes)
+        end
     end
     check_for_duplicate_in_dataframe(mesh)
     check_types_in_dataframe(mesh)

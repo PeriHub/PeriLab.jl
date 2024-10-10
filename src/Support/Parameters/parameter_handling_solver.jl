@@ -45,7 +45,7 @@ Get the initial time
 function get_initial_time(params::Dict)
 
     if haskey(params["Solver"], "Initial Time")
-        return params["Solver"]["Initial Time"]
+        return Float64(params["Solver"]["Initial Time"])
     end
 
     @error "No initial time defined"
@@ -80,7 +80,7 @@ Get the safety factor
 - `safety_factor::Float64`: The safety factor
 """
 function get_safety_factor(params::Dict)
-    return get(params["Solver"][get_solver_name(params)], "Safety Factor", 1.0)
+    return Float64(get(params["Solver"][get_solver_name(params)], "Safety Factor", 1.0))
 end
 
 """
@@ -94,7 +94,7 @@ Get the fixed time step
 - `fixed_dt::Float64`: The fixed time step
 """
 function get_fixed_dt(params::Dict)
-    return get(params["Solver"][get_solver_name(params)], "Fixed dt", -1.0)
+    return Float64(get(params["Solver"][get_solver_name(params)], "Fixed dt", -1.0))
 end
 
 
@@ -123,7 +123,7 @@ Get the numerical damping
 - `numerical_damping::Float64`: The numerical damping
 """
 function get_numerical_damping(params::Dict)
-    return get(params["Solver"], "Numerical Damping", Float64(0.0))
+    return Float64(get(params["Solver"], "Numerical Damping", 0.0))
 end
 
 """
@@ -137,7 +137,7 @@ Get the maximum damage.
 - `write_after_damage::Bool`: The value
 """
 function get_max_damage(params::Dict)
-    return get(params["Solver"], "Maximum Damage", Inf64)
+    return Float64(get(params["Solver"], "Maximum Damage", Inf64))
 end
 
 """

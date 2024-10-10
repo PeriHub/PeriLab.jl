@@ -146,7 +146,7 @@ end
             end
         end
     end
-    PeriLab.IO.output_frequency = [
+    test_data_manager.data["output_frequency"] = [
         Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1),
         Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1),
         Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1),
