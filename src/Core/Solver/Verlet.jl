@@ -475,7 +475,7 @@ function run_solver(
     damage_init::Bool = false
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
-    nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
+    #nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
     @inbounds @fastmath for idt in iter
         @timeit to "Verlet" begin
             active_nodes = datamanager.get_field("Active Nodes")
@@ -502,7 +502,8 @@ function run_solver(
             #if solver_options["Material Models"]
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
-            deformed_coorNP1[:, :] .= coor .+ uNP1
+            @views deformed_coorNP1[active_nodes, :] .=
+                coor[active_nodes, :] .+ uNP1[active_nodes, :]
 
             @timeit to "upload_to_cores" datamanager.synch_manager(
                 synchronise_field,
@@ -519,8 +520,10 @@ function run_solver(
                 synchronise_field,
                 to,
             )
+            # update the current active nodes; might have been changed by the additive models
 
             if "Material" in solver_options["Models"]
+                # TODO rename function -> missleading, because strains are also covered. Has to be something like a factory class
                 @timeit to "calculate_stresses" datamanager = calculate_stresses(
                     datamanager,
                     block_nodes,
@@ -536,30 +539,42 @@ function run_solver(
             @timeit to "apply_bc_dirichlet_force" datamanager =
                 Boundary_conditions.apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, step_time) #-> von neumann
-
+            active_nodes = datamanager.get_field("Active Nodes")
+            active_nodes =
+                find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
             if "Material" in solver_options["Models"]
                 check_inf_or_nan(force_densities, "Forces")
-                #=
+
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
                     # force density is for FEM part force
-                    force_densities[find_active(fe_nodes[nodes], index), :] +=
-                        @view external_forces[find_active(fe_nodes[nodes], index), :]
-                    a[find_active(fe_nodes[nodes], index), :] =
-                        force_densities[find_active(fe_nodes[nodes], index), :] ./
-                        lumped_mass[find_active(fe_nodes[nodes], index)] # element wise
-                    forces[find_active(fe_nodes[nodes], index), :] =
-                        @view force_densities[find_active(fe_nodes[nodes], index), :]
+                    active_nodes = datamanager.get_field("Active Nodes")
+                    active_nodes = find_active_nodes(
+                        fe_nodes,
+                        active_nodes,
+                        1:datamanager.get_nnodes(),
+                    )
+
+                    force_densities[active_nodes, :] +=
+                        @view external_forces[active_nodes, :]
+                    a[active_nodes, :] =
+                        force_densities[active_nodes, :] ./ lumped_mass[active_nodes] # element wise
+                    forces[active_nodes, :] = @view force_densities[active_nodes, :]
 
                     # only for cases in coupling where both the FEM and PD nodes are equal
                     # TODO discuss design decission
-                    force_densities[find_active(fe_nodes[nodes], index), :] ./=
-                        volume[find_active(fe_nodes[nodes], index)]
+                    force_densities[active_nodes, :] ./= volume[active_nodes]
 
                     # toggles the value and switch the non FEM nodes to true
-                    nodes = find_active(.~fe_nodes[nodes], index)
+                    active_nodes = datamanager.get_field("Active Nodes")
+                    active_nodes = find_active_nodes(
+                        fe_nodes,
+                        active_nodes,
+                        1:datamanager.get_nnodes(),
+                        false,
+                    )
                 end
-                =#
+
                 force_densities[active_nodes, :] +=
                     (@view external_force_densities[active_nodes, :]) .+
                     (@view external_forces[active_nodes, :]) ./ volume[active_nodes]
@@ -572,7 +587,7 @@ function run_solver(
             if "Thermal" in solver_options["Models"]
                 check_inf_or_nan(flowNP1, "Heat Flow")
                 # heat capacity check. if it is zero deltaT = 0
-                deltaT[active_nodes] =
+                @views deltaT[active_nodes] =
                     -flowNP1[active_nodes] .* dt ./
                     (density[active_nodes] .* heat_capacity[active_nodes])
                 if fem_option && time == 0

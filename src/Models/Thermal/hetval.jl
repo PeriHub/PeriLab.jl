@@ -61,13 +61,9 @@ function compute_model(
     statev = datamanager.get_field("State Variables")
     flux_N = datamanager.get_field("Heat Flow", "N")
     flux_NP1 = datamanager.get_field("Heat Flow", "NP1")
-    PREDEF = datamanager.get_field("Predefined Fields", false)
-    DPRED = datamanager.get_field("Predefined Fields Increment", false)
+    PREDEF = datamanager.get_field("Predefined Fields")
+    DPRED = datamanager.get_field("Predefined Fields Increment")
 
-    if isnothing(PREDEF)
-        PREDEF = zeros(size(temp_N))
-        DPRED = zeros(size(temp_N))
-    end
     for iID in nodes
         STATEV_temp = statev[iID, :]
         FLUX_temp = [flux_N[iID], flux_NP1[iID]]
@@ -101,7 +97,7 @@ UMAT interface
 - `TIME::Vector{Float64}`: Time
 - `DTIME::Float64`: Time increment
 - `STATEV::Vector{Float64}`: State variables
-- `FLUX::Float64`: Heat flux
+- `FLUX::Float64`: Heat Flow
 - `PREDEF::Vector{Float64}`: Predefined
 - `DPRED::Vector{Float64}`: Predefined increment
 

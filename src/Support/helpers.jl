@@ -126,7 +126,7 @@ end
 
 function find_active_nodes(
     active,
-    active_nodes::Vector{Int64},
+    active_nodes::Union{Vector{Int64},SubArray},
     nodes,
     false_or_true::Bool = true,
 )

@@ -135,17 +135,25 @@ function compute_stresses(
     stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}},
     iID_jID_nID::Tuple = (),
 )
-    hooke_matrix = get_fourth_order(
-        get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID),
-        dof,
-    )
-    fourth_order_times_second_order_tensor(
-        hooke_matrix,
-        stress_NP1[iID, :, :],
-        strain_increment[iID, :, :],
-        stress_N[iID, :, :],
-        dof,
-    )
+    #=
+        hooke_matrix = get_fourth_order(
+            get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID),
+            dof,
+        )
+        stress_NP1[iID, :, :] = fourth_order_times_second_order_tensor(
+            hooke_matrix,
+            stress_NP1[iID, :, :],
+            strain_increment[iID, :, :],
+            stress_N[iID, :, :],
+            dof,
+        )
+    =#
+    @views hookeMatrix =
+        get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID)
+    @views stress_NP1[iID, :, :] =
+        voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) +
+        stress_N[iID, :, :]
+
     return stress_NP1, datamanager
 end
 

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using .Helpers: get_active_update_nodes
+using .Helpers: find_active_nodes, get_active_update_nodes
 using StaticArrays: MMatrix, SMatrix
 using .Helpers: invert
 include("../Models/Material/material_basis.jl")
@@ -41,7 +41,7 @@ function get_partial_stresses(datamanager::Module, nodes::Union{SubArray,Vector{
     undeformed_bond = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
     stress = datamanager.get_field("Cauchy Stress", "NP1")
-    dof = datamanager.get_dof()
+
     for iID in nodes
         stress[iID, :, :] .+= bond_forces[iID]' * undeformed_bond[iID] .* volume[iID]
     end
@@ -115,7 +115,7 @@ function calculate_stresses(
     block_nodes::Dict{Int64,Vector{Int64}},
     options::Dict{String,Any},
 )
-
+    active_list = datamanager.get_field("Active")
     for block in eachindex(block_nodes)
         if !occursin(
             "Correspondence",
@@ -124,11 +124,10 @@ function calculate_stresses(
             if options["Calculate Cauchy"] |
                options["Calculate von Mises"] |
                options["Calculate Strain"]
-                active = datamanager.get_field("Active")
-                update_list = datamanager.get_field("Update")
-                index = datamanager.get_field("Index")
-                active_nodes, update_nodes =
-                    get_active_update_nodes(active, update_list, block_nodes, index, block)
+
+                active_nodes = datamanager.get_field("Active Nodes")
+                active_nodes =
+                    find_active_nodes(active_list, active_nodes, block_nodes[block])
                 datamanager = get_partial_stresses(datamanager, active_nodes)
             end
             if options["Calculate von Mises"]

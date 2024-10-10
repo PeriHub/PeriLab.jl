@@ -230,10 +230,10 @@ end
       lambda::Union{Float64, Int64}, bond_damage::Vector{Vector{Float64}}, undeformed_bond::Vector{Matrix{Float64}}, horizon::Vector{Float64},
       temperature::Vector{Float64}, heat_flow::Vector{Float64})
 
-Calculate heat flow based on a bond-based model for thermal analysis.
+Calculate Heat Flow based on a bond-based model for thermal analysis.
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: An array of node indices for which heat flow should be computed.
+- `nodes::Union{SubArray,Vector{Int64}}`: An array of node indices for which Heat Flow should be computed.
 - `dof::Int64`: The degree of freedom, either 2 or 3, indicating whether the analysis is 2D or 3D.
 - `nlist::Vector{Vector{Int64}`: A Vector representing the neighbor list for each node.
 - `lambda::Union{Float64, Int64}`: The thermal conductivity.
@@ -245,13 +245,13 @@ Calculate heat flow based on a bond-based model for thermal analysis.
 - `undeformed_bond_length::Vector{Vector{Float64}}`: A Vector representing the undeformed bond length for each bond.
 - `horizon::Vector{Float64}`: A Vector representing the horizon for each node.
 - `temperature::Vector{Float64}`: A Vector representing the temperature at each node.
-- `heat_flow::Vector{Float64}`: A Vector where the computed heat flow values will be stored.
+- `heat_flow::Vector{Float64}`: A Vector where the computed Heat Flow values will be stored.
 
 ## Returns
-- `heat_flow`: updated bond heat flow values will be stored.
+- `heat_flow`: updated bond Heat Flow values will be stored.
 
 ## Description
-This function calculates the heat flow between neighboring nodes based on a bond-based model for thermal analysis [OterkusS2014b](@cite). It considers various parameters, including thermal conductivity, damage state of bonds, geometry of bonds, horizons, temperature, and volume. The calculated bond heat flow values are stored in the `heat_flow` array.
+This function calculates the Heat Flow between neighboring nodes based on a bond-based model for thermal analysis [OterkusS2014b](@cite). It considers various parameters, including thermal conductivity, damage state of bonds, geometry of bonds, horizons, temperature, and volume. The calculated bond Heat Flow values are stored in the `heat_flow` array.
 
 """
 function compute_heat_flow_state_bond_based(

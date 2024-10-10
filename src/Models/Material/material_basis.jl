@@ -353,6 +353,7 @@ function distribute_forces(
         @views force_densities[nlist[iID], :] .-=
             bond_damage[iID] .* bond_force[iID] .* volume[iID]
     end
+    return force_densities
 end
 
 

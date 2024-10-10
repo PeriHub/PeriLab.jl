@@ -103,10 +103,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     if datamanager.fem_active()
         datamanager = FEM.init_FEM(params, datamanager)
     end
-    if datamanager.has_key("Active")
-        # can be predefined in mesh. Therefore it should be checked if it is there.
-        active = datamanager.get_field("Active")
-    else
+    if !datamanager.has_key("Active")
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)
     end
 

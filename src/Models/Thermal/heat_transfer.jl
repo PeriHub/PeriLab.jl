@@ -99,14 +99,12 @@ function compute_model(
         horizon,
     )
     for iID in nodes
-
-        if dof == 2
-            dx = sqrt(volume[iID])
-        elseif dof == 3
-            dx = volume[iID]^(1 / 3)
-        end
-
         if surface_nodes[iID] && specific_volume[iID] > req_specific_volume
+            if dof == 2
+                dx = sqrt(volume[iID])
+            elseif dof == 3
+                dx = volume[iID]^(1 / 3)
+            end
             heat_flow[iID] +=
                 (kappa * (temperature[iID] - Tenv)) / dx * floor(specific_volume[iID])
         end

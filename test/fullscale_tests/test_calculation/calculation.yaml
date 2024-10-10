@@ -33,6 +33,7 @@ PeriLab:
       Material Model: "Mat_2"
       Density: 2.7e-9
       Horizon: 2.1
+      Pre Calculation Model: "Pre_1"
   Boundary Conditions:
     BC_1:
       Variable: "Displacements"
