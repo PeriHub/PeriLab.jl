@@ -279,6 +279,15 @@ global expected_structure = Dict(
                         ),
                         false,
                     ],
+                    "Pre Calculation Global" => [
+                        Dict{Any,Any}(
+                            "Bond Associated Correspondence" => [Bool, false],
+                            "Deformation Gradient" => [Bool, false],
+                            "Deformed Bond Geometry" => [Bool, false],
+                            "Shape Tensor" => [Bool, false],
+                        ),
+                        false,
+                    ],
                     "Pre Calculation Models" => [
                         Dict{Any,Any}(
                             "Any" => [
