@@ -1,6 +1,7 @@
 # IO - Functions
 
 ## Index
+
 ```@index
 Pages = ["io_functions.md"]
 ```
@@ -8,7 +9,9 @@ Pages = ["io_functions.md"]
 ```@meta
 CurrentModule = PeriLab.IO
 ```
+
 ## IO
+
 ```@docs
 merge_exodus_files
 open_result_file
@@ -36,7 +39,9 @@ global_value_avg
 ```@meta
 CurrentModule = PeriLab.IO
 ```
+
 ## Read_Mesh
+
 ```@docs
 init_data
 create_and_distribute_bond_norm
@@ -76,7 +81,9 @@ check_types_in_dataframe
 ```@meta
 CurrentModule = PeriLab.IO.Geometry
 ```
+
 ## Geometry
+
 ```@docs
 bond_geometry
 shape_tensor
@@ -88,7 +95,9 @@ rotation_tensor
 ```@meta
 CurrentModule = PeriLab.IO
 ```
+
 ## Read_Input_Deck
+
 ```@docs
 read_input
 read_input_file
@@ -97,7 +106,9 @@ read_input_file
 ```@meta
 CurrentModule = PeriLab.IO
 ```
+
 ## Write_Exodus_Results
+
 ```@docs
 create_result_file
 paraview_specifics
@@ -113,7 +124,9 @@ merge_exodus_file
 ```@meta
 CurrentModule = PeriLab.IO
 ```
+
 ## Write_CSV_Results
+
 ```@docs
 write_global_results_in_csv
 ```
@@ -121,7 +134,9 @@ write_global_results_in_csv
 ```@meta
 CurrentModule = PeriLab.Solver.Helpers
 ```
+
 ## Helpers
+
 ```@docs
 find_indices
 find_active
@@ -139,7 +154,9 @@ rotate_second_order_tensor
 ```@meta
 CurrentModule = PeriLab.Solver.Model_Factory.Pre_Calculation
 ```
+
 ## Pre_Calculation
+
 ```@docs
 init_fields
 init_model
@@ -151,7 +168,9 @@ check_dependencies
 ```@meta
 CurrentModule = PeriLab.IO.Parameter_Handling
 ```
+
 ## parameter_handling
+
 ```@docs
 validate_yaml
 validate_structure_recursive
@@ -177,7 +196,6 @@ get_output_fieldnames
 get_outputs
 get_output_frequency
 get_model_parameter
-get_models_option
 get_solver_name
 get_initial_time
 get_final_time
@@ -192,7 +210,9 @@ get_header
 ```@meta
 CurrentModule = PeriLab.Solver.Model_Factory.Material.Set_modules
 ```
+
 ## Set_modules
+
 ```@docs
 find_jl_files
 find_module_files
@@ -203,7 +223,9 @@ create_module_specifics
 ```@meta
 CurrentModule = PeriLab.Logging_module
 ```
+
 ## Logging_module
+
 ```@docs
 set_result_files
 print_table
