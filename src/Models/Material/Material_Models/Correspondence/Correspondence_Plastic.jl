@@ -4,6 +4,7 @@
 
 module Correspondence_Plastic
 include("../../material_basis.jl")
+using .Material_Basis: flaw_function, get_von_mises_stress
 using LinearAlgebra
 using StaticArrays
 export fe_support

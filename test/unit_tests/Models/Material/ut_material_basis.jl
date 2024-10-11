@@ -3,7 +3,20 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-#include("../../../../src/Models/Material/material_basis.jl")
+include("../../../../src/Models/Material/material_basis.jl")
+using .Material_Basis:
+    get_value,
+    get_all_elastic_moduli,
+    get_Hooke_matrix,
+    distribute_forces,
+    flaw_function,
+    matrix_to_voigt,
+    voigt_to_matrix,
+    check_symmetry,
+    get_symmetry,
+    get_von_mises_stress,
+    get_strain,
+    compute_Piola_Kirchhoff_stress
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
 @testset "ut_distribute_forces" begin

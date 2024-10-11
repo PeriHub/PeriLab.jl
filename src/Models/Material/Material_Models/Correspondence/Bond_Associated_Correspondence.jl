@@ -3,11 +3,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bond_Associated_Correspondence
-#using LinearAlgebra
+using LinearAlgebra
 using StaticArrays
 include("../../../../Support/helpers.jl")
 include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
+using .Material_Basis: compute_Piola_Kirchhoff_stress
 using .Helpers: find_local_neighbors, invert, rotate, fastdot, determinant, smat
 using .Geometry:
     compute_strain,

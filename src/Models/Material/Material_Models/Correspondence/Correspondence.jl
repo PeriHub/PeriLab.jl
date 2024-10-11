@@ -7,9 +7,11 @@ using LinearAlgebra
 using TimerOutputs
 using Rotations
 include("../Zero_Energy_Control/global_control.jl")
+using .Global_zero_energy_control: compute_control
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 include("../../material_basis.jl")
+using .Material_Basis: compute_Piola_Kirchhoff_stress
 include("../../../../Support/helpers.jl")
 using .Helpers: invert, rotate, determinant, smat
 include("../../../../Support/geometry.jl")

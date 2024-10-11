@@ -4,6 +4,7 @@
 
 module PD_Solid_Elastic
 include("../../material_basis.jl")
+using .Material_Basis: get_symmetry
 include("./Ordinary.jl")
 using TimerOutputs
 using StaticArrays

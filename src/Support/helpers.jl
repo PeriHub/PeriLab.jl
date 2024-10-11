@@ -12,6 +12,9 @@ using LinearAlgebra
 using TensorOperations
 using StaticArrays
 using LoopVectorization
+global A2x2 = MMatrix{2,2}(zeros(Float64, 2, 2))
+global A3x3 = MMatrix{3,3}(zeros(Float64, 3, 3))
+global A6x6 = MMatrix{6,6}(zeros(Float64, 6, 6))
 export qdim
 export check_inf_or_nan
 export find_active_nodes
@@ -28,6 +31,23 @@ export invert
 export rotate
 export fastsubtract!
 export fastdot
+
+function get_MMatrix(dof)
+
+    if dof == 2
+        global A2x2
+        return A2x2
+    elseif dof == 3
+        global A3x3
+        return A3x3
+    elseif dof == 6
+        global A6x6
+        return A6x6
+    else
+        @error "MMatrix size $dof not pre-allocated. Please add your size to helper.jl"
+        return nothing
+    end
+end
 
 function fastsubtract!(c, a, b)
     for i = 1:lastindex(a)

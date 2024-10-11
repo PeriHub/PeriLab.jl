@@ -6,7 +6,7 @@ using .Helpers: find_active_nodes, get_active_update_nodes
 using StaticArrays: MMatrix, SMatrix
 using .Helpers: invert
 include("../Models/Material/material_basis.jl")
-
+using .Material_Basis: get_von_mises_stress, get_strain, get_Hooke_matrix
 """
     get_forces_from_force_density(datamanager::Module)
 
@@ -143,7 +143,7 @@ function calculate_stresses(
                 datamanager = calculate_strain(
                     datamanager,
                     active_nodes,
-                    invert(hookeMatrix, "Hook matrix not invertable"),
+                    invert(hookeMatrix, "Hooke matrix not invertable"),
                 )
             end
         end

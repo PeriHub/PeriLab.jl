@@ -5,6 +5,9 @@
 module Material
 include("../../Core/Module_inclusion/set_Modules.jl")
 include("material_basis.jl")
+using LinearAlgebra
+using .Material_Basis:
+    get_all_elastic_moduli, distribute_forces, check_symmetry, get_all_elastic_moduli
 using .Set_modules
 using TimerOutputs
 using StaticArrays

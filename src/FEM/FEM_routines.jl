@@ -6,6 +6,7 @@ using StaticArrays
 using FastGaussQuadrature
 using Statistics
 include("../Models/Material/material_basis.jl")
+using .Material_Basis: voigt_to_matrix
 include("../Support/helpers.jl")
 using .Helpers: invert, determinant
 function get_FE_material_model(params::Dict, name::String)

@@ -5,8 +5,11 @@
 module Global_zero_energy_control
 include("../../../../Support/helpers.jl")
 using .Helpers: get_fourth_order
+using StaticArrays: MMatrix
+using LinearAlgebra: mul!
 include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
+using .Material_Basis: get_Hooke_matrix
 using TensorOperations
 using .Geometry
 export control_name

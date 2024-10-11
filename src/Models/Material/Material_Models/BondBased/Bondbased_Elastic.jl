@@ -4,6 +4,7 @@
 
 module Bondbased_Elastic
 include("../../material_basis.jl")
+using .Material_Basis: get_symmetry
 using TimerOutputs
 export init_model
 export fe_support
