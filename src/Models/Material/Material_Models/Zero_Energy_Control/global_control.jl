@@ -207,7 +207,7 @@ function global_zero_energy_mode_stiffness(
     # Perform matrix multiplication for each i, j
     for i = 1:dof
         for j = 1:dof
-            zStiff[ID, i, j] = sum(C[i, j, :, :] .* Kinv_ID)
+            @views zStiff[ID, i, j] = sum(C[i, j, :, :] .* Kinv_ID)
         end
     end
 end
