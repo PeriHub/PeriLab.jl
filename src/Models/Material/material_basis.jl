@@ -6,7 +6,7 @@ module Material_Basis
 using LinearAlgebra
 using StaticArrays
 include("../../Support/helpers.jl")
-using .Helpers: get_MMatrix, determinant, invert
+using .Helpers: get_MMatrix, determinant, invert, smat
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
@@ -173,7 +173,7 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
     if occursin("anisotropic", symmetry)
-        aniso_matrix = get_MMatrix(6)
+        aniso_matrix = get_MMatrix(36)
         for iID = 1:6
             for jID = iID:6
                 if "C" * string(iID) * string(jID) in keys(parameter)
@@ -189,14 +189,14 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
         if dof == 3
             return aniso_matrix
         elseif occursin("plane strain", symmetry)
-            matrix = get_MMatrix(3)
+            matrix = get_MMatrix(9)
             matrix[1:2, 1:2] = aniso_matrix[1:2, 1:2]
             matrix[3, 1:2] = aniso_matrix[6, 1:2]
             matrix[1:2, 3] = aniso_matrix[1:2, 6]
             matrix[3, 3] = aniso_matrix[6, 6]
             return matrix
         elseif occursin("plane stress", symmetry)
-            matrix = get_MMatrix(3)
+            matrix = get_MMatrix(36)
             inv_aniso = invert(aniso_matrix, "Hooke matrix not invertable")
             matrix[1:2, 1:2] = inv_aniso[1:2, 1:2]
             matrix[3, 1:2] = inv_aniso[6, 1:2]
@@ -225,7 +225,7 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
         temp = E / ((1 + nu) * (1 - 2 * nu))
 
         if dof == 3
-            matrix = get_MMatrix(6)
+            matrix = get_MMatrix(36)
             matrix[1, 1] = (1 - nu) * temp
             matrix[2, 2] = (1 - nu) * temp
             matrix[3, 3] = (1 - nu) * temp
@@ -240,7 +240,7 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
             matrix[6, 6] = G
             return matrix
         elseif occursin("plane strain", symmetry)
-            matrix = get_MMatrix(3)
+            matrix = get_MMatrix(9)
             matrix[1, 1] = (1 - nu) * temp
             matrix[2, 2] = (1 - nu) * temp
             matrix[3, 3] = G
@@ -248,7 +248,7 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
             matrix[2, 1] = nu * temp
             return matrix
         elseif occursin("plane stress", symmetry)
-            matrix = get_MMatrix(3)
+            matrix = get_MMatrix(9)
             matrix[1, 1] = E / (1 - nu * nu)
             matrix[1, 2] = E * nu / (1 - nu * nu)
             matrix[2, 1] = E * nu / (1 - nu * nu)
@@ -260,7 +260,7 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
             return nothing
         end
     else
-        matrix = get_MMatrix(3)
+        matrix = get_MMatrix(9)
 
         @warn "material model defintion is missing; assuming isotropic plane stress "
         nu = parameter["Poisson's Ratio"][iID]
@@ -593,17 +593,11 @@ function compute_Piola_Kirchhoff_stress(
     deformation_gradient::Union{Matrix{Float64},SubArray{Float64}},
 )
     #50% less memory
-    return determinant(deformation_gradient) .* stress * invert(
+    return determinant(deformation_gradient) .* smat(stress) * invert(
         deformation_gradient,
         "Deformation gradient is singular and cannot be inverted.",
     )
-    # 30% computation time
-    #try
-    #    return det(deformation_gradient) .* stress /
-    #           deformation_gradient
-    #catch
-    #    "Deformation gradient is singular and cannot be inverted."
-    # return nothing
-    #end
+
 end
+
 end

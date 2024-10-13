@@ -117,36 +117,37 @@ function calculate_stresses(
 )
     active_list = datamanager.get_field("Active")
     for block in eachindex(block_nodes)
-        if !occursin(
+        if occursin(
             "Correspondence",
             datamanager.get_properties(block, "Material Model")["Material Model"],
         )
-            if options["Calculate Cauchy"] |
-               options["Calculate von Mises"] |
-               options["Calculate Strain"]
-
-                active_nodes = datamanager.get_field("Active Nodes")
-                active_nodes =
-                    find_active_nodes(active_list, active_nodes, block_nodes[block])
-                datamanager = get_partial_stresses(datamanager, active_nodes)
-            end
-            if options["Calculate von Mises"]
-                datamanager = calculate_von_mises_stress(datamanager, active_nodes)
-            end
-            if options["Calculate Strain"]
-                material_parameter = datamanager.get_properties(block, "Material Model")
-                hookeMatrix = get_Hooke_matrix(
-                    material_parameter,
-                    material_parameter["Symmetry"],
-                    datamanager.get_dof(),
-                )
-                datamanager = calculate_strain(
-                    datamanager,
-                    active_nodes,
-                    invert(hookeMatrix, "Hooke matrix not invertable"),
-                )
-            end
+            continue
         end
+        if options["Calculate Cauchy"] |
+           options["Calculate von Mises"] |
+           options["Calculate Strain"]
+
+            active_nodes = datamanager.get_field("Active Nodes")
+            active_nodes = find_active_nodes(active_list, active_nodes, block_nodes[block])
+            datamanager = get_partial_stresses(datamanager, active_nodes)
+        end
+        if options["Calculate von Mises"]
+            datamanager = calculate_von_mises_stress(datamanager, active_nodes)
+        end
+        if options["Calculate Strain"]
+            material_parameter = datamanager.get_properties(block, "Material Model")
+            hookeMatrix = get_Hooke_matrix(
+                material_parameter,
+                material_parameter["Symmetry"],
+                datamanager.get_dof(),
+            )
+            datamanager = calculate_strain(
+                datamanager,
+                active_nodes,
+                invert(hookeMatrix, "Hooke matrix not invertable"),
+            )
+        end
+
     end
 
     return datamanager

@@ -32,19 +32,19 @@ export rotate
 export fastsubtract!
 export fastdot
 
-function get_MMatrix(dof)
+function get_MMatrix(len::Int64)
 
-    if dof == 2
+    if len == 4
         global A2x2
         return A2x2
-    elseif dof == 3
+    elseif len == 9
         global A3x3
         return A3x3
-    elseif dof == 6
+    elseif len == 36
         global A6x6
         return A6x6
     else
-        @error "MMatrix size $dof not pre-allocated. Please add your size to helper.jl"
+        @error "MMatrix length $len not pre-allocated. Please add your size to helper.jl in get_MMatrix."
         return nothing
     end
 end
