@@ -144,7 +144,7 @@ function compute_model(
     theta = datamanager.get_field("Dilatation")
 
     # optimizing, because if no damage it has not to be updated
-
+    # TBD update_list should be used here as in shape_tensor.jl
     @timeit to "Weighted Volume" weighted_volume = compute_weighted_volume(
         nodes,
         nlist,

@@ -4,6 +4,8 @@
 
 module Shape_Tensor
 using DataStructures: OrderedDict
+include("../../Support/helpers.jl")
+using .Helpers: find_active_nodes
 include("../../Support/geometry.jl")
 using .Geometry
 export pre_calculation_name
@@ -74,7 +76,7 @@ function compute(
     parameter::Union{Dict,OrderedDict},
     block::Int64,
 )
-    dof = datamanager.get_dof()
+
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
@@ -82,9 +84,12 @@ function compute(
     undeformed_bond = datamanager.get_field("Bond Geometry")
     shape_tensor = datamanager.get_field("Shape Tensor")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
+    update_list = datamanager.get_field("Update")
+    active_nodes = datamanager.get_field("Active Nodes")
+    active_nodes = find_active_nodes(update_list, active_nodes, nodes)
 
     shape_tensor, inverse_shape_tensor = Geometry.shape_tensor(
-        nodes,
+        active_nodes,
         nlist,
         volume,
         omega,

@@ -201,13 +201,13 @@ function compute_models(
         end
     end
 
-    # Why not update_list.=false -> avoid neighbors
+    # Why not update_list.=false? -> avoid neighbors
     update_list = datamanager.get_field("Update")
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
 
-    #update_list .= false
+
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         if active_model_name == "Additive Model"
@@ -264,8 +264,14 @@ function compute_models(
             )
 
     end
-
-    update_list .= true
+    #=
+    Used for shape tensor or other fixed calculations, to avoid an update if its not needed.
+    The damage update is done in the second loop.
+    =#
+    update_list = datamanager.get_field("Update")
+    for (block, nodes) in pairs(block_nodes)
+        update_list[nodes] .= false
+    end
     return datamanager
 end
 
