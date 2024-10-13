@@ -238,11 +238,9 @@ function create_zero_energy_mode_stiffness(
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
         C = rotate_fourth_order_tensor(angles[iID, :], C, dof, false)
-        @tensor begin
-            zStiff[iID, i, j] = C[i, j, k, l] * Kinv[iID, k, l]
-        end
+        global_zero_energy_mode_stiffness(iID, dof, C, Kinv, zStiff)
     end
-    return zStiff
+
 end
 
 """
