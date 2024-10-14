@@ -359,7 +359,7 @@ function eval_bc(
         return field_values
     end
 
-    return zeros(Float64, length(x)) .+ value
+    return fill!(field_values, value)
 end
 
 end
