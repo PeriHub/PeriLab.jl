@@ -1,6 +1,7 @@
 # Functions
 
 ## Index
+
 ```@index
 Pages = ["functions.md"]
 ```
@@ -8,7 +9,9 @@ Pages = ["functions.md"]
 ```@meta
 CurrentModule = PeriLab.Data_manager
 ```
+
 ## Data_manager
+
 ```@docs
 get_comm
 set_comm
@@ -72,7 +75,9 @@ initialize_data
 ```@meta
 CurrentModule = PeriLab.Solver
 ```
+
 ## Solver
+
 ```@docs
 init
 get_block_nodes
@@ -85,7 +90,9 @@ synchronise_field
 ```@meta
 CurrentModule = PeriLab.Solver.Verlet
 ```
+
 ## Verlet
+
 ```@docs
 compute_thermodynamic_critical_time_step
 get_cs_denominator
@@ -100,7 +107,9 @@ run_solver
 ```@meta
 CurrentModule = PeriLab.Solver.Boundary_conditions
 ```
+
 ## Boundary_conditions
+
 ```@docs
 check_valid_bcs
 init_BCs
@@ -108,5 +117,5 @@ boundary_condition
 apply_bc_dirichlet
 apply_bc_neumann
 clean_up
-eval_bc
+eval_bc!
 ```

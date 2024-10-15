@@ -138,12 +138,14 @@ function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
            bc["Variable"] == "ForcesNP1"
             continue
         end
-        field_to_apply_bc = datamanager.get_field(bc["Variable"])
+        field = datamanager.get_field(bc["Variable"])
 
-        if ndims(field_to_apply_bc) > 1
+        if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
-                field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] .= eval_bc(
-                    field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]],
+                @views field_to_apply_bc =
+                    field[bc["Node Set"], dof_mapping[bc["Coordinate"]]]
+                eval_bc!(
+                    field_to_apply_bc,
                     bc["Value"],
                     coordinates[bc["Node Set"], :],
                     time,
@@ -156,8 +158,9 @@ function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
                 return nothing
             end
         else
-            field_to_apply_bc[bc["Node Set"]] .= eval_bc(
-                field_to_apply_bc[bc["Node Set"]],
+            @views field_to_apply_bc = field[bc["Node Set"]]
+            eval_bc!(
+                field_to_apply_bc,
                 bc["Value"],
                 coordinates[bc["Node Set"], :],
                 time,
@@ -193,17 +196,19 @@ function apply_bc_dirichlet_force(bcs::Dict, datamanager::Module, time::Float64)
             continue
         end
         if bc["Variable"] == "ForcesNP1"
-            field_to_apply_bc = datamanager.get_field("External Forces")
+            field = datamanager.get_field("External Forces")
         elseif bc["Variable"] == "Force DensitiesNP1"
-            field_to_apply_bc = datamanager.get_field("External Force Densities")
+            field = datamanager.get_field("External Force Densities")
         else
             continue
         end
 
-        if ndims(field_to_apply_bc) > 1
+        if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
-                field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] .= eval_bc(
-                    field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]],
+                @views field_to_apply_bc =
+                    field[bc["Node Set"], dof_mapping[bc["Coordinate"]]]
+                eval_bc!(
+                    field_to_apply_bc,
                     bc["Value"],
                     coordinates[bc["Node Set"], :],
                     time,
@@ -216,8 +221,9 @@ function apply_bc_dirichlet_force(bcs::Dict, datamanager::Module, time::Float64)
                 return nothing
             end
         else
-            field_to_apply_bc[bc["Node Set"]] .= eval_bc(
-                field_to_apply_bc[bc["Node Set"]],
+            @views field_to_apply_bc = field[bc["Node Set"]]
+            eval_bc!(
+                field_to_apply_bc,
                 bc["Value"],
                 coordinates[bc["Node Set"], :],
                 time,
@@ -253,27 +259,29 @@ function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
         if bc["Type"] != "Neumann"
             continue
         end
-        field_to_apply_bc = datamanager.get_field(bc["Variable"])
+        field = datamanager.get_field(bc["Variable"])
 
         if ndims(field_to_apply_bc) > 1
             if haskey(dof_mapping, bc["Coordinate"])
-                field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]] .+=
-                    eval_bc(
-                        field_to_apply_bc[bc["Node Set"], dof_mapping[bc["Coordinate"]]],
-                        bc["Value"],
-                        coordinates[bc["Node Set"], :],
-                        time,
-                        dof,
-                        bc["Initial"],
-                        name,
-                    )
+                @views field_to_apply_bc =
+                    field[bc["Node Set"], dof_mapping[bc["Coordinate"]]]
+                field_to_apply_bc .+= eval_bc!(
+                    field_to_apply_bc,
+                    bc["Value"],
+                    coordinates[bc["Node Set"], :],
+                    time,
+                    dof,
+                    bc["Initial"],
+                    name,
+                )
             else
                 @error "Coordinate in boundary condition must be x,y or z."
                 return nothing
             end
         else
-            field_to_apply_bc[bc["Node Set"]] .+= eval_bc(
-                field_to_apply_bc[bc["Node Set"]],
+            @views field_to_apply_bc = field[bc["Node Set"]]
+            field_to_apply_bc .+= eval_bc!(
+                field_to_apply_bc,
                 bc["Value"],
                 coordinates[bc["Node Set"], :],
                 time,
@@ -317,13 +325,13 @@ function clean_up(bc::String)
 end
 
 """
-    eval_bc(field_values::Union{SubArray,Vector{Float64},Vector{Int64}}, bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
+    eval_bc!(field_values::Union{Vector{Float64},Vector{Int64}}, bc::Union{Float64,Float64,Int64,String}, coordinates::Matrix{Float64}, time::Float64, dof::Int64)
 Working with if-statements
 "if t>2 0 else 20 end"
 works for scalars. If you want to evaluate a vector, please use the Julia notation as input
 "ifelse.(x .> y, 10, 20)"
 """
-function eval_bc(
+function eval_bc!(
     field_values::Union{SubArray,Vector{Float64},Vector{Int64}},
     bc::Union{Float64,Int64,String},
     coordinates::Union{Matrix{Float64},Matrix{Int64}},
@@ -341,7 +349,7 @@ function eval_bc(
 
     if length(coordinates) == 0
         # @warn "Ignoring boundary condition $name.\n No nodes found, check Input Deck and or Node Sets."
-        return field_values
+        return
     end
 
     global x = coordinates[:, 1]
@@ -356,10 +364,14 @@ function eval_bc(
     value = eval(bc_value)
 
     if isnothing(value) || (initial && t != 0.0)
-        return field_values
+        return
     end
 
-    return fill!(field_values, value)
+    if value isa Number
+        fill!(field_values, value)
+    else
+        copyto!(field_values, value)
+    end
 end
 
 end
