@@ -139,7 +139,6 @@ CurrentModule = PeriLab.Solver.Helpers
 
 ```@docs
 find_indices
-find_ative_nodes
 get_active_update_nodes
 find_files_with_ending
 check_inf_or_nan
