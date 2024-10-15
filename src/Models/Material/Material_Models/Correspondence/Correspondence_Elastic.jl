@@ -6,7 +6,7 @@ module Correspondence_Elastic
 include("../../material_basis.jl")
 include("../../../../Support/helpers.jl")
 using .Material_Basis: voigt_to_matrix, matrix_to_voigt, get_Hooke_matrix
-using .Helpers: get_fourth_order, fourth_order_times_second_order_tensor
+using .Helpers: get_fourth_order, fast_mul!, get_mapping
 export compute_stresses
 export correspondence_name
 export fe_support
@@ -125,7 +125,7 @@ Example:
 """
 function compute_stresses(
     datamanager::Module,
-    iID::Int64,
+    nodes,
     dof::Int64,
     material_parameter::Dict,
     time::Float64,
@@ -135,25 +135,19 @@ function compute_stresses(
     stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}},
     iID_jID_nID::Tuple = (),
 )
-    #=
-        hooke_matrix = get_fourth_order(
-            get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID),
-            dof,
-        )
-        stress_NP1[iID, :, :] = fourth_order_times_second_order_tensor(
-            hooke_matrix,
+
+    @views mapping = get_mapping(dof)
+    for iID in nodes
+        @views hookeMatrix =
+            get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID)
+        @views fast_mul!(
             stress_NP1[iID, :, :],
+            hookeMatrix,
             strain_increment[iID, :, :],
             stress_N[iID, :, :],
-            dof,
+            mapping,
         )
-    =#
-    @views hookeMatrix =
-        get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID)
-    @views stress_NP1[iID, :, :] =
-        voigt_to_matrix(hookeMatrix * matrix_to_voigt(strain_increment[iID, :, :])) +
-        stress_N[iID, :, :]
-
+    end
     return stress_NP1, datamanager
 end
 

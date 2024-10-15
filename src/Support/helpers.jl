@@ -15,6 +15,7 @@ using LoopVectorization
 global A2x2 = MMatrix{2,2}(zeros(Float64, 2, 2))
 global A3x3 = MMatrix{3,3}(zeros(Float64, 3, 3))
 global A6x6 = MMatrix{6,6}(zeros(Float64, 6, 6))
+
 export qdim
 export check_inf_or_nan
 export find_active_nodes
@@ -31,6 +32,30 @@ export invert
 export rotate
 export fastsubtract!
 export fastdot
+export fast_mul!
+export get_mapping
+
+
+
+function get_mapping(dof::Int64)
+    if dof == 2
+        return (1, 1), (2, 2), (2, 1)
+    elseif dof == 3
+        return (1, 1), (2, 2), (3, 3), (2, 3), (1, 3), (1, 2)
+    else
+        @error "$dof is no valid mapping option"
+    end
+end
+function fast_mul!(stress_NP1, C, strain_increment, stress_N, mapping)
+    @inbounds @fastmath for m ∈ axes(C, 1)
+        sNP1 = stress_N[mapping[m]...]
+        for k ∈ axes(C, 2)
+            sNP1 += C[m, k] * strain_increment[mapping[k]...]
+        end
+        stress_NP1[mapping[m]...] = sNP1
+        stress_NP1[reverse(mapping[m])...] = sNP1
+    end
+end
 
 function get_MMatrix(len::Int64)
 
