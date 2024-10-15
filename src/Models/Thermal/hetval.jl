@@ -70,7 +70,7 @@ function compute_model(
         HETVAL_interface(
             thermal_parameter["File"],
             CMNAME,
-            [temp_N[iID], deltaT[iID]],
+            [temp_N[iID], temp_NP1[iID] - temp_N[iID]],
             [time, time + dt],
             dt,
             STATEV_temp,
