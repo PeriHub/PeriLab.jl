@@ -209,24 +209,18 @@ function compute_model(
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
         for iID in nodes
-
-            #cauchy_stress_NP1, datamanager = mod.compute_stresses(datamanager, iID, dof, material_parameter, time, dt, strain_increment_nodal, cauchy_stress_N, stress_NP1)
-
-            for (jID, nID) in enumerate(nlist[iID])
-                # TODO how to make the separation if the datamager is included?
-                stress_NP1[iID], datamanager = mod.compute_stresses(
-                    datamanager,
-                    jID,
-                    dof,
-                    material_parameter,
-                    time,
-                    dt,
-                    strain_increment[iID],
-                    stress_N[iID],
-                    stress_NP1[iID],
-                    (iID, jID, nID),
-                )
-            end
+            stress_NP1[iID], datamanager = mod.compute_stresses_ba(
+                datamanager,
+                nodes,
+                nlist,
+                dof,
+                material_parameter,
+                time,
+                dt,
+                strain_increment,
+                stress_N,
+                stress_NP1,
+            )
         end
     end
     if rotation

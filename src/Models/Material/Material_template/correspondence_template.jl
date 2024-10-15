@@ -181,4 +181,20 @@ function compute_stresses(
     return stress_NP1, datamanager
 end
 
+function compute_stresses_ba(
+    datamanager::Module,
+    nodes,
+    nlist,
+    dof::Int64,
+    material_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+    strain_increment::Union{SubArray,Array{Float64,3},Vector{Float64}},
+    stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
+    stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}},
+)
+
+    @error "$(correspondence_name()) not yet implemented for bond associated."
+end
+
 end

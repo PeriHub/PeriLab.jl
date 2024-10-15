@@ -241,7 +241,7 @@ Example:
 """
 function compute_stresses(
     datamanager::Module,
-    iID::Int64,
+    nodes::Int64,
     dof::Int64,
     material_parameter::Dict,
     time::Float64,
@@ -249,7 +249,6 @@ function compute_stresses(
     strain_increment::Union{SubArray,Array{Float64,3}},
     stress_N::Union{SubArray,Array{Float64,3}},
     stress_NP1::Union{SubArray,Array{Float64,3}},
-    iID_jID_nID::Tuple = (),
 )
     # the notation from the Abaqus Fortran subroutine is used.
     nstatev = material_parameter["Number of State Variables"]
@@ -298,76 +297,77 @@ function compute_stresses(
     DFGRD0 = datamanager.get_field("DFGRD0")
     DFGRD1 = datamanager.get_field("Deformation Gradient")
     not_supported_int::Int64 = 0
+    for iID in nodes
+        STATEV_temp = statev[iID, :]
+        SSE_temp = SSE[iID]
+        SPD_temp = SPD[iID]
+        SCD_temp = SCD[iID]
+        RPL_temp = RPL[iID]
+        DDSDDT_temp = DDSDDT[iID, :]
+        DRPLDE_temp = DRPLDE[iID, :]
+        DRPLDT_temp = DRPLDT[iID]
 
-    STATEV_temp = statev[iID, :]
-    SSE_temp = SSE[iID]
-    SPD_temp = SPD[iID]
-    SCD_temp = SCD[iID]
-    RPL_temp = RPL[iID]
-    DDSDDT_temp = DDSDDT[iID, :]
-    DRPLDE_temp = DRPLDE[iID, :]
-    DRPLDT_temp = DRPLDT[iID]
+        UMAT_interface(
+            material_parameter["File"],
+            stress_temp,
+            STATEV_temp,
+            DDSDDE,
+            SSE_temp,
+            SPD_temp,
+            SCD_temp,
+            RPL_temp,
+            DDSDDT_temp,
+            DRPLDE_temp,
+            DRPLDT_temp,
+            matrix_to_voigt(strain_N[iID, :, :]),
+            matrix_to_voigt(strain_increment[iID, :, :]),
+            [time, time + dt],
+            dt,
+            temp[iID],
+            dtemp[iID],
+            PREDEF[iID, :],
+            DPRED[iID, :],
+            CMNAME,
+            ndi,
+            nshr,
+            ntens,
+            nstatev,
+            Vector{Float64}(props[:]),
+            nprops,
+            coords[iID, :],
+            rot_NP1[iID, :, :] - rot_N[iID, :, :],
+            not_supported_float,
+            not_supported_float,
+            DFGRD0[iID, :, :],
+            DFGRD1[iID, :, :],
+            not_supported_int,
+            not_supported_int,
+            not_supported_int,
+            not_supported_int,
+            not_supported_int,
+            not_supported_int,
+        )
 
-    UMAT_interface(
-        material_parameter["File"],
-        stress_temp,
-        STATEV_temp,
-        DDSDDE,
-        SSE_temp,
-        SPD_temp,
-        SCD_temp,
-        RPL_temp,
-        DDSDDT_temp,
-        DRPLDE_temp,
-        DRPLDT_temp,
-        matrix_to_voigt(strain_N[iID, :, :]),
-        matrix_to_voigt(strain_increment[iID, :, :]),
-        [time, time + dt],
-        dt,
-        temp[iID],
-        dtemp[iID],
-        PREDEF[iID, :],
-        DPRED[iID, :],
-        CMNAME,
-        ndi,
-        nshr,
-        ntens,
-        nstatev,
-        Vector{Float64}(props[:]),
-        nprops,
-        coords[iID, :],
-        rot_NP1[iID, :, :] - rot_N[iID, :, :],
-        not_supported_float,
-        not_supported_float,
-        DFGRD0[iID, :, :],
-        DFGRD1[iID, :, :],
-        not_supported_int,
-        not_supported_int,
-        not_supported_int,
-        not_supported_int,
-        not_supported_int,
-        not_supported_int,
-    )
+        statev[iID, :] = STATEV_temp
+        SSE[iID] = SSE_temp
+        SPD[iID] = SPD_temp
+        SCD[iID] = SCD_temp
+        RPL[iID] = RPL_temp
+        DDSDDT[iID, :] = DDSDDT_temp
+        DRPLDE[iID, :] = DRPLDE_temp
+        DRPLDT[iID] = DRPLDT_temp
 
-    statev[iID, :] = STATEV_temp
-    SSE[iID] = SSE_temp
-    SPD[iID] = SPD_temp
-    SCD[iID] = SCD_temp
-    RPL[iID] = RPL_temp
-    DDSDDT[iID, :] = DDSDDT_temp
-    DRPLDE[iID, :] = DRPLDE_temp
-    DRPLDT[iID] = DRPLDT_temp
+        Global_zero_energy_control.global_zero_energy_mode_stiffness(
+            iID,
+            dof,
+            DDSDDE,
+            Kinv,
+            zStiff,
+        )
+        stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
 
-    Global_zero_energy_control.global_zero_energy_mode_stiffness(
-        iID,
-        dof,
-        DDSDDE,
-        Kinv,
-        zStiff,
-    )
-    stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
-
-    DFGRD0 = DFGRD1
+        DFGRD0 = DFGRD1
+    end
     return datamanager, stress_NP1
 end
 
@@ -573,6 +573,23 @@ function compute_stresses(
     hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
 
     return hookeMatrix * strain_increment + stress_N, datamanager
+end
+
+
+function compute_stresses_ba(
+    datamanager::Module,
+    nodes,
+    nlist,
+    dof::Int64,
+    material_parameter::Dict,
+    time::Float64,
+    dt::Float64,
+    strain_increment::Union{SubArray,Array{Float64,3},Vector{Float64}},
+    stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
+    stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}},
+)
+
+    @error "$(correspondence_name()) not yet implemented for bond associated."
 end
 
 """
