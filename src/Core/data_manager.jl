@@ -1479,22 +1479,31 @@ function switch_NP1_to_N(nstep::Int64)
         field_NP1 = get_field(NP1)
         N = NP1_to_N[NP1]
         field_N = get_field(N)
+
         if size(field_NP1[1]) == () # vector
-            copyto!(field_N, field_NP1)
-            fill!(field_NP1, data["field_types"][NP1](0))
-        else # matrix
-            value = 0
-            for fieldID in eachindex(field_NP1)
-                copyto!(field_N[fieldID], field_NP1[fieldID])
-                if "Bond DamageNP1" != NP1
-                    # value = 1
-                    fill!(field_NP1[fieldID], data["field_types"][NP1](value))
-                end
-            end
+            switch_nodes!(field_N, field_NP1, NP1)
+        else # bond
+            switch_bonds!(field_N, field_NP1, NP1)
         end
     end
 end
 
+function switch_nodes!(field_N, field_NP1, NP1)
+    copyto!(field_N, field_NP1)
+    fill!(field_NP1, data["field_types"][NP1](0))
+end
+function switch_bonds!(field_N, field_NP1, NP1)
+
+    if "Bond DamageNP1" != NP1
+        for fieldID in eachindex(field_NP1)
+            switch_nodes!(field_N[fieldID], field_NP1[fieldID], NP1)
+        end
+    else
+        for fieldID in eachindex(field_NP1)
+            copyto!(field_N[fieldID], field_NP1[fieldID])
+        end
+    end
+end
 """
     synch_manager(synchronise_field, direction::String)
 
