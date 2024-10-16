@@ -4,6 +4,7 @@
 module Material_Basis
 
 using LinearAlgebra
+using LoopVectorization
 using StaticArrays
 include("../../Support/helpers.jl")
 using .Helpers: get_MMatrix, determinant, invert, smat
@@ -359,6 +360,33 @@ function distribute_forces(
     bond_damage::Vector{Vector{Float64}},
     force_densities::Matrix{Float64},
 )
+    @inbounds @fastmath for iID in nodes
+        @views @inbounds @fastmath for jID ∈ axes(nlist[iID], 1)
+            @views @inbounds @fastmath for m ∈ axes(force_densities[iID, :], 1)
+                #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
+                force_densities[iID, m] +=
+                    bond_damage[iID][jID] *
+                    bond_force[iID][jID, m] *
+                    volume[nlist[iID][jID]]
+                force_densities[nlist[iID][jID], m] -=
+                    bond_damage[iID][jID] * bond_force[iID][jID, m] * volume[iID]
+
+            end
+        end
+    end
+    return force_densities
+end
+
+
+
+function distribute_forces_old(
+    nodes::Union{SubArray,Vector{Int64}},
+    nlist::Vector{Vector{Int64}},
+    bond_force::Vector{Matrix{Float64}},
+    volume::Vector{Float64},
+    bond_damage::Vector{Vector{Float64}},
+    force_densities::Matrix{Float64},
+)
     for iID in nodes
         @views force_densities[iID, :] .+= transpose(
             sum(bond_damage[iID] .* bond_force[iID] .* volume[nlist[iID]], dims = 1),
@@ -367,9 +395,12 @@ function distribute_forces(
         @views force_densities[nlist[iID], :] .-=
             bond_damage[iID] .* bond_force[iID] .* volume[iID]
     end
+
+
+
+
     return force_densities
 end
-
 
 """
     matrix_to_voigt(matrix)

@@ -268,14 +268,7 @@ function distribute_force_densities(
             force_densities,
         )
     else
-        force_densities = distribute_forces(
-            nodes,
-            nlist,
-            bond_force,
-            volume,
-            bond_damage,
-            force_densities,
-        )
+        distribute_forces(nodes, nlist, bond_force, volume, bond_damage, force_densities)
     end
     return datamanager
 end
