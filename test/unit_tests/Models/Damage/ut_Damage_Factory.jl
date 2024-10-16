@@ -82,34 +82,6 @@ end
     @test damageNP1_test[2] == 1
     @test damageNP1_test[3] == 1
 end
-@testset "set_bond_damage" begin
-    test_data_manager = PeriLab.Data_manager
-    test_data_manager.set_num_controller(3)
-    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    nn[1] = 1
-    nn[2] = 2
-    nn[3] = 1
-    bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
-
-    for iID = 1:3
-        for jID = 1:nn[iID]
-            bdN[iID][jID] = jID * iID * iID + jID - iID
-            @test bdNP1[iID][jID] == 0
-        end
-    end
-    nodes = Vector{Int64}(1:3)
-    Damage.set_bond_damage(test_data_manager, nodes)
-    bdN = test_data_manager.get_field("Bond Damage", "N")
-    bdNP1 = test_data_manager.get_field("Bond Damage", "NP1")
-    for iID = 1:3
-        for jID = 1:nn[iID]
-            @test bdNP1[iID][jID] == bdN[iID][jID]
-            bdN[iID][jID] = 0
-            @test bdNP1[iID][jID] == jID * iID * iID + jID - iID
-            @test bdN[iID][jID] == 0
-        end
-    end
-end
 @testset "ut_Damage_factory_exceptions" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.data["properties"][1] =
