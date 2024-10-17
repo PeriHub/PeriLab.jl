@@ -355,7 +355,7 @@ function calculate_bond_force_2d!(
                 b_fi = zero(eltype(temp))
                 @inbounds @fastmath for jdof = 1:2
                     b_fi +=
-                        temp[idof, jdof] *
+                        temp[jdof, idof] *
                         bond_damage[iID][jID] *
                         undeformed_bond[iID][jID, jdof]
                 end
@@ -394,7 +394,7 @@ function calculate_bond_force_3d!(
                 b_fi = zero(eltype(temp))
                 @inbounds @fastmath for jdof = 1:3
                     @views b_fi +=
-                        temp[idof, jdof] *
+                        temp[jdof, idof] *
                         bond_damage[iID][jID] *
                         undeformed_bond[iID][jID, jdof]
                 end
