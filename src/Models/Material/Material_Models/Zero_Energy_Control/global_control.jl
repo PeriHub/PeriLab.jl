@@ -170,47 +170,46 @@ function create_zero_energy_mode_stiffness(
 )
 
     for iID in nodes
-        global_zero_energy_mode_stiffness(
-            iID,
-            dof,
-            get_fourth_order(CVoigt, dof),
-            Kinv,
-            zStiff,
-        )
+        global_zero_energy_mode_stiffness(iID, get_fourth_order(CVoigt, dof), Kinv, zStiff)
     end
     return zStiff
 end
 
 """
-global_zero_energy_mode_stiffness(id::Int64,dof::Int64, CVoigt, Kinv)
+global_zero_energy_mode_stiffness(id::Int64, C, Kinv, zstiff)
 
 Creates the zero energy mode stiffness, based on the UMAT interface
 
 # Arguments
 - `ID::Int64` : ID of the node
-- `dof::Int64`: The degree of freedom
-- `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
+- `C::Union{MMatrix, Matrix{Float64}}`: The fourth order elasticity tensor
 - `Kinv::Array{Float64, 3}`: The inverse shape tensor
 - `zStiff::Array{Float64, 3}`: The zero energy stiffness
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
+
+
+
+
 function global_zero_energy_mode_stiffness(
     ID::Int64,
-    dof::Int64,
     C,
     Kinv::Array{Float64,3},
     zStiff::Array{Float64,3},
 )
-    Kinv_ID = @view Kinv[ID, :, :]
 
     # Perform matrix multiplication for each i, j
-    for i = 1:dof
-        for j = 1:dof
-            @views zStiff[ID, i, j] = sum(C[i, j, :, :] .* Kinv_ID)
+    @views @inbounds @fastmath for i ∈ axes(zStiff, 2), j ∈ axes(zStiff, 3)
+        zij = zero(eltype(zStiff))
+        @views @inbounds @fastmath for k ∈ axes(Kinv, 2), l ∈ axes(Kinv, 3)
+            @views zij += C[i, j, k, l] * Kinv[ID, k, l]
         end
+        zStiff[ID, i, j] = zij
     end
+
 end
+
 
 """
     create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Matrix{Float64}, Kinv::Array{Float64, 3}, zStiff::Array{Float64, 3})
@@ -238,7 +237,7 @@ function create_zero_energy_mode_stiffness(
     C = Array{Float64,4}(get_fourth_order(CVoigt, dof))
     for iID in nodes
         C = rotate_fourth_order_tensor(angles[iID, :], C, dof, false)
-        global_zero_energy_mode_stiffness(iID, dof, C, Kinv, zStiff)
+        global_zero_energy_mode_stiffness(iID, C, Kinv, zStiff)
     end
 
 end
