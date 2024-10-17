@@ -5,7 +5,8 @@
 module Global_zero_energy_control
 include("../../../../Support/helpers.jl")
 using .Helpers: get_fourth_order
-using StaticArrays: MMatrix
+using StaticArrays: MMatrix, MVector
+using LoopVectorization
 using LinearAlgebra: mul!
 include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
@@ -72,14 +73,26 @@ function compute_control(
             rotation,
         )
     end
-    bond_force = get_zero_energy_mode_force(
-        nodes,
-        zStiff,
-        deformation_gradient,
-        undeformed_bond,
-        deformed_bond,
-        bond_force,
-    )
+
+    if dof == 2
+        get_zero_energy_mode_force_2d!(
+            nodes,
+            zStiff,
+            deformation_gradient,
+            undeformed_bond,
+            deformed_bond,
+            bond_force,
+        )
+    elseif dof == 3
+        get_zero_energy_mode_force_3d!(
+            nodes,
+            zStiff,
+            deformation_gradient,
+            undeformed_bond,
+            deformed_bond,
+            bond_force,
+        )
+    end
     return datamanager
 end
 
@@ -98,7 +111,7 @@ Computes the zero energy mode force
 # Returns
 - `bond_force::SubArray`: The bond force
 """
-function get_zero_energy_mode_force(
+function get_zero_energy_mode_force_2d!(
     nodes::Union{SubArray,Vector{Int64}},
     zStiff,
     deformation_gradient,
@@ -106,14 +119,59 @@ function get_zero_energy_mode_force(
     deformed_bond,
     bond_force,
 )
-    for iID in nodes
-        mul!(
-            bond_force[iID][:, :],
-            -(undeformed_bond[iID] * deformation_gradient[iID, :, :] - deformed_bond[iID]),
-            zStiff[iID, :, :],
-        )
+    # Working code
+    # bond_force[iID][:, :] = (-zStiff[iID, :, :] * (deformation_gradient[iID, :, :] * (undeformed_bond[iID])' - (deformed_bond[iID])'))'
+    @inbounds @fastmath for iID in nodes
+        @inbounds @fastmath @views for nID ∈ axes(undeformed_bond[iID], 1)
+            df = MVector{2}(zeros(2))
+            @inbounds @fastmath @views for m ∈ axes(deformation_gradient, 2)
+                df_i = zero(eltype(deformation_gradient))
+                @inbounds @fastmath @views for n ∈ axes(deformation_gradient, 3)
+                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID, n]
+                end
+                df[m] = df_i - deformed_bond[iID][nID, m]
+            end
+            @inbounds @fastmath @views for m ∈ axes(zStiff, 2)
+                bf_i = zero(eltype(zStiff))
+                @inbounds @fastmath @views for n ∈ axes(zStiff, 3)
+                    bf_i -= zStiff[iID, m, n] * df[n]
+                end
+                bond_force[iID][nID, m] = bf_i
+            end
+        end
+
     end
-    return bond_force
+end
+function get_zero_energy_mode_force_3d!(
+    nodes::Union{SubArray,Vector{Int64}},
+    zStiff,
+    deformation_gradient,
+    undeformed_bond,
+    deformed_bond,
+    bond_force,
+)
+    # Working code
+    # bond_force[iID][:, :] = (-zStiff[iID, :, :] * (deformation_gradient[iID, :, :] * (undeformed_bond[iID])' - (deformed_bond[iID])'))'
+    @inbounds @fastmath for iID in nodes
+        @inbounds @fastmath @views for nID ∈ axes(undeformed_bond[iID], 1)
+            df = MVector{3}(zeros(3))
+            @inbounds @fastmath @views for m ∈ axes(deformation_gradient, 2)
+                df_i = zero(eltype(deformation_gradient))
+                @inbounds @fastmath @views for n ∈ axes(deformation_gradient, 3)
+                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID, n]
+                end
+                df[m] = df_i - deformed_bond[iID][nID, m]
+            end
+            @inbounds @fastmath @views for m ∈ axes(zStiff, 2)
+                bf_i = zero(eltype(zStiff))
+                @inbounds @fastmath @views for n ∈ axes(zStiff, 3)
+                    bf_i -= zStiff[iID, m, n] * df[n]
+                end
+                bond_force[iID][nID, m] = bf_i
+            end
+        end
+
+    end
 end
 
 """
