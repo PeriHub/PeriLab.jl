@@ -33,6 +33,7 @@ export rotate
 export fastsubtract!
 export fastdot
 export fast_mul!
+export mat_mul!
 export get_mapping
 
 
@@ -46,6 +47,17 @@ function get_mapping(dof::Int64)
         @error "$dof is no valid mapping option"
     end
 end
+
+function matrix_diff!(s3, nodes, s2, s1)
+    @views for iID in nodes
+        @inbounds @fastmath @views for m ∈ axes(s1[iID, :, :], 1),
+            n ∈ axes(s1[iID, :, :], 2)
+
+            s3[iID, m, n] = s2[iID, m, n] - s1[iID, m, n]
+        end
+    end
+end
+
 function fast_mul!(stress_NP1, C, strain_increment, stress_N, mapping)
     @inbounds @fastmath for m ∈ axes(C, 1)
         sNP1 = stress_N[mapping[m]...]
@@ -56,6 +68,17 @@ function fast_mul!(stress_NP1, C, strain_increment, stress_N, mapping)
         stress_NP1[reverse(mapping[m])...] = sNP1
     end
 end
+
+function mat_mul!(C, A, B)
+    @inbounds @fastmath for m ∈ axes(A, 1), n ∈ axes(B, 2)
+        Cmn = zero(eltype(C))
+        for k ∈ axes(A, 2)
+            Cmn += A[m, k] * B[k, n]
+        end
+        C[m, n] = Cmn
+    end
+end
+
 
 function get_MMatrix(len::Int64)
 

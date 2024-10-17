@@ -176,6 +176,7 @@ function compute_model(
 
     strain_NP1 = compute_bond_strain(nodes, nlist, ba_deformation_gradient, strain_NP1)
     strain_increment = strain_NP1 - strain_N
+    #matrix_diff!(strain_increment, nodes, strain_NP1, strain_N)
     # TODO decomposition to get the rotation and large deformation in
     # TODO store not angles, but rotation matrices, because they are computed in decomposition
     if rotation

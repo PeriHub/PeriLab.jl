@@ -257,11 +257,10 @@ function compute_models(
     if "Material" in options
         active_nodes = datamanager.get_field("Active Nodes")
 
-        @timeit to "distribute_force_densities" @views datamanager =
-            Material.distribute_force_densities(
-                datamanager,
-                find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes()),
-            )
+        @timeit to "distribute_force_densities" Material.distribute_force_densities(
+            datamanager,
+            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes()),
+        )
 
     end
     #=

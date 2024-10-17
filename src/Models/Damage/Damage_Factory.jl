@@ -9,6 +9,7 @@ global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
 Set_modules.include_files(module_list)
 include("../../Support/helpers.jl")
 using TimerOutputs
+using LoopVectorization
 using .Helpers: find_inverse_bond_id
 
 export compute_model
@@ -105,22 +106,11 @@ function damage_index(
     nodes::Union{SubArray,Vector{Int64}},
     nlist_filtered_ids::SubArray,
 )
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
-    damage = datamanager.get_damage("NP1")
-
     for iID in nodes
-        undamaged_volume = sum(volume[nlist[iID]])
         bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 1
-        totalDamage = sum((1 .- bond_damageNP1[iID]) .* volume[nlist[iID]])
-        if damage[iID] < totalDamage / undamaged_volume
-            damage[iID] = totalDamage / undamaged_volume
-        end
     end
-
-    return datamanager
-
+    return damage_index(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 end
 
 function damage_index(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
@@ -128,16 +118,25 @@ function damage_index(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
     volume = datamanager.get_field("Volume")
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
     damage = datamanager.get_damage("NP1")
-    for iID in nodes
-        undamaged_volume = sum(volume[nlist[iID]])
-        totalDamage = sum((1 .- bond_damageNP1[iID]) .* volume[nlist[iID]])
+    compute_index(damage, nodes, volume, nlist, bond_damageNP1)
+    return datamanager
+end
+
+function compute_index(damage, nodes, volume, nlist, bond_damage)
+
+    @inbounds @fastmath for iID in nodes
+        undamaged_volume = zero(Float64)
+        totalDamage = zero(Float64)
+        @views @inbounds @fastmath for jID ∈ axes(nlist[iID], 1)
+            @views undamaged_volume += volume[nlist[iID][jID]]
+            @views totalDamage += (1 - bond_damage[iID][jID]) * volume[nlist[iID][jID]]
+        end
         if damage[iID] < totalDamage / undamaged_volume
             damage[iID] = totalDamage / undamaged_volume
         end
     end
-    return datamanager
-
 end
+
 
 """
     init_interface_crit_values(datamanager::Module, params::Dict, block_id::Int64)

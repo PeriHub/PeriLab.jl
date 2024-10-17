@@ -186,16 +186,19 @@ function compute_model(
     dt::Float64,
     to::TimerOutput,
 )
-    material_models = split(model_param["Material Model"], "+")
-    material_models = map(r -> strip(r), material_models)
+
     if occursin("Correspondence", model_param["Material Model"])
         mod = datamanager.get_model_module("Correspondence")
+
         datamanager =
             mod.compute_model(datamanager, nodes, model_param, block, time, dt, to)
         return datamanager
     end
+    material_models = split(model_param["Material Model"], "+")
+    material_models = map(r -> strip(r), material_models)
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
+
         datamanager =
             mod.compute_model(datamanager, nodes, model_param, block, time, dt, to)
     end
@@ -270,6 +273,6 @@ function distribute_force_densities(
     else
         distribute_forces(nodes, nlist, bond_force, volume, bond_damage, force_densities)
     end
-    return datamanager
+
 end
 end

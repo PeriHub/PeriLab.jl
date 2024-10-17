@@ -4,6 +4,8 @@
 
 module Correspondence
 using LinearAlgebra
+using StaticArrays
+using LoopVectorization
 using TimerOutputs
 using Rotations
 include("../Zero_Energy_Control/global_control.jl")
@@ -13,7 +15,7 @@ using .Bond_Associated_Correspondence
 include("../../material_basis.jl")
 using .Material_Basis: compute_Piola_Kirchhoff_stress
 include("../../../../Support/helpers.jl")
-using .Helpers: invert, rotate, determinant, smat
+using .Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
 include("../../../../Support/geometry.jl")
 using .Geometry: compute_strain
 using .Global_zero_energy_control
@@ -189,7 +191,8 @@ function compute_model(
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     strain_increment = datamanager.get_field("Strain Increment")
     strain_NP1 = compute_strain(nodes, deformation_gradient, strain_NP1)
-    @views strain_increment[nodes, :, :] = strain_NP1[nodes, :, :] - strain_N[nodes, :, :]
+
+    matrix_diff!(strain_increment, nodes, strain_NP1, strain_N)
 
     if rotation
         rotation_tensor = datamanager.get_field("Rotation Tensor")
@@ -201,7 +204,6 @@ function compute_model(
     material_models = map(r -> strip(r), material_models)
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
-
 
         stress_NP1, datamanager = mod.compute_stresses(
             datamanager,
@@ -221,6 +223,7 @@ function compute_model(
     end
     bond_force = calculate_bond_force(
         nodes,
+        dof,
         deformation_gradient,
         undeformed_bond,
         bond_damage,
@@ -292,6 +295,7 @@ Calculate bond forces for specified nodes based on deformation gradients.
 """
 function calculate_bond_force(
     nodes::Union{SubArray,Vector{Int64}},
+    dof::Int64,
     deformation_gradient::Array{Float64,3},
     undeformed_bond::Vector{Matrix{Float64}},
     bond_damage::Vector{Vector{Float64}},
@@ -299,15 +303,105 @@ function calculate_bond_force(
     stress_NP1::Array{Float64,3},
     bond_force::Vector{Matrix{Float64}},
 )
-    for iID in nodes
-        # taken from corresponcence.cxx -> computeForcesAndStresses
-        @views bond_force[iID][:, :] =
-            bond_damage[iID] .* undeformed_bond[iID] *
+    if dof == 2
+
+        calculate_bond_force_2d!(
+            bond_force,
+            nodes,
+            deformation_gradient,
+            undeformed_bond,
+            bond_damage,
+            inverse_shape_tensor,
+            stress_NP1,
+        )
+    elseif dof == 3
+        calculate_bond_force_3d!(
+            bond_force,
+            nodes,
+            deformation_gradient,
+            undeformed_bond,
+            bond_damage,
+            inverse_shape_tensor,
+            stress_NP1,
+        )
+
+    end
+    return bond_force
+end
+
+
+function calculate_bond_force_2d!(
+    bond_force::Vector{Matrix{Float64}},
+    nodes::Union{SubArray,Vector{Int64}},
+    deformation_gradient::Array{Float64,3},
+    undeformed_bond::Vector{Matrix{Float64}},
+    bond_damage::Vector{Vector{Float64}},
+    inverse_shape_tensor::Array{Float64,3},
+    stress_NP1::Array{Float64,3},
+)
+    @inbounds @fastmath for iID in nodes
+
+        pk_stress = SMatrix{2,2}(
             compute_Piola_Kirchhoff_stress(
                 stress_NP1[iID, :, :],
                 deformation_gradient[iID, :, :],
-            ) *
-            inverse_shape_tensor[iID, :, :]
+            ),
+        )
+        temp = MMatrix{2,2}(zeros(2, 2))
+
+        mat_mul!(temp, pk_stress, @view inverse_shape_tensor[iID, :, :])
+        @views @inbounds @fastmath for jID ∈ axes(bond_damage[iID], 1)
+            @inbounds @fastmath for idof = 1:2
+                b_fi = zero(eltype(temp))
+                @inbounds @fastmath for jdof = 1:2
+                    b_fi +=
+                        temp[idof, jdof] *
+                        bond_damage[iID][jID] *
+                        undeformed_bond[iID][jID, jdof]
+                end
+                bond_force[iID][jID, idof] = b_fi
+            end
+
+        end
+
+    end
+    return bond_force
+end
+
+function calculate_bond_force_3d(
+    bond_force::Vector{Matrix{Float64}},
+    nodes::Union{SubArray,Vector{Int64}},
+    deformation_gradient::Array{Float64,3},
+    undeformed_bond::Vector{Matrix{Float64}},
+    bond_damage::Vector{Vector{Float64}},
+    inverse_shape_tensor::Array{Float64,3},
+    stress_NP1::Array{Float64,3},
+)
+
+    @inbounds @fastmath for iID in nodes
+
+        pk_stress = SMatrix{3,3}(
+            compute_Piola_Kirchhoff_stress(
+                stress_NP1[iID, :, :],
+                deformation_gradient[iID, :, :],
+            ),
+        )
+        temp = MMatrix{3,3}(zeros(3, 3))
+
+        mat_mul!(temp, pk_stress, @view inverse_shape_tensor[iID, :, :])
+        @views @inbounds @fastmath for jID ∈ axes(bond_damage[iID], 1)
+            @inbounds @fastmath for idof = 1:3
+                b_fi = zero(eltype(temp))
+                @inbounds @fastmath for jdof = 1:3
+                    @views b_fi +=
+                        temp[idof, jdof] *
+                        bond_damage[iID][jID] *
+                        undeformed_bond[iID][jID, jdof]
+                end
+                bond_force[iID][jID, idof] = b_fi
+            end
+
+        end
 
     end
     return bond_force
