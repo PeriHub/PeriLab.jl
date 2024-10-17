@@ -209,20 +209,20 @@ function compute_model(
 
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
-        for iID in nodes
-            stress_NP1[iID], datamanager = mod.compute_stresses_ba(
-                datamanager,
-                nodes,
-                nlist,
-                dof,
-                material_parameter,
-                time,
-                dt,
-                strain_increment,
-                stress_N,
-                stress_NP1,
-            )
-        end
+
+        stress_NP1, datamanager = mod.compute_stresses_ba(
+            datamanager,
+            nodes,
+            nlist,
+            dof,
+            material_parameter,
+            time,
+            dt,
+            strain_increment,
+            stress_N,
+            stress_NP1,
+        )
+
     end
     if rotation
         for iID in nodes

@@ -159,16 +159,16 @@ function compute_stresses_ba(
     material_parameter::Dict,
     time::Float64,
     dt::Float64,
-    strain_increment::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}},
+    strain_increment,
+    stress_N,
+    stress_NP1,
 )
 
     @views mapping = get_mapping(dof)
     for iID in nodes
         @views hookeMatrix =
             get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID)
-        for jID in nlist[iID]
+        @views for jID in eachindex(nlist[iID])
             @views fast_mul!(
                 stress_NP1[iID][jID, :, :],
                 hookeMatrix,
