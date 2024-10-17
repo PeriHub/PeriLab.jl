@@ -136,7 +136,7 @@ function get_zero_energy_mode_force_2d!(
                 @inbounds @fastmath @views for n ∈ axes(zStiff, 3)
                     bf_i -= zStiff[iID, m, n] * df[n]
                 end
-                bond_force[iID][nID, m] = bf_i
+                bond_force[iID][nID, m] += bf_i
             end
         end
 
@@ -167,7 +167,7 @@ function get_zero_energy_mode_force_3d!(
                 @inbounds @fastmath @views for n ∈ axes(zStiff, 3)
                     bf_i -= zStiff[iID, m, n] * df[n]
                 end
-                bond_force[iID][nID, m] = bf_i
+                bond_force[iID][nID, m] += bf_i
             end
         end
 
