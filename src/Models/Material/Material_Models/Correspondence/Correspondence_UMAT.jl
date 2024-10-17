@@ -359,7 +359,6 @@ function compute_stresses(
 
         Global_zero_energy_control.global_zero_energy_mode_stiffness(
             iID,
-            dof,
             DDSDDE,
             Kinv,
             zStiff,

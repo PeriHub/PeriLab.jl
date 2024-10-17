@@ -209,8 +209,8 @@ function compute_stresses(
         @views temp_scalar = sum(temp_A .* temp_B)
         @views plastic_strain_NP1[iID] =
             plastic_strain_N[iID] + maximum([0, sqrt23 * temp_scalar])
-        return stress_NP1, datamanager
     end
+    return stress_NP1, datamanager
 end
 
 function compute_stresses_ba(
