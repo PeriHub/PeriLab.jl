@@ -368,7 +368,7 @@ function calculate_bond_force_2d!(
     return bond_force
 end
 
-function calculate_bond_force_3d(
+function calculate_bond_force_3d!(
     bond_force::Vector{Matrix{Float64}},
     nodes::Union{SubArray,Vector{Int64}},
     deformation_gradient::Array{Float64,3},
