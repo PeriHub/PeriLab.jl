@@ -37,21 +37,31 @@ end
         "Matrix",
         2,
     )
-    strain = test_data_manager.create_constant_bond_field("Strain", Float64, "Matrix", 2)
-
+    strain, strainN = test_data_manager.create_bond_field("Strain", Float64, "Matrix", 2)
+    strain_inc = test_data_manager.create_constant_bond_field(
+        "Strain Increment",
+        Float64,
+        "Matrix",
+        2,
+    )
     deformation_gradient[1][1, :, :] = [1 0; 0 1]
     deformation_gradient[2][1, :, :] = [0 1; 0 1]
 
-    strain = Bond_Associated_Correspondence.compute_bond_strain(
+    strainN[1][1, :, :] = [-1 -1; -1 -1]
+    strainN[2][1, :, :] = [0.5 0; 0 0.5]
+    strain, strain_inc = Bond_Associated_Correspondence.compute_bond_strain(
         nodes,
         nlist,
         deformation_gradient,
         strain,
+        strainN,
+        strain_inc,
     )
 
     @test strain[1][1, :, :] == [0 0; 0 0]
     @test strain[2][1, :, :] == [-0.5 0; 0 0.5]
-
+    @test strain_inc[1][1, :, :] == [1 1; 1 1]
+    @test strain_inc[2][1, :, :] == [-1.0 0; 0 0.0]
 end
 
 @testset "ut_update_Green_Langrange_strain" begin

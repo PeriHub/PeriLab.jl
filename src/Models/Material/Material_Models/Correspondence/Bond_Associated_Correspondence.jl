@@ -9,7 +9,8 @@ include("../../../../Support/helpers.jl")
 include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
 using .Material_Basis: compute_Piola_Kirchhoff_stress
-using .Helpers: find_local_neighbors, invert, rotate, fastdot, determinant, smat
+using .Helpers:
+    find_local_neighbors, invert, rotate, fastdot, determinant, smat, matrix_diff!
 using .Geometry:
     compute_strain,
     compute_bond_level_rotation_tensor,
@@ -174,8 +175,15 @@ function compute_model(
 
     ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
 
-    strain_NP1 = compute_bond_strain(nodes, nlist, ba_deformation_gradient, strain_NP1)
-    strain_increment = strain_NP1 - strain_N
+    strain_NP1, strain_increment = compute_bond_strain(
+        nodes,
+        nlist,
+        ba_deformation_gradient,
+        strain_NP1,
+        strain_N,
+        strain_increment,
+    )
+
     #matrix_diff!(strain_increment, nodes, strain_NP1, strain_N)
     # TODO decomposition to get the rotation and large deformation in
     # TODO store not angles, but rotation matrices, because they are computed in decomposition
@@ -282,26 +290,30 @@ function compute_stress_integral(
     deformation_gradient::Vector{Array{Float64,3}},
     stress_integral::Array{Float64,3},
 )
-    temp = @MMatrix zeros(dof, dof)
+    if dof == 2
+        temp = @MMatrix zeros(2, 2)
+    else
+        temp = @MMatrix zeros(3, 3)
+    end
     one = @views I(dof)
     factor::Float64 = 0
     for iID in nodes
         stress_integral[iID, :, :] .= 0.0
-        for (jID, nID) in enumerate(nlist[iID])
+        @views for (jID, nID) in enumerate(nlist[iID])
             if bond_damage[iID][jID] == 0
                 continue
             end
-            temp =
+            @views temp =
                 (one - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./
                 (bond_length[iID][jID] * bond_length[iID][jID])
 
-            factor =
+            @views factor =
                 volume[nID] *
                 omega[iID][jID] *
                 bond_damage[iID][jID] *
                 (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
 
-            stress_integral[iID, :, :] +=
+            @views stress_integral[iID, :, :] +=
                 factor .* compute_Piola_Kirchhoff_stress(
                     bond_stresses[iID][jID, :, :],
                     deformation_gradient[iID][jID, :, :],
@@ -314,16 +326,30 @@ end
 
 #function compute_bond_strain(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, deformation_gradient::SubArray, strain::SubArray)
 #
-function compute_bond_strain(nodes, nlist, deformation_gradient, strain)
+function compute_bond_strain(
+    nodes,
+    nlist,
+    deformation_gradient,
+    strain_NP1,
+    strain_N,
+    strain_increment,
+)
 
     for iID in nodes
-        strain[iID][:, :, :] = compute_strain(
+        @views strain_NP1[iID][:, :, :] = compute_strain(
             eachindex(nlist[iID]),
-            (@view deformation_gradient[iID][:, :, :]),
-            (@view strain[iID][:, :, :]),
+            (deformation_gradient[iID][:, :, :]),
+            (strain_NP1[iID][:, :, :]),
         )
+        @views matrix_diff!(
+            strain_increment[iID],
+            eachindex(nlist[iID]),
+            strain_NP1[iID],
+            strain_N[iID],
+        )
+
     end
-    return strain
+    return strain_NP1, strain_increment
 end
 
 
@@ -336,7 +362,7 @@ function update_Green_Langrange_nodal_strain_increment(
 )
 
     for iID in nodes
-        strain_increment[iID, :, :] = update_Green_Langrange_strain(
+        @views strain_increment[iID, :, :] = update_Green_Langrange_strain(
             dt,
             deformation_gradient[iID, :, :],
             deformation_gradient_dot[iID, :, :],
