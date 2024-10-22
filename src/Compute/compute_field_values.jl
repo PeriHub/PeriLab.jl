@@ -66,9 +66,16 @@ function calculate_von_mises_stress(
     dof = datamanager.get_dof()
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
+    spherical_stress_NP1::Float64 = 0
+    deviatoric_stress_NP1 = @MMatrix zeros(dof, dof)
     for iID in nodes
         von_Mises_stress[iID], spherical_stress_NP1, deviatoric_stress_NP1 =
-            get_von_mises_stress(von_Mises_stress[iID], dof, stress_NP1[iID, :, :])
+            get_von_mises_stress(
+                von_Mises_stress[iID],
+                stress_NP1[iID, :, :],
+                spherical_stress_NP1,
+                deviatoric_stress_NP1,
+            )
     end
     return datamanager
 end

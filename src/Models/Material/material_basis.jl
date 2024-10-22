@@ -587,20 +587,31 @@ end
 - `spherical_stress_NP1::Float64`: Spherical stress
 - `deviatoric_stress_NP1::Matrix{Float64}`: Deviatoric stress
 """
+
 function get_von_mises_stress(
     von_Mises_stress::Float64,
-    dof::Int64,
-    stress_NP1::Matrix{Float64},
+    stress_NP1,
+    spherical_stress_NP1,
+    deviatoric_stress_NP1,
 )
 
-    spherical_stress_NP1 = sum(stress_NP1[i, i] for i = 1:dof) / 3
-    deviatoric_stress_NP1 = stress_NP1[:, :] - spherical_stress_NP1 .* I(dof)
+    @views @inbounds @fastmath for i ∈ axes(stress_NP1, 1)
+        spherical_stress_NP1 += stress_NP1[i, i]
+    end
+    temp = zero(eltype(deviatoric_stress_NP1))
+    @views @inbounds @fastmath for i ∈ axes(stress_NP1, 1)
+        deviatoric_stress_NP1[i, i] = spherical_stress_NP1
+        for j ∈ axes(stress_NP1, 2)
+            deviatoric_stress_NP1[i, j] += stress_NP1[i, j]
+            temp += deviatoric_stress_NP1[i, j] * deviatoric_stress_NP1[i, j]
+        end
+    end
 
-    von_Mises_stress =
-        sqrt(3.0 / 2.0 * sum(deviatoric_stress_NP1[:, :] .* deviatoric_stress_NP1[:, :]))
+    von_Mises_stress = sqrt(3.0 / 2.0 * temp)
 
     return von_Mises_stress, spherical_stress_NP1, deviatoric_stress_NP1
 end
+
 
 """
     get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})

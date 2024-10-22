@@ -377,7 +377,7 @@ function compute_bond_level_rotation_tensor(
 )
     # all deformation gradients, etc. are in NP1. The increment is calculated outside this routine.
     for iID in nodes
-        ba_rotation_tensor[iID][:, :, :] = deformation_gradient_decomposition(
+        @views ba_rotation_tensor[iID][:, :, :] = deformation_gradient_decomposition(
             eachindex(nlist[iID]),
             ba_deformation_gradient[iID][:, :, :],
             ba_rotation_tensor[iID][:, :, :],
