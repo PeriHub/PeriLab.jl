@@ -6,7 +6,11 @@ using .Helpers: find_active_nodes, get_active_update_nodes
 using StaticArrays: MMatrix, SMatrix
 using .Helpers: invert
 include("../Models/Material/material_basis.jl")
-using .Material_Basis: get_von_mises_stress, get_strain, get_Hooke_matrix
+using .Material_Basis:
+    get_von_mises_stress,
+    get_strain,
+    get_Hooke_matrix,
+    compute_deviatoric_and_spherical_stresses
 """
     get_forces_from_force_density(datamanager::Module)
 
@@ -66,16 +70,17 @@ function calculate_von_mises_stress(
     dof = datamanager.get_dof()
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
-    spherical_stress_NP1::Float64 = 0
-    deviatoric_stress_NP1 = zeros(dof, dof)
+    spherical_stress::Float64 = 0
+    deviatoric_stress = zeros(dof, dof)
     for iID in nodes
-        von_Mises_stress[iID], spherical_stress_NP1, deviatoric_stress_NP1 =
-            get_von_mises_stress(
-                von_Mises_stress[iID],
-                stress_NP1[iID, :, :],
-                spherical_stress_NP1,
-                deviatoric_stress_NP1,
-            )
+        compute_deviatoric_and_spherical_stresses(
+            stress_NP1,
+            spherical_stress,
+            deviatoric_stress,
+            dof,
+        )
+        von_Mises_stress[iID] =
+            get_von_mises_stress(von_Mises_stress[iID], spherical_stress, deviatoric_stress)
     end
     return datamanager
 end

@@ -4,7 +4,8 @@
 
 module Correspondence_Plastic
 include("../../material_basis.jl")
-using .Material_Basis: flaw_function, get_von_mises_stress
+using .Material_Basis:
+    flaw_function, get_von_mises_stress, compute_deviatoric_and_spherical_stresses
 using LinearAlgebra
 using StaticArrays
 export fe_support
@@ -160,66 +161,36 @@ function compute_stresses(
 
     spherical_stress_NP1::Float64 = 0
     deviatoric_stress_NP1 = @MMatrix zeros(dof, dof)
-
     temp_A = @MMatrix zeros(dof, dof)
     temp_B = @MMatrix zeros(dof, dof)
 
     sqrt23::Float64 = sqrt(2 / 3)
     for iID in nodes
-        von_Mises_stress[iID], spherical_stress_NP1, deviatoric_stress_NP1 =
-            get_von_mises_stress(
-                von_Mises_stress[iID],
-                stress_NP1[iID, :, :],
-                spherical_stress_NP1,
-                deviatoric_stress_NP1,
-            )
+
         @views reduced_yield_stress = yield_stress
         @views reduced_yield_stress =
             flaw_function(material_parameter, coordinates[iID, :], yield_stress)
-        if von_Mises_stress[iID] < reduced_yield_stress
-            # material is elastic and nothing happens
-            plastic_strain_NP1[iID] = plastic_strain_N[iID]
-            continue
-        end
-        deviatoric_stress_magnitude_NP1 = maximum([1.0e-20, von_Mises_stress[iID] / sqrt23])
-        deviatoric_stress_NP1 .*=
-            sqrt23 * reduced_yield_stress / deviatoric_stress_magnitude_NP1
-        @views stress_NP1[iID, :, :] =
-            deviatoric_stress_NP1 + spherical_stress_NP1 .* I(dof)
-        @views von_Mises_stress[iID] = sqrt(3.0 / 2.0 * sum(deviatoric_stress_NP1[:, :]))
-        #############################
-        # comment taken from Peridigm elastic_plastic_correspondence.cxx
-        #############################
-        # Update the equivalent plastic strain
-        #
-        # The algorithm below is generic and should not need to be modified for
-        # any J2 plasticity yield surface.  It uses the difference in the yield
-        # surface location at the NP1 and N steps to increment eqps regardless
-        # of how the plastic multiplier was found in the yield surface
-        # evaluation.
-        #
-        # First go back to step N and compute deviatoric stress and its
-        # magnitude.  We didn't do this earlier because it wouldn't be necassary
-        # if the step is elastic.
-        @views spherical_stress_N = sum(stress_N[iID, i, i] for i = 1:dof) / 3
-        @views deviatoric_stress_N = stress_N[iID, :, :] - spherical_stress_N .* I(dof)
-        deviatoric_stress_magnitude_N =
-            maximum([1.0e-20, sqrt(sum(deviatoric_stress_N .* deviatoric_stress_N))])
-        # Contract the two tensors. This represents a projection of the plastic
-        # strain increment tensor onto the "direction" of deviatoric stress
-        # increment
-        @views temp_A =
-            (deviatoric_stress_NP1 - deviatoric_stress_N) ./ 2 /
-            material_parameter["Shear Modulus"]
-        @views temp_B =
-            (
-                deviatoric_stress_NP1 ./ deviatoric_stress_magnitude_NP1 +
-                deviatoric_stress_N ./ deviatoric_stress_magnitude_N
-            ) ./ 2
-        @views temp_scalar = sum(temp_A .* temp_B)
-        @views plastic_strain_NP1[iID] =
-            plastic_strain_N[iID] + maximum([0, sqrt23 * temp_scalar])
+
+        compute_plastic_model(
+            stress_NP1[iID, :, :],
+            stress_N[iID, :, :],
+            spherical_stress_NP1,
+            spherical_stress_N,
+            deviatoric_stress_NP1,
+            deviatoric_stress_N,
+            von_Mises_stress[iID],
+            plastic_strain_NP1[iID],
+            plastic_strain_N[iID],
+            reduced_yield_stress,
+            material_parameter["Shear Modulus"],
+            dof,
+            temp_A,
+            temp_B,
+            sqrt23,
+        )
+
     end
+
     return stress_NP1, datamanager
 end
 
@@ -235,7 +206,10 @@ function compute_stresses_ba(
     stress_N::Vector{Array{Float64,3}},
     stress_NP1::Vector{Array{Float64,3}},
 )
+    temp_A = @MMatrix zeros(dof, dof)
+    temp_B = @MMatrix zeros(dof, dof)
 
+    sqrt23::Float64 = sqrt(2 / 3)
     von_Mises_stress = datamanager.get_field("von Mises Bond Stress", "NP1")
     plastic_strain_N = datamanager.get_field("Plastic Bond Strain", "N")
     plastic_strain_NP1 = datamanager.get_field("Plastic Bond Strain", "NP1")
@@ -247,68 +221,28 @@ function compute_stresses_ba(
     spherical_stress_NP1::Float64 = 0
     deviatoric_stress_NP1 = @MMatrix zeros(dof, dof)
 
-    temp_A = @MMatrix zeros(dof, dof)
-    temp_B = @MMatrix zeros(dof, dof)
-
-    sqrt23::Float64 = sqrt(2 / 3)
     for iID in nodes
         @views reduced_yield_stress = yield_stress
         @views reduced_yield_stress =
             flaw_function(material_parameter, coordinates[iID, :], yield_stress)
         for jID in eachindex(nlist[iID])
-            von_Mises_stress[iID][jID], spherical_stress_NP1, deviatoric_stress_NP1 =
-                get_von_mises_stress(
-                    von_Mises_stress[iID][jID],
-                    stress_NP1[iID][jID, :, :],
-                    spherical_stress_NP1,
-                    deviatoric_stress_NP1,
-                )
-            if von_Mises_stress[iID][jID] < reduced_yield_stress
-                # material is elastic and nothing happens
-                plastic_strain_NP1[iID][jID] = plastic_strain_N[iID][jID]
-                return stress_NP1, datamanager
-            end
-            deviatoric_stress_magnitude_NP1 =
-                maximum([1.0e-20, von_Mises_stress[iID][jID] / sqrt23])
-            deviatoric_stress_NP1 .*=
-                sqrt23 * reduced_yield_stress / deviatoric_stress_magnitude_NP1
-            @views stress_NP1[iID][jID, :, :] =
-                deviatoric_stress_NP1 + spherical_stress_NP1 .* I(dof)
-            @views von_Mises_stress[iID][jID] =
-                sqrt(3.0 / 2.0 * sum(deviatoric_stress_NP1[:, :]))
-            #############################
-            # comment taken from Peridigm elastic_plastic_correspondence.cxx
-            #############################
-            # Update the equivalent plastic strain
-            #
-            # The algorithm below is generic and should not need to be modified for
-            # any J2 plasticity yield surface.  It uses the difference in the yield
-            # surface location at the NP1 and N steps to increment eqps regardless
-            # of how the plastic multiplier was found in the yield surface
-            # evaluation.
-            #
-            # First go back to step N and compute deviatoric stress and its
-            # magnitude.  We didn't do this earlier because it wouldn't be necassary
-            # if the step is elastic.
-            @views spherical_stress_N = sum(stress_N[iID][jID, i, i] for i = 1:dof) / 3
-            @views deviatoric_stress_N =
-                stress_N[iID][jID, :, :] - spherical_stress_N .* I(dof)
-            deviatoric_stress_magnitude_N =
-                maximum([1.0e-20, sqrt(sum(deviatoric_stress_N .* deviatoric_stress_N))])
-            # Contract the two tensors. This represents a projection of the plastic
-            # strain increment tensor onto the "direction" of deviatoric stress
-            # increment
-            @views temp_A =
-                (deviatoric_stress_NP1 - deviatoric_stress_N) ./ 2 /
-                material_parameter["Shear Modulus"]
-            @views temp_B =
-                (
-                    deviatoric_stress_NP1 ./ deviatoric_stress_magnitude_NP1 +
-                    deviatoric_stress_N ./ deviatoric_stress_magnitude_N
-                ) ./ 2
-            @views temp_scalar = sum(temp_A .* temp_B)
-            @views plastic_strain_NP1[iID][jID] =
-                plastic_strain_N[iID][jID] + maximum([0, sqrt23 * temp_scalar])
+            @views compute_plastic_model(
+                stress_NP1[iID][jID, :, :],
+                stress_N[iID][jID, :, :],
+                spherical_stress_NP1,
+                spherical_stress_N,
+                deviatoric_stress_NP1,
+                deviatoric_stress_N,
+                von_Mises_stress[iID][jID],
+                plastic_strain_NP1[iID][jID],
+                plastic_strain_N[iID][jID],
+                reduced_yield_stress,
+                material_parameter["Shear Modulus"],
+                dof,
+                temp_A,
+                temp_B,
+                sqrt23,
+            )
         end
     end
     return stress_NP1, datamanager
@@ -316,5 +250,78 @@ function compute_stresses_ba(
 
 end
 
+function compute_plastic_model(
+    stress_NP1,
+    stress_N,
+    spherical_stress_NP1,
+    spherical_stress_N,
+    deviatoric_stress_NP1,
+    deviatoric_stress_N,
+    von_Mises_stress,
+    plastic_strain_NP1,
+    plastic_strain_N,
+    reduced_yield_stress,
+    shear_modulus,
+    dof,
+    temp_A,
+    temp_B,
+    sqrt23,
+)
+
+    compute_deviatoric_and_spherical_stresses(
+        stress_NP1,
+        spherical_stress_NP1,
+        deviatoric_stress_NP1,
+        dof,
+    )
+
+    von_Mises_stress =
+        get_von_mises_stress(von_Mises_stress, spherical_stress_NP1, deviatoric_stress_NP1)
+    if von_Mises_stress < reduced_yield_stress
+        # material is elastic and nothing happens
+        plastic_strain_NP1 = plastic_strain_N
+        return
+    end
+    deviatoric_stress_magnitude_NP1 = maximum([1.0e-20, von_Mises_stress / sqrt23])
+    deviatoric_stress_NP1 .*=
+        sqrt23 * reduced_yield_stress / deviatoric_stress_magnitude_NP1
+    @views stress_NP1 = deviatoric_stress_NP1 + spherical_stress_NP1 .* I(dof)
+    von_Mises_stress =
+        get_von_mises_stress(von_Mises_stress, spherical_stress_NP1, deviatoric_stress_NP1)
+    #https://de.wikipedia.org/wiki/Plastizit%C3%A4tstheorie
+    #############################
+    # comment taken from Peridigm elastic_plastic_correspondence.cxx
+    #############################
+    # Update the equivalent plastic strain
+    #
+    # The algorithm below is generic and should not need to be modified for
+    # any J2 plasticity yield surface.  It uses the difference in the yield
+    # surface location at the NP1 and N steps to increment eqps regardless
+    # of how the plastic multiplier was found in the yield surface
+    # evaluation.
+    #
+    # First go back to step N and compute deviatoric stress and its
+    # magnitude.  We didn't do this earlier because it wouldn't be necassary
+    # if the step is elastic.
+    compute_deviatoric_and_spherical_stresses(
+        stress_N,
+        spherical_stress_N,
+        deviatoric_stress_N,
+        dof,
+    )
+    deviatoric_stress_magnitude_N = maximum([1.0e-20, norm(deviatoric_stress_N)])
+    # Contract the two tensors. This represents a projection of the plastic
+    # strain increment tensor onto the "direction" of deviatoric stress
+    # increment
+    @views temp_A = (deviatoric_stress_NP1 - deviatoric_stress_N) ./ 2 / shear_modulus
+    @views temp_B =
+        (
+            deviatoric_stress_NP1 ./ deviatoric_stress_magnitude_NP1 +
+            deviatoric_stress_N ./ deviatoric_stress_magnitude_N
+        ) ./ 2
+    @views temp_scalar = sum(temp_A .* temp_B)
+    @views plastic_strain_NP1 = plastic_strain_N + maximum([0, sqrt23 * temp_scalar])
+
+end
 
 end

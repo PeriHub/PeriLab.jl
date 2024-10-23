@@ -18,6 +18,7 @@ export voigt_to_matrix
 export check_symmetry
 export get_symmetry
 export get_von_mises_stress
+export compute_deviatoric_and_spherical_stresses
 export get_strain
 export compute_Piola_Kirchhoff_stress
 export apply_pointwise_E
@@ -592,26 +593,38 @@ end
 
 function get_von_mises_stress(
     von_Mises_stress::Float64,
-    stress_NP1,
-    spherical_stress_NP1,
-    deviatoric_stress_NP1,
+    spherical_stress,
+    deviatoric_stress,
 )
-
-    @views @inbounds @fastmath for i ∈ axes(stress_NP1, 1)
-        spherical_stress_NP1 += stress_NP1[i, i]
-    end
-    temp = zero(eltype(deviatoric_stress_NP1))
-    @views @inbounds @fastmath for i ∈ axes(stress_NP1, 1)
-        deviatoric_stress_NP1[i, i] = spherical_stress_NP1
-        for j ∈ axes(stress_NP1, 2)
-            deviatoric_stress_NP1[i, j] += stress_NP1[i, j]
-            temp += deviatoric_stress_NP1[i, j] * deviatoric_stress_NP1[i, j]
+    temp = zero(eltype(deviatoric_stress))
+    @views @inbounds @fastmath for i ∈ axes(deviatoric_stress, 1)
+        for j ∈ axes(deviatoric_stress, 2)
+            temp += deviatoric_stress[i, j] * deviatoric_stress[i, j]
         end
     end
 
     von_Mises_stress = sqrt(3.0 / 2.0 * temp)
 
-    return von_Mises_stress, spherical_stress_NP1, deviatoric_stress_NP1
+    return von_Mises_stress
+end
+
+function compute_deviatoric_and_spherical_stresses(
+    stress,
+    spherical_stress,
+    deviatoric_stress,
+    dof,
+)
+
+    @views @inbounds @fastmath for i ∈ axes(stress, 1)
+        spherical_stress += stress[i, i]
+    end
+    @views @inbounds @fastmath for i ∈ axes(stress, 1)
+        deviatoric_stress[i, i] = spherical_stress
+        for j ∈ axes(stress, 2)
+            deviatoric_stress[i, j] += stress[i, j]
+        end
+    end
+    spherical_stress /= dof
 end
 
 

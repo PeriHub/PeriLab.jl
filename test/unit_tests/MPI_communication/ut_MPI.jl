@@ -395,6 +395,12 @@ if ncores == 3
         dbdNP1[iID] .= 1 + (-1)^iID * 0.1
         dbNP1[iID] .= 1
     end
+
+    test_data_manager = Bondbased_Elastic.init_model(
+        test_data_manager,
+        Vector{Int64}(1:nodes),
+        Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0),
+    )
     test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
