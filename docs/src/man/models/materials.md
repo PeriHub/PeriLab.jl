@@ -1,7 +1,7 @@
 # Material Models
 
 ## Existing Models
-The models related functions can be found [here](@ref "Models - Functions").
+The models related functions can be found [here](@ref "Model Factory - Functions").
 
 | Method | Related Model in PeriLab |
 |---|---|
