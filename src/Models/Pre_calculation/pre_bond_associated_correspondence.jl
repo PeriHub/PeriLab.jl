@@ -6,6 +6,7 @@ module Pre_Bond_Associated_Correspondence
 using DataStructures: OrderedDict
 include("../../Support/geometry.jl")
 using .Geometry: calculate_bond_length, compute_weighted_deformation_gradient
+using LoopVectorization
 export pre_calculation_name
 export init_model
 export compute
@@ -144,9 +145,12 @@ function compute_weighted_volume(
     omega::Vector{Vector{Float64}},
     weighted_volume::Vector{Float64},
 )
-    for iID in nodes
-        weighted_volume[iID] =
-            sum(bond_damage[iID][:] .* omega[iID][:] .* volume[nlist[iID]])
+    @views @inbounds @fastmath for iID in nodes
+        weighted_volume[iID] = 0
+        @views @inbounds @fastmath for jID in eachindex(nlist[iID])
+            @views weighted_volume[iID] +=
+                bond_damage[iID][jID] * omega[iID][jID] * volume[nlist[iID][jID]]
+        end
     end
     return weighted_volume
 end
