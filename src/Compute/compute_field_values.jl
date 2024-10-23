@@ -70,20 +70,30 @@ function calculate_von_mises_stress(
     dof = datamanager.get_dof()
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
-    spherical_stress::Float64 = 0
-    deviatoric_stress = zeros(dof, dof)
+
     for iID in nodes
-        compute_deviatoric_and_spherical_stresses(
-            stress_NP1,
-            spherical_stress,
-            deviatoric_stress,
-            dof,
-        )
-        von_Mises_stress[iID] =
-            get_von_mises_stress(von_Mises_stress[iID], spherical_stress, deviatoric_stress)
+        @views von_Mises_stress[iID] =
+            von_Mises(von_Mises_stress[iID], stress_NP1[iID, :, :], dof)
     end
+
     return datamanager
 end
+function von_Mises(von_Mises_stress, stress, dof)
+    # faster than putting the first loop in the second one
+    von_Mises_stress = 0
+    for i = 1:dof
+        von_Mises_stress += stress[i, i] * stress[i, i]
+    end
+    for i = 1:dof
+        for j = i+1:dof
+            von_Mises_stress +=
+                -stress[i, i] * stress[j, j] + 3 * stress[i, j] * stress[i, j]
+        end
+    end
+    von_Mises_stress = sqrt(von_Mises_stress)
+    return von_Mises_stress
+end
+
 
 """
     calculate_strain(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, hooke_matrix::Matrix{Float64})

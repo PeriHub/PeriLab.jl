@@ -58,12 +58,12 @@ function init_model(
         return nothing
     end
 
-    # datamanager.create_node_field("von Mises Stress", Float64, 1)
+    datamanager.create_node_field("von Mises Yield Stress", Float64, 1)
     datamanager.create_node_field("Plastic Strain", Float64, 1)
 
     if haskey(material_parameter, "Bond Associated") &&
        material_parameter["Bond Associated"]
-        datamanager.create_bond_field("von Mises Bond Stress", Float64, 1)
+        datamanager.create_bond_field("von Mises Bond Yield Stress", Float64, 1)
         datamanager.create_bond_field("Plastic Bond Strain", Float64, 1)
     end
     return datamanager
@@ -151,7 +151,7 @@ function compute_stresses(
     stress_NP1::Union{SubArray,Array{Float64,3}},
 )
 
-    von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
+    von_Mises_stress = datamanager.get_field("von Mises Yield Stress", "NP1")
     plastic_strain_N = datamanager.get_field("Plastic Strain", "N")
     plastic_strain_NP1 = datamanager.get_field("Plastic Strain", "NP1")
     coordinates = datamanager.get_field("Coordinates")
@@ -210,7 +210,7 @@ function compute_stresses_ba(
     temp_B = @MMatrix zeros(dof, dof)
 
     sqrt23::Float64 = sqrt(2 / 3)
-    von_Mises_stress = datamanager.get_field("von Mises Bond Stress", "NP1")
+    von_Mises_stress = datamanager.get_field("von Mises Bond Yield Stress", "NP1")
     plastic_strain_N = datamanager.get_field("Plastic Bond Strain", "N")
     plastic_strain_NP1 = datamanager.get_field("Plastic Bond Strain", "NP1")
     coordinates = datamanager.get_field("Coordinates")
