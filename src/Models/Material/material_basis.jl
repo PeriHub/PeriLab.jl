@@ -20,6 +20,8 @@ export get_symmetry
 export get_von_mises_stress
 export get_strain
 export compute_Piola_Kirchhoff_stress
+export apply_pointwise_E
+
 function get_value(
     datamanager::Module,
     parameter::Union{Dict{Any,Any},Dict{String,Any}},
@@ -640,6 +642,26 @@ function compute_Piola_Kirchhoff_stress(
         "Deformation gradient is singular and cannot be inverted.",
     )
 
+end
+
+function apply_pointwise_E(nodes, E::Union{Int64,Float64}, bond_force)
+    @inbounds @fastmath for i in nodes
+        @views @inbounds @fastmath for j ∈ axes(bond_force, 2)
+            bond_force[i, j] *= E
+        end
+    end
+end
+
+function apply_pointwise_E(
+    nodes,
+    E::Union{SubArray,Vector{Float64},Vector{Int64}},
+    bond_force,
+)
+    @inbounds @fastmath for i in nodes
+        @views @inbounds @fastmath for j ∈ axes(bond_force, 2)
+            bond_force[i, j] *= E[i]
+        end
+    end
 end
 
 end

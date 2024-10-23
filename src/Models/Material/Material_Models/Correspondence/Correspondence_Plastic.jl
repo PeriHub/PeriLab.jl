@@ -259,9 +259,9 @@ function compute_stresses_ba(
             von_Mises_stress[iID][jID], spherical_stress_NP1, deviatoric_stress_NP1 =
                 get_von_mises_stress(
                     von_Mises_stress[iID][jID],
-                    @view stress_NP1[iID][jID, :, :],
+                    stress_NP1[iID][jID, :, :],
                     spherical_stress_NP1,
-                    deviatoric_stress_NP1
+                    deviatoric_stress_NP1,
                 )
             if von_Mises_stress[iID][jID] < reduced_yield_stress
                 # material is elastic and nothing happens

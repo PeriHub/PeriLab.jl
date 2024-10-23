@@ -25,13 +25,12 @@ end
     dof = 3
     test_data_manager.set_dof(dof)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 2
+    nn[2] = 3
     h = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
 
     h[1:nodes] = 1:nodes
     bf = test_data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
-
-    nn[1] = 2
-    nn[2] = 3
 
     bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
     dbN, dbNP1 = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof)
@@ -44,7 +43,11 @@ end
         dbdNP1[iID] .= 1 + (-1)^iID * 0.1
         dbNP1[iID] .= 1
     end
-
+    test_data_manager = Bondbased_Elastic.init_model(
+        test_data_manager,
+        Vector{Int64}(1:nodes),
+        Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0),
+    )
     test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
@@ -75,7 +78,15 @@ end
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
-
+    test_data_manager = Bondbased_Elastic.init_model(
+        test_data_manager,
+        Vector{Int64}(1:nodes),
+        Dict(
+            "Bulk Modulus" => 1.0,
+            "Young's Modulus" => 1.0,
+            "Symmetry" => "here is something",
+        ),
+    )
     test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
@@ -110,6 +121,12 @@ end
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
+    test_data_manager = Bondbased_Elastic.init_model(
+        test_data_manager,
+        Vector{Int64}(1:nodes),
+        Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane strain"),
+    )
+
     test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),
@@ -140,6 +157,11 @@ end
 
     bf[1][:, :] .= 0
     bf[2][:, :] .= 0
+    test_data_manager = Bondbased_Elastic.init_model(
+        test_data_manager,
+        Vector{Int64}(1:nodes),
+        Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0, "Symmetry" => "plane stress"),
+    )
     test_data_manager = Bondbased_Elastic.compute_model(
         test_data_manager,
         Vector{Int64}(1:nodes),

@@ -16,9 +16,39 @@ using .Material_Basis:
     get_symmetry,
     get_von_mises_stress,
     get_strain,
-    compute_Piola_Kirchhoff_stress
+    compute_Piola_Kirchhoff_stress,
+    apply_pointwise_E
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
+
+@testset "ut_apply_pointwise_E" begin
+    nodes = 2:3
+    bond_force = ones(4, 2)
+    E = 3.3
+    bond_force[2, 2] = 3
+    apply_pointwise_E(nodes, E, bond_force)
+    @test bond_force[1, 1] == 1
+    @test bond_force[1, 2] == 1
+    @test bond_force[2, 1] == E
+    @test bond_force[2, 2] == 3 * E
+    @test bond_force[3, 1] == E
+    @test bond_force[3, 2] == E
+    @test bond_force[4, 1] == 1
+    @test bond_force[4, 2] == 1
+
+    bond_force = ones(4, 2)
+    E = zeros(4)
+    apply_pointwise_E(nodes, E, bond_force)
+    @test bond_force[1, 1] == 1
+    @test bond_force[1, 2] == 1
+    @test bond_force[2, 1] == 0
+    @test bond_force[2, 2] == 0
+    @test bond_force[3, 1] == 0
+    @test bond_force[3, 2] == 0
+    @test bond_force[4, 1] == 1
+    @test bond_force[4, 2] == 1
+end
+
 @testset "ut_distribute_forces" begin
     nodes = [1, 2]
     nlist = [[2, 3], [1, 3]]
