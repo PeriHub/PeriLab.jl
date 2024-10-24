@@ -8,6 +8,19 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5] - 2024-10-24
+
+### Fixed
+
+- HETVAL subroutine
+- Correspondence routines
+- Damage index function
+
+### Changed
+
+- Optimzed memory allocation and speed
+- Refine documentations
+
 ## [1.2.4] - 2024-10-08
 
 ### Added
