@@ -104,7 +104,7 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 function damage_index(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
-    nlist_filtered_ids::SubArray,
+    nlist_filtered_ids::Vector{Vector{Int64}},
 )
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
     for iID in nodes

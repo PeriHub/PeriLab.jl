@@ -11,12 +11,7 @@ Set_modules.include_files(module_list)
 export init_coupling
 export compute_coupling
 
-function init_coupling(
-    datamanager::Module,
-    elements::Union{SubArray,Vector{Int64}},
-    nodes::Union{SubArray,Vector{Int64}},
-    complete_params::Dict,
-)
+function init_coupling(datamanager::Module, complete_params::Dict)
 
     if !haskey(complete_params["FEM"], "Coupling")
         return datamanager
@@ -32,25 +27,23 @@ function init_coupling(
         @error "No material of name " * material_model * " exists."
     end
     datamanager.set_model_module(coupling_model, mod)
-    datamanager =
-        mod.init_coupling_model(datamanager, nodes, complete_params["FEM"]["Coupling"])
+    datamanager = mod.init_coupling_model(datamanager, complete_params["FEM"]["Coupling"])
     return datamanager
 end
 
 function compute_coupling(
     datamanager::Module,
-    elements::Union{SubArray,Vector{Int64}},
     nodes::Union{SubArray,Vector{Int64}},
-    complete_params::Dict,
+    fem_params::Dict,
 )
 
-    if !haskey(complete_params["FEM"], "Coupling")
+    if !haskey(fem_params, "Coupling")
         return datamanager
     end
-    coupling_model = complete_params["FEM"]["Coupling"]["Coupling Type"]
+    coupling_model = fem_params["Coupling"]["Coupling Type"]
 
     mod = datamanager.get_model_module(coupling_model)
-    return mod.compute_model(datamanager, elements, nodes, complete_params)
+    return mod.compute_coupling(datamanager, nodes, fem_params)
 
 end
 

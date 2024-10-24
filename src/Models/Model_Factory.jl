@@ -18,6 +18,7 @@ include("../Support/Parameters/parameter_handling.jl")
 using .Parameter_Handling: get_model_parameter, get_heat_capacity
 # in future FEM will be outside of the Model_Factory
 include("../FEM/FEM_Factory.jl")
+include("../FEM/Coupling/Coupling_Factory.jl")
 
 using .Additive
 using .Corrosion
@@ -27,6 +28,7 @@ using .Pre_Calculation
 using .Thermal
 # in future FEM will be outside of the Model_Factory
 using .FEM
+using .Coupling_PF_FEM
 using TimerOutputs
 export compute_models
 export init_models
@@ -106,6 +108,11 @@ function init_models(
     if solver_options["Calculation"]["Calculate von Mises"]
         datamanager.create_node_field("von Mises Stress", Float64, 1)
     end
+
+    if datamanager.fem_active()
+        datamanager = Coupling_PF_FEM.init_coupling(datamanager, params)
+    end
+
     @info "Finalize Init Models"
     return datamanager
 end
@@ -233,6 +240,12 @@ function compute_models(
                 # update are the nodes to run a second time
                 update_nodes =
                     get_active_update_nodes(fe_nodes, update_list, nodes, update_nodes)
+
+                datamanager = Coupling_PF_FEM.compute_coupling(
+                    datamanager,
+                    nodes,
+                    datamanager.get_properties(1, "FEM"),
+                )
             end
             # active or all, or does it not matter?
 

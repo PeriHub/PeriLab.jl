@@ -41,6 +41,7 @@ global expected_structure = Dict(
                     "Element Type" => [String, true],
                     "Degree" => [Union{String,Int64}, true],
                     "Material Model" => [String, true],
+                    "Coupling" => [Dict{Any,Any}("Coupling Type" => [String, true]), false],
                 ),
                 false,
             ],

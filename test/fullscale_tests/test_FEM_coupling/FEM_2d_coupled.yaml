@@ -16,6 +16,8 @@ PeriLab:
     Element Type: "Lagrange"
     Degree: 1 1
     Material Model: "Mat_1"
+    Coupling:
+      Coupling Type: "Arlequin"
   Models:
     Material Models:
       Mat_1:
