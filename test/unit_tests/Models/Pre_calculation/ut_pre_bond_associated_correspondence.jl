@@ -15,12 +15,13 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
     undeformed_bond = [1.0, 2.0]
     horizon = 3.0
     expected_Q = [1.0 / 3.0, 2.0 / 3.0]
-
+    Q = zeros(2)
     Q = Pre_Bond_Associated_Correspondence.calculate_Q(
         accuracy_order,
         dof,
         undeformed_bond,
         horizon,
+        Q,
     )
 
     @test isapprox(Q, expected_Q)
@@ -36,12 +37,13 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
         0.2222222222222222,
         0.4444444444444444,
     ]
-
+    Q = zeros(5)
     Q = Pre_Bond_Associated_Correspondence.calculate_Q(
         accuracy_order,
         dof,
         undeformed_bond,
         horizon,
+        Q,
     )
 
     @test isapprox(Q, expected_Q)
@@ -61,24 +63,25 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
         1.1111111111111112,
         2.777777777777778,
     ]
-
+    Q = zeros(9)
     Q = Pre_Bond_Associated_Correspondence.calculate_Q(
         accuracy_order,
         dof,
         undeformed_bond,
         horizon,
+        Q,
     )
 
     @test isapprox(Q, expected_Q)
-
+    Q = zeros(3)
     undeformed_bond = [1.0, 0.0, 0]
-    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0) ==
+    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [1, 0, 0]
     undeformed_bond = [0.0, 1.0, 0]
-    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0) ==
+    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [0, 1, 0]
     undeformed_bond = [0.0, 0.0, 1.0]
-    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0) ==
+    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [0, 0, 1]
 end
 
@@ -142,20 +145,25 @@ end
         [0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0],
         [0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0; 0.0 0.0],
     ]
+    Q = zeros(5)
+    Minv = zeros(5, 5)
+    M = zeros(5, 5)
 
-    gradient_weights =
-        Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(
-            nodes,
-            dof,
-            accuracy_order,
-            volume,
-            nlist,
-            horizon,
-            bond_damage,
-            omega,
-            undeformed_bond,
-            gradient_weights,
-        )
+    Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(
+        nodes,
+        dof,
+        accuracy_order,
+        volume,
+        nlist,
+        horizon,
+        bond_damage,
+        omega,
+        Q,
+        M,
+        Minv,
+        undeformed_bond,
+        gradient_weights,
+    )
 
     @test isapprox(gradient_weights[1][1, :], [0.5000000000000014, -0.24999999999999992])
     @test isapprox(gradient_weights[1][2, :], [-2.5000000000000817, -1.000000000000037])
