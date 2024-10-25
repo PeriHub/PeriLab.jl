@@ -7,6 +7,7 @@ using DataStructures: OrderedDict
 include("../../Support/geometry.jl")
 using .Geometry: calculate_bond_length, compute_weighted_deformation_gradient
 using LoopVectorization
+using StaticArrays: @MVector
 export pre_calculation_name
 export init_model
 export compute
@@ -70,6 +71,16 @@ function init_model(
         "Matrix",
         dof,
     )
+
+    #https://arxiv.org/pdf/2004.11477
+    # maybe as static array
+
+    accuracy_order = datamanager.get_accuracy_order()
+    dim = qdim(accuracy_order, dof)
+
+    datamanager.create_constant_free_size_field("Q Vector", Float64, (dim,), 1)
+    datamanager.create_constant_free_size_field("Minv Matrix", Float64, (dim, dim))
+    datamanager.create_constant_free_size_field("M temporary Matrix", Float64, (dim, dim))
     return datamanager
 end
 
@@ -109,9 +120,13 @@ function compute(
     ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
     accuracy_order = datamanager.get_accuracy_order()
 
+    Q = datamanager.get_field("Q Vector")
+    Minv = datamanager.get_field("Minv Matrix")
+    M = datamanager.get_field("M temporary Matrix")
+
     weighted_volume =
         compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
-    gradient_weights = compute_Lagrangian_gradient_weights(
+    compute_Lagrangian_gradient_weights(
         nodes,
         dof,
         accuracy_order,
@@ -120,6 +135,9 @@ function compute(
         horizon,
         bond_damage,
         omega,
+        Q,
+        M,
+        Minv,
         bond_geometry,
         gradient_weights,
     )
@@ -132,6 +150,7 @@ function compute(
         displacement,
         deformation_gradient,
     )
+
     return datamanager
 end
 
@@ -161,7 +180,7 @@ accuracy_order::Int64 - needs a number of bonds which are linear independent
 
 """
 
-function calculate_Q(
+function calculate_Q_old(
     accuracy_order::Int64,
     dof::Int64,
     bond_geometry::Vector{Float64},
@@ -190,6 +209,49 @@ function calculate_Q(
     end
     return Q
 end
+
+
+function calculate_Q(
+    accuracy_order::Int64,
+    dof::Int64,
+    bond_geometry::Vector{Float64},
+    horizon::Union{Int64,Float64},
+    Q::Vector{Float64},
+)
+
+
+    counter = 0
+    Q .= 1
+    p = @MVector zeros(Int64, dof)
+    for this_order = 1:accuracy_order
+        for p[1] = this_order:-1:0
+            if dof == 3
+                for p[2] = this_order-p[1]:-1:0
+                    p[3] = this_order - p[1] - p[2]
+                    # Calculate the product for Q[counter]
+                    counter += 1
+                    Q[counter] = prod_Q(bond_geometry, horizon, p, Q[counter])
+                end
+            else
+                p[2] = this_order - p[1]
+                counter += 1
+                Q[counter] = prod_Q(bond_geometry, horizon, p, Q[counter])
+            end
+        end
+    end
+    return Q
+end
+
+function prod_Q(bond_geometry, horizon, p, Q)
+    @inbounds @fastmath for m ∈ axes(p, 1)
+        @views @inbounds @fastmath for pc = 1:p[m]
+            Q *= bond_geometry[m] / horizon
+        end
+    end
+    return Q
+end
+
+
 function compute_Lagrangian_gradient_weights(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
@@ -199,39 +261,86 @@ function compute_Lagrangian_gradient_weights(
     horizon::Union{SubArray,Vector{Float64}},
     bond_damage::Union{SubArray,Vector{Vector{Float64}}},
     omega::Union{SubArray,Vector{Vector{Float64}}},
+    Q,
+    M,
+    Minv,
     bond_geometry,
     gradient_weights,
 )
-    #https://arxiv.org/pdf/2004.11477
-    # maybe as static array
-    dim = qdim(accuracy_order, dof)
-    Minv = zeros(Float64, dim, dim)
+
     for iID in nodes
-        M = zeros(Float64, dim, dim)
+        M .= 0
         for (jID, nID) in enumerate(nlist[iID])
-            Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID, :], horizon[iID])
-            M += omega[iID][jID] * bond_damage[iID][jID] * volume[nID] .* Q * Q'
+            Q = calculate_Q(
+                accuracy_order,
+                dof,
+                bond_geometry[iID][jID, :],
+                horizon[iID],
+                Q,
+            )
+            QTQ!(M, omega[iID][jID], bond_damage[iID][jID], volume[nID], Q)
         end
 
-        Minv = invert(
+        @views Minv = invert(
             M,
             "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this.",
         )
 
-        for (jID, nID) in enumerate(nlist[iID])
-            Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID, :], horizon[iID])
+        for jID in eachindex(nlist[iID])
+            Q = calculate_Q(
+                accuracy_order,
+                dof,
+                bond_geometry[iID][jID, :],
+                horizon[iID],
+                Q,
+            )
             # this comes from Eq(19) in 10.1007/s40571-019-00266-9
             # or example 1 in https://arxiv.org/pdf/2004.11477
-            for idof = 1:dof # Eq (3) flowing
-                gradient_weights[iID][jID, idof] =
-                    omega[iID][jID] * bond_damage[iID][jID] / horizon[iID] *
-                    Minv[idof, :]' *
-                    Q
-            end
+            # Eq (3) flowing
+            compute_gradient_weights!(
+                gradient_weights,
+                dof,
+                omega,
+                bond_damage,
+                horizon,
+                Minv,
+                Q,
+                iID,
+                jID,
+            )
+
 
         end
     end
-    return gradient_weights
+end
+function QTQ!(M, omega, bond_damage, volume, Q)
+    @inbounds @fastmath for m ∈ axes(M, 1)
+        @inbounds @fastmath for n ∈ axes(M, 2)
+            M[m, n] += omega * bond_damage * volume * Q[m] * Q[n]
+        end
+    end
 end
 
+
+function compute_gradient_weights!(
+    gradient_weights,
+    dof,
+    omega,
+    bond_damage,
+    horizon,
+    Minv,
+    Q,
+    iID,
+    jID,
+)
+    for idof = 1:dof # Eq (3) flowing
+        gradient_weights[iID][jID, idof] = 0
+        @inbounds @fastmath for m ∈ axes(Minv, 2)
+            gradient_weights[iID][jID, idof] +=
+                omega[iID][jID] * bond_damage[iID][jID] / horizon[iID] *
+                Minv[idof, m] *
+                Q[m]
+        end
+    end
+end
 end
