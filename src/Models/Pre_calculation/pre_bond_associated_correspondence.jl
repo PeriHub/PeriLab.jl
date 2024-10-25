@@ -141,7 +141,7 @@ function compute(
         bond_geometry,
         gradient_weights,
     )
-    deformation_gradient = compute_weighted_deformation_gradient(
+    compute_weighted_deformation_gradient(
         nodes,
         dof,
         nlist,

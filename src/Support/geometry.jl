@@ -288,14 +288,20 @@ function compute_weighted_deformation_gradient(
     displacement,
     deformation_gradient,
 )
+    @inbounds @fastmath for iID in nodes
+        @inbounds @fastmath for m ∈ axes(deformation_gradient, 2)
+            @inbounds @fastmath for n ∈ axes(deformation_gradient, 3)
+                deformation_gradient[iID, n, m] = 0
+                @views @inbounds @fastmath for (jID, nID) in enumerate(nlist[iID])
+                    deformation_gradient[iID, n, m] +=
+                        (displacement[nID, m] - displacement[iID, m]) *
+                        (gradient_weight[iID][jID, n] * volume[nID])
+                end
+            end
+            deformation_gradient[iID, m, m] += 1
+        end
 
-    for iID in nodes
-        deformation_gradient[iID, :, :] = @views I(dof) +
-               (displacement[nlist[iID], :]' .- displacement[iID, :]) *
-               (gradient_weight[iID][:, :] .* volume[nlist[iID]])
     end
-    return deformation_gradient
-
 end
 
 
