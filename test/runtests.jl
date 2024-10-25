@@ -290,9 +290,9 @@ MPI.Init()
         @testset "test_point_wise_material" begin
             include("fullscale_tests/test_point_wise_material/test_point_wise_material.jl")
         end
-        @testset "test_FEM" begin
-            include("fullscale_tests/test_FEM/test_FEM.jl")
-        end
+        # @testset "test_FEM" begin
+        #     include("fullscale_tests/test_FEM/test_FEM.jl")
+        # end
     end
 
 

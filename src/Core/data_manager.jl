@@ -11,6 +11,7 @@ export create_bond_field
 export create_constant_free_size_field
 export create_constant_bond_field
 export create_constant_node_field
+export create_constant_element_field
 export create_node_field
 export fem_active
 export initialize_data
@@ -339,6 +340,34 @@ function create_constant_node_field(
 end
 
 """
+    create_constant_element_field(name::String, type::Type, dof::Int64)
+
+Creates a constant element field with the given name, data type, and degree of freedom.
+
+# Arguments
+- `name::String`: The name of the element field.
+- `vartype::Type`: The data type of the element field.
+- `dof::Int64`: The degrees of freedom per element.
+- `VectorOrArray::String` (optional) - Vector or Materix; Default is vector
+
+# Returns
+- `constant_element_field::Field`: The created constant element field.
+
+Example:
+```julia
+create_constant_element_field("temperature", Float64, 1)  # creates a temperature constant element field
+```
+"""
+function create_constant_element_field(
+    name::String,
+    type::Type,
+    dof::Int64,
+    default_value::Union{Int64,Float64,Bool} = 0.0,
+)
+    return create_field(name, type, "Element_Field", dof, default_value)
+end
+
+"""
     create_node_field(name::String, type::Type, dof::Int64)
 
 Creates a node field with the given name, data type, and degree of freedom.
@@ -428,6 +457,13 @@ function create_field(
             else
                 fields[vartype][name] = [fill(value, (n, dof)) for n in nBonds]
             end
+        end
+    elseif bond_or_node == "Element_Field"
+        nElements = get_field("Number of Element Neighbors")
+        if dof == 1
+            fields[vartype][name] = [fill(value, n) for n in nElements]
+        else
+            fields[vartype][name] = [fill(value, (n, dof)) for n in nElements]
         end
     elseif bond_or_node == "Free_Size_Field"
         fields[vartype][name] = Array{vartype}(zeros(dof))
