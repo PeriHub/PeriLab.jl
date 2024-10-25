@@ -66,7 +66,15 @@ function init_models(
     #end
     @info "Check pre calculation models are initialized for material models."
     datamanager = Pre_Calculation.check_dependencies(datamanager, block_nodes)
-
+    if haskey(params["Models"], "Material Models")
+        for mat in keys(params["Models"]["Material Models"])
+            if haskey(params["Models"]["Material Models"][mat], "Accuracy Order")
+                datamanager.set_accuracy_order(
+                    params["Models"]["Material Models"][mat]["Accuracy Order"],
+                )
+            end
+        end
+    end
     for model_name in solver_options["Models"]
         datamanager = add_model(datamanager, model_name)
     end
