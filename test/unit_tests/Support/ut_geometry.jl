@@ -568,7 +568,7 @@ end
     displacement = [0.0 0.0 0.0; 1.0 1.0 1.0]
     deformation_gradient = zeros(Float64, length(nnodes), dof, dof)
 
-    deformation_gradient = PeriLab.IO.Geometry.compute_weighted_deformation_gradient(
+    PeriLab.IO.Geometry.compute_weighted_deformation_gradient(
         nnodes,
         dof,
         nlist,

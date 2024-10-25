@@ -402,12 +402,13 @@ function compute_bond_level_deformation_gradient(
     deformation_gradient,
     ba_deformation_gradient,
 )
+    mean_deformation_gradient = zeros(dof, dof)
     for iID in nodes
         for (jID, nID) in enumerate(nlist[iID])
-            mean_deformation_gradient =
+            @views mean_deformation_gradient =
                 0.5 .* (deformation_gradient[iID, :, :] + deformation_gradient[nID, :, :])
 
-            ba_deformation_gradient[iID][jID, :, :] =
+            @views ba_deformation_gradient[iID][jID, :, :] =
                 mean_deformation_gradient +
                 (
                     bond_deformation[iID][jID, :] -
@@ -415,8 +416,15 @@ function compute_bond_level_deformation_gradient(
                 ) * bond_geometry[iID][jID, :]' /
                 (bond_length[iID][jID] * bond_length[iID][jID])
 
-            # scalarTemp = *(meanDefGrad+0) * undeformedBondX + *(meanDefGrad+1) * undeformedBondY + *(meanDefGrad+2) * undeformedBondZ;
 
+            #@inbounds @fastmath for m ∈ axes(ba_deformation_gradient[iID], 2)
+            #    @inbounds @fastmath for n ∈ axes(ba_deformation_gradient[iID], 3)
+            #
+            #        ba_deformation_gradient[iID][jID, m, n] = 0.5 * (deformation_gradient[iID, m, n] + deformation_gradient[nID, m, n]) + (bond_deformation[iID][jID, m] - 0.5 * (deformation_gradient[iID, m, n] + deformation_gradient[nID, m, n]) * bond_geometry[iID][jID, n]) * bond_geometry[iID][jID, m] / (bond_length[iID][jID] * bond_length[iID][jID])
+            #    end
+            #end
+            ## scalarTemp = *(meanDefGrad+0) * undeformedBondX + *(meanDefGrad+1) * undeformedBondY + *(meanDefGrad+2) * undeformedBondZ;
+            #
             # *(defGrad+0) = *(meanDefGrad+0) + (defStateX - scalarTemp) * undeformedBondX/undeformedBondLengthSq;
             # *(defGrad+1) = *(meanDefGrad+1) + (defStateX - scalarTemp) * undeformedBondY/undeformedBondLengthSq;
             # *(defGrad+2) = *(meanDefGrad+2) + (defStateX - scalarTemp) * undeformedBondZ/undeformedBondLengthSq;
