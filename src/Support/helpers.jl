@@ -35,6 +35,7 @@ export fastdot
 export fast_mul!
 export mat_mul!
 export get_mapping
+export mat_mul_transpose_mat!
 
 
 
@@ -78,7 +79,15 @@ function mat_mul!(C, A, B)
         C[m, n] = Cmn
     end
 end
-
+function mat_mul_transpose_mat!(C, A, B)
+    @inbounds @fastmath for m ∈ axes(A, 1), n ∈ axes(B, 2)
+        Cmn = zero(eltype(C))
+        @inbounds @fastmath for k ∈ axes(A, 2)
+            Cmn += A[k, m] * B[k, n]
+        end
+        C[m, n] = 0.5 * Cmn
+    end
+end
 
 function get_MMatrix(len::Int64)
 

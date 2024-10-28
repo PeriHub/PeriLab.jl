@@ -175,7 +175,7 @@ function compute_model(
 
     ba_rotation_tensor = datamanager.get_field("Bond Rotation Tensor", "NP1")
 
-    strain_NP1, strain_increment = compute_bond_strain(
+    compute_bond_strain(
         nodes,
         nlist,
         ba_deformation_gradient,
@@ -336,12 +336,8 @@ function compute_bond_strain(
 )
 
     for iID in nodes
-        @views strain_NP1[iID][:, :, :] = compute_strain(
-            eachindex(nlist[iID]),
-            (deformation_gradient[iID][:, :, :]),
-            (strain_NP1[iID][:, :, :]),
-        )
-        @views matrix_diff!(
+        compute_strain(eachindex(nlist[iID]), deformation_gradient[iID], strain_NP1[iID])
+        matrix_diff!(
             strain_increment[iID],
             eachindex(nlist[iID]),
             strain_NP1[iID],
@@ -349,7 +345,6 @@ function compute_bond_strain(
         )
 
     end
-    return strain_NP1, strain_increment
 end
 
 
