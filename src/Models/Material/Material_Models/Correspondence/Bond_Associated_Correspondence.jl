@@ -432,10 +432,12 @@ function compute_bond_forces(
             end
 
 
-            bond_forces[iID][jID, :] =
-                integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
-            # mul!(bond_forces[iID][jID, :], integral_nodal_stress[iID, :, :], gradient_weights[iID][jID, :])
-            bond_forces[iID][jID, :] +=
+            # bond_forces[iID][jID, :] =
+            #     integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
+            bf = @view bond_forces[iID][jID, :]
+            gw = @view gradient_weights[iID][jID, :]
+            mul!(bf, integral_nodal_stress[iID, :, :], gw)
+            @views bond_forces[iID][jID, :] +=
                 bond_damage[iID][jID] * omega[iID][jID] /
                 (weighted_volume[iID] * bond_length[iID][jID] * bond_length[iID][jID]) .*
                 bond_stress[iID][jID, :, :] * bond_geometry[iID][jID, :]

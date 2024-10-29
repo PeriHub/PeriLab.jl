@@ -169,13 +169,10 @@ function compute_stresses_ba(
         @views hookeMatrix =
             get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof, iID)
         @views for jID in eachindex(nlist[iID])
-            @views fast_mul!(
-                stress_NP1[iID][jID, :, :],
-                hookeMatrix,
-                strain_increment[iID][jID, :, :],
-                stress_N[iID][jID, :, :],
-                mapping,
-            )
+            @views sNP1 = stress_NP1[iID][jID, :, :]
+            @views sInc = strain_increment[iID][jID, :, :]
+            @views sN = stress_N[iID][jID, :, :]
+            fast_mul!(sNP1, hookeMatrix, sInc, sN, mapping)
         end
     end
     return stress_NP1, datamanager

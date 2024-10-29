@@ -8,6 +8,7 @@ include("../../Support/geometry.jl")
 using .Geometry: calculate_bond_length, compute_weighted_deformation_gradient
 using LoopVectorization
 using StaticArrays: @MVector
+
 export pre_calculation_name
 export init_model
 export compute
@@ -77,7 +78,9 @@ function init_model(
 
     accuracy_order = datamanager.get_accuracy_order()
     dim = qdim(accuracy_order, dof)
-
+    if "Q Vector" in datamanager.get_all_field_keys()
+        return datamanager
+    end
     datamanager.create_constant_free_size_field("Q Vector", Float64, (dim,), 1)
     datamanager.create_constant_free_size_field("Minv Matrix", Float64, (dim, dim))
     datamanager.create_constant_free_size_field("M temporary Matrix", Float64, (dim, dim))
@@ -124,8 +127,10 @@ function compute(
     Minv = datamanager.get_field("Minv Matrix")
     M = datamanager.get_field("M temporary Matrix")
 
-    weighted_volume =
-        compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+
+    compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+
+
     compute_Lagrangian_gradient_weights(
         nodes,
         dof,
@@ -143,7 +148,6 @@ function compute(
     )
     compute_weighted_deformation_gradient(
         nodes,
-        dof,
         nlist,
         volume,
         gradient_weights,
@@ -171,7 +175,6 @@ function compute_weighted_volume(
                 bond_damage[iID][jID] * omega[iID][jID] * volume[nlist[iID][jID]]
         end
     end
-    return weighted_volume
 end
 
 
@@ -214,14 +217,13 @@ end
 function calculate_Q(
     accuracy_order::Int64,
     dof::Int64,
-    bond_geometry::Vector{Float64},
+    bond_geometry,
     horizon::Union{Int64,Float64},
     Q::Vector{Float64},
 )
 
 
     counter = 0
-    Q .= 1
     p = @MVector zeros(Int64, dof)
     for this_order = 1:accuracy_order
         for p[1] = this_order:-1:0
@@ -243,6 +245,7 @@ function calculate_Q(
 end
 
 function prod_Q(bond_geometry, horizon, p, Q)
+    Q = 1
     @inbounds @fastmath for m ∈ axes(p, 1)
         @views @inbounds @fastmath for pc = 1:p[m]
             Q *= bond_geometry[m] / horizon
@@ -270,14 +273,9 @@ function compute_Lagrangian_gradient_weights(
 
     for iID in nodes
         M .= 0
+        bg = @view bond_geometry[iID][:, :]
         for (jID, nID) in enumerate(nlist[iID])
-            Q = calculate_Q(
-                accuracy_order,
-                dof,
-                bond_geometry[iID][jID, :],
-                horizon[iID],
-                Q,
-            )
+            @views Q = calculate_Q(accuracy_order, dof, bg[jID, :], horizon[iID], Q)
             QTQ!(M, omega[iID][jID], bond_damage[iID][jID], volume[nID], Q)
         end
 
@@ -287,13 +285,7 @@ function compute_Lagrangian_gradient_weights(
         )
 
         for jID in eachindex(nlist[iID])
-            Q = calculate_Q(
-                accuracy_order,
-                dof,
-                bond_geometry[iID][jID, :],
-                horizon[iID],
-                Q,
-            )
+            @views Q = calculate_Q(accuracy_order, dof, bg[jID, :], horizon[iID], Q)
             # this comes from Eq(19) in 10.1007/s40571-019-00266-9
             # or example 1 in https://arxiv.org/pdf/2004.11477
             # Eq (3) flowing

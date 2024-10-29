@@ -6,6 +6,7 @@ module Geometry
 using LinearAlgebra
 using TensorOperations
 using Combinatorics: levicivita
+using StaticArrays
 using Rotations
 include("helpers.jl")
 using .Helpers: invert, smat, mat_mul_transpose_mat!
@@ -43,6 +44,7 @@ Calculate bond geometries between nodes based on their coordinates.
 
  undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
 """
+
 function bond_geometry(
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Vector{Vector{Int64}},
@@ -52,29 +54,37 @@ function bond_geometry(
 )
 
     for iID in nodes
-        undeformed_bond[iID], undeformed_bond_length[iID] =
-            calculate_bond_length(iID, coor, nlist[iID])
+        calculate_bond_length(
+            iID,
+            coor,
+            nlist[iID],
+            undeformed_bond[iID],
+            undeformed_bond_length[iID],
+        )
     end
-    if any(any.(x -> x == 0, [lengths for lengths in undeformed_bond_length[nodes]]))
-        @error "Identical point coordinates with no distance"
-        return nothing
-    end
-    return undeformed_bond, undeformed_bond_length
+
 end
+
 
 function calculate_bond_length(
     iID::Int64,
     coor::Union{SubArray,Matrix{Float64},Matrix{Int64}},
     nlist::Vector{Int64},
+    bond_vectors,
+    bond_norm,
 )
+    @inbounds @fastmath @views for m ∈ axes(nlist, 1), cmn in zero(eltype(coor))
 
-    @views bond_vectors = coor[nlist, :] .- coor[iID, :]'
-    # distances = sqrt.(sum(bond_vectors .^ 2, dims=2))[:]
-
-    # Check for identical point coordinates
-    return bond_vectors, norm.(eachrow(bond_vectors))
+        @inbounds @fastmath @views for n ∈ axes(coor, 2)
+            bond_vectors[m, n] = coor[nlist[m], n] - coor[iID, n]
+            cmn += bond_vectors[m, n] * bond_vectors[m, n]
+        end
+        if cmn == 0
+            @error "Identical point coordinates with no distance"
+        end
+        bond_norm[m] = sqrt(cmn)
+    end
 end
-
 """
     shape_tensor(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
@@ -281,7 +291,6 @@ end
 
 function compute_weighted_deformation_gradient(
     nodes::Union{SubArray,Vector{Int64}},
-    dof::Int64,
     nlist,
     volume,
     gradient_weight,
@@ -407,7 +416,7 @@ function compute_bond_level_deformation_gradient(
     deformation_gradient,
     ba_deformation_gradient,
 )
-    mean_deformation_gradient = zeros(dof, dof)
+    mean_deformation_gradient = @MMatrix zeros(dof, dof)
     for iID in nodes
         for (jID, nID) in enumerate(nlist[iID])
             @views mean_deformation_gradient =
