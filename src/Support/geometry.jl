@@ -11,7 +11,7 @@ using Rotations
 include("helpers.jl")
 using .Helpers: invert, smat, mat_mul_transpose_mat!
 export bond_geometry
-export shape_tensor
+export compute_shape_tensors
 
 
 """
@@ -86,7 +86,7 @@ function calculate_bond_length(
     end
 end
 """
-    shape_tensor(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+    compute_shape_tensors(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
 Calculate the shape tensor and its inverse for a set of nodes in a computational mechanics context.
 
@@ -122,9 +122,9 @@ undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 shape_tensor = zeros(Float64, length(nodes), dof, dof)
 inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 
-shape_tensor(nodes, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+compute_shape_tensors(nodes, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 """
-function shape_tensor(
+function compute_shape_tensors(
     nodes::Union{SubArray,Vector{Int64}},
     nlist,
     volume,
@@ -137,11 +137,14 @@ function shape_tensor(
 
     for iID in nodes
 
-        shape_tensor[iID, :, :] = calculate_shape_tensor(
-            volume[nlist[iID]],
+        compute_shape_tensor(
+            shape_tensor,
+            volume,
             omega[iID],
             bond_damage[iID],
             undeformed_bond[iID],
+            nlist,
+            iID,
         )
 
         #mul!(
@@ -155,13 +158,38 @@ function shape_tensor(
             "Shape Tensor is singular and cannot be inverted).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.",
         )
     end
-    return shape_tensor, inverse_shape_tensor
+
 end
 
 
-function calculate_shape_tensor(volume, omega, bond_damage, undeformed_bond)
+#function compute_shape_tensor(volume, omega, bond_damage, undeformed_bond)
+#
+#    return (bond_damage .* volume .* omega .* undeformed_bond)' * undeformed_bond
+#
+#end
 
-    return (bond_damage .* volume .* omega .* undeformed_bond)' * undeformed_bond
+function compute_shape_tensor(
+    shape_tensor,
+    volume,
+    omega,
+    bond_damage,
+    undeformed_bond,
+    nlist,
+    iID,
+)
+    @inbounds @fastmath for m ∈ axes(shape_tensor, 2), n ∈ axes(shape_tensor, 3)
+        Cmn = zero(eltype(shape_tensor))
+        @inbounds @fastmath for k ∈ axes(undeformed_bond, 1)
+            Cmn +=
+                undeformed_bond[k, m] *
+                undeformed_bond[k, n] *
+                volume[nlist[iID][k]] *
+                omega[k] *
+                bond_damage[k]
+        end
+        shape_tensor[iID, m, n] = Cmn
+    end
+    #return (bond_damage .* volume .* omega .* undeformed_bond)' * undeformed_bond
 
 end
 

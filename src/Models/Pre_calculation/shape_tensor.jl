@@ -7,7 +7,7 @@ using DataStructures: OrderedDict
 include("../../Support/helpers.jl")
 using .Helpers: find_active_nodes
 include("../../Support/geometry.jl")
-using .Geometry
+using .Geometry: compute_shape_tensors
 export pre_calculation_name
 export init_model
 export compute
@@ -88,7 +88,7 @@ function compute(
     active_nodes = datamanager.get_field("Active Nodes")
     active_nodes = find_active_nodes(update_list, active_nodes, nodes)
 
-    shape_tensor, inverse_shape_tensor = Geometry.shape_tensor(
+    compute_shape_tensors(
         active_nodes,
         nlist,
         volume,

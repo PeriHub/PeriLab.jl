@@ -5,8 +5,8 @@
 using Test
 
 
-#include("../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../src/PeriLab.jl")
+using .PeriLab
 
 @testset "ut_compute_bond_level_deformation_gradient" begin
     nodes = [1]
@@ -319,7 +319,7 @@ end
         undeformed_bond,
         undeformed_bond_length,
     )
-    shape_tensor, inverse_shape_tensor = PeriLab.IO.Geometry.shape_tensor(
+    PeriLab.IO.Geometry.compute_shape_tensors(
         nodes,
         nlist,
         volume,
