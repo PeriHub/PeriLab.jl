@@ -332,8 +332,9 @@ end
 
     deformed_coor = copy(coor)
 
-    deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
+    PeriLab.IO.Geometry.compute_deformation_gradients(
         nodes,
+        dof,
         nlist,
         volume,
         omega,
@@ -361,8 +362,9 @@ end
         deformed_bond,
         deformed_bond_length,
     )
-    deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
+    PeriLab.IO.Geometry.compute_deformation_gradients(
         nodes,
+        dof,
         nlist,
         volume,
         omega,
@@ -395,8 +397,9 @@ end
         deformed_bond,
         deformed_bond_length,
     )
-    deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
+    PeriLab.IO.Geometry.compute_deformation_gradients(
         nodes,
+        dof,
         nlist,
         volume,
         omega,
@@ -433,8 +436,9 @@ end
         deformed_bond,
         deformed_bond_length,
     )
-    deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
+    PeriLab.IO.Geometry.compute_deformation_gradients(
         nodes,
+        dof,
         nlist,
         volume,
         omega,
@@ -485,8 +489,9 @@ end
         dof,
     )
 
-    deformation_gradient = PeriLab.IO.Geometry.compute_deformation_gradient(
+    PeriLab.IO.Geometry.compute_deformation_gradients(
         nodes,
+        dof,
         nlist,
         volume,
         omega,
