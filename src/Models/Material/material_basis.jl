@@ -212,12 +212,6 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
             return nothing
         end
     end
-    if !haskey(parameter, "Poisson's Ratio") ||
-       !haskey(parameter, "Young's Modulus") ||
-       !haskey(parameter, "Shear Modulus")
-        @error "No valid definition of Hook matrix inputs."
-        return nothing
-    end
     iID = ID
     if parameter["Poisson's Ratio"] isa Float64
         iID = 1
