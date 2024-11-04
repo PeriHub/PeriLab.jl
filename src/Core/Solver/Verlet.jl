@@ -484,10 +484,10 @@ function run_solver(
             # one step more, because of init step (time = 0)
             if "Material" in solver_options["Models"]
                 @views vNP1[active_nodes, :] =
-                    (1 - numerical_damping) .* vN[active_nodes, :] +
+                    (1 - numerical_damping) .* vN[active_nodes, :] .+
                     0.5 * dt .* a[active_nodes, :]
                 @views uNP1[active_nodes, :] =
-                    uN[active_nodes, :] + dt .* vNP1[active_nodes, :]
+                    uN[active_nodes, :] .+ dt .* vNP1[active_nodes, :]
             end
             if "Thermal" in solver_options["Models"]
                 temperatureNP1[active_nodes] =
@@ -502,7 +502,7 @@ function run_solver(
             #if solver_options["Material Models"]
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
-            @views deformed_coorNP1[active_nodes, :] .=
+            @views deformed_coorNP1[active_nodes, :] =
                 coor[active_nodes, :] .+ uNP1[active_nodes, :]
 
             @timeit to "upload_to_cores" datamanager.synch_manager(
@@ -575,12 +575,12 @@ function run_solver(
                     )
                 end
 
-                force_densities[active_nodes, :] +=
-                    (@view external_force_densities[active_nodes, :]) .+
-                    (@view external_forces[active_nodes, :]) ./ volume[active_nodes]
-                a[active_nodes, :] =
+                @views force_densities[active_nodes, :] +=
+                    external_force_densities[active_nodes, :] .+
+                    external_forces[active_nodes, :] ./ volume[active_nodes]
+                @views a[active_nodes, :] =
                     force_densities[active_nodes, :] ./ density[active_nodes] # element wise
-                forces[active_nodes, :] =
+                @views forces[active_nodes, :] =
                     force_densities[active_nodes, :] .* volume[active_nodes]
 
             end
