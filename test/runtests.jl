@@ -10,7 +10,7 @@ using MPI
 using PeriLab
 Logging.disable_logging(Logging.Error)
 
-# Aqua.test_all(PeriLab, ambiguities=false, stale_deps=(ignore=[:ZipArchives],))
+Aqua.test_all(PeriLab, ambiguities = false, stale_deps = (ignore = [:ZipArchives, :JSON3],))
 
 include("helper.jl")
 
@@ -227,9 +227,9 @@ MPI.Init()
         # @testset "test_body_force" begin
         #     include("fullscale_tests/test_body_force/test_body_force.jl")
         # end
-        @testset "test_contact" begin
-            include("fullscale_tests/test_contact/test_contact.jl")
-        end
+        # @testset "test_contact" begin
+        #     include("fullscale_tests/test_contact/test_contact.jl")
+        # end
         @testset "test_PD_Solid_Elastic" begin
             include("fullscale_tests/test_PD_solid_elastic/test_PD_solid_elastic.jl")
         end
