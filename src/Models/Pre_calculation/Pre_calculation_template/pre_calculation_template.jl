@@ -4,9 +4,9 @@
 
 module Pre_calculation_template
 using DataStructures: OrderedDict
-export compute
+export compute_model
 export init_model
-export Pre_calculation_name
+export pre_calculation_name
 """
     pre_calculation_name()
 

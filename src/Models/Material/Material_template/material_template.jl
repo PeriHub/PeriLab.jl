@@ -8,7 +8,6 @@ export fe_support
 export init_model
 export material_name
 export compute_model
-export synch_field
 
 """
   fe_support()

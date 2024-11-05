@@ -7,7 +7,6 @@ export fe_support
 export init_model
 export correspondence_name
 export compute_model
-export synch_field
 
 """
   fe_support()

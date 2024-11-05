@@ -7,7 +7,6 @@ module Critical_stretch
 export compute_model
 export damage_name
 export init_model
-export synch_field
 """
     damage_name()
 
