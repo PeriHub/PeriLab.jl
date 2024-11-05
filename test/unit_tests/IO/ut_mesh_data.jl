@@ -537,25 +537,25 @@ end
         undeformed_bond_length,
     )
 
-    @test undeformed_bond[1][1, 1] == 1
-    @test undeformed_bond[1][1, 2] == 0
+    @test undeformed_bond[1][1][1] == 1
+    @test undeformed_bond[1][1][2] == 0
     @test undeformed_bond_length[1][1] == 1
-    @test undeformed_bond[1][2, 1] == 0
-    @test undeformed_bond[1][2, 2] == 1
+    @test undeformed_bond[1][2][1] == 0
+    @test undeformed_bond[1][2][2] == 1
     @test undeformed_bond_length[1][2] == 1
 
-    @test undeformed_bond[2][1, 1] == -1
-    @test undeformed_bond[2][1, 2] == 0
+    @test undeformed_bond[2][1][1] == -1
+    @test undeformed_bond[2][1][2] == 0
     @test undeformed_bond_length[2][1] == 1
-    @test undeformed_bond[2][2, 1] == -1
-    @test undeformed_bond[2][2, 2] == 1
+    @test undeformed_bond[2][2][1] == -1
+    @test undeformed_bond[2][2][2] == 1
     @test undeformed_bond_length[2][2] / sqrt(2) - 1 < 1e-8
 
-    @test undeformed_bond[3][1, 1] == 0
-    @test undeformed_bond[3][1, 2] == -1
+    @test undeformed_bond[3][1][1] == 0
+    @test undeformed_bond[3][1][2] == -1
     @test undeformed_bond_length[3][1] == 1
-    @test undeformed_bond[3][2, 1] == 1
-    @test undeformed_bond[3][2, 2] == -1
+    @test undeformed_bond[3][2][1] == 1
+    @test undeformed_bond[3][2][2] == -1
     @test undeformed_bond_length[3][2] / sqrt(2) - 1 < 1e-8
 end
 

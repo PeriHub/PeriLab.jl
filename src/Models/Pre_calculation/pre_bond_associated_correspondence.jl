@@ -271,13 +271,7 @@ function compute_Lagrangian_gradient_weights(
     for iID in nodes
         M .= 0
         for (jID, nID) in enumerate(nlist[iID])
-            Q = calculate_Q(
-                accuracy_order,
-                dof,
-                bond_geometry[iID][jID, :],
-                horizon[iID],
-                Q,
-            )
+            Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID], horizon[iID], Q)
             QTQ!(M, omega[iID][jID], bond_damage[iID][jID], volume[nID], Q)
         end
 
@@ -287,13 +281,7 @@ function compute_Lagrangian_gradient_weights(
         )
 
         for jID in eachindex(nlist[iID])
-            Q = calculate_Q(
-                accuracy_order,
-                dof,
-                bond_geometry[iID][jID, :],
-                horizon[iID],
-                Q,
-            )
+            Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID], horizon[iID], Q)
             # this comes from Eq(19) in 10.1007/s40571-019-00266-9
             # or example 1 in https://arxiv.org/pdf/2004.11477
             # Eq (3) flowing
@@ -334,9 +322,9 @@ function compute_gradient_weights!(
     jID,
 )
     for idof = 1:dof # Eq (3) flowing
-        gradient_weights[iID][jID, idof] = 0
+        gradient_weights[iID][jID][idof] = 0
         @inbounds @fastmath for m ∈ axes(Minv, 2)
-            gradient_weights[iID][jID, idof] +=
+            gradient_weights[iID][jID][idof] +=
                 omega[iID][jID] * bond_damage[iID][jID] / horizon[iID] *
                 Minv[idof, m] *
                 Q[m]

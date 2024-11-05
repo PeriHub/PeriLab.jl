@@ -6,6 +6,7 @@ include("../../../../../../src/Models/Material/Material_Models/Ordinary/Ordinary
 using Test
 using .Ordinary
 @testset "compute_weighted_volume" begin
+    weighted_volume = zeros(9)
     weightedTest = zeros(9)
     # from Peridigm
     weightedTest[1] = 6.0311182727183619
@@ -84,6 +85,7 @@ using .Ordinary
     ]
     vec = Vector{Int64}(1:nnodes)
     weighted_volume = Ordinary.compute_weighted_volume(
+        weighted_volume,
         vec,
         nlist,
         undeformed_bond_length,
@@ -96,6 +98,7 @@ using .Ordinary
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
     end
     weighted_volume = Ordinary.compute_weighted_volume(
+        weighted_volume,
         Int64[],
         nlist,
         undeformed_bond_length,
@@ -182,13 +185,13 @@ end
 
 @testset "ut_get_bond_forces" begin
     vec = Vector{Int64}(1:nnodes)
-    bond_force_length = [Vector{Float64}(undef, 1), Vector{Float64}(undef, 1)]
-    bond_force_length[1][1] = 1
-    bond_force_length[2][1] = 1
-    deformed_bond = [zeros(Float64, 2, 2), zeros(Float64, 2, 2)]
-    deformed_bond[1][1] = 1
-    deformed_bond[2][1] = 1
-    bond_force = [zeros(Float64, 2, 2), zeros(Float64, 2, 2)]
+    dof = 2
+    nBonds = fill(dof, nnodes)
+    bond_force_length = [fill(1.0, n) for n in nBonds]
+    deformed_bond = [[fill(0.0, dof) for j = 1:n] for n in nBonds]
+    deformed_bond[1][1][1] = 1
+    deformed_bond[1][2][1] = 1
+    bond_force = [[fill(0.0, dof) for j = 1:n] for n in nBonds]
     bond_force = Ordinary.get_bond_forces(
         vec,
         bond_force_length,
@@ -196,7 +199,7 @@ end
         deformed_bond_length,
         bond_force,
     )
-    @test bond_force == [[0.5 0.0; 0.0 0.0], [0.5 0.0; 0.0 0.0]]
+    @test bond_force == [[[0.5, 0.0], [0.5, 0.0]], [[0.0, 0.0], [0.0, 0.0]]]
     deformed_bond_length[2][1] = 0
     @test isnothing(
         Ordinary.get_bond_forces(

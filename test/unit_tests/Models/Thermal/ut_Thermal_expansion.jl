@@ -51,21 +51,21 @@ end
     thermal_bond_deformation =
         test_data_manager.create_constant_bond_field("Thermal Deformation", Float64, dof)
 
-    undeformed_bond[1][1, 1] = 0
-    undeformed_bond[1][1, 2] = 1
+    undeformed_bond[1][1][1] = 0
+    undeformed_bond[1][1][2] = 1
     undeformed_bond_length[1][1] = 1
-    undeformed_bond[1][2, 1] = 1
-    undeformed_bond[1][2, 2] = 1
+    undeformed_bond[1][2][1] = 1
+    undeformed_bond[1][2][2] = 1
     undeformed_bond_length[1][2] = sqrt(2)
 
-    undeformed_bond[2][1, 1] = -1
-    undeformed_bond[2][1, 2] = -1
+    undeformed_bond[2][1][1] = -1
+    undeformed_bond[2][1][2] = -1
     undeformed_bond_length[2][1] = sqrt(2)
-    undeformed_bond[2][2, 1] = 10
-    undeformed_bond[2][2, 2] = -10
+    undeformed_bond[2][2][1] = 10
+    undeformed_bond[2][2][2] = -10
     undeformed_bond_length[2][2] = sqrt(200)
-    undeformed_bond[2][3, 1] = 0.1
-    undeformed_bond[2][3, 2] = 0
+    undeformed_bond[2][3][1] = 0.1
+    undeformed_bond[2][3][2] = 0
     undeformed_bond_length[2][3] = 0.1
 
     nodes = Vector{Int64}(1:nnodes)
@@ -83,7 +83,7 @@ end
     for iID in nodes
         for jID in nn[iID]
             for i = 1:dof
-                @test thermal_bond_deformation[iID][jID, i] == 0
+                @test thermal_bond_deformation[iID][jID][i] == 0
             end
         end
     end
@@ -97,8 +97,7 @@ end
     )
     for iID in nodes
         for jID in nn[iID]
-            @test thermal_bond_deformation[iID][jID, :] ==
-                  .-undeformed_bond[iID][jID, 1:dof]
+            @test thermal_bond_deformation[iID][jID] == .-undeformed_bond[iID][jID]
         end
     end
 
@@ -113,8 +112,8 @@ end
     for iID in nodes
         for jID in nn[iID]
             @test isapprox(
-                thermal_bond_deformation[iID][jID, :] .+ 1,
-                .-undeformed_bond[iID][jID, 1:dof] .* 2 .+ 1,
+                thermal_bond_deformation[iID][jID] .+ 1,
+                .-undeformed_bond[iID][jID] .* 2 .+ 1,
             )
         end
     end
@@ -134,12 +133,12 @@ end
     for iID in nodes
         for jID in nn[iID]
             @test isapprox(
-                thermal_bond_deformation[iID][jID, 1] + 1,
-                .-undeformed_bond[iID][jID, 1] * alpha[1, 1] * temperature[iID] + 1,
+                thermal_bond_deformation[iID][jID][1] + 1,
+                .-undeformed_bond[iID][jID][1] * alpha[1, 1] * temperature[iID] + 1,
             )
             @test isapprox(
-                thermal_bond_deformation[iID][jID, 2] + 1,
-                .-undeformed_bond[iID][jID, 2] * alpha[2, 2] * temperature[iID] + 1,
+                thermal_bond_deformation[iID][jID][2] + 1,
+                .-undeformed_bond[iID][jID][2] * alpha[2, 2] * temperature[iID] + 1,
             )
         end
     end

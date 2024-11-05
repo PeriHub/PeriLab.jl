@@ -284,7 +284,7 @@ function compute_stress_integral(
     bond_damage::Vector{Vector{Float64}},
     volume::Vector{Float64},
     weighted_volume::Vector{Float64},
-    bond_geometry::Vector{Matrix{Float64}},
+    bond_geometry::Vector{Vector{Vector{Float64}}},
     bond_length::Vector{Vector{Float64}},
     bond_stresses::Vector{Array{Float64,3}},
     deformation_gradient::Vector{Array{Float64,3}},
@@ -304,7 +304,7 @@ function compute_stress_integral(
                 continue
             end
             @views temp =
-                (one - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./
+                (one - bond_geometry[iID][jID] * bond_geometry[iID][jID]') ./
                 (bond_length[iID][jID] * bond_length[iID][jID])
 
             @views factor =
@@ -437,13 +437,13 @@ function compute_bond_forces(
             end
 
 
-            bond_forces[iID][jID, :] =
-                integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
+            bond_forces[iID][jID] .=
+                integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID]
             # mul!(bond_forces[iID][jID, :], integral_nodal_stress[iID, :, :], gradient_weights[iID][jID, :])
-            bond_forces[iID][jID, :] +=
+            bond_forces[iID][jID] +=
                 bond_damage[iID][jID] * omega[iID][jID] /
                 (weighted_volume[iID] * bond_length[iID][jID] * bond_length[iID][jID]) .*
-                bond_stress[iID][jID, :, :] * bond_geometry[iID][jID, :]
+                bond_stress[iID][jID, :, :] * bond_geometry[iID][jID]
 
 
             #

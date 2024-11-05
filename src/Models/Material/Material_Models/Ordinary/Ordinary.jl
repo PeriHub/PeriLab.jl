@@ -4,6 +4,8 @@
 
 module Ordinary
 
+using LinearAlgebra
+
 export compute_dilatation
 export compute_weighted_volume
 export get_bond_forces
@@ -32,6 +34,7 @@ Compute the weighted volume for each node, [SillingSA2007](@cite). Taken from Pe
 - `weighted_volume::Vector{Float64}`: Vector containing the computed weighted volume for each node.
 """
 function compute_weighted_volume(
+    weighted_volume::Vector{Float64},
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Vector{Vector{Int64}},
     undeformed_bond_length::Vector{Vector{Float64}},
@@ -43,7 +46,6 @@ function compute_weighted_volume(
     if length(nodes) == 0
         return Float64[]
     end
-    weighted_volume::Vector{Float64} = zeros(Float64, maximum(nodes))
 
     for iID in nodes
         # in Peridigm the weighted volume is for some reason independend from damages
@@ -81,17 +83,20 @@ Calculate the forces on the bonds in a peridynamic material.
 function get_bond_forces(
     nodes::Union{SubArray,Vector{Int64}},
     bond_force_length::Union{SubArray,Vector{Vector{Float64}}},
-    deformed_bond::Vector{Matrix{Float64}},
+    deformed_bond::Vector{Vector{Vector{Float64}}},
     deformed_bond_length::Vector{Vector{Float64}},
-    bond_force::Vector{Matrix{Float64}},
+    bond_force::Vector{Vector{Vector{Float64}}},
 )
     for iID in nodes
         if any(deformed_bond_length[iID] .== 0)
             @error "Length of bond is zero due to its deformation."
             return nothing
         else
-            bond_force[iID] .=
-                bond_force_length[iID] .* deformed_bond[iID] ./ deformed_bond_length[iID]
+            mul!.(
+                bond_force[iID],
+                bond_force_length[iID] ./ deformed_bond_length[iID],
+                deformed_bond[iID],
+            )
         end
     end
     return bond_force

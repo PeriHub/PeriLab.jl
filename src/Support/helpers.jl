@@ -98,17 +98,20 @@ function get_MMatrix(len::Int64)
 end
 
 function fastsubtract!(c, a, b)
-    for i = 1:lastindex(a)
-        for j = 1:lastindex(a[i])
-            c[i][j] = a[i][j] .- b[i][j]
+    @inbounds for i ∈ eachindex(a)
+        @inbounds for j ∈ eachindex(a[i])
+            c[i][j] .= a[i][j] .- b[i][j]
         end
     end
 end
-
-function fastdot(a, b)
+function fastdot(a, b, absolute = false)
     c = 0.0
     @inbounds @simd for i ∈ eachindex(a, b)
-        c += a[i] * b[i]
+        if absolute
+            c += abs(a[i]) * abs(b[i])
+        else
+            c += a[i] * b[i]
+        end
     end
     c
 end

@@ -384,16 +384,16 @@ if ncores == 3
     h .= 5.0
     bf = test_data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
 
-    bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
-    dbN, dbNP1 = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof)
+    bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1, 1)
+    dbN, dbNP1 =
+        test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof, 1)
     dbdN, dbdNP1 = test_data_manager.create_bond_field("Deformed Bond Length", Float64, 1)
     bg = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
-    bd = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
+    bd = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1, 1)
     for iID = 1:nodes
-        bdNP1[iID] .= 1
-        bd[iID] .= 1
-        dbdNP1[iID] .= 1 + (-1)^iID * 0.1
-        dbNP1[iID] .= 1
+        for jID = 1:nn[iID]
+            dbdNP1[iID][jID] = 1 + (-1)^iID * 0.1
+        end
     end
 
     test_data_manager = Bondbased_Elastic.init_model(

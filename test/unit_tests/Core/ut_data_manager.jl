@@ -210,7 +210,7 @@ end
     @test length(D[1, :]) == 7
 
     F = test_data_manager.get_field("F")
-    @test typeof(F[1, 1][1]) == Float64
+    @test typeof(F[1][1][1]) == Float64
     @test length(F[:, 1]) == num_controller + num_responder
     @test length(F[1]) == nn[1]
     @test length(F[2]) == nn[2]
@@ -220,18 +220,18 @@ end
     @test length(G[:, 1]) == num_controller + num_responder
 
     H = test_data_manager.get_field("H")
-    @test typeof(H[1][1, 1][1]) == Float64
+    @test typeof(H[1][1][1][1]) == Float64
     @test length(H[1][:, 1]) == nn[1]
-    @test length(H[1][1, :]) == 4
-    @test length(H[:][:, :]) == num_controller + num_responder
+    @test length(H[1][1]) == 4
+    @test length(H[:][:]) == num_controller + num_responder
 
     I = test_data_manager.get_field("INP1")
-    @test typeof(I[1][1, 1]) == Int64
+    @test typeof(I[1][1][1]) == Int64
     for i = 1:num_controller+num_responder
-        @test length(I[i][:, 1]) == nn[i]
+        @test length(I[i]) == nn[i]
     end
-    @test length(I[1][1, :]) == 7
-    @test length(I[:][:, :]) == num_controller + num_responder
+    @test length(I[1][1]) == 7
+    # @test length(I[:][:][:]) == num_controller + num_responder
 
 end
 
@@ -370,15 +370,15 @@ bd = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
 @testset "switch_NP1_to_N" begin
     bmatrixN, bmatrixNP1 = test_data_manager.create_bond_field("Bmat", Float64, "Matrix", 2)
     nmatrixN, nmatrixNP1 = test_data_manager.create_node_field("Nmat", Float64, "Matrix", 2)
-    IN[2][1, 3] = 0
+    IN[2][1][3] = 0
 
     DNP1[2, 3] = 5
     @test DN[2, 3] == 0
     @test DNP1[2, 3] == 5
     # bonds
-    INP1[2][1, 3] = 5
-    @test IN[2][1, 3] == 0
-    @test INP1[2][1, 3] == 5
+    INP1[2][1][3] = 5
+    @test IN[2][1][3] == 0
+    @test INP1[2][1][3] == 5
     nmatrixNP1[1, 1, 1] = 2
     nmatrixNP1[1, 1, 2] = 2
     nmatrixNP1[1, 2, 1] = 3
@@ -418,9 +418,9 @@ bd = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
     @test DNP1[2, 3] == 6
     @test DN[2, 3] == 5
 
-    @test INP1[2][1, 3] == 0
+    @test INP1[2][1][3] == 0
     # bonds
-    @test IN[2][1, 3] == 5
+    @test IN[2][1][3] == 5
     bd = test_data_manager.get_field("Bond Damage", "NP1")
     for id in eachindex(bd)
         # @test sum(bd[id]) == nn[id]

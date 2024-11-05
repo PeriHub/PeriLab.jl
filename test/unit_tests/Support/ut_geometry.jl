@@ -129,11 +129,9 @@ end
 
     u_bond, u_bond_length = PeriLab.IO.Geometry.calculate_bond_length(1, coor, nlist[1])
 
-    @test u_bond[1, 1] == 0.5
-    @test u_bond[1, 2] == 0.5
+    @test u_bond[1, 1] == [0.5, 0.5]
     @test isapprox(u_bond_length[1], sqrt(0.5))
-    @test u_bond[2, 1] == 1
-    @test u_bond[2, 2] == 0
+    @test u_bond[2, 1] == [1, 0]
     @test u_bond_length[2] == 1
 
     undeformed_bond, undeformed_bond_length = PeriLab.IO.Geometry.bond_geometry(
@@ -144,29 +142,29 @@ end
         undeformed_bond_length,
     )
 
-    @test undeformed_bond[1][1, 1] == 0.5
-    @test undeformed_bond[1][1, 2] == 0.5
+    @test undeformed_bond[1][1][1] == 0.5
+    @test undeformed_bond[1][1][2] == 0.5
     @test undeformed_bond_length[1][1] / sqrt(0.5) - 1 < 1e-8
-    @test undeformed_bond[1][2, 1] == 1
-    @test undeformed_bond[1][2, 2] == 0
+    @test undeformed_bond[1][2][1] == 1
+    @test undeformed_bond[1][2][2] == 0
     @test undeformed_bond_length[1][2] == 1
 
-    @test undeformed_bond[2][1, 1] == -0.5
-    @test undeformed_bond[2][1, 2] == -0.5
+    @test undeformed_bond[2][1][1] == -0.5
+    @test undeformed_bond[2][1][2] == -0.5
     @test undeformed_bond_length[2][1] / sqrt(0.5) - 1 < 1e-8
-    @test undeformed_bond[2][2, 1] == 0.5
-    @test undeformed_bond[2][2, 2] == -0.5
+    @test undeformed_bond[2][2][1] == 0.5
+    @test undeformed_bond[2][2][2] == -0.5
     @test undeformed_bond_length[2][2] / sqrt(1.25) - 1 < 1e-8
 
-    @test undeformed_bond[3][1, 1] == -1
-    @test undeformed_bond[3][1, 2] == 0
+    @test undeformed_bond[3][1][1] == -1
+    @test undeformed_bond[3][1][2] == 0
     @test undeformed_bond_length[3][1] == 1
-    @test undeformed_bond[3][2, 1] == -0.5
-    @test undeformed_bond[3][2, 2] == 0.5
+    @test undeformed_bond[3][2][1] == -0.5
+    @test undeformed_bond[3][2][2] == 0.5
     @test undeformed_bond_length[3][2] / sqrt(1.25) - 1 < 1e-8
 
-    @test undeformed_bond[4][1, 1] == 0.5
-    @test undeformed_bond[4][1, 2] == -0.5
+    @test undeformed_bond[4][1][1] == 0.5
+    @test undeformed_bond[4][1][2] == -0.5
     @test undeformed_bond_length[4][1] / sqrt(1.25) - 1 < 1e-8
     undeformed_bond, undeformed_bond_length = PeriLab.IO.Geometry.bond_geometry(
         Vector(1:nnodes),
@@ -176,38 +174,39 @@ end
         undeformed_bond_length,
     )
     # test if a sum exists or not
-    @test undeformed_bond[1][1, 1] == 0.5
-    @test undeformed_bond[1][1, 2] == 0.5
+    @test undeformed_bond[1][1][1] == 0.5
+    @test undeformed_bond[1][1][2] == 0.5
     @test undeformed_bond_length[1][1] / sqrt(0.5) - 1 < 1e-8
-    @test undeformed_bond[1][2, 1] == 1
-    @test undeformed_bond[1][2, 2] == 0
+    @test undeformed_bond[1][2][1] == 1
+    @test undeformed_bond[1][2][2] == 0
     @test undeformed_bond_length[1][2] == 1
 
-    @test undeformed_bond[2][1, 1] == -0.5
-    @test undeformed_bond[2][1, 2] == -0.5
+    @test undeformed_bond[2][1][1] == -0.5
+    @test undeformed_bond[2][1][2] == -0.5
     @test undeformed_bond_length[2][1] / sqrt(0.5) - 1 < 1e-8
-    @test undeformed_bond[2][2, 1] == 0.5
-    @test undeformed_bond[2][2, 2] == -0.5
+    @test undeformed_bond[2][2][1] == 0.5
+    @test undeformed_bond[2][2][2] == -0.5
     @test undeformed_bond_length[2][2] / sqrt(1.25) - 1 < 1e-8
 
-    @test undeformed_bond[3][1, 1] == -1
-    @test undeformed_bond[3][1, 2] == 0
+    @test undeformed_bond[3][1][1] == -1
+    @test undeformed_bond[3][1][2] == 0
     @test undeformed_bond_length[3][1] == 1
-    @test undeformed_bond[3][2, 1] == -0.5
-    @test undeformed_bond[3][2, 2] == 0.5
+    @test undeformed_bond[3][2][1] == -0.5
+    @test undeformed_bond[3][2][2] == 0.5
     @test undeformed_bond_length[3][2] / sqrt(1.25) - 1 < 1e-8
 
-    @test undeformed_bond[4][1, 1] == 0.5
-    @test undeformed_bond[4][1, 2] == -0.5
+    @test undeformed_bond[4][1][1] == 0.5
+    @test undeformed_bond[4][1][2] == -0.5
     @test undeformed_bond_length[4][1] / sqrt(1.25) - 1 < 1e-8
 
 
 
     coor[:, :] .= 0
-    undeformed_bond[1][:, :] .= 0
-    undeformed_bond[2][:, :] .= 0
-    undeformed_bond[3][:, :] .= 0
-    undeformed_bond[4][:, :] .= 0
+    for i = 1:nnodes
+        for j in eachindex(undeformed_bond[i])
+            undeformed_bond[i][j] .= 0
+        end
+    end
 
     undeformed_bond = PeriLab.IO.Geometry.bond_geometry(
         Vector(1:nnodes),
@@ -267,10 +266,11 @@ end
         test_data_manager.create_constant_bond_field("Deformed Bond Length", Float64, 1)
 
     nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-    volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
-    omega = test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
+    volume = test_data_manager.create_constant_node_field("Volume", Float64, 1, 1)
+    omega =
+        test_data_manager.create_constant_bond_field("Influence Function", Float64, 1, 1)
 
-    bond_damage = test_data_manager.create_constant_bond_field("Bond Damage", Float64, 1)
+    bond_damage = test_data_manager.create_constant_bond_field("Bond Damage", Float64, 1, 1)
     shape_tensor =
         test_data_manager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
     inverse_shape_tensor = test_data_manager.create_constant_node_field(
@@ -285,15 +285,6 @@ end
         "Matrix",
         dof,
     )
-    omega[1][:] .= 1
-    omega[2][:] .= 1
-    omega[3][:] .= 1
-    omega[4][:] .= 1
-    bond_damage[1][:] .= 1
-    bond_damage[2][:] .= 1
-    bond_damage[3][:] .= 1
-    bond_damage[4][:] .= 1
-    volume[:] .= 1
     nlist[1] = [2, 3, 4]
     nlist[2] = [1, 3, 4]
     nlist[3] = [1, 2, 4]
@@ -371,8 +362,7 @@ end
     for i = 1:nnodes
         for j = 1:nn[i]
             test_vector =
-                deformation_gradient[i, :, :] * undeformed_bond[i][j, 1:dof] -
-                deformed_bond[i][j, 1:dof]
+                deformation_gradient[i, :, :] * undeformed_bond[i][j] - deformed_bond[i][j]
             for k = 1:dof
                 @test abs(test_vector[k]) < 1e-7
             end
@@ -404,8 +394,7 @@ end
     for i = 1:nnodes
         for j in nn[i]
             test_vector =
-                deformation_gradient[i, :, :] * undeformed_bond[i][j, 1:dof] -
-                deformed_bond[i][j, 1:dof]
+                deformation_gradient[i, :, :] * undeformed_bond[i][j] - deformed_bond[i][j]
             for k = 1:dof
                 @test abs(test_vector[k]) < 1e-7
             end
@@ -442,8 +431,7 @@ end
     for i = 1:nnodes
         for j in nn[i]
             test_vector =
-                deformation_gradient[i, :, :] * undeformed_bond[i][j, 1:dof] -
-                deformed_bond[i][j, 1:dof]
+                deformation_gradient[i, :, :] * undeformed_bond[i][j] - deformed_bond[i][j]
             for k = 1:dof
                 @test abs(test_vector[k]) < 1e-7
             end
@@ -564,7 +552,7 @@ end
     dof = 3
     nlist = [[2], [1]]
     volume = [0.1, 0.2]
-    gradient_weight = [[0.5 0.5 0.5], [0.5 0.5 0.5]]
+    gradient_weight = [[[0.5, 0.5, 0.5]], [[0.5, 0.5, 0.5]]]
     displacement = [0.0 0.0 0.0; 1.0 1.0 1.0]
     deformation_gradient = zeros(Float64, length(nnodes), dof, dof)
 

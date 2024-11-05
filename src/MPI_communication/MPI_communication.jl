@@ -234,7 +234,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
                     @views send_msg = array[iID]
                 else
                     #TODO: Check if we can remove the [:,:]
-                    @views send_msg = array[iID][:, :]
+                    @views send_msg = mapreduce(permutedims, vcat, array[iID])
                 end
                 MPI.Isend(send_msg, comm; dest = jcore - 1, tag = 0)
                 # @debug "Sending   $rank -> $(jcore-1)"
@@ -245,7 +245,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
                 if dof == 1
                     @views recv_msg = similar(array[iID])
                 else
-                    @views recv_msg = similar(array[iID][:, :])
+                    @views recv_msg = similar(mapreduce(permutedims, vcat, array[iID]))
                 end
                 MPI.Recv!(recv_msg, comm; source = jcore - 1, tag = 0)
                 # @debug "Receiving $(jcore-1) -> $rank"
@@ -253,7 +253,7 @@ function synch_controller_bonds_to_responder(comm::MPI.Comm, overlapnodes, array
                 if dof == 1
                     array[iID] = recv_msg
                 else
-                    array[iID][:, :] = recv_msg
+                    array[iID] = Vector{eltype(recv_msg)}[eachcol(recv_msg)...]
                 end
             end
         end
@@ -274,11 +274,11 @@ Split a vector into a vector of matrices
 - `result::Vector`: The result vector
 """
 function split_vector(input, row_nums, dof)
-    result = Vector{Matrix{eltype(input)}}()
+    result = Vector{Vector{Vector{eltype(input)}}}()
     start = firstindex(input)
-    for len in row_nums
-        push!(result, reshape(input[start:(start+len-1)], (Int64(len / dof), dof)))
-        start += len
+    for (i, len) in enumerate(row_nums)
+        push!(result, [input[start+(j-1)*dof:start-1+j*dof] for j = 1:len])
+        start += dof * len
     end
     result
 end
@@ -317,7 +317,7 @@ function synch_controller_bonds_to_responder_flattened(
             @views send_indices = overlapnodes[rank+1][jcore]["Controller"]
             # @debug "Sending $rank -> $(jcore-1)"
             MPI.Isend(
-                vcat([reshape(array[i], :, 1) for i in send_indices]...),
+                vcat(vcat(array...)[send_indices]...),
                 comm;
                 dest = jcore - 1,
                 tag = 0,
@@ -326,7 +326,7 @@ function synch_controller_bonds_to_responder_flattened(
         if !isempty(overlapnodes[rank+1][jcore]["Responder"])
             @views recv_indices = overlapnodes[rank+1][jcore]["Responder"]
             row_nums = [length(subarr) for subarr in array[recv_indices]]
-            @views recv_msg = zeros(sum(row_nums))
+            @views recv_msg = zeros(sum(row_nums * dof))
             # @debug "Receiving $(jcore-1) -> $rank"
             MPI.Recv!(recv_msg, comm; source = jcore - 1, tag = 0)
             recv_msg = split_vector(recv_msg, row_nums, dof)

@@ -47,7 +47,9 @@ function get_partial_stresses(datamanager::Module, nodes::Union{SubArray,Vector{
     stress = datamanager.get_field("Cauchy Stress", "NP1")
 
     for iID in nodes
-        stress[iID, :, :] .+= bond_forces[iID]' * undeformed_bond[iID] .* volume[iID]
+        stress[iID, :, :] .+=
+            mapreduce(permutedims, vcat, bond_forces[iID])' *
+            mapreduce(permutedims, vcat, undeformed_bond[iID]) .* volume[iID]
     end
     return datamanager
 end

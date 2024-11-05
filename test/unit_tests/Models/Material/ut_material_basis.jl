@@ -51,19 +51,25 @@ end
 
 @testset "ut_distribute_forces" begin
     nodes = [1, 2]
+    dof = 2
     nlist = [[2, 3], [1, 3]]
-    bond_force = [rand(2, 2), rand(2, 2)]
+    nBonds = fill(dof, 2)
+    bond_force = [[fill(1.0, dof) for j = 1:n] for n in nBonds]
     volume = [1.0, 1.0, 1.0]
-    bond_damage = [[0.5, 0.5], [0.5, 0.5]]
+    bond_damage = [fill(0.5, n) for n in nBonds]
     force_densities = zeros(3, 2)
 
     expected_force_densities = copy(force_densities)
     for iID in nodes
         expected_force_densities[iID, :] .+= transpose(
-            sum(bond_damage[iID] .* bond_force[iID] .* volume[nlist[iID]], dims = 1),
+            sum(
+                bond_damage[iID] .* mapreduce(permutedims, vcat, bond_force[iID]) .*
+                volume[nlist[iID]],
+                dims = 1,
+            ),
         )
         expected_force_densities[nlist[iID], :] .-=
-            bond_damage[iID] .* bond_force[iID] .* volume[iID]
+            bond_damage[iID] .* mapreduce(permutedims, vcat, bond_force[iID]) .* volume[iID]
     end
 
     result =

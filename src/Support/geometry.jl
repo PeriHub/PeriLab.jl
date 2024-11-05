@@ -47,8 +47,8 @@ function bond_geometry(
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Vector{Vector{Int64}},
     coor::Union{SubArray,Matrix{Float64},Matrix{Int64}},
-    undeformed_bond,
-    undeformed_bond_length,
+    undeformed_bond::Vector{Vector{Vector{Float64}}},
+    undeformed_bond_length::Vector{Vector{Float64}},
 )
 
     for iID in nodes
@@ -72,7 +72,7 @@ function calculate_bond_length(
     # distances = sqrt.(sum(bond_vectors .^ 2, dims=2))[:]
 
     # Check for identical point coordinates
-    return bond_vectors, norm.(eachrow(bond_vectors))
+    return eachrow(bond_vectors), norm.(eachrow(bond_vectors))
 end
 
 """
@@ -127,11 +127,11 @@ function shape_tensor(
 
     for iID in nodes
 
-        shape_tensor[iID, :, :] = calculate_shape_tensor(
+        shape_tensor[iID, :, :] .= calculate_shape_tensor(
             volume[nlist[iID]],
             omega[iID],
             bond_damage[iID],
-            undeformed_bond[iID],
+            mapreduce(permutedims, vcat, undeformed_bond[iID]),
         )
 
         #mul!(
@@ -220,16 +220,16 @@ function compute_deformation_gradient(
     volume::Vector{Float64},
     omega::Vector{Vector{Float64}},
     bond_damage::Vector{Vector{Float64}},
-    deformed_bond::Vector{Matrix{Float64}},
-    undeformed_bond::Vector{Matrix{Float64}},
+    deformed_bond::Vector{Vector{Vector{Float64}}},
+    undeformed_bond::Vector{Vector{Vector{Float64}}},
     inverse_shape_tensor::Array{Float64,3},
     deformation_gradient::Array{Float64,3},
 )
     for iID in nodes
-        deformation_gradient[iID, :, :] = calculate_deformation_gradient(
+        deformation_gradient[iID, :, :] .= calculate_deformation_gradient(
             bond_damage[iID],
-            deformed_bond[iID],
-            undeformed_bond[iID],
+            mapreduce(permutedims, vcat, deformed_bond[iID]),
+            mapreduce(permutedims, vcat, undeformed_bond[iID]),
             volume[nlist[iID]],
             omega[iID],
         )
@@ -295,7 +295,7 @@ function compute_weighted_deformation_gradient(
                 @views @inbounds @fastmath for (jID, nID) in enumerate(nlist[iID])
                     deformation_gradient[iID, n, m] +=
                         (displacement[nID, m] - displacement[iID, m]) *
-                        (gradient_weight[iID][jID, n] * volume[nID])
+                        (gradient_weight[iID][jID][n] * volume[nID])
                 end
             end
             deformation_gradient[iID, m, m] += 1
@@ -411,9 +411,9 @@ function compute_bond_level_deformation_gradient(
             @views ba_deformation_gradient[iID][jID, :, :] =
                 mean_deformation_gradient +
                 (
-                    bond_deformation[iID][jID, :] -
-                    mean_deformation_gradient * bond_geometry[iID][jID, :]
-                ) * bond_geometry[iID][jID, :]' /
+                    bond_deformation[iID][jID] .-
+                    mean_deformation_gradient * bond_geometry[iID][jID]
+                ) * bond_geometry[iID][jID]' /
                 (bond_length[iID][jID] * bond_length[iID][jID])
 
 
