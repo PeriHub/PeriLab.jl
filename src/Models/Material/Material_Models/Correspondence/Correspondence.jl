@@ -190,8 +190,7 @@ function compute_model(
     stress_N = datamanager.get_field("Cauchy Stress", "N")
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     strain_increment = datamanager.get_field("Strain Increment")
-    strain_NP1 = compute_strain(nodes, deformation_gradient, strain_NP1)
-
+    compute_strain(nodes, deformation_gradient, strain_NP1)
     matrix_diff!(strain_increment, nodes, strain_NP1, strain_N)
 
     if rotation

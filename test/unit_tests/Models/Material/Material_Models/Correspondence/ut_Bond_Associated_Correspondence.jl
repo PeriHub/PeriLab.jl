@@ -6,8 +6,8 @@ include(
     "../../../../../../src/Models/Material/Material_Models/Correspondence/Bond_Associated_Correspondence.jl",
 )
 using Test
-#include("../../../../../../src/PeriLab.jl")
-#using .PeriLab
+# include("../../../../../../src/PeriLab.jl")
+# using .PeriLab
 
 
 @testset "ut_ba_correspondence_name" begin
@@ -49,7 +49,7 @@ end
 
     strainN[1][1, :, :] = [-1 -1; -1 -1]
     strainN[2][1, :, :] = [0.5 0; 0 0.5]
-    strain, strain_inc = Bond_Associated_Correspondence.compute_bond_strain(
+    Bond_Associated_Correspondence.compute_bond_strain(
         nodes,
         nlist,
         deformation_gradient,
@@ -61,7 +61,7 @@ end
     @test strain[1][1, :, :] == [0 0; 0 0]
     @test strain[2][1, :, :] == [-0.5 0; 0 0.5]
     @test strain_inc[1][1, :, :] == [1 1; 1 1]
-    @test strain_inc[2][1, :, :] == [-1.0 0; 0 0.0]
+    @test strain_inc[2][1, :, :] == [-1.0 0.0; 0.0 0.0]
 end
 
 @testset "ut_update_Green_Langrange_strain" begin

@@ -114,17 +114,17 @@ end
         test_data_manager.create_constant_node_field("Weighted Volume", Float64, 1)
 
 
-    result = Pre_Bond_Associated_Correspondence.compute_weighted_volume(
+    Pre_Bond_Associated_Correspondence.compute_weighted_volume!(
+        weighted_volume,
         nodes,
         nlist,
         volume,
         bond_damage,
         omega,
-        weighted_volume,
     )
 
     expected_weighted_volume = sum(bond_damage[1][:] .* omega[1][:] .* volume[nlist[1]])
-    @test isapprox(result[1], expected_weighted_volume)
+    @test isapprox(weighted_volume[1], expected_weighted_volume)
 
 end
 

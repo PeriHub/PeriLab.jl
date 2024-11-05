@@ -76,7 +76,7 @@ volume = [0.5, 0.5, 0.5, 0.5, 0.5]
 density = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
 horizon = [3.1, 3.1, 3.1, 3.1, 3.1]
 
-undeformed_bond = PeriLab.IO.Geometry.bond_geometry(
+PeriLab.IO.Geometry.bond_geometry(
     Vector(1:nnodes),
     nlist,
     coor,

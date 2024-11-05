@@ -82,7 +82,10 @@ end
 
 
 end
+@testset "ut_get_mapping" begin
 
+    @test isnothing(PeriLab.Solver.Helpers.get_mapping(4))
+end
 
 @testset "ut_qdim" begin
     @test isnothing(PeriLab.Solver.Helpers.qdim(0, 2))
