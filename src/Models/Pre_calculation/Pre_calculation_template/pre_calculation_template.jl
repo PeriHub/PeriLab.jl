@@ -6,7 +6,7 @@ module Pre_calculation_template
 using DataStructures: OrderedDict
 export compute_model
 export init_model
-export Pre_calculation_name
+export pre_calculation_name
 export fields_for_local_synchronization
 """
     pre_calculation_name()
