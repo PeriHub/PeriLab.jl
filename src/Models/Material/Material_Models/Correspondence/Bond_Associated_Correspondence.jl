@@ -69,8 +69,7 @@ function init_model(
     bond_damage = datamanager.get_bond_damage("NP1")
     weighted_volume = datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
 
-    weighted_volume =
-        compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+    compute_weighted_volume!(weighted_volume, nodes, nlist, volume, bond_damage, omega)
 
     return datamanager
 end
@@ -280,7 +279,7 @@ function compute_stress_integral(
     bond_damage::Vector{Vector{Float64}},
     volume::Vector{Float64},
     weighted_volume::Vector{Float64},
-    bond_geometry::Vector{Matrix{Float64}},
+    bond_geometry::Vector{Vector{Vector{Float64}}},
     bond_length::Vector{Vector{Float64}},
     bond_stresses::Vector{Array{Float64,3}},
     deformation_gradient::Vector{Array{Float64,3}},
@@ -300,7 +299,7 @@ function compute_stress_integral(
                 continue
             end
             @views temp =
-                (one - bond_geometry[iID][jID, :] * bond_geometry[iID][jID, :]') ./
+                (one - bond_geometry[iID][jID] * bond_geometry[iID][jID]') ./
                 (bond_length[iID][jID] * bond_length[iID][jID])
 
             @views factor =
@@ -430,13 +429,13 @@ function compute_bond_forces(
 
             # bond_forces[iID][jID, :] =
             #     integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
-            bf = @view bond_forces[iID][jID, :]
-            gw = @view gradient_weights[iID][jID, :]
+            bf = @view bond_forces[iID][jID]
+            gw = @view gradient_weights[iID][jID]
             mul!(bf, integral_nodal_stress[iID, :, :], gw)
-            @views bond_forces[iID][jID, :] +=
+            @views bond_forces[iID][jID] +=
                 bond_damage[iID][jID] * omega[iID][jID] /
                 (weighted_volume[iID] * bond_length[iID][jID] * bond_length[iID][jID]) .*
-                bond_stress[iID][jID, :, :] * bond_geometry[iID][jID, :]
+                bond_stress[iID][jID, :, :] * bond_geometry[iID][jID]
 
 
             #

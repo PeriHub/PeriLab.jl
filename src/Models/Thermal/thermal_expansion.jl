@@ -107,8 +107,8 @@ function compute_model(
 
     for iID in nodes
         for j = 1:dof
-            deformed_bond[iID][:, j] .-=
-                temperature_NP1[iID] * alpha_mat[j, j] .* undeformed_bond[iID][:, j]
+            deformed_bond[iID][:][j] .-=
+                temperature_NP1[iID] * alpha_mat[j, j] .* undeformed_bond[iID][:][j]
         end
         deformed_bond_length[iID] .-=
             sum(alpha_mat) / dof * temperature_NP1[iID] .* undeformed_bond_length[iID]
@@ -163,13 +163,13 @@ function thermal_deformation(
     nodes::Union{SubArray,Vector{Int64}},
     alpha::Union{Matrix{Float64},Matrix{Int64}},
     temperature::Union{Vector{Float64},SubArray},
-    undeformed_bond::Vector{Matrix{Float64}},
-    thermal_deformation::Vector{Matrix{Float64}},
+    undeformed_bond::Vector{Vector{Vector{Float64}}},
+    thermal_deformation::Vector{Vector{Vector{Float64}}},
 )
     for iID in nodes
-        for jID in eachindex(undeformed_bond[iID][:, 1])
-            thermal_deformation[iID][jID, :] =
-                -thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID, :]
+        for jID = 1:length(undeformed_bond[iID])
+            thermal_deformation[iID][jID] =
+                -thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID]
         end
     end
     return thermal_deformation

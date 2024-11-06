@@ -41,7 +41,6 @@ export get_num_responder
 export get_max_rank
 export get_cancel
 export get_damage_models
-export get_material_model
 export get_output_frequency
 export get_rotation
 export get_element_rotation
@@ -56,7 +55,6 @@ export set_inverse_nlist
 export set_fem
 export set_glob_to_loc
 export set_damage_models
-export set_material_model
 export set_model_module
 export set_num_controller
 export set_nset
@@ -453,6 +451,7 @@ function create_field(
                 fields[vartype][name] = fill(value, (data["nnodes"], dof, dof))
             else
                 fields[vartype][name] = fill(value, data["nnodes"], dof)
+                # fields[vartype][name] = [fill(value,dof) for j=1:data["nnodes"]]
             end
         end
     elseif bond_or_node == "Bond_Field"
@@ -463,7 +462,8 @@ function create_field(
             if VectorOrArray == "Matrix"
                 fields[vartype][name] = [fill(value, (n, dof, dof)) for n in nBonds]
             else
-                fields[vartype][name] = [fill(value, (n, dof)) for n in nBonds]
+                # fields[vartype][name] = [fill(value, (n, dof)) for n in nBonds]
+                fields[vartype][name] = [[fill(value, dof) for j = 1:n] for n in nBonds]
             end
         end
     elseif bond_or_node == "Element_Field"
@@ -988,18 +988,6 @@ This function returns the `damage_models` variable.
 """
 function get_damage_models()
     return data["damage_models"]
-end
-
-"""
-    get_material_models()
-
-This function returns the `material_models` variable.
-
-# Returns
-- `material_models`::Any: The value of the `material_models` variable.
-"""
-function get_material_models()
-    return data["material_models"]
 end
 
 """
@@ -1583,8 +1571,13 @@ function switch_NP1_to_N(nstep::Int64)
 end
 
 function switch_nodes!(field_N, field_NP1, NP1)
-    copyto!(field_N, field_NP1)
-    fill!(field_NP1, data["field_types"][NP1](0))
+    if field_NP1[1] isa AbstractVector
+        copyto!.(field_N, field_NP1)
+        fill!.(field_NP1, data["field_types"][NP1](0))
+    else
+        copyto!(field_N, field_NP1)
+        fill!(field_NP1, data["field_types"][NP1](0))
+    end
 end
 function switch_bonds!(field_N, field_NP1, NP1)
 

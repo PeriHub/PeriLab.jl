@@ -6,6 +6,8 @@ module PD_Solid_Elastic
 include("../../material_basis.jl")
 using .Material_Basis: get_symmetry
 include("./Ordinary.jl")
+include("../../../../Support/helpers.jl")
+using .Helpers: add_in_place!
 using TimerOutputs
 using StaticArrays
 using .Ordinary:
@@ -130,6 +132,7 @@ function compute_model(
     omega = datamanager.get_field("Influence Function")
     undeformed_bond_length = datamanager.get_field("Bond Length")
     bond_force = datamanager.get_field("Bond Forces")
+    temp = datamanager.get_field("Temporary Bond Field")
 
     bond_force_deviatoric_part = datamanager.get_field("Bond Forces Deviatoric")
     bond_force_isotropic_part = datamanager.get_field("Bond Forces Isotropic")
@@ -140,6 +143,7 @@ function compute_model(
     # optimizing, because if no damage it has not to be updated
     # TBD update_list should be used here as in shape_tensor.jl
     @timeit to "Weighted Volume" weighted_volume = compute_weighted_volume(
+        weighted_volume,
         nodes,
         nlist,
         undeformed_bond_length,
@@ -158,27 +162,22 @@ function compute_model(
         weighted_volume,
         omega,
     )
-    @timeit to "Bond Forces" bond_force_deviatoric_part, bond_force_isotropic_part =
-        elastic(
-            nodes,
-            dof,
-            undeformed_bond_length,
-            deformed_bond_length,
-            bond_damage,
-            theta,
-            weighted_volume,
-            omega,
-            material_parameter,
-            bond_force_deviatoric_part,
-            bond_force_isotropic_part,
-        )
-    bond_force = get_bond_forces(
+    @timeit to "elastic" bond_force_deviatoric_part, bond_force_isotropic_part = elastic(
         nodes,
-        bond_force_deviatoric_part + bond_force_isotropic_part,
-        deformed_bond,
+        dof,
+        undeformed_bond_length,
         deformed_bond_length,
-        bond_force,
+        bond_damage,
+        theta,
+        weighted_volume,
+        omega,
+        material_parameter,
+        bond_force_deviatoric_part,
+        bond_force_isotropic_part,
     )
+    add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
+    @timeit to "get_bond_forces" bond_force =
+        get_bond_forces(nodes, temp, deformed_bond, deformed_bond_length, bond_force, temp)
 
     return datamanager
 end
@@ -242,13 +241,14 @@ function elastic(
                 bulk_modulus[iID],
             )
         end
-        @views deviatoric_deformation =
-            deformed_bond_length[iID] .- undeformed_bond_length[iID] -
+        #TODO: deviatoric_deformation needs allocationg, add temp field
+        deviatoric_deformation =
+            deformed_bond_length[iID] .- undeformed_bond_length[iID] .-
             (gamma * theta[iID] / 3) .* undeformed_bond_length[iID]
-        @views bond_force_deviatoric_part[iID] =
+        bond_force_deviatoric_part[iID] .=
             bond_damage[iID] .* omega[iID] .* alpha .* deviatoric_deformation ./
             weighted_volume[iID]
-        @views bond_force_isotropic_part[iID] =
+        bond_force_isotropic_part[iID] .=
             bond_damage[iID] .* omega[iID] .* kappa .* theta[iID] .*
             undeformed_bond_length[iID] ./ weighted_volume[iID]
     end

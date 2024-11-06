@@ -6,8 +6,8 @@ include(
     "../../../../../../src/Models/Material/Material_Models/Correspondence/Bond_Associated_Correspondence.jl",
 )
 using Test
-#include("../../../../../../src/PeriLab.jl")
-#using .PeriLab
+# include("../../../../../../src/PeriLab.jl")
+# using .PeriLab
 
 
 @testset "ut_ba_correspondence_name" begin
@@ -166,12 +166,10 @@ end
 
     bond_geometry =
         test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
-    bond_geometry[1][:] = [1.0, 0.0]
-    bond_geometry[2][:] = [-1.0, 0.0]
+    bond_geometry[1][1] = [1.0, 0.0]
+    bond_geometry[2][1] = [-1.0, 0.0]
 
-    bond_length = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
-    bond_length[1][:] = [1.0]
-    bond_length[2][:] = [1.0]
+    bond_length = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1, 1)
 
     deformation_gradient = test_data_manager.create_constant_bond_field(
         "Bond Deformation Gradient",
@@ -179,8 +177,8 @@ end
         "Matrix",
         dof,
     )
-    deformation_gradient[1][1, :, :] = [1.0 0.0; 0.0 1.0]
-    deformation_gradient[2][1, :, :] = [1.0 0.0; 0.0 1.0]
+    deformation_gradient[1][1, :, :] = [1 0; 0 1]
+    deformation_gradient[2][1, :, :] = [1 0; 0 1]
 
     bond_stresses = test_data_manager.create_constant_bond_field(
         "Bond Cauchy Stress",

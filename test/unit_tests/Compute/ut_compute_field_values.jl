@@ -47,19 +47,15 @@ end
     nlist[5] = [1, 2, 4]
 
     test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
-    bond_forces = test_data_manager.create_constant_bond_field("Bond Forces", Float64, 3)
+    bond_forces = test_data_manager.create_constant_bond_field("Bond Forces", Float64, 3, 1)
     bond_geometry =
-        test_data_manager.create_constant_bond_field("Bond Geometry", Float64, 3)
-    bond_length = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
+        test_data_manager.create_constant_bond_field("Bond Geometry", Float64, 3, 1)
+    bond_length =
+        test_data_manager.create_constant_bond_field("Bond Length", Float64, 1, sqrt(3))
     test_data_manager.create_node_field("Cauchy Stress", Float64, "Matrix", 3)
     volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
 
     volume[1:5] = 1:5
-    for iID = 1:5
-        bond_geometry[iID] .= 1
-        bond_length[iID] .= sqrt(3)
-        bond_forces[iID][:, :] .= 1
-    end
 
     nodes = [1, 2, 3, 4, 5]
 
@@ -69,11 +65,11 @@ end
 
     testval = zeros(5, 3, 3)
     for iID = 1:5
-        for jID in eachindex(bond_forces[iID][:, 1])
+        for jID in eachindex(nlist[iID])
             for i = 1:3
                 for j = 1:3
                     testval[iID, i, j] +=
-                        bond_forces[iID][jID, i] * bond_geometry[iID][jID, j] * volume[iID]
+                        bond_forces[iID][jID][i] * bond_geometry[iID][jID][j] * volume[iID]
                 end
             end
         end

@@ -169,7 +169,7 @@ function create_and_distribute_bond_norm(
     datamanager::Module,
     nlist_filtered_ids::Vector{Vector{Int64}},
     distribution::Vector{Vector{Int64}},
-    bond_norm::Vector{Matrix{Float64}},
+    bond_norm::Vector{Any},
     dof::Int64,
 )
     bond_norm = send_value(comm, 0, bond_norm)
@@ -181,7 +181,7 @@ function create_and_distribute_bond_norm(
         distribution,
         true,
     )
-    bond_norm_field .= bond_norm
+    copyto!.(bond_norm_field, bond_norm)
 end
 
 """
@@ -1705,11 +1705,9 @@ function apply_bond_filters(
         end
         if contact_enabled
             nlist_filtered_ids = fill(Vector{Int64}([]), nnodes)
-            bond_norm = Matrix{Float64}[]
+            bond_norm = []
             for iID = 1:nnodes
-                # bond_norm[iID] = fill(fill(1, dof), length(nlist[iID]))
-                append!(bond_norm, [Matrix{Float64}(undef, length(nlist[iID]), dof)])
-                fill!(bond_norm[end], Float64(1))
+                push!(bond_norm, [fill(1.0, dof) for n = 1:length(nlist[iID])])
             end
         end
 
@@ -1728,7 +1726,7 @@ function apply_bond_filters(
                     )
                     nlist_filtered_ids[iID] = indices
                     for jID in indices
-                        bond_norm[iID][jID, :] .= normal
+                        bond_norm[iID][jID] .= normal
                     end
                 else
                     nlist[iID] = nlist[iID][filter_flag[iID]]

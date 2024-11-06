@@ -5,7 +5,7 @@
 module Deformation_Gradient
 using DataStructures: OrderedDict
 include("../../Support/geometry.jl")
-using .Geometry: compute_deformation_gradients
+using .Geometry: compute_deformation_gradients!
 export pre_calculation_name
 export init_model
 export compute
@@ -81,7 +81,8 @@ function compute(
     deformation_gradient = datamanager.get_field("Deformation Gradient")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
     dof = datamanager.get_dof()
-    compute_deformation_gradients(
+    compute_deformation_gradients!(
+        deformation_gradient,
         nodes,
         dof,
         nlist,
@@ -91,7 +92,6 @@ function compute(
         deformed_bond,
         undeformed_bond,
         inverse_shape_tensor,
-        deformation_gradient,
     )
 
     return datamanager

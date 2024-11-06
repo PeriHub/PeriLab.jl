@@ -296,41 +296,45 @@ function distribute_forces(
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Vector{Vector{Int64}},
     nlist_filtered_ids::Vector{Vector{Int64}},
-    bond_force::Vector{Matrix{Float64}},
+    bond_force::Vector{Vector{Vector{Float64}}},
     volume::Vector{Float64},
     bond_damage::Vector{Vector{Float64}},
     displacements::Matrix{Float64},
-    bond_norm::Vector{Matrix{Float64}},
+    bond_norm::Vector{Vector{Vector{Float64}}},
     force_densities::Matrix{Float64},
 )
 
-    for iID in nodes
+    @inbounds @fastmath for iID in nodes
         bond_mod = copy(bond_norm[iID])
         if length(nlist_filtered_ids[iID]) > 0
             for neighborID in nlist_filtered_ids[iID]
                 if dot(
                     (displacements[nlist[iID][neighborID], :] - displacements[iID, :]),
-                    bond_norm[iID][neighborID, :],
+                    bond_norm[iID][neighborID],
                 ) > 0
-                    bond_mod[neighborID, :] .= 0
+                    bond_mod[neighborID] .= 0
                 else
-                    bond_mod[neighborID, :] = abs.(@view bond_norm[iID][neighborID, :])
+                    bond_mod[neighborID] .= abs.(bond_norm[iID][neighborID])
                 end
             end
         end
 
-        force_densities[iID, :] .+= transpose(
-            sum(
-                bond_damage[iID] .* (@view bond_force[iID][:, :]) .* bond_mod .*
-                volume[nlist[iID]],
-                dims = 1,
-            ),
-        )
+        @views @inbounds @fastmath for jID ∈ axes(nlist[iID], 1)
+            @views @inbounds @fastmath for m ∈ axes(force_densities[iID, :], 1)
+                #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
+                force_densities[iID, m] +=
+                    bond_damage[iID][jID] *
+                    bond_force[iID][jID][m] *
+                    volume[nlist[iID][jID]] *
+                    bond_mod[jID][m]
+                force_densities[nlist[iID][jID], m] -=
+                    bond_damage[iID][jID] *
+                    bond_force[iID][jID][m] *
+                    volume[iID] *
+                    bond_mod[jID][m]
 
-        # force_densities[nlist[iID], :] .-= bond_damage[iID] .* bond_force[iID] .* bond_mod .* volume[iID]
-        force_densities[nlist[iID], :] .-=
-            bond_damage[iID] .* (@view bond_force[iID][:, :]) .* (@view bond_mod[:, :]) .*
-            volume[iID]
+            end
+        end
     end
 end
 
@@ -352,7 +356,7 @@ Distribute the forces on the nodes
 function distribute_forces(
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Vector{Vector{Int64}},
-    bond_force::Vector{Matrix{Float64}},
+    bond_force::Vector{Vector{Vector{Float64}}},
     volume::Vector{Float64},
     bond_damage::Vector{Vector{Float64}},
     force_densities::Matrix{Float64},
@@ -363,10 +367,10 @@ function distribute_forces(
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
                 force_densities[iID, m] +=
                     bond_damage[iID][jID] *
-                    bond_force[iID][jID, m] *
+                    bond_force[iID][jID][m] *
                     volume[nlist[iID][jID]]
                 force_densities[nlist[iID][jID], m] -=
-                    bond_damage[iID][jID] * bond_force[iID][jID, m] * volume[iID]
+                    bond_damage[iID][jID] * bond_force[iID][jID][m] * volume[iID]
 
             end
         end

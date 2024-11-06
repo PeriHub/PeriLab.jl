@@ -127,16 +127,16 @@ function get_zero_energy_mode_force_2d!(
             @inbounds @fastmath @views for m ∈ axes(deformation_gradient, 2)
                 df_i = zero(eltype(deformation_gradient))
                 @inbounds @fastmath @views for n ∈ axes(deformation_gradient, 3)
-                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID, n]
+                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID][n]
                 end
-                df[m] = df_i - deformed_bond[iID][nID, m]
+                df[m] = df_i - deformed_bond[iID][nID][m]
             end
             @inbounds @fastmath @views for m ∈ axes(zStiff, 2)
                 bf_i = zero(eltype(zStiff))
                 @inbounds @fastmath @views for n ∈ axes(zStiff, 3)
                     bf_i -= zStiff[iID, m, n] * df[n]
                 end
-                bond_force[iID][nID, m] += bf_i
+                bond_force[iID][nID][m] += bf_i
             end
         end
 
@@ -158,16 +158,16 @@ function get_zero_energy_mode_force_3d!(
             @inbounds @fastmath @views for m ∈ axes(deformation_gradient, 2)
                 df_i = zero(eltype(deformation_gradient))
                 @inbounds @fastmath @views for n ∈ axes(deformation_gradient, 3)
-                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID, n]
+                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID][n]
                 end
-                df[m] = df_i - deformed_bond[iID][nID, m]
+                df[m] = df_i - deformed_bond[iID][nID][m]
             end
             @inbounds @fastmath @views for m ∈ axes(zStiff, 2)
                 bf_i = zero(eltype(zStiff))
                 @inbounds @fastmath @views for n ∈ axes(zStiff, 3)
                     bf_i -= zStiff[iID, m, n] * df[n]
                 end
-                bond_force[iID][nID, m] += bf_i
+                bond_force[iID][nID][m] += bf_i
             end
         end
 

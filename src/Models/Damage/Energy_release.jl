@@ -8,7 +8,7 @@ include("../../Support/geometry.jl")
 include("../../Support/helpers.jl")
 using .Material
 using .Geometry
-using .Helpers: rotate, fastdot, fastsubtract!
+using .Helpers: rotate, fastdot, sub_in_place!
 using LinearAlgebra
 using StaticArrays
 export compute_model
@@ -77,7 +77,7 @@ function compute_model(
     critical_energy =
         critical_field ? datamanager.get_field("Critical_Value") :
         damage_parameter["Critical Value"]
-    quad_horizon = datamanager.get_field("Quad Horizon")
+    quad_horizons = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
     dependend_value::Bool = false
     if haskey(damage_parameter, "Temperature dependend")
@@ -109,17 +109,26 @@ function compute_model(
 
     bond_energy::Float64 = 0.0
     norm_displacement::Float64 = 0.0
+    product::Float64 = 0.0
     x_vector::Vector{Float64} = @SVector zeros(Float64, dof)
     x_vector[1] = 1.0
 
-    neighbor_bond_force::Vector{Float64} = @SVector zeros(Float64, dof)
-    projected_force::Vector{Float64} = @SVector zeros(Float64, dof)
+    bond_force::Vector{Float64} = zeros(Float64, dof)
+    neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
+    bond_force_delta::Vector{Float64} = zeros(Float64, dof)
+    projected_force::Vector{Float64} = zeros(Float64, dof)
+    relative_displacement::Vector{Float64} = zeros(Float64, dof)
 
-    fastsubtract!(bond_displacements, deformed_bond, undeformed_bond)
+    sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
+
     for iID in nodes
-        @views nlist_temp = nlist[iID]
+        nlist_temp = nlist[iID]
+        bond_displacement = bond_displacements[iID]
+        bond_force_vec = bond_forces[iID]
+        quad_horizon = quad_horizons[iID]
         for jID in eachindex(nlist_temp)
-            @views relative_displacement = bond_displacements[iID][jID, :]
+
+            relative_displacement .= bond_displacement[jID]
             norm_displacement = fastdot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (
                 tension &&
@@ -132,20 +141,20 @@ function compute_model(
 
             # check if the bond also exist at other node, due to different horizons
             try
-                @views neighbor_bond_force .=
-                    bond_forces[neighborID][inverse_nlist[neighborID][iID], :]
+                neighbor_bond_force .=
+                    bond_forces[neighborID][inverse_nlist[neighborID][iID]]
             catch e
                 # Handle the case when the key doesn't exist
             end
 
-            @views projected_force .=
-                fastdot(
-                    (bond_forces[iID][jID, :] - neighbor_bond_force),
-                    relative_displacement,
-                ) / (norm_displacement) .* relative_displacement
+            bond_force .= bond_force_vec[jID]
+            bond_force_delta .= bond_force .- neighbor_bond_force
 
-            @views bond_energy =
-                0.25 * fastdot((abs.(projected_force)), (abs.(relative_displacement)))
+
+            product = fastdot(bond_force_delta, relative_displacement)
+            mul!(projected_force, product / norm_displacement, relative_displacement)
+            product = fastdot(projected_force, relative_displacement, true)
+            bond_energy = 0.25 * product
 
             if dependend_value
                 critical_energy =
@@ -160,10 +169,10 @@ function compute_model(
 
             if aniso_damage
                 if all(rotation_tensor[iID, :, :] .== 0)
-                    @views rotated_bond = deformed_bond[iID][jID, :]
+                    @views rotated_bond = deformed_bond[iID][jID]
                 else
                     @views rotated_bond =
-                        rotation_tensor[iID, :, :]' * deformed_bond[iID][jID, :]
+                        rotation_tensor[iID, :, :]' * deformed_bond[iID][jID]
                 end
                 # Compute bond_norm for all components at once
                 @views bond_norm_all = abs.(rotated_bond) ./ deformed_bond_length[iID][jID]
@@ -207,7 +216,8 @@ function compute_model(
                 # end
 
             else
-                if bond_energy > crit_energy * quad_horizon[iID]
+                product = crit_energy * quad_horizon
+                if bond_energy > product
                     bond_damage[iID][jID] = 0.0
                     update_list[iID] = true
                 end

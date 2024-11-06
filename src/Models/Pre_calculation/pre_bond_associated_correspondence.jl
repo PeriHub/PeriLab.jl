@@ -5,7 +5,7 @@
 module Pre_Bond_Associated_Correspondence
 using DataStructures: OrderedDict
 include("../../Support/geometry.jl")
-using .Geometry: calculate_bond_length, compute_weighted_deformation_gradient
+using .Geometry: compute_weighted_deformation_gradient
 using LoopVectorization
 using StaticArrays: @MVector
 export fields_for_local_synchronization
@@ -128,7 +128,7 @@ function compute(
     M = datamanager.get_field("M temporary Matrix")
 
 
-    compute_weighted_volume(nodes, nlist, volume, bond_damage, omega, weighted_volume)
+    compute_weighted_volume!(weighted_volume, nodes, nlist, volume, bond_damage, omega)
 
 
     compute_Lagrangian_gradient_weights(
@@ -160,18 +160,18 @@ end
 
 
 
-function compute_weighted_volume(
+function compute_weighted_volume!(
+    weighted_volume::Vector{Float64},
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Union{Vector{Vector{Int64}},SubArray},
     volume::Vector{Float64},
     bond_damage::Vector{Vector{Float64}},
     omega::Vector{Vector{Float64}},
-    weighted_volume::Vector{Float64},
 )
     @views @inbounds @fastmath for iID in nodes
         weighted_volume[iID] = 0
         @views @inbounds @fastmath for jID in eachindex(nlist[iID])
-            @views weighted_volume[iID] +=
+            weighted_volume[iID] +=
                 bond_damage[iID][jID] * omega[iID][jID] * volume[nlist[iID][jID]]
         end
     end
@@ -217,7 +217,7 @@ end
 function calculate_Q(
     accuracy_order::Int64,
     dof::Int64,
-    bond_geometry,
+    bond_geometry::Vector{Float64},
     horizon::Union{Int64,Float64},
     Q::Vector{Float64},
 )
@@ -273,9 +273,9 @@ function compute_Lagrangian_gradient_weights(
 
     for iID in nodes
         M .= 0
-        bg = @view bond_geometry[iID][:, :]
+        # bg = @view bond_geometry[iID]
         for (jID, nID) in enumerate(nlist[iID])
-            @views Q = calculate_Q(accuracy_order, dof, bg[jID, :], horizon[iID], Q)
+            Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID], horizon[iID], Q)
             QTQ!(M, omega[iID][jID], bond_damage[iID][jID], volume[nID], Q)
         end
 
@@ -285,7 +285,7 @@ function compute_Lagrangian_gradient_weights(
         )
 
         for jID in eachindex(nlist[iID])
-            @views Q = calculate_Q(accuracy_order, dof, bg[jID, :], horizon[iID], Q)
+            Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID], horizon[iID], Q)
             # this comes from Eq(19) in 10.1007/s40571-019-00266-9
             # or example 1 in https://arxiv.org/pdf/2004.11477
             # Eq (3) flowing
@@ -326,9 +326,9 @@ function compute_gradient_weights!(
     jID,
 )
     for idof = 1:dof # Eq (3) flowing
-        gradient_weights[iID][jID, idof] = 0
+        gradient_weights[iID][jID][idof] = 0
         @inbounds @fastmath for m ∈ axes(Minv, 2)
-            gradient_weights[iID][jID, idof] +=
+            gradient_weights[iID][jID][idof] +=
                 omega[iID][jID] * bond_damage[iID][jID] / horizon[iID] *
                 Minv[idof, m] *
                 Q[m]

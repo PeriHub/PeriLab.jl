@@ -152,6 +152,7 @@ function compute_model(
     omega = datamanager.get_field("Influence Function")
     bond_damage = datamanager.get_bond_damage("NP1")
     bond_force = datamanager.get_field("Bond Forces")
+    temp = datamanager.get_field("Temporary Bond Field")
     shear_modulus = material_parameter["Shear Modulus"]
     bulk_modulus = material_parameter["Bulk Modulus"]
     bond_force_deviatoric_part = datamanager.get_field("Bond Forces Deviatoric")
@@ -195,6 +196,7 @@ function compute_model(
         deformed_bond,
         deformed_bond_length,
         bond_force,
+        temp,
     )
     return datamanager
 end

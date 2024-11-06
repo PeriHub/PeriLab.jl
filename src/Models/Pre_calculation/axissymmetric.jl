@@ -6,7 +6,7 @@ module Axissymmetric
 using DataStructures: OrderedDict
 export compute
 export init_model
-export Pre_calculation_name
+export pre_calculation_name
 
 """
     pre_calculation_name()

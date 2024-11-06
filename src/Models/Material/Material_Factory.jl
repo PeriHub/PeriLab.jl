@@ -43,7 +43,7 @@ function init_fields(datamanager::Module)
     datamanager.create_constant_node_field("Acceleration", Float64, dof)
     datamanager.create_node_field("Velocity", Float64, dof)
     datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
-    dof = datamanager.get_dof()
+    datamanager.create_constant_bond_field("Temporary Bond Field", Float64, 1)
     deformed_coorN, deformed_coorNP1 =
         datamanager.create_node_field("Deformed Coordinates", Float64, dof)
     deformed_coorN = copy(datamanager.get_field("Coordinates"))
@@ -111,11 +111,8 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
         for iID in nodes
             if length(nlist_filtered_ids[iID]) != 0
                 for neighborID in nlist_filtered_ids[iID]
-                    bond_norm[iID][neighborID, :] .*= sign(
-                        dot(
-                            (bond_geometry[iID][neighborID, :]),
-                            bond_norm[iID][neighborID, :],
-                        ),
+                    bond_norm[iID][neighborID] .*= sign(
+                        dot((bond_geometry[iID][neighborID]), bond_norm[iID][neighborID]),
                     )
                 end
             end
