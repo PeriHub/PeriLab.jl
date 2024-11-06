@@ -16,7 +16,7 @@ export compute_model
 export init_interface_crit_values
 export init_model
 export init_fields
-export synch_field
+
 
 """
     init_fields(datamanager::Module)
