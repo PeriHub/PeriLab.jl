@@ -312,15 +312,15 @@ end
         undeformed_bond,
         undeformed_bond_length,
     )
-    PeriLab.IO.Geometry.compute_shape_tensors(
+    PeriLab.IO.Geometry.compute_shape_tensors!(
+        shape_tensor,
+        inverse_shape_tensor,
         nodes,
         nlist,
         volume,
         omega,
         bond_damage,
         undeformed_bond,
-        shape_tensor,
-        inverse_shape_tensor,
     )
 
     deformed_coor = copy(coor)

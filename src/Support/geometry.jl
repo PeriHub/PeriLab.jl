@@ -11,7 +11,7 @@ using Rotations
 include("helpers.jl")
 using .Helpers: invert, smat, mat_mul_transpose_mat!
 export bond_geometry
-export compute_shape_tensors
+export compute_shape_tensors!
 export compute_deformation_gradients!
 
 
@@ -87,7 +87,7 @@ function calculate_bond_length!(
     end
 end
 """
-    compute_shape_tensors(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+    compute_shape_tensors!(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
 Calculate the shape tensor and its inverse for a set of nodes in a computational mechanics context.
 
@@ -122,18 +122,16 @@ bond_damage = zeros(Float64, length(nodes), length(nlist[1]))
 undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 shape_tensor = zeros(Float64, length(nodes), dof, dof)
 inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
-
-compute_shape_tensors(nodes, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 """
-function compute_shape_tensors(
+function compute_shape_tensors!(
+    shape_tensor,
+    inverse_shape_tensor,
     nodes::Union{SubArray,Vector{Int64}},
     nlist,
     volume,
     omega,
     bond_damage,
     undeformed_bond,
-    shape_tensor,
-    inverse_shape_tensor,
 )
 
     for iID in nodes
@@ -280,7 +278,8 @@ function compute_deformation_gradients!(
             nlist,
             iID,
         )
-        mul!(deformation_gradient[iID, :, :], temp, inverse_shape_tensor[iID, :, :])
+        dg = @view deformation_gradient[iID, :, :]
+        mul!(dg, temp, inverse_shape_tensor[iID, :, :])
     end
 
 end
