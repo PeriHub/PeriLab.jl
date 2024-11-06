@@ -28,7 +28,7 @@ export init_model
 export material_name
 export compute_model
 export init_model
-
+export fields_for_local_synchronization
 """
   init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
@@ -112,29 +112,35 @@ function material_name()
 end
 
 """
-    fields_to_local_synchronize()
+    fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
-The structure of the Dict must because
 
-    synchfield = Dict(
-        "Field name" =>
-            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
-    )
-
-or
-
-    synchfield = Dict(
-        "Field name" =>
-            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
-    )
 
 # Arguments
 
 """
-function fields_to_local_synchronize()
-    return Dict()
+function fields_for_local_synchronization(
+    datamanager::Module,
+    model::String,
+    model_param::Dict,
+)
+    material_models = split(model_param["Material Model"], "+")
+    material_models = map(r -> strip(r), material_models)
+    for material_model in material_models
+
+        mod = datamanager.get_model_module(material_model)
+
+        datamanager = mod.fields_for_local_synchronization(datamanager, model)
+        if model_param["Bond Associated"]
+            Bond_Associated_Correspondence.fields_for_local_synchronization(
+                datamanager,
+                model,
+            )
+        end
+    end
+    return datamanager
 end
 
 """

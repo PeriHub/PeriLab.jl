@@ -4,8 +4,10 @@
 
 module Damage_template
 using TimerOutputs
+export init_model
 export compute_model
 export damage_name
+export fields_for_local_synchronization
 """
     damage_name()
 
@@ -61,34 +63,22 @@ function compute_model(
     return datamanager
 end
 
-
 """
-    fields_to_local_synchronize()
+    fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
-The structure of the Dict must because
 
-    synchfield = Dict(
-        "Field name" =>
-            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
-    )
-
-or
-
-    synchfield = Dict(
-        "Field name" =>
-            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
-    )
 
 # Arguments
 
 """
-function fields_to_local_synchronize()
-    @info "Here you can add fields for synchronisation."
+function fields_for_local_synchronization(datamanager::Module, model::String)
+    #download_from_cores = false
+    #upload_to_cores = true
+    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
     return datamanager
 end
-
 """
     init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
 

@@ -5,6 +5,7 @@
 module Bond_Associated_Correspondence
 using LinearAlgebra
 using StaticArrays
+using TimerOutputs
 include("../../../../Support/helpers.jl")
 include("../../../../Support/geometry.jl")
 include("../../material_basis.jl")
@@ -17,8 +18,7 @@ using .Geometry:
     compute_bond_level_deformation_gradient
 include("../../../Pre_calculation/pre_bond_associated_correspondence.jl")
 using .Pre_Bond_Associated_Correspondence: compute_weighted_volume
-using TimerOutputs
-
+export fields_for_local_synchronization
 export init_model
 export compute_model
 
@@ -76,29 +76,25 @@ function init_model(
 end
 
 """
-    fields_to_local_synchronize()
+    fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
-The structure of the Dict must because
 
-    synchfield = Dict(
-        "Field name" =>
-            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
-    )
-
-or
-
-    synchfield = Dict(
-        "Field name" =>
-            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
-    )
 
 # Arguments
 
 """
-function fields_to_local_synchronize()
-    return Dict()
+function fields_for_local_synchronization(datamanager::Module, model::String)
+    download_from_cores = false
+    upload_to_cores = true
+    datamanager.set_local_synch(
+        model,
+        "Deformation Gradient",
+        download_from_cores,
+        upload_to_cores,
+    )
+    return datamanager
 end
 
 """

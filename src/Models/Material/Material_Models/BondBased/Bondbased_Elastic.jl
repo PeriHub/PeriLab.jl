@@ -76,31 +76,6 @@ function material_name()
     return "Bond-based Elastic"
 end
 
-"""
-    fields_for_local_synchronization()
-
-Returns a user developer defined local synchronization. This happens before each model.
-
-The structure of the Dict must because
-
-    synchfield = Dict(
-        "Field name" =>
-            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
-    )
-
-or
-
-    synchfield = Dict(
-        "Field name" =>
-            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
-    )
-
-# Arguments
-
-"""
-function fields_for_local_synchronization()
-    return Dict()
-end
 
 """
     compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
@@ -184,5 +159,21 @@ function compute_bb_force!(
     end
 end
 
+"""
+    fields_for_local_synchronization(datamanager::Module, model::String)
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+
+
+# Arguments
+
+"""
+function fields_for_local_synchronization(datamanager::Module, model::String)
+    #download_from_cores = false
+    #upload_to_cores = true
+    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
+    return datamanager
+end
 
 end

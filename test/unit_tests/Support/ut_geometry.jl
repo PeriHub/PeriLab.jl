@@ -5,8 +5,8 @@
 using Test
 
 
-include("../../../src/PeriLab.jl")
-using .PeriLab
+#include("../../../src/PeriLab.jl")
+#using .PeriLab
 
 @testset "ut_compute_bond_level_deformation_gradient" begin
     nodes = [1]

@@ -11,6 +11,7 @@ using .Global_zero_energy_control: global_zero_energy_mode_stiffness
 export fe_support
 export init_model
 export correspondence_name
+export fields_for_local_synchronization
 # export compute_model
 
 """
@@ -603,6 +604,23 @@ function malloc_cstring(s::String)
         s::Cstring,
         n::Csize_t,
     )::Cstring
+end
+
+"""
+    fields_for_local_synchronization(datamanager::Module, model::String)
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+
+
+# Arguments
+
+"""
+function fields_for_local_synchronization(datamanager::Module, model::String)
+    #download_from_cores = false
+    #upload_to_cores = true
+    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
+    return datamanager
 end
 
 end

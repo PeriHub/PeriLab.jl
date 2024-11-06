@@ -10,7 +10,7 @@ using LinearAlgebra
 using StaticArrays
 export fe_support
 export init_model
-
+export fields_for_local_synchronization
 """
   fe_support()
 
@@ -322,6 +322,23 @@ function compute_plastic_model(
     @views temp_scalar = sum(temp_A .* temp_B)
     @views plastic_strain_NP1 = plastic_strain_N + maximum([0, sqrt23 * temp_scalar])
 
+end
+
+"""
+    fields_for_local_synchronization(datamanager::Module, model::String)
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+
+
+# Arguments
+
+"""
+function fields_for_local_synchronization(datamanager::Module, model::String)
+    #download_from_cores = false
+    #upload_to_cores = true
+    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
+    return datamanager
 end
 
 end

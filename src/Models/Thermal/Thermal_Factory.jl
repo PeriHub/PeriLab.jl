@@ -12,6 +12,7 @@ using TimerOutputs
 export init_model
 export compute_model
 export init_fields
+export fields_for_local_synchronization
 
 """
     init_fields(datamanager::Module)
@@ -102,4 +103,29 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     end
     return datamanager
 end
+
+"""
+    fields_for_local_synchronization(datamanager, model, block)
+
+Defines all synchronization fields for local synchronization
+
+# Arguments
+- `datamanager::Module`: datamanager.
+- `model::String`: Model class.
+- `block::Int64`: block ID
+# Returns
+- `datamanager::Module`: Datamanager.
+"""
+
+function fields_for_local_synchronization(datamanager, model, block)
+    model_param = datamanager.get_properties(block, "Thermal Model")
+    thermal_models = split(model_param["Thermal Model"], "+")
+    thermal_models = map(r -> strip(r), thermal_models)
+    for thermal_model in thermal_models
+        mod = datamanager.get_model_module(thermal_model)
+        mod.fields_for_local_synchronization(datamanager, model)
+    end
+    return datamanager
+end
+
 end

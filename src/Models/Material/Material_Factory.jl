@@ -21,7 +21,7 @@ export compute_model
 export determine_isotropic_parameter
 export distribute_force_densities
 export init_fields
-
+export fields_for_local_synchronization
 
 """
     init_fields(datamanager::Module)
@@ -126,40 +126,30 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
 end
 
 """
-    fields_for_local_synchronization(model_param::Dict)
+    fields_for_local_synchronization(datamanager, model, block)
 
-Finds all synchronization fields from the model class
+Defines all synchronization fields for local synchronization
 
 # Arguments
-- `model_param::Dict`: model parameter.
+- `datamanager::Module`: datamanager.
+- `model::String`: Model class.
+- `block::Int64`: block ID
 # Returns
-- `synch_dict::Dict`: Synchronization Dictionary.
+- `datamanager::Module`: Datamanager.
 """
-function fields_for_local_synchronization(model_param::Dict)
-    synch_dict = Dict()
-    material_models = split(model_param["Material Model"], "+")
-    material_models = map(r -> strip(r), material_models)
+function fields_for_local_synchronization(datamanager, model, block)
+    model_param = datamanager.get_properties(block, "Material Model")
     if occursin("Correspondence", model_param["Material Model"])
         mod = datamanager.get_model_module("Correspondence")
-        merge(
-            synch_dict,
-            filter(
-                kv -> !(kv[1] in keys(synch_dict)),
-                mod.fields_for_local_synchronization(),
-            ),
-        )
+        mod.fields_for_local_synchronization(datamanager, model, model_param)
     end
+    material_models = split(model_param["Material Model"], "+")
+    material_models = map(r -> strip(r), material_models)
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
-        merge(
-            synch_dict,
-            filter(
-                kv -> !(kv[1] in keys(synch_dict)),
-                mod.fields_for_local_synchronization(),
-            ),
-        )
+        mod.fields_for_local_synchronization(datamanager, model)
     end
-    return synch_dict
+    return datamanager
 end
 
 """

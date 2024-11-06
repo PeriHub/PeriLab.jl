@@ -259,9 +259,9 @@ function synchronise_field(
     synch_field::String,
     direction::String,
 )
-
+    # might not needed
     if !haskey(synch_fields, synch_field)
-        @warn "Field $synch_field does not exist in synch_field dictionary"
+        @error "Field $synch_field does not exist in synch_field dictionary"
         return nothing
     end
     if direction == "download_from_cores"

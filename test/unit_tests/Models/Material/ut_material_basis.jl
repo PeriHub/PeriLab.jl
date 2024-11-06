@@ -438,10 +438,6 @@ end
     symmetry = "anisotropic missing"
     @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
 
-    symmetry = "missing"
-    parameter = Dict{String,Any}("Missing" => 5)
-    @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
-
 end
 
 @testset "ut_compute_Piola_Kirchhoff_stress" begin

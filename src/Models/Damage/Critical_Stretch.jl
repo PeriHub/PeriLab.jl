@@ -7,7 +7,7 @@ module Critical_stretch
 export compute_model
 export damage_name
 export init_model
-export synch_field
+export fields_for_local_synchronization
 """
     damage_name()
 
@@ -104,30 +104,20 @@ function compute_model(
     return datamanager
 end
 
+
+
 """
-    fields_for_local_synchronization()
+    fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
-The structure of the Dict must because
 
-    synchfield = Dict(
-        "Field name" =>
-            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
-    )
-
-or
-
-    synchfield = Dict(
-        "Field name" =>
-            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
-    )
 
 # Arguments
 
 """
-function fields_for_local_synchronization()
-    return Dict()
+function fields_for_local_synchronization(datamanager::Module, model::String)
+    return datamanager
 end
 
 function init_model(

@@ -4,8 +4,7 @@
 
 module Model_Factory
 include("../Support/helpers.jl")
-#include("./Material/material_basis.jl")
-#using .Material_Basis
+
 using .Helpers:
     check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert, determinant
 include("./Additive/Additive_Factory.jl")
@@ -90,7 +89,11 @@ function init_models(
             if datamanager.check_property(block, active_model_name)
                 @timeit to "init $active_model_name models" datamanager =
                     active_model.init_model(datamanager, block_nodes[block], block)
-                # TODO active_model.fields_for_local_synchronization()
+                @timeit to "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(
+                    datamanager,
+                    active_model_name,
+                    block,
+                )
                 # put it in datamanager
             end
         end
@@ -175,15 +178,16 @@ function compute_models(
         if active_model_name == "Damage Model"
             continue
         end
-        ## TODO @jan-timo synchronisation is missing
 
-        #for synch_key in active_model.fields_for_local_synchronization(datamanager.get_properties(block, active_model_name))
-        #synchronise_field"Active"
-        #@timeit to "upload_to_cores" datamanager.synch_manager(
-        #    synchronise_field,
-        #    "upload_to_cores",
-        #)
-        #end
+        local_synch(datamanager, active_model_name, "upload_to_cores", synchronise_field)
+        # maybe not needed?
+        local_synch(
+            datamanager,
+            active_model_name,
+            "download_from_cores",
+            synchronise_field,
+        )
+
         for (block, nodes) in pairs(block_nodes)
             # "delete" the view of active nodes
             active_nodes = datamanager.get_field("Active Nodes")
@@ -214,6 +218,7 @@ function compute_models(
                     )
             end
         end
+
     end
 
     # Why not update_list.=false? -> avoid neighbors
@@ -228,7 +233,14 @@ function compute_models(
         if active_model_name == "Additive Model"
             continue
         end
-        #synchronise_field(datamanager.local_synch_fiels(active_model_name))
+        local_synch(datamanager, active_model_name, "upload_to_cores", synchronise_field)
+        # maybe not needed?
+        local_synch(
+            datamanager,
+            active_model_name,
+            "download_from_cores",
+            synchronise_field,
+        )
         for (block, nodes) in pairs(block_nodes)
             active_nodes = datamanager.get_field("Active Nodes")
             update_nodes = datamanager.get_field("Update Nodes")
@@ -448,4 +460,18 @@ function add_model(datamanager::Module, model_name::String)
 end
 
 
+function local_synch(datamanager, model, direction, synchronise_field)
+    synch_fields = datamanager.get_local_synch_fields(model)
+    for synch_field in keys(synch_fields)
+        synchronise_field(
+            datamanager.get_com(),
+            synch_fields,
+            datamanager.get_overlap_map(),
+            datamanager.get_field,
+            synch_field,
+            direction,
+        )
+
+    end
+end
 end

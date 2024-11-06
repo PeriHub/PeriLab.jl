@@ -11,7 +11,7 @@ include("../../Support/helpers.jl")
 using TimerOutputs
 using LoopVectorization
 using .Helpers: find_inverse_bond_id
-
+export fields_for_local_synchronization
 export compute_model
 export init_interface_crit_values
 export init_model
@@ -75,19 +75,24 @@ function compute_model(
     return damage_index(datamanager, nodes, datamanager.get_filtered_nlist())
 end
 
-"""
-    synch_field(datamanager::Module, damage_model::String, synchronise_field)
 
-Field for synchronisation.
+"""
+    fields_for_local_synchronization(datamanager, model, block)
+
+Defines all synchronization fields for local synchronization
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
-- `damage_model::String`: The damage model
-- `synchronise_field`: Synchronise function to distribute parameter through cores.
+- `datamanager::Module`: datamanager.
+- `model::String`: Model class.
+- `block::Int64`: block ID
+# Returns
+- `datamanager::Module`: Datamanager.
 """
-function synch_field(datamanager::Module, damage_model::String, synchronise_field)
-    mod = datamanager.get_model_module(damage_model)
-    return mod.synch_field(datamanager, synchronise_field)
+function fields_for_local_synchronization(datamanager, model, block)
+    model_param = datamanager.get_properties(block, "Damage Model")
+    mod = datamanager.get_model_module(model_param["Damage Model"])
+
+    return mod.fields_for_local_synchronization(datamanager, model)
 end
 
 """
@@ -253,6 +258,7 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     end
     datamanager.set_model_module(model_param["Damage Model"], mod)
     datamanager = mod.init_model(datamanager, nodes, model_param, block)
+    datamanager = mod.fields_for_local_synchronization(datamanager, "Damage Model")
     datamanager.set_damage_models(model_param["Damage Model"])
     datamanager = Damage.init_interface_crit_values(datamanager, model_param, block)
     datamanager = Damage.init_aniso_crit_values(datamanager, model_param, block)

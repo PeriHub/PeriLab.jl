@@ -81,21 +81,6 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     return datamanager
 end
 
-"""
-    fields_for_local_synchronization(model_param::Dict)
-
-Finds all synchronization fields from the model class
-
-# Arguments
-- `model_param::Dict`: model parameter.
-# Returns
-- `synch_dict::Dict`: Synchronization Dictionary.
-"""
-function fields_for_local_synchronization(model_param::Dict)
-    synch_dict = Dict()
-
-    return synch_dict
-end
 
 """
     compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
@@ -130,6 +115,34 @@ function compute_model(
         datamanager = mod.compute(datamanager, nodes, model_param, block)
     end
 
+    return datamanager
+end
+
+
+
+"""
+    fields_for_local_synchronization(datamanager, model, block)
+
+Defines all synchronization fields for local synchronization
+
+# Arguments
+- `datamanager::Module`: datamanager.
+- `model::String`: Model class.
+- `block::Int64`: block ID
+# Returns
+- `datamanager::Module`: Datamanager.
+"""
+
+function fields_for_local_synchronization(datamanager, model, block)
+    model_param = datamanager.get_properties(block, "Pre Calculation Model")
+
+    for (pre_calculation_model, active) in pairs(model_param)
+        if !active
+            continue
+        end
+        mod = datamanager.get_model_module(pre_calculation_model)
+        mod.fields_for_local_synchronization(datamanager, model)
+    end
     return datamanager
 end
 

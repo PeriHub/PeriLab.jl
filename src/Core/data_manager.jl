@@ -102,6 +102,14 @@ function initialize_data()
     data["field_types"] = Dict()
     data["field_names"] = Vector{String}([])
     data["fields_to_synch"] = Dict()
+    data["local_fields_to_synch"] = Dict(
+        "Material Model" => Dict(),
+        "Damage Model" => Dict(),
+        "Thermal Model" => Dict(),
+        "Pre Calculation Model" => Dict(),
+        "Corrosion Model" => Dict(),
+        "Additive Model" => Dict(),
+    )
     data["filedirectory"] = ""
     data["inverse_nlist"] = []
     data["model_modules"] = OrderedDict{String,Module}()
@@ -802,6 +810,16 @@ function get_synch_fields()
 end
 
 """
+    get_local_synch_fields(model::String)
+
+    model - class of models; before computation of these models the synchronisation occurs
+    Get the fields to synchronize
+"""
+function get_local_synch_fields(model::String)
+    return data["local_fields_to_synch"][model]
+end
+
+"""
     get_pre_calculation_order()
 
 return the order of the pre calculation.
@@ -1483,7 +1501,7 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
     if name in get_all_field_keys()
         field = get_field(name)
         if dof == 0
-            dof = length(field[1, :])
+            dof = length(field[1, :, :])
         end
         data["fields_to_synch"][name] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
@@ -1493,12 +1511,52 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name * "NP1")
         if dof == 0
-            dof = length(field[1, :])
+            dof = length(field[1, :, :])
         end
         data["fields_to_synch"][name*"NP1"] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,
-            "dof" => length(field[1, :]),
+            "dof" => length(field[1, :, :]),
+        )
+    end
+
+end
+
+
+"""
+    set_local_synch(model, name, download_from_cores, upload_to_cores, dof=0)
+
+Sets the synchronization dictionary locally during the model update process. Should be used carefully, to avoid unessary communication.
+
+# Arguments
+- `name`::String: The name of the field.
+- `download_from_cores`::Bool: Whether to download the field from the cores.
+- `upload_to_cores`::Bool: Whether to upload the field to the cores.
+"""
+function set_local_synch(model, name, download_from_cores, upload_to_cores, dof = 0)
+    if !haskey(data["local_fields_to_synch"], model)
+        @error "Model $model is not defined. If it is a new model type, please add it to data[\"local_fields_to_synch\"] in the datamanager."
+        return nothing
+    end
+    if name in get_all_field_keys()
+        field = get_field(name)
+        if dof == 0
+            dof = length(field[1, :, :])
+        end
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}(
+            "upload_to_cores" => upload_to_cores,
+            "download_from_cores" => download_from_cores,
+            "dof" => dof,
+        )
+    elseif name * "NP1" in get_all_field_keys()
+        field = get_field(name * "NP1")
+        if dof == 0
+            dof = length(field[1, :, :])
+        end
+        data["local_fields_to_synch"][model][name*"NP1"] = Dict{String,Any}(
+            "upload_to_cores" => upload_to_cores,
+            "download_from_cores" => download_from_cores,
+            "dof" => length(field[1, :, :]),
         )
     end
 
@@ -1555,7 +1613,7 @@ function synch_manager(synchronise_field, direction::String)
         synchronise_field(
             get_comm(),
             synch_fields,
-            data["overlap_map"],
+            get_overlap_map(),
             get_field,
             synch_field,
             direction,

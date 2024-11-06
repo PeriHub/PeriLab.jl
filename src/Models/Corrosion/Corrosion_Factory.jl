@@ -11,7 +11,7 @@ using TimerOutputs
 export compute_model
 export init_model
 export init_fields
-
+export fields_for_local_synchronization
 
 
 """
@@ -95,30 +95,24 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     return datamanager
 end
 
+
 """
-    fields_for_local_synchronization()
+    fields_for_local_synchronization(datamanager, model, block)
 
-Returns a user developer defined local synchronization. This happens before each model.
-
-The structure of the Dict must because
-
-    synchfield = Dict(
-        "Field name" =>
-            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
-    )
-
-or
-
-    synchfield = Dict(
-        "Field name" =>
-            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
-    )
+Defines all synchronization fields for local synchronization
 
 # Arguments
-
+- `datamanager::Module`: datamanager.
+- `model::String`: Model class.
+- `block::Int64`: block ID
+# Returns
+- `datamanager::Module`: Datamanager.
 """
-function fields_for_local_synchronization()
-    return Dict()
+function fields_for_local_synchronization(datamanager, model, block)
+    model_param = datamanager.get_properties(block, "Corrosion Model")
+    mod = datamanager.get_model_module(model_param["Corrosion Model"])
+
+    return mod.fields_for_local_synchronization(datamanager, model)
 end
 
 end

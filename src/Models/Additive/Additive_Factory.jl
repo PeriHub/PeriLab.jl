@@ -13,7 +13,7 @@ using .Helpers: find_inverse_bond_id
 export compute_model
 export init_model
 export init_fields
-
+export fields_for_local_synchronization
 
 """
     init_fields(datamanager::Module)
@@ -113,6 +113,25 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     datamanager.set_model_module(model_param["Additive Model"], mod)
     datamanager = mod.init_model(datamanager, nodes, model_param, block)
     return datamanager
+end
+
+"""
+    fields_for_local_synchronization(datamanager, model, block)
+
+Defines all synchronization fields for local synchronization
+
+# Arguments
+- `datamanager::Module`: datamanager.
+- `model::String`: Model class.
+- `block::Int64`: block ID
+# Returns
+- `datamanager::Module`: Datamanager.
+"""
+function fields_for_local_synchronization(datamanager, model, block)
+    model_param = datamanager.get_properties(block, "Additive Model")
+    mod = datamanager.get_model_module(model_param["Additive Model"])
+
+    return mod.fields_for_local_synchronization(datamanager, model)
 end
 
 end

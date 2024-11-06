@@ -15,6 +15,7 @@ export init_model
 export material_name
 export compute_model
 export init_model
+export fields_for_local_synchronization
 """
   fe_support()
 
@@ -73,31 +74,24 @@ function material_name()
     return "PD Solid Elastic"
 end
 
+
 """
-    fields_to_local_synchronize()
+    fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
-The structure of the Dict must because
 
-    synchfield = Dict(
-        "Field name" =>
-            Dict("upload_to_cores" => true, "dof" => datamanager.get_dof()),
-    )
-
-or
-
-    synchfield = Dict(
-        "Field name" =>
-            Dict("download_from_cores" => true, "dof" => datamanager.get_dof()),
-    )
 
 # Arguments
 
 """
-function fields_to_local_synchronize()
-    return Dict()
+function fields_for_local_synchronization(datamanager::Module, model::String)
+    #download_from_cores = false
+    #upload_to_cores = true
+    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
+    return datamanager
 end
+
 
 """
     compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)

@@ -168,7 +168,7 @@ function calculate_specific_volume(
 end
 
 """
-    fields_for_local_synchronization()
+    fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
@@ -189,7 +189,7 @@ or
 # Arguments
 
 """
-function fields_for_local_synchronization()
+function fields_for_local_synchronization(datamanager::Module, model::String)
     return Dict()
 end
 

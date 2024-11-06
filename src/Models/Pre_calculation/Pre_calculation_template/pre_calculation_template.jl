@@ -7,6 +7,7 @@ using DataStructures: OrderedDict
 export compute
 export init_model
 export Pre_calculation_name
+export fields_for_local_synchronization
 """
     pre_calculation_name()
 
@@ -25,6 +26,24 @@ println(pre_calculation_name())
 """
 function pre_calculation_name()
     return "pre_calculation Template"
+end
+
+
+"""
+    fields_for_local_synchronization(datamanager::Module, model::String)
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+
+
+# Arguments
+
+"""
+function fields_for_local_synchronization(datamanager::Module, model::String)
+    #download_from_cores = false
+    #upload_to_cores = true
+    #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
+    return datamanager
 end
 
 """
