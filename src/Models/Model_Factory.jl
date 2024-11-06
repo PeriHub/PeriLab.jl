@@ -464,7 +464,7 @@ function local_synch(datamanager, model, direction, synchronise_field)
     synch_fields = datamanager.get_local_synch_fields(model)
     for synch_field in keys(synch_fields)
         synchronise_field(
-            datamanager.get_com(),
+            datamanager.get_comm(),
             synch_fields,
             datamanager.get_overlap_map(),
             datamanager.get_field,

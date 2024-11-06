@@ -17,7 +17,7 @@ using .Geometry:
     compute_bond_level_rotation_tensor,
     compute_bond_level_deformation_gradient
 include("../../../Pre_calculation/pre_bond_associated_correspondence.jl")
-using .Pre_Bond_Associated_Correspondence: compute_weighted_volume
+using .Pre_Bond_Associated_Correspondence: compute_weighted_volume!
 export fields_for_local_synchronization
 export init_model
 export compute_model
@@ -429,9 +429,12 @@ function compute_bond_forces(
 
             # bond_forces[iID][jID, :] =
             #     integral_nodal_stress[iID, :, :] * gradient_weights[iID][jID, :]
-            bf = @view bond_forces[iID][jID]
-            gw = @view gradient_weights[iID][jID]
-            mul!(bf, integral_nodal_stress[iID, :, :], gw)
+
+            mul!(
+                bond_forces[iID][jID],
+                integral_nodal_stress[iID, :, :],
+                gradient_weights[iID][jID],
+            )
             @views bond_forces[iID][jID] +=
                 bond_damage[iID][jID] * omega[iID][jID] /
                 (weighted_volume[iID] * bond_length[iID][jID] * bond_length[iID][jID]) .*
