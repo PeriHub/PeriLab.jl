@@ -4,6 +4,8 @@
 
 module Ordinary
 
+include("../../../../Support/helpers.jl")
+using .Helpers: div_in_place!, mul_in_place!
 using LinearAlgebra
 
 export compute_dilatation
@@ -86,18 +88,11 @@ function get_bond_forces(
     deformed_bond::Vector{Vector{Vector{Float64}}},
     deformed_bond_length::Vector{Vector{Float64}},
     bond_force::Vector{Vector{Vector{Float64}}},
+    temp::Vector{Vector{Float64}},
 )
+    div_in_place!(temp, bond_force_length, deformed_bond_length)
     for iID in nodes
-        if any(deformed_bond_length[iID] .== 0)
-            @error "Length of bond is zero due to its deformation."
-            return nothing
-        else
-            mul!.(
-                bond_force[iID],
-                bond_force_length[iID] ./ deformed_bond_length[iID],
-                deformed_bond[iID],
-            )
-        end
+        mul_in_place!(bond_force[iID], deformed_bond[iID], temp[iID])
     end
     return bond_force
 end

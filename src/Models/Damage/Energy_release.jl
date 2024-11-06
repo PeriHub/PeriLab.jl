@@ -8,7 +8,7 @@ include("../../Support/geometry.jl")
 include("../../Support/helpers.jl")
 using .Material
 using .Geometry
-using .Helpers: rotate, fastdot, fastsubtract!
+using .Helpers: rotate, fastdot, sub_in_place!
 using LinearAlgebra
 using StaticArrays
 export compute_model
@@ -118,7 +118,7 @@ function compute_model(
     projected_force::Vector{Float64} = zeros(Float64, dof)
     relative_displacement::Vector{Float64} = zeros(Float64, dof)
 
-    fastsubtract!(bond_displacements, deformed_bond, undeformed_bond)
+    sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
 
     for iID in nodes
         nlist_temp = nlist[iID]

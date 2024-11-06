@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using .Helpers: find_active_nodes, get_active_update_nodes
+using .Helpers: find_active_nodes, get_active_update_nodes, add_in_place!
 using StaticArrays: MMatrix, SMatrix
 using .Helpers: invert
 include("../Models/Material/material_basis.jl")
@@ -47,9 +47,8 @@ function get_partial_stresses(datamanager::Module, nodes::Union{SubArray,Vector{
     stress = datamanager.get_field("Cauchy Stress", "NP1")
 
     for iID in nodes
-        stress[iID, :, :] .+=
-            mapreduce(permutedims, vcat, bond_forces[iID])' *
-            mapreduce(permutedims, vcat, undeformed_bond[iID]) .* volume[iID]
+        str = @view stress[iID, :, :]
+        add_in_place!(str, bond_forces[iID], undeformed_bond[iID], volume[iID])
     end
     return datamanager
 end

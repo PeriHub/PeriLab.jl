@@ -30,7 +30,9 @@ export interpol_data
 export progress_bar
 export invert
 export rotate
-export fastsubtract!
+export sub_in_place!
+export add_in_place!
+export div_in_place!
 export fastdot
 export fast_mul!
 export mat_mul!
@@ -89,7 +91,25 @@ function mat_mul_transpose_mat!(C, A, B)
         C[m, n] = 0.5 * Cmn
     end
 end
+function add_in_place!(
+    C,
+    A::Vector{Vector{T}},
+    B::Vector{Vector{T}},
+    factor = 1,
+) where {T<:Number}
+    m = length(A)
+    n = length(A[1])
 
+    for i = 1:n
+        for j = 1:n
+            for k = 1:m
+                C[i, j] += A[k][i] * B[k][j] * factor
+            end
+        end
+    end
+
+    return C
+end
 function get_MMatrix(len::Int64)
 
     if len == 4
@@ -106,12 +126,56 @@ function get_MMatrix(len::Int64)
         return nothing
     end
 end
+function mul_in_place!(
+    C::Vector{Vector{T}},
+    A::Vector{Vector{T}},
+    B::Vector{T},
+) where {T<:Number}
+    # Check if dimensions match
+    @assert length(C) == length(A) == length(B)
 
-function fastsubtract!(c, a, b)
-    @inbounds for i ∈ eachindex(a)
-        @inbounds for j ∈ eachindex(a[i])
-            c[i][j] .= a[i][j] .- b[i][j]
+    @inbounds for i ∈ eachindex(A)
+        @inbounds for j ∈ eachindex(A[i])
+            C[i][j] = A[i][j] * B[i]
         end
+    end
+end
+function sub_in_place!(
+    C::Vector{Vector{Vector{T}}},
+    A::Vector{Vector{Vector{T}}},
+    B::Vector{Vector{Vector{T}}},
+) where {T<:Number}
+    # Check if dimensions match
+    @assert length(C) == length(A) == length(B)
+
+    @inbounds for i ∈ eachindex(A)
+        @inbounds for j ∈ eachindex(A[i])
+            C[i][j] .= A[i][j] .- B[i][j]
+        end
+    end
+end
+function add_in_place!(
+    C::Vector{Vector{T}},
+    A::Vector{Vector{T}},
+    B::Vector{Vector{T}},
+) where {T<:Number}
+    # Check if dimensions match
+    @assert length(C) == length(A) == length(B)
+
+    @inbounds for i ∈ eachindex(A)
+        C[i] .= A[i] .+ B[i]
+    end
+end
+function div_in_place!(
+    C::Vector{Vector{T}},
+    A::Vector{Vector{T}},
+    B::Vector{Vector{T}},
+) where {T<:Number}
+    # Check if dimensions match
+    @assert length(C) == length(A) == length(B)
+
+    @inbounds for i ∈ eachindex(A)
+        C[i] .= A[i] ./ B[i]
     end
 end
 function fastdot(a, b, absolute = false)

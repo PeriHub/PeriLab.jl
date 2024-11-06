@@ -6,6 +6,8 @@ module PD_Solid_Elastic
 include("../../material_basis.jl")
 using .Material_Basis: get_symmetry
 include("./Ordinary.jl")
+include("../../../../Support/helpers.jl")
+using .Helpers: add_in_place!
 using TimerOutputs
 using StaticArrays
 using .Ordinary:
@@ -136,6 +138,7 @@ function compute_model(
     omega = datamanager.get_field("Influence Function")
     undeformed_bond_length = datamanager.get_field("Bond Length")
     bond_force = datamanager.get_field("Bond Forces")
+    temp = datamanager.get_field("Temporary Bond Field")
 
     bond_force_deviatoric_part = datamanager.get_field("Bond Forces Deviatoric")
     bond_force_isotropic_part = datamanager.get_field("Bond Forces Isotropic")
@@ -178,13 +181,9 @@ function compute_model(
         bond_force_deviatoric_part,
         bond_force_isotropic_part,
     )
-    @timeit to "get_bond_forces" bond_force = get_bond_forces(
-        nodes,
-        bond_force_deviatoric_part + bond_force_isotropic_part,
-        deformed_bond,
-        deformed_bond_length,
-        bond_force,
-    )
+    add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
+    @timeit to "get_bond_forces" bond_force =
+        get_bond_forces(nodes, temp, deformed_bond, deformed_bond_length, bond_force, temp)
 
     return datamanager
 end
