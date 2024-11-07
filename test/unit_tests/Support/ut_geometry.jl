@@ -142,12 +142,12 @@ end
     @test undeformed_bond[1][2][2] == 0
     @test undeformed_bond_length[1][2] == 1
 
-    PeriLab.IO.Geometry.bond_geometry(
+    PeriLab.IO.Geometry.bond_geometry!(
+        undeformed_bond,
+        undeformed_bond_length,
         Vector(1:nnodes),
         nlist,
         coor,
-        undeformed_bond,
-        undeformed_bond_length,
     )
 
     @test undeformed_bond[1][1][1] == 0.5
@@ -174,12 +174,12 @@ end
     @test undeformed_bond[4][1][1] == 0.5
     @test undeformed_bond[4][1][2] == -0.5
     @test undeformed_bond_length[4][1] / sqrt(1.25) - 1 < 1e-8
-    PeriLab.IO.Geometry.bond_geometry(
+    PeriLab.IO.Geometry.bond_geometry!(
+        undeformed_bond,
+        undeformed_bond_length,
         Vector(1:nnodes),
         nlist,
         coor,
-        undeformed_bond,
-        undeformed_bond_length,
     )
     # test if a sum exists or not
     @test undeformed_bond[1][1][1] == 0.5
@@ -216,12 +216,12 @@ end
         end
     end
 
-    PeriLab.IO.Geometry.bond_geometry(
+    PeriLab.IO.Geometry.bond_geometry!(
+        undeformed_bond,
+        undeformed_bond_length,
         Vector(1:nnodes),
         nlist,
         coor,
-        undeformed_bond,
-        undeformed_bond_length,
     )
 end
 
@@ -305,12 +305,12 @@ end
     coor[4, 1] = 1
     coor[4, 2] = 0.5
 
-    PeriLab.IO.Geometry.bond_geometry(
+    PeriLab.IO.Geometry.bond_geometry!(
+        undeformed_bond,
+        undeformed_bond_length,
         Vector(1:nnodes),
         nlist,
         coor,
-        undeformed_bond,
-        undeformed_bond_length,
     )
     PeriLab.IO.Geometry.compute_shape_tensors!(
         shape_tensor,
@@ -348,12 +348,12 @@ end
     deformed_coor[2, 1] = 0.25
     deformed_coor[4, 1] = 0.25
 
-    PeriLab.IO.Geometry.bond_geometry(
+    PeriLab.IO.Geometry.bond_geometry!(
+        deformed_bond,
+        deformed_bond_length,
         Vector(1:nnodes),
         nlist,
         deformed_coor,
-        deformed_bond,
-        deformed_bond_length,
     )
     PeriLab.IO.Geometry.compute_deformation_gradients!(
         deformation_gradient,
@@ -382,12 +382,12 @@ end
     deformed_coor[3, 2] = 1.5
     deformed_coor[4, 2] = 1.5
 
-    PeriLab.IO.Geometry.bond_geometry(
+    PeriLab.IO.Geometry.bond_geometry!(
+        deformed_bond,
+        deformed_bond_length,
         Vector(1:nnodes),
         nlist,
         deformed_coor,
-        deformed_bond,
-        deformed_bond_length,
     )
     PeriLab.IO.Geometry.compute_deformation_gradients!(
         deformation_gradient,
@@ -420,12 +420,12 @@ end
     deformed_coor[4, 1] = 1.5
     deformed_coor[4, 2] = 0.5
 
-    PeriLab.IO.Geometry.bond_geometry(
+    PeriLab.IO.Geometry.bond_geometry!(
+        deformed_bond,
+        deformed_bond_length,
         Vector(1:nnodes),
         nlist,
         deformed_coor,
-        deformed_bond,
-        deformed_bond_length,
     )
     PeriLab.IO.Geometry.compute_deformation_gradients!(
         deformation_gradient,
