@@ -365,12 +365,12 @@ function get_bond_geometry(datamanager::Module)
     undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof)
     undeformed_bond_length =
         datamanager.create_constant_bond_field("Bond Length", Float64, 1)
-    Geometry.bond_geometry(
+    Geometry.bond_geometry!(
+        undeformed_bond,
+        undeformed_bond_length,
         Vector{Int64}(1:nnodes),
         nlist,
         coor,
-        undeformed_bond,
-        undeformed_bond_length,
     )
     return datamanager
 end
