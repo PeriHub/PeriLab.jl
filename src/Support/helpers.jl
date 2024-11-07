@@ -332,7 +332,7 @@ function check_inf_or_nan(array, msg)
         @error "Field ''$msg'' is infinite."
         return true
     end
-    if any(isnan.(array))
+    if isnan(sum(array))
         @error "Field ''$msg'' has NaN elements."
         return true
     end
