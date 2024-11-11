@@ -8,6 +8,13 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.6] - 2024-11-11
+
+### Changed
+
+- Bond fields are saved as vectors, reducing memroy usage
+- Optimzed memory allocation and speed
+
 ## [1.2.5] - 2024-10-24
 
 ### Fixed
