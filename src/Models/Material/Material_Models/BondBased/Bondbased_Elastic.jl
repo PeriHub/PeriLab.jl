@@ -147,14 +147,14 @@ function compute_bb_force!(
     deformed_bond,
 )
     @inbounds @fastmath for i ∈ axes(bond_force, 1)
-        @inbounds @fastmath for j ∈ axes(bond_force[i], 1)
-            bond_force[i][j] =
+        @inbounds @fastmath for j ∈ axes(bond_force, 2)
+            bond_force[i, j] =
                 (
                     constant *
                     bond_damage[i] *
                     (deformed_bond_length[i] - undeformed_bond_length[i]) /
                     undeformed_bond_length[i]
-                ) * deformed_bond[i][j] / deformed_bond_length[i]
+                ) * deformed_bond[i, j] / deformed_bond_length[i]
         end
     end
 end
