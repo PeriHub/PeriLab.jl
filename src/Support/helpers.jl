@@ -33,6 +33,7 @@ export rotate
 export sub_in_place!
 export add_in_place!
 export div_in_place!
+export fill_in_place!
 export fastdot
 export fast_mul!
 export mat_mul!
@@ -189,8 +190,18 @@ function fastdot(a, b, absolute = false)
     end
     c
 end
-
-
+function fill_in_place!(A::Vector{Vector{T}}, value::T) where {T<:Number}
+    @inbounds for i ∈ eachindex(A)
+        A[i] .= value
+    end
+end
+function copy_in_place!(A::Vector{Vector{T}}, B::Vector{Vector{T}}) where {T<:Number}
+    @inbounds for i ∈ eachindex(A)
+        A[i] .= B[i]
+        # @info A[i]
+        # @info B[i]
+    end
+end
 function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
 
     @inbounds @simd for i = 1:dof

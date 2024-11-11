@@ -5,6 +5,8 @@
 module Data_manager
 using MPI
 using DataStructures: OrderedDict
+include("../Support/helpers.jl")
+using .Helpers: fill_in_place!, copy_in_place!
 
 export add_active_model
 export create_bond_field
@@ -1572,8 +1574,8 @@ end
 
 function switch_nodes!(field_N, field_NP1, NP1)
     if field_NP1[1] isa AbstractVector
-        copyto!.(field_N, field_NP1)
-        fill!.(field_NP1, data["field_types"][NP1](0))
+        copy_in_place!(field_N, field_NP1)
+        fill_in_place!(field_NP1, data["field_types"][NP1](0))
     else
         copyto!(field_N, field_NP1)
         fill!(field_NP1, data["field_types"][NP1](0))

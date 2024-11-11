@@ -75,8 +75,10 @@ function compute_model(
         if time - dt <= activation_time[iID] < time
             active[iID] = true
             flux[iID] = -printTemperature * heat_capacity[iID] * density[iID] ./ dt
+            nlist_temp = nlist[iID]
 
-            for (jID, neighborID) in enumerate(nlist[iID])
+            for jID in eachindex(nlist_temp)
+                @views neighborID = nlist_temp[jID]
                 if activation_time[neighborID] <= time && bond_damage[iID][jID] == 0
                     bond_damage[iID][jID] = 1.0
                     if haskey(inverse_nlist[neighborID], iID)
