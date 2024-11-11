@@ -7,7 +7,7 @@ module Ordinary
 include("../../../../Support/helpers.jl")
 using .Helpers: div_in_place!, mul_in_place!
 using LinearAlgebra
-
+using LoopVectorization
 export compute_dilatation
 export compute_weighted_volume
 export get_bond_forces
@@ -45,20 +45,22 @@ function compute_weighted_volume(
     volume::Vector{Float64},
 )
 
-    if length(nodes) == 0
-        return Float64[]
-    end
-
     for iID in nodes
-        # in Peridigm the weighted volume is for some reason independend from damages
-        weighted_volume[iID] = sum(
-            omega[iID] .* bond_damage[iID] .* undeformed_bond_length[iID] .*
-            undeformed_bond_length[iID] .* volume[nlist[iID]],
-        )
+        wv = zero(eltype(weighted_volume))
+        @inbounds @fastmath for (jID, nID) in enumerate(nlist[iID])
 
+            wv +=
+                omega[iID][jID] *
+                bond_damage[iID][jID] *
+                undeformed_bond_length[iID][jID] *
+                undeformed_bond_length[iID][jID] *
+                volume[nID]
+        end
+        # in Peridigm the weighted volume is for some reason independend from damages
+        weighted_volume[iID] = wv
     end
     # @. weighted_volume[nodes] = sum(omega[nodes] .* bond_damage[nodes] .* undeformed_bond[nodes] .* bond_damage[nodes] .* undeformed_bond[nodes] .* volume[nlist[nodes]], dims=2)
-    return weighted_volume
+
 end
 
 """
@@ -158,12 +160,8 @@ function compute_dilatation(
     volume::Vector{Float64},
     weighted_volume::Vector{Float64},
     omega::Vector{Vector{Float64}},
+    theta,
 )
-    # not optimal, because of many zeros, but simpler, because it avoids reorganization. Part of potential optimization
-    if length(nodes) == 0
-        return Float64[]
-    end
-    theta::Vector{Float64} = zeros(Float64, maximum(nodes))
     for iID in nodes
         if weighted_volume[iID] == 0
             # @warn "Weighted volume is zero for local point ID: $iID"
@@ -179,6 +177,6 @@ function compute_dilatation(
                 volume[nlist[iID][jID]] / weighted_volume[iID] for jID = 1:nneighbors[iID]
             )
     end
-    return theta
+
 end
 end
