@@ -146,7 +146,7 @@ function compute_shape_tensors!(
             volume,
             omega[iID],
             bond_damage[iID],
-            mapreduce(permutedims, vcat, undeformed_bond[iID]),
+            undeformed_bond[iID],
             nlist,
             iID,
         )
@@ -185,8 +185,8 @@ function compute_shape_tensor!(
         Cmn = zero(eltype(shape_tensor))
         @inbounds @fastmath for k ∈ axes(undeformed_bond, 1)
             Cmn +=
-                undeformed_bond[k, m] *
-                undeformed_bond[k, n] *
+                undeformed_bond[k][m] *
+                undeformed_bond[k][n] *
                 volume[nlist[iID][k]] *
                 omega[k] *
                 bond_damage[k]
@@ -276,8 +276,8 @@ function compute_deformation_gradients!(
         compute_deformation_gradient!(
             temp,
             bond_damage[iID],
-            mapreduce(permutedims, vcat, deformed_bond[iID]),
-            mapreduce(permutedims, vcat, undeformed_bond[iID]),
+            deformed_bond[iID],
+            undeformed_bond[iID],
             volume,
             omega[iID],
             nlist,
@@ -305,8 +305,8 @@ function compute_deformation_gradient!(
         Cmn = zero(eltype(deformation_gradient))
         @inbounds @fastmath for k ∈ axes(undeformed_bond, 1)
             Cmn +=
-                deformed_bond[k, m] *
-                undeformed_bond[k, n] *
+                deformed_bond[k][m] *
+                undeformed_bond[k][n] *
                 volume[nlist[iID][k]] *
                 omega[k] *
                 bond_damage[k]
