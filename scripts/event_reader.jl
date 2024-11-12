@@ -10,18 +10,19 @@ using Plots
 
 function closest_point_to_vector(
     start_point::Vector{Float64},
-    end_point::Vector{Float64},
+    dir::Vector{Float64},
     point::Vector{Float64},
+    closest_point::Vector{Float64},
 )
     # Calculate the direction vector of the line segment
-    dir = normalize(end_point - start_point)
+    # dir = normalize(end_point - start_point)
 
     # Calculate the distance from the point to the line segment
     distance_along_line = dot(point - start_point, dir) / dot(dir, dir)
     # distance_along_line = clamp(distance_along_line, 0.0, 1.0)
 
     # Calculate the closest point on the line segment
-    closest_point = start_point + (dir * distance_along_line)
+    closest_point .= start_point .+ (dir .* distance_along_line)
 
     # Calculate the distance from the closest point to the point
     distance_to_closest_point =
@@ -43,7 +44,7 @@ function write_mesh(event_file, dx, dt, scale, width)
 
     height = minimum(layers)
 
-    dx_value = [dx * scale, dx * scale, height / 2]
+    dx_value = [dx * scale, dx * scale, (height / 2) * scale]
 
     volume = dx_value[1] * dx_value[2] * dx_value[3]
 
@@ -65,7 +66,7 @@ function write_mesh(event_file, dx, dt, scale, width)
     previous_extruding = 0
     x_peri = []
     y_peri = []
-    used_ids = []
+    used_ids = zeros(length(grid_x))
     p = Plots.plot()
 
     mesh_df = DataFrame(
@@ -76,6 +77,10 @@ function write_mesh(event_file, dx, dt, scale, width)
         volume = Float64[],
         time = Float64[],
     )
+    closest_point = zeros(2)
+    dir = zeros(2)
+    start_point = zeros(2)
+    point = zeros(2)
 
     iter = ProgressBar(eachindex(time_event))
     for i in iter
@@ -99,17 +104,20 @@ function write_mesh(event_file, dx, dt, scale, width)
                 lw = 1,
             )
 
+            start_point .= [previous_x, previous_y]
+            dir .= normalize([x, y] - [previous_x, previous_y])
             for j in eachindex(grid_x)
                 px = grid_x[j]
                 py = grid_y[j]
-                if !(j in used_ids)
+                point .= [px, py]
+                if used_ids[j] == 0
                     distance_along_line, distance_to_closest_point =
-                        closest_point_to_vector([previous_x, previous_y], [x, y], [px, py])
+                        closest_point_to_vector(start_point, dir, point, closest_point)
                     if distance_to_closest_point <= width / 2 &&
                        distance_along_line <= distance &&
                        distance_along_line >= 0
                         time_to_activation = distance_along_line / v
-                        push!(used_ids, j)
+                        used_ids[j] = 1
                         push!(
                             mesh_df,
                             [px, py, z, 1, volume, time_to_activation + previous_time],
@@ -135,7 +143,7 @@ function write_mesh(event_file, dx, dt, scale, width)
             savefig(p, "Output/layer" * string(z) * ".svg")
             x_peri = []
             y_peri = []
-            used_ids = []
+            used_ids = zeros(length(grid_x))
             p = Plots.plot()
             extruding = 0
         end
