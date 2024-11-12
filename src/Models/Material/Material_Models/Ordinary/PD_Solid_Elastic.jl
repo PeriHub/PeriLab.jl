@@ -142,7 +142,7 @@ function compute_model(
 
     # optimizing, because if no damage it has not to be updated
     # TBD update_list should be used here as in shape_tensor.jl
-    @timeit to "Weighted Volume" weighted_volume = compute_weighted_volume(
+    @timeit to "Weighted Volume" compute_weighted_volume(
         weighted_volume,
         nodes,
         nlist,
@@ -151,7 +151,7 @@ function compute_model(
         omega,
         volume,
     )
-    @timeit to "Dilatation" theta = compute_dilatation(
+    @timeit to "Dilatation" compute_dilatation(
         nodes,
         nneighbors,
         nlist,
@@ -161,6 +161,7 @@ function compute_model(
         volume,
         weighted_volume,
         omega,
+        theta,
     )
     @timeit to "elastic" bond_force_deviatoric_part, bond_force_isotropic_part = elastic(
         nodes,

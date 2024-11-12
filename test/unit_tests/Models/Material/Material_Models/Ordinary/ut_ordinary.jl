@@ -84,7 +84,7 @@ using .Ordinary
         0.8615883,
     ]
     vec = Vector{Int64}(1:nnodes)
-    weighted_volume = Ordinary.compute_weighted_volume(
+    Ordinary.compute_weighted_volume(
         weighted_volume,
         vec,
         nlist,
@@ -97,16 +97,7 @@ using .Ordinary
     for iID = 1:nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
     end
-    weighted_volume = Ordinary.compute_weighted_volume(
-        weighted_volume,
-        Int64[],
-        nlist,
-        undeformed_bond_length,
-        bond_damage,
-        omega,
-        volume,
-    )
-    @test weighted_volume == []
+
 end
 
 nnodes = 2
@@ -125,6 +116,7 @@ bond_damage[2][1] = 1
 
 volume = ones(Float64, 2)
 weighted_volume = ones(Float64, 2)
+theta = zeros(Float64, 2)
 omega = [ones(Float64, 2), ones(Float64, 2)]
 
 nlist = [Vector{Int64}(undef, 1), Vector{Int64}(undef, 1)]
@@ -133,7 +125,7 @@ nlist[2][1] = 2
 @testset "compute_dilatation" begin
     vec = Vector{Int64}(1:nnodes)
     theta = zeros(Float64, 2)
-    theta = Ordinary.compute_dilatation(
+    Ordinary.compute_dilatation(
         vec,
         nneighbors,
         nlist,
@@ -143,11 +135,12 @@ nlist[2][1] = 2
         volume,
         weighted_volume,
         omega,
+        theta,
     )
     @test theta[1] == 3.0
     @test theta[2] == 3.0
     weighted_volume[1] = 0
-    theta = Ordinary.compute_dilatation(
+    Ordinary.compute_dilatation(
         vec,
         nneighbors,
         nlist,
@@ -157,21 +150,11 @@ nlist[2][1] = 2
         volume,
         weighted_volume,
         omega,
+        theta,
     )
     @test theta[1] == 0.0
     @test theta[2] == 3.0
-    theta = Ordinary.compute_dilatation(
-        Int64[],
-        nneighbors,
-        nlist,
-        undeformed_bond_length,
-        deformed_bond_length,
-        bond_damage,
-        volume,
-        weighted_volume,
-        omega,
-    )
-    @test theta == []
+
 end
 
 @testset "calculate_symmetry_params" begin

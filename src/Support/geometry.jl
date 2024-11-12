@@ -16,16 +16,21 @@ export compute_deformation_gradients!
 
 
 """
-     bond_geometry!(nodes::Union{SubArray,Vector{Int64}}, nlist, coor, undeformed_bond, undeformed_bond_length)
+     bond_geometry(undeformed_bond::Vector{Vector{Vector{Float64}}},
+    undeformed_bond_length::Vector{Vector{Float64}},
+    nodes::Union{SubArray,Vector{Int64}},
+    nlist::Vector{Vector{Int64}},
+    coor::Union{SubArray,Matrix{Float64},Matrix{Int64}},
 
 Calculate bond geometries between nodes based on their coordinates.
 
 # Arguments
+ - `undeformed_bond`: A preallocated array or data structure to store bond geometries.
+ - `undeformed_bond_length`: A preallocated array or data structure to store bond distances.
  - `nodes::Union{SubArray,Vector{Int64}}`: A vector of integers representing node IDs.
  - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
  - `coor`: A matrix representing the coordinates of each node.
- - `undeformed_bond`: A preallocated array or data structure to store bond geometries.
- - `undeformed_bond_length`: A preallocated array or data structure to store bond distances.
+
 
 # Output
  - `undeformed_bond`: An updated `undeformed_bond` array with calculated bond geometries.
@@ -141,7 +146,7 @@ function compute_shape_tensors!(
             volume,
             omega[iID],
             bond_damage[iID],
-            undeformed_bond[iID],
+            mapreduce(permutedims, vcat, undeformed_bond[iID]),
             nlist,
             iID,
         )
@@ -180,8 +185,8 @@ function compute_shape_tensor!(
         Cmn = zero(eltype(shape_tensor))
         @inbounds @fastmath for k ∈ axes(undeformed_bond, 1)
             Cmn +=
-                undeformed_bond[k][m] *
-                undeformed_bond[k][n] *
+                undeformed_bond[k, m] *
+                undeformed_bond[k, n] *
                 volume[nlist[iID][k]] *
                 omega[k] *
                 bond_damage[k]
@@ -271,8 +276,8 @@ function compute_deformation_gradients!(
         compute_deformation_gradient!(
             temp,
             bond_damage[iID],
-            deformed_bond[iID],
-            undeformed_bond[iID],
+            mapreduce(permutedims, vcat, deformed_bond[iID]),
+            mapreduce(permutedims, vcat, undeformed_bond[iID]),
             volume,
             omega[iID],
             nlist,
@@ -300,8 +305,8 @@ function compute_deformation_gradient!(
         Cmn = zero(eltype(deformation_gradient))
         @inbounds @fastmath for k ∈ axes(undeformed_bond, 1)
             Cmn +=
-                deformed_bond[k][m] *
-                undeformed_bond[k][n] *
+                deformed_bond[k, m] *
+                undeformed_bond[k, n] *
                 volume[nlist[iID][k]] *
                 omega[k] *
                 bond_damage[k]
