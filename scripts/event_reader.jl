@@ -8,18 +8,39 @@ using ProgressBars
 using LinearAlgebra
 using Plots
 
+function fastdot(a, b)
+    c = 0.0
+    @inbounds @simd for i ∈ eachindex(a, b)
+        c += a[i] * b[i]
+    end
+    c
+end
+
+function sub_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{T}) where {T<:Number}
+    @assert length(C) == length(A) == length(B)
+
+    @inbounds for i ∈ eachindex(A)
+        C[i] = A[i] - B[i]
+    end
+end
+
+function normalize_in_place!(B::Vector{T}, A::Vector{T}) where {T<:Number}
+    nrm = norm(A)
+    @inbounds for i ∈ eachindex(A)
+        B[i] = A[i] / nrm
+    end
+end
+
 function closest_point_to_vector(
     start_point::Vector{Float64},
     dir::Vector{Float64},
     point::Vector{Float64},
     closest_point::Vector{Float64},
+    point_diff::Vector{Float64},
 )
-    # Calculate the direction vector of the line segment
-    # dir = normalize(end_point - start_point)
 
     # Calculate the distance from the point to the line segment
-    distance_along_line = dot(point - start_point, dir) / dot(dir, dir)
-    # distance_along_line = clamp(distance_along_line, 0.0, 1.0)
+    distance_along_line = dot(point_diff, dir) / dot(dir, dir)
 
     # Calculate the closest point on the line segment
     closest_point .= start_point .+ (dir .* distance_along_line)
@@ -31,7 +52,10 @@ function closest_point_to_vector(
     return distance_along_line, distance_to_closest_point
 end
 
-function write_mesh(event_file, dx, dt, scale, width)
+function write_mesh(event_file, dx, dt, scale, width, plot, plot_all = false)
+    if !isdir("Output")
+        mkdir("Output")
+    end
 
     events = CSV.read(event_file, DataFrame; delim = ",", comment = "#")
 
@@ -81,6 +105,7 @@ function write_mesh(event_file, dx, dt, scale, width)
     dir = zeros(2)
     start_point = zeros(2)
     point = zeros(2)
+    point_diff = zeros(2)
 
     iter = ProgressBar(eachindex(time_event))
     for i in iter
@@ -92,27 +117,40 @@ function write_mesh(event_file, dx, dt, scale, width)
         extruding = extrude_event[i]
 
         if previous_extruding == 1
-            distance = norm([x, y] - [previous_x, previous_y])
+            start_point[1] = previous_x
+            start_point[2] = previous_y
+            point[1] = x
+            point[2] = y
+            sub_in_place!(point_diff, point, start_point)
+            distance = norm(point_diff)
             v = distance / (time - previous_time)
 
-            p = plot!(
-                p,
-                [previous_x, x],
-                [previous_y, y],
-                label = "Plot",
-                lc = :black,
-                lw = 1,
-            )
+            if plot
+                p = plot!(
+                    p,
+                    [previous_x, x],
+                    [previous_y, y],
+                    # label = "Plot",
+                    legend = false,
+                    lc = :black,
+                    lw = 1,
+                )
+            end
 
-            start_point .= [previous_x, previous_y]
-            dir .= normalize([x, y] - [previous_x, previous_y])
+            normalize_in_place!(dir, point_diff)
             for j in eachindex(grid_x)
-                px = grid_x[j]
-                py = grid_y[j]
-                point .= [px, py]
+                point[1] = grid_x[j]
+                point[2] = grid_y[j]
+                sub_in_place!(point_diff, point, start_point)
                 if used_ids[j] == 0
                     distance_along_line, distance_to_closest_point =
-                        closest_point_to_vector(start_point, dir, point, closest_point)
+                        closest_point_to_vector(
+                            start_point,
+                            dir,
+                            point,
+                            closest_point,
+                            point_diff,
+                        )
                     if distance_to_closest_point <= width / 2 &&
                        distance_along_line <= distance &&
                        distance_along_line >= 0
@@ -120,31 +158,45 @@ function write_mesh(event_file, dx, dt, scale, width)
                         used_ids[j] = 1
                         push!(
                             mesh_df,
-                            [px, py, z, 1, volume, time_to_activation + previous_time],
+                            [
+                                point[1],
+                                point[2],
+                                z,
+                                1,
+                                volume,
+                                time_to_activation + previous_time,
+                            ],
                         )
-                        push!(x_peri, px)
-                        push!(y_peri, py)
+                        if plot
+                            push!(x_peri, point[1])
+                            push!(y_peri, point[2])
+                        end
                     end
                 end
             end
         end
 
         if i == length(time_event) || z != z_event[i+1]
-            p = scatter!(
-                p,
-                x_peri,
-                y_peri,
-                title = "Layer" * string(z),
-                xlabel = "X",
-                ylabel = "Y",
-                ma = 0.5,
-                ms = 1,
-            )
-            savefig(p, "Output/layer" * string(z) * ".svg")
-            x_peri = []
-            y_peri = []
-            used_ids = zeros(length(grid_x))
-            p = Plots.plot()
+            if plot
+                p = scatter!(
+                    p,
+                    x_peri,
+                    y_peri,
+                    title = "Layer" * string(z),
+                    xlabel = "X",
+                    ylabel = "Y",
+                    ma = 0.5,
+                    ms = 1,
+                )
+                savefig(p, "Output/layer" * string(z) * ".svg")
+                x_peri = []
+                y_peri = []
+                p = Plots.plot()
+                if !plot_all
+                    plot = false
+                end
+            end
+            fill!(used_ids, 0)
             extruding = 0
         end
 
@@ -166,5 +218,6 @@ dx = 0.2
 dt = 0.002
 scale = 1
 width = 0.5
+plot = true
 
-write_mesh(event_file, dx, dt, scale, width)
+write_mesh(event_file, dx, dt, scale, width, plot)
