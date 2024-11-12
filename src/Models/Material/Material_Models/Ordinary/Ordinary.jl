@@ -168,14 +168,17 @@ function compute_dilatation(
             theta[iID] = 0
             continue
         end
-        theta[iID] =
-            3.0 * sum(
+        th = zero(eltype(theta))
+        @inbounds @fastmath for jID in eachindex(nlist[iID])
+            th +=
                 omega[iID][jID] *
                 bond_damage[iID][jID] *
                 undeformed_bond_length[iID][jID] *
                 (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) *
-                volume[nlist[iID][jID]] / weighted_volume[iID] for jID = 1:nneighbors[iID]
-            )
+                volume[nlist[iID][jID]]
+
+        end
+        theta[iID] = 3 * th / weighted_volume[iID]
     end
 
 end
