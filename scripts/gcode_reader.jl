@@ -29,7 +29,8 @@ function parse_commandline()
         default = 1.0
         "--plot_enabled", "-p"
         help = "plot_enabled"
-        action = :store_true
+        arg_type = Bool
+        default = true
         "filename"
         help = "filename"
         required = true
@@ -155,8 +156,11 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject)
         if occursin(";", x)
             if occursin(";TYPE:", x)
                 command = split(x, ":")[2]
-            elseif occursin("; stop printing object", x)
-                command = "stop"
+            elseif occursin(";Z:", x)
+                command = "new_layer"
+                z = parse(Float64, split(x, ":")[2])
+                callbacks[command](z, dataObject)
+                continue
             else
                 command = x[2:end]
             end
@@ -225,11 +229,11 @@ function write_mesh(gcode_file, find_min_max, dx_value, pd_mesh = Dict())
     callbacks["G1"] = extrude  # move the printhead as well as extrude material
     callbacks["Perimeter"] = switch_on
     callbacks["Solid infill"] = switch_on
-    callbacks["WIPE_START"] = switch_off
-    callbacks["WIPE_END"] = switch_on
+    # callbacks["WIPE_START"] = switch_off
+    # callbacks["WIPE_END"] = switch_on
+    callbacks["Custom"] = switch_off
     callbacks["Skirt/Brim"] = switch_off
-    callbacks["stop"] = switch_off
-    callbacks["LAYER_CHANGE"] = new_layer
+    callbacks["new_layer"] = new_layer
 
     # watch out for relative and absolute positioning
     callbacks["G90"] = (cmds, dataobject) -> dataobject["positioning"] = "absolute"
@@ -242,12 +246,12 @@ function write_mesh(gcode_file, find_min_max, dx_value, pd_mesh = Dict())
         @info "Minimum and maximum values:"
         @info "X min/max:", myPrinter["x_min"], myPrinter["x_max"]
         @info "Y min/max:", myPrinter["y_min"], myPrinter["y_max"]
-        layer_heights = round.(diff(myPrinter["layers"][2:end]); digits = 10)
+        layer_heights = round.(diff(myPrinter["layers"]); digits = 10)
         if !all(layer_heights .== layer_heights[1])
             @warn "Layer heights are not equal"
             @warn layer_heights
         end
-        @info "Layers: $(myPrinter["layers"][2:end])"
+        @info "Layers: $(myPrinter["layers"])"
         return ndgrid(
             myPrinter["x_min"]:dx_value[1]:myPrinter["x_max"],
             myPrinter["y_min"]:dx_value[2]:myPrinter["y_max"],
@@ -363,6 +367,10 @@ function extrude(cmds, dataobject)
             de = e
         end
 
+        if e <= 0.0
+            return
+        end
+
         # Used filament
         dataobject["filamentUsage"] += de
         # println(dataobject["filamentUsage"]);5
@@ -396,9 +404,9 @@ end
 function switch_off(dataobject)
     dataobject["relevant_component"] = false
 end
-function new_layer(dataobject)
+function new_layer(z, dataobject)
     if dataobject["find_min_max"]
-        push!(dataobject["layers"], dataobject["z"])
+        push!(dataobject["layers"], z)
         return
     end
     pd_mesh = dataobject["pd_mesh"]
@@ -407,13 +415,13 @@ function new_layer(dataobject)
             dataobject["plot"],
             pd_mesh["x_peri"],
             pd_mesh["y_peri"],
-            title = "Layer" * string(dataobject["z"]),
+            title = "Layer" * string(z),
             xlabel = "X",
             ylabel = "Y",
             ma = 0.5,
             ms = 1,
         )
-        savefig(dataobject["plot"], "Output/layer" * string(dataobject["z"]) * ".svg")
+        savefig(dataobject["plot"], "Output/layer" * string(z) * ".svg")
         dataobject["plot"] = Plots.plot()
         pd_mesh["x_peri"] = []
         pd_mesh["y_peri"] = []
@@ -518,7 +526,7 @@ function main(
     dx::Float64,
     scale::Float64,
     width::Float64,
-    plot_enabled = true,
+    plot_enabled::Bool,
 )
 
     dx_value = [dx * scale, dx * scale]
@@ -580,7 +588,7 @@ function main(
     @info "Writing mesh"
     write_mesh(gcode_file, false, dx_value, pd_mesh)
 
-    txt_file = joinpath("Output", replace(gcode_file, ".gcode" => ".txt"))
+    txt_file = joinpath("Output", split(replace(gcode_file, ".gcode" => ".txt"), "/")[end])
     write(txt_file, "header: x y z block_id volume Activation_Time\n")
     CSV.write(txt_file, pd_mesh["mesh_df"]; delim = ' ', append = true)
 
