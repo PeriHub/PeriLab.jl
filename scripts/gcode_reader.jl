@@ -589,6 +589,8 @@ function main(
     write_mesh(gcode_file, false, dx_value, pd_mesh)
 
     txt_file = joinpath("Output", split(replace(gcode_file, ".gcode" => ".txt"), "/")[end])
+    @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
+    @info "Printing time: $(maximum(pd_mesh["mesh_df"].time)) seconds"
     write(txt_file, "header: x y z block_id volume Activation_Time\n")
     CSV.write(txt_file, pd_mesh["mesh_df"]; delim = ' ', append = true)
 
