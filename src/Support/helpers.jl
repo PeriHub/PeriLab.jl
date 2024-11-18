@@ -127,6 +127,14 @@ function get_MMatrix(len::Int64)
         return nothing
     end
 end
+function mul_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{Bool}) where {T<:Number}
+    # Check if dimensions match
+    @assert length(C) == length(A) == length(B)
+
+    @inbounds for i ∈ eachindex(A)
+        C[i] = A[i] * B[i]
+    end
+end
 function mul_in_place!(
     C::Vector{Vector{T}},
     A::Vector{Vector{T}},
@@ -165,6 +173,18 @@ function add_in_place!(
 
     @inbounds for i ∈ eachindex(A)
         C[i] .= A[i] .+ B[i]
+    end
+end
+function div_in_place!(C::Vector{T}, A::Vector{T}, B::T, absolute = false) where {T<:Number}
+    # Check if dimensions match
+    @assert length(C) == length(A)
+
+    @inbounds for i ∈ eachindex(A)
+        if absolute
+            C[i] = abs(A[i]) / B
+        else
+            C[i] = A[i] / B
+        end
     end
 end
 function div_in_place!(

@@ -8,7 +8,7 @@ include("../../Support/geometry.jl")
 include("../../Support/helpers.jl")
 using .Material
 using .Geometry
-using .Helpers: rotate, fastdot, sub_in_place!
+using .Helpers: rotate, fastdot, sub_in_place!, div_in_place!, mul_in_place!
 using LinearAlgebra
 using StaticArrays
 export compute_model
@@ -102,9 +102,15 @@ function compute_model(
 
     if aniso_damage
         aniso_crit_values = datamanager.get_aniso_crit_values()
-        bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
-        bond_norm::Float64 = 0.0
+        # bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
+        # bond_norm::Float64 = 0.0
         rotation_tensor = datamanager.get_field("Rotation Tensor")
+        rotation_temp::Matrix{Float64} = zeros(Float64, dof, dof)
+        rotated_bond::Vector{Float64} = zeros(Float64, dof)
+        bond_norm_all::Vector{Float64} = zeros(Float64, dof)
+        condition::Vector{Bool} = zeros(Bool, dof)
+        temp::Vector{Float64} = zeros(Float64, dof)
+        temp2::Vector{Float64} = zeros(Float64, dof)
     end
 
     bond_energy::Float64 = 0.0
@@ -128,7 +134,7 @@ function compute_model(
         quad_horizon = quad_horizons[iID]
         for jID in eachindex(nlist_temp)
 
-            relative_displacement .= bond_displacement[jID]
+            relative_displacement = bond_displacement[jID]
             norm_displacement = fastdot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (
                 tension &&
@@ -168,24 +174,31 @@ function compute_model(
                 critical_energy
 
             if aniso_damage
-                if all(rotation_tensor[iID, :, :] .== 0)
+                rotation_temp = rotation_tensor[iID, :, :]
+                if all(rotation_temp .== 0)
                     @views rotated_bond = deformed_bond[iID][jID]
                 else
-                    @views rotated_bond =
-                        rotation_tensor[iID, :, :]' * deformed_bond[iID][jID]
+                    rotation_temp = rotation_temp'
+                    mul!(rotated_bond, rotation_temp', deformed_bond[iID][jID])
                 end
                 # Compute bond_norm for all components at once
-                @views bond_norm_all = abs.(rotated_bond) ./ deformed_bond_length[iID][jID]
+                div_in_place!(
+                    bond_norm_all,
+                    rotated_bond,
+                    deformed_bond_length[iID][jID],
+                    true,
+                )
 
+                mul!(temp, bond_energy, bond_norm_all)
                 # Compute the condition for all components at once
-                @views condition =
-                    bond_energy * bond_norm_all .>
-                    aniso_crit_values[block_ids[iID]] * quad_horizon[iID]
+                mul!(temp2, aniso_crit_values[block_ids[iID]], quad_horizon)
+                condition .= temp .> temp2
 
                 # Update bond_damage, bond_damage_aniso, and update_list in a vectorized manner
-                bond_damage[iID][jID] -= sum(bond_norm_all .* condition)
+                mul_in_place!(temp, bond_norm_all, condition)
+                bond_damage[iID][jID] -= sum(temp)
                 bond_damage[iID][jID] = max.(bond_damage[iID][jID], 0) # Ensure non-negative
-                bond_damage_aniso[iID][jID, :] .= 0 .+ condition
+                # bond_damage_aniso[iID][jID] .= 0 .+ condition
                 update_list[iID] = any(condition)
 
                 ###################################################################################################
