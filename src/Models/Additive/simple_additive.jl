@@ -72,6 +72,9 @@ function compute_model(
     flux = datamanager.get_field("Heat Flow", "NP1")
     ###########
     for iID in nodes
+        if active[iID]
+            continue
+        end
         if time - dt <= activation_time[iID] < time
             active[iID] = true
             flux[iID] = -printTemperature * heat_capacity[iID] * density[iID] ./ dt
@@ -79,7 +82,10 @@ function compute_model(
 
             for jID in eachindex(nlist_temp)
                 @views neighborID = nlist_temp[jID]
-                if activation_time[neighborID] <= time && bond_damage[iID][jID] == 0
+                if bond_damage[iID][jID] != 0
+                    continue
+                end
+                if activation_time[neighborID] < time
                     bond_damage[iID][jID] = 1.0
                     if haskey(inverse_nlist[neighborID], iID)
                         bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 1.0

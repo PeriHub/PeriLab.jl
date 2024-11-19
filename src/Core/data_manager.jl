@@ -6,7 +6,7 @@ module Data_manager
 using MPI
 using DataStructures: OrderedDict
 include("../Support/helpers.jl")
-using .Helpers: fill_in_place!, copy_in_place!
+using .Helpers: fill_in_place!
 
 export add_active_model
 export create_bond_field
@@ -132,7 +132,7 @@ function initialize_data()
     data["active_models"] = OrderedDict{String,Module}()
     data["material_models"] = []
     data["damage_models"] = []
-    data["NP1_to_N"] = Dict{String,String}()
+    data["NP1_to_N"] = Dict{String,Vector{}}()
 
     fields[Int64] = Dict()
     fields[Float64] = Dict()
@@ -236,7 +236,7 @@ function create_bond_field(
     dof::Int64,
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
-
+    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
     return create_field(name * "N", type, "Bond_Field", dof, default_value),
     create_field(name * "NP1", type, "Bond_Field", dof, default_value)
 end
@@ -249,6 +249,7 @@ function create_bond_field(
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
 
+    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
     return create_field(name * "N", type, "Bond_Field", dof, default_value, VectorOrArray),
     create_field(name * "NP1", type, "Bond_Field", dof, default_value, VectorOrArray)
 end
@@ -306,6 +307,7 @@ function create_free_size_field(
     dof::Tuple,
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
+    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(vartype)]
     return create_field(name * "N", vartype, "Free_Size_Field", dof, default_value),
     create_field(name * "NP1", vartype, "Free_Size_Field", dof, default_value)
 end
@@ -401,6 +403,7 @@ function create_node_field(
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
 
+    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
     return create_field(name * "N", type, "Node_Field", dof, default_value),
     create_field(name * "NP1", type, "Node_Field", dof, default_value)
 end
@@ -412,6 +415,7 @@ function create_node_field(
     dof::Int64,
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
+    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
     return create_field(name * "N", type, "Node_Field", dof, default_value, VectorOrArray),
     create_field(name * "NP1", type, "Node_Field", dof, default_value, VectorOrArray)
 end
@@ -579,11 +583,16 @@ Returns the field with the given name and time.
 """
 function get_field(name::String, time::String)
 
-    if time == "Constant" || time == "CONSTANT"
-        return get_field(name)
+    try
+        if time == "N"
+            return get_field(data["NP1_to_N"][name][1])
+        else
+            return get_field(data["NP1_to_N"][name][2])
+        end
+    catch
+        @error "Field $name does not exist. Check if it is initialized as constant."
+        return nothing
     end
-    return get_field(name * time)
-
 end
 
 """
@@ -602,7 +611,7 @@ function get_field(name::String)
     catch
         @error "Field ''" *
                name *
-               "'' does not exist. Check if it is initialized as constant."
+               "'' does not exist. Check if it is initialized as non-constant."
         return nothing
     end
 end
@@ -726,23 +735,6 @@ get_nnodes()  # returns the current number of controler nodes. The neighbors are
 """
 function get_nnodes()
     return data["num_controller"]
-end
-
-"""
-    get_NP1_to_N_Dict()
-
-Get the NP1 to N dictionary
-"""
-function get_NP1_to_N_Dict(nstep)
-
-    if nstep == 1
-        for key in get_all_field_keys()
-            if occursin("NP1", key)
-                data["NP1_to_N"][key] = key[1:end-2]
-            end
-        end
-    end
-    return data["NP1_to_N"]
 end
 
 """
@@ -1555,44 +1547,24 @@ end
 """
     switch_NP1_to_N()
 
-Switches the fields from NP1 to N.
+Switches the fields from NP1 to N.active
 """
-function switch_NP1_to_N(nstep::Int64)
-    NP1_to_N = get_NP1_to_N_Dict(nstep)
-    for NP1 in keys(NP1_to_N)
-        field_NP1 = get_field(NP1)
-        N = NP1_to_N[NP1]
-        field_N = get_field(N)
-
-        if size(field_NP1[1]) == () # vector
-            switch_nodes!(field_N, field_NP1, NP1)
-        else # bond
-            switch_bonds!(field_N, field_NP1, NP1)
+function switch_NP1_to_N()
+    active = get_field("Active")
+    for key in keys(data["NP1_to_N"])
+        data["NP1_to_N"][key][1], data["NP1_to_N"][key][2] =
+            data["NP1_to_N"][key][2], data["NP1_to_N"][key][1]
+        field_NP1 = get_field(key, "NP1")
+        if key != "Bond Damage"
+            if field_NP1[1] isa AbstractVector || field_NP1[1] isa AbstractArray
+                fill_in_place!(field_NP1, data["NP1_to_N"][key][3], active)
+            else
+                fill!(field_NP1, data["NP1_to_N"][key][3])
+            end
         end
     end
 end
 
-function switch_nodes!(field_N, field_NP1, NP1)
-    if field_NP1[1] isa AbstractVector
-        copy_in_place!(field_N, field_NP1)
-        fill_in_place!(field_NP1, data["field_types"][NP1](0))
-    else
-        copyto!(field_N, field_NP1)
-        fill!(field_NP1, data["field_types"][NP1](0))
-    end
-end
-function switch_bonds!(field_N, field_NP1, NP1)
-
-    if "Bond DamageNP1" != NP1
-        for fieldID in eachindex(field_NP1)
-            switch_nodes!(field_N[fieldID], field_NP1[fieldID], NP1)
-        end
-    else
-        for fieldID in eachindex(field_NP1)
-            copyto!(field_N[fieldID], field_NP1[fieldID])
-        end
-    end
-end
 """
     synch_manager(synchronise_field, direction::String)
 

@@ -210,16 +210,28 @@ function fastdot(a, b, absolute = false)
     end
     c
 end
-function fill_in_place!(A::Vector{Vector{T}}, value::T) where {T<:Number}
+function fill_in_place!(
+    A::Union{Vector{Vector{T}},Vector{Array{dof,3}}},
+    value::T,
+    active::Vector{Bool},
+) where {T<:Number,dof<:Integer}
     @inbounds for i ∈ eachindex(A)
-        A[i] .= value
+        if active[i]
+            A[i] .= value
+        end
     end
 end
-function copy_in_place!(A::Vector{Vector{T}}, B::Vector{Vector{T}}) where {T<:Number}
+function fill_in_place!(
+    A::Vector{Vector{Vector{T}}},
+    value::T,
+    active::Vector{Bool},
+) where {T<:Number}
     @inbounds for i ∈ eachindex(A)
-        A[i] .= B[i]
-        # @info A[i]
-        # @info B[i]
+        if active[i]
+            @inbounds for j ∈ eachindex(A[i])
+                A[i][j] .= value
+            end
+        end
     end
 end
 function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
