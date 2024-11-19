@@ -467,7 +467,7 @@ function write_pd_mesh(dataobject)
             grid[1, i] = xg[i]
             grid[2, i] = yg[i]
         end
-        idxs = inrange(pd_mesh["balltree"], grid, pd_mesh["width"])
+        idxs = inrange(pd_mesh["balltree"], grid, pd_mesh["dx_value"][1] )
         # @info length(idxs)
         # for i in eachindex(xg)
         #     idxs, dists = knn(pd_mesh["balltree"], grid, 4, true)
