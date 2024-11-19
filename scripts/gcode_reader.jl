@@ -15,8 +15,12 @@ function parse_commandline()
     s = ArgParseSettings()
 
     @add_arg_table! s begin
-        "--dx", "-d"
+        "--dx", "-x"
         help = "dx"
+        arg_type = Float64
+        default = 0.2
+        "--dy", "-y"
+        help = "dy"
         arg_type = Float64
         default = 0.2
         "--width", "-w"
@@ -195,7 +199,7 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject)
     # end
 end
 
-function write_mesh(gcode_file, find_min_max, dx_value, pd_mesh = Dict())
+function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict())
 
     # create any data object
     # it will be passed as a second parameter to your callbacks
@@ -253,8 +257,8 @@ function write_mesh(gcode_file, find_min_max, dx_value, pd_mesh = Dict())
         end
         @info "Layers: $(myPrinter["layers"])"
         return ndgrid(
-            myPrinter["x_min"]:dx_value[1]:myPrinter["x_max"],
-            myPrinter["y_min"]:dx_value[2]:myPrinter["y_max"],
+            myPrinter["x_min"]:discretization[1]:myPrinter["x_max"],
+            myPrinter["y_min"]:discretization[2]:myPrinter["y_max"],
         ),
         layer_heights[1]
     end
@@ -441,9 +445,13 @@ function write_pd_mesh(dataobject)
     v = distance / (dataobject["time"] - dataobject["previous_time"])
     normalize_in_place!(pd_mesh["dir"], pd_mesh["point_diff"])
     neighbors = []
-    if distance <= pd_mesh["dx_value"][1]
-        idxs = inrange(pd_mesh["balltree"], pd_mesh["point"], pd_mesh["width"])
-        # add idxs if distance is less than or equal to dx_value
+    if distance <= min(pd_mesh["discretization"][1], pd_mesh["discretization"][2])
+        idxs = inrange(
+            pd_mesh["balltree"],
+            pd_mesh["point"],
+            max(pd_mesh["discretization"][1], pd_mesh["discretization"][2]),
+        )
+        # add idxs if distance is less than or equal to discretization
         for i in eachindex(idxs)
             push!(neighbors, idxs[i])
         end
@@ -451,11 +459,11 @@ function write_pd_mesh(dataobject)
         # @info pd_mesh["start_point"]
         # @info pd_mesh["point"]
         dx =
-            pd_mesh["start_point"][1] > pd_mesh["point"][1] ? -pd_mesh["dx_value"][1] :
-            pd_mesh["dx_value"][1]
+            pd_mesh["start_point"][1] > pd_mesh["point"][1] ?
+            -pd_mesh["discretization"][1] : pd_mesh["discretization"][1]
         dy =
-            pd_mesh["start_point"][2] > pd_mesh["point"][2] ? -pd_mesh["dx_value"][2] :
-            pd_mesh["dx_value"][2]
+            pd_mesh["start_point"][2] > pd_mesh["point"][2] ?
+            -pd_mesh["discretization"][2] : pd_mesh["discretization"][2]
         (xg, yg) = ndgrid(
             pd_mesh["start_point"][1]:dx:pd_mesh["point"][1],
             pd_mesh["start_point"][2]:dy:pd_mesh["point"][2],
@@ -467,7 +475,11 @@ function write_pd_mesh(dataobject)
             grid[1, i] = xg[i]
             grid[2, i] = yg[i]
         end
-        idxs = inrange(pd_mesh["balltree"], grid, pd_mesh["dx_value"][1] )
+        idxs = inrange(
+            pd_mesh["balltree"],
+            grid,
+            max(pd_mesh["discretization"][1], pd_mesh["discretization"][2]),
+        )
         # @info length(idxs)
         # for i in eachindex(xg)
         #     idxs, dists = knn(pd_mesh["balltree"], grid, 4, true)
@@ -524,18 +536,19 @@ end
 function main(
     gcode_file::String,
     dx::Float64,
+    dy::Float64,
     scale::Float64,
     width::Float64,
     plot_enabled::Bool,
 )
 
-    dx_value = [dx * scale, dx * scale]
+    discretization = [dx * scale, dy * scale]
 
     @info "Read gcode file $gcode_file"
-    @info "Params: dx $dx, width $width and scale $scale "
-    (grid_x, grid_y), height = write_mesh(gcode_file, true, dx_value)
+    @info "Params: dx $dx, dy $dy, width $width and scale $scale "
+    (grid_x, grid_y), height = write_mesh(gcode_file, true, discretization)
 
-    dx_value = [dx * scale, dx * scale, (height / 2) * scale]
+    discretization = [dx * scale, dy * scale, (height / 2) * scale]
 
     nnodes = length(grid_x)
 
@@ -550,7 +563,7 @@ function main(
 
     # grid_x = reduce(vcat, xg)
     # grid_y = reduce(vcat, yg)
-    # grid_x, grid_y = write_mesh(gcode_file, true, dx_value)
+    # grid_x, grid_y = write_mesh(gcode_file, true, discretization)
 
     pd_mesh = Dict{String,Any}()
     pd_mesh["plot_enabled"] = plot_enabled
@@ -559,8 +572,8 @@ function main(
         pd_mesh["y_peri"] = []
     end
     pd_mesh["balltree"] = balltree
-    pd_mesh["dx_value"] = dx_value
-    pd_mesh["volume"] = dx_value[1] * dx_value[2] * dx_value[3]
+    pd_mesh["discretization"] = discretization
+    pd_mesh["volume"] = discretization[1] * discretization[2] * discretization[3]
     pd_mesh["grid"] = grid
     # pd_mesh["grid_y"] = grid_y
     pd_mesh["previous_time"] = 0
@@ -586,7 +599,7 @@ function main(
     pd_mesh["point_diff"] = zeros(2)
 
     @info "Writing mesh"
-    write_mesh(gcode_file, false, dx_value, pd_mesh)
+    write_mesh(gcode_file, false, discretization, pd_mesh)
 
     txt_file = joinpath("Output", split(replace(gcode_file, ".gcode" => ".txt"), "/")[end])
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
@@ -601,6 +614,7 @@ parsed_args = parse_commandline()
 main(
     parsed_args["filename"],
     parsed_args["dx"],
+    parsed_args["dy"],
     parsed_args["scale"],
     parsed_args["width"],
     parsed_args["plot_enabled"],
