@@ -211,10 +211,10 @@ function fastdot(a, b, absolute = false)
     c
 end
 function fill_in_place!(
-    A::Union{Vector{Vector{T}},Vector{Array{dof,3}}},
+    A::Union{Vector{Vector{T}},Vector{AbstractArray{<:Number}}},
     value::T,
     active::Vector{Bool},
-) where {T<:Number,dof<:Integer}
+) where {T<:Number}
     @inbounds for i ∈ eachindex(A)
         if active[i]
             A[i] .= value
