@@ -729,7 +729,8 @@ function read_mesh(filename::String, params::Dict)
 
         id = 1
         block_id = 1
-        element_written = Array{Int64,1}(undef, num_elements)
+        # element_written = Array{Int64,1}(undef, num_elements)
+        element_written = []
         nsets = Dict{String,Vector{Int64}}()
 
         # sort element_sets by length
@@ -754,13 +755,14 @@ function read_mesh(filename::String, params::Dict)
                 else
                     mesh_df[id, :] = [center[1], center[2], center[3], volume, block_id]
                 end
-                element_written[id] = element_id
+                # element_written[id] = element_id
+                push!(element_written, element_id)
                 id += 1
             end
             nsets[key] = ns_nodes
             block_id += 1
         end
-        @info "Found $(maximum(mesh_df.block_id)) block(s)"
+        @info "Found $(block_id-1) block(s)"
         @info "Found $(length(nsets)) node sets"
         @info "NodeSets: $element_sets_keys"
 
