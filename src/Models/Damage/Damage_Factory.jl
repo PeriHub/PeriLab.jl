@@ -243,9 +243,9 @@ datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 """
 function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
     model_param = datamanager.get_properties(block, "Damage Model")
-    if haskey(model_param, "Anisotropic Damage")
-        datamanager.create_bond_field("Bond Damage Anisotropic", Float64, dof, 1)
-    end
+    # if haskey(model_param, "Anisotropic Damage")
+    #     datamanager.create_bond_field("Bond Damage Anisotropic", Float64, datamanager.get_dof(), 1)
+    # end
     mod = Set_modules.create_module_specifics(
         model_param["Damage Model"],
         module_list,

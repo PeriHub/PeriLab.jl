@@ -1505,7 +1505,7 @@ Compute the neighbor list for each node in a mesh based on their proximity using
 An array of neighbor lists, where each element represents the neighbors of a node in the mesh.
 """
 function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vector{String}})
-    @debug "Init Neighborhoodlist"
+    @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
     data = zeros(dof, nnodes)

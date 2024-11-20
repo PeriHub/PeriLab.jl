@@ -279,7 +279,7 @@ function write_nodal_results_in_exodus(
     #write_values
     nnodes = datamanager.get_nnodes()
     for varname in keys(output)
-        field = datamanager.get_field(output[varname]["fieldname"])
+        field = datamanager.get_field(output[varname]["fieldname"], output[varname]["time"])
         #exo, timestep::Integer, id::Integer, var_index::Integer,vector
         # =>https://github.com/cmhamel/Exodus.jl/blob/master/src/Variables.jl
         if haskey(output[varname], "dof")

@@ -21,6 +21,7 @@ If you want to provide a code change, please:
 ## Contributors
 * Christian Willberg
 * Jan-Timo Hesse
+* Felix Winkelmann
 
 ## What can I contribute?
 

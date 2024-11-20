@@ -40,12 +40,17 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
         end
 
         for data_entry in datamanager.get_all_field_keys()
-            if (occursin(bcs[bc]["Variable"], data_entry) && occursin("NP1", data_entry)) ||
-               bcs[bc]["Variable"] == data_entry
-                bcs[bc]["Initial"] = bcs[bc]["Type"] == "Initial"
-                bcs[bc]["Variable"] = data_entry
-                working_bcs[bc] = bcs[bc]
+            if (occursin(bcs[bc]["Variable"], data_entry) && occursin("NP1", data_entry))
+                bcs[bc]["Time"] = "NP1"
                 valid = true
+            elseif bcs[bc]["Variable"] == data_entry
+                bcs[bc]["Variable"] = data_entry
+                bcs[bc]["Time"] = "constant"
+                valid = true
+            end
+            if valid
+                bcs[bc]["Initial"] = bcs[bc]["Type"] == "Initial"
+                working_bcs[bc] = bcs[bc]
                 break
             end
         end
@@ -134,11 +139,11 @@ function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
     for name in keys(bcs)
         bc = bcs[name]
         if !(bc["Type"] in ["Initial", "Dirichlet"]) ||
-           bc["Variable"] == "Force DensitiesNP1" ||
-           bc["Variable"] == "ForcesNP1"
+           bc["Variable"] == "Force Densities" ||
+           bc["Variable"] == "Forces"
             continue
         end
-        field = datamanager.get_field(bc["Variable"])
+        field = datamanager.get_field(bc["Variable"], bc["Time"])
 
         if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
@@ -195,9 +200,9 @@ function apply_bc_dirichlet_force(bcs::Dict, datamanager::Module, time::Float64)
         if bc["Type"] != "Dirichlet"
             continue
         end
-        if bc["Variable"] == "ForcesNP1"
+        if bc["Variable"] == "Forces"
             field = datamanager.get_field("External Forces")
-        elseif bc["Variable"] == "Force DensitiesNP1"
+        elseif bc["Variable"] == "Force Densities"
             field = datamanager.get_field("External Force Densities")
         else
             continue

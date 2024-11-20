@@ -137,7 +137,7 @@ function get_output_fieldnames(
     computes::Vector{String},
     output_type::String,
 )
-    return_outputs = String[]
+    return_outputs = []
     for output in keys(outputs)
         if !isa(outputs[output], Bool)
             @error "Output variable $output must be set to True or False"
@@ -146,15 +146,15 @@ function get_output_fieldnames(
         if outputs[output]
             if output_type == "CSV"
                 if output in computes
-                    push!(return_outputs, output)
+                    push!(return_outputs, [output, "constant"])
                 else
                     @warn '"' * output * '"' * " is not defined as global variable"
                 end
             else
                 if output in variables || output in computes
-                    push!(return_outputs, output)
+                    push!(return_outputs, [output, "constant"])
                 elseif output * "NP1" in variables
-                    push!(return_outputs, output * "NP1")
+                    push!(return_outputs, [output, "NP1"])
                 else
                     @warn '"' * output * '"' * " is not defined as variable"
                 end

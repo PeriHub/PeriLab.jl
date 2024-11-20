@@ -127,6 +127,14 @@ function get_MMatrix(len::Int64)
         return nothing
     end
 end
+function mul_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{Bool}) where {T<:Number}
+    # Check if dimensions match
+    @assert length(C) == length(A) == length(B)
+
+    @inbounds for i ∈ eachindex(A)
+        C[i] = A[i] * B[i]
+    end
+end
 function mul_in_place!(
     C::Vector{Vector{T}},
     A::Vector{Vector{T}},
@@ -167,6 +175,18 @@ function add_in_place!(
         C[i] .= A[i] .+ B[i]
     end
 end
+function div_in_place!(C::Vector{T}, A::Vector{T}, B::T, absolute = false) where {T<:Number}
+    # Check if dimensions match
+    @assert length(C) == length(A)
+
+    @inbounds for i ∈ eachindex(A)
+        if absolute
+            C[i] = abs(A[i]) / B
+        else
+            C[i] = A[i] / B
+        end
+    end
+end
 function div_in_place!(
     C::Vector{Vector{T}},
     A::Vector{Vector{T}},
@@ -190,16 +210,28 @@ function fastdot(a, b, absolute = false)
     end
     c
 end
-function fill_in_place!(A::Vector{Vector{T}}, value::T) where {T<:Number}
+function fill_in_place!(
+    A::Union{Vector{Vector{T}},Vector{Array{T,3}}},
+    value::T,
+    active::Vector{Bool},
+) where {T<:Number}
     @inbounds for i ∈ eachindex(A)
-        A[i] .= value
+        if active[i]
+            A[i] .= value
+        end
     end
 end
-function copy_in_place!(A::Vector{Vector{T}}, B::Vector{Vector{T}}) where {T<:Number}
+function fill_in_place!(
+    A::Vector{Vector{Vector{T}}},
+    value::T,
+    active::Vector{Bool},
+) where {T<:Number}
     @inbounds for i ∈ eachindex(A)
-        A[i] .= B[i]
-        # @info A[i]
-        # @info B[i]
+        if active[i]
+            @inbounds for j ∈ eachindex(A[i])
+                A[i][j] .= value
+            end
+        end
     end
 end
 function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
