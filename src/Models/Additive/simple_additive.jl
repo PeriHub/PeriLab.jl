@@ -85,7 +85,7 @@ function compute_model(
                 if bond_damage[iID][jID] != 0
                     continue
                 end
-                if activation_time[neighborID] < time
+                if activation_time[neighborID] <= time
                     bond_damage[iID][jID] = 1.0
                     if haskey(inverse_nlist[neighborID], iID)
                         bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 1.0

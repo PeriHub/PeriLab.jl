@@ -122,7 +122,7 @@ test_data_manager.create_bond_field("I", Int64, 7)
 testfield_keys = test_data_manager.get_all_field_keys()
 @testset "create data fields -> get all fields" begin
     @test test_data_manager.get_nnodes() == num_controller
-    @test B[1] == test_data_manager.get_field("BN")
+    @test B[1] == test_data_manager.get_field("B", "N")
     @test B[2] == test_data_manager.get_field("B", "NP1")
     @test C == test_data_manager.get_field("C")
     @test "A" in testfield_keys
@@ -189,7 +189,7 @@ end
     @test typeof(A[1]) == Float64
     @test length(A) == test_data_manager.data["nnodes"] == num_controller + num_responder
 
-    B = test_data_manager.get_field("BN")
+    B = test_data_manager.get_field("B", "N")
     @test typeof(B[1]) == Bool
     @test length(B) == test_data_manager.data["nnodes"] == num_controller + num_responder
 
@@ -200,7 +200,7 @@ end
           num_controller + num_responder
     @test length(C[1, :]) == 4
 
-    D = test_data_manager.get_field("DNP1")
+    D = test_data_manager.get_field("D", "NP1")
     @test typeof(D[1, 1]) == Int64
     @test length(D[:, 1]) ==
           test_data_manager.data["nnodes"] ==
@@ -213,7 +213,7 @@ end
     @test length(F[1]) == nn[1]
     @test length(F[2]) == nn[2]
     @test length(F[3]) == nn[3]
-    G = test_data_manager.get_field("GN")
+    G = test_data_manager.get_field("G", "N")
     @test typeof(G[1, 1][1]) == Bool
     @test length(G[:, 1]) == num_controller + num_responder
 
@@ -223,7 +223,7 @@ end
     @test length(H[1][1]) == 4
     @test length(H[:][:]) == num_controller + num_responder
 
-    I = test_data_manager.get_field("INP1")
+    I = test_data_manager.get_field("I", "NP1")
     @test typeof(I[1][1][1]) == Int64
     for i = 1:num_controller+num_responder
         @test length(I[i]) == nn[i]
@@ -298,7 +298,7 @@ end
     @test test1 == test_data_manager.get_field("test3", "N")
     @test test2 == test_data_manager.get_field("test3", "NP1")
     test1, test2 = test_data_manager.create_node_field("test4", Float64, 3)
-    @test test1 == test_data_manager.get_field("test4N")
+    @test test1 == test_data_manager.get_field("test4", "N")
     @test test2 == test_data_manager.get_field("test4", "NP1")
     test = test_data_manager.create_constant_bond_field("test5", Float64, 1)
     @test test == test_data_manager.get_field("test5")
@@ -354,22 +354,22 @@ end
     @test test_data_manager.data["NP1_to_N"]["I"][2] == "INP1"
 end
 @testset "set_and_get_values" begin
-    DN = test_data_manager.get_field("DN")
+    DN = test_data_manager.get_field("D", "N")
     DN[1, 3] = 10
-    DNtest = test_data_manager.get_field("DN")
+    DNtest = test_data_manager.get_field("D", "N")
     @test DN[1, 3] == DNtest[1, 3]
 end
 
-DN = test_data_manager.get_field("DN")
-DNP1 = test_data_manager.get_field("DNP1")
-
-IN = test_data_manager.get_field("IN")
-INP1 = test_data_manager.get_field("INP1")
 bd = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
 test_data_manager.create_constant_node_field("Active", Bool, 1, true)
 @testset "switch_NP1_to_N" begin
     bmatrixN, bmatrixNP1 = test_data_manager.create_bond_field("Bmat", Float64, "Matrix", 2)
     nmatrixN, nmatrixNP1 = test_data_manager.create_node_field("Nmat", Float64, "Matrix", 2)
+    DN = test_data_manager.get_field("D", "N")
+    DNP1 = test_data_manager.get_field("D", "NP1")
+
+    IN = test_data_manager.get_field("I", "N")
+    INP1 = test_data_manager.get_field("I", "NP1")
     IN[2][1][3] = 0
 
     DNP1[2, 3] = 5
@@ -392,6 +392,10 @@ test_data_manager.create_constant_node_field("Active", Bool, 1, true)
     @test sum(maximum(bd)) == 0
     test_data_manager.switch_NP1_to_N()
 
+    DN = test_data_manager.get_field("D", "N")
+    DNP1 = test_data_manager.get_field("D", "NP1")
+    nmatrixN = test_data_manager.get_field("Nmat", "N")
+    nmatrixNP1 = test_data_manager.get_field("Nmat", "NP1")
     @test DN[2, 3] == 5
     @test nmatrixN[1, 1, 1] == 2
     @test nmatrixN[1, 1, 2] == 2
@@ -418,6 +422,8 @@ test_data_manager.create_constant_node_field("Active", Bool, 1, true)
     @test DNP1[2, 3] == 6
     @test DN[2, 3] == 5
 
+    IN = test_data_manager.get_field("I", "N")
+    INP1 = test_data_manager.get_field("I", "NP1")
     @test INP1[2][1][3] == 0
     # bonds
     @test IN[2][1][3] == 5

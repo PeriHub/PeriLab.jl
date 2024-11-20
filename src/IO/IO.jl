@@ -218,8 +218,9 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             nodeset = []
 
             for key in keys(computes)
-                if fieldname == key
-                    fieldname = computes[key]["Variable"]
+                if fieldname[1] == key
+                    fieldname[1] = computes[key]["Variable"]
+                    fieldname[2] = "constant"
                     compute_name = string(key)
                     compute_params = computes[key]
                     global_var = true
@@ -230,18 +231,19 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             end
             # end
 
-            datafield = datamanager.get_field(fieldname)
+            datafield = datamanager.get_field(fieldname[1], fieldname[2])
             sizedatafield = size(datafield)
             if length(sizedatafield) == 0
                 @error "No field " * fieldname * " exists."
                 return nothing
             end
 
-            if fieldname == "State Variables"
+            if fieldname[1] == "State Variables"
                 nstatev = length(sizedatafield) == 1 ? 1 : sizedatafield[2]
                 for dof = 1:nstatev
                     output_mapping[id]["Fields"]["State_Variable_"*string(dof)] = Dict(
-                        "fieldname" => fieldname,
+                        "fieldname" => fieldname[1],
+                        "time" => fieldname[2],
                         "global_var" => global_var,
                         "dof" => dof,
                         "type" => typeof(datafield[1, 1]),
@@ -253,7 +255,8 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             if length(sizedatafield) == 1
                 if global_var
                     output_mapping[id]["Fields"][compute_name] = Dict(
-                        "fieldname" => fieldname,
+                        "fieldname" => fieldname[1],
+                        "time" => fieldname[2],
                         "global_var" => global_var,
                         "dof" => 1,
                         "type" => typeof(datafield[1, 1]),
@@ -261,8 +264,9 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                         "nodeset" => nodeset,
                     )
                 else
-                    output_mapping[id]["Fields"][clearNP1(fieldname)] = Dict(
-                        "fieldname" => fieldname,
+                    output_mapping[id]["Fields"][fieldname[1]] = Dict(
+                        "fieldname" => fieldname[1],
+                        "time" => fieldname[2],
                         "global_var" => global_var,
                         "dof" => 1,
                         "type" => typeof(datafield[1, 1]),
@@ -276,7 +280,8 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                             dof,
                             i_ref_dof,
                         )] = Dict(
-                            "fieldname" => fieldname,
+                            "fieldname" => fieldname[1],
+                            "time" => fieldname[2],
                             "global_var" => global_var,
                             "dof" => dof,
                             "type" => typeof(datafield[1, 1]),
@@ -284,10 +289,12 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                             "nodeset" => nodeset,
                         )
                     else
-                        output_mapping[id]["Fields"][clearNP1(
-                            fieldname,
-                        )*get_paraview_coordinates(dof, i_ref_dof)] = Dict(
-                            "fieldname" => fieldname,
+                        output_mapping[id]["Fields"][fieldname[1]*get_paraview_coordinates(
+                            dof,
+                            i_ref_dof,
+                        )] = Dict(
+                            "fieldname" => fieldname[1],
+                            "time" => fieldname[2],
                             "global_var" => global_var,
                             "dof" => dof,
                             "type" => typeof(datafield[1, 1]),
@@ -304,7 +311,8 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                                 i_dof,
                                 i_ref_dof,
                             )*get_paraview_coordinates(j_dof, j_ref_dof)] = Dict(
-                                "fieldname" => fieldname,
+                                "fieldname" => fieldname[1],
+                                "time" => fieldname[2],
                                 "global_var" => global_var,
                                 "i_dof" => i_dof,
                                 "j_dof" => j_dof,
@@ -313,11 +321,12 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                                 "nodeset" => nodeset,
                             )
                         else
-                            output_mapping[id]["Fields"][clearNP1(fieldname)*get_paraview_coordinates(
+                            output_mapping[id]["Fields"][fieldname[1]*get_paraview_coordinates(
                                 i_dof,
                                 i_ref_dof,
                             )*get_paraview_coordinates(j_dof, j_ref_dof)] = Dict(
-                                "fieldname" => fieldname,
+                                "fieldname" => fieldname[1],
+                                "time" => fieldname[2],
                                 "global_var" => global_var,
                                 "i_dof" => i_dof,
                                 "j_dof" => j_dof,

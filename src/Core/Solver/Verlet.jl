@@ -421,35 +421,19 @@ function run_solver(
     active_list = datamanager.get_field("Active")
     density = datamanager.get_field("Density")
     coor = datamanager.get_field("Coordinates")
-    uNP1 = datamanager.get_field("Displacements", "NP1")
     # index = datamanager.get_field("Index")
     comm = datamanager.get_comm()
 
-    deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     if "Material" in solver_options["Models"]
-        forces = datamanager.get_field("Forces", "NP1")
         external_forces = datamanager.get_field("External Forces")
-        force_densities = datamanager.get_field("Force Densities", "NP1")
         external_force_densities = datamanager.get_field("External Force Densities")
-        uN = datamanager.get_field("Displacements", "N")
-        vN = datamanager.get_field("Velocity", "N")
-        vNP1 = datamanager.get_field("Velocity", "NP1")
         a = datamanager.get_field("Acceleration")
-        deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
     end
     if "Thermal" in solver_options["Models"]
-        flowN = datamanager.get_field("Heat Flow", "N")
-        flowNP1 = datamanager.get_field("Heat Flow", "NP1")
-        temperatureN = datamanager.get_field("Temperature", "N")
-        temperatureNP1 = datamanager.get_field("Temperature", "NP1")
         deltaT = datamanager.get_field("Delta Temperature")
         heat_capacity = datamanager.get_field("Specific Heat Capacity")
     end
     if "Corrosion" in solver_options["Models"]
-        concentrationN = datamanager.get_field("Concentration", "N")
-        concentrationNP1 = datamanager.get_field("Concentration", "NP1")
-        concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
-        concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
         ## TODO field creation not in run
         delta_concentration =
             datamanager.create_constant_node_field("Delta Concentration", Float64, 1)
@@ -459,9 +443,6 @@ function run_solver(
     if fem_option
         lumped_mass = datamanager.get_field("Lumped Mass Matrix")
         fe_nodes = datamanager.get_field("FE Nodes")
-    end
-    if "Damage" in solver_options["Models"]
-        damage = datamanager.get_damage("NP1")
     end
     active = datamanager.get_field("Active")
 
@@ -478,6 +459,31 @@ function run_solver(
     #nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
     @inbounds @fastmath for idt in iter
         @timeit to "Verlet" begin
+            uNP1 = datamanager.get_field("Displacements", "NP1")
+            deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
+            if "Material" in solver_options["Models"]
+                forces = datamanager.get_field("Forces", "NP1")
+                force_densities = datamanager.get_field("Force Densities", "NP1")
+                uN = datamanager.get_field("Displacements", "N")
+                vN = datamanager.get_field("Velocity", "N")
+                vNP1 = datamanager.get_field("Velocity", "NP1")
+                deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
+            end
+            if "Thermal" in solver_options["Models"]
+                flowN = datamanager.get_field("Heat Flow", "N")
+                flowNP1 = datamanager.get_field("Heat Flow", "NP1")
+                temperatureN = datamanager.get_field("Temperature", "N")
+                temperatureNP1 = datamanager.get_field("Temperature", "NP1")
+            end
+            if "Corrosion" in solver_options["Models"]
+                concentrationN = datamanager.get_field("Concentration", "N")
+                concentrationNP1 = datamanager.get_field("Concentration", "NP1")
+                concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
+                concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
+            end
+            if "Damage" in solver_options["Models"]
+                damage = datamanager.get_damage("NP1")
+            end
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes =
                 find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())

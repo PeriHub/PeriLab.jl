@@ -27,13 +27,15 @@ function calculate_nodelist(
     # get block_nodes
     # check NP1
     if datamanager.has_key(field_key * "NP1")
-        field_key *= "NP1"
+        field = datamanager.get_field(field_key, "NP1")
+        field_key = field_key * "NP1"
+    else
+        field = datamanager.get_field(field_key)
     end
     if !datamanager.has_key(field_key)
         @error "Field $field_key does not exists for compute sum."
         return nothing
     end
-    field = datamanager.get_field(field_key)
     field_type = datamanager.get_field_type(field_key)
 
     if calculation_type == "Sum"

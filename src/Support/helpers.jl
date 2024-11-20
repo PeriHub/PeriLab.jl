@@ -211,7 +211,7 @@ function fastdot(a, b, absolute = false)
     c
 end
 function fill_in_place!(
-    A::Union{Vector{Vector{T}},Vector{AbstractArray{<:Number}}},
+    A::Union{Vector{Vector{T}},Vector{Array{T,3}}},
     value::T,
     active::Vector{Bool},
 ) where {T<:Number}

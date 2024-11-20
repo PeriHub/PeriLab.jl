@@ -78,6 +78,7 @@ function compute(
 )
     nlist = datamanager.get_nlist()
     deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
+    deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     Geometry.bond_geometry!(

@@ -443,10 +443,10 @@ function create_field(
     VectorOrArray::String = "Vector",
 )
     if has_key(name)
-        if size(get_field(name), 1) != data["nnodes"]
+        if size(_get_field(name), 1) != data["nnodes"]
             @warn "Field $name exists already with different size. Predefined field is returned"
         end
-        return get_field(name)
+        return _get_field(name)
     end
     value = vartype(default_value)
     if bond_or_node == "Node_Field"
@@ -461,7 +461,7 @@ function create_field(
             end
         end
     elseif bond_or_node == "Bond_Field"
-        nBonds = get_field("Number of Neighbors")
+        nBonds = _get_field("Number of Neighbors")
         if dof == 1
             fields[vartype][name] = [fill(value, n) for n in nBonds]
         else
@@ -473,7 +473,7 @@ function create_field(
             end
         end
     elseif bond_or_node == "Element_Field"
-        nElements = get_field("Number of Element Neighbors")
+        nElements = _get_field("Number of Element Neighbors")
         if dof == 1
             fields[vartype][name] = [fill(value, n) for n in nElements]
         else
@@ -581,22 +581,36 @@ Returns the field with the given name and time.
 # Returns
 - `field::Field`: The field with the given name and time.
 """
-function get_field(name::String, time::String)
+function get_field(name::String, time::String = "constant")
 
-    try
-        if time == "N"
-            return get_field(data["NP1_to_N"][name][1])
-        else
-            return get_field(data["NP1_to_N"][name][2])
+    if time == "constant"
+        return _get_field(name)
+    elseif time == "N"
+        try
+            return _get_field(data["NP1_to_N"][name][1])
+        catch
+            @error "Field ''" *
+                   name *
+                   "'' does not exist. Check if it is initialized as constant."
+            return nothing
         end
-    catch
-        @error "Field $name does not exist. Check if it is initialized as constant."
+    elseif time == "NP1"
+        try
+            return _get_field(data["NP1_to_N"][name][2])
+        catch
+            @error "Field ''" *
+                   name *
+                   "'' does not exist. Check if it is initialized as constant."
+            return nothing
+        end
+    else
+        @error "Time $time is not supported. Use 'constant', 'N', or 'NP1'"
         return nothing
     end
 end
 
 """
-    get_field(name::String)
+    _get_field(name::String)
 
 Returns the field with the given name.
 
@@ -605,7 +619,7 @@ Returns the field with the given name.
 # Returns
 - `field::Field`: The field with the given name.
 """
-function get_field(name::String)
+function _get_field(name::String)
     try
         return data["field_array_type"][name]["get_function"]()
     catch
@@ -705,7 +719,7 @@ end
 Get the neighborhood list.
 """
 function get_nlist()
-    return get_field("Neighborhoodlist")
+    return _get_field("Neighborhoodlist")
 end
 
 """
@@ -717,7 +731,7 @@ function get_filtered_nlist()
     if !has_key("FilteredNeighborhoodlist")
         return nothing
     end
-    return get_field("FilteredNeighborhoodlist")
+    return _get_field("FilteredNeighborhoodlist")
 end
 
 """
@@ -1481,7 +1495,7 @@ Sets the synchronization dictionary globally.
 """
 function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
     if name in get_all_field_keys()
-        field = get_field(name)
+        field = _get_field(name)
         if dof == 0
             dof = length(field[1, :, :])
         end
@@ -1491,7 +1505,7 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
             "dof" => dof,
         )
     elseif name * "NP1" in get_all_field_keys()
-        field = get_field(name * "NP1")
+        field = get_field(name, "NP1")
         if dof == 0
             dof = length(field[1, :, :])
         end
@@ -1521,7 +1535,7 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         return nothing
     end
     if name in get_all_field_keys()
-        field = get_field(name)
+        field = _get_field(name)
         if dof == 0
             dof = length(field[1, :, :])
         end
@@ -1531,7 +1545,7 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
             "dof" => dof,
         )
     elseif name * "NP1" in get_all_field_keys()
-        field = get_field(name * "NP1")
+        field = get_field(name, "NP1")
         if dof == 0
             dof = length(field[1, :, :])
         end
@@ -1550,7 +1564,7 @@ end
 Switches the fields from NP1 to N.active
 """
 function switch_NP1_to_N()
-    active = get_field("Active")
+    active = _get_field("Active")
     for key in keys(data["NP1_to_N"])
         data["NP1_to_N"][key][1], data["NP1_to_N"][key][2] =
             data["NP1_to_N"][key][2], data["NP1_to_N"][key][1]

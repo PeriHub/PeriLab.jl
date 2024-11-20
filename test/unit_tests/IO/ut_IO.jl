@@ -88,12 +88,14 @@ block_Id[end] = 2
         for entry in keys(sort(output[i]["Fields"]))
             if occursin("Forces", entry)
                 dof_force += 1
-                @test output[i]["Fields"][entry]["fieldname"] == "ForcesNP1"
+                @test output[i]["Fields"][entry]["fieldname"] == "Forces"
+                @test output[i]["Fields"][entry]["time"] == "NP1"
                 @test output[i]["Fields"][entry]["dof"] == dof_force
                 @test output[i]["Fields"][entry]["type"] == Float64
             else
                 dof_disp += 1
-                @test output[i]["Fields"][entry]["fieldname"] == "DisplacementsNP1"
+                @test output[i]["Fields"][entry]["fieldname"] == "Displacements"
+                @test output[i]["Fields"][entry]["time"] == "NP1"
                 @test output[i]["Fields"][entry]["dof"] == dof_disp
                 @test output[i]["Fields"][entry]["type"] == Float64
             end
@@ -135,12 +137,14 @@ end
         for entry in keys(sort(outputs[i]["Fields"]))
             if occursin("Forces", entry)
                 dofForce += 1
-                @test outputs[i]["Fields"][entry]["fieldname"] == "ForcesNP1"
+                @test outputs[i]["Fields"][entry]["fieldname"] == "Forces"
+                @test outputs[i]["Fields"][entry]["time"] == "NP1"
                 @test outputs[i]["Fields"][entry]["dof"] == dofForce
                 @test outputs[i]["Fields"][entry]["type"] == Float64
             else
                 dofDisp += 1
-                @test outputs[i]["Fields"][entry]["fieldname"] == "DisplacementsNP1"
+                @test outputs[i]["Fields"][entry]["fieldname"] == "Displacements"
+                @test outputs[i]["Fields"][entry]["time"] == "NP1"
                 @test outputs[i]["Fields"][entry]["dof"] == dofDisp
                 @test outputs[i]["Fields"][entry]["type"] == Float64
             end

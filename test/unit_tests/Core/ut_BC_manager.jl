@@ -332,7 +332,8 @@ end
     @test bcs["BC_1"]["Coordinate"] == "x"
     @test bcs["BC_1"]["Value"] == "20*t"
     @test bcs["BC_1"]["Node Set"] == [1, 3, 4]
-    @test bcs["BC_2"]["Variable"] == "DisplacementsNP1"
+    @test bcs["BC_2"]["Variable"] == "Displacements"
+    @test bcs["BC_2"]["Time"] == "NP1"
     @test bcs["BC_2"]["Coordinate"] == "z"
     @test bcs["BC_2"]["Value"] == "5"
     @test bcs["BC_2"]["Node Set"] == [4, 2, 7, 10]
@@ -346,7 +347,7 @@ end
     test_data_manager.set_num_controller(10)
     test_data_manager.set_dof(3)
     test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
-    test_data_manager.create_constant_node_field("Forces", Float64, 3)
+    test_data_manager.create_constant_node_field("Temperature", Float64, 3)
     test_data_manager.create_node_field("Displacements", Float64, 3)
     test_data_manager.set_nset("Nset_1", [1, 2, 3])
     test_data_manager.set_nset("Nset_2", [3, 4, 7, 10])
@@ -367,7 +368,7 @@ end
     params = Dict(
         "Boundary Conditions" => Dict(
             "BC_1" => Dict(
-                "Variable" => "Forces",
+                "Variable" => "Temperature",
                 "Node Set" => "Nset_1",
                 "Coordinate" => "x",
                 "Value" => "20*t",
@@ -381,27 +382,27 @@ end
         ),
     )
 
-    force = test_data_manager.get_field("Forces")
+    temperature = test_data_manager.get_field("Temperature")
     disp = test_data_manager.get_field("Displacements", "NP1")
-    @test sum(force) == 0
+    @test sum(temperature) == 0
     @test sum(disp) == 0
     bcs = PeriLab.Solver.Boundary_conditions.init_BCs(params, test_data_manager)
     PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.0)
-    force = test_data_manager.get_field("Forces")
+    temperature = test_data_manager.get_field("Temperature")
     disp = test_data_manager.get_field("Displacements", "NP1")
-    @test sum(force) == 0
+    @test sum(temperature) == 0
     @test sum(disp) == 20
     @test isapprox(
         disp,
         [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5],
     )
     PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.2)
-    force = test_data_manager.get_field("Forces")
+    temperature = test_data_manager.get_field("Temperature")
     disp = test_data_manager.get_field("Displacements", "NP1")
 
-    @test sum(force) == 12
+    @test sum(temperature) == 12
     @test isapprox(
-        force,
+        temperature,
         [4 0 0; 0 0 0; 4 0 0; 4 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0; 0 0 0],
     )
     @test sum(disp) == 20
@@ -412,10 +413,10 @@ end
     # test if global nodes are not at the core
     bcs["BC_1"]["Node Set"] = []
     bcs["BC_2"]["Node Set"] = []
-    force .= 0
+    temperature .= 0
     disp .= 0
     PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.2)
-    @test sum(force) == 0
+    @test sum(temperature) == 0
     @test sum(disp) == 0
 
     params = Dict(
