@@ -1558,6 +1558,12 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
 
 end
 
+function switch_bonds!(field_N, field_NP1)
+    for fieldID in eachindex(field_NP1)
+        copyto!(field_N[fieldID], field_NP1[fieldID])
+    end
+end
+
 """
     switch_NP1_to_N()
 
@@ -1566,15 +1572,19 @@ Switches the fields from NP1 to N.active
 function switch_NP1_to_N()
     active = _get_field("Active")
     for key in keys(data["NP1_to_N"])
+        if key == "Bond Damage"
+            field_NP1 = get_field(key, "NP1")
+            field_N = get_field(key, "N")
+            switch_bonds!(field_N, field_NP1)
+            continue
+        end
         data["NP1_to_N"][key][1], data["NP1_to_N"][key][2] =
             data["NP1_to_N"][key][2], data["NP1_to_N"][key][1]
         field_NP1 = get_field(key, "NP1")
-        if key != "Bond Damage"
-            if field_NP1[1] isa AbstractVector || field_NP1[1] isa AbstractArray
-                fill_in_place!(field_NP1, data["NP1_to_N"][key][3], active)
-            else
-                fill!(field_NP1, data["NP1_to_N"][key][3])
-            end
+        if field_NP1[1] isa AbstractVector || field_NP1[1] isa AbstractArray
+            fill_in_place!(field_NP1, data["NP1_to_N"][key][3], active)
+        else
+            fill!(field_NP1, data["NP1_to_N"][key][3])
         end
     end
 end
