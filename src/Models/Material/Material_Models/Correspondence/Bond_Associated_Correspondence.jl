@@ -22,25 +22,6 @@ export fields_for_local_synchronization
 export init_model
 export compute_model
 
-"""
-    correspondence_name()
-
-Gives the correspondence material name. It is needed for comparison with the yaml input deck.
-
-# Arguments
-
-# Returns
-- `name::String`: The name of the material.
-
-Example:
-```julia
-println(correspondence_name())
-"Material Template"
-```
-"""
-function correspondence_name()
-    return "Bond Associated Correspondence"
-end
 
 function init_model(
     datamanager::Module,
