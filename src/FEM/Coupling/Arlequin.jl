@@ -13,7 +13,7 @@ function init_coupling_model(datamanager::Module, complete_params::Dict)
     # Find number of element neighbors
     datamanager.create_constant_element_field("Coupling Elementlist", Int64, 1)
     # Assign Element ids
-
+    datamanager.create_constant_free_size_field("Local Coupling Matrix", Float64, (5,5))
     return datamanager
 end
 
