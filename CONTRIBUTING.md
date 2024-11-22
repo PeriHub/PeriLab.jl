@@ -22,6 +22,7 @@ If you want to provide a code change, please:
 * Christian Willberg
 * Jan-Timo Hesse
 * Felix Winkelmann
+* Anna Pernatii
 
 ## What can I contribute?
 
