@@ -45,11 +45,13 @@ PeriLab:
       Node Set: Node Set 1
       Coordinate: x
       Value: 0.0
+      Type: Dirichlet
     BC_2:
       Variable: Displacements
       Node Set: Node Set 2
       Coordinate: y
       Value: 0.0
+      Type: Dirichlet
     BC_3:
       Variable: Displacements
       Node Set: Node Set 2

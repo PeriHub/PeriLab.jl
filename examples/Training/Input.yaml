@@ -38,11 +38,13 @@ PeriLab:
       Node Set: "Node Set 1"
       Coordinate: "x"
       Value: "0"
+      Type: Dirichlet
     BC_2:
       Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "x"
       Value: "2*t"
+      Type: Dirichlet
   Solver:
     Material Models: True
     Damage Models: True

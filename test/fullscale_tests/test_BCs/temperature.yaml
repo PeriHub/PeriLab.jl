@@ -37,14 +37,17 @@ PeriLab:
       Variable: "Temperature"
       Node Set: "Node Set 1"
       Value: "300"
+      Type: Dirichlet
     BC_2:
       Variable: "Temperature"
       Node Set: "Node Set 2"
       Value: "1*10^7*t"
+      Type: Dirichlet
     BC_3:
       Variable: "Temperature"
       Node Set: "Node Set 3"
       Value: "if t>0.00001 0 else 600 end"
+      Type: Dirichlet
   Solver:
     Material Models: True
     Thermal Models: True

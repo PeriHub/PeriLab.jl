@@ -28,11 +28,13 @@ PeriLab:
       Node Set: Node Set 1
       Variable: Displacements
       Value: 4.4*t
+      Type: Dirichlet
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
       Variable: Displacements
       Value: -4.4*t
+      Type: Dirichlet
   Compute Class Parameters:
     External_Forces:
       Compute Class: Block_Data
@@ -104,7 +106,7 @@ PeriLab:
         Property_2: 1.1
         Property_3: 0.2
         Predefined Field Names: "Volume"
-    Pre Calculation:
+    Pre Calculation Global:
       Bond Associated Deformation Gradient: false
       Deformation Gradient: false
       Deformed Bond Geometry: true

@@ -32,6 +32,7 @@ PeriLab:
       Variable: "Temperature"
       Node Set: "Node Set 3"
       Value: "2e-6"
+      Type: Dirichlet
     #BC_2:
     #  Variable: "Displacements"
     #  Node Set: "Node Set 3"

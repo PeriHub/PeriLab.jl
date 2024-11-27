@@ -35,10 +35,12 @@ PeriLab:
       Variable: "Temperature"
       Node Set: "Node Set 1"
       Value: "100"
+      Type: Dirichlet
     BC_2:
       Variable: "Temperature"
       Node Set: "Node Set 2"
       Value: "0.0"
+      Type: Dirichlet
   #Compute Class Parameters:
   #  External_Forces:
   #    Compute Class: Block_Data
@@ -96,7 +98,7 @@ PeriLab:
         Thermal Model: "Thermal Flow"
         Type: "Bond based"
         Thermal Conductivity: 2.0
-    Pre Calculation:
+    Pre Calculation Global:
       Bond Associated Deformation Gradient: false
 
       Deformation Gradient: false

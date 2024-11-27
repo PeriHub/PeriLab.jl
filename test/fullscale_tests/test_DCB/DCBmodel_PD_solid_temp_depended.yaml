@@ -36,15 +36,18 @@ PeriLab:
       Node Set: Node Set 1
       Variable: Displacements
       Value: -4.4*t
+      Type: Dirichlet
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
       Variable: Displacements
       Value: 4.4*t
+      Type: Dirichlet
     BC_3:
       Variable: "Temperature"
       Node Set: "Node Set 3"
       Value: "0"
+      Type: Dirichlet
   Compute Class Parameters:
     External_Forces:
       Compute Class: Block_Data
@@ -111,7 +114,7 @@ PeriLab:
         Symmetry: isotropic plane stress
         Young's Modulus: 70000.0
         Poisson's Ratio: 0.3
-    Pre Calculation:
+    Pre Calculation Global:
       Bond Associated Deformation Gradient: false
       Deformation Gradient: false
       Deformed Bond Geometry: true

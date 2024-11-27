@@ -10,7 +10,7 @@ PeriLab:
       Node Set 2: ns_Dogbone_2.txt
     Type: Text File
   Models:
-    Pre Calculation:
+    Pre Calculation Global:
       Deformed Bond Geometry: true
       Deformation Gradient: false
       Shape Tensor: false
@@ -31,11 +31,13 @@ PeriLab:
       Node Set: Node Set 1
       Variable: Displacements
       Value: 0
+      Type: Dirichlet
     BC_2:
       Coordinate: x
       Node Set: Node Set 2
       Variable: Displacements
       Value: 0.5*t
+      Type: Dirichlet
   Blocks:
     block_1:
       Density: 1.4e-8

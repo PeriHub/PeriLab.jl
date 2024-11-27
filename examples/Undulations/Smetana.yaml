@@ -66,11 +66,13 @@ PeriLab:
       Node Set: Node Set 1
       Variable: Displacements
       Value: 6*t
+      Type: Dirichlet
     BC_2:
       Coordinate: x
       Node Set: Node Set 2
       Variable: Displacements
       Value: "0.0"
+      Type: Dirichlet
   Compute Class Parameters:
     External_Displacements:
       Block: block_9
@@ -531,7 +533,7 @@ PeriLab:
         Thickness: 1.0
         Young's Modulus: 165000.0
         Zero Energy Control: "Global"
-    Pre Calculation:
+    Pre Calculation Global:
       Bond Associated Deformation Gradient: false
       Deformation Gradient: true
       Deformed Bond Geometry: true

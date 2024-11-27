@@ -10,7 +10,7 @@ PeriLab:
     Type: "Text File"
     Input Mesh File: "mesh.txt"
   Models:
-    Pre Calculation:
+    Pre Calculation Global:
       Deformed Bond Geometry: true
       Shape Tensor: true
     Material Models:
@@ -45,10 +45,12 @@ PeriLab:
       Variable: "Temperature"
       Node Set: "Node Set 1"
       Value: "10"
+      Type: Dirichlet
     BC_2:
       Variable: "Temperature"
       Node Set: "Node Set 2"
       Value: "0.0"
+      Type: Dirichlet
   Solver:
     Material Models: False
     Thermal Models: True

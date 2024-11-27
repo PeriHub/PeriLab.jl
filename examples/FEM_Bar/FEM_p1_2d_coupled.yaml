@@ -40,11 +40,13 @@ PeriLab:
       Node Set: "Node Set 1"
       Coordinate: "x"
       Value: "0.00001*sin(200000*t)"
+      Type: Dirichlet
     BC_2:
       Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "x"
       Value: "0.0"
+      Type: Dirichlet
   Solver:
     Initial Time: 0.0
     Final Time: 1e-04

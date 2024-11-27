@@ -37,6 +37,7 @@ PeriLab:
       Variable: "Temperature"
       Node Set: "Node Set 3"
       Value: "100*t"
+      Type: Dirichlet
   Solver:
     Material Models: True
     Thermal Models: True
