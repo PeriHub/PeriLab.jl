@@ -470,11 +470,13 @@ function write_pd_mesh(dataobject)
         )
         nnodes = length(xg)
         # @info nnodes
-        grid = zeros(2, nnodes)
+        grid = zeros(2, nnodes + 1)
         for i = 1:nnodes
             grid[1, i] = xg[i]
             grid[2, i] = yg[i]
         end
+        grid[1, end] = pd_mesh["point"][1]
+        grid[2, end] = pd_mesh["point"][2]
         idxs = inrange(
             pd_mesh["balltree"],
             grid,
@@ -511,7 +513,7 @@ function write_pd_mesh(dataobject)
         )
         if distance_to_closest_point <= pd_mesh["width"] / 2 &&
            distance_along_line <= distance &&
-           distance_along_line >= 0
+           distance_along_line >= -pd_mesh["width"] / 2
             time_to_activation = distance_along_line / v
             pd_mesh["used_ids"][neighbors[i]] = true
             push!(
