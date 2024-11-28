@@ -65,11 +65,11 @@ function compute_model(
     activation_time = datamanager.get_field("Activation_Time")
     bond_damage = datamanager.get_bond_damage("NP1")
     active = datamanager.get_field("Active")
-    heat_capacity = datamanager.get_field("Specific Heat Capacity")
-    density = datamanager.get_field("Density")
-    printTemperature = additive_parameter["Print Temperature"]
+    number_of_neighbors = datamanager.get_field("Number of Neighbors")
     # must be specified, because it might be that no temperature model has been defined
     flux = datamanager.get_field("Heat Flow", "NP1")
+    add_flux = datamanager.get_field("Additive Heat Flux")
+    nn::Int64 = 1
     ###########
     for iID in nodes
         if active[iID]
@@ -77,19 +77,17 @@ function compute_model(
         end
         if time - dt <= activation_time[iID] < time
             active[iID] = true
-            flux[iID] = -printTemperature * heat_capacity[iID] * density[iID] ./ dt
+            flux[iID] = add_flux[iID] / dt
             nlist_temp = nlist[iID]
-
-            for jID in eachindex(nlist_temp)
+            nn = number_of_neighbors[iID]
+            for jID = 1:nn
                 @views neighborID = nlist_temp[jID]
-                if bond_damage[iID][jID] != 0
+                if activation_time[neighborID] > time
                     continue
                 end
-                if activation_time[neighborID] <= time
-                    bond_damage[iID][jID] = 1.0
-                    if haskey(inverse_nlist[neighborID], iID)
-                        bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 1.0
-                    end
+                bond_damage[iID][jID] = 1.0
+                if haskey(inverse_nlist[neighborID], iID)
+                    bond_damage[neighborID][inverse_nlist[neighborID][iID]] = 1.0
                 end
             end
         end
@@ -118,6 +116,16 @@ function init_model(
     additive_parameter::Dict,
     block::Int64,
 )
+
+    add_flux = datamanager.create_constant_node_field("Additive Heat Flux", Float64, 1)
+    heat_capacity = datamanager.get_field("Specific Heat Capacity")
+    density = datamanager.get_field("Density")
+
+    printTemperature = additive_parameter["Print Temperature"]
+
+    for iID in nodes
+        add_flux[iID] = -printTemperature * heat_capacity[iID] * density[iID]
+    end
 
     return datamanager
 end

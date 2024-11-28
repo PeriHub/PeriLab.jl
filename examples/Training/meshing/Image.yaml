@@ -26,11 +26,13 @@ PeriLab:
       Node Set: Node Set 1
       Variable: Displacements
       Value: 10*t
+      Type: Dirichlet
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
       Variable: Displacements
       Value: -10*t
+      Type: Dirichlet
   Blocks:
     block_1:
       Density: 1.4e-8

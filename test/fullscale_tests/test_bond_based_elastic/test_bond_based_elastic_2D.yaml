@@ -10,7 +10,7 @@ PeriLab:
     Type: "Text File"
     Input Mesh File: "test_mesh_2D.txt"
   Models:
-    Pre Calculation:
+    Pre Calculation Global:
       Deformed Bond Geometry: true
       Deformation Gradient: false
       Shape Tensor: false
@@ -39,11 +39,13 @@ PeriLab:
       Node Set: "Node Set 1"
       Coordinate: "y"
       Value: "0.1*t^2"
+      Type: Dirichlet
     BC_2:
       Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "y"
       Value: "0.0"
+      Type: Dirichlet
   Solver:
     Initial Time: 0.0
     Final Time: 5.0e-6

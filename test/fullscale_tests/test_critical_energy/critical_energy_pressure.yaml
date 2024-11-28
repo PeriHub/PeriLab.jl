@@ -44,11 +44,13 @@ PeriLab:
       Node Set: "Node Set 1"
       Coordinate: "x"
       Value: "1."
+      Type: Dirichlet
     BC_2:
       Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "x"
       Value: "0.0"
+      Type: Dirichlet
   Solver:
     Damage Models: True
     Initial Time: 0.0

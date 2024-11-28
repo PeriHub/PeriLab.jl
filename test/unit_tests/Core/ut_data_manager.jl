@@ -125,6 +125,7 @@ testfield_keys = test_data_manager.get_all_field_keys()
     @test B[1] == test_data_manager.get_field("B", "N")
     @test B[2] == test_data_manager.get_field("B", "NP1")
     @test C == test_data_manager.get_field("C")
+    @test C == test_data_manager.get_field("C", "constant")
     @test "A" in testfield_keys
     @test ("AN" in testfield_keys) == false
     @test ("ANP1" in testfield_keys) == false
@@ -360,7 +361,7 @@ end
     @test DN[1, 3] == DNtest[1, 3]
 end
 
-bd = test_data_manager.create_bond_field("Bond Damage", Float64, 1)
+bdn, bdnp1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1, 1)
 test_data_manager.create_constant_node_field("Active", Bool, 1, true)
 @testset "switch_NP1_to_N" begin
     bmatrixN, bmatrixNP1 = test_data_manager.create_bond_field("Bmat", Float64, "Matrix", 2)
@@ -388,9 +389,20 @@ test_data_manager.create_constant_node_field("Active", Bool, 1, true)
     bmatrixNP1[1][1, 2, 1] = 3
     bmatrixNP1[1][2, 2, 2] = 4
     # extra test, because Bond Damage is set to one, to avoid unneccessary operations
-    bd = test_data_manager.get_field("Bond Damage", "NP1")
-    @test sum(maximum(bd)) == 0
+    bdn = test_data_manager.get_field("Bond Damage", "N")
+    bdnp1 = test_data_manager.get_field("Bond Damage", "NP1")
+    bdnp1[2][1] = 0.5
+    @test bdn[2][1] == 1.0
+    @test bdnp1[2][1] == 0.5
+
     test_data_manager.switch_NP1_to_N()
+
+    bdn = test_data_manager.get_field("Bond Damage", "N")
+    bdnp1 = test_data_manager.get_field("Bond Damage", "NP1")
+    @test bdn[2][1] == 0.5
+    @test bdn[2][2] == 1.0
+    @test bdnp1[2][1] == 0.5
+    @test bdnp1[2][2] == 1.0
 
     DN = test_data_manager.get_field("D", "N")
     DNP1 = test_data_manager.get_field("D", "NP1")
@@ -427,11 +439,6 @@ test_data_manager.create_constant_node_field("Active", Bool, 1, true)
     @test INP1[2][1][3] == 0
     # bonds
     @test IN[2][1][3] == 5
-    bd = test_data_manager.get_field("Bond Damage", "NP1")
-    for id in eachindex(bd)
-        # @test sum(bd[id]) == nn[id]
-        @test sum(bd[id]) == 0.0
-    end
 
 end
 

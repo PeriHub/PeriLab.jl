@@ -360,12 +360,12 @@ Checks if the sum of the array is finite. If not, an error is raised.
 - `Bool`: `true` if the sum of the array is finite, `false` otherwise.
 """
 function check_inf_or_nan(array, msg)
-    if !isfinite(sum(array))
-        @error "Field ''$msg'' is infinite."
-        return true
-    end
     if isnan(sum(array))
         @error "Field ''$msg'' has NaN elements."
+        return true
+    end
+    if !isfinite(sum(array))
+        @error "Field ''$msg'' is infinite."
         return true
     end
     return false

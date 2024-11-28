@@ -7,7 +7,7 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 include("material_basis.jl")
 using LinearAlgebra
 using .Material_Basis:
-    get_all_elastic_moduli, distribute_forces, check_symmetry, get_all_elastic_moduli
+    get_all_elastic_moduli, distribute_forces!, check_symmetry, get_all_elastic_moduli
 using .Set_modules
 using TimerOutputs
 using StaticArrays
@@ -246,7 +246,8 @@ function distribute_force_densities(
     if !isnothing(nlist_filtered_ids)
         bond_norm = datamanager.get_field("Bond Norm")
         displacements = datamanager.get_field("Displacements", "NP1")
-        force_densities = distribute_forces(
+        force_densities = distribute_forces!(
+            force_densities,
             nodes,
             nlist,
             nlist_filtered_ids,
@@ -255,10 +256,9 @@ function distribute_force_densities(
             bond_damage,
             displacements,
             bond_norm,
-            force_densities,
         )
     else
-        distribute_forces(nodes, nlist, bond_force, volume, bond_damage, force_densities)
+        distribute_forces!(force_densities, nodes, nlist, bond_force, volume, bond_damage)
     end
 
 end

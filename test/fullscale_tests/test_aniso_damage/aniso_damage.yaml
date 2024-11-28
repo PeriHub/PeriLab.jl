@@ -31,21 +31,25 @@ PeriLab:
       Node Set: Node Set 1
       Variable: Displacements
       Value: 0
+      Type: Dirichlet
     BC_2:
       Coordinate: y
       Node Set: Node Set 1
       Variable: Displacements
       Value: 3000*t
+      Type: Dirichlet
     BC_3:
       Coordinate: x
       Node Set: Node Set 2
       Variable: Displacements
       Value: 0
+      Type: Dirichlet
     BC_4:
       Coordinate: y
       Node Set: Node Set 2
       Variable: Displacements
       Value: -3000*t
+      Type: Dirichlet
   Compute Class Parameters:
     External_Displacement:
       Block: block_3

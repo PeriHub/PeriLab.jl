@@ -344,7 +344,17 @@ function get_block_model_definition(
     properties,
 )
     # properties function from datamanager
-    pre_calculation_all_blocks::Bool = true
+
+    if haskey(params["Models"], "Pre Calculation Global")
+        for block_id in blocks
+            properties(
+                block_id,
+                "Pre Calculation Model",
+                params["Models"]["Pre Calculation Global"],
+            )
+        end
+    end
+
     for block_id in blocks
         if !haskey(params["Blocks"], "block_" * string(block_id))
             continue
@@ -357,23 +367,7 @@ function get_block_model_definition(
                     model,
                     get_model_parameter(params, model, block[model]),
                 )
-                if model == "Pre Calculation Model"
-                    pre_calculation_all_blocks = false
-                end
             end
-        end
-    end
-    # makes sure that pre calculation exists everywhere
-    # material needs are set elsewhere
-    # maybe not important and can be thrown away
-    # TODO check if realy needed
-    if haskey(params["Models"], "Pre Calculation Models") && pre_calculation_all_blocks
-        for block_id in blocks
-            properties(
-                block_id,
-                model,
-                get_model_parameter(params, model, "Pre Calculation Model"),
-            )
         end
     end
     return properties

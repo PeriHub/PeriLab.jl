@@ -38,16 +38,19 @@ PeriLab:
       Node Set: "Node Set 1"
       Coordinate: "x"
       Value: "0.1"
+      Type: Dirichlet
     BC_2:
       Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "y"
       Value: "0.1*t"
+      Type: Dirichlet
     BC_3:
       Variable: "Displacements"
       Node Set: "Node Set 3"
       Coordinate: "z"
       Value: "if t>0.00001 0 else 0.1 end"
+      Type: Dirichlet
   Solver:
     Material Models: False
     Thermal Models: True

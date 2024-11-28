@@ -35,11 +35,13 @@ PeriLab:
       Node Set: "Node Set 1"
       Coordinate: "y"
       Value: "0"
+      Type: Dirichlet
     BC_2:
       Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "y"
       Value: "0.0001*t"
+      Type: Dirichlet
   Solver:
     Initial Time: 0.0
     Final Time: 1e-05

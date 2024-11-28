@@ -8,7 +8,7 @@ using .Material_Basis:
     get_value,
     get_all_elastic_moduli,
     get_Hooke_matrix,
-    distribute_forces,
+    distribute_forces!,
     flaw_function,
     matrix_to_voigt,
     voigt_to_matrix,
@@ -72,9 +72,8 @@ end
             bond_damage[iID] .* mapreduce(permutedims, vcat, bond_force[iID]) .* volume[iID]
     end
 
-    result =
-        distribute_forces(nodes, nlist, bond_force, volume, bond_damage, force_densities)
-    @test result ≈ expected_force_densities
+    distribute_forces!(force_densities, nodes, nlist, bond_force, volume, bond_damage)
+    @test force_densities ≈ expected_force_densities
 end
 @testset "ut_flaw_function" begin
 

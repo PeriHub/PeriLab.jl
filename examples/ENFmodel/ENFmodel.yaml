@@ -44,21 +44,25 @@ PeriLab:
       Node Set: Node Set 1
       Variable: Force Densities
       Value: -5000000*t
+      Type: Dirichlet
     BC_2:
       Coordinate: x
       Node Set: Node Set 2
       Variable: Displacements
       Value: "0"
+      Type: Dirichlet
     BC_3:
       Coordinate: y
       Node Set: Node Set 2
       Variable: Displacements
       Value: "0"
+      Type: Dirichlet
     BC_4:
       Coordinate: y
       Node Set: Node Set 3
       Variable: Displacements
       Value: "0"
+      Type: Dirichlet
   # Compute Class Parameters:
   #   External_Displacements:
   #     Block: block_3

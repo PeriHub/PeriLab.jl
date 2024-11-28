@@ -11,7 +11,7 @@ using .Helpers: get_MMatrix, determinant, invert, smat
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
-export distribute_forces
+export distribute_forces!
 export flaw_function
 export matrix_to_voigt
 export voigt_to_matrix
@@ -275,7 +275,7 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
 end
 
 """
-    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
+    distribute_forces!(nodes::Union{SubArray,Vector{Int64}}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
@@ -292,7 +292,8 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::Matrix{Float64}`: The force densities.
 """
-function distribute_forces(
+function distribute_forces!(
+    force_densities::Matrix{Float64},
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Vector{Vector{Int64}},
     nlist_filtered_ids::Vector{Vector{Int64}},
@@ -301,7 +302,6 @@ function distribute_forces(
     bond_damage::Vector{Vector{Float64}},
     displacements::Matrix{Float64},
     bond_norm::Vector{Vector{Vector{Float64}}},
-    force_densities::Matrix{Float64},
 )
 
     @inbounds @fastmath for iID in nodes
@@ -339,7 +339,7 @@ function distribute_forces(
 end
 
 """
-    distribute_forces(nodes::Union{SubArray,Vector{Int64}}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
+    distribute_forces!(nodes::Union{SubArray,Vector{Int64}}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
@@ -353,13 +353,13 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::Matrix{Float64}`: The force densities.
 """
-function distribute_forces(
+function distribute_forces!(
+    force_densities::Matrix{Float64},
     nodes::Union{SubArray,Vector{Int64}},
     nlist::Vector{Vector{Int64}},
     bond_force::Vector{Vector{Vector{Float64}}},
     volume::Vector{Float64},
     bond_damage::Vector{Vector{Float64}},
-    force_densities::Matrix{Float64},
 )
     @inbounds @fastmath for iID in nodes
         @views @inbounds @fastmath for jID ∈ axes(nlist[iID], 1)
@@ -375,7 +375,6 @@ function distribute_forces(
             end
         end
     end
-    return force_densities
 end
 
 
