@@ -9,7 +9,7 @@ using DataFrames
 using PrettyTables
 using Logging
 
-include("../Support/geometry.jl")
+include("../Support/Geometry.jl")
 
 using .Geometry
 

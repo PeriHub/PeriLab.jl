@@ -4,9 +4,9 @@
 
 module Shape_Tensor
 using DataStructures: OrderedDict
-include("../../Support/helpers.jl")
+include("../../Support/Helpers.jl")
 using .Helpers: find_active_nodes
-include("../../Support/geometry.jl")
+include("../../Support/Geometry.jl")
 using .Geometry: compute_shape_tensors!
 export pre_calculation_name
 export init_model

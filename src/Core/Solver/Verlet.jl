@@ -11,7 +11,7 @@ using LoopVectorization
 using PrettyTables
 using Logging
 
-include("../../Support/helpers.jl")
+include("../../Support/Helpers.jl")
 using .Helpers: check_inf_or_nan, find_active_nodes, progress_bar
 include("../../Support/Parameters/parameter_handling.jl")
 using .Parameter_Handling:

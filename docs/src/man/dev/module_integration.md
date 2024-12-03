@@ -29,6 +29,9 @@ This function is called from the solver. You can call whatever function you like
 ## Module name
 You can setup the module name as you like as long as it does not exist a second time in PeriLab.
 
+!!! info "Coding Style"
+    Please name the module file and the module equaly.
+
 # Creating your own model category
 !!! warn "Creating your own model category"
     This is advanced programming. Feel free to contact the developers for help.

@@ -8,7 +8,7 @@ using DataFrames
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 using OrderedCollections: OrderedDict
 using PrettyTables
-include("../Support/helpers.jl")
+include("../Support/Helpers.jl")
 using .Helpers: fastdot
 include("./logging.jl")
 using .Logging_module: print_table

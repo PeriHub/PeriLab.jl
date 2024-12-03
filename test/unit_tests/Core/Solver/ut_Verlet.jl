@@ -5,27 +5,27 @@
 using Test
 using MPI
 @testset "ut_test_timestep" begin
-    @test PeriLab.Solver.Verlet.test_timestep(1.0, 2.0) == 1
-    @test PeriLab.Solver.Verlet.test_timestep(2.0, 1.1) == 1.1
-    @test PeriLab.Solver.Verlet.test_timestep(2.0, 2.0) == 2
+    @test PeriLab.Solver_control.Verlet.test_timestep(1.0, 2.0) == 1
+    @test PeriLab.Solver_control.Verlet.test_timestep(2.0, 1.1) == 1.1
+    @test PeriLab.Solver_control.Verlet.test_timestep(2.0, 2.0) == 2
 end
 
 @testset "ut_get_integration_steps" begin
-    @test isnothing(PeriLab.Solver.Verlet.get_integration_steps(0.0, 0.0, -1.0))
-    @test PeriLab.Solver.Verlet.get_integration_steps(0.0, 1.0, 1.0) == (1, 1.0)
-    @test PeriLab.Solver.Verlet.get_integration_steps(0.0, 2.0, 1.0) == (2, 1.0)
-    @test PeriLab.Solver.Verlet.get_integration_steps(0.0, 6.0, 2.0) == (3, 2.0)
-    @test PeriLab.Solver.Verlet.get_integration_steps(2.0, 6.0, 2.0) == (2, 2.0)
+    @test isnothing(PeriLab.Solver_control.Verlet.get_integration_steps(0.0, 0.0, -1.0))
+    @test PeriLab.Solver_control.Verlet.get_integration_steps(0.0, 1.0, 1.0) == (1, 1.0)
+    @test PeriLab.Solver_control.Verlet.get_integration_steps(0.0, 2.0, 1.0) == (2, 1.0)
+    @test PeriLab.Solver_control.Verlet.get_integration_steps(0.0, 6.0, 2.0) == (3, 2.0)
+    @test PeriLab.Solver_control.Verlet.get_integration_steps(2.0, 6.0, 2.0) == (2, 2.0)
 end
 
 @testset "ut_get_cs_denominator" begin
     volume = Float64[1, 2, 3]
     undeformed_bond = [1, 2, 3]
-    @test PeriLab.Solver.Verlet.get_cs_denominator(volume, undeformed_bond) == 3
+    @test PeriLab.Solver_control.Verlet.get_cs_denominator(volume, undeformed_bond) == 3
     undeformed_bond = [2, 4, 6]
-    @test PeriLab.Solver.Verlet.get_cs_denominator(volume, undeformed_bond) == 1.5
+    @test PeriLab.Solver_control.Verlet.get_cs_denominator(volume, undeformed_bond) == 1.5
     undeformed_bond = [1, 0.5, 2]
-    @test PeriLab.Solver.Verlet.get_cs_denominator(volume, undeformed_bond) == 6.5
+    @test PeriLab.Solver_control.Verlet.get_cs_denominator(volume, undeformed_bond) == 6.5
 end
 
 nnodes = 5
@@ -93,7 +93,7 @@ testVal = 72.82376628733019
 # from Peridigm
 @testset "ut_mechanical_critical_time_step" begin
 
-    t = PeriLab.Solver.Verlet.compute_mechanical_critical_time_step(
+    t = PeriLab.Solver_control.Verlet.compute_mechanical_critical_time_step(
         Vector{Int64}(1:nnodes),
         test_data_manager,
         Float64(140.0),
@@ -104,7 +104,7 @@ end
 # from Peridigm
 @testset "ut_thermodynamic_crititical_time_step" begin
 
-    t = PeriLab.Solver.Verlet.compute_thermodynamic_critical_time_step(
+    t = PeriLab.Solver_control.Verlet.compute_thermodynamic_critical_time_step(
         Vector{Int64}(1:nnodes),
         test_data_manager,
         Float64(0.12),
@@ -168,11 +168,11 @@ end
 # outputs = Dict()
 # solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
 # test_data_manager.set_rank(0)
-# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(block_nodes), bcs, test_data_manager, outputs, result_files, Solver.write_results)
+# result_files = run_Verlet_solver(solver_options, Solver_control.get_nodes(block_nodes), bcs, test_data_manager, outputs, result_files, Solver_control.write_results)
 # test_data_manager.set_rank(1)
 # # only if routine runs, if progress bar is not active
 # bcs = Boundary_conditions.init_BCs(params, test_data_manager)
 # result_files = []
 # outputs = Dict()
 # solver_options = Dict("Initial Time" => 0, "dt" => 3.59255e-05, "nsteps" => 2)
-# result_files = run_Verlet_solver(solver_options, Solver.get_nodes(block_nodes), bcs, test_data_manager, outputs, result_files, Solver.write_results)
+# result_files = run_Verlet_solver(solver_options, Solver_control.get_nodes(block_nodes), bcs, test_data_manager, outputs, result_files, Solver_control.write_results)

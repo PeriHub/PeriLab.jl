@@ -4,7 +4,7 @@
 
 module Bond_Deformation
 using DataStructures: OrderedDict
-include("../../Support/geometry.jl")
+include("../../Support/Geometry.jl")
 using .Geometry
 export pre_calculation_name
 export init_model

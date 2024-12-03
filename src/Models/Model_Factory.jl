@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Model_Factory
-include("../Support/helpers.jl")
+include("../Support/Helpers.jl")
 
 using .Helpers:
     check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert, determinant

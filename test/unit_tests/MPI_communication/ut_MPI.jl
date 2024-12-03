@@ -86,7 +86,7 @@ push_test!(
     @__LINE__
 )
 if ncores == 3
-    include("../../../src/Core/data_manager.jl")
+    include("../../../src/Core/Data_manager.jl")
     include("../../../src/IO/IO.jl")
     import .IO
     using .Data_manager

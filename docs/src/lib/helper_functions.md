@@ -13,6 +13,6 @@ CurrentModule = PeriLab
 ## Helpers
 
 ```@autodocs
-Modules = [Solver.Helpers]
+Modules = [Solver_control.Helpers]
 Order   = [:function, :type]
 ```

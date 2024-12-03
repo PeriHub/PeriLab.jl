@@ -11,7 +11,7 @@ This module provides functionality for running simulations in the PeriLab enviro
 
 ## Modules
 
-- `Core/data_manager.jl`: Data manager module for data management and access.
+- `Core/Data_manager.jl`: Data manager module for data management and access.
 - `IO/logging.jl`: Module for setting up and managing logging.
 - `IO/IO.jl`: Input/output functions for handling data files.
 - `Core/Solver/Solver_control.jl`: Solver control module for managing simulation solvers.
@@ -35,7 +35,7 @@ main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=fals
 """
 
 module PeriLab
-include("./Core/data_manager.jl")
+include("./Core/Data_manager.jl")
 include("./IO/logging.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
@@ -273,8 +273,8 @@ function main(
             @timeit to "IO.initialize_data" datamanager, params =
                 IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
             @info "Init Solver"
-            @timeit to "Solver.init" block_nodes, bcs, datamanager, solver_options =
-                Solver.init(params, datamanager, to)
+            @timeit to "Solver_control.init" block_nodes, bcs, datamanager, solver_options =
+                Solver_control.init(params, datamanager, to)
             IO.show_block_summary(
                 solver_options,
                 params,
@@ -299,7 +299,7 @@ function main(
                 nsteps = solver_options["nsteps"]
                 solver_options["nsteps"] = 10
                 elapsed_time = @elapsed begin
-                    @timeit to "Solver" result_files = Solver.solver(
+                    @timeit to "Solver" result_files = Solver_control.solver(
                         solver_options,
                         block_nodes,
                         bcs,
@@ -317,7 +317,7 @@ function main(
                 @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
 
             else
-                @timeit to "Solver.solver" result_files = Solver.solver(
+                @timeit to "Solver_control.solver" result_files = Solver_control.solver(
                     solver_options,
                     block_nodes,
                     bcs,

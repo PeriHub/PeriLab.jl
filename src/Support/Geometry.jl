@@ -8,7 +8,7 @@ using TensorOperations
 using Combinatorics: levicivita
 using StaticArrays
 using Rotations
-include("helpers.jl")
+include("Helpers.jl")
 using .Helpers: invert, smat, mat_mul_transpose_mat!
 export bond_geometry!
 export compute_shape_tensors!

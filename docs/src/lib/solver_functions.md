@@ -20,13 +20,13 @@ Order   = [:function, :type]
 ## Verlet
 
 ```@autodocs
-Modules = [Solver.Verlet]
+Modules = [Solver_control.Verlet]
 Order   = [:function, :type]
 ```
 
 ## Boundary_conditions
 
 ```@autodocs
-Modules = [Solver.Boundary_conditions]
+Modules = [Solver_control.Boundary_conditions]
 Order   = [:function, :type]
 ```

@@ -14,9 +14,9 @@ include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 include("../../material_basis.jl")
 using .Material_Basis: compute_Piola_Kirchhoff_stress
-include("../../../../Support/helpers.jl")
+include("../../../../Support/Helpers.jl")
 using .Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
-include("../../../../Support/geometry.jl")
+include("../../../../Support/Geometry.jl")
 using .Geometry: compute_strain
 using .Global_zero_energy_control
 include("../../../../Core/Module_inclusion/set_Modules.jl")

@@ -6,7 +6,7 @@ module PD_Solid_Elastic
 include("../../material_basis.jl")
 using .Material_Basis: get_symmetry
 include("./Ordinary.jl")
-include("../../../../Support/helpers.jl")
+include("../../../../Support/Helpers.jl")
 using .Helpers: add_in_place!
 using TimerOutputs
 using StaticArrays

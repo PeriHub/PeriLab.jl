@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 include("../../../../src/Models/Damage/Energy_release.jl")
-# include("../../../../src/Core/data_manager.jl")
+# include("../../../../src/Core/Data_manager.jl")
 using Test
 using .Critical_Energy_Model
 @testset "get_quad_horizon" begin

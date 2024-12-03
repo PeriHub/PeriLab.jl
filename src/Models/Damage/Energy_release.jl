@@ -4,8 +4,8 @@
 
 module Critical_Energy_Model
 include("../Material/Material_Factory.jl")
-include("../../Support/geometry.jl")
-include("../../Support/helpers.jl")
+include("../../Support/Geometry.jl")
+include("../../Support/Helpers.jl")
 using .Material
 using .Geometry
 using .Helpers: rotate, fastdot, sub_in_place!, div_in_place!, mul_in_place!

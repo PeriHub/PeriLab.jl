@@ -7,7 +7,7 @@ using FastGaussQuadrature
 using Statistics
 include("../Models/Material/material_basis.jl")
 using .Material_Basis: voigt_to_matrix
-include("../Support/helpers.jl")
+include("../Support/Helpers.jl")
 using .Helpers: invert, determinant
 function get_FE_material_model(params::Dict, name::String)
     if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])

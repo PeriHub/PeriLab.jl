@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Solver
+module Solver_control
 
 include("../../Support/Parameters/parameter_handling.jl")
-include("../../Support/helpers.jl")
+include("../../Support/Helpers.jl")
 using .Parameter_Handling:
     get_density,
     get_horizon,

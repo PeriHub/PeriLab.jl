@@ -4,7 +4,7 @@
 
 module Correspondence_Elastic
 include("../../material_basis.jl")
-include("../../../../Support/helpers.jl")
+include("../../../../Support/Helpers.jl")
 using .Material_Basis: voigt_to_matrix, matrix_to_voigt, get_Hooke_matrix
 using .Helpers: get_fourth_order, fast_mul!, get_mapping
 export compute_stresses

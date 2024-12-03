@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Global_zero_energy_control
-include("../../../../Support/helpers.jl")
+include("../../../../Support/Helpers.jl")
 using .Helpers: get_fourth_order
 using StaticArrays: MMatrix, MVector
 using LoopVectorization
 using LinearAlgebra: mul!
-include("../../../../Support/geometry.jl")
+include("../../../../Support/Geometry.jl")
 include("../../material_basis.jl")
 using .Material_Basis: get_Hooke_matrix
 using TensorOperations

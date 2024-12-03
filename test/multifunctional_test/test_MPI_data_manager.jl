@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../src/Core/data_manager.jl")
+include("../../src/Core/Data_manager.jl")
 include("../../src/IO/mesh_data.jl")
 using Test
 using MPI

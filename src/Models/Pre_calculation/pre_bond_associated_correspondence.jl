@@ -4,7 +4,7 @@
 
 module Pre_Bond_Associated_Correspondence
 using DataStructures: OrderedDict
-include("../../Support/geometry.jl")
+include("../../Support/Geometry.jl")
 using .Geometry: compute_weighted_deformation_gradient
 using LoopVectorization
 using StaticArrays: @MVector
@@ -13,7 +13,7 @@ export pre_calculation_name
 export init_model
 export compute
 
-include("../../Support/helpers.jl")
+include("../../Support/Helpers.jl")
 using .Helpers: invert, qdim
 
 

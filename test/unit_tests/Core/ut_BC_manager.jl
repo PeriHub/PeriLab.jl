@@ -8,21 +8,22 @@ using Test
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
 @testset "ut_clean_up" begin
-    @test PeriLab.Solver.Boundary_conditions.clean_up("") == ""
-    @test PeriLab.Solver.Boundary_conditions.clean_up("-") == " .- "
-    @test PeriLab.Solver.Boundary_conditions.clean_up("+") == " .+ "
-    @test PeriLab.Solver.Boundary_conditions.clean_up("*") == " .* "
-    @test PeriLab.Solver.Boundary_conditions.clean_up("/") == " ./ "
-    @test PeriLab.Solver.Boundary_conditions.clean_up("5e-8") == "5e-8"
-    @test PeriLab.Solver.Boundary_conditions.clean_up("5.0e-8") == "5.0e-8"
-    @test PeriLab.Solver.Boundary_conditions.clean_up("5.0e-8-5") == "5.0e-8 .- 5"
-    @test PeriLab.Solver.Boundary_conditions.clean_up("5.0e-8/5e+5*t") ==
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("") == ""
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("-") == " .- "
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("+") == " .+ "
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("*") == " .* "
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("/") == " ./ "
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("5e-8") == "5e-8"
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("5.0e-8") == "5.0e-8"
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("5.0e-8-5") == "5.0e-8 .- 5"
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("5.0e-8/5e+5*t") ==
           "5.0e-8 ./ 5e+5 .* t"
-    @test PeriLab.Solver.Boundary_conditions.clean_up("5-8.0/5e+5") == "5 .- 8.0 ./ 5e+5"
-    @test PeriLab.Solver.Boundary_conditions.clean_up("2") == "2"
-    @test PeriLab.Solver.Boundary_conditions.clean_up("2.") == "2."
-    @test PeriLab.Solver.Boundary_conditions.clean_up("2.0") == "2.0"
-    @test PeriLab.Solver.Boundary_conditions.clean_up("2.0.-1") == "2.0 .- 1"
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("5-8.0/5e+5") ==
+          "5 .- 8.0 ./ 5e+5"
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("2") == "2"
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("2.") == "2."
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("2.0") == "2.0"
+    @test PeriLab.Solver_control.Boundary_conditions.clean_up("2.0.-1") == "2.0 .- 1"
 end
 
 @testset "ut_evaluation" begin
@@ -32,41 +33,48 @@ end
     coor = zeros(3, 3)
     bc = Int64(10)
     values = ones(Float64, 3)
-    PeriLab.Solver.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
     @test (10 * unit) == values
     values = ones(Float64, 3)
     bc = Float64(10)
-    PeriLab.Solver.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
     @test (10 * unit) == values
     values = ones(Float64, 3)
     bc = Float64(10)
-    PeriLab.Solver.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
     @test (10 * unit) == values
     values = ones(Float64, 3)
     bc = string(10)
-    PeriLab.Solver.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
     @test (10 * unit) == values
     values = ones(Float64, 3)
     bc = "x"
     for i = 1:4
         coor[3, 1] = i * i - 2
-        PeriLab.Solver.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+        PeriLab.Solver_control.Boundary_conditions.eval_bc!(
+            values,
+            bc,
+            coor,
+            time,
+            dof,
+            false,
+        )
         @test (coor[:, 1]) == values
         values = ones(Float64, 3)
     end
     dof = 3
     bc = "t"
-    PeriLab.Solver.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
     @test (time * unit) == values
     values = ones(Float64, 3)
     bc = "t*x"
-    PeriLab.Solver.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
     @test (time .* coor[:, 1]) == values
     values = ones(Float64, 3)
     for t = 0:4
         bc = "if t>2 0 else 20 end"
         if t > 2
-            PeriLab.Solver.Boundary_conditions.eval_bc!(
+            PeriLab.Solver_control.Boundary_conditions.eval_bc!(
                 values,
                 bc,
                 coor,
@@ -77,7 +85,7 @@ end
             @test (0.0 * unit) == values
             values = ones(Float64, 3)
         else
-            PeriLab.Solver.Boundary_conditions.eval_bc!(
+            PeriLab.Solver_control.Boundary_conditions.eval_bc!(
                 values,
                 bc,
                 coor,
@@ -92,7 +100,7 @@ end
     for t = 0:2
         bc = "100.0"
         if t == 0
-            PeriLab.Solver.Boundary_conditions.eval_bc!(
+            PeriLab.Solver_control.Boundary_conditions.eval_bc!(
                 values,
                 bc,
                 coor,
@@ -102,7 +110,7 @@ end
             )
             @test (100.0 * unit) == values
             values = ones(Float64, 3)
-            PeriLab.Solver.Boundary_conditions.eval_bc!(
+            PeriLab.Solver_control.Boundary_conditions.eval_bc!(
                 values,
                 bc,
                 coor,
@@ -113,7 +121,7 @@ end
             @test (100.0 * unit) == values
             values = ones(Float64, 3)
         else
-            PeriLab.Solver.Boundary_conditions.eval_bc!(
+            PeriLab.Solver_control.Boundary_conditions.eval_bc!(
                 values,
                 bc,
                 coor,
@@ -126,7 +134,7 @@ end
         end
     end
     temp_values = values
-    PeriLab.Solver.Boundary_conditions.eval_bc!(
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(
         values,
         bc,
         Matrix{Float64}(undef, 0, 0),
@@ -142,7 +150,10 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_dof() = 2
     params = Dict()
-    bcs = PeriLab.Solver.Boundary_conditions.boundary_condition(params, test_data_manager)
+    bcs = PeriLab.Solver_control.Boundary_conditions.boundary_condition(
+        params,
+        test_data_manager,
+    )
     @test length(bcs) == 0
     params = Dict(
         "Boundary Conditions" => Dict(
@@ -184,7 +195,10 @@ end
         ),
     )
 
-    bcs = PeriLab.Solver.Boundary_conditions.boundary_condition(params, test_data_manager)
+    bcs = PeriLab.Solver_control.Boundary_conditions.boundary_condition(
+        params,
+        test_data_manager,
+    )
     @test isnothing(bcs)
     params = Dict(
         "Boundary Conditions" => Dict(
@@ -203,7 +217,10 @@ end
         ),
     )
 
-    bcs = PeriLab.Solver.Boundary_conditions.boundary_condition(params, test_data_manager)
+    bcs = PeriLab.Solver_control.Boundary_conditions.boundary_condition(
+        params,
+        test_data_manager,
+    )
 
     @test length(bcs) == 2
     @test "BC_1" in keys(bcs)
@@ -256,9 +273,12 @@ end
         ),
     )
 
-    bcs = PeriLab.Solver.Boundary_conditions.boundary_condition(params, test_data_manager)
+    bcs = PeriLab.Solver_control.Boundary_conditions.boundary_condition(
+        params,
+        test_data_manager,
+    )
     @test isnothing(
-        PeriLab.Solver.Boundary_conditions.check_valid_bcs(bcs, test_data_manager),
+        PeriLab.Solver_control.Boundary_conditions.check_valid_bcs(bcs, test_data_manager),
     )
 end
 @testset "ut_init_BCs" begin
@@ -298,7 +318,7 @@ end
         ),
     )
 
-    bcs = PeriLab.Solver.Boundary_conditions.init_BCs(params, test_data_manager)
+    bcs = PeriLab.Solver_control.Boundary_conditions.init_BCs(params, test_data_manager)
     @test length(bcs) == 1
     # clean up params representation
     @test "BC_1" in keys(bcs)
@@ -324,7 +344,7 @@ end
             ),
         ),
     )
-    bcs = PeriLab.Solver.Boundary_conditions.init_BCs(params, test_data_manager)
+    bcs = PeriLab.Solver_control.Boundary_conditions.init_BCs(params, test_data_manager)
     @test length(bcs) == 2
     @test "BC_1" in keys(bcs)
     @test "BC_2" in keys(bcs)
@@ -386,8 +406,12 @@ end
     disp = test_data_manager.get_field("Displacements", "NP1")
     @test sum(temperature) == 0
     @test sum(disp) == 0
-    bcs = PeriLab.Solver.Boundary_conditions.init_BCs(params, test_data_manager)
-    PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.0)
+    bcs = PeriLab.Solver_control.Boundary_conditions.init_BCs(params, test_data_manager)
+    PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+        bcs,
+        test_data_manager,
+        0.0,
+    )
     temperature = test_data_manager.get_field("Temperature")
     disp = test_data_manager.get_field("Displacements", "NP1")
     @test sum(temperature) == 0
@@ -396,7 +420,11 @@ end
         disp,
         [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5],
     )
-    PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.2)
+    PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+        bcs,
+        test_data_manager,
+        0.2,
+    )
     temperature = test_data_manager.get_field("Temperature")
     disp = test_data_manager.get_field("Displacements", "NP1")
 
@@ -415,7 +443,11 @@ end
     bcs["BC_2"]["Node Set"] = []
     temperature .= 0
     disp .= 0
-    PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.2)
+    PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+        bcs,
+        test_data_manager,
+        0.2,
+    )
     @test sum(temperature) == 0
     @test sum(disp) == 0
 
@@ -429,8 +461,12 @@ end
             ),
         ),
     )
-    bcs = PeriLab.Solver.Boundary_conditions.init_BCs(params, test_data_manager)
+    bcs = PeriLab.Solver_control.Boundary_conditions.init_BCs(params, test_data_manager)
     @test isnothing(
-        PeriLab.Solver.Boundary_conditions.apply_bc_dirichlet(bcs, test_data_manager, 0.2),
+        PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+            bcs,
+            test_data_manager,
+            0.2,
+        ),
     )
 end

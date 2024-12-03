@@ -6,7 +6,7 @@ module Material_Basis
 using LinearAlgebra
 using LoopVectorization
 using StaticArrays
-include("../../Support/helpers.jl")
+include("../../Support/Helpers.jl")
 using .Helpers: get_MMatrix, determinant, invert, smat
 export get_value
 export get_all_elastic_moduli

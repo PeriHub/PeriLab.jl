@@ -5,7 +5,7 @@
 module Data_manager
 using MPI
 using DataStructures: OrderedDict
-include("../Support/helpers.jl")
+include("../Support/Helpers.jl")
 using .Helpers: fill_in_place!
 
 export add_active_model

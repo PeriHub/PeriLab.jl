@@ -9,18 +9,18 @@ using Test
 PeriLab.Data_manager.initialize_data()
 
 @testset "ut_valid_models" begin
-    @test isnothing(PeriLab.Solver.FEM.valid_models(Dict()))
-    @test isnothing(PeriLab.Solver.FEM.valid_models(Dict("Additive Model" => "a")))
-    @test isnothing(PeriLab.Solver.FEM.valid_models(Dict("Damage Model" => "a")))
-    @test PeriLab.Solver.FEM.valid_models(
+    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict()))
+    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict("Additive Model" => "a")))
+    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict("Damage Model" => "a")))
+    @test PeriLab.Solver_control.FEM.valid_models(
         Dict(
             "Damage Model" => "a",
             "Additive Model" => "a",
             "Material Model" => "a Correspondence",
         ),
     )
-    @test isnothing(PeriLab.Solver.FEM.valid_models(Dict("Thermal Model" => "a")))
-    @test PeriLab.Solver.FEM.valid_models(Dict("Material Model" => "a"))
+    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict("Thermal Model" => "a")))
+    @test PeriLab.Solver_control.FEM.valid_models(Dict("Material Model" => "a"))
 end
 @testset "ut_init_FEM" begin
     test_data_manager = PeriLab.Data_manager
@@ -30,16 +30,20 @@ end
     test_data_manager.set_num_controller(6)
     rho = test_data_manager.create_constant_node_field("Density", Float64, 1)
     rho .= 2
-    test = PeriLab.Solver.FEM.init_FEM(Dict(), test_data_manager)
+    test = PeriLab.Solver_control.FEM.init_FEM(Dict(), test_data_manager)
     @test isnothing(test)
-    test = PeriLab.Solver.FEM.init_FEM(Dict("FEM" => Dict()), test_data_manager)
+    test = PeriLab.Solver_control.FEM.init_FEM(Dict("FEM" => Dict()), test_data_manager)
     @test isnothing(test)
     test_data_manager.set_dof(1)
-    test =
-        PeriLab.Solver.FEM.init_FEM(Dict("FEM" => Dict("Degree" => 1)), test_data_manager)
+    test = PeriLab.Solver_control.FEM.init_FEM(
+        Dict("FEM" => Dict("Degree" => 1)),
+        test_data_manager,
+    )
     @test isnothing(test)
-    test =
-        PeriLab.Solver.FEM.init_FEM(Dict("FEM" => Dict("Degree" => 4)), test_data_manager)
+    test = PeriLab.Solver_control.FEM.init_FEM(
+        Dict("FEM" => Dict("Degree" => 4)),
+        test_data_manager,
+    )
     @test isnothing(test)
     dof = 2
     test_data_manager.set_dof(dof)
@@ -89,7 +93,7 @@ end
             ),
         ),
     )
-    @test isnothing(PeriLab.Solver.FEM.init_FEM(params, test_data_manager))
+    @test isnothing(PeriLab.Solver_control.FEM.init_FEM(params, test_data_manager))
     params = Dict(
         "FEM" => Dict(
             "Degree" => 1,
@@ -110,7 +114,7 @@ end
     )
 
 
-    test_data_manager = PeriLab.Solver.FEM.init_FEM(params, test_data_manager)
+    test_data_manager = PeriLab.Solver_control.FEM.init_FEM(params, test_data_manager)
 
     @test "N Matrix" in test_data_manager.get_all_field_keys()
     @test "B Matrix" in test_data_manager.get_all_field_keys()
@@ -157,7 +161,7 @@ end
 
     # only in tests for resize or redefinition reasons
     test_data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
-    @test isnothing(PeriLab.Solver.FEM.init_FEM(params, test_data_manager))
+    @test isnothing(PeriLab.Solver_control.FEM.init_FEM(params, test_data_manager))
 end
 
 @testset "ut_eval" begin
@@ -217,9 +221,9 @@ end
         ),
     )
 
-    test_data_manager = PeriLab.Solver.FEM.init_FEM(params, test_data_manager)
+    test_data_manager = PeriLab.Solver_control.FEM.init_FEM(params, test_data_manager)
     elements = Vector{Int64}([1, 2])
-    test_data_manager = PeriLab.Solver.FEM.eval(
+    test_data_manager = PeriLab.Solver_control.FEM.eval(
         test_data_manager,
         elements,
         test_data_manager.get_properties(1, "FEM"),
@@ -251,7 +255,7 @@ end
     displacements[5, 2] = 0.5
     displacements[6, 1] = 1
     displacements[6, 2] = 0.5
-    test_data_manager = PeriLab.Solver.FEM.eval(
+    test_data_manager = PeriLab.Solver_control.FEM.eval(
         test_data_manager,
         elements,
         test_data_manager.get_properties(1, "FEM"),
@@ -277,7 +281,8 @@ end
 @testset "ut_get_FEM_nodes" begin
     test_data_manager = PeriLab.Data_manager
     topology = test_data_manager.get_field("FE Topology")
-    test_data_manager = PeriLab.Solver.FEM.get_FEM_nodes(test_data_manager, topology)
+    test_data_manager =
+        PeriLab.Solver_control.FEM.get_FEM_nodes(test_data_manager, topology)
     @test "FE Nodes" in test_data_manager.get_all_field_keys()
     fem_nodes = test_data_manager.get_field("FE Nodes")
     for i in eachindex(fem_nodes)
@@ -292,7 +297,8 @@ end
     topology[2, 2] = 5
     topology[2, 3] = 3
     topology[2, 4] = 4
-    test_data_manager = PeriLab.Solver.FEM.get_FEM_nodes(test_data_manager, topology)
+    test_data_manager =
+        PeriLab.Solver_control.FEM.get_FEM_nodes(test_data_manager, topology)
     @test fem_nodes[1]
     @test !fem_nodes[2]
     @test fem_nodes[3]

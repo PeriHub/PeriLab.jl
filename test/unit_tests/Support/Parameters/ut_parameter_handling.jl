@@ -10,74 +10,79 @@ using Dierckx
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
 @testset "ut_get_element_degree" begin
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_element_degree(Dict()))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_element_degree(Dict()))
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_element_degree(Dict("Degree" => "ABC")),
+        PeriLab.Solver_control.Parameter_Handling.get_element_degree(
+            Dict("Degree" => "ABC"),
+        ),
     )
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_element_degree(Dict("Degree" => "1")),
+        PeriLab.Solver_control.Parameter_Handling.get_element_degree(Dict("Degree" => "1")),
     )
-    @test PeriLab.Solver.Parameter_Handling.get_element_degree(Dict("Degree" => 1)) == 1
-    @test PeriLab.Solver.Parameter_Handling.get_element_degree(
+    @test PeriLab.Solver_control.Parameter_Handling.get_element_degree(
+        Dict("Degree" => 1),
+    ) == 1
+    @test PeriLab.Solver_control.Parameter_Handling.get_element_degree(
         Dict("Degree" => [1, 2, 3]),
     ) == [1, 2, 3]
-    @test PeriLab.Solver.Parameter_Handling.get_element_degree(
+    @test PeriLab.Solver_control.Parameter_Handling.get_element_degree(
         Dict("Degree" => [1, 2, 3, 5]),
     ) == [1, 2, 3, 5]
 end
 
 @testset "ut_get_element_type" begin
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_element_type(Dict()))
-    @test PeriLab.Solver.Parameter_Handling.get_element_type(
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_element_type(Dict()))
+    @test PeriLab.Solver_control.Parameter_Handling.get_element_type(
         Dict("Element Type" => "ABC"),
     ) == "ABC"
-    @test PeriLab.Solver.Parameter_Handling.get_element_type(Dict("Element Type" => 12)) ==
-          "12"
+    @test PeriLab.Solver_control.Parameter_Handling.get_element_type(
+        Dict("Element Type" => 12),
+    ) == "12"
 end
 
 @testset "ut_get_output_type" begin
-    @test PeriLab.Solver.Parameter_Handling.get_output_type(
+    @test PeriLab.Solver_control.Parameter_Handling.get_output_type(
         Dict("Output1" => Dict()),
         "Output1",
     ) == "Exodus"
-    @test PeriLab.Solver.Parameter_Handling.get_output_type(
+    @test PeriLab.Solver_control.Parameter_Handling.get_output_type(
         Dict("Output1" => Dict("Output File Type" => "CSV")),
         "Output1",
     ) == "CSV"
-    @test PeriLab.Solver.Parameter_Handling.get_output_type(
+    @test PeriLab.Solver_control.Parameter_Handling.get_output_type(
         Dict(
             "Output1" => Dict("Output File Type" => "Exodus"),
             "Output2" => Dict("Output File Type" => "CSV"),
         ),
         "Output1",
     ) == "Exodus"
-    @test PeriLab.Solver.Parameter_Handling.get_output_type(
+    @test PeriLab.Solver_control.Parameter_Handling.get_output_type(
         Dict(
             "Output1" => Dict("Output File Type" => "Exodus"),
             "Output2" => Dict("Output File Type" => "CSV"),
         ),
         "Output2",
     ) == "CSV"
-    @test PeriLab.Solver.Parameter_Handling.get_output_type(
+    @test PeriLab.Solver_control.Parameter_Handling.get_output_type(
         Dict("Output1" => Dict("Output File Type" => "CSV"), "Output2" => Dict()),
         "Output2",
     ) == "Exodus"
-    @test PeriLab.Solver.Parameter_Handling.get_output_type(
+    @test PeriLab.Solver_control.Parameter_Handling.get_output_type(
         Dict("Output1" => Dict("Output File Type" => "Exodus")),
         "Output1",
     ) == "Exodus"
 end
 @testset "ut_get_bond_filters" begin
     params = Dict("Discretization" => Dict())
-    check, bfList = PeriLab.Solver.Parameter_Handling.get_bond_filters(params)
+    check, bfList = PeriLab.Solver_control.Parameter_Handling.get_bond_filters(params)
     @test !check
     @test bfList == Dict{String,Dict{String,Any}}()
     params = Dict("Discretization" => Dict("Bond Filters" => Dict()))
-    check, bfList = PeriLab.Solver.Parameter_Handling.get_bond_filters(params)
+    check, bfList = PeriLab.Solver_control.Parameter_Handling.get_bond_filters(params)
     @test check
     @test bfList == Dict()
     params = Dict("Discretization" => Dict("Bond Filters" => Dict("a" => Dict("a" => 1))))
-    check, bfList = PeriLab.Solver.Parameter_Handling.get_bond_filters(params)
+    check, bfList = PeriLab.Solver_control.Parameter_Handling.get_bond_filters(params)
     @test check
     @test bfList == Dict("a" => Dict("a" => 1))
     params = Dict(
@@ -89,7 +94,7 @@ end
             ),
         ),
     )
-    check, bfList = PeriLab.Solver.Parameter_Handling.get_bond_filters(params)
+    check, bfList = PeriLab.Solver_control.Parameter_Handling.get_bond_filters(params)
     @test check
     @test bfList ==
           Dict("a" => Dict("a" => 1), "g" => Dict("a" => 1), "adas" => Dict("a" => 1))
@@ -99,16 +104,16 @@ end
     params = Dict{Any,Any}()
     @info "Error messages are tested and therefore okay."
 
-    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Models" => Dict{Any,Any}()))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
             "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()),
             "Discretization" => Dict{Any,Any}(),
         ),
     )
-    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
             "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()),
@@ -116,14 +121,14 @@ end
             "Blocks" => Dict{Any,Any}(),
         ),
     )
-    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
             "Models" => Dict{Any,Any}("Material Models" => Dict{Any,Any}()),
             "Blocks" => Dict{Any,Any}(),
         ),
     )
-    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.validate_yaml(params))
 
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
@@ -134,11 +139,11 @@ end
         ),
     )
 
-    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.validate_yaml(params))
 
     params = Dict{Any,Any}("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}()))
 
-    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.validate_yaml(params))
 
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
@@ -159,7 +164,7 @@ end
             "Solver" => Dict{Any,Any}("Final Time" => 1.0, "Initial Time" => 0.0),
         ),
     )
-    @test isnothing(PeriLab.Solver.Parameter_Handling.validate_yaml(params))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.validate_yaml(params))
     params = Dict{Any,Any}(
         "PeriLab" => Dict{Any,Any}(
             "Models" => Dict{Any,Any}(
@@ -179,30 +184,36 @@ end
             "Solver" => Dict{Any,Any}("Final Time" => 1.0, "Initial Time" => 0.0),
         ),
     )
-    @test PeriLab.Solver.Parameter_Handling.validate_yaml(params) == params["PeriLab"]
+    @test PeriLab.Solver_control.Parameter_Handling.validate_yaml(params) ==
+          params["PeriLab"]
 end
 
 @testset "ut_get_external_topology_name" begin
     params = Dict("Discretization" => Dict())
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_external_topology_name(params))
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_external_topology_name(params),
+    )
     params = Dict("Discretization" => Dict("Input External Topology" => Dict()))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_external_topology_name(params))
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_external_topology_name(params),
+    )
     name = randstring(12)
     params =
         Dict("Discretization" => Dict("Input External Topology" => Dict("File" => name)))
-    @test PeriLab.Solver.Parameter_Handling.get_external_topology_name(params) == name
+    @test PeriLab.Solver_control.Parameter_Handling.get_external_topology_name(params) ==
+          name
 end
 @testset "ut_get_mesh_name" begin
     params = Dict("Discretization" => Dict())
-    @test PeriLab.Solver.Parameter_Handling.get_mesh_name(params) === nothing
+    @test PeriLab.Solver_control.Parameter_Handling.get_mesh_name(params) === nothing
     name = randstring(12)
     params = Dict("Discretization" => Dict("Input Mesh File" => name))
-    @test PeriLab.Solver.Parameter_Handling.get_mesh_name(params) == name
+    @test PeriLab.Solver_control.Parameter_Handling.get_mesh_name(params) == name
 end
 
 @testset "ut_get_output_filenames" begin
     params = Dict()
-    filenames = PeriLab.Solver.Parameter_Handling.get_output_filenames(params, "")
+    filenames = PeriLab.Solver_control.Parameter_Handling.get_output_filenames(params, "")
     @test filenames == []
     params = Dict(
         "Outputs" => Dict(
@@ -210,7 +221,7 @@ end
             "Output2" => Dict("Output Filename" => "2"),
         ),
     )
-    filenames = PeriLab.Solver.Parameter_Handling.get_output_filenames(params, "")
+    filenames = PeriLab.Solver_control.Parameter_Handling.get_output_filenames(params, "")
     @test filenames[1] == "1.e"
     @test filenames[2] == "2.e"
     params = Dict(
@@ -219,7 +230,8 @@ end
             "Output2" => Dict("Output Filename" => "4", "Output File Type" => "Exodus"),
         ),
     )
-    filenames = PeriLab.Solver.Parameter_Handling.get_output_filenames(params, "test")
+    filenames =
+        PeriLab.Solver_control.Parameter_Handling.get_output_filenames(params, "test")
     @test filenames[1] == "test/3.csv"
     @test filenames[2] == "test/4.e"
 end
@@ -230,7 +242,7 @@ end
     variables = ["DisplacementsNP1", "Forces"]
     computes = ["External_Displacements"]
     output_type = "Exodus"
-    fieldnames = PeriLab.Solver.Parameter_Handling.get_output_fieldnames(
+    fieldnames = PeriLab.Solver_control.Parameter_Handling.get_output_fieldnames(
         outputs,
         variables,
         computes,
@@ -244,7 +256,7 @@ end
 
     outputs = Dict("Displacements" => "true")
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_output_fieldnames(
+        PeriLab.Solver_control.Parameter_Handling.get_output_fieldnames(
             outputs,
             variables,
             computes,
@@ -254,7 +266,7 @@ end
 
     outputs = Dict("External_Displacements" => true)
     output_type = "CSV"
-    fieldnames = PeriLab.Solver.Parameter_Handling.get_output_fieldnames(
+    fieldnames = PeriLab.Solver_control.Parameter_Handling.get_output_fieldnames(
         outputs,
         variables,
         computes,
@@ -263,7 +275,7 @@ end
     @test fieldnames == [["External_Displacements", "constant"]]
 
     outputs = Dict("External_Forces" => true)
-    fieldnames = PeriLab.Solver.Parameter_Handling.get_output_fieldnames(
+    fieldnames = PeriLab.Solver_control.Parameter_Handling.get_output_fieldnames(
         outputs,
         variables,
         computes,
@@ -281,7 +293,7 @@ end
             "Output2" => Dict("Number of Output Steps" => 1, "Output Frequency" => 1),
         ),
     )
-    freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Solver_control.Parameter_Handling.get_output_frequency(params, nsteps)
     @test freq[1] == 2
     @test freq[2] == 40
 
@@ -291,17 +303,17 @@ end
             "Output2" => Dict("Number of Output Steps" => 10),
         ),
     )
-    freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Solver_control.Parameter_Handling.get_output_frequency(params, nsteps)
     @test freq[1] == 20
     @test freq[2] == 4
 
     nsteps = 1000
-    freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Solver_control.Parameter_Handling.get_output_frequency(params, nsteps)
     @test freq[1] == 20
     @test freq[2] == 100
 
     nsteps = 2
-    freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Solver_control.Parameter_Handling.get_output_frequency(params, nsteps)
     @test freq[1] == 2
     @test freq[2] == 1
 
@@ -312,7 +324,7 @@ end
         ),
     )
     nsteps = 1000
-    freq = PeriLab.Solver.Parameter_Handling.get_output_frequency(params, nsteps)
+    freq = PeriLab.Solver_control.Parameter_Handling.get_output_frequency(params, nsteps)
     @test (freq[1] == 100) || (freq[1] == 20)
     @test (freq[2] == 100) || (freq[2] == 20)
 end
@@ -348,7 +360,11 @@ test_data_manager = PeriLab.Data_manager
     )
 
     vector::Vector{String} = []
-    outputs = PeriLab.Solver.Parameter_Handling.get_outputs(params, testfield_keys, vector)
+    outputs = PeriLab.Solver_control.Parameter_Handling.get_outputs(
+        params,
+        testfield_keys,
+        vector,
+    )
 
     @test ["A", "constant"] in outputs["Output1"]["fieldnames"]
     @test (["B", "NP1"] in outputs["Output1"]["fieldnames"]) == false
@@ -377,8 +393,11 @@ test_data_manager = PeriLab.Data_manager
             ),
         ),
     )
-    outputs =
-        PeriLab.Solver.Parameter_Handling.get_outputs(params, testfield_keys, String["M"])
+    outputs = PeriLab.Solver_control.Parameter_Handling.get_outputs(
+        params,
+        testfield_keys,
+        String["M"],
+    )
     @test !(["A", "constant"] in outputs["Output1"]["fieldnames"])
     @test !(["B", "NP1"] in outputs["Output1"]["fieldnames"])
     @test !(["C", "constant"] in outputs["Output1"]["fieldnames"])
@@ -395,8 +414,11 @@ test_data_manager = PeriLab.Data_manager
             ),
         ),
     )
-    outputs =
-        PeriLab.Solver.Parameter_Handling.get_outputs(params, testfield_keys, String["M"])
+    outputs = PeriLab.Solver_control.Parameter_Handling.get_outputs(
+        params,
+        testfield_keys,
+        String["M"],
+    )
     @test !(["A", "constant"] in outputs["Output1"]["fieldnames"])
     @test ["M", "constant"] in outputs["Output1"]["fieldnames"]
 
@@ -404,18 +426,25 @@ test_data_manager = PeriLab.Data_manager
         "Outputs" =>
             Dict("Output1" => Dict("fieldnames" => [], "Output Variables" => Dict())),
     )
-    outputs =
-        PeriLab.Solver.Parameter_Handling.get_outputs(params, testfield_keys, String[])
+    outputs = PeriLab.Solver_control.Parameter_Handling.get_outputs(
+        params,
+        testfield_keys,
+        String[],
+    )
     @test outputs["Output1"]["fieldnames"] == []
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [])))
-    outputs =
-        PeriLab.Solver.Parameter_Handling.get_outputs(params, testfield_keys, String[])
+    outputs = PeriLab.Solver_control.Parameter_Handling.get_outputs(
+        params,
+        testfield_keys,
+        String[],
+    )
     @test outputs["Output1"]["fieldnames"] == []
 end
 @testset "ut_get_computes" begin
     params = Dict()
     testfield_keys = test_data_manager.get_all_field_keys()
-    @test PeriLab.Solver.Parameter_Handling.get_computes(params, testfield_keys) == Dict()
+    @test PeriLab.Solver_control.Parameter_Handling.get_computes(params, testfield_keys) ==
+          Dict()
 
     params = Dict(
         "Compute Class Parameters" => Dict(
@@ -439,7 +468,8 @@ end
         ),
     )
 
-    computes = PeriLab.Solver.Parameter_Handling.get_computes(params, testfield_keys)
+    computes =
+        PeriLab.Solver_control.Parameter_Handling.get_computes(params, testfield_keys)
 
     @test haskey(computes, "External_Forces")
     @test haskey(computes, "External_Displacements")
@@ -467,23 +497,23 @@ end
         ),
     )
 
-    computes_names = PeriLab.Solver.Parameter_Handling.get_computes_names(params)
+    computes_names = PeriLab.Solver_control.Parameter_Handling.get_computes_names(params)
 
     @test "External_Forces" in computes_names
     @test "External_Displacements" in computes_names
 end
 
 @testset "ut_get_output_variables" begin
-    @test PeriLab.Solver.Parameter_Handling.get_output_variables(
+    @test PeriLab.Solver_control.Parameter_Handling.get_output_variables(
         "Force",
         ["Force", "DisplacementsNP1"],
     ) == "Force"
-    @test PeriLab.Solver.Parameter_Handling.get_output_variables(
+    @test PeriLab.Solver_control.Parameter_Handling.get_output_variables(
         "Displacements",
         ["Force", "DisplacementsNP1"],
     ) == "DisplacementsNP1"
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_output_variables(
+        PeriLab.Solver_control.Parameter_Handling.get_output_variables(
             "Stress",
             ["Force", "DisplacementsNP1"],
         ),
@@ -492,10 +522,10 @@ end
 
 @testset "ut_get_bc_definitions" begin
     params = Dict()
-    bcs = PeriLab.Solver.Parameter_Handling.get_bc_definitions(params)
+    bcs = PeriLab.Solver_control.Parameter_Handling.get_bc_definitions(params)
     @test length(bcs) == 0
     params = Dict("Boundary Conditions" => Dict())
-    bcs = PeriLab.Solver.Parameter_Handling.get_bc_definitions(params)
+    bcs = PeriLab.Solver_control.Parameter_Handling.get_bc_definitions(params)
     @test length(bcs) == 0
     params = Dict(
         "Boundary Conditions" => Dict(
@@ -513,7 +543,7 @@ end
             ),
         ),
     )
-    bcs = PeriLab.Solver.Parameter_Handling.get_bc_definitions(params)
+    bcs = PeriLab.Solver_control.Parameter_Handling.get_bc_definitions(params)
     @test length(bcs) == 2
     @test bcs["BC_1"] == Dict(
         "Variable" => "Force",
@@ -538,11 +568,11 @@ end
             "Corrosion Models" => true,
         ),
     )
-    solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
+    solver_options = PeriLab.Solver_control.Parameter_Handling.get_model_options(params)
     @test solver_options ==
           ["Additive", "Damage", "Pre_Calculation", "Thermal", "Corrosion", "Material"]
     params = Dict("Solver" => Dict())
-    solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
+    solver_options = PeriLab.Solver_control.Parameter_Handling.get_model_options(params)
     @test solver_options == ["Pre_Calculation", "Material"]
     params = Dict(
         "Solver" => Dict(
@@ -552,19 +582,19 @@ end
         ),
     )
 
-    solver_options = PeriLab.Solver.Parameter_Handling.get_model_options(params)
+    solver_options = PeriLab.Solver_control.Parameter_Handling.get_model_options(params)
     @test solver_options == ["Damage", "Pre_Calculation", "Thermal"]
 end
 @testset "ut_get_number_of_blocks" begin
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_number_of_blocks(Dict()))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(Dict()))
     params = Dict("Blocks" => Dict())
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_number_of_blocks(params))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(params))
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
-    @test PeriLab.Solver.Parameter_Handling.get_number_of_blocks(params) == 2
+    @test PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(params) == 2
     params = Dict(
         "Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict()),
     )
-    @test PeriLab.Solver.Parameter_Handling.get_number_of_blocks(params) == 3
+    @test PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(params) == 3
     params = Dict(
         "Blocks" => Dict(
             "block_1" => Dict(),
@@ -573,77 +603,99 @@ end
             "block_4" => Dict(),
         ),
     )
-    @test PeriLab.Solver.Parameter_Handling.get_number_of_blocks(params) == 4
+    @test PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(params) == 4
 end
 
 @testset "ut_block_values" begin
     params = Dict("Blocks" => Dict())
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_horizon(params, 1))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_density(params, 1))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_heat_capacity(params, 1))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_values(params, 1, "Density"))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_values(params, 1, "not there"))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 1))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_density(params, 1))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 1))
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Density"),
+    )
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "not there"),
+    )
     params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_horizon(params, 1))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_density(params, 1))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_heat_capacity(params, 1))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_values(params, 1, "Density"))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_horizon(params, 2))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_density(params, 2))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_heat_capacity(params, 2))
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_values(params, 2, "Density"))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 1))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_density(params, 1))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 1))
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Density"),
+    )
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 2))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_density(params, 2))
+    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 2))
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Density"),
+    )
     params = Dict(
         "Blocks" => Dict(
             "block_1" => Dict("Density" => 1, "Specific Heat Capacity" => 3),
             "block_2" => Dict("Density" => 12.3, "Horizon" => 2),
         ),
     )
-    @test PeriLab.Solver.Parameter_Handling.get_values(params, 1, "Density") == 1
-    @test PeriLab.Solver.Parameter_Handling.get_values(params, 2, "Density") == 12.3
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_values(params, 3, "Density"))
-    @test PeriLab.Solver.Parameter_Handling.get_values(
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Density") == 1
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Density") == 12.3
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_values(params, 3, "Density"),
+    )
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(
         params,
         1,
         "Specific Heat Capacity",
     ) == 3
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_values(params, 2, "Specific Heat Capacity"),
+        PeriLab.Solver_control.Parameter_Handling.get_values(
+            params,
+            2,
+            "Specific Heat Capacity",
+        ),
     )
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_values(params, 3, "Specific Heat Capacity"),
+        PeriLab.Solver_control.Parameter_Handling.get_values(
+            params,
+            3,
+            "Specific Heat Capacity",
+        ),
     )
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_values(params, 1, "Horizon"))
-    @test PeriLab.Solver.Parameter_Handling.get_values(params, 2, "Horizon") == 2
-    @test isnothing(PeriLab.Solver.Parameter_Handling.get_values(params, 3, "Horizon"))
-    @test PeriLab.Solver.Parameter_Handling.get_values(params, 1, "Density") ==
-          PeriLab.Solver.Parameter_Handling.get_density(params, 1)
-    @test PeriLab.Solver.Parameter_Handling.get_values(params, 2, "Density") ==
-          PeriLab.Solver.Parameter_Handling.get_density(params, 2)
-    @test PeriLab.Solver.Parameter_Handling.get_values(params, 3, "Density") ==
-          PeriLab.Solver.Parameter_Handling.get_density(params, 3)
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Horizon"),
+    )
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Horizon") == 2
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_values(params, 3, "Horizon"),
+    )
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Density") ==
+          PeriLab.Solver_control.Parameter_Handling.get_density(params, 1)
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Density") ==
+          PeriLab.Solver_control.Parameter_Handling.get_density(params, 2)
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 3, "Density") ==
+          PeriLab.Solver_control.Parameter_Handling.get_density(params, 3)
 
-    @test PeriLab.Solver.Parameter_Handling.get_values(params, 1, "Horizon") ==
-          PeriLab.Solver.Parameter_Handling.get_horizon(params, 1)
-    @test PeriLab.Solver.Parameter_Handling.get_values(params, 2, "Horizon") ==
-          PeriLab.Solver.Parameter_Handling.get_horizon(params, 2)
-    @test PeriLab.Solver.Parameter_Handling.get_values(params, 3, "Horizon") ==
-          PeriLab.Solver.Parameter_Handling.get_horizon(params, 3)
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Horizon") ==
+          PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 1)
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Horizon") ==
+          PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 2)
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 3, "Horizon") ==
+          PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 3)
 
-    @test PeriLab.Solver.Parameter_Handling.get_values(
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(
         params,
         1,
         "Specific Heat Capacity",
-    ) == PeriLab.Solver.Parameter_Handling.get_heat_capacity(params, 1)
-    @test PeriLab.Solver.Parameter_Handling.get_values(
+    ) == PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 1)
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(
         params,
         2,
         "Specific Heat Capacity",
-    ) == PeriLab.Solver.Parameter_Handling.get_heat_capacity(params, 2)
-    @test PeriLab.Solver.Parameter_Handling.get_values(
+    ) == PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 2)
+    @test PeriLab.Solver_control.Parameter_Handling.get_values(
         params,
         3,
         "Specific Heat Capacity",
-    ) == PeriLab.Solver.Parameter_Handling.get_heat_capacity(params, 3)
+    ) == PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 3)
 end
 
 @testset "ut_solver" begin
@@ -655,22 +707,22 @@ end
             "Numerical Damping" => 5e-6,
         ),
     )
-    @test PeriLab.Solver.Parameter_Handling.get_solver_name(params) == "Verlet"
-    @test PeriLab.Solver.Parameter_Handling.get_final_time(params) ==
+    @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params) == "Verlet"
+    @test PeriLab.Solver_control.Parameter_Handling.get_final_time(params) ==
           params["Solver"]["Final Time"]
-    @test PeriLab.Solver.Parameter_Handling.get_initial_time(params) ==
+    @test PeriLab.Solver_control.Parameter_Handling.get_initial_time(params) ==
           params["Solver"]["Initial Time"]
-    @test PeriLab.Solver.Parameter_Handling.get_safety_factor(params) ==
+    @test PeriLab.Solver_control.Parameter_Handling.get_safety_factor(params) ==
           params["Solver"]["Verlet"]["Safety Factor"]
-    @test PeriLab.Solver.Parameter_Handling.get_fixed_dt(params) ==
+    @test PeriLab.Solver_control.Parameter_Handling.get_fixed_dt(params) ==
           params["Solver"]["Verlet"]["Fixed dt"]
-    @test PeriLab.Solver.Parameter_Handling.get_numerical_damping(params) ==
+    @test PeriLab.Solver_control.Parameter_Handling.get_numerical_damping(params) ==
           params["Solver"]["Numerical Damping"]
     params = Dict("Solver" => Dict("Verlet" => Dict()))
-    @test PeriLab.Solver.Parameter_Handling.get_safety_factor(params) == 1
-    @test PeriLab.Solver.Parameter_Handling.get_fixed_dt(params) == -1.0
-    @test PeriLab.Solver.Parameter_Handling.get_nsteps(params) == 1
-    @test PeriLab.Solver.Parameter_Handling.get_nsteps(
+    @test PeriLab.Solver_control.Parameter_Handling.get_safety_factor(params) == 1
+    @test PeriLab.Solver_control.Parameter_Handling.get_fixed_dt(params) == -1.0
+    @test PeriLab.Solver_control.Parameter_Handling.get_nsteps(params) == 1
+    @test PeriLab.Solver_control.Parameter_Handling.get_nsteps(
         Dict(
             "Solver" => Dict(
                 "Verlet" => Dict("Safety Factor" => 0.95, "Number of Steps" => 6),
@@ -678,18 +730,20 @@ end
             ),
         ),
     ) == 6
-    @test PeriLab.Solver.Parameter_Handling.get_numerical_damping(params) == 0.0
+    @test PeriLab.Solver_control.Parameter_Handling.get_numerical_damping(params) == 0.0
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_initial_time(Dict("Solver" => Dict())),
+        PeriLab.Solver_control.Parameter_Handling.get_initial_time(
+            Dict("Solver" => Dict()),
+        ),
     )
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_final_time(Dict("Solver" => Dict())),
+        PeriLab.Solver_control.Parameter_Handling.get_final_time(Dict("Solver" => Dict())),
     )
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_final_time(Dict("Solver" => Dict())),
+        PeriLab.Solver_control.Parameter_Handling.get_final_time(Dict("Solver" => Dict())),
     )
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_solver_name(
+        PeriLab.Solver_control.Parameter_Handling.get_solver_name(
             Dict("Solver" => Dict("Solvername" => Dict())),
         ),
     )
@@ -701,7 +755,7 @@ end
             "Numerical Damping" => 5e-6,
         ),
     )
-    @test PeriLab.Solver.Parameter_Handling.get_solver_name(params) == "External"
+    @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params) == "External"
 end
 
 path = "./test/unit_tests/Support/Parameters/"
@@ -733,59 +787,62 @@ params = Dict(
 
 @testset "ut_find_data_files" begin
     @test sort(
-        PeriLab.Solver.Parameter_Handling.find_data_files(
+        PeriLab.Solver_control.Parameter_Handling.find_data_files(
             params["Models"]["Material Models"]["A"],
         ),
     ) == ["test_file", "test_file_2"]
-    @test PeriLab.Solver.Parameter_Handling.find_data_files(
+    @test PeriLab.Solver_control.Parameter_Handling.find_data_files(
         params["Models"]["Material Models"]["B"],
     ) == ["test_file_B"]
-    @test PeriLab.Solver.Parameter_Handling.find_data_files(
+    @test PeriLab.Solver_control.Parameter_Handling.find_data_files(
         params["Models"]["Damage Models"]["E"],
     ) == []
 end
 @testset "ut_get_model_parameter" begin
     block_models = Dict{Int32,Dict{String,String}}()
     for id = 1:2
-        block_models[id] = PeriLab.Solver.Parameter_Handling.get_block_models(params, id)
+        block_models[id] =
+            PeriLab.Solver_control.Parameter_Handling.get_block_models(params, id)
     end
     @test block_models[1]["Material Model"] == "A"
     @test block_models[1]["Damage Model"] == "E"
     @test block_models[2]["Material Model"] == "B"
     testData = Dict("Material Model" => Dict(), "Damage Model" => Dict())
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_model_parameter(
+        PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
             params,
             "Does not exist Model",
             block_models[1]["Material Model"],
         ),
     )
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_model_parameter(
+        PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
             params,
             "Does not exist Model",
             "s",
         ),
     )
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.get_model_parameter(
+        PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
             params,
             "Material Model",
             "s",
         ),
     )
-    testData["Material Model"] = PeriLab.Solver.Parameter_Handling.get_model_parameter(
-        params,
-        "Material Model",
-        block_models[1]["Material Model"],
-    )
+    testData["Material Model"] =
+        PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
+            params,
+            "Material Model",
+            block_models[1]["Material Model"],
+        )
     @test testData["Material Model"]["s"] == 0
     @test testData["Material Model"]["d"] == true
-    testData["Material Model"] = PeriLab.Solver.Parameter_Handling.get_model_parameter(
-        params,
-        "Material Model",
-        block_models[2]["Material Model"],
-    )
+    testData["Material Model"] =
+        PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
+            params,
+            "Material Model",
+            block_models[2]["Material Model"],
+        )
     @test testData["Material Model"]["sa"] == [3.2, 2, 3]
     @test testData["Material Model"]["d"] == "true"
     test_dict = testData["Material Model"]["test_file_B"]
@@ -793,19 +850,25 @@ end
     @test test_dict["min"] == -2.5
 
     @test typeof(test_dict["spl"]) == Dierckx.Spline1D
-    testData["Damage Model"] = PeriLab.Solver.Parameter_Handling.get_model_parameter(
-        params,
-        "Damage Model",
-        block_models[1]["Damage Model"],
-    )
+    testData["Damage Model"] =
+        PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
+            params,
+            "Damage Model",
+            block_models[1]["Damage Model"],
+        )
     @test testData["Damage Model"]["ss"] == 0
     @test testData["Damage Model"]["d"] == 1.1
 end
 
 @testset "ut_check_for_duplicates" begin
-    @test !(PeriLab.Solver.Parameter_Handling.check_for_duplicates(["a", "b", "c"]))
+    @test !(PeriLab.Solver_control.Parameter_Handling.check_for_duplicates(["a", "b", "c"]))
     @test isnothing(
-        PeriLab.Solver.Parameter_Handling.check_for_duplicates(["a", "b", "c", "a"]),
+        PeriLab.Solver_control.Parameter_Handling.check_for_duplicates([
+            "a",
+            "b",
+            "c",
+            "a",
+        ]),
     )
 end
 
@@ -838,12 +901,13 @@ end
     )
     validate = true
     checked_keys = []
-    validate, checked_keys = PeriLab.Solver.Parameter_Handling.validate_structure_recursive(
-        expected_structure,
-        params,
-        validate,
-        checked_keys,
-    )
+    validate, checked_keys =
+        PeriLab.Solver_control.Parameter_Handling.validate_structure_recursive(
+            expected_structure,
+            params,
+            validate,
+            checked_keys,
+        )
     @test validate
     @test checked_keys == ["PeriLab", "Blocks", "Material Model", "Density", "Any"]
 
@@ -854,12 +918,13 @@ end
             ),
         ),
     )
-    validate, checked_keys = PeriLab.Solver.Parameter_Handling.validate_structure_recursive(
-        expected_structure,
-        params,
-        validate,
-        checked_keys,
-    )
+    validate, checked_keys =
+        PeriLab.Solver_control.Parameter_Handling.validate_structure_recursive(
+            expected_structure,
+            params,
+            validate,
+            checked_keys,
+        )
     @test !validate
 
     params = Dict(
@@ -868,12 +933,13 @@ end
                 Dict{Any,Any}("Any" => Dict{Any,Any}("Material Model" => "Test")),
         ),
     )
-    validate, checked_keys = PeriLab.Solver.Parameter_Handling.validate_structure_recursive(
-        expected_structure,
-        params,
-        validate,
-        checked_keys,
-    )
+    validate, checked_keys =
+        PeriLab.Solver_control.Parameter_Handling.validate_structure_recursive(
+            expected_structure,
+            params,
+            validate,
+            checked_keys,
+        )
     @test !validate
 end
 @testset "ut_node_sets" begin
@@ -883,7 +949,8 @@ end
     lenNumbers = length(numbers)
     params = Dict("Discretization" => Dict())
 
-    @test PeriLab.Solver.Parameter_Handling.get_node_sets(params, "") == Dict{String,Any}()
+    @test PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "") ==
+          Dict{String,Any}()
     params = Dict(
         "Discretization" => Dict(
             "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename),
@@ -897,7 +964,7 @@ end
     end
     close(file)
 
-    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "")
+    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "")
     @test "Nset_1" in keys(nsets)
     @test "Nset_2" in keys(nsets)
     @test length(nsets["Nset_1"]) == 7
@@ -914,14 +981,14 @@ end
     file = open(filename, "w")
     println(file, "header: global_id")
     close(file)
-    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "")
+    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "")
     @test haskey(nsets, "Nset_1")
     @test !haskey(nsets, "Nset_2")
     rm(filename)
     filename = "test.txt"
     file = open(filename, "w")
     close(file)
-    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(params, "")
+    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "")
     @test haskey(nsets, "Nset_1")
     @test !haskey(nsets, "Nset_2")
     rm(filename)
@@ -934,7 +1001,7 @@ end
             "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename),
         ),
     )
-    nsets = PeriLab.Solver.Parameter_Handling.get_node_sets(
+    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(
         params,
         "unit_tests/Support/Parameters",
     )

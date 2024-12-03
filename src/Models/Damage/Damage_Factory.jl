@@ -7,7 +7,7 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
 Set_modules.include_files(module_list)
-include("../../Support/helpers.jl")
+include("../../Support/Helpers.jl")
 using TimerOutputs
 using LoopVectorization
 using .Helpers: find_inverse_bond_id
