@@ -6,8 +6,8 @@ module Bond_Associated_Correspondence
 using LinearAlgebra
 using StaticArrays
 using TimerOutputs
-include("../../../../Support/helpers.jl")
-include("../../../../Support/geometry.jl")
+include("../../../../Support/Helpers.jl")
+include("../../../../Support/Geometry.jl")
 include("../../material_basis.jl")
 using .Material_Basis: compute_Piola_Kirchhoff_stress
 using .Helpers:
