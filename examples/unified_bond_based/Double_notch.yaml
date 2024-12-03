@@ -1,0 +1,101 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Bond Filters:
+      bf_1:
+        Bottom Length: 0.025
+        Bottom Unit Vector X: 1.0
+        Bottom Unit Vector Y: 0.0
+        Bottom Unit Vector Z: 0.0
+        Lower Left Corner X: -0.1
+        Lower Left Corner Y: 0.0
+        Lower Left Corner Z: -1.0
+        Normal X: 0.0
+        Normal Y: 1.0
+        Normal Z: 0.0
+        Side Length: 0.025
+        Type: Rectangular_Plane
+      bf_2:
+        Bottom Length: 0.025
+        Bottom Unit Vector X: 1.0
+        Bottom Unit Vector Y: 0.0
+        Bottom Unit Vector Z: 0.0
+        Lower Left Corner X: 0.075
+        Lower Left Corner Y: 0.0
+        Lower Left Corner Z: -1.0
+        Normal X: 0.0
+        Normal Y: 1.0
+        Normal Z: 0.0
+        Side Length: 0.025
+        Type: Rectangular_Plane
+    Node Sets:
+      Node Set 1: nodes_1.txt
+      Node Set 2: nodes_2.txt
+      Node Set 3: nodes_3.txt
+      Node Set 4: nodes_4.txt
+    Type: "Text File"
+    Input Mesh File: "mesh_notch.txt"
+  Models:
+    Material Models:
+      Aluminium:
+        Material Model: "PD Solid Elastic"
+        Young's Modulus: 3.0e11
+        Poisson's Ratio: 0.2
+        Symmetry: "isotropic plane stress"
+        Zero Energy Control: "Global"
+    Damage Models:
+      Damage:
+        Critical Value: 100.2
+        Damage Model: Critical Energy
+  Blocks:
+    block_1:
+      Material Model: "Aluminium"
+      Damage Model: Damage
+      Density: 27000
+      Horizon: 0.0032
+  Boundary Conditions:
+    BC_1:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "y"
+      Value: "-0.01*t"
+    BC_2:
+      Variable: "Displacements"
+      Node Set: "Node Set 2"
+      Coordinate: "y"
+      Value: "0.01*t"
+    BC_3:
+      Variable: "Displacements"
+      Node Set: "Node Set 3"
+      Coordinate: "x"
+      Value: "0.05*t"
+    BC_4:
+      Variable: "Displacements"
+      Node Set: "Node Set 4"
+      Coordinate: "x"
+      Value: "-0.05*t"
+      #Variable: "Force Densities"
+      #Value: -2.4752475247524753e15*t
+      Type: Dirichlet
+
+  Solver:
+    Material Models: True
+    Damage Models: True
+    Initial Time: 0.0
+    Final Time: 1.0e-3
+    Verlet:
+      Safety Factor: 1.00
+  Outputs:
+    Output1:
+      Flush File: True
+      Output Filename: "double_notch"
+      Output File Type: "Exodus"
+      Number of Output Steps: 3000
+      Output Variables:
+        Forces: True
+        Displacements: True
+        Damage: True
+        Number of Neighbors: True

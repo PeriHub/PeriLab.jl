@@ -11,8 +11,10 @@ x = 0.2 # m
 y = 0.2 # m
 notch_x = 0.025
 notch_y = 0.005
-dx = 0.002
+dx = 0.001
 vol = dx * dx
+
+
 
 
 # Parameter
@@ -46,7 +48,7 @@ mesh_entry = [
 open("mesh_notch.txt", "w") do io
     write(io, mesh)  # Header
     for (x, y, blockID, volume) in mesh_entry
-        write(io, "$x $y, $blockID, $volume\n")
+        write(io, "$x $y $blockID $volume\n")
     end
 end
 function point_ids(points, condition)
@@ -92,3 +94,10 @@ open("nodes_4.txt", "w") do io
         write(io, "$id\n")
     end
 end
+
+
+force = 25000
+
+nx = (x_max - x_min) / dx + 1
+
+force_dens = force / vol / nx
