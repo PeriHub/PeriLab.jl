@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module PD_Solid_Elastic
-include("../../material_basis.jl")
+include("../../Material_Basis.jl")
 using .Material_Basis: get_symmetry
 include("./Ordinary.jl")
 include("../../../../Support/Helpers.jl")

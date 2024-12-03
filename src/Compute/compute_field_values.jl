@@ -5,7 +5,7 @@
 using .Helpers: find_active_nodes, get_active_update_nodes, add_in_place!
 using StaticArrays: MMatrix, SMatrix
 using .Helpers: invert
-include("../Models/Material/material_basis.jl")
+include("../Models/Material/Material_Basis.jl")
 using .Material_Basis:
     get_von_mises_stress,
     get_strain,

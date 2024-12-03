@@ -12,7 +12,7 @@ include("../Zero_Energy_Control/global_control.jl")
 using .Global_zero_energy_control: compute_control
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
-include("../../material_basis.jl")
+include("../../Material_Basis.jl")
 using .Material_Basis: compute_Piola_Kirchhoff_stress
 include("../../../../Support/Helpers.jl")
 using .Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!

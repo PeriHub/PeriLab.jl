@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_Plastic
-include("../../material_basis.jl")
+include("../../Material_Basis.jl")
 using .Material_Basis:
     flaw_function, get_von_mises_stress, compute_deviatoric_and_spherical_stresses
 using LinearAlgebra

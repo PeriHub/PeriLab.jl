@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bondbased_Elastic
-include("../../material_basis.jl")
+include("../../Material_Basis.jl")
 using .Material_Basis: get_symmetry, apply_pointwise_E
 using LoopVectorization
 using TimerOutputs

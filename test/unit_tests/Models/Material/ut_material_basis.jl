@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-include("../../../../src/Models/Material/material_basis.jl")
+include("../../../../src/Models/Material/Material_Basis.jl")
 using .Material_Basis:
     get_value,
     get_all_elastic_moduli,

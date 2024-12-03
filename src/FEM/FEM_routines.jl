@@ -5,7 +5,7 @@ using LinearAlgebra
 using StaticArrays
 using FastGaussQuadrature
 using Statistics
-include("../Models/Material/material_basis.jl")
+include("../Models/Material/Material_Basis.jl")
 using .Material_Basis: voigt_to_matrix
 include("../Support/Helpers.jl")
 using .Helpers: invert, determinant
