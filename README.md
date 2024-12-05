@@ -217,7 +217,7 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 
 <p>
 
-<a href="https://orcid.org/0000-0002-3006-1520"><img src="./docs/src/assets/orcid_preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
+<a href="https://orcid.org/0000-0002-3006-1520"><img src="https://orcid.org/assets/vectors/orcid.logo.icon.svg"  style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
 
 </p>
 
