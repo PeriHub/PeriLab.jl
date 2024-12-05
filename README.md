@@ -211,7 +211,7 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 ## Authors and acknowledgment
 <p>
 
-<a href="https://orcid.org/0000-0003-2433-9183"><img src="./docs/src/assets/orcid_preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Prof. Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
+<a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.org/assets/vectors/orcid.logo.icon.svg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Prof. Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
 
 </p>
 
