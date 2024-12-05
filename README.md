@@ -128,7 +128,7 @@ julia> MPI.install_mpiexecjl()
 
 Run PeriLab with two processors:
 ```sh
-$ mpiexecjl -n 2 julia -e "using PeriLab; PeriLab.main()" examples/DCB/DCBmodel.yaml -v
+$ mpiexecjl -n 2 julia --project=./ -e "using PeriLab; PeriLab.main()" examples/DCB/DCBmodel.yaml -v
 ```
 
 >Note: For HPC configurations please refer to [here](https://juliaparallel.org/MPI.jl/stable/configuration/#configure_jll_binarys).
@@ -181,8 +181,6 @@ Here are some exciting tasks on our roadmap:
 
 - 🏎️ **Optimizations**: As part of its ongoing development, PeriLab will continue to focus on optimizing the simulation process by incorporating new techniques like parallel optimization algorithms for improved efficiency and reduced computational resources.
 
-- 🦿 **CUDA support**: We are planning to support GPU acceleration for improved performance and reduced computational resources.
-
 Feel free to contribute and help us make PeriLab even better! 🙌
 
 ## Contributing
@@ -213,13 +211,13 @@ For any questions or inquiries about PeriLab.jl, feel free to reach out to the a
 ## Authors and acknowledgment
 <p>
 
-<a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Prof. Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
+<a href="https://orcid.org/0000-0003-2433-9183"><img src="./docs/src/assets/orcid_preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Prof. Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
 
 </p>
 
 <p>
 
-<a href="https://orcid.org/0000-0002-3006-1520"><img src="https://orcid.figshare.com/ndownloader/files/8439032/preview/8439032/preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
+<a href="https://orcid.org/0000-0002-3006-1520"><img src="./docs/src/assets/orcid_preview.jpg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
 
 </p>
 
