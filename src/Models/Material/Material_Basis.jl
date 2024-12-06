@@ -22,6 +22,21 @@ export compute_deviatoric_and_spherical_stresses
 export get_strain
 export compute_Piola_Kirchhoff_stress
 export apply_pointwise_E
+export compute_bond_based_constants
+
+
+
+function compute_bond_based_constants(nodes, symmetry, constant, horizon)
+    for iID in nodes
+        if symmetry == "plane stress"
+            constant[iID] = 9 / (pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+        elseif symmetry == "plane strain"
+            constant[iID] = 48 / (5 * pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+        else
+            constant[iID] = 12 / (pi * horizon[iID]^4) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+        end
+    end
+end
 
 function get_value(
     datamanager::Module,
@@ -74,6 +89,9 @@ function get_all_elastic_moduli(
     end
 
     bond_based = occursin("Bond-based", parameter["Material Model"])
+    if bond_based
+        bond_based = !occursin("Unified Bond-based", parameter["Material Model"])
+    end
     bulk_field = datamanager.has_key("Bulk_Modulus")
     youngs_field = datamanager.has_key("Young's_Modulus")
     poissons_field = datamanager.has_key("Poisson's_Ratio")

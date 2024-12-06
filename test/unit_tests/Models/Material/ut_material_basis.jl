@@ -319,6 +319,17 @@ end
     @test parameter["Poisson's Ratio"] == [0.125, 0.125, 0.125]
     @test parameter["Bulk Modulus"] == [10, 10, 10]
     @test parameter["Shear Modulus"] == [10, 10, 10]
+
+    parameter = Dict{String,Any}(
+        "Material Model" => "Unified Bond-based Elastic",
+        "Young's Modulus" => 5,
+        "Poisson's Ratio" => 0.125,
+    )
+    get_all_elastic_moduli(test_data_manager, parameter)
+    @test parameter["Bulk Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
+    @test parameter["Shear Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
+    @test parameter["Poisson's Ratio"] == Float64(0.125)
+    @test parameter["Young's Modulus"] == 5
 end
 
 @testset "get_Hooke_matrix" begin
