@@ -4,7 +4,7 @@
 
 module Bondbased_Elastic
 include("../../Material_Basis.jl")
-using .Material_Basis: get_symmetry, apply_pointwise_E
+using .Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
 using LoopVectorization
 using TimerOutputs
 export init_model
@@ -54,17 +54,11 @@ function init_model(
     constant = datamanager.create_constant_node_field("Bond Based Constant", Float64, 1)
     horizon = datamanager.get_field("Horizon")
     symmetry::String = get_symmetry(material_parameter)
-    for iID in nodes
-        if symmetry == "plane stress"
-            constant[iID] = 12 / (2 * (1 - 1 / 3)) / (pi * horizon[iID]^3) # from EQ 2.9 +2.9 D=2 in Handbook of PD
-        elseif symmetry == "plane strain"
-            constant[iID] = 12 / (2 * (1 - 0.25 + 0.25 * 0.25)) / (pi * horizon[iID]^3) # from EQ 2.12 + 2.9 D=2 in Handbook of PD
-        else
-            constant[iID] = 18 / (3 - 2 / 3) / (pi * horizon[iID]^4) # from EQ 2.12 D=3 in Handbook of PD
-        end
-    end
+    compute_bond_based_constants(nodes, symmetry, constant, horizon)
     return datamanager
 end
+
+
 
 
 """
@@ -133,7 +127,7 @@ function compute_model(
         #    ) .* deformed_bond[iID] ./ deformed_bond_length[iID]
         #
     end
-    # checks if E is scalar or a vector. Is needed for point wise definition
+    # might be put in constant
     apply_pointwise_E(nodes, E, bond_force)
     return datamanager
 end
