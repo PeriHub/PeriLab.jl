@@ -18,8 +18,8 @@ using .Material_Basis:
     get_strain,
     compute_Piola_Kirchhoff_stress,
     apply_pointwise_E
-#include("../../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../../src/PeriLab.jl")
+using .PeriLab
 
 @testset "ut_apply_pointwise_E" begin
     nodes = 2:3
@@ -326,10 +326,11 @@ end
         "Poisson's Ratio" => 0.125,
     )
     get_all_elastic_moduli(test_data_manager, parameter)
-    @test parameter["Bulk Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
-    @test parameter["Shear Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
-    @test parameter["Poisson's Ratio"] == Float64(0.125)
-    @test parameter["Young's Modulus"] == 5
+
+    @test parameter["Young's Modulus"] == [22.5, 22.5, 22.5]
+    @test parameter["Poisson's Ratio"] == [0.125, 0.125, 0.125]
+    @test parameter["Bulk Modulus"] == [10, 10, 10]
+    @test parameter["Shear Modulus"] == [10, 10, 10]
 end
 
 @testset "get_Hooke_matrix" begin
