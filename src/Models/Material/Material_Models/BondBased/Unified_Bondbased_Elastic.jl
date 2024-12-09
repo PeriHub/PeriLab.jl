@@ -73,6 +73,7 @@ function init_model(
     E = material_parameter["Young's Modulus"]
 
     # a is not explained -> EQ(41)
+    # might be dx
     a = 1
     for iID in nodes
         beta = compute_beta(iID, nu)
@@ -181,7 +182,6 @@ function compute_model(
                 iso_strain,
             )
         else
-
             compute_bb_force_2D!(
                 bond_force[iID],
                 0.5 * constant[iID],
@@ -189,6 +189,9 @@ function compute_model(
                 deformed_bond_length[iID],
                 undeformed_bond_length[iID],
                 deformed_bond[iID],
+                undeformed_bond[iID],
+                bond_strain[iID],
+                iso_strain,
             )
         end
     end
@@ -305,6 +308,37 @@ function compute_bb_force_3D!(
                     undeformed_bond_length[i]
                 ) *
                 deformed_bond[i][j] / deformed_bond_length[i]
+        end
+    end
+end
+
+
+function compute_bb_force_2D!(
+    bond_force,
+    constant,
+    bond_damage,
+    deformed_bond_length,
+    undeformed_bond_length,
+    undeformed_bond,
+    deformed_bond,
+    bond_strain,
+    iso_strain,
+)
+
+    @inbounds @fastmath for i ∈ axes(bond_force, 1)
+        @inbounds @fastmath for j ∈ axes(bond_force, 2)
+            bond_force[i][j] =
+                bond_damage[i] *
+                (
+                    (
+                        constant[i][2] *
+                        bond_strain[j, j] *
+                        undeformed_bond[i][j] *
+                        undeformed_bond[i][j]
+                    ) / undeformed_bond_length[i] / undeformed_bond_length[i] +
+                    constant[i][2] * iso_strain
+                ) *
+                deformed_bond[i][j] / deformed_bond_length[i] # Eq(42)
         end
     end
 end

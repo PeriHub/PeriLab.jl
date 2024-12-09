@@ -20,12 +20,12 @@ PeriLab:
         Material Model: "Unified Bond-based Elastic"
         Symmetry: "isotropic plane strain"
         Bulk Modulus: 2.5e+3
-        Poisson's Ration: 0.3
+        Poisson's Ratio: 0.3
       Mat_2:
         Material Model: "Unified Bond-based Elastic"
         Symmetry: "isotropic plane strain"
         Bulk Modulus: 3.5e+3
-        Poisson's Ration: 0.3
+        Poisson's Ratio: 0.3
   Blocks:
     block_1:
       Material Model: "Mat_1"
