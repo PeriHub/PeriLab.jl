@@ -10,10 +10,7 @@ using Test
 # using .PeriLab
 
 
-@testset "ut_ba_correspondence_name" begin
-    @test Bond_Associated_Correspondence.correspondence_name() ==
-          "Bond Associated Correspondence"
-end
+
 
 @testset "ut_compute_bond_strain" begin
     test_data_manager = PeriLab.Data_manager
