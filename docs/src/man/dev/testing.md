@@ -5,7 +5,7 @@ The testing takes place manually or if commits are submitted to the repository. 
     Tests only handle expected results and helps that code stays as intended after further development. It does not guarantee that not error occur.
 
 !!! info "New tests"
-    If new unexpected errors occur, please add an test to check possible exception to avoid them next time..
+    If new unexpected errors occur, please add an test to check possible exception to avoid them next time.
 
 ## Runtests.jl
 
@@ -44,7 +44,7 @@ Unit tests are tests to check functions. To do that you add a file the the unit_
 
 
 !!! info "Exceptions"
-    In this tests the exeptions should be tested, because full scale tests are not capable of
+    In this tests the exeptions should be tested, because full scale tests are not capable of.
 
 
 ## Full scale test
