@@ -54,6 +54,7 @@ makedocs(
             "Guide"=>"man/dev/developement_guide.md",
             "Datamanager"=>"man/dev/datamanager.md",
             "Module integration"=>"man/dev/module_integration.md",
+            "Software Testing"=>"man/dev/testing.md",
         ],
         "API"=>Any[
             "Model Factory"=>"lib/model_factory_functions.md",
