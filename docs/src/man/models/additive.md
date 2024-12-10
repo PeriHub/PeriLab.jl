@@ -23,4 +23,4 @@ Within this process the $t_{activate}$ can be user defined. However, to reproduc
 
 
 
-![Discretization_BondFilters_RectangularPlane](../../assets/3d_printing.png)
+![Virtual printing process](https://onlinelibrary.wiley.com/cms/asset/b5c3f70e-2585-4b01-854b-88febf14741e/adts202400818-fig-0009-m.jpg)
