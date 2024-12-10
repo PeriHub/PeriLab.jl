@@ -13,7 +13,7 @@ CurrentModule = PeriLab
 ## Solver
 
 ```@autodocs
-Modules = [Solver]
+Modules = [Solver_control]
 Order   = [:function, :type]
 ```
 
