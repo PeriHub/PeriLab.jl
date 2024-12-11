@@ -199,10 +199,9 @@ function compute_models(
                 active_model_name != "Additive Model",
             )
 
-            if fem_option # not correct I think
-                # find all non-FEM nodes
-                active_nodes = find_active_nodes(fe_nodes, active_nodes, nodes)
-                #active_nodes = view(nodes, find_active(.~view(fe_nodes, active_nodes), active_nodes))
+            if fem_option
+                # find all non-FEM nodes in active nodes
+                active_nodes = find_active_nodes(fe_nodes, active_nodes, active_nodes)
             end
             if datamanager.check_property(block, active_model_name)
                 # synch
@@ -245,6 +244,11 @@ function compute_models(
             active_nodes = datamanager.get_field("Active Nodes")
             update_nodes = datamanager.get_field("Update Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes, nodes)
+            if fem_option
+                # FEM active means FEM nodes
+                active_nodes =
+                    find_active_nodes(fe_nodes, active_nodes, active_nodes, false)
+            end
             update_nodes = get_update_nodes(
                 active_list,
                 update_list,
@@ -254,19 +258,7 @@ function compute_models(
                 active_model_name,
             )
 
-            if fem_option
-                # FEM active means FEM nodes
-                active_nodes = find_active_nodes(fe_nodes, active_nodes, nodes)
-                # update are the nodes to run a second time
-                update_nodes =
-                    get_active_update_nodes(fe_nodes, update_list, nodes, update_nodes)
 
-                datamanager = Coupling_PF_FEM.compute_coupling(
-                    datamanager,
-                    nodes,
-                    datamanager.get_properties(1, "FEM"),
-                )
-            end
             # active or all, or does it not matter?
 
             if datamanager.check_property(block, active_model_name)
@@ -296,6 +288,20 @@ function compute_models(
         )
 
     end
+
+    if fem_option
+        # FEM active means FEM nodes
+        active_nodes = find_active_nodes(fe_nodes, active_nodes, nodes)
+        # update are the nodes to run a second time
+        update_nodes = get_active_update_nodes(fe_nodes, update_list, nodes, update_nodes)
+
+        datamanager = Coupling_PF_FEM.compute_coupling(
+            datamanager,
+            nodes,
+            datamanager.get_properties(1, "FEM"),
+        )
+    end
+
     #=
     Used for shape tensor or other fixed calculations, to avoid an update if its not needed.
     The damage update is done in the second loop.

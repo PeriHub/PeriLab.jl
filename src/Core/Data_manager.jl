@@ -25,6 +25,7 @@ export get_block_list
 export get_crit_values_matrix
 export get_aniso_crit_values
 export get_comm
+export get_coupling_dict
 export get_directory
 export get_field
 export get_field_type
@@ -51,6 +52,7 @@ export remove_active_model
 export set_accuracy_order
 export set_block_list
 export set_crit_values_matrix
+export set_coupling_dict
 export set_aniso_crit_values
 export set_directory
 export set_inverse_nlist
@@ -121,6 +123,7 @@ function initialize_data()
         "Deformation Gradient",
         "Bond Associated Correspondence",
     ]
+    data["coupling_dict"] = Dict{Int64,Int64}()
     data["output_frequency"] = []
     data["accuracy_order"] = 1
     data["rank"] = 0
@@ -177,6 +180,17 @@ Get the MPI communicator
 function get_comm()
     return data["commMPi"]
 end
+
+
+"""
+    get_coupling_dict()
+
+Get the PD - FE coupling dict
+"""
+function get_coupling_dict()
+    return data["coupling_dict"]
+end
+
 
 function get_directory()
     return data["filedirectory"]
@@ -1092,6 +1106,18 @@ function set_crit_values_matrix(crit_values::Array{Float64,3})
     data["crit_values_matrix"] = crit_values
 end
 
+
+"""
+    set_coupling_dict(coupling_dict::Dict{Int64,Int64})
+
+Sets the FE - PD couplings. PD nodes -> FE Elements.
+
+# Arguments
+- `coupling_dict::Dict{Int64,Int64}`: The coupling dictionary.
+"""
+function set_coupling_dict(coupling_dict::Dict{Int64,Int64})
+    data["coupling_dict"] = coupling_dict
+end
 
 """
 set_aniso_crit_values(crit_values::Dict{Int64,Any})
