@@ -4,6 +4,14 @@
 module FEM
 include("../Core/Module_inclusion/set_Modules.jl")
 include("./FEM_routines.jl")
+using .FEM_routines:
+    compute_FEM,
+    create_element_matrices,
+    get_Jacobian,
+    get_number_of_integration_points,
+    get_lumped_mass,
+    create_B_matrix,
+    create_B_matrix
 #include("../Models/Material/Material_Basis.jl")
 #using .Material_Basis: voigt_to_matrix
 # in future using set modules for material
@@ -168,7 +176,7 @@ function eval(
     time::Float64,
     dt::Float64,
 )
-    return calculate_FEM(
+    return compute_FEM(
         datamanager,
         elements,
         params,

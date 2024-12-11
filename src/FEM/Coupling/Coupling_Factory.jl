@@ -12,7 +12,7 @@ export init_coupling
 export compute_coupling
 
 function init_coupling(datamanager::Module, complete_params::Dict)
-
+    datamanager.create_constant_node_field("PD Nodes", Int64, 1)
     if !haskey(complete_params["FEM"], "Coupling")
         return datamanager
     end
@@ -27,7 +27,10 @@ function init_coupling(datamanager::Module, complete_params::Dict)
         @error "No material of name " * material_model * " exists."
     end
     datamanager.set_model_module(coupling_model, mod)
-    datamanager = mod.init_coupling_model(datamanager, complete_params["FEM"]["Coupling"])
+
+    ###TODO nodes and blcoks
+    datamanager =
+        mod.init_coupling_model(datamanager, nodes, complete_params["FEM"]["Coupling"])
     return datamanager
 end
 

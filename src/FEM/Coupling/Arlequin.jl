@@ -4,19 +4,56 @@
 
 module Arlequin_coupling
 include("../Element_formulation/lagrange_element.jl")
+include("../FEM_routines.jl")
 using .Lagrange_element:
     define_lagrangian_grid_space, get_recursive_lagrange_shape_functions
+using .FEM_routines: get_polynomial_degree
+using .Helpers: find_active_nodes
 using LinearAlgebra
 function coupling_name()
     return "Arlequin"
 end
 
-function init_coupling_model(datamanager::Module, complete_params::Dict)
+function init_coupling_model(
+    datamanager::Module,
+    nodes::Union{SubArray,Vector{Int64}},
+    complete_params::Dict,
+)
+    dof = datamanager.get_dof()
+    p = get_polynomial_degree(complete_params, dof)
+    topology = datamanager.get_field("FE Topology")
+    coordinates = datamanager.get_field("Coordinates")
 
+    pd_nodes = datamanager.get_field("PD Nodes")
+    fe_nodes = datamanager.get_field("FE Nodes")
+    pd_nodes = find_active_nodes(fe_nodes, pd_nodes, nodes)
     datamanager.create_constant_node_field("Number of Element Neighbors", Int64, 1, 1)
     # Find number of element neighbors
     datamanager.create_constant_element_field("Coupling Element List", Int64, 1)
+    # TODO size correct?
+
+    coupling_matrix = create_constant_node_field(
+        "Coupling Matrix",
+        Float64,
+        "Matrix",
+        prod(p .+ 1) + 1,
+        prod(p .+ 1) + 1,
+    )
+    # TODO to specify over params?
+    kappa = 1
     # Assign Element ids
+    coupling_dict = find_point_in_elements(coordinates, topology, pd_nodes)
+    for (coupling_node, coupling_element) in pairs(coupling_dict)
+        coupling_matrix[coupling_node, :, :] = compute_coupling_matrix(
+            coordinates,
+            topology,
+            coupling_node,
+            coupling_element,
+            kappa,
+            p,
+            dof,
+        )
+    end
 
     return datamanager
 end
@@ -26,6 +63,7 @@ function compute_coupling(
     nodes::Union{SubArray,Vector{Int64}},
     fem_params::Dict,
 )
+
 
     coupling_elements = datamanager.get_field("Coupling Element List") # elements connected to PD nodes
     # p1->(E1,E4)->E1-> 1,3,7,2..
@@ -50,6 +88,9 @@ function compute_coupling(
     # @info Jinv
     @info N_Matrix
     @info B_Matrix
+
+
+
     return datamanager
 
 end
@@ -206,56 +247,6 @@ coupling_FE_nodes = unique(FE_nodes)
 kappa = 1
 coupl_matrix = Array{Float64}(zeros(5, 5, length(coupling_nodes)))
 weight_coefficient = 0.5 # just here, should be changed in future to a function
-
-using LinearAlgebra
-
-function is_point_in_polygon(point, polygon_vertices)
-    # Point-in-polygon test using ray casting method
-    x, y = point
-    n = length(polygon_vertices)
-    inside = false
-
-    j = n
-    for i in 1:n
-        xi, yi = polygon_vertices[i]
-        xj, yj = polygon_vertices[j]
-
-        intersect = ((yi > y) != (yj > y)) &&
-                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
-
-        if intersect
-            inside = !inside
-        end
-
-        j = i
-    end
-
-    return inside
-end
-
-function find_point_in_elements(coordinates, topology, points_to_check)
-    num_elements = size(topology, 1)   # Number of elements
-
-    # Will store which element each point is in
-    point_locations = zeros(Int, length(points_to_check))
-
-    # Iterate through points to check
-    for (point_index, point_coords) in enumerate(eachrow(coordinates[points_to_check, :]))
-        # Check each element
-        for (element_index, element_vertices) in enumerate(eachrow(topology))
-            # Get vertex coordinates for this element
-            poly_vertices = [coordinates[v, :] for v in element_vertices]
-
-            # Check if point is in this element
-            if is_point_in_polygon(point_coords, poly_vertices)
-                point_locations[point_index] = element_index
-                break
-            end
-        end
-    end
-
-    return point_locations
-end
 
 
 # Building coupling matrix

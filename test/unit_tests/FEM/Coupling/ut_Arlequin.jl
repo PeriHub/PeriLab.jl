@@ -38,7 +38,7 @@ end
     @test test_dict[8] == 1
 end
 
-@testset "ut_find_point_in_elements" begin
+@testset "ut_compute_coupling_matrix" begin
     dof = 2
     elements = 1:2  # FE        #@info elements
     nodes = 1:10   # beide

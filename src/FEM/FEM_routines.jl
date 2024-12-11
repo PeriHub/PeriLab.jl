@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
+module FEM_routines
 using LinearAlgebra
 using StaticArrays
 using FastGaussQuadrature
@@ -19,7 +20,7 @@ function get_FE_material_model(params::Dict, name::String)
     return params["Material Models"][params["FEM"][name]["Material Model"]]
 end
 
-function calculate_FEM(
+function compute_FEM(
     datamanager::Module,
     elements::Union{SubArray,Vector{Int64}},
     params::Dict,
@@ -356,4 +357,5 @@ function create_B_matrix(
         end
     end
     return B
+end
 end
