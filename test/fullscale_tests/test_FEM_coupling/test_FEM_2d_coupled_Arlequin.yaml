@@ -18,6 +18,7 @@ PeriLab:
     Material Model: "Mat_1"
     Coupling:
       Coupling Type: "Arlequin"
+      PD Weight: 0.5 # standard is 0.5
   Models:
     Material Models:
       Mat_1:
