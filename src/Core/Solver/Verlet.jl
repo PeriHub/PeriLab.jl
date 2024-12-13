@@ -416,7 +416,6 @@ function run_solver(
     atexit(() -> datamanager.set_cancel(true))
 
     @info "Run Verlet Solver"
-    nnodes = datamanager.get_nnodes()
     volume = datamanager.get_field("Volume")
     active_list = datamanager.get_field("Active")
     density = datamanager.get_field("Density")

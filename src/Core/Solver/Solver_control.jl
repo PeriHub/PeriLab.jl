@@ -102,6 +102,11 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
 
     if datamanager.fem_active()
         datamanager = FEM.init_FEM(params, datamanager)
+        datamanager = FEM.Coupling_PD_FEM.init_coupling(
+            datamanager,
+            1:datamanager.get_nnodes(),
+            params,
+        )
     end
     if !datamanager.has_key("Active")
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)

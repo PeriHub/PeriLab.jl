@@ -10,8 +10,11 @@ using .FEM_routines:
     get_Jacobian,
     get_number_of_integration_points,
     get_lumped_mass,
+    get_polynomial_degree,
     create_B_matrix,
     create_B_matrix
+include("./Coupling/Coupling_Factory.jl")
+using .Coupling_PD_FEM
 #include("../Models/Material/Material_Basis.jl")
 #using .Material_Basis: voigt_to_matrix
 # in future using set modules for material

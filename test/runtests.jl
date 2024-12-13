@@ -33,6 +33,9 @@ MPI.Init()
             @testset "ut_lagrange_element" begin
                 include("unit_tests/FEM/Element_formulation/ut_lagrange_element.jl")
             end
+            @testset "ut_Arlequin" begin
+                include("unit_tests/FEM/Coupling/ut_Arlequin.jl")
+            end
         end
         @testset "Compute" begin
             @testset "ut_compute_global_values" begin
@@ -290,9 +293,9 @@ MPI.Init()
         @testset "test_point_wise_material" begin
             include("fullscale_tests/test_point_wise_material/test_point_wise_material.jl")
         end
-        # @testset "test_FEM" begin
-        #     include("fullscale_tests/test_FEM/test_FEM.jl")
-        # end
+        @testset "test_FEM" begin
+            include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
+        end
     end
 
 

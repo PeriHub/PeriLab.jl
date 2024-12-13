@@ -17,8 +17,6 @@ include("../Support/Parameters/parameter_handling.jl")
 using .Parameter_Handling: get_model_parameter, get_heat_capacity
 # in future FEM will be outside of the Model_Factory
 include("../FEM/FEM_Factory.jl")
-include("../FEM/Coupling/Coupling_Factory.jl")
-
 using .Additive
 using .Corrosion
 using .Damage
@@ -27,7 +25,6 @@ using .Pre_Calculation
 using .Thermal
 # in future FEM will be outside of the Model_Factory
 using .FEM
-using .Coupling_PF_FEM
 using TimerOutputs
 export compute_models
 export init_models
@@ -120,10 +117,6 @@ function init_models(
         datamanager.create_node_field("von Mises Stress", Float64, 1)
     end
 
-    if datamanager.fem_active()
-        datamanager = Coupling_PF_FEM.init_coupling(datamanager, params)
-    end
-
     @info "Finalize Init Models"
     return datamanager
 end
@@ -159,7 +152,7 @@ function compute_models(
         fe_nodes = datamanager.get_field("FE Nodes")
         nelements = datamanager.get_num_elements()
         # in future the FE analysis can be put into the block loop. Right now it is outside the block.
-        datamanager = FEM.eval(
+        @timeit to "FEM eval" datamanager = FEM.eval(
             datamanager,
             Vector{Int64}(1:nelements),
             datamanager.get_properties(1, "FEM"),
@@ -201,7 +194,8 @@ function compute_models(
 
             if fem_option
                 # find all non-FEM nodes in active nodes
-                active_nodes = find_active_nodes(fe_nodes, active_nodes, active_nodes)
+                active_nodes =
+                    find_active_nodes(fe_nodes, active_nodes, active_nodes, false)
             end
             if datamanager.check_property(block, active_model_name)
                 # synch
@@ -290,14 +284,12 @@ function compute_models(
     end
 
     if fem_option
-        # FEM active means FEM nodes
-        active_nodes = find_active_nodes(fe_nodes, active_nodes, nodes)
-        # update are the nodes to run a second time
-        update_nodes = get_active_update_nodes(fe_nodes, update_list, nodes, update_nodes)
 
-        datamanager = Coupling_PF_FEM.compute_coupling(
+        active_nodes =
+            find_active_nodes(fe_nodes, active_nodes, 1:datamanager.get_nnodes(), false)
+        @timeit to "FEM_PD_coupling" datamanager = FEM.Coupling_PD_FEM.compute_coupling(
             datamanager,
-            nodes,
+            active_nodes,
             datamanager.get_properties(1, "FEM"),
         )
     end

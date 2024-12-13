@@ -8,21 +8,19 @@ include("../FEM_routines.jl")
 using .Lagrange_element:
     define_lagrangian_grid_space, get_recursive_lagrange_shape_functions
 using .FEM_routines: get_polynomial_degree
+include("../../Support/Helpers.jl")
 using .Helpers: find_active_nodes
 using LinearAlgebra
+using PointInPoly
 function coupling_name()
     return "Arlequin"
 end
 
-function init_coupling_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    complete_params::Dict,
-)
+function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     dof = datamanager.get_dof()
-    p = get_polynomial_degree(complete_params, dof)
-    if !haskey(complete_params, "Weight")
-        complete_params["PD Weight"] = 0.5
+    p = get_polynomial_degree(fe_params, dof)
+    if !haskey(fe_params["Coupling"], "PD Weight")
+        fe_params["Coupling"]["PD Weight"] = 0.5
         @info "Weight for coupling is set to 0.5."
     end
     topology = datamanager.get_field("FE Topology")
@@ -30,22 +28,26 @@ function init_coupling_model(
 
     pd_nodes = datamanager.get_field("PD Nodes")
     fe_nodes = datamanager.get_field("FE Nodes")
-    pd_nodes = find_active_nodes(fe_nodes, pd_nodes, nodes)
-    datamanager.create_constant_node_field("Number of Element Neighbors", Int64, 1, 1)
-    # Find number of element neighbors
-    # TODO size correct?
+    pd_nodes = find_active_nodes(fe_nodes, pd_nodes, nodes, false)
+
+
 
     coupling_matrix = datamanager.create_constant_node_field(
         "Coupling Matrix",
         Float64,
         "Matrix",
         prod(p .+ 1) + 1,
-        prod(p .+ 1) + 1,
     )
     # TODO to specify over params?
-    kappa = 1
+
+    if !haskey(fe_params["Coupling"], "Kappa")
+        fe_params["Coupling"]["Kappa"] = 1.0
+        @info "Stiffness scaling kappa for coupling is set to 1."
+    end
+    kappa = fe_params["Coupling"]["Kappa"]
     # Assign Element ids
-    coupling_dict = find_point_in_elements(coordinates, topology, pd_nodes)
+    topo_mapping = topo_closed_loop(p)
+    coupling_dict = find_point_in_elements(coordinates, topology, topo_mapping, pd_nodes)
     for (coupling_node, coupling_element) in pairs(coupling_dict)
         coupling_matrix[coupling_node, :, :] = compute_coupling_matrix(
             coordinates,
@@ -61,6 +63,29 @@ function init_coupling_model(
     return datamanager
 end
 
+
+function topo_closed_loop(pn)
+    mapping = Int64[]
+
+    for ip = 1:pn[1]+1
+        push!(mapping, ip)
+    end
+    for ip = 2:pn[2]+1
+        push!(mapping, ip * (pn[1] + 1))
+    end
+
+    for ip = 2:pn[1]+1
+        push!(mapping, (pn[1] + 1) * (pn[2] + 1) - ip + 1)
+    end
+
+    for ip = 1:pn[2]-1
+        push!(mapping, (pn[1] + 1) * pn[2] + 1 - (pn[1] + 1) * ip)
+    end
+
+    return mapping
+end
+
+
 function compute_coupling(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},
@@ -70,35 +95,22 @@ function compute_coupling(
     topology = datamanager.get_field("FE Topology")
     force_densities = datamanager.get_field("Force Densities", "NP1")
     displacements = datamanager.get_field("Displacements", "NP1")
-    weight_coefficient = fem_params["PD Weight"]
+    volume = datamanager.get_field("Volume")
     coupling_matrix = datamanager.get_field("Coupling Matrix")
+    # EQ(13) in 10.1002/pamm.202400021 is fulfilled , also for the mass part.
+    # F_i/rho = a ?! TODO check this assumption
+    weight_coefficient = fem_params["Coupling"]["PD Weight"]
     coupling_dict = datamanager.get_coupling_dict()
 
     for (coupling_node, coupling_element) in pairs(coupling_dict)
-        topo = vcat(coupling_node, topology[coupling_element])
+        topo = vcat(coupling_node, topology[coupling_element, :])
+        force_densities[topology[coupling_element], :] .*= (1 - weight_coefficient)
+        force_densities[coupling_node, :] .*= weight_coefficient
         @views local_disp = displacements[topo, :]
-        force_densities +=
-            coupling_matrix[coupling_node, :, :] * local_disp * weight_coefficient
+        force_densities[topo, :] +=
+            coupling_matrix[coupling_node, :, :] * local_disp ./ volume[topo]
+        #force_densities[coupling_node, :] /= volume[coupling_node]
     end
-
-    # Add weightening
-    # for ipd in coupling_nodes
-    #     force_internal[ipd*dof-1:ipd*dof] *= weight_coefficient
-    # end
-    #
-    # for ife in coupling_FE_nodes
-    #     force_internal[ife*dof-1:ife*dof] *= (1 - weight_coefficient)
-    # end
-
-    # Add weightening for mass vector same way
-
-    # Add to the system coupling matrix
-    #for (point_idx, point_val) in enumerate(coupling_nodes)
-    #    topo_local = [point_val; topology[point_locations[point_idx], :]] # global numbering of coupled nodes [xpd x1fe x2fe x3fe x4fe]
-    #
-    #    # depends how vectors are constructed
-    #end
-
 
     return datamanager
 
@@ -168,23 +180,31 @@ function compute_coupling_matrix(
     return local_coupl_matrix
 end
 
-
-function find_point_in_elements(coordinates, topology, points_to_check)
+## TODO does only work if the PD point is not on a FE - point, line or surface (3D)
+function find_point_in_elements(coordinates, topology, topo_mapping, points_to_check)
 
     # Will store which element each point is in ->
     point_locations = Dict{Int64,Int64}()
-
+    if length(coordinates[1, :]) == 2
+        coor =
+            [(coordinates[i, 1], coordinates[i, 2]) for i in eachindex(coordinates[:, 1])]
+    else
+        coor = [
+            (coordinates[i, 1], coordinates[i, 2], coordinates[i, 3]) for
+            i in eachindex(coordinates[:, 1])
+        ]
+    end
     # Iterate through points to check
-    @views for (point_index, point_coords) in
-               enumerate(eachrow(coordinates[points_to_check, :]))
+    for point_index in points_to_check
         # Check each element
-        for (element_index, element_vertices) in enumerate(eachrow(topology))
-            # Get vertex coordinates for this element
-            poly_vertices = [coordinates[v, :] for v in element_vertices]
-
+        for element_index in eachindex(topology[:, 1])
             # Check if point is in this element
-            if is_point_in_polygon(point_coords, poly_vertices)
-                point_locations[points_to_check[point_index]] = element_index
+            if point_in_polygon(
+                coor[point_index],
+                coor,
+                topology[element_index, topo_mapping],
+            )
+                point_locations[point_index] = element_index
                 break
             end
         end
@@ -193,29 +213,19 @@ function find_point_in_elements(coordinates, topology, points_to_check)
     return point_locations
 end
 
-
-function is_point_in_polygon(point, polygon_vertices)
-    # Point-in-polygon test using ray casting method
-    x, y = point
-    n = length(polygon_vertices)
-    inside = false
-
-    j = n
-    for i = 1:n
-        @views xi, yi = polygon_vertices[i]
-        @views xj, yj = polygon_vertices[j]
-
-        intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
-
-        if intersect
-            inside = !inside
-        end
-
-        j = i
+function point_in_polygon(point, coor, topo)
+    faces = NTuple{length(topo),Tuple{Tuple{Float64,Float64},Tuple{Float64,Float64}}}(
+        i < length(topo) ? (coor[topo[i]], coor[topo[i+1]]) :
+        (coor[topo[end]], coor[topo[1]]) for i in eachindex(topo)
+    )
+    start = (minimum(t -> t[1], coor), minimum(t -> t[2], coor))
+    stop = (maximum(t -> t[1], coor), maximum(t -> t[2], coor))
+    if pinpoly(point, faces, start, stop) == 0
+        return false
     end
-
-    return inside
+    return true
 end
+
 #=
 
 kappa = 1

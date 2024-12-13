@@ -11,7 +11,7 @@ PeriLab:
     Type: Text File
     Input External Topology:
       File: "topo.txt"
-      Add Neighbor Search: true
+      Add Neighbor Search: false
   FEM:
     Element Type: "Lagrange"
     Degree: 1 1
@@ -31,12 +31,12 @@ PeriLab:
     block_1:
       Material Model: "Mat_1"
       Density: 2000
-      Horizon: 1.1005
+      Horizon: 0.004005
       FEM: true
     block_2:
       Material Model: "Mat_1"
       Density: 2000
-      Horizon: 1.1005
+      Horizon: 0.004005
   Boundary Conditions:
     BC_1:
       Variable: "Displacements"
@@ -53,13 +53,13 @@ PeriLab:
   Solver:
     Initial Time: 0.0
     Final Time: 1.0e-4
-    Numerical Damping: 0e-0
+    Numerical Damping: 0.00e-0
     Verlet:
       Safety Factor: 1.00
       Fixed dt: 1e-8
   Outputs:
     Output1:
-      Output Filename: "FEM"
+      Output Filename: "test_FEM_2d_coupled_Arlequin"
       Output File Type: Exodus
       Output Frequency: 100
       Output Variables:

@@ -5,9 +5,9 @@
 using Test
 #include("../../../src/PeriLab.jl")
 
-include("../../../../src/FEM/Coupling/Arlequin.jl")
+include("../../../../src/FEM/Coupling/Arlequin_coupling.jl")
 @testset "ut_coupling_name" begin
-    @test Arlequin.coupling_name() == "Arlequin"
+    @test Arlequin_coupling.coupling_name() == "Arlequin"
 end
 @testset "ut_find_point_in_elements" begin
     dof = 2
@@ -17,8 +17,8 @@ end
     nodesFE = nodes[1:nFEnodes, 1]
     nodesPD = nodes[nFEnodes+1:end, 1]
     topology = Array{Int64}(zeros(2, 4))
-    topology[1, :] = [1, 2, 4, 6]
-    topology[2, :] = [6, 4, 3, 5]
+    topology[1, :] = [1, 2, 6, 4]
+    topology[2, :] = [6, 4, 5, 3]
 
     coordinates = zeros(11, 2)
     coordinates[1, :] = [2, 0]
@@ -31,8 +31,13 @@ end
     coordinates[8, :] = [1.5, 0.5]     #PD
     coordinates[9, :] = [0.5, 1.5]
     coordinates[10, :] = [1.5, 1.5]    #PD
-
-    test_dict = Arlequin.find_point_in_elements(coordinates, topology, nodesPD)
+    topo_mapping = Arlequin_coupling.topo_closed_loop([1, 1])
+    test_dict = Arlequin_coupling.find_point_in_elements(
+        coordinates,
+        topology,
+        topo_mapping,
+        nodesPD,
+    )
     @test collect(keys(test_dict)) == [7, 8]
     @test test_dict[7] == 2
     @test test_dict[8] == 1
@@ -65,7 +70,15 @@ end
     p = [1, 1]
     dof = 2
 
-    test_mat = compute_coupling_matrix(coordinates, topology, 7, 2, kappa, p, dof)
+    test_mat = Arlequin_coupling.compute_coupling_matrix(
+        coordinates,
+        topology,
+        7,
+        2,
+        kappa,
+        p,
+        dof,
+    )
     @test test_mat == [
         1.0 -0.0625 -0.0625 -0.0625 -0.0625
         -0.0625 0.00390625 0.00390625 0.00390625 0.00390625
@@ -73,7 +86,15 @@ end
         -0.0625 0.00390625 0.00390625 0.00390625 0.00390625
         -0.0625 0.00390625 0.00390625 0.00390625 0.00390625
     ]
-    test_mat = compute_coupling_matrix(coordinates, topology, 8, 1, kappa, p, dof)
+    test_mat = Arlequin_coupling.compute_coupling_matrix(
+        coordinates,
+        topology,
+        8,
+        1,
+        kappa,
+        p,
+        dof,
+    )
 
     @test test_mat == [
         1.0 -0.0625 -0.0625 -0.0625 -0.0625
