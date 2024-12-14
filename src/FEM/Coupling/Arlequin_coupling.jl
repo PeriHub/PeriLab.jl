@@ -175,7 +175,7 @@ function compute_coupling_matrix(
     I = ones(1, 1)
     Np = [N1p N2p N3p N4p]
 
-    local_coupl_matrix = kappa * [I -Np; -Np' Np'*Np]
+    local_coupl_matrix = kappa * [I Np; Np' Np'*Np]
 
     return local_coupl_matrix
 end

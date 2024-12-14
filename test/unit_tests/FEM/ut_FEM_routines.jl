@@ -2,9 +2,17 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 include("../../../src/FEM/FEM_routines.jl")
-include("../../../src/FEM/Element_formulation/lagrange_element.jl")
 # include("../../../src/PeriLab.jl")
-
+using .FEM_routines:
+    create_element_matrices,
+    get_Jacobian,
+    get_polynomial_degree,
+    get_number_of_integration_points,
+    create_element_matrices,
+    get_lumped_mass,
+    get_weights_and_integration_points,
+    get_multi_dimensional_integration_point_data,
+    get_FE_material_model
 # using .PeriLab
 using Test
 

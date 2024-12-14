@@ -148,17 +148,7 @@ function compute_models(
 )
     fem_option = datamanager.fem_active()
     if fem_option
-        # no damage occur here. Therefore, it runs one time
         fe_nodes = datamanager.get_field("FE Nodes")
-        nelements = datamanager.get_num_elements()
-        # in future the FE analysis can be put into the block loop. Right now it is outside the block.
-        @timeit to "FEM eval" datamanager = FEM.eval(
-            datamanager,
-            Vector{Int64}(1:nelements),
-            datamanager.get_properties(1, "FEM"),
-            time,
-            dt,
-        )
     end
 
     active_list = datamanager.get_field("Active")
@@ -284,14 +274,24 @@ function compute_models(
     end
 
     if fem_option
+        @timeit to "FEM" begin
+            nelements = datamanager.get_num_elements()
+            active_nodes =
+                find_active_nodes(fe_nodes, active_nodes, 1:datamanager.get_nnodes(), false)
 
-        active_nodes =
-            find_active_nodes(fe_nodes, active_nodes, 1:datamanager.get_nnodes(), false)
-        @timeit to "FEM_PD_coupling" datamanager = FEM.Coupling_PD_FEM.compute_coupling(
-            datamanager,
-            active_nodes,
-            datamanager.get_properties(1, "FEM"),
-        )
+            @timeit to "eval" datamanager = FEM.eval(
+                datamanager,
+                Vector{Int64}(1:nelements),
+                datamanager.get_properties(1, "FEM"),
+                time,
+                dt,
+            )
+            @timeit to "coupling" datamanager = FEM.Coupling_PD_FEM.compute_coupling(
+                datamanager,
+                active_nodes,
+                datamanager.get_properties(1, "FEM"),
+            )
+        end
     end
 
     #=

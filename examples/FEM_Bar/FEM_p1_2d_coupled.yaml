@@ -16,6 +16,9 @@ PeriLab:
     Element Type: "Lagrange"
     Degree: 1
     Material Model: "Mat_1"
+    Coupling:
+      Coupling Type: "Arlequin"
+      PD Weight: 0.5 # standard is 0.5
   Models:
     Material Models:
       Mat_1:
@@ -49,16 +52,16 @@ PeriLab:
       Type: Dirichlet
   Solver:
     Initial Time: 0.0
-    Final Time: 1e-04
+    Final Time: 2e-04
     Verlet:
       Safety Factor: 1.00
       Numerical Damping: 1e-05
-      Fixed dt: 5e-9
+      Fixed dt: 1e-9
   Outputs:
     Output1:
       Output Filename: "FEM_p1_2d_coupled"
       Output File Type: Exodus
-      Output Frequency: 100
+      Output Frequency: 500
       Output Variables:
         Cauchy Stress: True
         Displacements: True

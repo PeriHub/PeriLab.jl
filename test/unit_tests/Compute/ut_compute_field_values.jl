@@ -4,6 +4,7 @@
 
 using Test
 # include("../../../src/Core/Data_manager.jl")
+include("../../../src/Support/Helpers.jl")
 include("../../../src/Compute/compute_field_values.jl")
 @testset "ut_get_forces_from_force_density" begin
     test_data_manager = PeriLab.Data_manager
