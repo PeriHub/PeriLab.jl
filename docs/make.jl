@@ -44,6 +44,7 @@ makedocs(
                 "Ordinary state-based"=>"theory/theory_ordinary.md",
                 "Non-Ordinary state-based"=>"theory/theory_correspondence.md",
             ],
+            "Physics"=>Any["Thermal Models"=>"theory/theory_thermal.md",],
         ],
         "FAQ"=>"lib/faq.md",
         "Glossar"=>"lib/glossar.md",
