@@ -36,6 +36,7 @@ function compute_FEM(
     dof = datamanager.get_dof()
 
     force_densities = datamanager.get_field("Force Densities", "NP1")
+    volume = datamanager.get_field("Volume")
     displacement = datamanager.get_field("Displacements", "NP1")
     strain_N = datamanager.get_field("Element Strain", "N")
     strain_NP1 = datamanager.get_field("Element Strain", "NP1")
@@ -91,16 +92,17 @@ function compute_FEM(
                 #tbd
                 #stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
             end
-
+            # specific force density
             force_densities[topo, :] -=
                 reshape(
                     B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .*
                     det_jacobian[id_el, id_int],
                     (dof, nnodes),
-                )'
+                )' #./ volume[topo]
             # if you do not use permutedims you will get some index errors
             stress_temp .+= stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int]
         end
+
         # as long as no elements stresses are written
         temp = permutedims(cauchy_stress[topo, :, :], (2, 3, 1))
         temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
