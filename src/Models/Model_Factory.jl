@@ -77,6 +77,12 @@ function init_models(
         datamanager = add_model(datamanager, model_name)
     end
 
+    if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
+        heat_capacity =
+            datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
+        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
+    end
+
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         @info "Init $active_model_name "
         @timeit to "$active_model_name model fields" datamanager =
@@ -94,11 +100,6 @@ function init_models(
                 # put it in datamanager
             end
         end
-    end
-
-    if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
-        heat_capacity = datamanager.get_field("Specific Heat Capacity")
-        heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
     end
 
     if solver_options["Calculation"]["Calculate Cauchy"] |

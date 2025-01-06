@@ -32,7 +32,6 @@ function init_fields(datamanager::Module)
     # must be specified, because it might be that no temperature model has been defined
     datamanager.create_node_field("Temperature", Float64, 1)
     datamanager.create_node_field("Heat Flow", Float64, 1)
-    datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
 
     bond_damageN = datamanager.get_bond_damage("N")
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
