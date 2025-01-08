@@ -202,9 +202,24 @@ global expected_structure = Dict(
                                     "Bond Associated" => [Bool, false],
                                     "Bond Horizon" => [Union{Float64,Int64}, false],
                                     "Poisson's Ratio" => [Union{Float64,Int64}, false],
+                                    "Poisson's Ratio XY" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Poisson's Ratio YZ" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Poisson's Ratio ZX" =>
+                                        [Union{Float64,Int64}, false],
                                     "Young's Modulus" => [Union{Float64,Int64}, false],
+                                    "Young's Modulus X" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Young's Modulus Y" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Young's Modulus Z" =>
+                                        [Union{Float64,Int64}, false],
                                     "Bulk Modulus" => [Union{Float64,Int64}, false],
                                     "Shear Modulus" => [Union{Float64,Int64}, false],
+                                    "Shear Modulus XY" => [Union{Float64,Int64}, false],
+                                    "Shear Modulus YZ" => [Union{Float64,Int64}, false],
+                                    "Shear Modulus ZX" => [Union{Float64,Int64}, false],
                                     "Yield Stress" => [Union{Float64,Int64}, false],
                                     "Zero Energy Control" => [String, false],
                                     "C11" => [Union{Float64,Int64}, false],

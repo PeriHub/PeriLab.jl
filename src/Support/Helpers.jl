@@ -112,15 +112,18 @@ function add_in_place!(
     return C
 end
 function get_MMatrix(len::Int64)
+    global A2x2
+    global A3x3
+    global A6x6
 
     if len == 4
-        global A2x2
+        A2x2 .= 0
         return A2x2
     elseif len == 9
-        global A3x3
+        A3x3 .= 0
         return A3x3
     elseif len == 36
-        global A6x6
+        A6x6 .= 0
         return A6x6
     else
         @error "MMatrix length $len not pre-allocated. Please add your size to helper.jl in get_MMatrix."

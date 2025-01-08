@@ -220,11 +220,32 @@ function compute_crititical_time_step(
         if mechanical
             bulk_modulus =
                 datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
+            g_xy = datamanager.get_property(iblock, "Material Model", "Shear Modulus XY")
+            g_yz = datamanager.get_property(iblock, "Material Model", "Shear Modulus YZ")
+            g_zx = datamanager.get_property(iblock, "Material Model", "Shear Modulus ZX")
+            c_44 = datamanager.get_property(iblock, "Material Model", "C44")
+            c_55 = datamanager.get_property(iblock, "Material Model", "C55")
+            c_66 = datamanager.get_property(iblock, "Material Model", "C66")
             if !isnothing(bulk_modulus)
                 t = compute_mechanical_critical_time_step(
                     block_nodes[iblock],
                     datamanager,
                     bulk_modulus,
+                )
+                critical_time_step = test_timestep(t, critical_time_step)
+            elseif !isnothing(g_xy) && !isnothing(g_yz) && !isnothing(g_zx)
+                t = compute_mechanical_critical_time_step(
+                    block_nodes[iblock],
+                    datamanager,
+                    maximum([g_xy, g_yz, g_zx]),
+                )
+                critical_time_step = test_timestep(t, critical_time_step)
+                #TODO: temporary solution!!!
+            elseif !isnothing(c_44) && !isnothing(c_55) && !isnothing(c_66)
+                t = compute_mechanical_critical_time_step(
+                    block_nodes[iblock],
+                    datamanager,
+                    maximum([c_44 / 2, c_55 / 2, c_66 / 2]),
                 )
                 critical_time_step = test_timestep(t, critical_time_step)
             else
