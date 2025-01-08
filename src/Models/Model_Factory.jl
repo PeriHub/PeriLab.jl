@@ -262,22 +262,9 @@ function compute_models(
     end
     # must be here to avoid double distributions
     # distributes ones over all nodes
-
-    if "Material" in options
-        active_nodes = datamanager.get_field("Active Nodes")
-
-        @timeit to "distribute_force_densities" Material.distribute_force_densities(
-            datamanager,
-            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes()),
-        )
-
-    end
-
     if fem_option
         @timeit to "FEM" begin
             nelements = datamanager.get_num_elements()
-            active_nodes =
-                find_active_nodes(fe_nodes, active_nodes, 1:datamanager.get_nnodes(), false)
 
             @timeit to "eval" datamanager = FEM.eval(
                 datamanager,
@@ -286,12 +273,35 @@ function compute_models(
                 time,
                 dt,
             )
-            @timeit to "coupling" datamanager = FEM.Coupling_PD_FEM.compute_coupling(
+            active_nodes = datamanager.get_field("Active Nodes")
+            FEM.force_densities(
                 datamanager,
-                active_nodes,
-                datamanager.get_properties(1, "FEM"),
+                find_active_nodes(fe_nodes, active_nodes, active_nodes, true),
             )
         end
+    end
+    if "Material" in options
+        active_nodes = datamanager.get_field("Active Nodes")
+        active_nodes =
+            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
+        if fem_option
+            # FEM active means FEM nodes
+            active_nodes = find_active_nodes(fe_nodes, active_nodes, active_nodes, false)
+        end
+
+        @timeit to "distribute_force_densities" Material.distribute_force_densities(
+            datamanager,
+            active_nodes,
+        )
+
+    end
+
+    if fem_option
+        @timeit to "coupling" datamanager = FEM.Coupling_PD_FEM.compute_coupling(
+            datamanager,
+            datamanager.get_properties(1, "FEM"),
+        )
+
     end
 
     #=
