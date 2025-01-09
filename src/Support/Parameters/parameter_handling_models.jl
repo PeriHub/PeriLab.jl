@@ -53,7 +53,12 @@ else
     println("Parameter not found.")
 end
 """
-function get_model_parameter(params::Dict, model::String, id::String)
+function get_model_parameter(
+    params::Dict,
+    model::String,
+    id::String,
+    directory::String = "",
+)
     if !haskey(params["Models"], model * "s")
         @error model *
                " is defined in blocks, but no " *
@@ -64,8 +69,12 @@ function get_model_parameter(params::Dict, model::String, id::String)
     if haskey(params["Models"][model*"s"], id)
         file_keys = find_data_files(params["Models"][model*"s"][id])
         for file_key in file_keys
-            data = csv_reader_temporary(params["Models"][model*"s"][id][file_key])
-            params["Models"][model*"s"][id][file_key] =
+            data, header = csv_reader_temporary(
+                joinpath(directory, params["Models"][model*"s"][id][file_key]),
+            )
+            params["Models"][model*"s"][id][file_key] = Dict()
+            params["Models"][model*"s"][id][file_key]["Field"] = header[1]
+            params["Models"][model*"s"][id][file_key]["Data"] =
                 interpolation(data[!, 1], data[!, 2])
         end
         return params["Models"][model*"s"][id]
@@ -89,7 +98,8 @@ function csv_reader_temporary(filename::String)
         header = header,
         skipto = header_line + 1,
         comment = "#",
-    )
+    ),
+    header
 end
 
 

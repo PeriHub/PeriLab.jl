@@ -447,6 +447,18 @@ function find_inverse_bond_id(nlist::Vector{Vector{Int64}})
     return inverse_nlist
 end
 
+function is_dependent(field_name::String, damage_parameter::Dict, datamanager::Module)
+    if damage_parameter[field_name] isa Dict
+        if !datamanager.has_key(damage_parameter[field_name]["Field"] * "NP1")
+            @error "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
+            return nothing
+        end
+        field = datamanager.get_field(damage_parameter[field_name]["Field"], "NP1")
+        return true, field
+    end
+    return false, nothing
+end
+
 function interpolation(
     x::Union{Vector{Float64},Vector{Int64}},
     y::Union{Vector{Float64},Vector{Int64}},
@@ -461,12 +473,16 @@ end
 function interpol_data(
     x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
     values::Dict{String,Any},
+    warning_flag::Bool = true,
 )
-    if values["min"] > minimum(x)
-        @warn "Interpolation value is below interpolation range. Using minimum value of dataset."
-    end
-    if values["max"] < maximum(x)
-        @warn "Interpolation value is above interpolation range. Using maximum value of dataset."
+    if warning_flag
+        if values["min"] > minimum(x)
+            @warn "Interpolation value is below interpolation range. Using minimum value of dataset."
+        end
+        if values["max"] < maximum(x)
+            @warn "Interpolation value is above interpolation range. Using maximum value of dataset."
+        end
+        warning_flag = false
     end
     return evaluate(values["spl"], x)
 end

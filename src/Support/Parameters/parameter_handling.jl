@@ -163,7 +163,7 @@ global expected_structure = Dict(
                         Dict{Any,Any}(
                             "Any" => [
                                 Dict{Any,Any}(
-                                    "Critical Value" => [Union{Float64,Int64}, true],
+                                    "Critical Value" => [Union{Float64,Int64,String}, true],
                                     "Damage Model" => [String, true],
                                     "Interblock Damage" => [
                                         Dict{Any,Any}(
@@ -297,6 +297,7 @@ global expected_structure = Dict(
                     ],
                     "Pre Calculation Global" => [
                         Dict{Any,Any}(
+                            "Bond Associated Deformation Gradient" => [Bool, false],
                             "Bond Associated Correspondence" => [Bool, false],
                             "Deformation Gradient" => [Bool, false],
                             "Deformed Bond Geometry" => [Bool, false],

@@ -341,6 +341,7 @@ function get_block_model_definition(
     blocks::Vector{Int64},
     prop_keys::Vector{String},
     properties,
+    directory::String = "",
 )
     # properties function from datamanager
 
@@ -364,7 +365,7 @@ function get_block_model_definition(
                 properties(
                     block_id,
                     model,
-                    get_model_parameter(params, model, block[model]),
+                    get_model_parameter(params, model, block[model], directory),
                 )
             end
         end
@@ -389,7 +390,14 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
     datamanager.init_properties()
     blocks = datamanager.get_block_list()
     prop_keys = datamanager.init_properties()
-    get_block_model_definition(params, blocks, prop_keys, datamanager.set_properties)
+    directory = datamanager.get_directory()
+    get_block_model_definition(
+        params,
+        blocks,
+        prop_keys,
+        datamanager.set_properties,
+        directory,
+    )
     if material_model
         dof = datamanager.get_dof()
         for block in blocks

@@ -46,7 +46,7 @@ PeriLab:
     BC_3:
       Variable: "Temperature"
       Node Set: "Node Set 3"
-      Value: "0"
+      Value: 250000.0 * t
       Type: Dirichlet
   Compute Class Parameters:
     External_Forces:
@@ -93,14 +93,13 @@ PeriLab:
         Number of Neighbors: true
         External_Forces: True
         External_Displacements: True
-        Strain: True
         Temperature: True
   Models:
     Damage Models:
       Damage:
         Damage Model: Critical Energy
-        Critical Value: 0.0035714285714285716
-        #Temperature dependend: "crictical_energy_temperature_depended.txt"
+        Critical Value: crictical_energy_temperature_depended.txt #0.0035714285714285716
+        # Temperature dependend: "crictical_energy_temperature_depended.txt"
     Thermal Models:
       Temp:
         Thermal Model: "Thermal Flow"

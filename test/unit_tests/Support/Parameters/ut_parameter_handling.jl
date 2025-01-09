@@ -846,10 +846,11 @@ end
     @test testData["Material Model"]["sa"] == [3.2, 2, 3]
     @test testData["Material Model"]["d"] == "true"
     test_dict = testData["Material Model"]["test_file_B"]
-    @test test_dict["max"] == 0.5
-    @test test_dict["min"] == -2.5
+    @test test_dict["Field"] == "Temperature"
+    @test test_dict["Data"]["max"] == 0.5
+    @test test_dict["Data"]["min"] == -2.5
 
-    @test typeof(test_dict["spl"]) == Dierckx.Spline1D
+    @test typeof(test_dict["Data"]["spl"]) == Dierckx.Spline1D
     testData["Damage Model"] =
         PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
             params,
