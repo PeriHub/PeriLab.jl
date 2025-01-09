@@ -131,24 +131,8 @@ function get_all_elastic_moduli(
         nu = nu_fixed
         poissons = true
     end
-    if haskey(parameter, "Symmetry") &&
-       occursin("anisotropic", lowercase(parameter["Symmetry"]))
-        E_x = haskey(parameter, "Young's Modulus X")
-        E_y = haskey(parameter, "Young's Modulus Y")
-        E_z = haskey(parameter, "Young's Modulus Z")
-        nu_xy = haskey(parameter, "Poisson's Ratio XY")
-        nu_yz = haskey(parameter, "Poisson's Ratio YZ")
-        nu_zx = haskey(parameter, "Poisson's Ratio ZX")
-        g_xy = haskey(parameter, "Shear Modulus XY")
-        g_yz = haskey(parameter, "Shear Modulus YZ")
-        g_zx = haskey(parameter, "Shear Modulus ZX")
-        if E_x + E_y + E_z + nu_xy + nu_yz + nu_zx + g_xy + g_yz + g_zx > 0
-            if !E_x || !E_y || !E_z || !nu_xy || !nu_yz || !nu_zx || !g_xy || !g_yz || !g_zx
-                @error "Non isotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, ZX, Shear Modulus XY, YZ, ZX"
-                return nothing
-            end
-            parameter["Compute_Hook"] = true
-        else
+    if haskey(parameter, "Symmetry")
+        if occursin("anisotropic", lowercase(parameter["Symmetry"]))
             for iID = 1:6
                 for jID = iID:6
                     if !("C" * string(iID) * string(jID) in keys(parameter))
@@ -157,9 +141,23 @@ function get_all_elastic_moduli(
                     end
                 end
             end
-            parameter["Compute_Hook"] = false
+            return
+        elseif occursin("orthotropic", lowercase(parameter["Symmetry"]))
+            E_x = haskey(parameter, "Young's Modulus X")
+            E_y = haskey(parameter, "Young's Modulus Y")
+            E_z = haskey(parameter, "Young's Modulus Z")
+            nu_xy = haskey(parameter, "Poisson's Ratio XY")
+            nu_yz = haskey(parameter, "Poisson's Ratio YZ")
+            nu_zx = haskey(parameter, "Poisson's Ratio ZX")
+            g_xy = haskey(parameter, "Shear Modulus XY")
+            g_yz = haskey(parameter, "Shear Modulus YZ")
+            g_zx = haskey(parameter, "Shear Modulus ZX")
+            if !E_x || !E_y || !E_z || !nu_xy || !nu_yz || !nu_zx || !g_xy || !g_yz || !g_zx
+                @error "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, ZX, Shear Modulus XY, YZ, ZX"
+                return nothing
+            end
+            return
         end
-        return
     end
 
     # tbd non isotropic material check
@@ -223,56 +221,14 @@ Returns the Hooke matrix of the material.
 """
 function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64 = 1)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
+
     if occursin("anisotropic", lowercase(symmetry))
         aniso_matrix = get_MMatrix(36)
-
-        if parameter["Compute_Hook"]
-
-            E_x = parameter["Young's Modulus X"]
-            E_y = parameter["Young's Modulus Y"]
-            E_z = parameter["Young's Modulus Z"]
-            nu_xy = parameter["Poisson's Ratio XY"]
-            nu_yz = parameter["Poisson's Ratio YZ"]
-            nu_zx = parameter["Poisson's Ratio ZX"]
-            g_xy = parameter["Shear Modulus XY"]
-            g_yz = parameter["Shear Modulus YZ"]
-            g_zx = parameter["Shear Modulus ZX"]
-
-            nu_yx = nu_xy * E_y / E_x
-            nu_xz = nu_zx * E_x / E_z
-            nu_zy = nu_yz * E_z / E_y
-
-            delta =
-                (
-                    1 - nu_xy * nu_yx - nu_yz * nu_zy - nu_zx * nu_xz -
-                    2 * nu_xy * nu_yz * nu_zx
-                ) / E_x *
-                E_y *
-                E_z
-
-            aniso_matrix[1, 1] = (1 - nu_yz * nu_zy) / E_y * E_z * delta
-            aniso_matrix[2, 2] = (1 - nu_zx * nu_xz) / E_z * E_x * delta
-            aniso_matrix[3, 3] = (1 - nu_xy * nu_yx) / E_x * E_y * delta
-
-            aniso_matrix[1, 2] = (nu_yx + nu_zx * nu_yz) / E_y * E_z * delta
-            aniso_matrix[2, 1] = (nu_xy + nu_xz * nu_zy) / E_z * E_x * delta
-
-            aniso_matrix[1, 3] = (nu_zx + nu_yx * nu_zy) / E_y * E_z * delta
-            aniso_matrix[3, 1] = (nu_xz + nu_xy * nu_yz) / E_x * E_y * delta
-
-            aniso_matrix[2, 3] = (nu_zy + nu_zx * nu_xy) / E_z * E_x * delta
-            aniso_matrix[3, 2] = (nu_yz + nu_xz * nu_yx) / E_x * E_y * delta
-
-            aniso_matrix[4, 4] = 2 * g_yz
-            aniso_matrix[5, 5] = 2 * g_zx
-            aniso_matrix[6, 6] = 2 * g_xy
-        else
-            for iID = 1:6
-                for jID = iID:6
-                    value = parameter["C"*string(iID)*string(jID)]
-                    aniso_matrix[iID, jID] = value
-                    aniso_matrix[jID, iID] = value
-                end
+        for iID = 1:6
+            for jID = iID:6
+                value = parameter["C"*string(iID)*string(jID)]
+                aniso_matrix[iID, jID] = value
+                aniso_matrix[jID, iID] = value
             end
         end
 
@@ -301,7 +257,50 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
             @error "2D model defintion is missing; plane stress or plane strain "
             return nothing
         end
+    elseif occursin("orthotropic", lowercase(symmetry))
+        aniso_matrix = get_MMatrix(36)
+
+        E_x = parameter["Young's Modulus X"]
+        E_y = parameter["Young's Modulus Y"]
+        E_z = parameter["Young's Modulus Z"]
+        nu_xy = parameter["Poisson's Ratio XY"]
+        nu_yz = parameter["Poisson's Ratio YZ"]
+        nu_zx = parameter["Poisson's Ratio ZX"]
+        g_xy = parameter["Shear Modulus XY"]
+        g_yz = parameter["Shear Modulus YZ"]
+        g_zx = parameter["Shear Modulus ZX"]
+
+        nu_yx = nu_xy * E_y / E_x
+        nu_xz = nu_zx * E_x / E_z
+        nu_zy = nu_yz * E_z / E_y
+
+        delta =
+            (
+                1 - nu_xy * nu_yx - nu_yz * nu_zy - nu_zx * nu_xz -
+                2 * nu_xy * nu_yz * nu_zx
+            ) / E_x *
+            E_y *
+            E_z
+
+        aniso_matrix[1, 1] = (1 - nu_yz * nu_zy) / E_y * E_z * delta
+        aniso_matrix[2, 2] = (1 - nu_zx * nu_xz) / E_z * E_x * delta
+        aniso_matrix[3, 3] = (1 - nu_xy * nu_yx) / E_x * E_y * delta
+
+        aniso_matrix[1, 2] = (nu_yx + nu_zx * nu_yz) / E_y * E_z * delta
+        aniso_matrix[2, 1] = (nu_xy + nu_xz * nu_zy) / E_z * E_x * delta
+
+        aniso_matrix[1, 3] = (nu_zx + nu_yx * nu_zy) / E_y * E_z * delta
+        aniso_matrix[3, 1] = (nu_xz + nu_xy * nu_yz) / E_x * E_y * delta
+
+        aniso_matrix[2, 3] = (nu_zy + nu_zx * nu_xy) / E_z * E_x * delta
+        aniso_matrix[3, 2] = (nu_yz + nu_xz * nu_yx) / E_x * E_y * delta
+
+        aniso_matrix[4, 4] = 2 * g_yz
+        aniso_matrix[5, 5] = 2 * g_zx
+        aniso_matrix[6, 6] = 2 * g_xy
+        return aniso_matrix
     end
+
     iID = ID
     if parameter["Poisson's Ratio"] isa Float64
         iID = 1

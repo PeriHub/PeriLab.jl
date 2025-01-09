@@ -447,7 +447,7 @@ end
 
     #TODO: Check above
 
-    symmetry = "anisotropic"
+    symmetry = "Orthotropic"
     parameter = Dict{String,Any}(
         "Material Model" => "PD Solid Elastic",
         "Young's Modulus X" => 5,

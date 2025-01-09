@@ -95,7 +95,7 @@ PeriLab:
       Safety Factor: 1.0
   Outputs:
     Output1:
-      Output Filename: "aniso_hooke"
+      Output Filename: "symmetry_hooke"
       Output File Type: Exodus
       Output Frequency: 1
       Output Variables:

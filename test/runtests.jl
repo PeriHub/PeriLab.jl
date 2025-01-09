@@ -215,8 +215,8 @@ MPI.Init()
         @testset "test_two_block" begin
             include("fullscale_tests/test_two_block/test_two_block.jl")
         end
-        @testset "test_aniso" begin
-            include("fullscale_tests/test_aniso/test_aniso.jl")
+        @testset "test_symmetry" begin
+            include("fullscale_tests/test_symmetry/test_symmetry.jl")
         end
         @testset "test_additive_simple" begin
             include("fullscale_tests/test_additive/test_additive.jl")
