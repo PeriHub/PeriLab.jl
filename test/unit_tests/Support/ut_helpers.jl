@@ -5,6 +5,7 @@
 using Test
 using ProgressBars
 using LinearAlgebra
+using StaticArrays
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
 
@@ -379,7 +380,7 @@ end
           nsteps + 1
 end
 
-@testset "get_active_update_nodes" begin
+@testset "ut_get_active_update_nodes" begin
     nnodes = 4
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
@@ -458,4 +459,14 @@ end
         block_nodes[block],
         index,
     ) == []
+end
+
+@testset "ut_get_MMatrix" begin
+    @test PeriLab.Solver_control.Helpers.get_MMatrix(4) ==
+          MMatrix{2,2}(zeros(Float64, 2, 2))
+    @test PeriLab.Solver_control.Helpers.get_MMatrix(9) ==
+          MMatrix{3,3}(zeros(Float64, 3, 3))
+    @test PeriLab.Solver_control.Helpers.get_MMatrix(36) ==
+          MMatrix{6,6}(zeros(Float64, 6, 6))
+    @test isnothing(PeriLab.Solver_control.Helpers.get_MMatrix(8))
 end

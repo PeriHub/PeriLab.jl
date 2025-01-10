@@ -310,4 +310,75 @@ end
     (filter_flag, normal) = PeriLab.IO.disk_filter(nnodes, data, filter, nlist, dof)
     @test filter_flag == expected_filter_flag
     @test normal == expected_normal
+
+    @test isnothing(PeriLab.IO.disk_filter(nnodes, data, filter, nlist, 2))
+end
+
+@testset "ut_rectangular_plane_filter" begin
+    nnodes = 6
+
+    data = zeros(Float64, 3, 6)
+    data[1, 1] = 0
+    data[2, 1] = 0
+    data[3, 1] = -1.0
+
+    data[1, 2] = 0
+    data[2, 2] = -0.5
+    data[3, 2] = -1.0
+
+    data[1, 3] = 0
+    data[2, 3] = 1.5
+    data[3, 3] = -1.0
+
+    data[1, 4] = 0
+    data[2, 4] = 0
+    data[3, 4] = 1.0
+
+    data[1, 5] = 0
+    data[2, 5] = -0.5
+    data[3, 5] = 1.0
+
+    data[1, 6] = 0
+    data[2, 6] = 1.5
+    data[3, 6] = 1.0
+
+    filter = Dict(
+        "Lower Left Corner X" => -0.5,
+        "Lower Left Corner Y" => -0.5,
+        "Lower Left Corner Z" => 0.0,
+        "Bottom Unit Vector X" => 1.0,
+        "Bottom Unit Vector Y" => 0.0,
+        "Bottom Unit Vector Z" => 0.0,
+        "Normal X" => 0.0,
+        "Normal Y" => 0.0,
+        "Normal Z" => 1.0,
+        "Bottom Length" => 1.0,
+        "Side Length" => 1.0,
+    )
+
+    nlist = [
+        [2, 3, 4, 5, 6],
+        [1, 3, 4, 5, 6],
+        [1, 2, 4, 5, 6],
+        [1, 2, 3, 5, 6],
+        [1, 2, 3, 4, 6],
+        [1, 2, 3, 4, 5],
+    ]
+    dof = 3
+
+    # Define the expected output values
+    expected_filter_flag = [
+        [true, true, true, true, true],   # Node 1
+        [true, true, true, false, true],   # Node 2
+        [true, true, true, true, true],   # Node 3
+        [true, true, true, true, true],   # Node 4
+        [true, false, true, true, true],   # Node 5
+        [true, true, true, true, true],    # Node 6
+    ]
+
+    expected_normal = [0, 0, 1]
+    (filter_flag, normal) =
+        PeriLab.IO.rectangular_plane_filter(nnodes, data, filter, nlist, dof)
+    @test filter_flag == expected_filter_flag
+    @test normal == expected_normal
 end

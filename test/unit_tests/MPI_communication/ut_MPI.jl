@@ -429,6 +429,11 @@ if ncores == 3
                 Dict("tests" => [], "line" => [])
         # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
     end
+
+    solver_options = Dict("Solver" => Dict("Models" => ["Material"]))
+    params = Dict("Blocks" => Dict(1 => Dict("Material Model" => "Test")))
+    IO.show_block_summary(solver_options, params, "", false, comm, test_data_manager)
+
 end
 
 open("test_results_$rank.json", "w") do f

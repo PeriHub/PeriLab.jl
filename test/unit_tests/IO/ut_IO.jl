@@ -309,3 +309,8 @@ end
     # Not fully tested yet because MPI.size=1
     @test PeriLab.IO.show_mpi_summary("", false, comm, test_data_manager) == 1
 end
+
+@testset "ut_clearNP1" begin
+    @test PeriLab.IO.clearNP1("ForceNP1") == "Force"
+    @test PeriLab.IO.clearNP1("Force") == "Force"
+end

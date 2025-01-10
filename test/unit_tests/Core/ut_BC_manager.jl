@@ -248,7 +248,7 @@ end
                 "Value" => "20*t",
             ),
             "BC_2" => Dict(
-                "Variable" => "not there",
+                "Variable" => "Displacements",
                 "Node Set" => "Nset_2",
                 "Coordinate" => "z",
                 "Value" => "0",
@@ -270,6 +270,38 @@ end
             8 => 8,
             9 => 9,
             10 => 10,
+        ),
+    )
+
+    bcs = PeriLab.Solver_control.Boundary_conditions.boundary_condition(
+        params,
+        test_data_manager,
+    )
+
+    # @test bcs = PeriLab.Solver_control.Boundary_conditions.check_valid_bcs(bcs, test_data_manager)
+
+
+    test_data_manager.set_dof(2)
+    @test isnothing(
+        PeriLab.Solver_control.Boundary_conditions.check_valid_bcs(bcs, test_data_manager),
+    )
+    test_data_manager.set_dof(3)
+
+
+    params = Dict(
+        "Boundary Conditions" => Dict(
+            "BC_1" => Dict(
+                "Variable" => "Forces",
+                "Node Set" => "Nset_1",
+                "Coordinate" => "x",
+                "Value" => "20*t",
+            ),
+            "BC_2" => Dict(
+                "Variable" => "not there",
+                "Node Set" => "Nset_2",
+                "Coordinate" => "z",
+                "Value" => "0",
+            ),
         ),
     )
 
