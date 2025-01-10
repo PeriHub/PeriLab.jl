@@ -350,16 +350,12 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix, symmetry::String, dof::Int64
         matrix[3, 3] = aniso_matrix[6, 6]
         return matrix
     elseif occursin("plane stress", symmetry)
-        @info aniso_matrix
         inv_aniso = invert(aniso_matrix, "Hooke matrix not invertable")
-        @info inv_aniso
         matrix = get_MMatrix(36)
-        @info aniso_matrix
         matrix[1:2, 1:2] = inv_aniso[1:2, 1:2]
         matrix[3, 1:2] = inv_aniso[6, 1:2]
         matrix[1:2, 3] = inv_aniso[1:2, 6]
         matrix[3, 3] = inv_aniso[6, 6]
-        @info matrix
         return invert(matrix, "Hooke matrix not invertable")
     else
         @error "2D model defintion is missing; plane stress or plane strain "
