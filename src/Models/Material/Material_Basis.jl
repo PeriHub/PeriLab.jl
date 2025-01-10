@@ -7,7 +7,7 @@ using LinearAlgebra
 using LoopVectorization
 using StaticArrays
 include("../../Support/Helpers.jl")
-using .Helpers: get_MMatrix, determinant, invert, smat
+using .Helpers: get_MMatrix, determinant, invert, smat, interpol_data
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
@@ -231,32 +231,7 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
                 aniso_matrix[jID, iID] = value
             end
         end
-
-        if dof == 3
-            return aniso_matrix
-        elseif occursin("plane strain", symmetry)
-            matrix = get_MMatrix(9)
-            matrix[1:2, 1:2] = aniso_matrix[1:2, 1:2]
-            matrix[3, 1:2] = aniso_matrix[6, 1:2]
-            matrix[1:2, 3] = aniso_matrix[1:2, 6]
-            matrix[3, 3] = aniso_matrix[6, 6]
-            return matrix
-        elseif occursin("plane stress", symmetry)
-            @info aniso_matrix
-            inv_aniso = invert(aniso_matrix, "Hooke matrix not invertable")
-            @info inv_aniso
-            matrix = get_MMatrix(36)
-            @info aniso_matrix
-            matrix[1:2, 1:2] = inv_aniso[1:2, 1:2]
-            matrix[3, 1:2] = inv_aniso[6, 1:2]
-            matrix[1:2, 3] = inv_aniso[1:2, 6]
-            matrix[3, 3] = inv_aniso[6, 6]
-            @info matrix
-            return invert(matrix, "Hooke matrix not invertable")
-        else
-            @error "2D model defintion is missing; plane stress or plane strain "
-            return nothing
-        end
+        return get_2D_Hooke_matrix(aniso_matrix, symmetry, dof)
     elseif occursin("orthotropic", lowercase(symmetry))
         aniso_matrix = get_MMatrix(36)
 
@@ -298,7 +273,8 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
         aniso_matrix[4, 4] = 2 * g_yz
         aniso_matrix[5, 5] = 2 * g_zx
         aniso_matrix[6, 6] = 2 * g_xy
-        return aniso_matrix
+
+        return get_2D_Hooke_matrix(aniso_matrix, symmetry, dof)
     end
 
     iID = ID
@@ -360,6 +336,34 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
         matrix[3, 3] = G
         return matrix
 
+    end
+end
+
+function get_2D_Hooke_matrix(aniso_matrix::Matrix{Float64}, symmetry::String, dof::Int64)
+    if dof == 3
+        return aniso_matrix
+    elseif occursin("plane strain", symmetry)
+        matrix = get_MMatrix(9)
+        matrix[1:2, 1:2] = aniso_matrix[1:2, 1:2]
+        matrix[3, 1:2] = aniso_matrix[6, 1:2]
+        matrix[1:2, 3] = aniso_matrix[1:2, 6]
+        matrix[3, 3] = aniso_matrix[6, 6]
+        return matrix
+    elseif occursin("plane stress", symmetry)
+        @info aniso_matrix
+        inv_aniso = invert(aniso_matrix, "Hooke matrix not invertable")
+        @info inv_aniso
+        matrix = get_MMatrix(36)
+        @info aniso_matrix
+        matrix[1:2, 1:2] = inv_aniso[1:2, 1:2]
+        matrix[3, 1:2] = inv_aniso[6, 1:2]
+        matrix[1:2, 3] = inv_aniso[1:2, 6]
+        matrix[3, 3] = inv_aniso[6, 6]
+        @info matrix
+        return invert(matrix, "Hooke matrix not invertable")
+    else
+        @error "2D model defintion is missing; plane stress or plane strain "
+        return nothing
     end
 end
 
@@ -759,6 +763,20 @@ function apply_pointwise_E(
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for j ∈ axes(bond_force, 2)
             bond_force[i, j] *= E[i]
+        end
+    end
+end
+
+function apply_pointwise_E(nodes, bond_force, dependent_field)
+    warning_flag = true
+    @inbounds @fastmath for i in nodes
+        E_int = interpol_data(
+            dependent_field[i],
+            damage_parameter["Young's Modulus"]["Data"],
+            warning_flag,
+        )
+        @views @inbounds @fastmath for j ∈ axes(bond_force, 2)
+            bond_force[i, j] *= E_int
         end
     end
 end
