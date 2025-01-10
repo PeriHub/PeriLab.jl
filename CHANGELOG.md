@@ -8,12 +8,20 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.6] - 2024-11-11
+## [1.2.6] - 2024-01-10
+
+### Added
+
+- Unified Bond-based Elastic model #210
+- Orthothropic material definition for Correspondence models #216
+- Gcode reader script
+- Dependency properties for Energy Release Damage Model and Bond-based Elastic #215
 
 ### Changed
 
-- Bond fields are saved as vectors, reducing memroy usage
+- Bond fields are saved as vectors, reducing memory usage
 - Optimzed memory allocation and speed
+- Optimized additve process simuations
 
 ## [1.2.5] - 2024-10-24
 
