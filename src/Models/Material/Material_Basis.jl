@@ -339,7 +339,7 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
     end
 end
 
-function get_2D_Hooke_matrix(aniso_matrix::Matrix{Float64}, symmetry::String, dof::Int64)
+function get_2D_Hooke_matrix(aniso_matrix::MMatrix, symmetry::String, dof::Int64)
     if dof == 3
         return aniso_matrix
     elseif occursin("plane strain", symmetry)

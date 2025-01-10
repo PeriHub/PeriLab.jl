@@ -4,7 +4,9 @@
 
 module Bondbased_Elastic
 include("../../Material_Basis.jl")
+include("../../../../Support/Helpers.jl")
 using .Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
+using .Helpers: is_dependent
 using LoopVectorization
 using TimerOutputs
 export init_model
@@ -105,6 +107,9 @@ function compute_model(
 
     E = material_parameter["Young's Modulus"]
 
+    dependend_value, dependent_field =
+        is_dependent("Young's Modulus", material_parameter, datamanager)
+
     for iID in nodes
         if any(deformed_bond_length[iID] .== 0)
             @error "Length of bond is zero due to its deformation."
@@ -128,7 +133,11 @@ function compute_model(
         #
     end
     # might be put in constant
-    apply_pointwise_E(nodes, E, bond_force)
+    if dependend_value
+        apply_pointwise_E(nodes, E, bond_force, dependent_field)
+    else
+        apply_pointwise_E(nodes, E, bond_force)
+    end
     return datamanager
 end
 
