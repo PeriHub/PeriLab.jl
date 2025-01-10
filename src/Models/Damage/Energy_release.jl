@@ -8,7 +8,14 @@ include("../../Support/Geometry.jl")
 include("../../Support/Helpers.jl")
 using .Material
 using .Geometry
-using .Helpers: rotate, fastdot, sub_in_place!, div_in_place!, mul_in_place!, is_dependent
+using .Helpers:
+    rotate,
+    fastdot,
+    sub_in_place!,
+    div_in_place!,
+    mul_in_place!,
+    interpol_data,
+    is_dependent
 using LinearAlgebra
 using StaticArrays
 export compute_model
