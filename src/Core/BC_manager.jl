@@ -208,25 +208,8 @@ function apply_bc_dirichlet_force(bcs::Dict, datamanager::Module, time::Float64)
             continue
         end
 
-        if ndims(field) > 1
-            if haskey(dof_mapping, bc["Coordinate"])
-                @views field_to_apply_bc =
-                    field[bc["Node Set"], dof_mapping[bc["Coordinate"]]]
-                eval_bc!(
-                    field_to_apply_bc,
-                    bc["Value"],
-                    coordinates[bc["Node Set"], :],
-                    time,
-                    dof,
-                    bc["Initial"],
-                    name,
-                )
-            else
-                @error "Coordinate in boundary condition must be x,y or z."
-                return nothing
-            end
-        else
-            @views field_to_apply_bc = field[bc["Node Set"]]
+        if haskey(dof_mapping, bc["Coordinate"])
+            @views field_to_apply_bc = field[bc["Node Set"], dof_mapping[bc["Coordinate"]]]
             eval_bc!(
                 field_to_apply_bc,
                 bc["Value"],
@@ -236,6 +219,9 @@ function apply_bc_dirichlet_force(bcs::Dict, datamanager::Module, time::Float64)
                 bc["Initial"],
                 name,
             )
+        else
+            @error "Coordinate in boundary condition must be x,y or z."
+            return nothing
         end
 
     end
@@ -266,11 +252,11 @@ function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
         end
         field = datamanager.get_field(bc["Variable"])
 
-        if ndims(field_to_apply_bc) > 1
+        if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
                 @views field_to_apply_bc =
                     field[bc["Node Set"], dof_mapping[bc["Coordinate"]]]
-                field_to_apply_bc .+= eval_bc!(
+                eval_bc!(
                     field_to_apply_bc,
                     bc["Value"],
                     coordinates[bc["Node Set"], :],
@@ -278,6 +264,7 @@ function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
                     dof,
                     bc["Initial"],
                     name,
+                    true,
                 )
             else
                 @error "Coordinate in boundary condition must be x,y or z."
@@ -285,7 +272,7 @@ function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
             end
         else
             @views field_to_apply_bc = field[bc["Node Set"]]
-            field_to_apply_bc .+= eval_bc!(
+            eval_bc!(
                 field_to_apply_bc,
                 bc["Value"],
                 coordinates[bc["Node Set"], :],
@@ -293,6 +280,7 @@ function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
                 dof,
                 bc["Initial"],
                 name,
+                true,
             )
         end
 
@@ -344,6 +332,7 @@ function eval_bc!(
     dof::Int64,
     initial::Bool,
     name::String = "BC_1",
+    neumann::Bool = false,
 )
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
@@ -373,7 +362,11 @@ function eval_bc!(
     end
 
     if value isa Number
-        fill!(field_values, value)
+        if neumann
+            field_values .+= value
+        else
+            fill!(field_values, value)
+        end
     else
         copyto!(field_values, value)
     end

@@ -229,14 +229,14 @@ Compute the norm of the deviatoric force state for each node.
 
 function compute_deviatoric_force_state_norm(
     nodes::Union{SubArray,Vector{Int64}},
-    nlist::SubArray,
+    nlist::Vector{Vector{Int64}},
     alpha::Float64,
-    bond_force_deviatoric::SubArray,
-    bond_damage::SubArray,
-    omega::SubArray,
-    volume::SubArray,
-    deviatoric_plastic_extension_state::SubArray,
-    td_norm::SubArray,
+    bond_force_deviatoric::Vector{Vector{Float64}},
+    bond_damage::Vector{Vector{Float64}},
+    omega::Vector{Vector{Float64}},
+    volume::Vector{Float64},
+    deviatoric_plastic_extension_state::Vector{Vector{Float64}},
+    td_norm::Vector{Float64},
 )
     # not optimal allocation of memory, but not check of indices is needed
 
@@ -285,14 +285,14 @@ Update the plastic state based on the deviatoric force norm.
 
 function plastic(
     nodes::Union{SubArray,Vector{Int64}},
-    td_norm,
-    yield_value::SubArray,
+    td_norm::Vector{Float64},
+    yield_value::Vector{Float64},
     lambdaNP1::Union{SubArray,Vector{Float64}},
     alpha::Float64,
-    omega::SubArray,
-    bond_damage::SubArray,
-    deviatoric_plastic_extension_state::SubArray,
-    bond_force_deviatoric::SubArray,
+    omega::Vector{Vector{Float64}},
+    bond_damage::Vector{Vector{Float64}},
+    deviatoric_plastic_extension_state::Vector{Vector{Float64}},
+    bond_force_deviatoric::Vector{Vector{Float64}},
 )
 
 

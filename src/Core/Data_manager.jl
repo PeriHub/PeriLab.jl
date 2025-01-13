@@ -624,6 +624,20 @@ function get_field(name::String, time::String = "constant")
 end
 
 """
+    get_field_if_exists(name::String, time::String)
+
+Returns the field with the given name if it exists.
+
+# Arguments
+- `name::String`: The name of the field.
+- `time::String`: The time of the field.
+# Returns
+- `field::Field`: The field with the given name and time.
+"""
+function get_field_if_exists(name::String, time::String = "constant")
+    return has_key(name) ? get_field(name, time) : nothing
+end
+"""
     _get_field(name::String)
 
 Returns the field with the given name.

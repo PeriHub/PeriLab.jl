@@ -503,9 +503,9 @@ Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
 """
 function matrix_to_voigt(matrix)
     if length(matrix) == 4
-        return @SVector [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
+        return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
     elseif length(matrix) == 9
-        return @SVector [
+        return [
             matrix[1, 1]
             matrix[2, 2]
             matrix[3, 3]

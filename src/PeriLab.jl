@@ -53,7 +53,7 @@ using .Data_manager
 # import PrecompileTools
 import .Logging_module
 import .IO
-import .Solver
+import .Solver_control
 
 PERILAB_VERSION = "1.2.7"
 
