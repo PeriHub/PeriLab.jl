@@ -237,15 +237,15 @@ function fill_in_place!(
         end
     end
 end
-function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
+# function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
 
-    @inbounds @simd for i = 1:dof
-        for j = 1:dof
-            s1[i, j] = s3[i, j] + fastdot(C[i, j, :, :], s2[:, :])
-        end
-    end
-    return s1
-end
+#     @inbounds @simd for i = 1:dof
+#         for j = 1:dof
+#             s1[i, j] = s3[i, j] + fastdot(C[i, j, :, :], s2[:, :])
+#         end
+#     end
+#     return s1
+# end
 
 """
     qdim(order::Int64, dof::Int64)

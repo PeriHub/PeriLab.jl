@@ -470,3 +470,35 @@ end
           MMatrix{6,6}(zeros(Float64, 6, 6))
     @test isnothing(PeriLab.Solver_control.Helpers.get_MMatrix(8))
 end
+
+@testset "ut_sub_in_place" begin
+    C = [[[0.0, 0], [0, 0]], [[0, 0], [0, 0]]]
+    A = [[[1, 2], [3, 4]], [[5, 6.1], [7, 8]]]
+    B = [[[1.0, 4], [5, 1]], [[2, 1], [1, 4]]]
+    PeriLab.Solver_control.Helpers.sub_in_place!(C, A, B)
+    @test C == [[[0, -2.0], [-2.0, 3.0]], [[3.0, 5.1], [6.0, 4.0]]]
+end
+
+@testset "ut_add_in_place" begin
+    C = [[0.0, 0], [0, 0], [0, 0], [0, 0]]
+    A = [[1, 2], [3, 4], [5, 6.1], [7, 8]]
+    B = [[1.0, 4], [5, 1], [2, 1], [1, 4]]
+    PeriLab.Solver_control.Helpers.add_in_place!(C, A, B)
+    @test C == [[2.0, 6.0], [8.0, 5.0], [7.0, 7.1], [8.0, 12.0]]
+end
+
+@testset "ut_div_in_place" begin
+    C = [[0.0, 0], [0, 0], [0, 0], [0, 0]]
+    A = [[1, 2], [3, 4], [5, 6.1], [7, 8]]
+    B = [[1.0, 4], [5, 1], [2, 1], [1, 4]]
+    PeriLab.Solver_control.Helpers.div_in_place!(C, A, B)
+    @test C == [[1.0, 0.5], [0.6, 4.0], [2.5, 6.1], [7.0, 2.0]]
+
+    C = [0.0, 0.0]
+    A = [-2.0, 4.0]
+    B = 2.0
+    PeriLab.Solver_control.Helpers.div_in_place!(C, A, B, false)
+    @test C == [-1.0, 2.0]
+    PeriLab.Solver_control.Helpers.div_in_place!(C, A, B, true)
+    @test C == [1.0, 2.0]
+end

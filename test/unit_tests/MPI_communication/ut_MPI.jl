@@ -101,18 +101,28 @@ if ncores == 3
     test_data_manager = Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_comm(comm)
+    test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
 
     if rank == 0
         test_data_manager.set_num_controller(1)
         test_data_manager.set_num_responder(2)
+        block_Id = test_data_manager.get_field("Block_Id")
+        block_Id .= 1
+        test_data_manager.set_block_list([1])
     end
     if rank == 1
         test_data_manager.set_num_controller(2)
         test_data_manager.set_num_responder(1)
+        block_Id = test_data_manager.get_field("Block_Id")
+        block_Id .= 2
+        test_data_manager.set_block_list([2, 2])
     end
     if rank == 2
         test_data_manager.set_num_controller(1)
         test_data_manager.set_num_responder(2)
+        block_Id = test_data_manager.get_field("Block_Id")
+        block_Id .= 1
+        test_data_manager.set_block_list([1])
     end
     test_data_manager.set_dof(dof)
     A = test_data_manager.create_constant_node_field("A", Float64, 1)
@@ -430,9 +440,17 @@ if ncores == 3
         # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
     end
 
-    solver_options = Dict("Solver" => Dict("Models" => ["Material"]))
-    params = Dict("Blocks" => Dict(1 => Dict("Material Model" => "Test")))
+    solver_options = Dict("Models" => ["Material"])
+    params = Dict(
+        "Blocks" => Dict(
+            "block_1" => Dict("Material Model" => "Test 1"),
+            "block_2" => Dict("Material Model" => "Test 2"),
+        ),
+    )
     IO.show_block_summary(solver_options, params, "", false, comm, test_data_manager)
+    IO.show_block_summary(solver_options, params, "", true, comm, test_data_manager)
+    IO.show_mpi_summary("", false, comm, test_data_manager)
+    IO.show_mpi_summary("", true, comm, test_data_manager)
 
 end
 
