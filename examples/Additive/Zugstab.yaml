@@ -22,7 +22,7 @@ PeriLab:
         Print Temperature: 200
     Thermal Models:
       Thermal:
-        Thermal Model: Heat Transfer + Thermal Flow + Thermal Expansion
+        Thermal Model: Heat Transfer + Thermal Flow
         Heat Transfer Coefficient: 15.0e-3
         Environmental Temperature: 30
         Type: Bond based
@@ -39,28 +39,29 @@ PeriLab:
       Horizon: 2.0
       Density: 1240.e-12
       Specific Heat Capacity: 1800.0e+6
-  Boundary Conditions:
-    BC_1:
-      Variable: Displacements
-      Node Set: Node Set 1
-      Coordinate: x
-      Value: 0.0
-      Type: Dirichlet
-    BC_2:
-      Variable: Displacements
-      Node Set: Node Set 2
-      Coordinate: y
-      Value: 0.0
-      Type: Dirichlet
-    BC_3:
-      Variable: Displacements
-      Node Set: Node Set 2
-      Coordinate: z
-      Value: 0.0
+  # Boundary Conditions:
+  #   BC_1:
+  #     Variable: Displacements
+  #     Node Set: Node Set 1
+  #     Coordinate: x
+  #     Value: 0.0
+  #     Type: Dirichlet
+  #   BC_2:
+  #     Variable: Displacements
+  #     Node Set: Node Set 2
+  #     Coordinate: y
+  #     Value: 0.0
+  #     Type: Dirichlet
+  #   BC_3:
+  #     Variable: Displacements
+  #     Node Set: Node Set 2
+  #     Coordinate: z
+  #     Value: 0.0
   Solver:
     Additive Models: True
     Material Models: False
     Thermal Models: True
+    Pre Calculation Models: False
     Initial Time: 0.0
     Final Time: 2700
     # Final Time: 500

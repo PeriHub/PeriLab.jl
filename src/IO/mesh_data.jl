@@ -506,6 +506,8 @@ function check_mesh_elements(mesh::DataFrame, dof::Int64)
                         end
                     end
                 end
+            elseif mesh_entry[end-1:end] in ["_y", "_z"]
+                continue
             else
                 name = mesh_entry
                 mesh_id = [name]

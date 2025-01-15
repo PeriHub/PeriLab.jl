@@ -82,7 +82,7 @@ function compute_model(
     req_specific_volume = get(thermal_parameter, "Required Specific Volume", 1.1)
     heat_flow = datamanager.get_field("Heat Flow", "NP1")
     temperature = datamanager.get_field("Temperature", "NP1")
-    surface_nodes = datamanager.get_field("Surface_Nodes")
+    surface_nodes = datamanager.get_field_if_exists("Surface_Nodes")
     specific_volume = datamanager.get_field("Specific Volume")
     active = datamanager.get_field("Active")
     horizon = datamanager.get_field("Horizon")
@@ -99,7 +99,10 @@ function compute_model(
         horizon,
     )
     for iID in nodes
-        if surface_nodes[iID] && specific_volume[iID] > req_specific_volume
+        if !isnothing(surface_nodes) && !surface_nodes[iID]
+            continue
+        end
+        if specific_volume[iID] > req_specific_volume
             if dof == 2
                 dx = sqrt(volume[iID])
             elseif dof == 3

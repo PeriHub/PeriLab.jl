@@ -55,14 +55,15 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     block_nodes = get_block_nodes(datamanager.get_field("Block_Id"), nnodes)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
-    fem_block = datamanager.create_constant_node_field("FEM Block", Bool, 1, false)
-    datamanager.create_constant_node_field("Index", Int64, 1)
+    if datamanager.fem_active()
+        fem_block = datamanager.create_constant_node_field("FEM Block", Bool, 1, false)
+        fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
+    end
     active_nodes = datamanager.create_constant_node_field("Active Nodes", Int64, 1)
     update_nodes = datamanager.create_constant_node_field("Update Nodes", Int64, 1)
     datamanager.create_constant_node_field("Update", Bool, 1, true)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
-    fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
     solver_options["Models"] = get_model_options(params)
     solver_options["Calculation"] = get_calculation_options(params)
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)

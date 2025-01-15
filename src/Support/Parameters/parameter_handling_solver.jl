@@ -156,7 +156,7 @@ function get_model_options(params::Dict)
     damage::Bool = get(params["Solver"], "Damage Models", false)
     material::Bool = get(params["Solver"], "Material Models", true)
     thermal::Bool = get(params["Solver"], "Thermal Models", false)
-    pre_calculation::Bool = get(params["Solver"], "Pre Calculation", true)
+    pre_calculation::Bool = get(params["Solver"], "Pre Calculation Models", true)
     ###
     # TODO here, the order is predefined. Wrong place!
     ###

@@ -295,6 +295,11 @@ function main(
                     PERILAB_VERSION,
                 )
             Logging_module.set_result_files(result_files)
+            if verbose
+                fields = datamanager.get_all_field_keys()
+                @info "Found " * string(length(fields)) * " Fields"
+                @info fields
+            end
             if dry_run
                 nsteps = solver_options["nsteps"]
                 solver_options["nsteps"] = 10

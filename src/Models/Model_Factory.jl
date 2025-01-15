@@ -62,14 +62,16 @@ function init_models(
     #        rotNP1 = copy(rotN)
     #    end
     #end
-    @info "Check pre calculation models are initialized for material models."
-    datamanager = Pre_Calculation.check_dependencies(datamanager, block_nodes)
-    if haskey(params["Models"], "Material Models")
-        for mat in keys(params["Models"]["Material Models"])
-            if haskey(params["Models"]["Material Models"][mat], "Accuracy Order")
-                datamanager.set_accuracy_order(
-                    params["Models"]["Material Models"][mat]["Accuracy Order"],
-                )
+    if "Pre_Calculation" in solver_options["Models"]
+        @info "Check pre calculation models are initialized for material models."
+        datamanager = Pre_Calculation.check_dependencies(datamanager, block_nodes)
+        if haskey(params["Models"], "Material Models")
+            for mat in keys(params["Models"]["Material Models"])
+                if haskey(params["Models"]["Material Models"][mat], "Accuracy Order")
+                    datamanager.set_accuracy_order(
+                        params["Models"]["Material Models"][mat]["Accuracy Order"],
+                    )
+                end
             end
         end
     end

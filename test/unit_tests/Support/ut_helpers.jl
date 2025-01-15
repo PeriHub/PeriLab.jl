@@ -387,21 +387,21 @@ end
     test_data_manager.set_num_controller(nnodes)
     update_list = test_data_manager.create_constant_node_field("Update", Bool, 1, true)
     active = test_data_manager.create_constant_node_field("Active", Bool, 1, true)
-    index = test_data_manager.create_constant_node_field("Index", Int64, 1)
+    update_nodes = test_data_manager.create_constant_node_field("Update Nodes", Int64, 1)
     block_nodes = Dict(1 => [1, 2], 2 => [3, 4])
     block = 1
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [1, 2]
     block = 2
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [3, 4]
     update_list[3] = false
     block = 1
@@ -409,14 +409,14 @@ end
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [1, 2]
     block = 2
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [4]
 
     active[3] = false
@@ -425,21 +425,21 @@ end
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [1, 2]
     block = 2
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [4]
     update_list[3] = true
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [4]
     block = 1
     update_list[3] = false
@@ -448,7 +448,7 @@ end
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [1, 2]
     block = 2
     active[3] = false
@@ -457,7 +457,7 @@ end
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == []
 end
 

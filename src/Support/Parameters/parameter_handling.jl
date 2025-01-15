@@ -328,6 +328,7 @@ global expected_structure = Dict(
                     "Damage Models" => [Bool, false],
                     "Material Models" => [Bool, false],
                     "Thermal Models" => [Bool, false],
+                    "Pre Calculation Models" => [Bool, false],
                     "Calculate Cauchy" => [Bool, false],
                     "Calculate von Mises" => [Bool, false],
                     "Calculate Strain" => [Bool, false],
