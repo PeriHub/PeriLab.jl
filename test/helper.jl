@@ -18,19 +18,33 @@ function run_perilab(filename, cores, compare, folder_name = ""; reload = false)
     if cores == 1
         PeriLab.main(filename * ".yaml"; silent = true, reload = reload)
     else
+        fn =
+            """using PeriLab; PeriLab.main(""" *
+            '"' *
+            filename *
+            """.yaml"; silent = true)"""
+        command = `$(Base.julia_cmd()) -e "$(fn)"`
         mpiexec() do exe  # MPI wrapper
-
             cmd = `$exe -n $cores $command`
             exit_code = run(cmd).exitcode
             @test exit_code == 0
         end
     end
     if compare
-        same = exodiff(
-            filename * ".e",
-            "./Reference/" * filename * ".e";
-            command_file = folder_name * ".cmd",
-        )
+        same = false
+        if cores == 1
+            same = exodiff(
+                filename * ".e",
+                "./Reference/" * filename * ".e";
+                command_file = folder_name * ".cmd",
+            )
+        else
+            same = exodiff(
+                filename * ".e",
+                "./Reference/" * filename * ".e",
+                ["-p", "-f", folder_name * ".cmd"],
+            )
+        end
         @test same
         if same
             rm("exodiff.log")
