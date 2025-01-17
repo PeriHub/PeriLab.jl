@@ -164,7 +164,7 @@ function compute_model(
     # TODO decomposition to get the rotation and large deformation in
     # TODO store not angles, but rotation matrices, because they are computed in decomposition
     if rotation
-        rotation_tensor = datamanager.get_field("Rotation Tensor")
+        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
         ba_rotation_tensor = compute_bond_level_rotation_tensor(
             nodes,
             nlist,

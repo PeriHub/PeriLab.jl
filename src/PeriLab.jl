@@ -275,6 +275,8 @@ function main(
             @info "Init Solver"
             @timeit to "Solver_control.init" block_nodes, bcs, datamanager, solver_options =
                 Solver_control.init(params, datamanager, to)
+            @timeit to "IO.init orientations" datamanager =
+                IO.init_orientations(datamanager)
             IO.show_block_summary(
                 solver_options,
                 params,

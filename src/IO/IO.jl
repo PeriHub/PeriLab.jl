@@ -370,7 +370,6 @@ function initialize_data(
     end
     @timeit to "init_data" datamanager, params =
         init_data(read_input_file(filename), filedirectory, datamanager, comm, to)
-    @timeit to "init orientations" datamanager = init_orientations(datamanager)
     return datamanager, params
 end
 

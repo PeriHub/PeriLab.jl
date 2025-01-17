@@ -12,7 +12,8 @@ using .Parameter_Handling:
     get_solver_name,
     get_model_options,
     get_fem_block,
-    get_calculation_options
+    get_calculation_options,
+    get_angles
 using .Helpers: find_indices, fastdot
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
@@ -64,6 +65,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     datamanager.create_constant_node_field("Update", Bool, 1, true)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
+    set_angles(datamanager, params, block_nodes_with_neighbors) # includes the Neighbors
     solver_options["Models"] = get_model_options(params)
     solver_options["Calculation"] = get_calculation_options(params)
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
@@ -155,6 +157,38 @@ function set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
         density[block_nodes[block]] .= get_density(params, block)
     end
     return density
+end
+
+"""
+    set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
+
+Sets the density of the nodes in the dictionary.
+
+# Arguments
+- `datamanager::Module`: The data manager
+- `params::Dict`: The parameters
+- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+"""
+function set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
+    rotation = false
+    dof = datamanager.get_dof()
+    for block in eachindex(block_nodes)
+        if get_angles(params, block, dof) !== nothing
+            rotation = true
+            break
+        end
+    end
+    if rotation
+        datamanager.set_rotation(true)
+        angles = datamanager.create_constant_node_field("Angles", Float64, dof)
+
+        for block in eachindex(block_nodes)
+            angles_global = get_angles(params, block, dof)
+            for iID in block_nodes[block]
+                angles[iID, :] = angles_global
+            end
+        end
+    end
 end
 
 """

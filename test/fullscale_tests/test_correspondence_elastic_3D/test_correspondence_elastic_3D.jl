@@ -12,4 +12,5 @@ cd("fullscale_tests/" * folder_name) do
     # run_perilab("strain_yy", 1, true, folder_name)
     run_perilab("strain_yz", 1, true, folder_name)
     run_perilab("strain_zz", 1, true, folder_name)
+    run_perilab("strain_xy_angles", 1, true, folder_name)
 end

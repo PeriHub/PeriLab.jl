@@ -9,6 +9,7 @@ export get_horizon
 export get_values
 export get_number_of_blocks
 export get_block_models
+export get_angles
 
 """
     get_density(params::Dict, block_id::Int64)
@@ -68,6 +69,33 @@ Get the horizon of a block.
 """
 function get_horizon(params::Dict, block_id::Int64)
     return get_values(params, block_id, "Horizon")
+end
+
+"""
+    get_angles(params::Dict, block_id::Int64, dof::Int64)
+
+Get the horizon of a block.
+
+# Arguments
+- `params::Dict`: The parameters
+- `block_id::Int64`: The ID of the block
+- `dof::Int64`: The dof
+# Returns
+- `angles::Float64`: The angles of the block
+"""
+function get_angles(params::Dict, block_id::Int64, dof::Int64)
+    if isnothing(get_values(params, block_id, "Angle X"))
+        return nothing
+    end
+    if dof == 2
+        return get_values(params, block_id, "Angle X")
+    elseif dof == 3
+        return [
+            get_values(params, block_id, "Angle X"),
+            get_values(params, block_id, "Angle Y"),
+            get_values(params, block_id, "Angle Z"),
+        ]
+    end
 end
 
 """

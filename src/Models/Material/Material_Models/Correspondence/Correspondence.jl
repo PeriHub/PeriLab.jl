@@ -200,7 +200,7 @@ function compute_model(
     matrix_diff!(strain_increment, nodes, strain_NP1, strain_N)
 
     if rotation
-        rotation_tensor = datamanager.get_field("Rotation Tensor")
+        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
         stress_N = rotate(nodes, stress_N, rotation_tensor, false)
         strain_increment = rotate(nodes, strain_increment, rotation_tensor, false)
     end
