@@ -349,7 +349,7 @@ end
     E = parameter["Young's Modulus"]
     nu = parameter["Poisson's Ratio"]
     temp = 1 / ((1 + nu) * (1 - 2 * nu))
-    C = get_Hooke_matrix(parameter, symmetry, 3)
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
     for iID = 1:3
         @test isapprox(C[iID, iID], E * (1 - nu) * temp)
         @test C[iID+3, iID+3] == parameter["Shear Modulus"]
@@ -361,7 +361,7 @@ end
     end
 
     symmetry = "isotropic plane strain"
-    C2D = get_Hooke_matrix(parameter, symmetry, 2)
+    C2D = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
     for iID = 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
         for jID = 1:2
@@ -373,7 +373,7 @@ end
     @test C2D[3, 3] == parameter["Shear Modulus"]
 
     symmetry = "missing"
-    C2D = get_Hooke_matrix(parameter, symmetry, 2)
+    C2D = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
     for iID = 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
         for jID = 1:2
@@ -390,7 +390,7 @@ end
     C2D_test[1:2, 1:2] = Cinv[1:2, 1:2]
     C2D_test[3, 3] = Cinv[6, 6]
     C2D_test = inv(C2D_test)
-    C = get_Hooke_matrix(parameter, symmetry, 2)
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
     for iID = 1:3
         for jID = 1:3
             if C2D_test[iID, jID] != 0
@@ -406,10 +406,10 @@ end
     end
 
     symmetry = "isotropic missing"
-    @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
+    @test isnothing(get_Hooke_matrix(test_data_manager, parameter, symmetry, 2))
 
     symmetry = "anisotropic"
-    C = get_Hooke_matrix(parameter, symmetry, 3)
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
     for iID = 1:6
         for jID = 1:6
             @test C[iID, jID] == C[jID, iID]
@@ -420,7 +420,7 @@ end
     end
 
     symmetry = "anisotropic plane strain"
-    C = get_Hooke_matrix(parameter, symmetry, 2)
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
     for iID = 1:2
         for jID = 1:2
             @test C[iID, jID] == C[jID, iID]
@@ -436,7 +436,7 @@ end
     @test C[3, 2] == parameter["C26"]
 
     # symmetry = "anisotropic plane stress"
-    # C = get_Hooke_matrix(parameter, symmetry, 2)
+    # C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
     # for iID = 1:3
     #     for jID = 1:3
     #         if C2D_test[iID, jID] != 0
@@ -461,7 +461,7 @@ end
         "Shear Modulus ZX" => 3,
         "Compute_Hook" => true,
     )
-    C = get_Hooke_matrix(parameter, symmetry, 3)
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
     @info C
     @test C[1, 1] == 8.081851555555554
     @test C[1, 2] == 1.525944

@@ -160,6 +160,7 @@ function calculate_stresses(
         if options["Calculate Strain"]
             material_parameter = datamanager.get_properties(block, "Material Model")
             hookeMatrix = get_Hooke_matrix(
+                datamanager,
                 material_parameter,
                 material_parameter["Symmetry"],
                 datamanager.get_dof(),

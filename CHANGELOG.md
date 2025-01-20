@@ -8,7 +8,19 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.6] - 2024-01-10
+## [1.2.7] - 2025-01.20
+
+### Added
+
+- Temperature dependent orthotropic material #215
+- Blockwise angle definition
+
+### Fixed
+
+- Field allocation for additive
+- MPI Testing
+
+## [1.2.6] - 2025-01-10
 
 ### Added
 

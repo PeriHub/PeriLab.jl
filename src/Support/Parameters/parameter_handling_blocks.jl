@@ -84,7 +84,8 @@ Get the horizon of a block.
 - `angles::Float64`: The angles of the block
 """
 function get_angles(params::Dict, block_id::Int64, dof::Int64)
-    if isnothing(get_values(params, block_id, "Angle X"))
+
+    if !haskey(params["Blocks"]["block_"*string(block_id)], "Angle X")
         return nothing
     end
     if dof == 2

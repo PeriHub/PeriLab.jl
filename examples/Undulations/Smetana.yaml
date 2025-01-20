@@ -159,16 +159,8 @@ PeriLab:
         C55: 4200.000000000001
         C56: 0.0
         C66: 42170.22415673136
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_10:
         C11: 168977.79883095485
@@ -192,16 +184,8 @@ PeriLab:
         C55: 5600.0
         C56: 0.0
         C66: 5600.0
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_11:
         C11: 168977.79883095485
@@ -225,16 +209,8 @@ PeriLab:
         C55: 5600.0
         C56: 0.0
         C66: 5600.0
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_12:
         C11: 168977.79883095485
@@ -258,16 +234,8 @@ PeriLab:
         C55: 5600.0
         C56: 0.0
         C66: 5600.0
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_2:
         C11: 11402.506122303133
@@ -291,16 +259,8 @@ PeriLab:
         C55: 2800.0
         C56: 0.0
         C66: 5600.0
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_3:
         C11: 53619.92831989757
@@ -324,16 +284,8 @@ PeriLab:
         C55: 4200.000000000001
         C56: 0.0
         C66: 42170.224156731456
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_4:
         C11: 168977.79883095485
@@ -357,16 +309,8 @@ PeriLab:
         C55: 5600.0
         C56: 0.0
         C66: 5600.0
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_5:
         C11: 168977.79883095485
@@ -390,16 +334,8 @@ PeriLab:
         C55: 5600.0
         C56: 0.0
         C66: 5600.0
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_6:
         C11: 53619.92831989757
@@ -423,16 +359,8 @@ PeriLab:
         C55: 4200.000000000001
         C56: 0.0
         C66: 42170.224156731456
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_7:
         C11: 11402.506122303133
@@ -456,16 +384,8 @@ PeriLab:
         C55: 2800.0
         C56: 0.0
         C66: 5600.0
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_8:
         C11: 53619.92831989742
@@ -489,16 +409,8 @@ PeriLab:
         C55: 4200.000000000001
         C56: 0.0
         C66: 42170.22415673136
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
       mat_9:
         C11: 168977.79883095485
@@ -522,16 +434,8 @@ PeriLab:
         C55: 5600.0
         C56: 0.0
         C66: 5600.0
-        Hourglass Coefficient: 1.0
         Material Model: Correspondence Elastic
-        Material Symmetry: Anisotropic
-        Plane Stress: true
-        Poisson's Ratio: 0.33999999999999997
-        Stabilization Type: Global Stiffness
-        Symmetry: isotropic plane stress
-        Thermal Bond Based: true
-        Thickness: 1.0
-        Young's Modulus: 165000.0
+        Symmetry: Anisotropic plane strain
         Zero Energy Control: "Global"
     Pre Calculation Global:
       Bond Associated Deformation Gradient: false

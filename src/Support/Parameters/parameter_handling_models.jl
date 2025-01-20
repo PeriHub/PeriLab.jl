@@ -72,10 +72,15 @@ function get_model_parameter(
             data, header = csv_reader_temporary(
                 joinpath(directory, params["Models"][model*"s"][id][file_key]),
             )
-            params["Models"][model*"s"][id][file_key] = Dict()
-            params["Models"][model*"s"][id][file_key]["Field"] = header[1]
-            params["Models"][model*"s"][id][file_key]["Data"] =
-                interpolation(data[!, 1], data[!, 2])
+            for i = 2:size(data, 2)
+                if header[i] != replace(file_key, " " => "_")
+                    continue
+                end
+                params["Models"][model*"s"][id][file_key] = Dict()
+                params["Models"][model*"s"][id][file_key]["Field"] = header[1]
+                params["Models"][model*"s"][id][file_key]["Data"] =
+                    interpolation(data[!, 1], data[!, i])
+            end
         end
         return params["Models"][model*"s"][id]
     else

@@ -279,6 +279,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
     end
     return Float64(4 / (pi * horizon^4))
 end
+
 function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},

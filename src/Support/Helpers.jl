@@ -447,6 +447,20 @@ function find_inverse_bond_id(nlist::Vector{Vector{Int64}})
     return inverse_nlist
 end
 
+function get_dependent_value(
+    datamanager::Module,
+    field_name::String,
+    parameter::Dict,
+    iID::Int64 = 1,
+)
+
+    dependend_value, dependent_field = is_dependent(field_name, parameter, datamanager)
+
+    return dependend_value ?
+           interpol_data(dependent_field[iID], parameter[field_name]["Data"]) :
+           parameter[field_name]
+end
+
 function is_dependent(field_name::String, damage_parameter::Dict, datamanager::Module)
     if damage_parameter[field_name] isa Dict
         if !datamanager.has_key(damage_parameter[field_name]["Field"] * "NP1")

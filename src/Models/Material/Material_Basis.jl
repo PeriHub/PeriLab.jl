@@ -7,7 +7,7 @@ using LinearAlgebra
 using LoopVectorization
 using StaticArrays
 include("../../Support/Helpers.jl")
-using .Helpers: get_MMatrix, determinant, invert, smat, interpol_data
+using .Helpers: get_MMatrix, determinant, invert, smat, interpol_data, get_dependent_value
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
@@ -207,11 +207,12 @@ function get_all_elastic_moduli(
 end
 
 """
-    get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
+    get_Hooke_matrix(datamanager::Module, parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
 
 Returns the Hooke matrix of the material.
 
 # Arguments
+- `datamanager::Module`: The data manager.
 - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
 - `symmetry::String`: The symmetry of the material.
 - `dof::Int64`: The degree of freedom.
@@ -219,14 +220,24 @@ Returns the Hooke matrix of the material.
 # Returns
 - `matrix::Matrix{Float64}`: The Hooke matrix.
 """
-function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64 = 1)
+function get_Hooke_matrix(
+    datamanager::Module,
+    parameter::Dict,
+    symmetry::String,
+    dof::Int64,
+    ID::Int64 = 1,
+)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
     if occursin("anisotropic", lowercase(symmetry))
         aniso_matrix = get_MMatrix(36)
         for iID = 1:6
             for jID = iID:6
-                value = parameter["C"*string(iID)*string(jID)]
+                value = get_dependent_value(
+                    datamanager,
+                    "C" * string(iID) * string(jID),
+                    parameter,
+                )
                 aniso_matrix[iID, jID] = value
                 aniso_matrix[jID, iID] = value
             end
@@ -235,15 +246,15 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
     elseif occursin("orthotropic", lowercase(symmetry))
         aniso_matrix = get_MMatrix(36)
 
-        E_x = parameter["Young's Modulus X"]
-        E_y = parameter["Young's Modulus Y"]
-        E_z = parameter["Young's Modulus Z"]
-        nu_xy = parameter["Poisson's Ratio XY"]
-        nu_yz = parameter["Poisson's Ratio YZ"]
-        nu_zx = parameter["Poisson's Ratio ZX"]
-        g_xy = parameter["Shear Modulus XY"]
-        g_yz = parameter["Shear Modulus YZ"]
-        g_zx = parameter["Shear Modulus ZX"]
+        E_x = get_dependent_value(datamanager, "Young's Modulus X", parameter, ID)
+        E_y = get_dependent_value(datamanager, "Young's Modulus Y", parameter, ID)
+        E_z = get_dependent_value(datamanager, "Young's Modulus Z", parameter, ID)
+        nu_xy = get_dependent_value(datamanager, "Poisson's Ratio XY", parameter, ID)
+        nu_yz = get_dependent_value(datamanager, "Poisson's Ratio YZ", parameter, ID)
+        nu_zx = get_dependent_value(datamanager, "Poisson's Ratio ZX", parameter, ID)
+        g_xy = get_dependent_value(datamanager, "Shear Modulus XY", parameter, ID)
+        g_yz = get_dependent_value(datamanager, "Shear Modulus YZ", parameter, ID)
+        g_zx = get_dependent_value(datamanager, "Shear Modulus ZX", parameter, ID)
 
         nu_yx = nu_xy * E_y / E_x
         nu_xz = nu_zx * E_x / E_z

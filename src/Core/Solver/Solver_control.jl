@@ -185,7 +185,7 @@ function set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
         for block in eachindex(block_nodes)
             angles_global = get_angles(params, block, dof)
             for iID in block_nodes[block]
-                angles[iID, :] = angles_global
+                angles[iID, :] .= angles_global
             end
         end
     end
