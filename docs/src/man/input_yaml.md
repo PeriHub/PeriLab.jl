@@ -15,12 +15,18 @@ The information is stored in the [params dictionary](@ref "Parameters")
     - **Damage Model**: String representing the damage model. (optional)
     - **Thermal Model**: String representing the thermal model. (optional)
     - **Additive Model**: String representing the additive model. (optional)
+    - **Pre Calculation Model**: String representing the pre-calculation model. (optional)
+    - **Angle X**: Numeric value representing angle in X direction. (Float64 or Int64, optional)
+    - **Angle Y**: Numeric value representing angle in Y direction. (Float64 or Int64, optional)
+    - **Angle Z**: Numeric value representing angle in Z direction. (Float64 or Int64, optional)
 
 ## `FEM (optional)`
 
 - **Element Type**: String representing the type of finite element.
 - **Degree**: Numeric value representing the degree. (String or Int64)
 - **Material Model**: String representing the material model.
+- **Coupling**: Coupling parameters. (optional)
+  - **Coupling Type**: String representing the type of coupling.
 
 ## `Boundary Conditions (optional)`
 
@@ -61,6 +67,9 @@ The information is stored in the [params dictionary](@ref "Parameters")
     - **Bottom Length**: Numeric value representing the bottom length. (Float64 or Int64)
     - **Side Length**: Numeric value representing the side length. (Float64 or Int64)
     - **Allow Contact**: Boolean indicating whether to allow contact. (optional)
+- **Surface Extrusion**: Surface extrusion parameters. (optional)
+  - **Direction**: String representing surface extrusion direction (e.g., 'X', or 'Y').
+  - **Step_X/Y/Z**: Numeric values representing step components for surface extrusion direction (Float64 or Int64).
 
 ## `Outputs (optional)`
 
@@ -81,7 +90,7 @@ The information is stored in the [params dictionary](@ref "Parameters")
     - **Critical Value**: Numeric value representing the critical value. (Float64 or Int64)
     - **Damage Model**: String representing the damage model.
     - **Interblock Damage**: Dictionary of interblock damage parameters.
-      - *__Own_Name__*: Numeric value representing interblock damage. (Float64 or Int64, required)
+      - **Interblock Critical Value**: Numeric value representing interblock damage. (Float64 or Int64, required)
     - **Anisotropic Damage**: Dictionary of anisotropic damage parameters.
       - **Critical Value X/Y**: Numeric values representing critical values in X and Y directions. (Float64 or Int64, required)
 - **Material Models**: Dictionary of [material models](models/materials.md). (optional)
@@ -101,12 +110,18 @@ The information is stored in the [params dictionary](@ref "Parameters")
   - *__Own_Name__*: List of additive model configurations.
     - **Additive Model**: String representing the additive model.
     - **Print Temperature**: Numeric value representing the print temperature. (Float64 or Int64, optional)
-- **Pre Calculation**: Dictionary of pre-calculation parameters.
+- **Pre Calculation Models**: Dictionary of pre-calculation models. (optional)
+  - *__Own_Name__* : List of pre calculation model configurations.. (optional).
+    - **Bond Associated Deformation Gradient/Deformation Gradient/Deformed Bond Geometry/Shape Tensor**: Boolean values indicating whether to calculate the respective parameter. (optional)
+- **Pre Calculation Global**: Dictionary of pre-calculation parameters.
   - **Bond Associated Deformation Gradient/Deformation Gradient/Deformed Bond Geometry/Shape Tensor**: Boolean values indicating whether to calculate the respective parameter. (optional)
 
 ## `Solver`
 
-- **Solve For Displacement/Material Models/Damage Models/Thermal Models/Additive Models**: Boolean values indicating whether to solve for the respective components. (optional)
+- **Additive Models/Material Models/Damage Models/Thermal Models/Pre Calculation Models**: Boolean values indicating whether to solve for the respective components. (optional)
+- **Calculate Cauchy**: Boolean values indicating whether to calculate Cauchy stresses for deformation gradient and shape tensor calculations (optional).
+- **Calculate von Mises**: Boolean values indicating whether to calculate von Mises stresses for deformation gradient and shape tensor calculations (optional).
+- **Calculate Strain** : Boolean values indicating whether to calculate strain for deformation gradient and shape tensor calculations (optional).
 - **Maximum Damage**: Numeric value representing the maximum damage. (Float64, optional)
 - **Final Time/Initial Time**: Numeric values representing the final and initial time. (Float64 or Int64, required)
 - **Numerical Damping**: Numeric value representing numerical damping. (Float64 or Int64, optional)
