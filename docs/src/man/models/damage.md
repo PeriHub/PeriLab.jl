@@ -24,4 +24,4 @@ As bonds are bidirectional, the critical damage value can be defined for both or
 
 Bonds that aren't crossing a block interface are not affected by the interblock damage model.
 
-![Discretization_BondFilters_RectangularPlane](../../assets/InterBlockDamage.svg)
+![InterBlockDamage](../../assets/InterBlockDamage.svg)

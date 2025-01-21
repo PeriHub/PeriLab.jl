@@ -12,8 +12,6 @@ Manifest.toml
 *.json
 *.out
 *.sbatch
-*.png
-*.svg
 !**/Reference/*.e*
 LocalPreferences.toml
 
