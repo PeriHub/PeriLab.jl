@@ -477,31 +477,6 @@ function distribute_forces!(
     end
 end
 
-
-
-function distribute_forces_old(
-    nodes::Union{SubArray,Vector{Int64}},
-    nlist::Vector{Vector{Int64}},
-    bond_force::Vector{Matrix{Float64}},
-    volume::Vector{Float64},
-    bond_damage::Vector{Vector{Float64}},
-    force_densities::Matrix{Float64},
-)
-    for iID in nodes
-        @views force_densities[iID, :] .+= transpose(
-            sum(bond_damage[iID] .* bond_force[iID] .* volume[nlist[iID]], dims = 1),
-        )
-
-        @views force_densities[nlist[iID], :] .-=
-            bond_damage[iID] .* bond_force[iID] .* volume[iID]
-    end
-
-
-
-
-    return force_densities
-end
-
 """
     matrix_to_voigt(matrix)
 

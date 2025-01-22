@@ -113,7 +113,8 @@ function synch_responder_to_controller(comm::MPI.Comm, overlapnodes, vector, dof
             end
             # @debug "Sending $rank -> $(jcore-1)"
             # @debug size(send_buffers[jcore])
-            MPI.Isend(send_buffers[jcore], comm; dest = jcore - 1, tag = 0)
+            # MPI.Isend(send_buffers[jcore], comm; dest = jcore - 1, tag = 0)
+            MPI.Send(send_buffers[jcore], comm; dest = jcore - 1, tag = 0)
         end
 
         if !isempty(overlapnodes[rank+1][jcore]["Controller"])
@@ -169,9 +170,9 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
         if !isempty(overlapnodes[rank+1][jcore]["Controller"])
             send_index = overlapnodes[rank+1][jcore]["Controller"]
             if dof == 1
-                MPI.Isend(vector[send_index], comm; dest = jcore - 1, tag = 0)
+                MPI.Send(vector[send_index], comm; dest = jcore - 1, tag = 0)
             else
-                MPI.Isend(vector[send_index, :], comm; dest = jcore - 1, tag = 0)
+                MPI.Send(vector[send_index, :], comm; dest = jcore - 1, tag = 0)
             end
             # @debug "Sending $rank -> $(jcore-1)"
         end
@@ -316,12 +317,7 @@ function synch_controller_bonds_to_responder_flattened(
         if !isempty(overlapnodes[rank+1][jcore]["Controller"])
             @views send_indices = overlapnodes[rank+1][jcore]["Controller"]
             # @debug "Sending $rank -> $(jcore-1)"
-            MPI.Isend(
-                vcat(vcat(array...)[send_indices]...),
-                comm;
-                dest = jcore - 1,
-                tag = 0,
-            )
+            MPI.Send(vcat(vcat(array...)[send_indices]...), comm; dest = jcore - 1, tag = 0)
         end
         if !isempty(overlapnodes[rank+1][jcore]["Responder"])
             @views recv_indices = overlapnodes[rank+1][jcore]["Responder"]

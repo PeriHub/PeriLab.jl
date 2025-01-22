@@ -331,6 +331,20 @@ end
     @test parameter["Poisson's Ratio"] == [0.125, 0.125, 0.125]
     @test parameter["Bulk Modulus"] == [10, 10, 10]
     @test parameter["Shear Modulus"] == [10, 10, 10]
+
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Symmetry" => "Anisotropic",
+        "C11" => 5,
+    )
+    @test isnothing(get_all_elastic_moduli(test_data_manager, parameter))
+
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Symmetry" => "Orthotropic",
+        "Young's Modulus X" => 5,
+    )
+    @test isnothing(get_all_elastic_moduli(test_data_manager, parameter))
 end
 
 @testset "get_Hooke_matrix" begin

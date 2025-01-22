@@ -2,8 +2,8 @@
 The theory is taken from [WillbergC2024b](@cite)
 ## Thermo-mechanics
 To introduce a thermo-mechanical coupling the mechanical strains in \autoref{eq:GreenLagrangeStrains} have to be expanded with the thermal strains:
-$$
- \boldsymbol{\varepsilon}=\boldsymbol{\varepsilon}_{mechanical} + \boldsymbol{\varepsilon}_{thermal}.
+
+$$\boldsymbol{\varepsilon}=\boldsymbol{\varepsilon}_{mechanical} + \boldsymbol{\varepsilon}_{thermal}.
 
 $$
 The thermal strains are defined as
@@ -17,18 +17,24 @@ $$
 
 ## Thermal flux
 The mechanical response due to temperature changes is included in the Peridynamics model. However, the heat flux must be included as well.  Under the assumption that mechanical deformations do not change the temperature, the thermodynamic equilibrium equation can be studied separately.
+
 $$
 \rho C_v\dot{\tau} = \int_{\mathcal{H}}(\underline{h}(\textbf{x},t)\langle\boldsymbol{\xi}\rangle-\underline{h}(\textbf{x}',t)\langle\boldsymbol{\xi}'\rangle)dV_{\textbf{x}}+ S_i
 $$
+
 The parameters are $\rho$ the mass density, $C_v$ the specific heat capacity, $\dot{\tau}$ the temperature gradient in time, $dV_{\textbf{x}}$ the volume and $S_i$ the heat sink or heat source.
 The heat flux of a bond is defined as
+
 $$
 \underline{h}(\textbf{x},t)\langle\boldsymbol{\xi}\rangle = \mathbf{q}^T\mathbf{K}^{-1}(\textbf{x})\boldsymbol{\xi}
 $$
+
 with $\mathbf{q}$ as classical heat flux and $\mathbf{K}$ as the shape tensor. It follows
+
 $$
 \nabla\cdot\mathbf{q} = \int_{\mathcal{H}}\left[\mathbf{q}(\textbf{x}')^T\mathbf{K}^{-1}(\textbf{x}')+\mathbf{q}(\textbf{x})^T\mathbf{K}^{-1}(\textbf{x})\right]\boldsymbol{\xi}dV_{\textbf{x}}
 $$
+
 which can be derived utilizing the spatial gradient of the temperature $\nabla\tau$ as
 
 $$
@@ -58,11 +64,14 @@ Following \cite{GuX2019c,OterkusS2014b} the heat volumetric density at the surfa
 $$
 S_i = \frac{q_{bc}}{\Delta}
 $$
+
 where $\Delta$ can be set to $dx$.
 Thereby, $q_{bc}$ is
+
 $$
 q_{bc} = \kappa (\tau-\tau_{env})
 $$
+
 where $\kappa$ is the heat convection coefficient between solid and environment and $\tau_{env}$ the environmental temperature. For a mesh free model the question arises how the outer surface and the corresponded surface can be identified. For the outer surface the Peridynamics neighborhood $\mathcal{H}$ is utilized. It is assumed that is circle for 2D and a sphere for 3D.
 Therefore, the following criteria has to be fulfilled for 2D
 
