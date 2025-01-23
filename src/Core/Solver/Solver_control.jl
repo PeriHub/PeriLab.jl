@@ -114,6 +114,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     if !datamanager.has_key("Active")
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)
     end
+    #TODO: sync active with datamanager
 
     datamanager = remove_models(datamanager, solver_options["Models"])
 
@@ -306,7 +307,7 @@ function synchronise_field(
     end
     if direction == "download_from_cores"
         if synch_fields[synch_field][direction]
-            vector = get_field(synch_field)
+            vector = get_field(synch_field, synch_fields[synch_field]["time"])
             return synch_responder_to_controller(
                 comm,
                 overlap_map,
@@ -318,7 +319,7 @@ function synchronise_field(
     end
     if direction == "upload_to_cores"
         if synch_fields[synch_field][direction]
-            vector = get_field(synch_field)
+            vector = get_field(synch_field, synch_fields[synch_field]["time"])
             if occursin("Bond", synch_field)
                 return synch_controller_bonds_to_responder_flattened(
                     comm,

@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1 2
+      Node Set 2: 3 4
+    Type: "Text File"
+    Input Mesh File: "test_mesh_4_points.txt"
+  Models:
+    Pre Calculation Global:
+      Deformed Bond Geometry: true
+      Deformation Gradient: false
+      Shape Tensor: false
+      Bond Associated Deformation Gradient: false
+    Material Models:
+      Mat_1:
+        Material Model: "Bond-based Elastic"
+        Symmetry: "isotropic plane strain"
+        Bulk Modulus: 2.5e+3
+  Blocks:
+    block_1:
+      Material Model: "Mat_1"
+      Density: 2.7e-9
+      Horizon: 2.1
+  Boundary Conditions:
+    BC_1:
+      Variable: "Displacements"
+      Node Set: "Node Set 2"
+      Coordinate: "x"
+      Value: "1*t"
+      Type: Dirichlet
+    BC_2:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "0.0"
+      Type: Dirichlet
+  Solver:
+    Initial Time: 0.0
+    Final Time: 5.0e-6
+    Verlet:
+      Safety Factor: 1.0
+  Outputs:
+    Output1:
+      Output Filename: "test_bond_based_elastic_4_points"
+      Output Frequency: 1
+      Output Variables:
+        Displacements: True
+        Forces: True

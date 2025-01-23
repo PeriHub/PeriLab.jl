@@ -1543,16 +1543,18 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,
             "dof" => dof,
+            "time" => "constant",
         )
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name, "NP1")
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["fields_to_synch"][name*"NP1"] = Dict{String,Any}(
+        data["fields_to_synch"][name] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,
             "dof" => length(field[1, :, :]),
+            "time" => "NP1",
         )
     end
 
@@ -1583,16 +1585,18 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,
             "dof" => dof,
+            "time" => "constant",
         )
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name, "NP1")
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["local_fields_to_synch"][model][name*"NP1"] = Dict{String,Any}(
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}(
             "upload_to_cores" => upload_to_cores,
             "download_from_cores" => download_from_cores,
             "dof" => length(field[1, :, :]),
+            "time" => "NP1",
         )
     end
 
