@@ -259,7 +259,6 @@ MPI.Init()
         end
         @testset "test_thermal_flow" begin
             include("fullscale_tests/test_thermal_flow/test_thermal_flow.jl")
-            # include("fullscale_tests/test_thermal_flow_paper/test_thermal_flow.jl")
         end
         @testset "test_hetval" begin
             include("fullscale_tests/test_hetval/test_hetval.jl")
@@ -297,7 +296,7 @@ MPI.Init()
             include("fullscale_tests/test_point_wise_material/test_point_wise_material.jl")
         end
         @testset "test_FEM_coupling" begin
-            #   include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
+            include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
         end
         @testset "test_FEM" begin
             include("fullscale_tests/test_FEM/test_FEM.jl")

@@ -5,44 +5,50 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 1: 1 12 23
-      Node Set 2: 11 22 33
-    Input Mesh File: "mesh.txt"
+      Node Set 1: 1 32 63
+      Node Set 2: 31 62 93
+    Input Mesh File: "mesh_data_coupled.txt"
     Type: Text File
     Input External Topology:
-      File: "topo.txt"
+      File: "topo_data_coupled.txt"
       Add Neighbor Search: false
   FEM:
     Element Type: "Lagrange"
-    Degree: 1 1
+    Degree: 1
     Material Model: "Mat_1"
     Coupling:
       Coupling Type: "Arlequin"
       PD Weight: 0.5 # standard is 0.5
+      Kappa: 7e10 # Young's Modulus got starting point
   Models:
     Material Models:
       Mat_1:
         Material Model: "Correspondence Elastic"
         Symmetry: "isotropic plane strain"
-        Zero Energy Control: "Global"
-        Bulk Modulus: 2.5e+3
-        Shear Modulus: 1.15e3
+        Young's Modulus: 7e10
+        Poisson's Ratio: 0.33
+      Mat_2:
+        Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane strain"
+        Young's Modulus: 7e10
+        Poisson's Ratio: 0.33
   Blocks:
     block_1:
       Material Model: "Mat_1"
-      Density: 2000
-      Horizon: 0.004005
-      FEM: true
+      Density: 2700
+      Horizon: 1.1005
+      FEM: True
     block_2:
-      Material Model: "Mat_1"
-      Density: 2000
-      Horizon: 0.004005
+      Material Model: "Mat_2"
+      Density: 2700
+      Horizon: 1.1005
+      FEM: False
   Boundary Conditions:
     BC_1:
       Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
-      Value: "-0.001*t"
+      Value: "0.00001*sin(200000*t)"
       Type: Dirichlet
     BC_2:
       Variable: "Displacements"
@@ -52,17 +58,16 @@ PeriLab:
       Type: Dirichlet
   Solver:
     Initial Time: 0.0
-    Final Time: 1.0e-4
-    Numerical Damping: 0.00e-0
+    Final Time: 1e-06
     Verlet:
       Safety Factor: 1.00
-      Fixed dt: 1e-8
+      Numerical Damping: 1e-05
+      Fixed dt: 1.0e-9
   Outputs:
     Output1:
       Output Filename: "test_FEM_2d_coupled_Arlequin"
       Output File Type: Exodus
-      Output Frequency: 100
+      Output Frequency: 10
       Output Variables:
         Cauchy Stress: True
         Displacements: True
-        Number of Neighbors: True
