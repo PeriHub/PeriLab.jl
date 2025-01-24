@@ -147,17 +147,7 @@ end
     @test "Lumped Mass Matrix" in test_data_manager.get_all_field_keys()
     lumped_mass = test_data_manager.get_field("Lumped Mass Matrix")
 
-    @test isapprox(
-        lumped_mass[:],
-        [
-            0.49999999999999994,
-            0.9999999999999998,
-            0.49999999999999994,
-            0.9999999999999998,
-            0.4999999999999999,
-            0.49999999999999994,
-        ],
-    )
+    @test isapprox(lumped_mass[:], [2, 4, 2, 4, 2, 2])
 
     # only in tests for resize or redefinition reasons
     test_data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 1, 6)
@@ -173,6 +163,7 @@ end
     test_data_manager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
     test_data_manager.create_node_field("Force Densities", Float64, dof)
     test_data_manager.create_node_field("Displacements", Float64, dof)
+    test_data_manager.create_node_field("Forces", Float64, dof)
     coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, dof)
     # only in tests for resize or redefinition reasons
     test_data_manager.fields[Int64]["FE Topology"] = zeros(Int64, 2, 4)

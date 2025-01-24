@@ -35,8 +35,7 @@ function compute_FEM(
     end
     dof = datamanager.get_dof()
 
-    force_densities = datamanager.get_field("Force Densities", "NP1")
-    volume = datamanager.get_field("Volume")
+    forces = datamanager.get_field("Forces", "NP1")
     displacement = datamanager.get_field("Displacements", "NP1")
     strain_N = datamanager.get_field("Element Strain", "N")
     strain_NP1 = datamanager.get_field("Element Strain", "NP1")
@@ -93,7 +92,7 @@ function compute_FEM(
                 #stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
             end
             # specific force density
-            force_densities[topo, :] -=
+            forces[topo, :] -=
                 reshape(
                     B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .*
                     det_jacobian[id_el, id_int],
@@ -130,8 +129,9 @@ function get_lumped_mass(
             mean_rho = mean(rho[topology[id_el, :]])
             for i_node = 1:nnodes
                 lumped_mass[topology[id_el, i_node]] +=
-                    sum(temp[(i_node-1)*dof+1, :]) .* mean_rho *
-                    determinant_jacobian[id_el, id_int]
+                    sum(temp[(i_node-1)*dof+1, :]) .* mean_rho
+                # no volume is needed, because the time integration is done F/V
+                #* determinant_jacobian[id_el, id_int]
             end
         end
     end
