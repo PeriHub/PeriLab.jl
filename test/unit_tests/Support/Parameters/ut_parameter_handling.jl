@@ -7,8 +7,8 @@ using Test
 using Random
 using Dierckx
 
-#include("../../../../src/PeriLab.jl")
-#using .PeriLab
+include("../../../../src/PeriLab.jl")
+using .PeriLab
 @testset "ut_get_element_degree" begin
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_element_degree(Dict()))
     @test isnothing(
@@ -331,6 +331,7 @@ end
 
 test_data_manager = PeriLab.Data_manager
 @testset "ut_get_outputs" begin
+    test_data_manager.initialize_data()
     test_data_manager.set_num_controller(5)
     test_data_manager.create_constant_node_field("A", Float64, 1)
     test_data_manager.create_node_field("B", Bool, 1)
@@ -768,13 +769,13 @@ params = Dict(
             "A" => Dict(
                 "s" => 0,
                 "d" => true,
-                "test_file" => path * "test_data_file.txt",
-                "test_file_2" => path * "test_data_file.txt",
+                "A" => path * "test_data_file.txt",
+                "B" => path * "test_data_file.txt",
             ),
             "B" => Dict(
                 "sa" => [3.2, 2, 3],
                 "d" => "true",
-                "test_file_B" => path * "test_data_file.txt",
+                "Young's_Modulus" => path * "test_data_file.txt",
             ),
         ),
         "Damage Models" => Dict("E" => Dict("ss" => 0, "d" => 1.1)),
@@ -790,10 +791,10 @@ params = Dict(
         PeriLab.Solver_control.Parameter_Handling.find_data_files(
             params["Models"]["Material Models"]["A"],
         ),
-    ) == ["test_file", "test_file_2"]
+    ) == ["A", "B"]
     @test PeriLab.Solver_control.Parameter_Handling.find_data_files(
         params["Models"]["Material Models"]["B"],
-    ) == ["test_file_B"]
+    ) == ["Young's_Modulus"]
     @test PeriLab.Solver_control.Parameter_Handling.find_data_files(
         params["Models"]["Damage Models"]["E"],
     ) == []
@@ -845,11 +846,12 @@ end
         )
     @test testData["Material Model"]["sa"] == [3.2, 2, 3]
     @test testData["Material Model"]["d"] == "true"
-    test_dict = testData["Material Model"]["test_file_B"]
-    @test test_dict["max"] == 0.5
-    @test test_dict["min"] == -2.5
+    test_dict = testData["Material Model"]["Young's_Modulus"]
+    @test test_dict["Field"] == "Temperature"
+    @test test_dict["Data"]["max"] == 0.5
+    @test test_dict["Data"]["min"] == -2.5
 
-    @test typeof(test_dict["spl"]) == Dierckx.Spline1D
+    @test typeof(test_dict["Data"]["spl"]) == Dierckx.Spline1D
     testData["Damage Model"] =
         PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
             params,

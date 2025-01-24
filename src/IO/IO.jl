@@ -370,7 +370,6 @@ function initialize_data(
     end
     @timeit to "init_data" datamanager, params =
         init_data(read_input_file(filename), filedirectory, datamanager, comm, to)
-    @timeit to "init orientations" datamanager = init_orientations(datamanager)
     return datamanager, params
 end
 
@@ -399,17 +398,18 @@ function init_orientations(datamanager::Module)
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     orientations = datamanager.create_constant_node_field("Orientations", Float64, 3)
-    rotation_tensor =
-        datamanager.create_constant_node_field("Rotation Tensor", Float64, "Matrix", dof)
+    rotation_tensor_N, rotation_tensor_NP1 =
+        datamanager.create_node_field("Rotation Tensor", Float64, "Matrix", dof)
     angles = datamanager.get_field("Angles")
 
     for iID = 1:nnodes
-        rotation_tensor[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
+        rotation_tensor_N[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
+        rotation_tensor_NP1[iID, :, :] = rotation_tensor_N[iID, :, :]
 
         if dof == 2
-            orientations[iID, :] = vcat(rotation_tensor[iID, :, 1], 0)
+            orientations[iID, :] = vcat(rotation_tensor_N[iID, :, 1], 0)
         elseif dof == 3
-            orientations[iID, :] = rotation_tensor[iID, :, 1]
+            orientations[iID, :] = rotation_tensor_N[iID, :, 1]
         end
 
     end

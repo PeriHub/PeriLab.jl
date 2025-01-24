@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_UMAT
+using StaticArrays
 include("../../Material_Basis.jl")
 using .Material_Basis: voigt_to_matrix, matrix_to_voigt, get_Hooke_matrix
 include("../../../../Support/Geometry.jl")
@@ -133,7 +134,7 @@ function init_model(
     )
     DFGRD0 = datamanager.create_constant_node_field("DFGRD0", Float64, "Matrix", dof)
     # is already initialized if thermal problems are adressed
-    temperature = datamanager.create_node_field("Temperature", Float64, 1)
+    datamanager.create_node_field("Temperature", Float64, 1)
     deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     if haskey(material_parameter, "Predefined Field Names")
         field_names = split(material_parameter["Predefined Field Names"], " ")
@@ -242,7 +243,7 @@ Example:
 """
 function compute_stresses(
     datamanager::Module,
-    nodes::Int64,
+    nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
     material_parameter::Dict,
     time::Float64,
@@ -272,19 +273,17 @@ function compute_stresses(
     strain_N = datamanager.get_field("Strain", "N")
     temp = datamanager.get_field("Temperature", "N")
     dtemp = datamanager.get_field("Delta Temperature")
-    PREDEF = datamanager.get_field("Predefined Fields", false)
-    DPRED = datamanager.get_field("Predefined Fields Increment", false)
+    PREDEF = datamanager.get_field_if_exists("Predefined Fields")
+    DPRED = datamanager.get_field_if_exists("Predefined Fields Increment")
 
     if isnothing(PREDEF)
-        PREDEF = zeros(size(temp_N))
-        DPRED = zeros(size(temp_N))
+        PREDEF = zeros(size(temp))
+        DPRED = zeros(size(temp))
     end
 
     # only 80 charakters are supported
     CMNAME::Cstring = malloc_cstring(material_parameter["UMAT Material Name"])
     coords = datamanager.get_field("Coordinates")
-    rot_N = datamanager.get_field("Rotation Tensor", "N")
-    rot_NP1 = datamanager.get_field("Rotation Tensor", "NP1")
     zStiff = datamanager.get_field("Zero Energy Stiffness")
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     # Number of normal stress components at this point
@@ -294,6 +293,11 @@ function compute_stresses(
     # Size of the stress or strain component array
     ntens = ndi + nshr
     not_supported_float::Float64 = 0.0
+
+    rot_N = datamanager.get_field_if_exists("Rotation Tensor", "N")
+    rot_NP1 = datamanager.get_field_if_exists("Rotation Tensor", "NP1")
+
+    DROT = isnothing(rot_NP1) ? zeros(length(temp), ntens, ntens) : rot_NP1 - rot_N
 
     DFGRD0 = datamanager.get_field("DFGRD0")
     DFGRD1 = datamanager.get_field("Deformation Gradient")
@@ -307,7 +311,6 @@ function compute_stresses(
         DDSDDT_temp = DDSDDT[iID, :]
         DRPLDE_temp = DRPLDE[iID, :]
         DRPLDT_temp = DRPLDT[iID]
-
         UMAT_interface(
             material_parameter["File"],
             stress_temp,
@@ -336,7 +339,7 @@ function compute_stresses(
             Vector{Float64}(props[:]),
             nprops,
             coords[iID, :],
-            rot_NP1[iID, :, :] - rot_N[iID, :, :],
+            DROT[iID, :, :],
             not_supported_float,
             not_supported_float,
             DFGRD0[iID, :, :],
@@ -358,17 +361,18 @@ function compute_stresses(
         DRPLDE[iID, :] = DRPLDE_temp
         DRPLDT[iID] = DRPLDT_temp
 
-        Global_zero_energy_control.global_zero_energy_mode_stiffness(
-            iID,
-            DDSDDE,
-            Kinv,
-            zStiff,
-        )
+        #TODO: Fix this
+        # Global_zero_energy_control.global_zero_energy_mode_stiffness(
+        #     iID,
+        #     DDSDDE,
+        #     Kinv,
+        #     zStiff,
+        # )
         stress_NP1[iID, :, :] = voigt_to_matrix(stress_temp)
 
         DFGRD0 = DFGRD1
     end
-    return datamanager, stress_NP1
+    return stress_NP1, datamanager
 end
 
 """
@@ -431,8 +435,8 @@ function UMAT_interface(
     DDSDDT::Vector{Float64},
     DRPLDE::Vector{Float64},
     DRPLDT::Float64,
-    STRAN::Vector{Float64},
-    DSTRAN::Vector{Float64},
+    STRAN::Union{Vector{Float64},SVector{3,Float64}},
+    DSTRAN::Union{Vector{Float64},SVector{3,Float64}},
     TIME::Vector{Float64},
     DTIME::Float64,
     TEMP::Float64,
@@ -556,25 +560,6 @@ Converts each letter in the string `str` to its corresponding lowercase equivale
 function set_subroutine_caller(sub_name::String)
     return eval(Meta.parse(":" * (lowercase(sub_name)) * "_"))
 end
-
-
-
-function compute_stresses(
-    datamanager::Module,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Vector{Float64},
-    stress_N::Vector{Float64},
-    stress_NP1::Vector{Float64},
-)
-
-    hookeMatrix = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
-
-    return hookeMatrix * strain_increment + stress_N, datamanager
-end
-
 
 function compute_stresses_ba(
     datamanager::Module,

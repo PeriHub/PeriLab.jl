@@ -9,22 +9,37 @@ PeriLab:
       Density: 2.81e-09
       Horizon: 5.533088235294117
       Material Model: Aluminium
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 0.0
     block_2:
       Density: 2.81e-09
       Horizon: 5.533088235294117
       Material Model: Aluminium
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 0.0
     block_3:
       Density: 2.81e-09
       Horizon: 5.533088235294117
       Material Model: Aluminium
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 0.0
     block_4:
       Density: 2.81e-09
       Horizon: 5.533088235294117
       Material Model: Aluminium
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 0.0
     block_5:
       Density: 2.81e-09
       Horizon: 5.533088235294117
       Material Model: Aluminium
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 0.0
   Boundary Conditions:
     BC_1:
       Coordinate: x

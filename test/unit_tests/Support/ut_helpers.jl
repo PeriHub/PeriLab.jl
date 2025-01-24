@@ -5,6 +5,7 @@
 using Test
 using ProgressBars
 using LinearAlgebra
+using StaticArrays
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
 
@@ -379,28 +380,28 @@ end
           nsteps + 1
 end
 
-@testset "get_active_update_nodes" begin
+@testset "ut_get_active_update_nodes" begin
     nnodes = 4
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     update_list = test_data_manager.create_constant_node_field("Update", Bool, 1, true)
     active = test_data_manager.create_constant_node_field("Active", Bool, 1, true)
-    index = test_data_manager.create_constant_node_field("Index", Int64, 1)
+    update_nodes = test_data_manager.create_constant_node_field("Update Nodes", Int64, 1)
     block_nodes = Dict(1 => [1, 2], 2 => [3, 4])
     block = 1
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [1, 2]
     block = 2
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [3, 4]
     update_list[3] = false
     block = 1
@@ -408,14 +409,14 @@ end
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [1, 2]
     block = 2
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [4]
 
     active[3] = false
@@ -424,21 +425,21 @@ end
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [1, 2]
     block = 2
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [4]
     update_list[3] = true
     @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [4]
     block = 1
     update_list[3] = false
@@ -447,7 +448,7 @@ end
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == [1, 2]
     block = 2
     active[3] = false
@@ -456,6 +457,48 @@ end
         active,
         update_list,
         block_nodes[block],
-        index,
+        update_nodes,
     ) == []
+end
+
+@testset "ut_get_MMatrix" begin
+    @test PeriLab.Solver_control.Helpers.get_MMatrix(4) ==
+          MMatrix{2,2}(zeros(Float64, 2, 2))
+    @test PeriLab.Solver_control.Helpers.get_MMatrix(9) ==
+          MMatrix{3,3}(zeros(Float64, 3, 3))
+    @test PeriLab.Solver_control.Helpers.get_MMatrix(36) ==
+          MMatrix{6,6}(zeros(Float64, 6, 6))
+    @test isnothing(PeriLab.Solver_control.Helpers.get_MMatrix(8))
+end
+
+@testset "ut_sub_in_place" begin
+    C = [[[0.0, 0], [0, 0]], [[0, 0], [0, 0]]]
+    A = [[[1, 2], [3, 4]], [[5, 6.1], [7, 8]]]
+    B = [[[1.0, 4], [5, 1]], [[2, 1], [1, 4]]]
+    PeriLab.Solver_control.Helpers.sub_in_place!(C, A, B)
+    @test C == [[[0, -2.0], [-2.0, 3.0]], [[3.0, 5.1], [6.0, 4.0]]]
+end
+
+@testset "ut_add_in_place" begin
+    C = [[0.0, 0], [0, 0], [0, 0], [0, 0]]
+    A = [[1, 2], [3, 4], [5, 6.1], [7, 8]]
+    B = [[1.0, 4], [5, 1], [2, 1], [1, 4]]
+    PeriLab.Solver_control.Helpers.add_in_place!(C, A, B)
+    @test C == [[2.0, 6.0], [8.0, 5.0], [7.0, 7.1], [8.0, 12.0]]
+end
+
+@testset "ut_div_in_place" begin
+    C = [[0.0, 0], [0, 0], [0, 0], [0, 0]]
+    A = [[1, 2], [3, 4], [5, 6.1], [7, 8]]
+    B = [[1.0, 4], [5, 1], [2, 1], [1, 4]]
+    PeriLab.Solver_control.Helpers.div_in_place!(C, A, B)
+    @test C == [[1.0, 0.5], [0.6, 4.0], [2.5, 6.1], [7.0, 2.0]]
+
+    C = [0.0, 0.0]
+    A = [-2.0, 4.0]
+    B = 2.0
+    PeriLab.Solver_control.Helpers.div_in_place!(C, A, B, false)
+    @test C == [-1.0, 2.0]
+    PeriLab.Solver_control.Helpers.div_in_place!(C, A, B, true)
+    @test C == [1.0, 2.0]
 end

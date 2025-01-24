@@ -8,7 +8,14 @@ include("../../Support/Geometry.jl")
 include("../../Support/Helpers.jl")
 using .Material
 using .Geometry
-using .Helpers: rotate, fastdot, sub_in_place!, div_in_place!, mul_in_place!
+using .Helpers:
+    rotate,
+    fastdot,
+    sub_in_place!,
+    div_in_place!,
+    mul_in_place!,
+    interpol_data,
+    is_dependent
 using LinearAlgebra
 using StaticArrays
 export compute_model
@@ -79,17 +86,9 @@ function compute_model(
         damage_parameter["Critical Value"]
     quad_horizons = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
-    dependend_value::Bool = false
-    if haskey(damage_parameter, "Temperature dependend")
-        if !datamanager.has_key(damage_parameter["Temperature dependend"]["Field key"])
-            @error "Critical Value key " *
-                   damage_parameter["Temperature dependend"]["Field key"] *
-                   " does not exist for value interpolation in damage model."
-            return nothing
-        end
-        field = datamanager.get_field(damage_parameter["Critical Value"]["Field key"])
-        dependend_value = true
-    end
+
+    dependend_value, dependent_field =
+        is_dependent("Critical Value", damage_parameter, datamanager)
 
     # for anisotropic damage models
     rotation::Bool = datamanager.get_rotation()
@@ -104,7 +103,7 @@ function compute_model(
         aniso_crit_values = datamanager.get_aniso_crit_values()
         # bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
         # bond_norm::Float64 = 0.0
-        rotation_tensor = datamanager.get_field("Rotation Tensor")
+        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
         rotation_temp::Matrix{Float64} = zeros(Float64, dof, dof)
         rotated_bond::Vector{Float64} = zeros(Float64, dof)
         bond_norm_all::Vector{Float64} = zeros(Float64, dof)
@@ -126,6 +125,7 @@ function compute_model(
     relative_displacement::Vector{Float64} = zeros(Float64, dof)
 
     sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
+    warning_flag = true
 
     for iID in nodes
         nlist_temp = nlist[iID]
@@ -163,8 +163,11 @@ function compute_model(
             bond_energy = 0.25 * product
 
             if dependend_value
-                critical_energy =
-                    interpol_data(field[iID], damage_parameter["Temperature dependend"])
+                critical_energy = interpol_data(
+                    dependent_field[iID],
+                    damage_parameter["Critical Value"]["Data"],
+                    warning_flag,
+                )
             end
 
             @views crit_energy =
@@ -276,6 +279,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
     end
     return Float64(4 / (pi * horizon^4))
 end
+
 function init_model(
     datamanager::Module,
     nodes::Union{SubArray,Vector{Int64}},

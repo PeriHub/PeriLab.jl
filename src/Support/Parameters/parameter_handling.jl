@@ -30,6 +30,9 @@ global expected_structure = Dict(
                             "Additive Model" => [String, false],
                             "Pre Calculation Model" => [String, false],
                             "Corrosion_template Model" => [String, false],
+                            "Angle X" => [Union{Float64,Int64}, false],
+                            "Angle Y" => [Union{Float64,Int64}, false],
+                            "Angle Z" => [Union{Float64,Int64}, false],
                         ),
                         true,
                     ],
@@ -163,7 +166,7 @@ global expected_structure = Dict(
                         Dict{Any,Any}(
                             "Any" => [
                                 Dict{Any,Any}(
-                                    "Critical Value" => [Union{Float64,Int64}, true],
+                                    "Critical Value" => [Union{Float64,Int64,String}, true],
                                     "Damage Model" => [String, true],
                                     "Interblock Damage" => [
                                         Dict{Any,Any}(
@@ -202,9 +205,45 @@ global expected_structure = Dict(
                                     "Bond Associated" => [Bool, false],
                                     "Bond Horizon" => [Union{Float64,Int64}, false],
                                     "Poisson's Ratio" => [Union{Float64,Int64}, false],
+                                    "Poisson's Ratio XY" => [
+                                        Union{Float64,Int64,String},
+                                        false,
+                                    ],
+                                    "Poisson's Ratio YZ" => [
+                                        Union{Float64,Int64,String},
+                                        false,
+                                    ],
+                                    "Poisson's Ratio ZX" => [
+                                        Union{Float64,Int64,String},
+                                        false,
+                                    ],
                                     "Young's Modulus" => [Union{Float64,Int64}, false],
+                                    "Young's Modulus X" => [
+                                        Union{Float64,Int64,String},
+                                        false,
+                                    ],
+                                    "Young's Modulus Y" => [
+                                        Union{Float64,Int64,String},
+                                        false,
+                                    ],
+                                    "Young's Modulus Z" => [
+                                        Union{Float64,Int64,String},
+                                        false,
+                                    ],
                                     "Bulk Modulus" => [Union{Float64,Int64}, false],
                                     "Shear Modulus" => [Union{Float64,Int64}, false],
+                                    "Shear Modulus XY" => [
+                                        Union{Float64,Int64,String},
+                                        false,
+                                    ],
+                                    "Shear Modulus YZ" => [
+                                        Union{Float64,Int64,String},
+                                        false,
+                                    ],
+                                    "Shear Modulus ZX" => [
+                                        Union{Float64,Int64,String},
+                                        false,
+                                    ],
                                     "Yield Stress" => [Union{Float64,Int64}, false],
                                     "Zero Energy Control" => [String, false],
                                     "C11" => [Union{Float64,Int64}, false],
@@ -282,6 +321,7 @@ global expected_structure = Dict(
                     ],
                     "Pre Calculation Global" => [
                         Dict{Any,Any}(
+                            "Bond Associated Deformation Gradient" => [Bool, false],
                             "Bond Associated Correspondence" => [Bool, false],
                             "Deformation Gradient" => [Bool, false],
                             "Deformed Bond Geometry" => [Bool, false],
@@ -312,6 +352,7 @@ global expected_structure = Dict(
                     "Damage Models" => [Bool, false],
                     "Material Models" => [Bool, false],
                     "Thermal Models" => [Bool, false],
+                    "Pre Calculation Models" => [Bool, false],
                     "Calculate Cauchy" => [Bool, false],
                     "Calculate von Mises" => [Bool, false],
                     "Calculate Strain" => [Bool, false],

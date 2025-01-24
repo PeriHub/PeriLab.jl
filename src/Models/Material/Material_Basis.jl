@@ -7,7 +7,7 @@ using LinearAlgebra
 using LoopVectorization
 using StaticArrays
 include("../../Support/Helpers.jl")
-using .Helpers: get_MMatrix, determinant, invert, smat
+using .Helpers: get_MMatrix, determinant, invert, smat, interpol_data, get_dependent_value
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
@@ -131,6 +131,34 @@ function get_all_elastic_moduli(
         nu = nu_fixed
         poissons = true
     end
+    if haskey(parameter, "Symmetry")
+        if occursin("anisotropic", lowercase(parameter["Symmetry"]))
+            for iID = 1:6
+                for jID = iID:6
+                    if !("C" * string(iID) * string(jID) in keys(parameter))
+                        @error "C" * string(iID) * string(jID) * " not defined"
+                        return nothing
+                    end
+                end
+            end
+            return
+        elseif occursin("orthotropic", lowercase(parameter["Symmetry"]))
+            E_x = haskey(parameter, "Young's Modulus X")
+            E_y = haskey(parameter, "Young's Modulus Y")
+            E_z = haskey(parameter, "Young's Modulus Z")
+            nu_xy = haskey(parameter, "Poisson's Ratio XY")
+            nu_yz = haskey(parameter, "Poisson's Ratio YZ")
+            nu_zx = haskey(parameter, "Poisson's Ratio ZX")
+            g_xy = haskey(parameter, "Shear Modulus XY")
+            g_yz = haskey(parameter, "Shear Modulus YZ")
+            g_zx = haskey(parameter, "Shear Modulus ZX")
+            if !E_x || !E_y || !E_z || !nu_xy || !nu_yz || !nu_zx || !g_xy || !g_yz || !g_zx
+                @error "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, ZX, Shear Modulus XY, YZ, ZX"
+                return nothing
+            end
+            return
+        end
+    end
 
     # tbd non isotropic material check
     if bulk + youngs + shear + poissons < 2
@@ -179,11 +207,12 @@ function get_all_elastic_moduli(
 end
 
 """
-    get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
+    get_Hooke_matrix(datamanager::Module, parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
 
 Returns the Hooke matrix of the material.
 
 # Arguments
+- `datamanager::Module`: The data manager.
 - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
 - `symmetry::String`: The symmetry of the material.
 - `dof::Int64`: The degree of freedom.
@@ -191,45 +220,74 @@ Returns the Hooke matrix of the material.
 # Returns
 - `matrix::Matrix{Float64}`: The Hooke matrix.
 """
-function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int64 = 1)
+function get_Hooke_matrix(
+    datamanager::Module,
+    parameter::Dict,
+    symmetry::String,
+    dof::Int64,
+    ID::Int64 = 1,
+)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
-    if occursin("anisotropic", symmetry)
+    if occursin("anisotropic", lowercase(symmetry))
         aniso_matrix = get_MMatrix(36)
         for iID = 1:6
             for jID = iID:6
-                if "C" * string(iID) * string(jID) in keys(parameter)
-                    value = parameter["C"*string(iID)*string(jID)]
-                else
-                    @error "C" * string(iID) * string(jID) * " not defined"
-                    return nothing
-                end
+                value = get_dependent_value(
+                    datamanager,
+                    "C" * string(iID) * string(jID),
+                    parameter,
+                )
                 aniso_matrix[iID, jID] = value
                 aniso_matrix[jID, iID] = value
             end
         end
-        if dof == 3
-            return aniso_matrix
-        elseif occursin("plane strain", symmetry)
-            matrix = get_MMatrix(9)
-            matrix[1:2, 1:2] = aniso_matrix[1:2, 1:2]
-            matrix[3, 1:2] = aniso_matrix[6, 1:2]
-            matrix[1:2, 3] = aniso_matrix[1:2, 6]
-            matrix[3, 3] = aniso_matrix[6, 6]
-            return matrix
-        elseif occursin("plane stress", symmetry)
-            matrix = get_MMatrix(36)
-            inv_aniso = invert(aniso_matrix, "Hooke matrix not invertable")
-            matrix[1:2, 1:2] = inv_aniso[1:2, 1:2]
-            matrix[3, 1:2] = inv_aniso[6, 1:2]
-            matrix[1:2, 3] = inv_aniso[1:2, 6]
-            matrix[3, 3] = inv_aniso[6, 6]
-            return invert(matrix, "Hooke matrix not invertable")
-        else
-            @error "2D model defintion is missing; plane stress or plane strain "
-            return nothing
-        end
+        return get_2D_Hooke_matrix(aniso_matrix, symmetry, dof)
+    elseif occursin("orthotropic", lowercase(symmetry))
+        aniso_matrix = get_MMatrix(36)
+
+        E_x = get_dependent_value(datamanager, "Young's Modulus X", parameter, ID)
+        E_y = get_dependent_value(datamanager, "Young's Modulus Y", parameter, ID)
+        E_z = get_dependent_value(datamanager, "Young's Modulus Z", parameter, ID)
+        nu_xy = get_dependent_value(datamanager, "Poisson's Ratio XY", parameter, ID)
+        nu_yz = get_dependent_value(datamanager, "Poisson's Ratio YZ", parameter, ID)
+        nu_zx = get_dependent_value(datamanager, "Poisson's Ratio ZX", parameter, ID)
+        g_xy = get_dependent_value(datamanager, "Shear Modulus XY", parameter, ID)
+        g_yz = get_dependent_value(datamanager, "Shear Modulus YZ", parameter, ID)
+        g_zx = get_dependent_value(datamanager, "Shear Modulus ZX", parameter, ID)
+
+        nu_yx = nu_xy * E_y / E_x
+        nu_xz = nu_zx * E_x / E_z
+        nu_zy = nu_yz * E_z / E_y
+
+        delta =
+            (
+                1 - nu_xy * nu_yx - nu_yz * nu_zy - nu_zx * nu_xz -
+                2 * nu_xy * nu_yz * nu_zx
+            ) / E_x *
+            E_y *
+            E_z
+
+        aniso_matrix[1, 1] = (1 - nu_yz * nu_zy) / E_y * E_z * delta
+        aniso_matrix[2, 2] = (1 - nu_zx * nu_xz) / E_z * E_x * delta
+        aniso_matrix[3, 3] = (1 - nu_xy * nu_yx) / E_x * E_y * delta
+
+        aniso_matrix[1, 2] = (nu_yx + nu_zx * nu_yz) / E_y * E_z * delta
+        aniso_matrix[2, 1] = (nu_xy + nu_xz * nu_zy) / E_z * E_x * delta
+
+        aniso_matrix[1, 3] = (nu_zx + nu_yx * nu_zy) / E_y * E_z * delta
+        aniso_matrix[3, 1] = (nu_xz + nu_xy * nu_yz) / E_x * E_y * delta
+
+        aniso_matrix[2, 3] = (nu_zy + nu_zx * nu_xy) / E_z * E_x * delta
+        aniso_matrix[3, 2] = (nu_yz + nu_xz * nu_yx) / E_x * E_y * delta
+
+        aniso_matrix[4, 4] = 2 * g_yz
+        aniso_matrix[5, 5] = 2 * g_zx
+        aniso_matrix[6, 6] = 2 * g_xy
+
+        return get_2D_Hooke_matrix(aniso_matrix, symmetry, dof)
     end
+
     iID = ID
     if parameter["Poisson's Ratio"] isa Float64
         iID = 1
@@ -289,6 +347,30 @@ function get_Hooke_matrix(parameter::Dict, symmetry::String, dof::Int64, ID::Int
         matrix[3, 3] = G
         return matrix
 
+    end
+end
+
+function get_2D_Hooke_matrix(aniso_matrix::MMatrix, symmetry::String, dof::Int64)
+    if dof == 3
+        return aniso_matrix
+    elseif occursin("plane strain", symmetry)
+        matrix = get_MMatrix(9)
+        matrix[1:2, 1:2] = aniso_matrix[1:2, 1:2]
+        matrix[3, 1:2] = aniso_matrix[6, 1:2]
+        matrix[1:2, 3] = aniso_matrix[1:2, 6]
+        matrix[3, 3] = aniso_matrix[6, 6]
+        return matrix
+    elseif occursin("plane stress", symmetry)
+        inv_aniso = invert(aniso_matrix, "Hooke matrix not invertable")
+        matrix = get_MMatrix(36)
+        matrix[1:2, 1:2] = inv_aniso[1:2, 1:2]
+        matrix[3, 1:2] = inv_aniso[6, 1:2]
+        matrix[1:2, 3] = inv_aniso[1:2, 6]
+        matrix[3, 3] = inv_aniso[6, 6]
+        return invert(matrix, "Hooke matrix not invertable")
+    else
+        @error "2D model defintion is missing; plane stress or plane strain "
+        return nothing
     end
 end
 
@@ -395,31 +477,6 @@ function distribute_forces!(
     end
 end
 
-
-
-function distribute_forces_old(
-    nodes::Union{SubArray,Vector{Int64}},
-    nlist::Vector{Vector{Int64}},
-    bond_force::Vector{Matrix{Float64}},
-    volume::Vector{Float64},
-    bond_damage::Vector{Vector{Float64}},
-    force_densities::Matrix{Float64},
-)
-    for iID in nodes
-        @views force_densities[iID, :] .+= transpose(
-            sum(bond_damage[iID] .* bond_force[iID] .* volume[nlist[iID]], dims = 1),
-        )
-
-        @views force_densities[nlist[iID], :] .-=
-            bond_damage[iID] .* bond_force[iID] .* volume[iID]
-    end
-
-
-
-
-    return force_densities
-end
-
 """
     matrix_to_voigt(matrix)
 
@@ -432,9 +489,9 @@ Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
 """
 function matrix_to_voigt(matrix)
     if length(matrix) == 4
-        return @SVector [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
+        return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
     elseif length(matrix) == 9
-        return @SVector [
+        return [
             matrix[1, 1]
             matrix[2, 2]
             matrix[3, 3]
@@ -688,6 +745,20 @@ function apply_pointwise_E(
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for j ∈ axes(bond_force, 2)
             bond_force[i, j] *= E[i]
+        end
+    end
+end
+
+function apply_pointwise_E(nodes, bond_force, dependent_field)
+    warning_flag = true
+    @inbounds @fastmath for i in nodes
+        E_int = interpol_data(
+            dependent_field[i],
+            damage_parameter["Young's Modulus"]["Data"],
+            warning_flag,
+        )
+        @views @inbounds @fastmath for j ∈ axes(bond_force, 2)
+            bond_force[i, j] *= E_int
         end
     end
 end

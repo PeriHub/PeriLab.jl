@@ -60,8 +60,13 @@ function compute_control(
         dof,
     )
     rotation::Bool = datamanager.get_rotation()
-    angles = datamanager.get_field("Angles")
-    CVoigt = get_Hooke_matrix(material_parameter, material_parameter["Symmetry"], dof)
+    angles = datamanager.get_field_if_exists("Angles")
+    CVoigt = get_Hooke_matrix(
+        datamanager,
+        material_parameter,
+        material_parameter["Symmetry"],
+        dof,
+    )
     if !haskey(material_parameter, "UMAT Material Name")
         zStiff = create_zero_energy_mode_stiffness(
             nodes,
@@ -194,7 +199,7 @@ function create_zero_energy_mode_stiffness(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
     CVoigt::Union{MMatrix,Matrix{Float64}},
-    angles::Union{Matrix{Float64},Nothing},
+    angles::Union{Matrix{Float64},Vector{Float64},Nothing},
     Kinv::Array{Float64,3},
     zStiff::Array{Float64,3},
     rotation::Bool,
@@ -288,7 +293,7 @@ function create_zero_energy_mode_stiffness(
     nodes::Union{SubArray,Vector{Int64}},
     dof::Int64,
     CVoigt::Union{MMatrix,Matrix{Float64}},
-    angles::Matrix{Float64},
+    angles::Union{Matrix{Float64},Vector{Float64}},
     Kinv::Array{Float64,3},
     zStiff::Array{Float64,3},
 )

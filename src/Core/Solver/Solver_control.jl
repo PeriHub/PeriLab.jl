@@ -12,7 +12,8 @@ using .Parameter_Handling:
     get_solver_name,
     get_model_options,
     get_fem_block,
-    get_calculation_options
+    get_calculation_options,
+    get_angles
 using .Helpers: find_indices, fastdot
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
@@ -55,14 +56,16 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     block_nodes = get_block_nodes(datamanager.get_field("Block_Id"), nnodes)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
-    fem_block = datamanager.create_constant_node_field("FEM Block", Bool, 1, false)
-    datamanager.create_constant_node_field("Index", Int64, 1)
+    if datamanager.fem_active()
+        fem_block = datamanager.create_constant_node_field("FEM Block", Bool, 1, false)
+        fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
+    end
     active_nodes = datamanager.create_constant_node_field("Active Nodes", Int64, 1)
     update_nodes = datamanager.create_constant_node_field("Update Nodes", Int64, 1)
     datamanager.create_constant_node_field("Update", Bool, 1, true)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
-    fem_block = set_fem_block(params, block_nodes_with_neighbors, fem_block) # includes the neighbors
+    set_angles(datamanager, params, block_nodes_with_neighbors) # includes the Neighbors
     solver_options["Models"] = get_model_options(params)
     solver_options["Calculation"] = get_calculation_options(params)
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
@@ -111,6 +114,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     if !datamanager.has_key("Active")
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)
     end
+    #TODO: sync active with datamanager
 
     datamanager = remove_models(datamanager, solver_options["Models"])
 
@@ -154,6 +158,38 @@ function set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
         density[block_nodes[block]] .= get_density(params, block)
     end
     return density
+end
+
+"""
+    set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
+
+Sets the density of the nodes in the dictionary.
+
+# Arguments
+- `datamanager::Module`: The data manager
+- `params::Dict`: The parameters
+- `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
+"""
+function set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
+    rotation = false
+    dof = datamanager.get_dof()
+    for block in eachindex(block_nodes)
+        if get_angles(params, block, dof) !== nothing
+            rotation = true
+            break
+        end
+    end
+    if rotation
+        datamanager.set_rotation(true)
+        angles = datamanager.create_constant_node_field("Angles", Float64, dof)
+
+        for block in eachindex(block_nodes)
+            angles_global = get_angles(params, block, dof)
+            for iID in block_nodes[block]
+                angles[iID, :] .= angles_global
+            end
+        end
+    end
 end
 
 """
@@ -271,7 +307,7 @@ function synchronise_field(
     end
     if direction == "download_from_cores"
         if synch_fields[synch_field][direction]
-            vector = get_field(synch_field)
+            vector = get_field(synch_field, synch_fields[synch_field]["time"])
             return synch_responder_to_controller(
                 comm,
                 overlap_map,
@@ -283,7 +319,7 @@ function synchronise_field(
     end
     if direction == "upload_to_cores"
         if synch_fields[synch_field][direction]
-            vector = get_field(synch_field)
+            vector = get_field(synch_field, synch_fields[synch_field]["time"])
             if occursin("Bond", synch_field)
                 return synch_controller_bonds_to_responder_flattened(
                     comm,

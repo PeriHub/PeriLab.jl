@@ -99,7 +99,7 @@ PeriLab:
         Symmetry: isotropic plane stress
         Young's Modulus: 70000.0
         Poisson's Ratio: 0.3
-        File: "libusertest.so"
+        File: "libusermat.so"
         Number of State Variables: 1
         Number of Properties: 3
         Property_1: 15
@@ -112,7 +112,7 @@ PeriLab:
       Deformed Bond Geometry: true
       Shape Tensor: false
   Solver:
-    Final Time: 0.0002
+    Final Time: 0.00002
     Initial Time: 0.0
     Material Models: true
     Damage Models: true

@@ -112,15 +112,18 @@ function add_in_place!(
     return C
 end
 function get_MMatrix(len::Int64)
+    global A2x2
+    global A3x3
+    global A6x6
 
     if len == 4
-        global A2x2
+        A2x2 .= 0
         return A2x2
     elseif len == 9
-        global A3x3
+        A3x3 .= 0
         return A3x3
     elseif len == 36
-        global A6x6
+        A6x6 .= 0
         return A6x6
     else
         @error "MMatrix length $len not pre-allocated. Please add your size to helper.jl in get_MMatrix."
@@ -234,15 +237,15 @@ function fill_in_place!(
         end
     end
 end
-function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
+# function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
 
-    @inbounds @simd for i = 1:dof
-        for j = 1:dof
-            s1[i, j] = s3[i, j] + fastdot(C[i, j, :, :], s2[:, :])
-        end
-    end
-    return s1
-end
+#     @inbounds @simd for i = 1:dof
+#         for j = 1:dof
+#             s1[i, j] = s3[i, j] + fastdot(C[i, j, :, :], s2[:, :])
+#         end
+#     end
+#     return s1
+# end
 
 """
     qdim(order::Int64, dof::Int64)
@@ -444,6 +447,32 @@ function find_inverse_bond_id(nlist::Vector{Vector{Int64}})
     return inverse_nlist
 end
 
+function get_dependent_value(
+    datamanager::Module,
+    field_name::String,
+    parameter::Dict,
+    iID::Int64 = 1,
+)
+
+    dependend_value, dependent_field = is_dependent(field_name, parameter, datamanager)
+
+    return dependend_value ?
+           interpol_data(dependent_field[iID], parameter[field_name]["Data"]) :
+           parameter[field_name]
+end
+
+function is_dependent(field_name::String, damage_parameter::Dict, datamanager::Module)
+    if damage_parameter[field_name] isa Dict
+        if !datamanager.has_key(damage_parameter[field_name]["Field"] * "NP1")
+            @error "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
+            return nothing
+        end
+        field = datamanager.get_field(damage_parameter[field_name]["Field"], "NP1")
+        return true, field
+    end
+    return false, nothing
+end
+
 function interpolation(
     x::Union{Vector{Float64},Vector{Int64}},
     y::Union{Vector{Float64},Vector{Int64}},
@@ -458,12 +487,16 @@ end
 function interpol_data(
     x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
     values::Dict{String,Any},
+    warning_flag::Bool = true,
 )
-    if values["min"] > minimum(x)
-        @warn "Interpolation value is below interpolation range. Using minimum value of dataset."
-    end
-    if values["max"] < maximum(x)
-        @warn "Interpolation value is above interpolation range. Using maximum value of dataset."
+    if warning_flag
+        if values["min"] > minimum(x)
+            @warn "Interpolation value is below interpolation range. Using minimum value of dataset."
+        end
+        if values["max"] < maximum(x)
+            @warn "Interpolation value is above interpolation range. Using maximum value of dataset."
+        end
+        warning_flag = false
     end
     return evaluate(values["spl"], x)
 end

@@ -1,0 +1,75 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36
+    Type: "Text File"
+    Input Mesh File: "test_mesh.txt"
+  Models:
+    Material Models:
+      Mat_1:
+        Material Model: "Correspondence Elastic"
+        Bulk Modulus: 2.5e+3
+        Shear Modulus: 1.15e3
+        Symmetry: "isotropic"
+        # Zero Energy Control: "Global"
+      Mat_2:
+        Material Model: "Correspondence Elastic"
+        Bulk Modulus: 3.5e+3
+        Shear Modulus: 2.15e3
+        Symmetry: "isotropic"
+        # Zero Energy Control: "Global"
+  Blocks:
+    block_1:
+      Material Model: "Mat_1"
+      Density: 2.7e-9
+      Horizon: 2.1
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 120.0
+    block_2:
+      Material Model: "Mat_2"
+      Density: 2.7e-9
+      Horizon: 2.1
+      Angle X: 0.0
+      Angle Y: 0.0
+      Angle Z: 70.0
+  Boundary Conditions:
+    BC_1:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "x"
+      Value: "0.1*y"
+      Type: Dirichlet
+    BC_2:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "y"
+      Value: "0.1*x"
+      Type: Dirichlet
+    BC_3:
+      Variable: "Displacements"
+      Node Set: "Node Set 1"
+      Coordinate: "z"
+      Value: "0.0"
+      Type: Dirichlet
+  Solver:
+    Initial Time: 0.0
+    Final Time: 5.0e-6
+    End step after damage: 3
+    Verlet:
+      Safety Factor: 1.0
+  Outputs:
+    Output1:
+      Output Filename: "strain_xy_angles"
+      Output Frequency: 1
+      Output Variables:
+        Displacements: True
+        Forces: True
+        Volume: True
+        Cauchy Stress: True
+        Angles: True
+        Orientations: True

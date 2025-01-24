@@ -215,6 +215,9 @@ MPI.Init()
         @testset "test_two_block" begin
             include("fullscale_tests/test_two_block/test_two_block.jl")
         end
+        @testset "test_symmetry" begin
+            include("fullscale_tests/test_symmetry/test_symmetry.jl")
+        end
         @testset "test_additive_simple" begin
             include("fullscale_tests/test_additive/test_additive.jl")
         end
@@ -239,9 +242,9 @@ MPI.Init()
         @testset "test_PD_Solid_Elastic_3D" begin
             include("fullscale_tests/test_PD_solid_elastic_3D/test_PD_solid_elastic_3D.jl")
         end
-        # @testset "test_PD_Solid_Plastic" begin
-        #     include("fullscale_tests/test_PD_solid_plastic/test_PD_solid_plastic.jl")
-        # end
+        @testset "test_PD_Solid_Plastic" begin
+            include("fullscale_tests/test_PD_solid_plastic/test_PD_solid_plastic.jl")
+        end
         @testset "test_calculation" begin
             include("fullscale_tests/test_calculation/test_calculation.jl")
         end
@@ -287,9 +290,9 @@ MPI.Init()
         @testset "test_Abaqus" begin
             include("fullscale_tests/test_Abaqus/test_Abaqus.jl")
         end
-        # @testset "test_aniso_damage" begin
-        #     include("fullscale_tests/test_aniso_damage/test_aniso_damage.jl")
-        # end
+        @testset "test_aniso_damage" begin
+            include("fullscale_tests/test_aniso_damage/test_aniso_damage.jl")
+        end
         @testset "test_point_wise_material" begin
             include("fullscale_tests/test_point_wise_material/test_point_wise_material.jl")
         end

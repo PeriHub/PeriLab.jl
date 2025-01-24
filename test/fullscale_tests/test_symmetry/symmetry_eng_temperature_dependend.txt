@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+header: Temperature Young's_Modulus_X Young's_Modulus_Y
+-50 2.5e3 2.5e3
+0 3.0e3 3.0e3
+50 4.5e3 4.5e3

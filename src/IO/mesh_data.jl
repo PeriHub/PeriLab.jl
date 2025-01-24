@@ -506,6 +506,8 @@ function check_mesh_elements(mesh::DataFrame, dof::Int64)
                         end
                     end
                 end
+            elseif mesh_entry[end-1:end] in ["_y", "_z"]
+                continue
             else
                 name = mesh_entry
                 mesh_id = [name]
@@ -1770,12 +1772,12 @@ function disk_filter(
 )
 
 
-    if dof == 2
-        center = [filter["Center X"], filter["Center Y"]]
-        normal = [filter["Normal X"], filter["Normal Y"]]
-    else
+    if dof == 3
         center = [filter["Center X"], filter["Center Y"], filter["Center Z"]]
         normal = [filter["Normal X"], filter["Normal Y"], filter["Normal Z"]]
+    else
+        @error "Disk filter only implemented for 3D, use rectangular plane filter instead"
+        return nothing
     end
     #normalize vector
     normal = normal ./ norm(normal)
@@ -1930,7 +1932,6 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     end
 
     block_id = maximum(mesh.block_id) + 1
-    volume = step_x * step_y * step_z
 
     id = 0
 
@@ -1942,15 +1943,33 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
 
         if direction == "X"
             if dof == 2
-                push!(mesh, (x = i, y = j, volume = volume, block_id = block_id))
+                push!(mesh, (x = i, y = j, volume = step_x * step_y, block_id = block_id))
             else
-                push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
+                push!(
+                    mesh,
+                    (
+                        x = i,
+                        y = j,
+                        z = k,
+                        volume = step_x * step_y * step_z,
+                        block_id = block_id,
+                    ),
+                )
             end
         elseif direction == "Y"
             if dof == 2
-                push!(mesh, (x = j, y = i, volume = volume, block_id = block_id))
+                push!(mesh, (x = j, y = i, volume = step_x * step_y, block_id = block_id))
             else
-                push!(mesh, (x = j, y = i, z = k, volume = volume, block_id = block_id))
+                push!(
+                    mesh,
+                    (
+                        x = j,
+                        y = i,
+                        z = k,
+                        volume = step_x * step_y * step_z,
+                        block_id = block_id,
+                    ),
+                )
             end
         end
         append!(node_sets["Extruded_1"], [Int64(id)])
@@ -1965,15 +1984,33 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
 
         if direction == "X"
             if dof == 2
-                push!(mesh, (x = i, y = j, volume = volume, block_id = block_id))
+                push!(mesh, (x = i, y = j, volume = step_x * step_y, block_id = block_id))
             else
-                push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
+                push!(
+                    mesh,
+                    (
+                        x = i,
+                        y = j,
+                        z = k,
+                        volume = step_x * step_y * step_z,
+                        block_id = block_id,
+                    ),
+                )
             end
         elseif direction == "Y"
             if dof == 2
-                push!(mesh, (x = j, y = i, volume = volume, block_id = block_id))
+                push!(mesh, (x = j, y = i, volume = step_x * step_y, block_id = block_id))
             else
-                push!(mesh, (x = j, y = i, z = k, volume = volume, block_id = block_id))
+                push!(
+                    mesh,
+                    (
+                        x = j,
+                        y = i,
+                        z = k,
+                        volume = step_x * step_y * step_z,
+                        block_id = block_id,
+                    ),
+                )
             end
         end
         append!(node_sets["Extruded_2"], [Int64(id)])

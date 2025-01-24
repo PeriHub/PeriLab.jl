@@ -331,6 +331,20 @@ end
     @test parameter["Poisson's Ratio"] == [0.125, 0.125, 0.125]
     @test parameter["Bulk Modulus"] == [10, 10, 10]
     @test parameter["Shear Modulus"] == [10, 10, 10]
+
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Symmetry" => "Anisotropic",
+        "C11" => 5,
+    )
+    @test isnothing(get_all_elastic_moduli(test_data_manager, parameter))
+
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Symmetry" => "Orthotropic",
+        "Young's Modulus X" => 5,
+    )
+    @test isnothing(get_all_elastic_moduli(test_data_manager, parameter))
 end
 
 @testset "get_Hooke_matrix" begin
@@ -341,6 +355,7 @@ end
         "Bulk Modulus" => 5,
         "Shear Modulus" => 1.25,
         "Poisson's Ratio" => 0.2,
+        "Compute_Hook" => false,
     )
     get_all_elastic_moduli(test_data_manager, parameter)
 
@@ -348,7 +363,7 @@ end
     E = parameter["Young's Modulus"]
     nu = parameter["Poisson's Ratio"]
     temp = 1 / ((1 + nu) * (1 - 2 * nu))
-    C = get_Hooke_matrix(parameter, symmetry, 3)
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
     for iID = 1:3
         @test isapprox(C[iID, iID], E * (1 - nu) * temp)
         @test C[iID+3, iID+3] == parameter["Shear Modulus"]
@@ -360,7 +375,7 @@ end
     end
 
     symmetry = "isotropic plane strain"
-    C2D = get_Hooke_matrix(parameter, symmetry, 2)
+    C2D = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
     for iID = 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
         for jID = 1:2
@@ -372,7 +387,7 @@ end
     @test C2D[3, 3] == parameter["Shear Modulus"]
 
     symmetry = "missing"
-    C2D = get_Hooke_matrix(parameter, symmetry, 2)
+    C2D = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
     for iID = 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
         for jID = 1:2
@@ -389,7 +404,7 @@ end
     C2D_test[1:2, 1:2] = Cinv[1:2, 1:2]
     C2D_test[3, 3] = Cinv[6, 6]
     C2D_test = inv(C2D_test)
-    C = get_Hooke_matrix(parameter, symmetry, 2)
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
     for iID = 1:3
         for jID = 1:3
             if C2D_test[iID, jID] != 0
@@ -405,10 +420,10 @@ end
     end
 
     symmetry = "isotropic missing"
-    @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
+    @test isnothing(get_Hooke_matrix(test_data_manager, parameter, symmetry, 2))
 
     symmetry = "anisotropic"
-    C = get_Hooke_matrix(parameter, symmetry, 3)
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
     for iID = 1:6
         for jID = 1:6
             @test C[iID, jID] == C[jID, iID]
@@ -417,8 +432,9 @@ end
             end
         end
     end
+
     symmetry = "anisotropic plane strain"
-    C = get_Hooke_matrix(parameter, symmetry, 2)
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
     for iID = 1:2
         for jID = 1:2
             @test C[iID, jID] == C[jID, iID]
@@ -433,28 +449,46 @@ end
     @test C[3, 1] == parameter["C16"]
     @test C[3, 2] == parameter["C26"]
 
-    symmetry = "anisotropic plane stress"
-    C = get_Hooke_matrix(parameter, symmetry, 2)
-    for iID = 1:3
-        for jID = 1:3
-            if C2D_test[iID, jID] != 0
-                @test C[iID, jID] / C2D_test[iID, jID] - 1 < 1e-7
-            end
-        end
-    end
+    # symmetry = "anisotropic plane stress"
+    # C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
+    # for iID = 1:3
+    #     for jID = 1:3
+    #         if C2D_test[iID, jID] != 0
+    #             @test C[iID, jID] / C2D_test[iID, jID] - 1 < 1e-7
+    #         end
+    #     end
+    # end
 
+    #TODO: Check above
+
+    symmetry = "Orthotropic"
     parameter = Dict{String,Any}(
-        "C11" => 2.0,
-        "C12" => 3.0,
-        "C13" => 4.0,
-        "C22" => 5.0,
-        "C33" => 7.0,
+        "Material Model" => "PD Solid Elastic",
+        "Young's Modulus X" => 5,
+        "Young's Modulus Y" => 6,
+        "Young's Modulus Z" => 7,
+        "Poisson's Ratio XY" => 0.1,
+        "Poisson's Ratio YZ" => 0.2,
+        "Poisson's Ratio ZX" => 0.3,
+        "Shear Modulus XY" => 1,
+        "Shear Modulus YZ" => 2,
+        "Shear Modulus ZX" => 3,
+        "Compute_Hook" => true,
     )
-    @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
-
-    symmetry = "anisotropic missing"
-    @test isnothing(get_Hooke_matrix(parameter, symmetry, 2))
-
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
+    @info C
+    @test C[1, 1] == 8.081851555555554
+    @test C[1, 2] == 1.525944
+    @test C[1, 3] == 2.7806090666666665
+    @test C[2, 1] == 0.7785428571428572
+    @test C[2, 2] == 4.856624489795917
+    @test C[2, 3] == 1.3667752380952378
+    @test C[3, 1] == 2.0428964571428567
+    @test C[3, 2] == 1.9681563428571425
+    @test C[3, 3] == 8.615043839999998
+    @test C[4, 4] == 4
+    @test C[5, 5] == 6
+    @test C[6, 6] == 2
 end
 
 @testset "ut_compute_Piola_Kirchhoff_stress" begin

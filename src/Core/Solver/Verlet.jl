@@ -220,11 +220,32 @@ function compute_crititical_time_step(
         if mechanical
             bulk_modulus =
                 datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
+            g_xy = datamanager.get_property(iblock, "Material Model", "Shear Modulus XY")
+            g_yz = datamanager.get_property(iblock, "Material Model", "Shear Modulus YZ")
+            g_zx = datamanager.get_property(iblock, "Material Model", "Shear Modulus ZX")
+            c_44 = datamanager.get_property(iblock, "Material Model", "C44")
+            c_55 = datamanager.get_property(iblock, "Material Model", "C55")
+            c_66 = datamanager.get_property(iblock, "Material Model", "C66")
             if !isnothing(bulk_modulus)
                 t = compute_mechanical_critical_time_step(
                     block_nodes[iblock],
                     datamanager,
                     bulk_modulus,
+                )
+                critical_time_step = test_timestep(t, critical_time_step)
+            elseif !isnothing(g_xy) && !isnothing(g_yz) && !isnothing(g_zx)
+                t = compute_mechanical_critical_time_step(
+                    block_nodes[iblock],
+                    datamanager,
+                    maximum([g_xy, g_yz, g_zx]),
+                )
+                critical_time_step = test_timestep(t, critical_time_step)
+                #TODO: temporary solution!!!
+            elseif !isnothing(c_44) && !isnothing(c_55) && !isnothing(c_66)
+                t = compute_mechanical_critical_time_step(
+                    block_nodes[iblock],
+                    datamanager,
+                    maximum([c_44 / 2, c_55 / 2, c_66 / 2]),
                 )
                 critical_time_step = test_timestep(t, critical_time_step)
             else
@@ -420,7 +441,6 @@ function run_solver(
     active_list = datamanager.get_field("Active")
     density = datamanager.get_field("Density")
     coor = datamanager.get_field("Coordinates")
-    # index = datamanager.get_field("Index")
     comm = datamanager.get_comm()
 
     if "Material" in solver_options["Models"]
@@ -458,9 +478,9 @@ function run_solver(
     #nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
     @inbounds @fastmath for idt in iter
         @timeit to "Verlet" begin
-            uNP1 = datamanager.get_field("Displacements", "NP1")
-            deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
             if "Material" in solver_options["Models"]
+                uNP1 = datamanager.get_field("Displacements", "NP1")
+                deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
                 forces = datamanager.get_field("Forces", "NP1")
                 force_densities = datamanager.get_field("Force Densities", "NP1")
                 uN = datamanager.get_field("Displacements", "N")
@@ -504,12 +524,12 @@ function run_solver(
             end
             @timeit to "apply_bc_dirichlet" datamanager =
                 Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
-            #if solver_options["Material Models"]
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
-            @views deformed_coorNP1[active_nodes, :] =
-                coor[active_nodes, :] .+ uNP1[active_nodes, :]
-
+            if "Material" in solver_options["Models"]
+                @views deformed_coorNP1[active_nodes, :] =
+                    coor[active_nodes, :] .+ uNP1[active_nodes, :]
+            end
             @timeit to "upload_to_cores" datamanager.synch_manager(
                 synchronise_field,
                 "upload_to_cores",
