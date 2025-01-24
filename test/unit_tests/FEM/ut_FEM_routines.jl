@@ -4,7 +4,7 @@
 include("../../../src/FEM/FEM_routines.jl")
 include("../../../src/FEM/Element_formulation/lagrange_element.jl")
 using .Lagrange_element
-# include("../../../src/PeriLab.jl")
+#include("../../../src/PeriLab.jl")
 using .FEM_routines:
     create_element_matrices,
     get_Jacobian,
@@ -389,7 +389,7 @@ end
     lumped_mass =
         get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
     for i = 1:4
-        @test isapprox(lumped_mass[i], 0.25)
+        @test isapprox(lumped_mass[i], 1.0)
     end
     lumped_mass[:] .= 0
     rho[:] .= 2.0
@@ -397,14 +397,15 @@ end
     lumped_mass =
         get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
     for i = 1:4
-        @test isapprox(lumped_mass[i], 0.5)
+        @test isapprox(lumped_mass[i], 2.0)
     end
     lumped_mass[:] .= 0
     rho[:] .= 1.2
 
     lumped_mass =
         get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
-    @test lumped_mass == [0.3; 0.3; 0.3; 0.3]
+    # specific lumped mass
+    @test lumped_mass == [1.2; 1.2; 1.2; 1.2]
 end
 
 @testset "ut_get_FE_material_model" begin
