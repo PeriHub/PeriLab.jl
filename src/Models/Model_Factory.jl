@@ -187,6 +187,9 @@ function compute_models(
                 # find all non-FEM nodes in active nodes
                 active_nodes =
                     find_active_nodes(fe_nodes, active_nodes, active_nodes, false)
+                if active_nodes == []
+                    continue
+                end
             end
             if datamanager.check_property(block, active_model_name)
                 # synch
@@ -233,6 +236,9 @@ function compute_models(
                 # FEM active means FEM nodes
                 active_nodes =
                     find_active_nodes(fe_nodes, active_nodes, active_nodes, false)
+                if active_nodes == []
+                    continue
+                end
             end
             update_nodes = get_update_nodes(
                 active_list,

@@ -544,12 +544,12 @@ function run_solver(
             @timeit to "apply_bc_dirichlet_force" datamanager =
                 Boundary_conditions.apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, step_time) #-> von neumann
-            active_nodes = datamanager.get_field("Active Nodes")
-            active_nodes =
-                find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
+
             if "Material" in solver_options["Models"]
                 check_inf_or_nan(force_densities, "Forces")
-
+                active_nodes = datamanager.get_field("Active Nodes")
+                active_nodes =
+                    find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
                     # force density is for FEM part force
@@ -560,17 +560,15 @@ function run_solver(
                         1:datamanager.get_nnodes(),
                     )
 
+
+                    forces = datamanager.get_field("Forces", "NP1")
+                    forces[active_nodes, :] += external_forces[active_nodes, :]
                     force_densities[active_nodes, :] +=
-                        @view external_forces[active_nodes, :]
+                        external_force_densities[active_nodes, :] .+
+                        external_forces[active_nodes, :] ./ volume[active_nodes]
                     a[active_nodes, :] =
                         force_densities[active_nodes, :] ./ lumped_mass[active_nodes] # element wise
-                    forces[active_nodes, :] = @view force_densities[active_nodes, :]
 
-                    # only for cases in coupling where both the FEM and PD nodes are equal
-                    # TODO discuss design decission
-                    force_densities[active_nodes, :] ./= volume[active_nodes]
-
-                    # toggles the value and switch the non FEM nodes to true
                     active_nodes = datamanager.get_field("Active Nodes")
                     active_nodes = find_active_nodes(
                         fe_nodes,

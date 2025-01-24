@@ -505,17 +505,17 @@ end
 
 @testset "ut_get_output_variables" begin
     @test PeriLab.Solver_control.Parameter_Handling.get_output_variables(
-        "Force",
-        ["Force", "DisplacementsNP1"],
-    ) == "Force"
+        "Forces",
+        ["Forces", "DisplacementsNP1"],
+    ) == "Forces"
     @test PeriLab.Solver_control.Parameter_Handling.get_output_variables(
         "Displacements",
-        ["Force", "DisplacementsNP1"],
+        ["Forces", "DisplacementsNP1"],
     ) == "DisplacementsNP1"
     @test isnothing(
         PeriLab.Solver_control.Parameter_Handling.get_output_variables(
             "Stress",
-            ["Force", "DisplacementsNP1"],
+            ["Forces", "DisplacementsNP1"],
         ),
     )
 end
@@ -530,7 +530,7 @@ end
     params = Dict(
         "Boundary Conditions" => Dict(
             "BC_1" => Dict(
-                "Variable" => "Force",
+                "Variable" => "Forces",
                 "Node Set" => "Nset_1",
                 "Coordinate" => "x",
                 "Value" => "20*t",
@@ -546,7 +546,7 @@ end
     bcs = PeriLab.Solver_control.Parameter_Handling.get_bc_definitions(params)
     @test length(bcs) == 2
     @test bcs["BC_1"] == Dict(
-        "Variable" => "Force",
+        "Variable" => "Forces",
         "Node Set" => "Nset_1",
         "Coordinate" => "x",
         "Value" => "20*t",

@@ -21,11 +21,12 @@ export get_active_models
 export get_all_field_keys
 export has_key
 export get_accuracy_order
+export get_aniso_crit_values
 export get_block_list
 export get_crit_values_matrix
-export get_aniso_crit_values
 export get_comm
 export get_coupling_dict
+export get_coupling_fe_nodes
 export get_directory
 export get_field
 export get_field_type
@@ -53,6 +54,7 @@ export set_accuracy_order
 export set_block_list
 export set_crit_values_matrix
 export set_coupling_dict
+export set_coupling_fe_nodes
 export set_aniso_crit_values
 export set_directory
 export set_inverse_nlist
@@ -136,7 +138,7 @@ function initialize_data()
     data["material_models"] = []
     data["damage_models"] = []
     data["NP1_to_N"] = Dict{String,Vector{}}()
-
+    data["coupling_fe_nodes"] = []
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -190,6 +192,17 @@ Get the PD - FE coupling dict
 function get_coupling_dict()
     return data["coupling_dict"]
 end
+
+"""
+    get_coupling_fe_nodes()
+
+Get the FE nodes involved in the coupling
+"""
+function get_coupling_fe_nodes()
+    return data["coupling_fe_nodes"]
+end
+
+
 
 
 function get_directory()
@@ -1117,6 +1130,16 @@ Sets the FE - PD couplings. PD nodes -> FE Elements.
 """
 function set_coupling_dict(coupling_dict::Dict{Int64,Int64})
     data["coupling_dict"] = coupling_dict
+end
+
+
+"""
+    set_coupling_fe_nodes()
+
+Get the FE nodes involved in the coupling
+"""
+function set_coupling_fe_nodes(values::Vector{Int64})
+    data["coupling_fe_nodes"] = values
 end
 
 """

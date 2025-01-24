@@ -1080,7 +1080,13 @@ function create_consistent_neighborhoodlist(
     end
     fe_nodes = unique(fe_nodes)
     for fe_node in fe_nodes
-        if !pd_neighbors
+        if !pd_neighbors # deletes the FE neighbor points from the PD points
+            for nID in nlist[fe_node]
+                index = findfirst(x -> x == fe_node, nlist[nID])
+                if !isnothing(index)
+                    deleteat!(nlist[nID], index)
+                end
+            end
             nlist[fe_node] = Int64[]
         end
         for el_id in nodes_to_element[fe_node]
