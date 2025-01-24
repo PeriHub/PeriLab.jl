@@ -502,3 +502,17 @@ end
     PeriLab.Solver_control.Helpers.div_in_place!(C, A, B, true)
     @test C == [1.0, 2.0]
 end
+
+@testset "ut_is_dependent" begin
+    (fieldN, fieldNP1) = test_data_manager.create_node_field("Parameter", Float64, 1)
+    params = Dict("Value" => Dict("Field" => "Parameter"))
+    @test PeriLab.Solver_control.Helpers.is_dependent("Value", params, test_data_manager) ==
+          (true, fieldNP1)
+    params = Dict("Value" => 1.0)
+    @test PeriLab.Solver_control.Helpers.is_dependent("Value", params, test_data_manager) ==
+          (false, nothing)
+    params = Dict("Value" => Dict("Field" => "Non_Existent"))
+    @test isnothing(
+        PeriLab.Solver_control.Helpers.is_dependent("Value", params, test_data_manager),
+    )
+end

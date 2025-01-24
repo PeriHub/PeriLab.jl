@@ -10,7 +10,7 @@ using Test
 @testset "ut_get_block_model_definition" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
-    block_list = [1, 2, 3]
+    block_list = [1, 2, 3, 4]
     test_data_manager.set_block_list(block_list)
     prop_keys = test_data_manager.init_properties()
     params = Dict(
@@ -132,4 +132,10 @@ end
           params["Models"]["Thermal Models"]["therm"]["value"]
     @test test_data_manager_read_properties.get_property(3, "Thermal Model", "bool") ==
           params["Models"]["Thermal Models"]["therm"]["bool"]
+end
+
+@testset "ut_add_model" begin
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.initialize_data()
+    @test isnothing(Model_Factory.add_model(test_data_manager, "Test"))
 end

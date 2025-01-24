@@ -113,4 +113,16 @@ end
         1.0,
         1.0,
     ) == test_data_manager
+
+    dof = 3
+    test_data_manager.set_dof(dof)
+
+    @test Heat_transfer.compute_model(
+        test_data_manager,
+        Vector{Int64}(1:10),
+        Dict("Heat Transfer Coefficient" => 1, "Environmental Temperature" => 1.2),
+        1,
+        1.0,
+        1.0,
+    ) == test_data_manager
 end

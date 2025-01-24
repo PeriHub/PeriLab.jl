@@ -196,26 +196,6 @@ function compute_shape_tensor!(
     #return (bond_damage .* volume .* omega .* undeformed_bond)' * undeformed_bond
 end
 
-
-function bond_associated_deformation_gradient(
-    dof::Int64,
-    volume,
-    omega,
-    bond_damage,
-    undeformed_bond,
-    deformed_bond,
-)
-
-    return calculate_deformation_gradient(
-        bond_damage,
-        deformed_bond,
-        undeformed_bond,
-        volume,
-        omega,
-    )
-
-end
-
 """
     compute_deformation_gradients!(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 

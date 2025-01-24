@@ -54,3 +54,30 @@ end
     @test isapprox(yield[2], 225 * 2.2 * 2.2 / (24 * pi * 2^4))
 
 end
+
+@testset "ut_plastic" begin
+
+    nodes = [1, 2]
+    td_norm = [2.0, 2.0]
+    yield_value = [1.0, 1.0]
+    lambdaNP1 = [4.0, 4.0]
+    alpha = 1.0
+    omega = [[1.0, 1.0], [2.0, 2.0]]
+    bond_damage = [[0.0, 0.0], [0.0, 0.0]]
+    deviatoric_plastic_extension_state = [[0.0, 0.0], [0.0, 0.0]]
+    bond_force_deviatoric = [[0.0, 0.0], [0.0, 0.0]]
+
+    (bond_force_deviatoric, deviatoric_plastic_extension_state) = PD_Solid_Plastic.plastic(
+        nodes,
+        td_norm,
+        yield_value,
+        lambdaNP1,
+        alpha,
+        omega,
+        bond_damage,
+        deviatoric_plastic_extension_state,
+        bond_force_deviatoric,
+    )
+    @test bond_force_deviatoric == [[0.0, 0.0], [0.0, 0.0]]
+    @test deviatoric_plastic_extension_state == [[0.0, 0.0], [0.0, 0.0]]
+end
