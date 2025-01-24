@@ -202,8 +202,9 @@ function div_in_place!(
         C[i] .= A[i] ./ B[i]
     end
 end
-function fastdot(a, b, absolute = false)
-    c = 0.0
+function fastdot(a::AbstractArray, b::AbstractArray, absolute = false)
+    c = zero(eltype(a))
+    @assert length(a) == length(b)
     @inbounds @simd for i ∈ eachindex(a, b)
         if absolute
             c += abs(a[i]) * abs(b[i])

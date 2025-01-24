@@ -7,8 +7,8 @@ using Test
 using Random
 using Dierckx
 
-include("../../../../src/PeriLab.jl")
-using .PeriLab
+# include("../../../../src/PeriLab.jl")
+# using .PeriLab
 @testset "ut_get_element_degree" begin
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_element_degree(Dict()))
     @test isnothing(
@@ -977,6 +977,17 @@ end
     for i = 1:lenNumbers
         @test nsets["Nset_2"][i] == numbers[i]
     end
+
+    params = Dict(
+        "Discretization" =>
+            Dict("Node Sets" => Dict("Nset_1" => "1:7", "Nset_2" => filename)),
+    )
+    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "")
+    @test length(nsets["Nset_1"]) == 7
+    for i = 1:7
+        @test nsets["Nset_1"][i] == i
+    end
+
     rm(filename)
 
     filename = "test.txt"
