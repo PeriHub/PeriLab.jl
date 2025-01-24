@@ -197,5 +197,24 @@ function get_FEM_nodes(datamanager::Module, topology::Matrix{Int64})
     return datamanager
 end
 
+"""
+    force_densities(datamanager, nodes)
+
+Computes the force densities from the FEM nodes.
+
+# Arguments
+- `datamanager::Module`: The datamanager.
+- `nodes::Vector{Int64}`: FEM nodes.
+# Returns
+
+"""
+function force_densities(datamanager, nodes)
+    volume = datamanager.get_field("Volume")
+    forces = datamanager.get_field("Forces", "NP1")
+    force_densities = datamanager.get_field("Force Densities", "NP1")
+    #forces[nodes, :] ./= volume[nodes] # unclear why its needed here
+    force_densities[nodes, :] = forces[nodes, :] ./ volume[nodes]
+
+end
 
 end
