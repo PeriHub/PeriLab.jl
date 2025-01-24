@@ -7,8 +7,8 @@ using Test
 using Random
 using Dierckx
 
-include("../../../../src/PeriLab.jl")
-using .PeriLab
+#include("../../../../src/PeriLab.jl")
+#using .PeriLab
 @testset "ut_get_element_degree" begin
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_element_degree(Dict()))
     @test isnothing(

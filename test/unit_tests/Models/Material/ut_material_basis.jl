@@ -18,8 +18,8 @@ using .Material_Basis:
     get_strain,
     compute_Piola_Kirchhoff_stress,
     apply_pointwise_E
-include("../../../../src/PeriLab.jl")
-using .PeriLab
+#include("../../../../src/PeriLab.jl")
+#using .PeriLab
 
 @testset "ut_apply_pointwise_E" begin
     nodes = 2:3

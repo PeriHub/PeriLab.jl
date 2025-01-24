@@ -12,11 +12,15 @@ include("../../Support/Helpers.jl")
 using .Helpers: find_active_nodes
 using LinearAlgebra
 using PointInPoly
+export coupling_name
+export init_coupling_model
+export compute_coupling
 function coupling_name()
     return "Arlequin"
 end
 
 function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
+    @info "Coupling $(coupling_name()) is active."
     dof = datamanager.get_dof()
     p = get_polynomial_degree(fe_params, dof)
     if !haskey(fe_params["Coupling"], "PD Weight")
@@ -29,25 +33,33 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     pd_nodes = datamanager.get_field("PD Nodes")
     fe_nodes = datamanager.get_field("FE Nodes")
     pd_nodes = find_active_nodes(fe_nodes, pd_nodes, nodes, false)
+    lumped_mass = datamanager.get_field("Lumped Mass Matrix")
 
-
-
+    # TODO memory efficiency; create a mapping field and allocate only the memory of length coupling nodes
     coupling_matrix = datamanager.create_constant_node_field(
         "Coupling Matrix",
         Float64,
         "Matrix",
-        prod(p .+ 1) + 1,
+        (prod(p .+ 1) + 1),
     )
-    # TODO to specify over params?
 
+    if any(x -> x > 1, p)
+        @error "Coupling is supported only for linear elements yet."
+        return nothing
+    end
     if !haskey(fe_params["Coupling"], "Kappa")
         fe_params["Coupling"]["Kappa"] = 1.0
-        @info "Stiffness scaling kappa for coupling is set to 1."
+        @info "Coupling stiffness is set to 1."
     end
     kappa = fe_params["Coupling"]["Kappa"]
+    weight_coefficient = fe_params["Coupling"]["PD Weight"]
+    @info "Coupling stiffness kappa: $kappa"
     # Assign Element ids
     topo_mapping = topo_closed_loop(p)
+
     coupling_dict = find_point_in_elements(coordinates, topology, topo_mapping, pd_nodes)
+    # point should be inside element -> for Arlequin; more stable
+    rho = datamanager.get_field("Density")
     for (coupling_node, coupling_element) in pairs(coupling_dict)
         coupling_matrix[coupling_node, :, :] = compute_coupling_matrix(
             coordinates,
@@ -58,8 +70,14 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
             p,
             dof,
         )
+        rho[coupling_node] *= (1 - weight_coefficient)
     end
     datamanager.set_coupling_dict(coupling_dict)
+    element_list = collect(values(coupling_dict))
+    unique_fe_coupling_nodes = unique(topology[element_list, :])
+    lumped_mass[unique_fe_coupling_nodes] .*= weight_coefficient
+
+    datamanager.set_coupling_fe_nodes(unique_fe_coupling_nodes)
     return datamanager
 end
 
@@ -84,14 +102,15 @@ function topo_closed_loop(pn)
 
     return mapping
 end
+##
+# TODO
+# only one point PD -> one Element; Check
+# weights are not multiplied for FE -> lumped and coupling; check for internal -> kuerzt sich raus?
+# 0.25 shape function check # TODO 0.25  -> not in FEM
+##
 
-
-function compute_coupling(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    fem_params::Dict,
-)
-
+function compute_coupling(datamanager::Module, fem_params::Dict)
+    dof = datamanager.get_dof()
     topology = datamanager.get_field("FE Topology")
     force_densities = datamanager.get_field("Force Densities", "NP1")
     displacements = datamanager.get_field("Displacements", "NP1")
@@ -101,23 +120,29 @@ function compute_coupling(
     # F_i/rho = a ?! TODO check this assumption
     weight_coefficient = fem_params["Coupling"]["PD Weight"]
     coupling_dict = datamanager.get_coupling_dict()
+    unique_fe_coupling_nodes = datamanager.get_coupling_fe_nodes()
+    force_densities[unique_fe_coupling_nodes, :] .*= weight_coefficient
 
+    # TODO weights are not correct here see EQ(1)
     for (coupling_node, coupling_element) in pairs(coupling_dict)
+
         topo = vcat(coupling_node, topology[coupling_element, :])
-        force_densities[topology[coupling_element], :] .*= (1 - weight_coefficient)
-        force_densities[coupling_node, :] .*= weight_coefficient
-        @views local_disp = displacements[topo, :]
-        force_densities[topo, :] +=
-            coupling_matrix[coupling_node, :, :] * local_disp ./ volume[topo]
-        #force_densities[coupling_node, :] /= volume[coupling_node]
+        force_densities[coupling_node, :] .*= (1 - weight_coefficient)
+        vol = vcat(volume[coupling_node], volume[topology[coupling_element, :]])
+
+        force_densities[topo, :] -=
+            coupling_matrix[coupling_node, :, :] * displacements[topo, :] ./ vol
+
+        #force_densities[topo, :] +=
+
+        #force_densities[coupling_node, :] += force_temp[1, :] ./ volume[coupling_node]
+        #force_densities[topology[coupling_element, :], :] += force_temp[2:5, :] ./ volume[coupling_node]^2
+        ## TODO det(jacobi)
     end
 
     return datamanager
 
 end
-
-
-
 
 function compute_coupling_matrix(
     coordinates,
@@ -132,16 +157,17 @@ function compute_coupling_matrix(
     # Point coordinates
     x_point = coordinates[point_val, 1]
     y_point = coordinates[point_val, 2]
+    #
     ### Right now only for linear elements
     x1 = coordinates[topology[element_number, 1], 1]
     y1 = coordinates[topology[element_number, 1], 2]
     x2 = coordinates[topology[element_number, 2], 1]
     y2 = coordinates[topology[element_number, 2], 2]
-    x3 = coordinates[topology[element_number, 3], 1]
-    y3 = coordinates[topology[element_number, 3], 2]
-    x4 = coordinates[topology[element_number, 4], 1]
-    y4 = coordinates[topology[element_number, 4], 2]
-    ###
+    x3 = coordinates[topology[element_number, 4], 1]
+    y3 = coordinates[topology[element_number, 4], 2]
+    x4 = coordinates[topology[element_number, 3], 1]
+    y4 = coordinates[topology[element_number, 3], 2]
+    #### this is not correct, because diag2 is dx
     dx = sqrt((x2 - x1)^2 + (y2 - y1)^2)
 
     # Compute diagonal lengths
@@ -163,24 +189,30 @@ function compute_coupling_matrix(
         ksi = 0.0
         eta = 0.0
     end
+
     xi = define_lagrangian_grid_space(dof, p)
     Nxi = get_recursive_lagrange_shape_functions(xi[1, :], ksi, p[1])
     Neta = get_recursive_lagrange_shape_functions(xi[2, :], eta, p[2])
     # shape functions of PD point in local coord
-    N1p = 0.25 * Nxi[1] * Neta[1] #(1 - ksi) * (1 - eta)
-    N2p = 0.25 * Nxi[2] * Neta[1] #(1 + ksi) * (1 - eta)
-    N3p = 0.25 * Nxi[2] * Neta[2] #(1 + ksi) * (1 + eta)
-    N4p = 0.25 * Nxi[1] * Neta[2] #(1 - ksi) * (1 + eta)
+    # notation from lagrange_element.jl
+    N1p = Nxi[1] * Neta[1] #(1 - ksi) * (1 - eta)
+    N2p = Nxi[2] * Neta[1] #(1 + ksi) * (1 - eta)
+    N3p = Nxi[1] * Neta[2] #(1 - ksi) * (1 + eta)
+    N4p = Nxi[2] * Neta[2] #(1 + ksi) * (1 + eta)
 
-    I = ones(1, 1)
     Np = [N1p N2p N3p N4p]
-
-    local_coupl_matrix = kappa * [I Np; Np' Np'*Np]
+    local_coupl_matrix = kappa * [1 -Np; -Np' Np'*Np]
 
     return local_coupl_matrix
 end
 
 ## TODO does only work if the PD point is not on a FE - point, line or surface (3D)
+
+"""
+ find_point_in_elements(coordinates, topology, topo_mapping, points_to_check)
+    computes one corresponding element for a PD point; If the point is connected to multiple elements; the first one is chosen.
+
+"""
 function find_point_in_elements(coordinates, topology, topo_mapping, points_to_check)
 
     # Will store which element each point is in ->
@@ -225,51 +257,5 @@ function point_in_polygon(point, coor, topo)
     end
     return true
 end
-
-#=
-
-kappa = 1
-
-weight_coefficient = 0.5 # just here, should be changed in future to a function
-
-
-
-
-stiffPD = 0.01     # some factor just for simple case
-
-# Time integration Solver
-
-displacement = Array{Float64}(zeros(length(coordinates)))   # depends what structure has this vector in original code, here it is (x1,y1,x2,y2... )'
-
-#displacement = fill(0.1, 10, dof)
-
-for tt in 1:100
-
-    force_internal_FE = stiffmatrFE * displacement[nodesFE*dof]
-    force_internal_PD = force_dencities #here both x and Y coord
-    force_internal = vcat(force_internal_FE, force_internal_PD)
-    # calculation of damage
-
-    # Add weightening
-    for ipd in coupling_nodes
-        force_internal[ipd*dof-1:ipd*dof] *= weight_coefficient
-    end
-
-    for ife in coupling_FE_nodes
-        force_internal[ife*dof-1:ife*dof] *= weight_coefficient
-    end
-
-    # Add weightening for mass vector same way
-
-    # Add to the system coupling matrix
-    for (point_idx, point_val) in enumerate(coupling_nodes)
-        topo_local = [point_val; topology[point_locations[point_idx], :]] # global numbering of coupled nodes [xpd x1fe x2fe x3fe x4fe]
-        ...
-        # depends how vectors are constructed
-    end
-end
-
-
-=#
 
 end

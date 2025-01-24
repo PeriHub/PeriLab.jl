@@ -106,6 +106,7 @@ function get_recursive_lagrange_shape_functions(
             N[ip] *= (value - xi[jp]) / (xi[ip] - xi[jp])
         end
     end
+    ## TODO check if this is valid, if higher order elements are in place
     return N
 end
 
@@ -131,6 +132,7 @@ function get_recursive_lagrange_shape_functions_derivative(
             B[ip] += temp
         end
     end
+    ## TODO check if this is valid, if higher order elements are in place
     return B
 end
 function get_2D_matrices(
