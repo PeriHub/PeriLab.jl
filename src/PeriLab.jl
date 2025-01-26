@@ -55,7 +55,7 @@ import .Logging_module
 import .IO
 import .Solver_control
 
-PERILAB_VERSION = "1.2.8"
+PERILAB_VERSION = "1.3.0"
 
 export main
 
@@ -134,8 +134,9 @@ function parse_commandline()
         "--reload", "-r"
         help = "reload"
         action = :store_true
-        "filename"
-        help = "filename"
+        "filenames"
+        nargs = '*'
+        help = "filenames"
         required = true
     end
 
@@ -156,15 +157,18 @@ function main()::Cint
         @debug "  $arg  =>  $val"
     end
     MPI.Init()
-    main(
-        parsed_args["filename"];
-        output_dir = parsed_args["output_dir"],
-        dry_run = parsed_args["dry_run"],
-        verbose = parsed_args["verbose"],
-        debug = parsed_args["debug"],
-        silent = parsed_args["silent"],
-        reload = parsed_args["reload"],
-    )
+    for filename in parsed_args["filenames"]
+        main(
+            filename;
+            output_dir = parsed_args["output_dir"],
+            dry_run = parsed_args["dry_run"],
+            verbose = parsed_args["verbose"],
+            debug = parsed_args["debug"],
+            silent = parsed_args["silent"],
+            reload = parsed_args["reload"],
+        )
+    end
+    MPI.Finalize()
     return 0
 end
 

@@ -8,6 +8,13 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2025-01-24
+
+### Added
+
+- FEM-PD Coupling #218
+- Multiple Job Excution #222
+
 ## [1.2.7] - 2025-01.20
 
 ### Added
