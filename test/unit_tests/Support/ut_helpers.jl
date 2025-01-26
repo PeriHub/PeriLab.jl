@@ -139,10 +139,11 @@ end
         tensor,
         back,
     )
+
     @test isapprox(tensorTest[1, 1] + 1, 1) # plus one, because of how approx works
     @test isapprox(tensorTest[1, 2] + 1, 1)
     @test isapprox(tensorTest[2, 1] + 1, 1)
-    # @test isapprox(tensorTest[2, 2], 1)
+    @test isapprox(tensorTest[2, 2] + 1, 1)
     back = false
     tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
         Matrix{Float64}(rot),
@@ -175,7 +176,7 @@ end
     @test isapprox(tensorTest[1, 2] + 1, 1)
     @test isapprox(tensorTest[1, 3] + 1, 1)
     @test isapprox(tensorTest[2, 1] + 1, 1)
-    # @test isapprox(tensorTest[2, 2], 1)
+    @test isapprox(tensorTest[2, 2] + 1, 1)
     @test isapprox(tensorTest[2, 3] + 1, 1)
     @test isapprox(tensorTest[3, 1] + 1, 1)
     @test isapprox(tensorTest[3, 2] + 1, 1)

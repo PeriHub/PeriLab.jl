@@ -11,7 +11,6 @@ using LinearAlgebra: mul!
 include("../../../../Support/Geometry.jl")
 include("../../Material_Basis.jl")
 using .Material_Basis: get_Hooke_matrix
-using TensorOperations
 using .Geometry
 export control_name
 export compute_control
@@ -325,18 +324,43 @@ function rotate_fourth_order_tensor(
     back::Bool,
 )
     rot = Geometry.rotation_tensor(angles)
-    R = rot[1:dof, 1:dof]
+    @views R = rot[1:dof, 1:dof]
     if back
-        @tensor begin
-            C[m, n, o, p] = C[i, j, k, l] * R[m, i] * R[n, j] * R[o, k] * R[p, l]
-        end
-        return C
-    end
-    @tensor begin
-        C[m, n, o, p] = C[i, j, k, l] * R[i, m] * R[j, n] * R[k, o] * R[l, p]
+        fourth_order_rotation(R', C)
+    else
+        fourth_order_rotation(R, C)
     end
     return C
 end
+
+function fourth_order_rotation(R, C::Array{Float64,4})
+
+    @inbounds @fastmath for m ∈ axes(C, 1)
+        @inbounds @fastmath for n ∈ axes(C, 1)
+            @inbounds @fastmath for o ∈ axes(C, 1)
+                @inbounds @fastmath for p ∈ axes(C, 1)
+                    Cmnop = zero(eltype(C))
+                    @inbounds @fastmath for i ∈ axes(C, 1)
+                        @inbounds @fastmath for j ∈ axes(C, 1)
+                            @inbounds @fastmath for k ∈ axes(C, 1)
+                                @inbounds @fastmath for l ∈ axes(C, 1)
+                                    Cmnop +=
+                                        C[i, j, k, l] *
+                                        R[m, i] *
+                                        R[n, j] *
+                                        R[o, k] *
+                                        R[p, l]
+                                end
+                            end
+                        end
+                    end
+                    C[m, n, o, p] = Cmnop
+                end
+            end
+        end
+    end
+end
+
 
 
 

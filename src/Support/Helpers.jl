@@ -9,7 +9,6 @@ using Tensors
 using Dierckx
 using ProgressBars
 using LinearAlgebra
-using TensorOperations
 using StaticArrays
 using LoopVectorization
 global A2x2 = MMatrix{2,2}(zeros(Float64, 2, 2))
@@ -627,14 +626,28 @@ Rotates the second order tensor.
 - `tensor::Matrix{Float64}`: Second order tensor.
 """
 function rotate_second_order_tensor(R::Matrix{Float64}, tensor::Matrix{Float64}, back::Bool)
-
     if back
-        @tensor begin
-            tensor[m, n] = tensor[i, j] * R[m, i] * R[n, j]
-        end
+        rotation(R', tensor)
     else
-        @tensor begin
-            tensor[m, n] = tensor[i, j] * R[i, m] * R[j, n]
+        rotation(R, tensor)
+    end
+    return tensor
+end
+
+function rotation(
+    R::Union{Adjoint{Float64,Matrix{Float64}},Matrix{Float64}},
+    tensor::Matrix{Float64},
+)
+
+    @inbounds @fastmath for m ∈ axes(tensor, 1)
+        @inbounds @fastmath for n ∈ axes(tensor, 1)
+            tmn = zero(eltype(tensor))
+            @inbounds @fastmath for i ∈ axes(tensor, 1)
+                @inbounds @fastmath for j ∈ axes(tensor, 1)
+                    tmn += tensor[i, j] * R[i, m] * R[j, n]
+                end
+            end
+            tensor[m, n] = tmn
         end
     end
 end

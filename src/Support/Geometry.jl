@@ -4,7 +4,6 @@
 
 module Geometry
 using LinearAlgebra
-using TensorOperations
 using Combinatorics: levicivita
 using StaticArrays
 using Rotations
