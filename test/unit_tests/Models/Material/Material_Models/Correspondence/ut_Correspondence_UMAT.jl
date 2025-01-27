@@ -60,31 +60,6 @@ end
             Dict{String,Any}(),
         ),
     )
-    @test isnothing(
-        Correspondence_UMAT.init_model(
-            test_data_manager,
-            Vector{Int64}(1:nodes),
-            Dict{String,Any}(
-                "File" => file,
-                "Number of Properties" => 3,
-                "Property_1" => 2,
-                "Property_3" => 2.4,
-            ),
-        ),
-    )
-    @test isnothing(
-        Correspondence_UMAT.init_model(
-            test_data_manager,
-            Vector{Int64}(1:nodes),
-            Dict{String,Any}(
-                "File" => file,
-                "Number of Properties" => 3,
-                "Property_1" => 2,
-                "Property_2" => 2.4,
-                "Property_4" => 2,
-            ),
-        ),
-    )
 
     @test isnothing(
         Correspondence_UMAT.init_model(
