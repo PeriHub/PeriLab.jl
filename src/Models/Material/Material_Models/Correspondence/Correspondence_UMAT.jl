@@ -83,10 +83,11 @@ function init_model(
 
     for iID = 1:num_props
         if !haskey(material_parameter, "Property_$iID")
-            @error "Property_$iID is missing. Number of properties is $num_props and properties have to be in order without a missing number."
-            return nothing
+            @warn "Property_$iID is missing. Make sure that all properties are defined."
+            properties[iID] = 0.0
+        else
+            properties[iID] = material_parameter["Property_$iID"]
         end
-        properties[iID] = material_parameter["Property_$iID"]
     end
 
     if !haskey(material_parameter, "UMAT Material Name")
@@ -275,6 +276,8 @@ function compute_stresses(
 
     DFGRD0 = datamanager.get_field("DFGRD0")
     DFGRD1 = datamanager.get_field("Deformation Gradient")
+    JSTEP = datamanager.get_step()
+    KINC::Int64 = 1
     not_supported_int::Int64 = 0
     for iID in nodes
         STATEV_temp = statev[iID, :]
@@ -318,12 +321,12 @@ function compute_stresses(
             not_supported_float,
             DFGRD0[iID, :, :],
             DFGRD1[iID, :, :],
+            iID,
             not_supported_int,
             not_supported_int,
             not_supported_int,
-            not_supported_int,
-            not_supported_int,
-            not_supported_int,
+            JSTEP,
+            KINC,
         )
 
         statev[iID, :] = STATEV_temp
