@@ -211,6 +211,8 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
         fieldnames = outputs[output]["fieldnames"]
         output_mapping[id]["flush_file"] = get_flush_file(outputs, output)
         output_mapping[id]["write_after_damage"] = get_write_after_damage(outputs, output)
+        output_mapping[id]["start_time"] = get_start_time(outputs, output)
+        output_mapping[id]["end_time"] = get_end_time(outputs, output)
         for fieldname in fieldnames
             compute_name = ""
             compute_params = Dict{}
@@ -575,6 +577,9 @@ function write_results(
         output_type = outputs[id]["Output File Type"]
         # step 1 ist the zero step?!
         if outputs[id]["write_after_damage"] && max_damage == 0.0
+            continue
+        end
+        if outputs[id]["start_time"] > time || outputs[id]["end_time"] < time
             continue
         end
         output_frequency = datamanager.get_output_frequency()

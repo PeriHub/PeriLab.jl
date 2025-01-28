@@ -4,6 +4,8 @@
 
 export get_flush_file
 export get_write_after_damage
+export get_start_time
+export get_end_time
 export get_outputs
 export get_output_frequency
 export get_output_filenames
@@ -116,6 +118,36 @@ Get the write after damage.
 """
 function get_write_after_damage(outputs::Dict, output::String)
     get(outputs[output], "Write After Damage", false)
+end
+
+"""
+    get_start_time(outputs::Dict, output::String)
+
+Get the start_time.
+
+# Arguments
+- `outputs::Dict`: The outputs
+- `output::String`: The output
+# Returns
+- `start_time::Float64`: The value
+"""
+function get_start_time(outputs::Dict, output::String)
+    get(outputs[output], "Start Time", 0.0)
+end
+
+"""
+    get_end_time(outputs::Dict, output::String)
+
+Get the end_time.
+
+# Arguments
+- `outputs::Dict`: The outputs
+- `output::String`: The output
+# Returns
+- `end_time::Float64`: The value
+"""
+function get_end_time(outputs::Dict, output::String)
+    get(outputs[output], "End Time", Inf64)
 end
 
 """

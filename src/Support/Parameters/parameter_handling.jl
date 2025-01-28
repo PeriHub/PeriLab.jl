@@ -150,6 +150,8 @@ global expected_structure = Dict(
                             "Output File Type" => [String, false],
                             "Output Filename" => [String, true],
                             "Write After Damage" => [Bool, false],
+                            "Start Time" => [Float64, false],
+                            "End Time" => [Float64, false],
                             "Output Variables" => [
                                 Dict{Any,Any}("Any" => [Bool, true]),
                                 true,
