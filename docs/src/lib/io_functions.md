@@ -17,13 +17,6 @@ Modules = [IO]
 Order   = [:function, :type]
 ```
 
-## Geometry
-
-```@autodocs
-Modules = [IO.Geometry]
-Order   = [:function, :type]
-```
-
 ## parameter_handling
 
 ```@autodocs
