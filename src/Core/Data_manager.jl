@@ -20,6 +20,7 @@ export initialize_data
 export get_active_models
 export get_all_field_keys
 export has_key
+export get_step
 export get_accuracy_order
 export get_aniso_crit_values
 export get_block_list
@@ -50,6 +51,7 @@ export get_rotation
 export get_element_rotation
 export init_properties
 export remove_active_model
+export set_step
 export set_accuracy_order
 export set_block_list
 export set_crit_values_matrix
@@ -89,6 +91,7 @@ const data = Dict()
 Initialize all parameter in the datamanager and sets them to the default values.
 """
 function initialize_data()
+    data["step"] = 0
     data["nnodes"] = 0
     data["num_controller"] = 0
     data["num_responder"] = 0
@@ -145,6 +148,31 @@ function initialize_data()
 end
 ###################################
 
+"""
+    set_step(step::Int64)
+
+Set the step of the simulation.
+
+# Arguments
+- `step::Int64`: The step of the simulation.
+
+"""
+function set_step(step::Int64)
+    data["step"] = step
+end
+
+"""
+    get_step()
+
+Get the step of the simulation.
+
+# Returns
+- `Int64`: The step of the simulation.
+
+"""
+function get_step()
+    return data["step"]
+end
 
 """
     add_active_model(key::String, module_name::Module)

@@ -62,6 +62,7 @@ makedocs(
             "Data Manager"=>"lib/data_manager_functions.md",
             "Solver"=>"lib/solver_functions.md",
             "IO"=>"lib/io_functions.md",
+            "Geometry"=>"lib/geometry_functions.md",
             "MPI"=>"lib/mpi_functions.md",
             "Helper"=>"lib/helper_functions.md",
             "Logging"=>"lib/logging_functions.md",

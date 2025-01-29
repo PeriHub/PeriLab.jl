@@ -134,7 +134,7 @@ Get the maximum damage.
 # Arguments
 - `params::Dict`: The parameters dictionary.
 # Returns
-- `write_after_damage::Bool`: The value
+- `max_damage::Float64`: The value
 """
 function get_max_damage(params::Dict)
     return Float64(get(params["Solver"], "Maximum Damage", Inf64))
