@@ -22,12 +22,14 @@ PeriLab:
         Thermal Expansion Coefficient: 2.5e-2
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: "Test"
       Thermal Model: "Thermal test"
       Density: 10
       Horizon: 0.001505
       Specific Heat Capacity: 0.33
     block_2:
+      Block ID: 2
       Material Model: "Test"
       Thermal Model: "Thermal test"
       Density: 10

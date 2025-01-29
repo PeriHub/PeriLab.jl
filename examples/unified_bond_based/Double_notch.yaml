@@ -52,6 +52,7 @@ PeriLab:
         Damage Model: Critical Energy
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: "Aluminium"
       Damage Model: Damage
       Density: 27000

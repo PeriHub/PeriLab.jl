@@ -12,6 +12,29 @@ export get_block_models
 export get_angles
 
 """
+    get_block_names(params::Dict)
+
+Get the names of the blocks.
+
+# Arguments
+- `params::Dict`: The parameters dictionary.
+# Returns
+- `block_names::Vector{String}`: The names of the blocks.
+"""
+function get_block_names(params::Dict)
+    block_ids = [v["Block ID"] for v in values(params["Blocks"])]
+    block_list = Vector{String}()
+    for id = 1:maximum(block_ids)
+        for (block, value) in params["Blocks"]
+            if value["Block ID"] == id
+                push!(block_list, block)
+            end
+        end
+    end
+    return block_list
+end
+
+"""
     get_density(params::Dict, block_id::Int64)
 
 Get the density of a block.
@@ -100,13 +123,13 @@ function get_angles(params::Dict, block_id::Int64, dof::Int64)
 end
 
 """
-    get_values(params::Dict, block_id::Int64, valueName::String, defaultValue::Union{Float64,Bool,Nothing})
+    get_values(params::Dict, block_name::String, valueName::String, defaultValue::Union{Float64,Bool,Nothing})
 
 Get the value of a block.
 
 # Arguments
 - `params::Dict`: The parameters
-- `block_id::Int64`: The ID of the block
+- `block_name::String`: The ID of the block
 - `valueName::String`: The name of the value
 - `defaultValue::Union{Float64,Bool,Nothing`: The default value
 # Returns
@@ -114,21 +137,38 @@ Get the value of a block.
 """
 function get_values(
     params::Dict,
+    block_name::String,
+    valueName::String,
+    defaultValue::Union{Float64,Bool,Nothing} = nothing,
+)
+    if haskey(params["Blocks"], block_name)
+        if haskey(params["Blocks"][block_name], valueName)
+            return params["Blocks"][block_name][valueName]
+        end
+        if isnothing(defaultValue)
+            @error "$valueName of $block_name is not defined"
+        end
+        return defaultValue
+    end
+    @error "$block_name is not defined"
+    return nothing
+end
+
+function get_values(
+    params::Dict,
     block_id::Int64,
     valueName::String,
     defaultValue::Union{Float64,Bool,Nothing} = nothing,
 )
-    if haskey(params["Blocks"], "block_" * string(block_id))
-        if haskey(params["Blocks"]["block_"*string(block_id)], valueName)
-            return params["Blocks"]["block_"*string(block_id)][valueName]
+    for block_name in keys(params["Blocks"])
+        if params["Blocks"][block_name]["Block ID"] == block_id
+            return params["Blocks"][block_name][valueName]
         end
-        if isnothing(defaultValue)
-            @error "$valueName of Block $block_id is not defined"
-        end
-        return defaultValue
     end
-    @error "Block $block_id is not defined"
-    return nothing
+    if isnothing(defaultValue)
+        @error "$valueName of $block_name is not defined"
+    end
+    return defaultValue
 end
 
 """

@@ -5,20 +5,24 @@
 PeriLab:
   Blocks:
     block_1:
+      Block ID: 1
       Damage Model: Damage
       Density: 1.95e-06
       Horizon: 0.82
       Material Model: Aluminium
     block_2:
+      Block ID: 2
       Damage Model: Damage
       Density: 1.95e-06
       Horizon: 0.82
       Material Model: UMAT
     block_3:
+      Block ID: 3
       Density: 1.95e-06
       Horizon: 0.82
       Material Model: Aluminium
     block_4:
+      Block ID: 4
       Density: 1.95e-06
       Horizon: 0.82
       Material Model: UMAT

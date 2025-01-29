@@ -62,10 +62,12 @@ PeriLab:
         Zero Energy Control: "Global"
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: "Mat_1"
       Density: 2.7e-9
       Horizon: 2.1
     block_2:
+      Block ID: 2
       Material Model: "Mat_2"
       Density: 2.7e-9
       Horizon: 2.1

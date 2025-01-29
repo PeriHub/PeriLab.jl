@@ -24,6 +24,7 @@ PeriLab:
         Shear Modulus: 1.15e3
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: "Mat_1"
       Density: 2000
       Horizon: 1.1005

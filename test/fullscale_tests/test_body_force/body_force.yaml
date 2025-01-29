@@ -15,14 +15,17 @@ PeriLab:
         Shear Modulus: 40.0e3
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: Material_1
       Horizon: 0.54
       Density: 1000.0
     block_2:
+      Block ID: 2
       Material Model: Material_1
       Horizon: 0.54
       Density: 1000.0
     block_3:
+      Block ID: 3
       Material Model: Material_1
       Horizon: 0.54
       Density: 1000.0

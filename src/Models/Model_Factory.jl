@@ -356,7 +356,7 @@ Special case for pre calculation. It is set to all blocks, if no block definitio
 """
 function get_block_model_definition(
     params::Dict,
-    blocks::Vector{Int64},
+    block_list::Vector{String},
     prop_keys::Vector{String},
     properties,
     directory::String = "",
@@ -364,7 +364,7 @@ function get_block_model_definition(
     # properties function from datamanager
 
     if haskey(params["Models"], "Pre Calculation Global")
-        for block_id in blocks
+        for block_id in eachindex(block_list)
             properties(
                 block_id,
                 "Pre Calculation Model",
@@ -373,11 +373,11 @@ function get_block_model_definition(
         end
     end
 
-    for block_id in blocks
-        if !haskey(params["Blocks"], "block_" * string(block_id))
+    for (block_id, block_name) in enumerate(block_list)
+        if !haskey(params["Blocks"], block_name)
             continue
         end
-        block = params["Blocks"]["block_"*string(block_id)]
+        block = params["Blocks"][block_name]
         for model in prop_keys
             if haskey(block, model)
                 properties(
@@ -418,7 +418,7 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
     )
     if material_model
         dof = datamanager.get_dof()
-        for block in blocks
+        for block in eachindex(blocks)
             Material.check_material_symmetry(
                 dof,
                 datamanager.get_properties(block, "Material Model"),

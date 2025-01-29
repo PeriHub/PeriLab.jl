@@ -33,6 +33,7 @@ PeriLab:
         Required Specific Volume: 1.6
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: PLA
       Additive Model: Additive
       Thermal Model: Thermal

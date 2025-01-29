@@ -525,7 +525,7 @@ function init_write_results(
                 outputs[id],
                 coords,
                 block_Id[1:nnodes],
-                Vector{Int64}(1:max_block_id),
+                datamanager.get_block_list(),
                 nsets,
                 global_ids,
                 PERILAB_VERSION,
@@ -798,7 +798,6 @@ function show_block_summary(
     #---
     block_Id = datamanager.get_field("Block_Id")
     block_list = datamanager.get_block_list()
-    block_list = ["block_" * string(block) for block in block_list]
 
     for id in eachindex(block_list)
         row = [block_list[id]]
@@ -897,18 +896,17 @@ function show_mpi_summary(
     rank = MPI.Comm_rank(comm)
 
     block_Id = datamanager.get_field("Block_Id")
-    max_block_id = maximum(datamanager.get_block_list())
-    max_block_id = find_and_set_core_value_max(comm, max_block_id)
+    block_list = datamanager.get_block_list()
     nlist = datamanager.get_nlist()
     headers = ["Rank"]
-    append!(headers, ["block_" * string(block) for block in range(1, max_block_id)])
+    vcat!(headers, block_list)
     append!(headers, ["Total"])
 
     df = DataFrame([header => [] for header in headers])
 
     row = [string(rank)]
     total = 0
-    for id in range(1, max_block_id)
+    for id = 1:length(block_list)
         # get number of nodes
         # num_nodes = string(length(findall(x -> x == id, block_Id)))
         if findall(x -> x == id, block_Id) == []
