@@ -592,7 +592,7 @@ function flaw_function(
     if params["Flaw Function"]["Function"] == "Pre-defined"
         flaw_size = params["Flaw Function"]["Flaw Size"]
         flaw_magnitude = params["Flaw Function"]["Flaw Magnitude"]
-        if (1 < flaw_magnitude) || (flaw_magnitude < 0)
+        if !(0 < flaw_magnitude <= 1)
             @error "Flaw Magnitude should be between 0 and 1"
             return nothing
         end
