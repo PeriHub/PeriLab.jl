@@ -195,7 +195,7 @@ function compute_models(
             end
             if datamanager.check_property(block, active_model_name)
                 # synch
-                @timeit to "compute $active_model_name model" datamanager =
+                @timeit to "compute $active_model_name" datamanager =
                     active_model.compute_model(
                         datamanager,
                         active_nodes,
@@ -256,7 +256,7 @@ function compute_models(
 
             if datamanager.check_property(block, active_model_name)
                 # TODO synch
-                @timeit to "compute $active_model_name model" datamanager =
+                @timeit to "compute $active_model_name" datamanager =
                     active_model.compute_model(
                         datamanager,
                         update_nodes,
