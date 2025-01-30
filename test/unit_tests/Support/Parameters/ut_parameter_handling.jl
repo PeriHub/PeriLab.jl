@@ -176,6 +176,7 @@ end
                 Dict{Any,Any}("Input Mesh File" => "test", "Type" => "test"),
             "Blocks" => Dict{Any,Any}(
                 "Block_1" => Dict{Any,Any}(
+                    "Block ID" => 1,
                     "Block Names" => "Block_1",
                     "Density" => 1.0,
                     "Horizon" => 1.0,

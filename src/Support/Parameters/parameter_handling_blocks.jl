@@ -162,13 +162,17 @@ function get_values(
 )
     for block_name in keys(params["Blocks"])
         if params["Blocks"][block_name]["Block ID"] == block_id
-            return params["Blocks"][block_name][valueName]
+            if haskey(params["Blocks"][block_name], valueName)
+                return params["Blocks"][block_name][valueName]
+            end
+            if isnothing(defaultValue)
+                @error "$valueName of $block_name is not defined"
+            end
+            return defaultValue
         end
     end
-    if isnothing(defaultValue)
-        @error "$valueName of $block_name is not defined"
-    end
-    return defaultValue
+    @error "$block_name is not defined"
+    return nothing
 end
 
 """

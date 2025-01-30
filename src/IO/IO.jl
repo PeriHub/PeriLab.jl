@@ -899,7 +899,7 @@ function show_mpi_summary(
     block_list = datamanager.get_block_list()
     nlist = datamanager.get_nlist()
     headers = ["Rank"]
-    vcat!(headers, block_list)
+    headers = vcat(headers, block_list)
     append!(headers, ["Total"])
 
     df = DataFrame([header => [] for header in headers])

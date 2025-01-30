@@ -10,7 +10,7 @@ using Test
 @testset "ut_get_block_model_definition" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
-    block_list = [1, 2, 3, 4]
+    block_list = ["1", "2", "3", "4"]
     test_data_manager.set_block_list(block_list)
     prop_keys = test_data_manager.init_properties()
     params = Dict(
@@ -67,7 +67,7 @@ end
 
 @testset "ut_read_properties" begin
     test_data_manager_read_properties = PeriLab.Data_manager
-    block_list = [1, 2, 3]
+    block_list = ["1", "2", "3"]
     test_data_manager_read_properties.set_block_list(block_list)
 
     params = Dict(

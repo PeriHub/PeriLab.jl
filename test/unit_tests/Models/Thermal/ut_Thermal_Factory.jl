@@ -30,7 +30,7 @@ end
 @testset "init_model" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
-    test_data_manager.set_block_list([1, 2])
+    test_data_manager.set_block_list(["1", "2"])
     test_data_manager.init_properties()
     test_data_manager.set_properties(
         1,

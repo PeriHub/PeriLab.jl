@@ -246,7 +246,7 @@ exo1["file"] = init_results_in_exodus(
     outputs,
     coords,
     block_Id[1:nnodes],
-    Vector{Int64}(1:maximum(block_Id)),
+    ["1", "2"],
     nsets,
     [1, 2, 3, 4, 5],
     "1.0.0",
