@@ -17,7 +17,7 @@ export matrix_to_voigt
 export voigt_to_matrix
 export check_symmetry
 export get_symmetry
-export get_von_mises_stress
+export get_von_mises_yield_stress
 export compute_deviatoric_and_spherical_stresses
 export get_strain
 export compute_Piola_Kirchhoff_stress
@@ -652,7 +652,7 @@ function get_symmetry(material::Dict)
 end
 
 """
-    get_von_mises_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
+    get_von_mises_yield_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
 
 # Arguments
 - `von_Mises_stress::Float64`: Von Mises stress
@@ -663,7 +663,7 @@ end
 - `deviatoric_stress_NP1::Matrix{Float64}`: Deviatoric stress
 """
 
-function get_von_mises_stress(
+function get_von_mises_yield_stress(
     von_Mises_stress::Float64,
     spherical_stress,
     deviatoric_stress,
@@ -686,17 +686,18 @@ function compute_deviatoric_and_spherical_stresses(
     deviatoric_stress,
     dof,
 )
-
     @views @inbounds @fastmath for i ∈ axes(stress, 1)
         spherical_stress += stress[i, i]
     end
-    @views @inbounds @fastmath for i ∈ axes(stress, 1)
-        deviatoric_stress[i, i] = spherical_stress
-        for j ∈ axes(stress, 2)
-            deviatoric_stress[i, j] += stress[i, j]
-        end
-    end
     spherical_stress /= dof
+
+    @views @inbounds @fastmath for i ∈ axes(stress, 1)
+        for j ∈ axes(stress, 2)
+            deviatoric_stress[i, j] = stress[i, j]
+        end
+        deviatoric_stress[i, i] -= spherical_stress
+    end
+
 end
 
 

@@ -50,7 +50,7 @@ PeriLab:
   Solver:
     Initial Time: 0.0
     Final Time: 5.0e-6
-    Calculate von Mises: true
+    Calculate von Mises stress: true
     Calculate Cauchy: true
     Calculate Strain: true
     Verlet:

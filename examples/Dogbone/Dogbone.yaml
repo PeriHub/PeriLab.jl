@@ -21,12 +21,19 @@ PeriLab:
         Symmetry: "isotropic plane stress"
         Young's Modulus: 7.0e+5
         Poisson's Ratio: 0.33
-        Yield Stress: 20
+        Yield Stress: 10
         Zero Energy Control: "Global"
+        Flaw Function:
+          Active: true
+          Function: "Pre-defined"
+          Flaw Location X: 6.3
+          Flaw Location Y: -1.0
+          Flaw Magnitude: 0.75
+          Flaw Size: 0.1
     Damage Models:
       Damage:
-        Critical Value: 10.1
-        Damage Model: Critical Energy
+        Critical Value: 0.00003
+        Damage Model: Critical Stretch
   Boundary Conditions:
     BC_1:
       Coordinate: x
@@ -38,7 +45,7 @@ PeriLab:
       Coordinate: x
       Node Set: Node Set 2
       Variable: Displacements
-      Value: 0.5*t
+      Value: 4.5*t
       Type: Dirichlet
   Blocks:
     block_1:
@@ -87,17 +94,20 @@ PeriLab:
         Number of Neighbors: true
         External_Forces: True
         External_Displacements: True
+        von Mises Yield Stress: True
+        Plastic Strain: True
     Output2:
-      Number of Output Steps: 100
+      Number of Output Steps: 500
       Output File Type: CSV
       Output Filename: Dogbone_Output
       Output Variables:
         External_Forces: True
         External_Displacements: True
+
   Solver:
     Material Models: true
     Damage Models: true
-    Final Time: 1e-5
+    Final Time: 1e-4
     Initial Time: 0.0
     Numerical Damping: 0.0005
     Verlet:

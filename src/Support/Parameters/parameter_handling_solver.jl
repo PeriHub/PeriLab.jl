@@ -200,11 +200,11 @@ Get the calculation options
 """
 function get_calculation_options(params::Dict)
     cauchy::Bool = get(params["Solver"], "Calculate Cauchy", false)
-    von_mises::Bool = get(params["Solver"], "Calculate von Mises", false)
+    von_mises::Bool = get(params["Solver"], "Calculate von Mises stress", false)
     strain::Bool = get(params["Solver"], "Calculate Strain", false)
     return Dict{String,Any}(
         "Calculate Cauchy" => cauchy,
-        "Calculate von Mises" => von_mises,
+        "Calculate von Mises stress" => von_mises,
         "Calculate Strain" => strain,
     )
 end

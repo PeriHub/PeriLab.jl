@@ -222,6 +222,7 @@ function compute_model(
         )
 
     end
+
     if rotation
         stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
     end

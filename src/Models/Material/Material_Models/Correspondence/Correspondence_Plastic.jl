@@ -5,7 +5,7 @@
 module Correspondence_Plastic
 include("../../Material_Basis.jl")
 using .Material_Basis:
-    flaw_function, get_von_mises_stress, compute_deviatoric_and_spherical_stresses
+    flaw_function, get_von_mises_yield_stress, compute_deviatoric_and_spherical_stresses
 using LinearAlgebra
 using StaticArrays
 export fe_support
@@ -125,7 +125,7 @@ function compute_stresses(
     stress_NP1::Union{SubArray,Array{Float64,3}},
 )
 
-    von_Mises_stress = datamanager.get_field("von Mises Yield Stress", "NP1")
+    von_Mises_stress_yield = datamanager.get_field("von Mises Yield Stress", "NP1")
     plastic_strain_N = datamanager.get_field("Plastic Strain", "N")
     plastic_strain_NP1 = datamanager.get_field("Plastic Strain", "NP1")
     coordinates = datamanager.get_field("Coordinates")
@@ -145,23 +145,25 @@ function compute_stresses(
         @views reduced_yield_stress =
             flaw_function(material_parameter, coordinates[iID, :], yield_stress)
 
-        compute_plastic_model(
-            stress_NP1[iID, :, :],
-            stress_N[iID, :, :],
-            spherical_stress_NP1,
-            spherical_stress_N,
-            deviatoric_stress_NP1,
-            deviatoric_stress_N,
-            von_Mises_stress[iID],
-            plastic_strain_NP1[iID],
-            plastic_strain_N[iID],
-            reduced_yield_stress,
-            material_parameter["Shear Modulus"],
-            dof,
-            temp_A,
-            temp_B,
-            sqrt23,
-        )
+        stress_NP1[iID, :, :], plastic_strain_NP1[iID], von_Mises_stress_yield[iID] =
+            compute_plastic_model(
+                stress_NP1[iID, :, :],
+                stress_N[iID, :, :],
+                spherical_stress_NP1,
+                spherical_stress_N,
+                deviatoric_stress_NP1,
+                deviatoric_stress_N,
+                strain_increment[iID, :, :],
+                von_Mises_stress_yield[iID],
+                plastic_strain_NP1[iID],
+                plastic_strain_N[iID],
+                reduced_yield_stress,
+                material_parameter["Shear Modulus"],
+                dof,
+                temp_A,
+                temp_B,
+                sqrt23,
+            )
 
     end
 
@@ -184,7 +186,7 @@ function compute_stresses_ba(
     temp_B = @MMatrix zeros(dof, dof)
 
     sqrt23::Float64 = sqrt(2 / 3)
-    von_Mises_stress = datamanager.get_field("von Mises Bond Yield Stress", "NP1")
+    von_Mises_stress_yield = datamanager.get_field("von Mises Bond Yield Stress", "NP1")
     plastic_strain_N = datamanager.get_field("Plastic Bond Strain", "N")
     plastic_strain_NP1 = datamanager.get_field("Plastic Bond Strain", "NP1")
     coordinates = datamanager.get_field("Coordinates")
@@ -200,14 +202,17 @@ function compute_stresses_ba(
         @views reduced_yield_stress =
             flaw_function(material_parameter, coordinates[iID, :], yield_stress)
         for jID in eachindex(nlist[iID])
-            @views compute_plastic_model(
+            stress_NP1[iID][jID, :, :],
+            plastic_strain_NP1[iID][jID],
+            von_Mises_stress_yield[iID][jID] = compute_plastic_model(
                 stress_NP1[iID][jID, :, :],
                 stress_N[iID][jID, :, :],
                 spherical_stress_NP1,
                 spherical_stress_N,
                 deviatoric_stress_NP1,
                 deviatoric_stress_N,
-                von_Mises_stress[iID][jID],
+                strain_increment[iID][jID, :, :],
+                von_Mises_stress_yield[iID][jID],
                 plastic_strain_NP1[iID][jID],
                 plastic_strain_N[iID][jID],
                 reduced_yield_stress,
@@ -231,7 +236,8 @@ function compute_plastic_model(
     spherical_stress_N,
     deviatoric_stress_NP1,
     deviatoric_stress_N,
-    von_Mises_stress,
+    strain_increment,
+    von_Mises_stress_yield,
     plastic_strain_NP1,
     plastic_strain_N,
     reduced_yield_stress,
@@ -249,19 +255,26 @@ function compute_plastic_model(
         dof,
     )
 
-    von_Mises_stress =
-        get_von_mises_stress(von_Mises_stress, spherical_stress_NP1, deviatoric_stress_NP1)
-    if von_Mises_stress < reduced_yield_stress
+    von_Mises_stress_yield = get_von_mises_yield_stress(
+        von_Mises_stress_yield,
+        spherical_stress_NP1,
+        deviatoric_stress_NP1,
+    )
+    if von_Mises_stress_yield < reduced_yield_stress
         # material is elastic and nothing happens
         plastic_strain_NP1 = plastic_strain_N
-        return
+        return stress_NP1, plastic_strain_NP1, von_Mises_stress_yield
     end
-    deviatoric_stress_magnitude_NP1 = maximum([1.0e-20, von_Mises_stress / sqrt23])
+    deviatoric_stress_magnitude_NP1 = maximum([1.0e-20, von_Mises_stress_yield / sqrt23])
     deviatoric_stress_NP1 .*=
         sqrt23 * reduced_yield_stress / deviatoric_stress_magnitude_NP1
     @views stress_NP1 = deviatoric_stress_NP1 + spherical_stress_NP1 .* I(dof)
-    von_Mises_stress =
-        get_von_mises_stress(von_Mises_stress, spherical_stress_NP1, deviatoric_stress_NP1)
+
+    von_Mises_stress_yield = get_von_mises_yield_stress(
+        von_Mises_stress_yield,
+        spherical_stress_NP1,
+        deviatoric_stress_NP1,
+    )
     #https://de.wikipedia.org/wiki/Plastizit%C3%A4tstheorie
     #############################
     # comment taken from Peridigm elastic_plastic_correspondence.cxx
@@ -287,15 +300,27 @@ function compute_plastic_model(
     # Contract the two tensors. This represents a projection of the plastic
     # strain increment tensor onto the "direction" of deviatoric stress
     # increment
-    @views temp_A = (deviatoric_stress_NP1 - deviatoric_stress_N) ./ 2 / shear_modulus
+    # deviatoricStrainInc[i]
+    dev_strain_inc = zeros(dof, dof)
+    spherical_strain::Float64 = 0
+    compute_deviatoric_and_spherical_stresses(
+        strain_increment,
+        spherical_strain,
+        dev_strain_inc,
+        dof,
+    )
+
+    @views temp_A =
+        dev_strain_inc - (deviatoric_stress_NP1 - deviatoric_stress_N) ./ 2 / shear_modulus
     @views temp_B =
         (
             deviatoric_stress_NP1 ./ deviatoric_stress_magnitude_NP1 +
             deviatoric_stress_N ./ deviatoric_stress_magnitude_N
         ) ./ 2
-    @views temp_scalar = sum(temp_A .* temp_B)
-    @views plastic_strain_NP1 = plastic_strain_N + maximum([0, sqrt23 * temp_scalar])
+    @views temp_scalar = sum(temp_A .* temp_B) # checken
 
+    @views plastic_strain_NP1 = plastic_strain_N + maximum([0, sqrt23 * temp_scalar])
+    return stress_NP1, plastic_strain_NP1, von_Mises_stress_yield
 end
 
 """

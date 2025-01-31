@@ -14,7 +14,7 @@ using .Material_Basis:
     voigt_to_matrix,
     check_symmetry,
     get_symmetry,
-    get_von_mises_stress,
+    get_von_mises_yield_stress,
     get_strain,
     compute_Piola_Kirchhoff_stress,
     apply_pointwise_E
