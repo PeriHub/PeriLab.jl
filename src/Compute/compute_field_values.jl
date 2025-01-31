@@ -7,10 +7,7 @@ using StaticArrays: MMatrix, SMatrix
 using .Helpers: invert
 include("../Models/Material/Material_Basis.jl")
 using .Material_Basis:
-    get_von_mises_stress,
-    get_strain,
-    get_Hooke_matrix,
-    compute_deviatoric_and_spherical_stresses
+    get_strain, get_Hooke_matrix, compute_deviatoric_and_spherical_stresses
 """
     get_forces_from_force_density(datamanager::Module)
 
@@ -147,14 +144,14 @@ function calculate_stresses(
             continue
         end
         if options["Calculate Cauchy"] |
-           options["Calculate von Mises"] |
+           options["Calculate von Mises stress"] |
            options["Calculate Strain"]
 
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes, block_nodes[block])
             datamanager = get_partial_stresses(datamanager, active_nodes)
         end
-        if options["Calculate von Mises"]
+        if options["Calculate von Mises stress"]
             datamanager = calculate_von_mises_stress(datamanager, active_nodes)
         end
         if options["Calculate Strain"]
