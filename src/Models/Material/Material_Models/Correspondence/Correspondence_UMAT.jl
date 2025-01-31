@@ -13,6 +13,9 @@ export fe_support
 export init_model
 export correspondence_name
 export fields_for_local_synchronization
+
+global umat_file_path = ""
+
 # export compute_model
 
 """
@@ -62,6 +65,7 @@ function init_model(
     directory = datamanager.get_directory()
     material_parameter["File"] =
         joinpath(joinpath(pwd(), directory), material_parameter["File"])
+    global umat_file_path = material_parameter["File"]
     if !isfile(material_parameter["File"])
         @error "File $(material_parameter["File"]) does not exist, please check name and directory."
         return nothing
@@ -289,7 +293,6 @@ function compute_stresses(
         DRPLDE_temp = DRPLDE[iID, :]
         DRPLDT_temp = DRPLDT[iID]
         UMAT_interface(
-            material_parameter["File"],
             stress_temp,
             STATEV_temp,
             DDSDDE,
@@ -401,7 +404,6 @@ UMAT interface
 - `datamanager`: Datamanager
 """
 function UMAT_interface(
-    filename::String,
     STRESS::Vector{Float64},
     STATEV::Vector{Float64},
     DDSDDE::Matrix{Float64},
@@ -440,8 +442,8 @@ function UMAT_interface(
     JSTEP::Int64,
     KINC::Int64,
 )
-    expr = :(ccall(
-        (:umat_, $filename),
+    ccall(
+        (:umat_, umat_file_path),
         Cvoid,
         (
             Ptr{Float64},
@@ -482,45 +484,44 @@ function UMAT_interface(
             Ref{Int64},
             Ref{Int64},
         ),
-        $STRESS,
-        $STATEV,
-        $DDSDDE,
-        $SSE,
-        $SPD,
-        $SCD,
-        $RPL,
-        $DDSDDT,
-        $DRPLDE,
-        $DRPLDT,
-        $STRAN,
-        $DSTRAN,
-        $TIME,
-        $DTIME,
-        $TEMP,
-        $DTEMP,
-        $PREDEF,
-        $DPRED,
-        $CMNAME,
-        $NDI,
-        $NSHR,
-        $NTENS,
-        $NSTATEV,
-        $PROPS,
-        $NPROPS,
-        $COORDS,
-        $DROT,
-        $PNEWDT,
-        $CELENT,
-        $DFGRD0,
-        $DFGRD1,
-        $NOEL,
-        $NPT,
-        $LAYER,
-        $KSPT,
-        $JSTEP,
-        $KINC,
-    ))
-    eval(expr)
+        STRESS,
+        STATEV,
+        DDSDDE,
+        SSE,
+        SPD,
+        SCD,
+        RPL,
+        DDSDDT,
+        DRPLDE,
+        DRPLDT,
+        STRAN,
+        DSTRAN,
+        TIME,
+        DTIME,
+        TEMP,
+        DTEMP,
+        PREDEF,
+        DPRED,
+        CMNAME,
+        NDI,
+        NSHR,
+        NTENS,
+        NSTATEV,
+        PROPS,
+        NPROPS,
+        COORDS,
+        DROT,
+        PNEWDT,
+        CELENT,
+        DFGRD0,
+        DFGRD1,
+        NOEL,
+        NPT,
+        LAYER,
+        KSPT,
+        JSTEP,
+        KINC,
+    )
 end
 
 """
