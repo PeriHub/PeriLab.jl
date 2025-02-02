@@ -23,12 +23,6 @@ PeriLab:
       Density: 1000
       Horizon: 0.00151
       Specific Heat Capacity: 100
-    block_2:
-      Block ID: 2
-      Thermal Model: "Thermal test"
-      Density: 1000
-      Horizon: 0.00151
-      Specific Heat Capacity: 100
   Boundary Conditions:
     BC_1:
       Variable: "Temperature"

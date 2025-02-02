@@ -453,8 +453,20 @@ function init_write_results(
     nnsets = datamanager.get_nnsets()
     coordinates = datamanager.get_field("Coordinates")
     block_Id = datamanager.get_field("Block_Id")
+
+    comm = datamanager.get_comm()
     max_block_id = maximum(block_Id)
-    max_block_id = find_and_set_core_value_max(datamanager.get_comm(), max_block_id)
+    max_block_id = find_and_set_core_value_max(comm, max_block_id)
+    
+    block_list = datamanager.get_block_list()
+    if datamanager.get_max_rank() > 1
+        all_block_list = gather_values(comm, block_list)
+        if datamanager.get_rank() == 0
+            block_list = unique(vcat(all_block_list...))
+        end
+        block_list = send_value(comm,0,block_list)
+    end
+
     nsets = datamanager.get_nsets()
     outputs = get_results_mapping(params, path, datamanager)
 
@@ -525,7 +537,7 @@ function init_write_results(
                 outputs[id],
                 coords,
                 block_Id[1:nnodes],
-                datamanager.get_block_list(),
+                block_list,
                 nsets,
                 global_ids,
                 PERILAB_VERSION,
@@ -897,6 +909,16 @@ function show_mpi_summary(
 
     block_Id = datamanager.get_field("Block_Id")
     block_list = datamanager.get_block_list()
+    
+    block_list = datamanager.get_block_list()
+    if datamanager.get_max_rank() > 1
+        all_block_list = gather_values(comm, block_list)
+        if datamanager.get_rank() == 0
+            block_list = unique(vcat(all_block_list...))
+        end
+        block_list = send_value(comm,0,block_list)
+    end
+
     nlist = datamanager.get_nlist()
     headers = ["Rank"]
     headers = vcat(headers, block_list)

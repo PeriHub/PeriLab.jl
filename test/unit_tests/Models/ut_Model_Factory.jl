@@ -10,14 +10,15 @@ using Test
 @testset "ut_get_block_model_definition" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
-    block_list = ["1", "2", "3", "4"]
+    block_list = ["block_1", "block_2", "block_3"]
     test_data_manager.set_block_list(block_list)
     prop_keys = test_data_manager.init_properties()
     params = Dict(
         "Blocks" => Dict(
-            "block_1" => Dict("Material Model" => "a"),
-            "block_2" => Dict("Material Model" => "c"),
+            "block_1" => Dict("Block ID" => 1, "Material Model" => "a"),
+            "block_2" => Dict("Block ID" => 2, "Material Model" => "c"),
             "block_3" => Dict(
+                  "Block ID" => 3,
                 "Material Model" => "a",
                 "Damage Model" => "a",
                 "Thermal Model" => "therm",
@@ -67,14 +68,15 @@ end
 
 @testset "ut_read_properties" begin
     test_data_manager_read_properties = PeriLab.Data_manager
-    block_list = ["1", "2", "3"]
+    block_list = ["block_1", "block_2", "block_3"]
     test_data_manager_read_properties.set_block_list(block_list)
 
     params = Dict(
         "Blocks" => Dict(
-            "block_1" => Dict("Material Model" => "a"),
-            "block_2" => Dict("Material Model" => "c"),
+            "block_1" => Dict("Block ID" => 1, "Material Model" => "a"),
+            "block_2" => Dict("Block ID" => 2, "Material Model" => "c"),
             "block_3" => Dict(
+                  "Block ID" => 3,
                 "Material Model" => "a",
                 "Damage Model" => "a",
                 "Thermal Model" => "therm",
