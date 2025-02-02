@@ -126,7 +126,7 @@ function get_block_nodes(block_Id::Union{SubArray,Vector{Int64}}, block::Int64)
 end
 
 """
-    init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, uniqueBlocks::Vector{Int64}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String)
+    init_results_in_exodus(exo::ExodusDatabase, output::Dict{}, coords::Union{Matrix{Int64},Matrix{Float64}}, block_Id::Vector{Int64}, block_list::Vector{String}, nsets::Dict{String,Vector{Int64}}, global_ids::Vector{Int64}, PERILAB_VERSION::String)
 
 Initializes the results in exodus
 
@@ -135,7 +135,7 @@ Initializes the results in exodus
 - `output::Dict{String,Any}`: The output
 - `coords::Union{Matrix{Int64},Matrix{Float64}}`: The coordinates
 - `block_Id::Vector{Int64}`: The block Id
-- `uniqueBlocks::Vector{Int64}`: The unique blocks
+- `block_list::Vector{String}`: The unique blocks
 - `nsets::Dict{String,Vector{Int64}}`: The node sets
 - `global_ids::Vector{Int64}`: The global ids
 # Returns
@@ -146,7 +146,7 @@ function init_results_in_exodus(
     output::Dict{},
     coords::Union{Matrix{Int64},Matrix{Float64}},
     block_Id::Vector{Int64},
-    uniqueBlocks::Vector{Int64},
+    block_list::Vector{String},
     nsets::Dict{String,Vector{Int64}},
     global_ids::Vector{Int64},
     PERILAB_VERSION::String,
@@ -187,7 +187,7 @@ function init_results_in_exodus(
 
     fem_active = !isnothing(topology)
 
-    for block in uniqueBlocks
+    for (block, block_name) in enumerate(block_list)
         conn = get_block_nodes(block_Id, block)# virtual elements
         if fem_active
             if fem_block[conn[1]]
@@ -195,14 +195,14 @@ function init_results_in_exodus(
                 fem_conn = Matrix(topology')
                 fem_conn[end-1:end, :] .= fem_conn[[end; end - 1], :]
                 write_block(exo, block, "QUAD4", fem_conn)
-                write_name(exo, Block, block, "Block_" * string(block))
+                write_name(exo, Block, block, block_name)
             else
                 write_block(exo, block, "SPHERE", conn)
-                write_name(exo, Block, block, "Block_" * string(block))
+                write_name(exo, Block, block, block_name)
             end
         else
             write_block(exo, block, "SPHERE", conn)
-            write_name(exo, Block, block, "Block_" * string(block))
+            write_name(exo, Block, block, block_name)
         end
     end
 

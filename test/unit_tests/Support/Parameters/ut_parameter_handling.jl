@@ -176,6 +176,7 @@ end
                 Dict{Any,Any}("Input Mesh File" => "test", "Type" => "test"),
             "Blocks" => Dict{Any,Any}(
                 "Block_1" => Dict{Any,Any}(
+                    "Block ID" => 1,
                     "Block Names" => "Block_1",
                     "Density" => 1.0,
                     "Horizon" => 1.0,
@@ -618,7 +619,12 @@ end
     @test isnothing(
         PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "not there"),
     )
-    params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
+    params = Dict(
+        "Blocks" => Dict(
+            "block_1" => Dict("Block ID" => 1),
+            "block_2" => Dict("Block ID" => 2),
+        ),
+    )
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 1))
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_density(params, 1))
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 1))
@@ -633,8 +639,12 @@ end
     )
     params = Dict(
         "Blocks" => Dict(
-            "block_1" => Dict("Density" => 1, "Specific Heat Capacity" => 3),
-            "block_2" => Dict("Density" => 12.3, "Horizon" => 2),
+            "block_1" => Dict(
+                "Block ID" => 1,
+                "Density" => 1,
+                "Specific Heat Capacity" => 3,
+            ),
+            "block_2" => Dict("Block ID" => 2, "Density" => 12.3, "Horizon" => 2),
         ),
     )
     @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Density") == 1

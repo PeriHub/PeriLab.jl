@@ -44,12 +44,14 @@ PeriLab:
         Thermal Conductivity: 2000.0
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: "Mat_1"
       Density: 2.7e-9
       Horizon: 2.1
       Thermal Model: Temp
       Specific Heat Capacity: 18000.0
     block_2:
+      Block ID: 2
       Material Model: "Mat_2"
       Density: 2.7e-9
       Horizon: 2.1

@@ -29,6 +29,7 @@ PeriLab:
         Thermal Expansion Coefficient: 7.0e-5
   Blocks:
     block_1:
+      Block ID: 1
       Density: 1.4e-8
       Specific Heat Capacity: 1800.0e+6
       Horizon: 0.35

@@ -22,6 +22,7 @@ PeriLab:
         Bulk Modulus: 2.5e+3
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: "Mat_1"
       Density: 2.7e-9
       Horizon: 2.1

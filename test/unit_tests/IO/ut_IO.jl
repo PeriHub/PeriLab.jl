@@ -267,7 +267,7 @@ end
     block_Id = test_data_manager.get_field("Block_Id")
     block_Id .+= 1
     block_Id[end] = 2
-    test_data_manager.set_block_list([1, 1, 1, 1, 2])
+    test_data_manager.set_block_list(["block_1", "block_2"])
     solver_options = Dict(
         "Models" => (
             "Material Models" => true,

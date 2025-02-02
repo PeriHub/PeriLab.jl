@@ -34,11 +34,13 @@ PeriLab:
         Poisson's Ratio: 0.33
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: "Mat_1"
       Density: 2700
       Horizon: 1.1005
       FEM: True
     block_2:
+      Block ID: 2
       Material Model: "Mat_2"
       Density: 2700
       Horizon: 1.1005

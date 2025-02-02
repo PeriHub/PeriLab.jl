@@ -24,6 +24,7 @@ PeriLab:
         Print Temperature: 463.15
   Blocks:
     block_1:
+      Block ID: 1
       Thermal Model: "Thermal Test"
       Horizon: 0.000151
       Additive Model: "Additive Test"

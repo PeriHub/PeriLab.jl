@@ -21,6 +21,7 @@ global expected_structure = Dict(
                 Dict{Any,Any}(
                     "Any" => [
                         Dict{Any,Any}(
+                            "Block ID" => [Int64, true],
                             "Density" => [Union{Float64,Int64}, true],
                             "Horizon" => [Union{Float64,Int64}, true],
                             "Specific Heat Capacity" => [Union{Float64,Int64}, false],

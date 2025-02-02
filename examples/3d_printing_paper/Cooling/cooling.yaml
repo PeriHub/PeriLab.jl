@@ -22,6 +22,7 @@ PeriLab:
         Required Specific Volume: 1.0
   Blocks:
     block_1:
+      Block ID: 1
       Thermal Model: "Thermal test"
       Density: 1000.
       Horizon: 0.000635
