@@ -189,10 +189,6 @@ function init_results_in_exodus(
 
     for (block, block_name) in enumerate(block_list)
         conn = get_block_nodes(block_Id, block)# virtual elements
-        if length(conn) == 0
-            @warn "Block with id " * string(block) * " is empty"
-            continue
-        end
         if fem_active
             if fem_block[conn[1]]
                 # fem_conn = topology[conn, :]'

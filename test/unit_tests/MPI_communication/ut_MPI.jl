@@ -108,22 +108,20 @@ if ncores == 3
         test_data_manager.set_num_responder(2)
         block_Id = test_data_manager.get_field("Block_Id")
         block_Id .= 1
-        test_data_manager.set_block_list(["block_1"])
     end
     if rank == 1
         test_data_manager.set_num_controller(2)
         test_data_manager.set_num_responder(1)
         block_Id = test_data_manager.get_field("Block_Id")
         block_Id .= 2
-        test_data_manager.set_block_list(["block_2"])
     end
     if rank == 2
         test_data_manager.set_num_controller(1)
         test_data_manager.set_num_responder(2)
         block_Id = test_data_manager.get_field("Block_Id")
         block_Id .= 1
-        test_data_manager.set_block_list(["block_1"])
     end
+    test_data_manager.set_block_list(["block_1", "block_2"])
     test_data_manager.set_dof(dof)
     A = test_data_manager.create_constant_node_field("A", Float64, 1)
     B = test_data_manager.create_constant_node_field("B", Float64, 4)

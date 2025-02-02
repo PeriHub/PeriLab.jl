@@ -45,7 +45,6 @@ PeriLab:
   Solver:
     Initial Time: 0.0
     Final Time: 5.0e-6
-    End step after damage: 3
     Verlet:
       Safety Factor: 1.0
   Outputs:

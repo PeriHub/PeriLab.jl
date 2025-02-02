@@ -455,8 +455,6 @@ function init_write_results(
     block_Id = datamanager.get_field("Block_Id")
 
     comm = datamanager.get_comm()
-    max_block_id = maximum(block_Id)
-    max_block_id = find_and_set_core_value_max(comm, max_block_id)
     
     block_list = datamanager.get_block_list()
     if datamanager.get_max_rank() > 1
@@ -507,7 +505,7 @@ function init_write_results(
                     filename,
                     nnodes,
                     dof,
-                    max_block_id,
+                    length(block_list),
                     nnsets,
                     num_elements,
                     topology,

@@ -12,19 +12,24 @@ export get_block_models
 export get_angles
 
 """
-    get_block_names(params::Dict)
+    get_block_names(params::Dict, block_ids::Vector{Int64})
 
 Get the names of the blocks.
 
 # Arguments
 - `params::Dict`: The parameters dictionary.
+- `block_ids::Vector{Int64}`: The IDs of the blocks
 # Returns
 - `block_names::Vector{String}`: The names of the blocks.
 """
-function get_block_names(params::Dict)
-    block_ids = [v["Block ID"] for v in values(params["Blocks"])]
+function get_block_names(params::Dict, block_ids::Vector{Int64})
+    param_block_ids = [v["Block ID"] for v in values(params["Blocks"])]
     block_list = Vector{String}()
-    for id = 1:maximum(block_ids)
+    for id = 1:maximum(param_block_ids)
+        if !(id in block_ids)
+            @warn "Block with ID $id is not defined in the provided mesh"
+            continue
+        end
         for (block, value) in params["Blocks"]
             if value["Block ID"] == id
                 push!(block_list, block)
