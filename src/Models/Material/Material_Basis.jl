@@ -229,7 +229,8 @@ function get_Hooke_matrix(
 )
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
-    if occursin("anisotropic", lowercase(symmetry))
+    symmetry = lowercase(symmetry)
+    if occursin("anisotropic", symmetry)
         aniso_matrix = get_MMatrix(36)
         for iID = 1:6
             for jID = iID:6
@@ -243,7 +244,7 @@ function get_Hooke_matrix(
             end
         end
         return get_2D_Hooke_matrix(aniso_matrix, symmetry, dof)
-    elseif occursin("orthotropic", lowercase(symmetry))
+    elseif occursin("orthotropic", symmetry)
         aniso_matrix = get_MMatrix(36)
 
         E_x = get_dependent_value(datamanager, "Young's Modulus X", parameter, ID)
@@ -264,22 +265,20 @@ function get_Hooke_matrix(
             (
                 1 - nu_xy * nu_yx - nu_yz * nu_zy - nu_zx * nu_xz -
                 2 * nu_xy * nu_yz * nu_zx
-            ) / E_x *
-            E_y *
-            E_z
+            ) / (E_x * E_y * E_z)
 
-        aniso_matrix[1, 1] = (1 - nu_yz * nu_zy) / E_y * E_z * delta
-        aniso_matrix[2, 2] = (1 - nu_zx * nu_xz) / E_z * E_x * delta
-        aniso_matrix[3, 3] = (1 - nu_xy * nu_yx) / E_x * E_y * delta
+        aniso_matrix[1, 1] = (1 - nu_yz * nu_zy) / (E_y * E_z * delta)
+        aniso_matrix[2, 2] = (1 - nu_zx * nu_xz) / (E_z * E_x * delta)
+        aniso_matrix[3, 3] = (1 - nu_xy * nu_yx) / (E_x * E_y * delta)
 
-        aniso_matrix[1, 2] = (nu_yx + nu_zx * nu_yz) / E_y * E_z * delta
-        aniso_matrix[2, 1] = (nu_xy + nu_xz * nu_zy) / E_z * E_x * delta
+        aniso_matrix[1, 2] = (nu_yx + nu_zx * nu_yz) / (E_y * E_z * delta)
+        aniso_matrix[2, 1] = (nu_xy + nu_xz * nu_zy) / (E_z * E_x * delta)
 
-        aniso_matrix[1, 3] = (nu_zx + nu_yx * nu_zy) / E_y * E_z * delta
-        aniso_matrix[3, 1] = (nu_xz + nu_xy * nu_yz) / E_x * E_y * delta
+        aniso_matrix[1, 3] = (nu_zx + nu_yx * nu_zy) / (E_y * E_z * delta)
+        aniso_matrix[3, 1] = (nu_xz + nu_xy * nu_yz) / (E_x * E_y * delta)
 
-        aniso_matrix[2, 3] = (nu_zy + nu_zx * nu_xy) / E_z * E_x * delta
-        aniso_matrix[3, 2] = (nu_yz + nu_xz * nu_yx) / E_x * E_y * delta
+        aniso_matrix[2, 3] = (nu_zy + nu_zx * nu_xy) / (E_z * E_x * delta)
+        aniso_matrix[3, 2] = (nu_yz + nu_xz * nu_yx) / (E_x * E_y * delta)
 
         aniso_matrix[4, 4] = 2 * g_yz
         aniso_matrix[5, 5] = 2 * g_zx
