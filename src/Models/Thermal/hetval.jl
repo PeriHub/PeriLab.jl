@@ -8,6 +8,9 @@ export compute_model
 export init_model
 export thermal_model_name
 export fields_for_local_synchronization
+
+global hetval_file_path = ""
+
 """
     thermal_model_name()
 
@@ -68,7 +71,6 @@ function compute_model(
         STATEV_temp = statev[iID, :]
         FLUX_temp = [flux_N[iID], flux_NP1[iID]]
         HETVAL_interface(
-            thermal_parameter["File"],
             CMNAME,
             [temp_N[iID], temp_NP1[iID] - temp_N[iID]],
             [time, time + dt],
@@ -86,12 +88,11 @@ function compute_model(
 end
 
 """
-    HETVAL_interface(filename::String, CMNAME::Cstring, TEMP::Float64, TIME::Vector{Float64}, DTIME::Float64, STATEV::Vector{Float64}, FLUX::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64})
+    HETVAL_interface(CMNAME::Cstring, TEMP::Float64, TIME::Vector{Float64}, DTIME::Float64, STATEV::Vector{Float64}, FLUX::Float64, PREDEF::Vector{Float64}, DPRED::Vector{Float64})
 
-UMAT interface
+HETVAL interface
 
 # Arguments
-- `filename::String`: Filename
 - `CMNAME::Cstring`: Material name
 - `TEMP::Float64`: Temperature
 - `TIME::Vector{Float64}`: Time
@@ -105,7 +106,6 @@ UMAT interface
 - `datamanager`: Datamanager
 """
 function HETVAL_interface(
-    filename::String,
     CMNAME::Cstring,
     TEMP::Vector{Float64},
     TIME::Vector{Float64},
@@ -115,8 +115,8 @@ function HETVAL_interface(
     PREDEF::Vector{Float64},
     DPRED::Vector{Float64},
 )
-    expr = :(ccall(
-        (:hetval_, $filename),
+    ccall(
+        (:hetval_, hetval_file_path),
         Cvoid,
         (
             Cstring,
@@ -128,16 +128,15 @@ function HETVAL_interface(
             Ptr{Float64},
             Ptr{Float64},
         ),
-        $CMNAME,
-        $TEMP,
-        $TIME,
-        $DTIME,
-        $STATEV,
-        $FLUX,
-        $PREDEF,
-        $DPRED,
-    ))
-    eval(expr)
+        CMNAME,
+        TEMP,
+        TIME,
+        DTIME,
+        STATEV,
+        FLUX,
+        PREDEF,
+        DPRED,
+    )
 end
 
 """
@@ -167,6 +166,7 @@ function init_model(
     directory = datamanager.get_directory()
     thermal_parameter["File"] =
         joinpath(joinpath(pwd(), directory), thermal_parameter["File"])
+    global hetval_file_path = thermal_parameter["File"]
     if !isfile(thermal_parameter["File"])
         @error "File $(thermal_parameter["File"]) does not exist, please check name and directory."
         return nothing

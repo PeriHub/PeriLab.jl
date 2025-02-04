@@ -108,7 +108,8 @@ end
     FLUX::Vector{Float64} = [0.0, 0.0]
     PREDEF::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
     DPRED::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
-    HETVAL.HETVAL_interface(file, CMNAME, TEMP, TIME, DTIME, STATEV, FLUX, PREDEF, DPRED)
+    HETVAL.hetval_file_path = file
+    HETVAL.HETVAL_interface(CMNAME, TEMP, TIME, DTIME, STATEV, FLUX, PREDEF, DPRED)
     @test FLUX[1] == 100
     @test FLUX[2] == 100
     @test TEMP[1] == 2.5
