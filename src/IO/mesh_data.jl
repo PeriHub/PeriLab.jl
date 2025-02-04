@@ -760,6 +760,7 @@ function read_mesh(filename::String, params::Dict)
         for key in element_sets_keys
             element_set = element_sets[key]
             ns_nodes = Array{Int64,1}(undef, length(element_set))
+            nset_only = true
             for (jID, element_id) in enumerate(element_set)
                 if element_id in element_written
                     # push!(ns_nodes, findfirst(x -> x == element_id, element_written))
@@ -768,6 +769,7 @@ function read_mesh(filename::String, params::Dict)
                     end
                     continue
                 end
+                nset_only = false
                 ns_nodes[jID] = id
                 node_ids = elements[element_id]
                 element_type = element_types[element_id]
@@ -785,7 +787,8 @@ function read_mesh(filename::String, params::Dict)
             end
             if key in nset_names
                 nsets[key] = ns_nodes
-            else
+            end
+            if !nset_only
                 block_id += 1
                 push!(block_names, key)
             end
