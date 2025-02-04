@@ -20,10 +20,12 @@ PeriLab:
         Shear Modulus: 2.15e3
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: "Mat_1"
       Density: 2.7e-9
       Horizon: 2.1
     block_2:
+      Block ID: 2
       Material Model: "Mat_2"
       Density: 2.7e-9
       Horizon: 2.1
@@ -49,7 +51,6 @@ PeriLab:
   Solver:
     Initial Time: 0.0
     Final Time: 5.0e-6
-    End step after damage: 3
     Verlet:
       Safety Factor: 1.0
   Outputs:

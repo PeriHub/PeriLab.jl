@@ -105,7 +105,7 @@ function init_models(
     end
 
     if solver_options["Calculation"]["Calculate Cauchy"] |
-       solver_options["Calculation"]["Calculate von Mises"]
+       solver_options["Calculation"]["Calculate von Mises stress"]
         datamanager.create_node_field(
             "Cauchy Stress",
             Float64,
@@ -116,7 +116,7 @@ function init_models(
     if solver_options["Calculation"]["Calculate Strain"]
         datamanager.create_node_field("Strain", Float64, "Matrix", datamanager.get_dof())
     end
-    if solver_options["Calculation"]["Calculate von Mises"]
+    if solver_options["Calculation"]["Calculate von Mises stress"]
         datamanager.create_node_field("von Mises Stress", Float64, 1)
     end
 
@@ -195,7 +195,7 @@ function compute_models(
             end
             if datamanager.check_property(block, active_model_name)
                 # synch
-                @timeit to "compute $active_model_name model" datamanager =
+                @timeit to "compute $active_model_name" datamanager =
                     active_model.compute_model(
                         datamanager,
                         active_nodes,
@@ -256,7 +256,7 @@ function compute_models(
 
             if datamanager.check_property(block, active_model_name)
                 # TODO synch
-                @timeit to "compute $active_model_name model" datamanager =
+                @timeit to "compute $active_model_name" datamanager =
                     active_model.compute_model(
                         datamanager,
                         update_nodes,
@@ -356,7 +356,7 @@ Special case for pre calculation. It is set to all blocks, if no block definitio
 """
 function get_block_model_definition(
     params::Dict,
-    blocks::Vector{Int64},
+    block_list::Vector{String},
     prop_keys::Vector{String},
     properties,
     directory::String = "",
@@ -364,7 +364,7 @@ function get_block_model_definition(
     # properties function from datamanager
 
     if haskey(params["Models"], "Pre Calculation Global")
-        for block_id in blocks
+        for block_id in eachindex(block_list)
             properties(
                 block_id,
                 "Pre Calculation Model",
@@ -373,11 +373,11 @@ function get_block_model_definition(
         end
     end
 
-    for block_id in blocks
-        if !haskey(params["Blocks"], "block_" * string(block_id))
+    for (block_id, block_name) in enumerate(block_list)
+        if !haskey(params["Blocks"], block_name)
             continue
         end
-        block = params["Blocks"]["block_"*string(block_id)]
+        block = params["Blocks"][block_name]
         for model in prop_keys
             if haskey(block, model)
                 properties(
@@ -418,7 +418,7 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
     )
     if material_model
         dof = datamanager.get_dof()
-        for block in blocks
+        for block in eachindex(blocks)
             Material.check_material_symmetry(
                 dof,
                 datamanager.get_properties(block, "Material Model"),

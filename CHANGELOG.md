@@ -8,6 +8,27 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2025-02-02
+
+### Breaking Changes
+
+- Added "Block ID" definition
+
+### Added
+
+- Start and End Time for Output definition
+
+### Changed
+
+- Block name can be anything now
+- Abaqus element block definition
+- Renamed to "Calculate von Mises stress"
+
+### Fixed
+
+- UMAT interface parameter definition and speed
+- Correspondence Plastic #223
+
 ## [1.3.0] - 2025-01-24
 
 ### Added

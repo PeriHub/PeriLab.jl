@@ -13,11 +13,13 @@ PeriLab:
         Print Temperature: 100
   Blocks:
     block_1:
+      Block ID: 1
       Additive Model: "Test"
       Density: 2000
       Horizon: 2.1005
       Specific Heat Capacity: 1e6
     block_2:
+      Block ID: 2
       Additive Model: "Test"
       Density: 2000
       Horizon: 2.1005

@@ -84,7 +84,7 @@ PeriLab.IO.Geometry.bond_geometry!(
     coor,
 )
 
-blocks = [1, 1, 2, 2, 1]
+blocks = ["1", "2"]
 blocks = test_data_manager.set_block_list(blocks)
 # from Peridigm
 testValmech = 0.0002853254715348906

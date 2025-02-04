@@ -453,8 +453,18 @@ function init_write_results(
     nnsets = datamanager.get_nnsets()
     coordinates = datamanager.get_field("Coordinates")
     block_Id = datamanager.get_field("Block_Id")
-    max_block_id = maximum(block_Id)
-    max_block_id = find_and_set_core_value_max(datamanager.get_comm(), max_block_id)
+
+    comm = datamanager.get_comm()
+    
+    block_list = datamanager.get_block_list()
+    if datamanager.get_max_rank() > 1
+        all_block_list = gather_values(comm, block_list)
+        if datamanager.get_rank() == 0
+            block_list = unique(vcat(all_block_list...))
+        end
+        block_list = send_value(comm,0,block_list)
+    end
+
     nsets = datamanager.get_nsets()
     outputs = get_results_mapping(params, path, datamanager)
 
@@ -495,7 +505,7 @@ function init_write_results(
                     filename,
                     nnodes,
                     dof,
-                    max_block_id,
+                    length(block_list),
                     nnsets,
                     num_elements,
                     topology,
@@ -525,7 +535,7 @@ function init_write_results(
                 outputs[id],
                 coords,
                 block_Id[1:nnodes],
-                Vector{Int64}(1:max_block_id),
+                block_list,
                 nsets,
                 global_ids,
                 PERILAB_VERSION,
@@ -798,7 +808,6 @@ function show_block_summary(
     #---
     block_Id = datamanager.get_field("Block_Id")
     block_list = datamanager.get_block_list()
-    block_list = ["block_" * string(block) for block in block_list]
 
     for id in eachindex(block_list)
         row = [block_list[id]]
@@ -897,18 +906,27 @@ function show_mpi_summary(
     rank = MPI.Comm_rank(comm)
 
     block_Id = datamanager.get_field("Block_Id")
-    max_block_id = maximum(datamanager.get_block_list())
-    max_block_id = find_and_set_core_value_max(comm, max_block_id)
+    block_list = datamanager.get_block_list()
+    
+    block_list = datamanager.get_block_list()
+    if datamanager.get_max_rank() > 1
+        all_block_list = gather_values(comm, block_list)
+        if datamanager.get_rank() == 0
+            block_list = unique(vcat(all_block_list...))
+        end
+        block_list = send_value(comm,0,block_list)
+    end
+
     nlist = datamanager.get_nlist()
     headers = ["Rank"]
-    append!(headers, ["block_" * string(block) for block in range(1, max_block_id)])
+    headers = vcat(headers, block_list)
     append!(headers, ["Total"])
 
     df = DataFrame([header => [] for header in headers])
 
     row = [string(rank)]
     total = 0
-    for id in range(1, max_block_id)
+    for id = 1:length(block_list)
         # get number of nodes
         # num_nodes = string(length(findall(x -> x == id, block_Id)))
         if findall(x -> x == id, block_Id) == []

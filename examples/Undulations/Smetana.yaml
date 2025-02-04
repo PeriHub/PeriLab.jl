@@ -5,6 +5,7 @@
 PeriLab:
   Blocks:
     block_1:
+      Block ID: 1
       Damage Model: dam_1
       Density: 2.78e-07
       Horizon: 0.10808756666769913
@@ -22,41 +23,49 @@ PeriLab:
       Horizon: 0.10520909721162187
       Material Model: mat_12
     block_2:
+      Block ID: 2
       Damage Model: dam_1
       Density: 2.78e-07
       Horizon: 0.10790221275321964
       Material Model: mat_2
     block_3:
+      Block ID: 3
       Damage Model: dam_1
       Density: 2.78e-07
       Horizon: 0.10793038889869432
       Material Model: mat_3
     block_4:
+      Block ID: 4
       Damage Model: dam_1
       Density: 2.78e-07
       Horizon: 0.10769470134067027
       Material Model: mat_4
     block_5:
+      Block ID: 5
       Damage Model: dam_1
       Density: 2.78e-07
       Horizon: 0.1053327028239361
       Material Model: mat_5
     block_6:
+      Block ID: 6
       Damage Model: dam_1
       Density: 2.78e-07
       Horizon: 0.10520435698741722
       Material Model: mat_6
     block_7:
+      Block ID: 7
       Damage Model: dam_1
       Density: 2.78e-07
       Horizon: 0.10520435698842057
       Material Model: mat_7
     block_8:
+      Block ID: 8
       Damage Model: dam_1
       Density: 2.78e-07
       Horizon: 0.10559265062785532
       Material Model: mat_8
     block_9:
+      Block ID: 9
       Density: 2.78e-07
       Horizon: 0.10534124295901519
       Material Model: mat_9

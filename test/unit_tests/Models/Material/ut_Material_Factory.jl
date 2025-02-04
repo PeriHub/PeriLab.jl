@@ -28,7 +28,7 @@ end
 
 @testset "ut_init_model" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.set_block_list([2, 3, 1, 1])
+    test_data_manager.set_block_list(["2", "3", "1"])
     test_data_manager.init_properties()
     test_data_manager.set_property(1, "Material Model", "E", 1)
     @test isnothing(Material.init_model(test_data_manager, Vector{Int64}(1:4), 1))

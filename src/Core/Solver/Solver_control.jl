@@ -13,7 +13,8 @@ using .Parameter_Handling:
     get_model_options,
     get_fem_block,
     get_calculation_options,
-    get_angles
+    get_angles,
+    get_block_names
 using .Helpers: find_indices, fastdot
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
@@ -51,9 +52,12 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     solver_options = Dict()
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
+    block_ids = datamanager.get_field("Block_Id")
     block_nodes_with_neighbors =
-        get_block_nodes(datamanager.get_field("Block_Id"), nnodes + num_responder)
-    block_nodes = get_block_nodes(datamanager.get_field("Block_Id"), nnodes)
+        get_block_nodes(block_ids, nnodes + num_responder)
+    block_nodes = get_block_nodes(block_ids, nnodes)
+    block_list = get_block_names(params, block_ids)
+    datamanager.set_block_list(block_list)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
     if datamanager.fem_active()

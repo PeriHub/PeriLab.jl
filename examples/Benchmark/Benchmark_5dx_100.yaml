@@ -5,11 +5,13 @@
 PeriLab:
   Blocks:
     block_1:
+      Block ID: 1
       Damage Model: Damage
       Density: 1.95e-06
       Horizon: 0.5
       Material Model: Aluminium
     block_2:
+      Block ID: 2
       Damage Model: Damage
       Density: 1.95e-06
       Horizon: 0.5

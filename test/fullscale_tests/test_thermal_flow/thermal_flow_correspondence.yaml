@@ -22,12 +22,14 @@ PeriLab:
         Thermal Conductivity: 2000.0
   Blocks:
     block_1:
+      Block ID: 1
       Thermal Model: "Thermal test"
       Pre Calculation Model: "Pre"
       Density: 1.24e-03
       Horizon: 1.1005e-3
       Specific Heat Capacity: 1800000000.0
     block_2:
+      Block ID: 2
       Thermal Model: "Thermal test"
       Pre Calculation Model: "Pre"
       Density: 1.24e-03

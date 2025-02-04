@@ -46,6 +46,7 @@ function init_data(
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
         if rank == 1
+
             @timeit to "load_and_evaluate_mesh" distribution,
             mesh,
             ntype,
@@ -129,7 +130,6 @@ function init_data(
             )
         end
 
-        datamanager.set_block_list(datamanager.get_field("Block_Id"))
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
         datamanager.set_fem(fem_active)
         if fem_active
@@ -735,15 +735,37 @@ function read_mesh(filename::String, params::Dict)
         element_written = []
         nsets = Dict{String,Vector{Int64}}()
 
+        nset_names = []
+
+        for boundary_condtion in keys(params["Boundary Conditions"])
+            if haskey(params["Boundary Conditions"][boundary_condtion], "Node Set")
+                push!(
+                    nset_names,
+                    params["Boundary Conditions"][boundary_condtion]["Node Set"],
+                )
+            end
+        end
+        nset_names = unique(nset_names)
+
         # sort element_sets by length
         # element_sets_keys = sort(collect(keys(element_sets)), by=x -> length(element_sets[x]), rev=true)
         element_sets_keys = collect(keys(element_sets))
+        for nset in nset_names
+            if nset in element_sets_keys
+                deleteat!(element_sets_keys, findfirst(x -> x == nset, element_sets_keys))
+                push!(element_sets_keys, nset)
+            end
+        end
+        block_names = []
         for key in element_sets_keys
             element_set = element_sets[key]
             ns_nodes = Array{Int64,1}(undef, length(element_set))
             for (jID, element_id) in enumerate(element_set)
                 if element_id in element_written
-                    push!(ns_nodes, findfirst(x -> x == element_id, element_written))
+                    # push!(ns_nodes, findfirst(x -> x == element_id, element_written))
+                    if key in nset_names
+                        ns_nodes[jID] = findfirst(x -> x == element_id, element_written)
+                    end
                     continue
                 end
                 ns_nodes[jID] = id
@@ -761,12 +783,17 @@ function read_mesh(filename::String, params::Dict)
                 push!(element_written, element_id)
                 id += 1
             end
-            nsets[key] = ns_nodes
-            block_id += 1
+            if key in nset_names
+                nsets[key] = ns_nodes
+            else
+                block_id += 1
+                push!(block_names, key)
+            end
         end
         @info "Found $(block_id-1) block(s)"
-        @info "Found $(length(nsets)) node sets"
-        @info "NodeSets: $element_sets_keys"
+        @info "Blocks: $block_names"
+        @info "Found $(length(nsets)) node set(s)"
+        @info "NodeSets: $(keys(nsets))"
 
         mesh = nothing
         nodes = nothing

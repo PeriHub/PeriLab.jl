@@ -163,7 +163,7 @@ function init_interface_crit_values(
     if !haskey(damage_parameter, "Interblock Damage")
         return datamanager
     end
-    max_block_id = maximum(datamanager.get_block_list())
+    max_block_id = length(datamanager.get_block_list())
     inter_critical_value = datamanager.get_crit_values_matrix()
     if inter_critical_value == fill(-1, (1, 1, 1))
         inter_critical_value = fill(

@@ -23,11 +23,13 @@ PeriLab:
         Damage Model: Critical Energy
   Blocks:
     block_1:
+      Block ID: 1
       Material Model: "Aluminium"
       Damage Model: Damage
       Density: 2.7e-9
       Horizon: 2.7221534653465347
     block_2:
+      Block ID: 2
       Material Model: "Aluminium"
       Density: 2.7e-9
       Horizon: 2.7221534653465347

@@ -459,21 +459,17 @@ end
 end
 
 @testset "ut_block_list" begin
-    test_data_manager.set_block_list(Vector{Int64}())
+    test_data_manager.set_block_list(Vector{String}())
     block_list = test_data_manager.get_block_list()
     @test length(block_list) == 0
-    test_data_manager.set_block_list([1, 2, 3, 4, 4, 4, 1, 1, 1, 2, 2])
+    test_data_manager.set_block_list(["1", "2", "3", "4"])
     block_list = test_data_manager.get_block_list()
     @test length(block_list) == 4
-    @test block_list == [1, 2, 3, 4]
-    test_data_manager.set_block_list([4, 4, 2, 2, 1, 1])
-    block_list = test_data_manager.get_block_list()
-    @test length(block_list) == 3
-    @test block_list == [1, 2, 4]
+    @test block_list == ["1", "2", "3", "4"]
 end
 
 @testset "ut_properties" begin
-    test_data_manager.set_block_list([2, 3, 1, 1])
+    test_data_manager.set_block_list(["2", "3", "1"])
     test_data_manager.init_properties()
     @test length(test_data_manager.data["properties"]) == 3
     @test isnothing(test_data_manager.get_property(1, "Material Model", "E"))

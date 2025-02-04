@@ -99,7 +99,7 @@ function initialize_data()
     data["nnsets"] = 0
     data["dof"] = 2
     data["fem_option"] = false
-    data["block_list"] = []
+    data["block_list"] = Vector{String}()
     data["distribution"] = []
     data["crit_values_matrix"] = fill(-1, (1, 1, 1))
     data["aniso_crit_values"] = Dict()
@@ -937,6 +937,7 @@ function get_properties(block_id::Int64, property::String)
     end
     return Dict()
 end
+
 """
     get_property(block_id::Int64, property::String, value_name::String)
 
@@ -1095,7 +1096,7 @@ This function initializes the properties dictionary. Order of dictionary defines
 function init_properties()
 
     block_list = get_block_list()
-    for iblock in block_list
+    for iblock = 1:length(block_list)
         data["properties"][iblock] = OrderedDict{String,Dict}(
             "Additive Model" => Dict{String,Any}(),
             "Damage Model" => Dict{String,Any}(),
@@ -1105,7 +1106,7 @@ function init_properties()
             "Material Model" => Dict{String,Any}(),
         )
     end
-    return collect(keys(data["properties"][block_list[1]]))
+    return collect(keys(data["properties"][1]))
 end
 
 """
@@ -1145,8 +1146,8 @@ Sets the block list globally.
 # Arguments
 - `blocks::Union{SubArray,Vector{Int64}}`: The block list.
 """
-function set_block_list(blocks::Union{SubArray,Vector{Int64}})
-    data["block_list"] = sort!(unique(blocks))
+function set_block_list(blocks::Vector{String})
+    data["block_list"] = blocks
 end
 
 """

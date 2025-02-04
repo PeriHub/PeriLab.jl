@@ -21,6 +21,7 @@ global expected_structure = Dict(
                 Dict{Any,Any}(
                     "Any" => [
                         Dict{Any,Any}(
+                            "Block ID" => [Int64, true],
                             "Density" => [Union{Float64,Int64}, true],
                             "Horizon" => [Union{Float64,Int64}, true],
                             "Specific Heat Capacity" => [Union{Float64,Int64}, false],
@@ -356,7 +357,7 @@ global expected_structure = Dict(
                     "Thermal Models" => [Bool, false],
                     "Pre Calculation Models" => [Bool, false],
                     "Calculate Cauchy" => [Bool, false],
-                    "Calculate von Mises" => [Bool, false],
+                    "Calculate von Mises stress" => [Bool, false],
                     "Calculate Strain" => [Bool, false],
                     "Maximum Damage" => [Float64, false],
                     "Final Time" => [Union{Float64,Int64}, true],
