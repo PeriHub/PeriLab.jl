@@ -221,8 +221,6 @@ function calculate_Q(
     horizon::Union{Int64,Float64},
     Q::Vector{Float64},
 )
-
-
     counter = 0
     p = @MVector zeros(Int64, dof)
     for this_order = 1:accuracy_order
@@ -306,6 +304,7 @@ function compute_Lagrangian_gradient_weights(
     end
 end
 function QTQ!(M, omega, bond_damage, volume, Q)
+    # each operation does not need the sum. It's an integral over all neighbor nodes.
     @inbounds @fastmath for m ∈ axes(M, 1)
         @inbounds @fastmath for n ∈ axes(M, 2)
             M[m, n] += omega * bond_damage * volume * Q[m] * Q[n]
