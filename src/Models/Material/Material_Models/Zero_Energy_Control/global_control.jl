@@ -301,7 +301,7 @@ function create_zero_energy_mode_stiffness(
         C = rotate_fourth_order_tensor(angles[iID, :], C, dof, false)
         global_zero_energy_mode_stiffness(iID, C, Kinv, zStiff)
     end
-
+    return zStiff
 end
 
 """
