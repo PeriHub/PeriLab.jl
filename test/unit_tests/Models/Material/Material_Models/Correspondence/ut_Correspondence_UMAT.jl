@@ -205,8 +205,8 @@ end
     PROPS[1] = 4.2
     STRAN[1] = 1
     DSTRAN[1] = 3
+    Correspondence_UMAT.umat_file_path = file
     Correspondence_UMAT.UMAT_interface(
-        file,
         STRESS,
         STATEV,
         DDSDDE,
