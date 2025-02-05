@@ -46,6 +46,7 @@ using Logging
 using ArgParse
 using Dates
 using LibGit2
+using StyledStrings
 
 const to = TimerOutput()
 using .Data_manager
@@ -67,17 +68,51 @@ Prints a banner displaying information about the PeriLab application.
 This function prints a banner containing details about the PeriLab application, including its name, version, copyright, contact information, and license. It provides a visual introduction to the application.
 """
 function print_banner()
-    println(
-        """\e[]
-\e[1;36mPeriLab. \e[0m                  \e[1;32md8b \e[1;36m888               888\e[0m       |  Version: $PERILAB_VERSION
-\e[1;36m888   Y88b\e[0m                 \e[1;32mY8P \e[1;36m888               888\e[0m       |  Copyright:
-\e[1;36m888    888\e[0m                     \e[1;36m888               888\e[0m       |  Dr.-Ing. Christian Willberg (https://orcid.org/0000-0003-2433-9183)
-\e[1;36m888   d88P\e[0m \e[1;36m.d88b.\e[0m  \e[1;36m888d888 888 888       \e[1;36m8888b.\e[0m  \e[1;36m88888b.\e[0m   |  M.Sc. Jan-Timo Hesse (https://orcid.org/0000-0002-3006-1520)
-\e[1;36m8888888P"\e[0m \e[1;36md8P  Y8b\e[0m \e[1;36m888P"   888 888          \e[1;36m"88b\e[0m \e[1;36m888 "88b\e[0m  |  Contact: christian.willberg@h2.de, jan-timo.hesse@dlr.de
-\e[1;36m888\e[0m       \e[1;36m88888888\e[0m \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m.d888888\e[0m \e[1;36m888  888\e[0m  |  License: BSD-3-Clause
-\e[1;36m888\e[0m       \e[1;36mY8b.\e[0m     \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m888\e[0m      \e[1;36m888  888\e[0m \e[1;36m888 d88P\e[0m  |  DOI: 10.1016/j.softx.2024.101700
-\e[1;36m888\e[0m        \e[1;36m"Y8888\e[0m  \e[1;36m888\e[0m     \e[1;36m888\e[0m \e[1;36m88888888\e[0m \e[1;36m"Y888888\e[0m \e[1;36m88888P"\e[0m   |  GitHub: https://github.com/PeriHub/PeriLab.jl\n""",
+    line = []
+    push!(
+        line,
+        styled"{bright_blue:PeriLab.                   }{bright_green:d8b} {bright_blue:888               888       }| {bold:Version}: {underline:$PERILAB_VERSION}",
     )
+    push!(
+        line,
+        styled"{bright_blue:888   Y88b                 }{bright_green:Y8P} {bright_blue:888               888       }| {bold:Copyright}:",
+    )
+    push!(
+        line,
+        styled"{bright_blue:888    888                     888               888       }|  Dr.-Ing. Christian Willberg (https://orcid.org/0000-0003-2433-9183)",
+    )
+    push!(
+        line,
+        styled"{bright_blue:888   d88P .d88b.  888d888 888 888       8888b.  88888b.   }|  M.Sc. Jan-Timo Hesse (https://orcid.org/0000-0002-3006-1520)",
+    )
+    push!(
+        line,
+        styled"{bright_blue:8888888P\" d8P  Y8b 888P\"   888 888          \"88b 888 \"88b  }| {bold:Contact}: christian.willberg@h2.de, jan-timo.hesse@dlr.de",
+    )
+    push!(
+        line,
+        styled"{bright_blue:888       88888888 888     888 888      .d888888 888  888  }| {bold:GitHub}: https://github.com/PeriHub/PeriLab.jl",
+    )
+    push!(
+        line,
+        styled"{bright_blue:888       Y8b.     888     888 888      888  888 888 d88P  }| {bold:DOI}: 10.1016/j.softx.2024.101700",
+    )
+    push!(
+        line,
+        styled"{bright_blue:888        \"Y8888  888     888 88888888 \"Y888888 88888P\"   }| {bold:License}: BSD-3-Clause",
+    )
+
+    num_of_chars = 0
+    for l in line
+        num_of_chars = max(num_of_chars, length(l) - displaysize(stdout)[2])
+    end
+    for l in line
+        if num_of_chars == 0
+            println(l)
+        else
+            println(split(l, "|")[1][1:end-num_of_chars] * "|" * split(l, "|")[2])
+        end
+    end
 end
 
 """
