@@ -222,7 +222,10 @@ function compute_crititical_time_step(
                 datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
             g_xy = datamanager.get_property(iblock, "Material Model", "Shear Modulus XY")
             g_yz = datamanager.get_property(iblock, "Material Model", "Shear Modulus YZ")
-            g_zx = datamanager.get_property(iblock, "Material Model", "Shear Modulus ZX")
+            g_xz = datamanager.get_property(iblock, "Material Model", "Shear Modulus XZ")
+            E_x = datamanager.get_property(iblock, "Material Model", "Young's Modulus X")
+            E_y = datamanager.get_property(iblock, "Material Model", "Young's Modulus Y")
+            E_z = datamanager.get_property(iblock, "Material Model", "Young's Modulus Z")
             c_44 = datamanager.get_property(iblock, "Material Model", "C44")
             c_55 = datamanager.get_property(iblock, "Material Model", "C55")
             c_66 = datamanager.get_property(iblock, "Material Model", "C66")
@@ -233,11 +236,14 @@ function compute_crititical_time_step(
                     bulk_modulus,
                 )
                 critical_time_step = test_timestep(t, critical_time_step)
-            elseif !isnothing(g_xy) && !isnothing(g_yz) && !isnothing(g_zx)
+            elseif !isnothing(g_xy) && !isnothing(g_yz) && !isnothing(g_xz)
+                K_x = E_x * g_xy / (3 * (3 * g_xy - E_x))
+                K_y = E_y * g_yz / (3 * (3 * g_yz - E_y))
+                K_z = E_z * g_xz / (3 * (3 * g_xz - E_z))
                 t = compute_mechanical_critical_time_step(
                     block_nodes[iblock],
                     datamanager,
-                    maximum([g_xy, g_yz, g_zx]),
+                    maximum([K_x, K_y, K_z]),
                 )
                 critical_time_step = test_timestep(t, critical_time_step)
                 #TODO: temporary solution!!!

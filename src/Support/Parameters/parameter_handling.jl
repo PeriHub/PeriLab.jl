@@ -216,7 +216,7 @@ global expected_structure = Dict(
                                         Union{Float64,Int64,String},
                                         false,
                                     ],
-                                    "Poisson's Ratio ZX" => [
+                                    "Poisson's Ratio XZ" => [
                                         Union{Float64,Int64,String},
                                         false,
                                     ],
@@ -243,7 +243,7 @@ global expected_structure = Dict(
                                         Union{Float64,Int64,String},
                                         false,
                                     ],
-                                    "Shear Modulus ZX" => [
+                                    "Shear Modulus XZ" => [
                                         Union{Float64,Int64,String},
                                         false,
                                     ],

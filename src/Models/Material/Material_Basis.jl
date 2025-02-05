@@ -148,12 +148,12 @@ function get_all_elastic_moduli(
             E_z = haskey(parameter, "Young's Modulus Z")
             nu_xy = haskey(parameter, "Poisson's Ratio XY")
             nu_yz = haskey(parameter, "Poisson's Ratio YZ")
-            nu_zx = haskey(parameter, "Poisson's Ratio ZX")
+            nu_xz = haskey(parameter, "Poisson's Ratio XZ")
             g_xy = haskey(parameter, "Shear Modulus XY")
             g_yz = haskey(parameter, "Shear Modulus YZ")
-            g_zx = haskey(parameter, "Shear Modulus ZX")
-            if !E_x || !E_y || !E_z || !nu_xy || !nu_yz || !nu_zx || !g_xy || !g_yz || !g_zx
-                @error "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, ZX, Shear Modulus XY, YZ, ZX"
+            g_zx = haskey(parameter, "Shear Modulus XZ")
+            if !E_x || !E_y || !E_z || !nu_xy || !nu_yz || !nu_xz || !g_xy || !g_yz || !g_zx
+                @error "Orthotropic material requires Young's Modulus X, Y, Z, Poisson's Ratio XY, YZ, XZ, Shear Modulus XY, YZ, XZ"
                 return nothing
             end
             return
@@ -252,14 +252,14 @@ function get_Hooke_matrix(
         E_z = get_dependent_value(datamanager, "Young's Modulus Z", parameter, ID)
         nu_xy = get_dependent_value(datamanager, "Poisson's Ratio XY", parameter, ID)
         nu_yz = get_dependent_value(datamanager, "Poisson's Ratio YZ", parameter, ID)
-        nu_zx = get_dependent_value(datamanager, "Poisson's Ratio ZX", parameter, ID)
+        nu_xz = get_dependent_value(datamanager, "Poisson's Ratio XZ", parameter, ID)
         g_xy = get_dependent_value(datamanager, "Shear Modulus XY", parameter, ID)
         g_yz = get_dependent_value(datamanager, "Shear Modulus YZ", parameter, ID)
-        g_zx = get_dependent_value(datamanager, "Shear Modulus ZX", parameter, ID)
+        g_xz = get_dependent_value(datamanager, "Shear Modulus XZ", parameter, ID)
 
         nu_yx = nu_xy * E_y / E_x
-        nu_xz = nu_zx * E_x / E_z
         nu_zy = nu_yz * E_z / E_y
+        nu_zx = nu_xz * E_z / E_x
 
         delta =
             (
@@ -281,7 +281,7 @@ function get_Hooke_matrix(
         aniso_matrix[3, 2] = (nu_yz + nu_xz * nu_yx) / (E_x * E_y * delta)
 
         aniso_matrix[4, 4] = 2 * g_yz
-        aniso_matrix[5, 5] = 2 * g_zx
+        aniso_matrix[5, 5] = 2 * g_xz
         aniso_matrix[6, 6] = 2 * g_xy
 
         return get_2D_Hooke_matrix(aniso_matrix, symmetry, dof)
@@ -308,9 +308,9 @@ function get_Hooke_matrix(
             matrix[3, 1] = nu * temp
             matrix[2, 3] = nu * temp
             matrix[3, 2] = nu * temp
-            matrix[4, 4] = G
-            matrix[5, 5] = G
-            matrix[6, 6] = G
+            matrix[4, 4] = (1 - 2 * nu) * temp
+            matrix[5, 5] = (1 - 2 * nu) * temp
+            matrix[6, 6] = (1 - 2 * nu) * temp
             return matrix
         elseif occursin("plane strain", symmetry)
             matrix = get_MMatrix(9)
