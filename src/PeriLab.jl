@@ -55,7 +55,7 @@ import .Logging_module
 import .IO
 import .Solver_control
 
-PERILAB_VERSION = "1.3.2"
+PERILAB_VERSION = "1.3.3"
 
 export main
 
