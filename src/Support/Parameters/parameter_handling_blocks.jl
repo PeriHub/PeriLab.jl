@@ -112,10 +112,14 @@ Get the horizon of a block.
 - `angles::Float64`: The angles of the block
 """
 function get_angles(params::Dict, block_id::Int64, dof::Int64)
-
-    if !haskey(params["Blocks"]["block_"*string(block_id)], "Angle X")
-        return nothing
+    for block_name in keys(params["Blocks"])
+        if params["Blocks"][block_name]["Block ID"] == block_id
+            if !haskey(params["Blocks"][block_name], "Angle X")
+                return nothing
+            end
+        end
     end
+
     if dof == 2
         return get_values(params, block_id, "Angle X")
     elseif dof == 3
@@ -147,7 +151,7 @@ function get_values(
     defaultValue::Union{Float64,Bool,Nothing} = nothing,
 )
     if haskey(params["Blocks"], block_name)
-        if haskey(params["Blocks"][block_name], valueName)
+        if haskey(params["Blocks"][block_name], valueName)ed
             return params["Blocks"][block_name][valueName]
         end
         if isnothing(defaultValue)
@@ -176,7 +180,7 @@ function get_values(
             return defaultValue
         end
     end
-    @error "$block_name is not defined"
+    @error "Block with ID $block_id is not defined"
     return nothing
 end
 

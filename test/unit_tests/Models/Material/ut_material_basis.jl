@@ -476,19 +476,44 @@ end
         "Compute_Hook" => true,
     )
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
-    @info C
-    @test C[1, 1] == 8.081851555555554
-    @test C[1, 2] == 1.525944
-    @test C[1, 3] == 2.7806090666666665
-    @test C[2, 1] == 0.7785428571428572
-    @test C[2, 2] == 4.856624489795917
-    @test C[2, 3] == 1.3667752380952378
-    @test C[3, 1] == 2.0428964571428567
-    @test C[3, 2] == 1.9681563428571425
-    @test C[3, 3] == 8.615043839999998
+    @test C[1, 1] == 5.510293955741496
+    @test C[1, 2] == 1.04040515248266
+    @test C[1, 3] == 1.8958493889684027
+    @test C[2, 1] == 1.04040515248266
+    @test C[2, 2] == 6.490146427391831
+    @test C[2, 3] == 1.8264890454695586
+    @test C[3, 1] == 1.8958493889684025
+    @test C[3, 2] == 1.8264890454695588
+    @test C[3, 3] == 7.994935593966752
     @test C[4, 4] == 4
     @test C[5, 5] == 6
     @test C[6, 6] == 2
+
+    symmetry = "Orthotropic"
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Young's Modulus X" => 7000,
+        "Young's Modulus Y" => 7000,
+        "Young's Modulus Z" => 7000,
+        "Poisson's Ratio XY" => 0.3,
+        "Poisson's Ratio YZ" => 0.3,
+        "Poisson's Ratio ZX" => 0.3,
+        "Shear Modulus XY" => 2000,
+        "Shear Modulus YZ" => 2000,
+        "Shear Modulus ZX" => 2000,
+        "Compute_Hook" => true,
+    )
+    C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
+
+    symmetry = "isotropic"
+    parameter = Dict{String,Any}(
+        "Material Model" => "PD Solid Elastic",
+        "Young's Modulus" => 7000,
+        "Poisson's Ratio" => 0.3,
+        "Shear Modulus" => 2000,
+        "Compute_Hook" => true,
+    )
+    @test C == get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
 end
 
 @testset "ut_compute_Piola_Kirchhoff_stress" begin

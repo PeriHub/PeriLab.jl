@@ -53,8 +53,7 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
     block_ids = datamanager.get_field("Block_Id")
-    block_nodes_with_neighbors =
-        get_block_nodes(block_ids, nnodes + num_responder)
+    block_nodes_with_neighbors = get_block_nodes(block_ids, nnodes + num_responder)
     block_nodes = get_block_nodes(block_ids, nnodes)
     block_list = get_block_names(params, block_ids)
     datamanager.set_block_list(block_list)
@@ -189,6 +188,9 @@ function set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
 
         for block in eachindex(block_nodes)
             angles_global = get_angles(params, block, dof)
+            if isnothing(angles_global)
+                angles_global = 0.0
+            end
             for iID in block_nodes[block]
                 angles[iID, :] .= angles_global
             end
