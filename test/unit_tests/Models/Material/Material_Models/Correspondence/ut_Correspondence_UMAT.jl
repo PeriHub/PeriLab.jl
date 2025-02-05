@@ -154,11 +154,12 @@ end
 
 # Test wrapper function for UMAT_interface
 @testset "UMAT_interface Tests" begin
+
     # Example test case (you should define your own)
     test_data_manager = PeriLab.Data_manager
-    file = "./src/Models/Material/UMATs/libusertest.so"
-    if !isfile(file)
-        file = "../src/Models/Material/UMATs/libusertest.so"
+    global umat_file_path = "./src/Models/Material/UMATs/libusertest.so"
+    if !isfile(umat_file_path)
+        global umat_file_path = "../src/Models/Material/UMATs/libusertest.so"
     end
     STRESS::Vector{Float64} = zeros(Float64, 6)  # Example initialization, adjust the size as needed
     STATEV::Vector{Float64} = zeros(Float64, 10)  # Adjust the size and values as needed
@@ -206,7 +207,6 @@ end
     STRAN[1] = 1
     DSTRAN[1] = 3
     Correspondence_UMAT.UMAT_interface(
-        file,
         STRESS,
         STATEV,
         DDSDDE,
