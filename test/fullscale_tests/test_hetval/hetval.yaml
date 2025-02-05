@@ -25,7 +25,6 @@ PeriLab:
         Thermal Conductivity: 2000.0
         File: "hetval.so"
         Number of State Variables: 1
-        Number of Properties: 3
         Property_1: 15
         Property_2: 1.1
         Property_3: 0.2
