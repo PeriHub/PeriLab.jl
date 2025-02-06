@@ -366,7 +366,7 @@ end
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
     for iID = 1:3
         @test isapprox(C[iID, iID], E * (1 - nu) * temp)
-        @test C[iID+3, iID+3] == parameter["Shear Modulus"]
+        @test C[iID+3, iID+3] == (1 - 2 * nu) * temp * E
         for jID = 1:3
             if iID != jID
                 @test isapprox(C[iID, jID], E * nu * temp)
@@ -469,22 +469,22 @@ end
         "Young's Modulus Z" => 7,
         "Poisson's Ratio XY" => 0.1,
         "Poisson's Ratio YZ" => 0.2,
-        "Poisson's Ratio ZX" => 0.3,
+        "Poisson's Ratio XZ" => 0.3,
         "Shear Modulus XY" => 1,
         "Shear Modulus YZ" => 2,
-        "Shear Modulus ZX" => 3,
+        "Shear Modulus XZ" => 3,
         "Compute_Hook" => true,
     )
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
-    @test C[1, 1] == 5.510293955741496
-    @test C[1, 2] == 1.04040515248266
-    @test C[1, 3] == 1.8958493889684027
-    @test C[2, 1] == 1.04040515248266
-    @test C[2, 2] == 6.490146427391831
-    @test C[2, 3] == 1.8264890454695586
-    @test C[3, 1] == 1.8958493889684025
-    @test C[3, 2] == 1.8264890454695588
-    @test C[3, 3] == 7.994935593966752
+    @test C[1, 1] == 5.9692770078477215
+    @test C[1, 2] == 1.2773417932876945
+    @test C[1, 3] == 2.8051427617298383
+    @test C[2, 1] == 1.277341793287694
+    @test C[2, 2] == 6.567039572549674
+    @test C[2, 3] == 2.068792786775756
+    @test C[3, 1] == 2.8051427617298383
+    @test C[3, 2] == 2.068792786775756
+    @test C[3, 3] == 8.660878276840876
     @test C[4, 4] == 4
     @test C[5, 5] == 6
     @test C[6, 6] == 2
@@ -497,10 +497,10 @@ end
         "Young's Modulus Z" => 7000,
         "Poisson's Ratio XY" => 0.3,
         "Poisson's Ratio YZ" => 0.3,
-        "Poisson's Ratio ZX" => 0.3,
+        "Poisson's Ratio XZ" => 0.3,
         "Shear Modulus XY" => 2000,
         "Shear Modulus YZ" => 2000,
-        "Shear Modulus ZX" => 2000,
+        "Shear Modulus XZ" => 2000,
         "Compute_Hook" => true,
     )
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)

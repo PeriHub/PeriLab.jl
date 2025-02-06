@@ -157,9 +157,9 @@ end
 
     # Example test case (you should define your own)
     test_data_manager = PeriLab.Data_manager
-    global umat_file_path = "./src/Models/Material/UMATs/libusertest.so"
-    if !isfile(umat_file_path)
-        global umat_file_path = "../src/Models/Material/UMATs/libusertest.so"
+    file = "./src/Models/Material/UMATs/libusertest.so"
+    if !isfile(file)
+        file = "../src/Models/Material/UMATs/libusertest.so"
     end
     STRESS::Vector{Float64} = zeros(Float64, 6)  # Example initialization, adjust the size as needed
     STATEV::Vector{Float64} = zeros(Float64, 10)  # Adjust the size and values as needed

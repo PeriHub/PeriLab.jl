@@ -8,6 +8,14 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2025-02-05
+
+### Fixed
+
+- Hooke matrix calculation for orthotropic materials
+- Zero Energy Control with rotations
+- HEATVAL interface speed
+
 ## [1.3.1] - 2025-02-02
 
 ### Breaking Changes

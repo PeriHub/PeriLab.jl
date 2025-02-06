@@ -18,7 +18,7 @@ using Test
             "block_1" => Dict("Block ID" => 1, "Material Model" => "a"),
             "block_2" => Dict("Block ID" => 2, "Material Model" => "c"),
             "block_3" => Dict(
-                  "Block ID" => 3,
+                "Block ID" => 3,
                 "Material Model" => "a",
                 "Damage Model" => "a",
                 "Thermal Model" => "therm",
@@ -76,7 +76,7 @@ end
             "block_1" => Dict("Block ID" => 1, "Material Model" => "a"),
             "block_2" => Dict("Block ID" => 2, "Material Model" => "c"),
             "block_3" => Dict(
-                  "Block ID" => 3,
+                "Block ID" => 3,
                 "Material Model" => "a",
                 "Damage Model" => "a",
                 "Thermal Model" => "therm",
@@ -104,14 +104,9 @@ end
     Model_Factory.read_properties(params, test_data_manager_read_properties, false)
 
 
-    @test test_data_manager_read_properties.get_property(1, "Material Model", "value") ==
-          params["Models"]["Material Models"]["a"]["value"]
-    @test test_data_manager_read_properties.get_property(2, "Material Model", "value") ==
-          params["Models"]["Material Models"]["c"]["value"]
-    @test test_data_manager_read_properties.get_property(2, "Material Model", "value2") ==
-          params["Models"]["Material Models"]["c"]["value2"]
-    @test test_data_manager_read_properties.get_property(3, "Material Model", "value") ==
-          params["Models"]["Material Models"]["a"]["value"]
+    @test isnothing(
+        test_data_manager_read_properties.get_property(1, "Material Model", "value"),
+    )
     @test test_data_manager_read_properties.get_property(3, "Damage Model", "value") ==
           params["Models"]["Damage Models"]["a"]["value"]
     @test test_data_manager_read_properties.get_property(3, "Thermal Model", "value") ==

@@ -18,10 +18,10 @@ PeriLab:
         Young's Modulus Z: 2.5e3
         Poisson's Ratio XY: 0.3
         Poisson's Ratio YZ: 0.3
-        Poisson's Ratio ZX: 0.3
+        Poisson's Ratio XZ: 0.3
         Shear Modulus XY: 2.15e3
         Shear Modulus YZ: 2.15e3
-        Shear Modulus ZX: 2.15e3
+        Shear Modulus XZ: 2.15e3
         Zero Energy Control: "Global"
       Mat_2:
         Material Model: "Correspondence Elastic"
@@ -31,10 +31,10 @@ PeriLab:
         Young's Modulus Z: 2.5e3
         Poisson's Ratio XY: 0.3
         Poisson's Ratio YZ: 0.3
-        Poisson's Ratio ZX: 0.3
+        Poisson's Ratio XZ: 0.3
         Shear Modulus XY: 2.15e3
         Shear Modulus YZ: 2.15e3
-        Shear Modulus ZX: 2.15e3
+        Shear Modulus XZ: 2.15e3
         Zero Energy Control: "Global"
   Blocks:
     block_1:

@@ -360,6 +360,7 @@ function get_block_model_definition(
     prop_keys::Vector{String},
     properties,
     directory::String = "",
+    material_model::Bool = true,
 )
     # properties function from datamanager
 
@@ -379,6 +380,9 @@ function get_block_model_definition(
         end
         block = params["Blocks"][block_name]
         for model in prop_keys
+            if model == "Material Model" && !material_model
+                continue
+            end
             if haskey(block, model)
                 properties(
                     block_id,
@@ -415,6 +419,7 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
         prop_keys,
         datamanager.set_properties,
         directory,
+        material_model,
     )
     if material_model
         dof = datamanager.get_dof()
