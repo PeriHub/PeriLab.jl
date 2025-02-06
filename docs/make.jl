@@ -47,7 +47,7 @@ makedocs(
             "Physics"=>Any["Thermal Models"=>"theory/theory_thermal.md"],
             "Finite Element Method"=>Any[
                 "FEM"=>"theory/theory_FEM.md",
-                "FEM"=>"theory/theory_FEM_PD_coupling.md",
+                "Finite Element - Peridynamics coupling"=>"theory/theory_FEM_PD_coupling.md",
             ],
         ],
         "FAQ"=>"lib/faq.md",

@@ -13,24 +13,20 @@ $$\mathbf{z}=d-\sum_{\Omega}\mathbf{N}_i(\boldsymbol{\xi})\mathbf{u}_i$$
 with $\mathbf{d}$ the displacement of the PD point and $\sum_{\Omega}\mathbf{N}_i(\boldsymbol{\xi})\mathbf{u}_i$ the displacement within the finite element.
 
 With
-$\mathbf{K}_z=\kappa
-\begin{bmatrix}
+
+$$\mathbf{K}_z=\kappa\begin{bmatrix}
 \mathbf{I} & \mathbf{N}_d \\
 \mathbf{N}^T_d & \mathbf{N}^T_d\mathbf{N}_d
 \end{bmatrix}\begin{bmatrix}
 \mathbf{d}  \\
 \mathbf{u}
-\end{bmatrix}
-$
-
-
+\end{bmatrix}$$
 
 ## Arlequin
 Following [PernatiiA2023](@cite) for the Arlequng method the equation of motion of the coupled system in discretized form looks as follows:
 
 
-$$\mathbf{K}_z=\kappa
-\begin{bmatrix}
+$$\mathbf{K}_z=\kappa\begin{bmatrix}
 \frac{\alpha}{V_{el}}\mathbf{M}_{FE} &  \\
  & (1-\alpha)\rho_{PD}
 \end{bmatrix}\begin{bmatrix}
@@ -48,5 +44,4 @@ $$\mathbf{K}_z=\kappa
 \end{bmatrix}=\begin{bmatrix}
 \frac{\alpha}{V_{el}}\mathbf{F}_{FE}  \\
 (1-\alpha)\mathbf{b}_{PD}
-\end{bmatrix}
-$$
+\end{bmatrix}$$
