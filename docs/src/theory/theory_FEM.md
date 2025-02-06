@@ -28,9 +28,7 @@ $$\mathbf{K}=\int_V \mathbf{B}^T\mathbf{CB}dV$$
 Lagrange polynomials can be used to formulated finite elements
 [AbramowitzStegun1983](@cite). These polynomials can be defined recursively for a polynomial $p$.
 
-$
-L(x) =  \prod\limits_{\begin{smallmatrix}0\le m\le p\\ m\neq j\end{smallmatrix}} \frac{x-x_m}{x_j-x_m}
-$
+$$L(x) =  \prod\limits_{\begin{smallmatrix}0\le m\le p\\ m\neq j\end{smallmatrix}} \frac{x-x_m}{x_j-x_m}$$
 
 The values $x$ are defined in local coordinated $[-1\,1]$. These shape functions can be defined seperatly for each direction, also with different polynomial orders. In combination these functions are used in the matrix $\mathbf{N}$.
 
