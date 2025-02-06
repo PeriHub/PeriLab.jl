@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Arlequin_coupling
-include("../Element_formulation/lagrange_element.jl")
+include("../Element_formulation/Lagrange_element.jl")
 include("../FEM_routines.jl")
 using .Lagrange_element:
     define_lagrangian_grid_space, get_recursive_lagrange_shape_functions
@@ -194,7 +194,7 @@ function compute_coupling_matrix(
     Nxi = get_recursive_lagrange_shape_functions(xi[1, :], ksi, p[1])
     Neta = get_recursive_lagrange_shape_functions(xi[2, :], eta, p[2])
     # shape functions of PD point in local coord
-    # notation from lagrange_element.jl
+    # notation from Lagrange_element.jl
     N1p = Nxi[1] * Neta[1] #(1 - ksi) * (1 - eta)
     N2p = Nxi[2] * Neta[1] #(1 + ksi) * (1 - eta)
     N3p = Nxi[1] * Neta[2] #(1 - ksi) * (1 + eta)

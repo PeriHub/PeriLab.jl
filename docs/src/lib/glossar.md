@@ -3,6 +3,8 @@
 ## Abbreviations
 | Abbreviation | Full |
 |---|---|
+| dof | degree of freedom |
+| FEM | Finite Element Method |
 | PD | Peridynamics |
 ## Variables
 | Parameter|Name |

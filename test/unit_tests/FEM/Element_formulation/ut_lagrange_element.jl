@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 # include("../../../../src/FEM/FEM_routines.jl")
-include("../../../../src/FEM/Element_formulation/lagrange_element.jl")
+include("../../../../src/FEM/Element_formulation/Lagrange_element.jl")
 #using .Lagrange_element
 using Test
 
