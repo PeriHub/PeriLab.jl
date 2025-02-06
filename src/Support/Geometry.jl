@@ -252,6 +252,10 @@ function compute_deformation_gradients!(
         temp = @MMatrix zeros(3, 3)
     end
     for iID in nodes
+        if deformed_bond[iID] == undeformed_bond[iID]
+            deformation_gradient[iID, :, :] = I(dof)
+            continue
+        end
         compute_deformation_gradient!(
             temp,
             bond_damage[iID],
