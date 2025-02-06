@@ -1,4 +1,6 @@
-## Theory manual
+# Theory manual
+## Peridynamic theory
+
 The theory manual condenses the implemented features.
 
 Peridynamics is an integral continuum mechanics formulation. For a pure mechanical description it can be formulated as:
@@ -27,3 +29,8 @@ To solve this three main types of formulations are usable; bond-based, ordinary 
 | [Bond-based](theory_bondbased.md) | [Bond-based Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/BondBased/Bondbased_Elastic.jl) |
 | [Ordinary state-based](theory_ordinary.md) | [PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Elastic.jl) [PD Solid Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/PD_Solid_Plastic.jl) |
 |[Non-ordinary state-based](theory_correspondence.md)| [Correspondence Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Elastic.jl) [Correspondence Plastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Correspondence_Plastic.jl)|
+|Bond-associated correspondence | |
+|Unified bond-based | |
+
+## Finite element theory
+Finite elements are used to model boundary conditions or to be computational more efficient. PeriLab is no FEM code. Within the theory manual the basic theory and the FEM-PD coupling methods are presented.
