@@ -31,7 +31,7 @@ MPI.Init()
                 include("unit_tests/FEM/ut_FEM_Factory.jl")
             end
             @testset "ut_Lagrange_element" begin
-                include("unit_tests/FEM/Element_formulation/ut_Lagrange_element.jl")
+                include("unit_tests/FEM/Element_formulation/ut_lagrange_element.jl")
             end
             @testset "ut_Arlequin" begin
                 include("unit_tests/FEM/Coupling/ut_Arlequin.jl")
