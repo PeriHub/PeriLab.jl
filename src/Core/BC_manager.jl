@@ -25,9 +25,11 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
     working_bcs = Dict()
     for bc in keys(bcs)
 
-        if !isnothing(datamanager.get_step()) &&
-           bcs[bc]["Step ID"] != datamanager.get_step()
-            continue
+        if haskey(bcs[bc], "Step ID")
+            if !isnothing(datamanager.get_step()) &&
+               bcs[bc]["Step ID"] != datamanager.get_step()
+                continue
+            end
         end
 
         if haskey(bcs[bc], "Coordinate")
