@@ -15,6 +15,8 @@ export distribute_forces!
 export flaw_function
 export matrix_to_voigt
 export voigt_to_matrix
+export matrix_to_vector
+export vector_to_matrix
 export check_symmetry
 export get_symmetry
 export get_von_mises_yield_stress
@@ -525,6 +527,62 @@ function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
         ]
     else
         @error "Unsupported matrix size for voigt_to_matrix"
+        return nothing
+    end
+end
+
+"""
+    matrix_to_vector(matrix)
+
+Convert a 3x3 matrix to a 6x1 vector
+
+# Arguments
+- `matrix::Matrix{Float64}`: The matrix.
+# Returns
+- `vector::Vector{Float64}`: The vector.
+"""
+function matrix_to_vector(matrix)
+    if length(matrix) == 4
+        return [matrix[1, 1]; matrix[2, 2]; 0.0; matrix[1, 2]; matrix[2, 1]]
+    elseif length(matrix) == 9
+        return [
+            matrix[1, 1]
+            matrix[2, 2]
+            matrix[3, 3]
+            matrix[1, 2]
+            matrix[2, 3]
+            matrix[3, 1]
+            matrix[2, 1]
+            matrix[3, 2]
+            matrix[1, 3]
+        ]
+    end
+end
+
+"""
+    vector_to_matrix(matrix)
+
+Convert a 6x1 vector to a 3x3 matrix
+
+# Arguments
+- `vector::Vector{Float64}`: The vector.
+# Returns
+- `matrix::Matrix{Float64}`: The matrix.
+"""
+function vector_to_matrix(vector)
+    if length(vector) == 5
+        return @SMatrix [
+            vector[1] vector[3]
+            vector[4] vector[2]
+        ]
+    elseif length(vector) == 9
+        return @SMatrix [
+            vector[1] vector[4] vector[9]
+            vector[7] vector[2] vector[5]
+            vector[6] vector[8] vector[3]
+        ]
+    else
+        @error "Unsupported vector size for vector_to_matrix"
         return nothing
     end
 end
