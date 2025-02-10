@@ -483,7 +483,7 @@ function run_solver(
     iter = progress_bar(rank, nsteps, silent)
     #nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
     @inbounds @fastmath for idt in iter
-        datamanager.set_step(idt)
+        datamanager.set_iteration(idt)
         @timeit to "Verlet" begin
             if "Material" in solver_options["Models"]
                 uNP1 = datamanager.get_field("Displacements", "NP1")

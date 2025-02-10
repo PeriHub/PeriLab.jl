@@ -398,6 +398,7 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(10)
     test_data_manager.set_dof(3)
+    test_data_manager.set_step(nothing)
     test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
     test_data_manager.create_constant_node_field("Temperature", Float64, 3)
     test_data_manager.create_node_field("Displacements", Float64, 3)

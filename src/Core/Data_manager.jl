@@ -21,6 +21,7 @@ export get_active_models
 export get_all_field_keys
 export has_key
 export get_step
+export get_iteration
 export get_accuracy_order
 export get_aniso_crit_values
 export get_block_list
@@ -52,6 +53,7 @@ export get_element_rotation
 export init_properties
 export remove_active_model
 export set_step
+export set_iteration
 export set_accuracy_order
 export set_block_list
 export set_crit_values_matrix
@@ -157,7 +159,7 @@ Set the step of the simulation.
 - `step::Int64`: The step of the simulation.
 
 """
-function set_step(step::Int64)
+function set_step(step::Union{Int64,Nothing})
     data["step"] = step
 end
 
@@ -172,6 +174,32 @@ Get the step of the simulation.
 """
 function get_step()
     return data["step"]
+end
+
+"""
+    set_iteration(iteration::Int64)
+
+Set the iteration of the simulation.
+
+# Arguments
+- `iteration::Int64`: The iteration of the simulation.
+
+"""
+function set_iteration(iteration::Int64)
+    data["iteration"] = iteration
+end
+
+"""
+    get_step()
+
+Get the iteration of the simulation.
+
+# Returns
+- `Int64`: The iteration of the simulation.
+
+"""
+function get_iteration()
+    return data["iteration"]
 end
 
 """

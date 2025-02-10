@@ -22,6 +22,7 @@ global expected_structure = Dict(
                     "Any" => [
                         Dict{Any,Any}(
                             "Block ID" => [Int64, true],
+                            "Step ID" => [Int64, false],
                             "Density" => [Union{Float64,Int64}, true],
                             "Horizon" => [Union{Float64,Int64}, true],
                             "Specific Heat Capacity" => [Union{Float64,Int64}, false],
@@ -376,7 +377,43 @@ global expected_structure = Dict(
                         false,
                     ],
                 ),
-                true,
+                false,
+            ],
+            "Solver" => [
+                Dict{Any,Any}(
+                    "Any" => [
+                        Dict{Any,Any}(
+                            "Step ID" => [Int64, false],
+                            "Additive Models" => [Bool, false],
+                            "Corrosion Models" => [Bool, false],
+                            "Damage Models" => [Bool, false],
+                            "Material Models" => [Bool, false],
+                            "Thermal Models" => [Bool, false],
+                            "Pre Calculation Models" => [Bool, false],
+                            "Calculate Cauchy" => [Bool, false],
+                            "Calculate von Mises stress" => [Bool, false],
+                            "Calculate Strain" => [Bool, false],
+                            "Maximum Damage" => [Float64, false],
+                            "Final Time" => [Union{Float64,Int64}, false],
+                            "Initial Time" => [Union{Float64,Int64}, false],
+                            "Numerical Damping" => [Union{Float64,Int64}, false],
+                            "Verlet" => [
+                                Dict{Any,Any}(
+                                    "Safety Factor" => [Union{Float64,Int64}, false],
+                                    "Fixed dt" => [Union{Float64,Int64}, false],
+                                    "Number of Steps" => [Int64, false],
+                                ),
+                                false,
+                            ],
+                            "External" => [
+                                Dict{Any,Any}("Number of Steps" => [Int64, false]),
+                                false,
+                            ],
+                        ),
+                        false,
+                    ],
+                ),
+                false,
             ],
         ),
         true,

@@ -570,11 +570,13 @@ end
             "Corrosion Models" => true,
         ),
     )
-    solver_options = PeriLab.Solver_control.Parameter_Handling.get_model_options(params)
+    solver_options =
+        PeriLab.Solver_control.Parameter_Handling.get_model_options(params["Solver"])
     @test solver_options ==
           ["Additive", "Damage", "Pre_Calculation", "Thermal", "Corrosion", "Material"]
     params = Dict("Solver" => Dict())
-    solver_options = PeriLab.Solver_control.Parameter_Handling.get_model_options(params)
+    solver_options =
+        PeriLab.Solver_control.Parameter_Handling.get_model_options(params["Solver"])
     @test solver_options == ["Pre_Calculation", "Material"]
     params = Dict(
         "Solver" => Dict(
@@ -584,7 +586,8 @@ end
         ),
     )
 
-    solver_options = PeriLab.Solver_control.Parameter_Handling.get_model_options(params)
+    solver_options =
+        PeriLab.Solver_control.Parameter_Handling.get_model_options(params["Solver"])
     @test solver_options == ["Damage", "Pre_Calculation", "Thermal"]
 end
 @testset "ut_get_number_of_blocks" begin
@@ -718,30 +721,32 @@ end
             "Numerical Damping" => 5e-6,
         ),
     )
-    @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params) == "Verlet"
-    @test PeriLab.Solver_control.Parameter_Handling.get_final_time(params) ==
+    @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params["Solver"]) ==
+          "Verlet"
+    @test PeriLab.Solver_control.Parameter_Handling.get_final_time(params["Solver"]) ==
           params["Solver"]["Final Time"]
-    @test PeriLab.Solver_control.Parameter_Handling.get_initial_time(params) ==
+    @test PeriLab.Solver_control.Parameter_Handling.get_initial_time(params["Solver"]) ==
           params["Solver"]["Initial Time"]
-    @test PeriLab.Solver_control.Parameter_Handling.get_safety_factor(params) ==
+    @test PeriLab.Solver_control.Parameter_Handling.get_safety_factor(params["Solver"]) ==
           params["Solver"]["Verlet"]["Safety Factor"]
-    @test PeriLab.Solver_control.Parameter_Handling.get_fixed_dt(params) ==
+    @test PeriLab.Solver_control.Parameter_Handling.get_fixed_dt(params["Solver"]) ==
           params["Solver"]["Verlet"]["Fixed dt"]
-    @test PeriLab.Solver_control.Parameter_Handling.get_numerical_damping(params) ==
-          params["Solver"]["Numerical Damping"]
+    @test PeriLab.Solver_control.Parameter_Handling.get_numerical_damping(
+        params["Solver"],
+    ) == params["Solver"]["Numerical Damping"]
     params = Dict("Solver" => Dict("Verlet" => Dict()))
-    @test PeriLab.Solver_control.Parameter_Handling.get_safety_factor(params) == 1
-    @test PeriLab.Solver_control.Parameter_Handling.get_fixed_dt(params) == -1.0
-    @test PeriLab.Solver_control.Parameter_Handling.get_nsteps(params) == 1
+    @test PeriLab.Solver_control.Parameter_Handling.get_safety_factor(params["Solver"]) == 1
+    @test PeriLab.Solver_control.Parameter_Handling.get_fixed_dt(params["Solver"]) == -1.0
+    @test PeriLab.Solver_control.Parameter_Handling.get_nsteps(params["Solver"]) == 1
     @test PeriLab.Solver_control.Parameter_Handling.get_nsteps(
         Dict(
-            "Solver" => Dict(
-                "Verlet" => Dict("Safety Factor" => 0.95, "Number of Steps" => 6),
-                "Numerical Damping" => 5e-6,
-            ),
+            "Verlet" => Dict("Safety Factor" => 0.95, "Number of Steps" => 6),
+            "Numerical Damping" => 5e-6,
         ),
     ) == 6
-    @test PeriLab.Solver_control.Parameter_Handling.get_numerical_damping(params) == 0.0
+    @test PeriLab.Solver_control.Parameter_Handling.get_numerical_damping(
+        params["Solver"],
+    ) == 0.0
     @test isnothing(
         PeriLab.Solver_control.Parameter_Handling.get_initial_time(
             Dict("Solver" => Dict()),
@@ -766,7 +771,8 @@ end
             "Numerical Damping" => 5e-6,
         ),
     )
-    @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params) == "External"
+    @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params["Solver"]) ==
+          "External"
 end
 
 path = "./test/unit_tests/Support/Parameters/"

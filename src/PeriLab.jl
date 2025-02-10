@@ -39,6 +39,8 @@ include("./Core/Data_manager.jl")
 include("./IO/logging.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
+include("./Support/Parameters/parameter_handling.jl")
+using .Parameter_Handling: get_solver_steps
 
 using MPI
 using TimerOutputs
@@ -311,41 +313,77 @@ function main(
             Data_manager.set_silent(silent)
             @timeit to "IO.initialize_data" datamanager, params =
                 IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
-            @info "Init Solver"
-            @timeit to "Solver_control.init" block_nodes, bcs, datamanager, solver_options =
-                Solver_control.init(params, datamanager, to)
-            @timeit to "IO.init orientations" datamanager =
-                IO.init_orientations(datamanager)
-            IO.show_block_summary(
-                solver_options,
-                params,
-                Logging_module.get_log_file(),
-                silent,
-                comm,
+
+            steps = get_solver_steps(params)
+            for step_id in steps
+                if !isnothing(step_id)
+                    @info "Step: " * string(step_id) * " of " * string(length(steps))
+                end
+                @info "Init Solver"
+                @timeit to "Solver_control.init" block_nodes,
+                bcs,
                 datamanager,
-            )
-            IO.show_mpi_summary(Logging_module.get_log_file(), silent, comm, datamanager)
-            @debug "Init write results"
-            @timeit to "IO.init_write_results" result_files, outputs =
-                IO.init_write_results(
+                solver_options = Solver_control.init(params, datamanager, to, step_id)
+                datamanager.set_step(step_id)
+                @timeit to "IO.init orientations" datamanager =
+                    IO.init_orientations(datamanager)
+                IO.show_block_summary(
+                    solver_options,
                     params,
-                    output_dir,
-                    filedirectory,
+                    Logging_module.get_log_file(),
+                    silent,
+                    comm,
                     datamanager,
-                    solver_options["nsteps"],
-                    PERILAB_VERSION,
                 )
-            Logging_module.set_result_files(result_files)
-            if verbose
-                fields = datamanager.get_all_field_keys()
-                @info "Found " * string(length(fields)) * " Fields"
-                @info fields
-            end
-            if dry_run
-                nsteps = solver_options["nsteps"]
-                solver_options["nsteps"] = 10
-                elapsed_time = @elapsed begin
-                    @timeit to "Solver" result_files = Solver_control.solver(
+                IO.show_mpi_summary(
+                    Logging_module.get_log_file(),
+                    silent,
+                    comm,
+                    datamanager,
+                )
+                @debug "Init write results"
+                @timeit to "IO.init_write_results" result_files, outputs =
+                    IO.init_write_results(
+                        params,
+                        output_dir,
+                        filedirectory,
+                        datamanager,
+                        solver_options["nsteps"],
+                        PERILAB_VERSION,
+                    )
+                Logging_module.set_result_files(result_files)
+                if verbose
+                    fields = datamanager.get_all_field_keys()
+                    @info "Found " * string(length(fields)) * " Fields"
+                    @info fields
+                end
+                if dry_run
+                    nsteps = solver_options["nsteps"]
+                    solver_options["nsteps"] = 10
+                    elapsed_time = @elapsed begin
+                        @timeit to "Solver" result_files = Solver_control.solver(
+                            solver_options,
+                            block_nodes,
+                            bcs,
+                            datamanager,
+                            outputs,
+                            result_files,
+                            IO.write_results,
+                            to,
+                            silent,
+                        )
+                    end
+
+                    @info "Estimated runtime: " *
+                          string((elapsed_time / 10) * nsteps) *
+                          " [s]"
+                    file_size = IO.get_file_size(result_files)
+                    @info "Estimated filesize: " *
+                          string((file_size / 10) * nsteps) *
+                          " [b]"
+
+                else
+                    @timeit to "Solver_control.solver" result_files = Solver_control.solver(
                         solver_options,
                         block_nodes,
                         bcs,
@@ -357,23 +395,6 @@ function main(
                         silent,
                     )
                 end
-
-                @info "Estimated runtime: " * string((elapsed_time / 10) * nsteps) * " [s]"
-                file_size = IO.get_file_size(result_files)
-                @info "Estimated filesize: " * string((file_size / 10) * nsteps) * " [b]"
-
-            else
-                @timeit to "Solver_control.solver" result_files = Solver_control.solver(
-                    solver_options,
-                    block_nodes,
-                    bcs,
-                    datamanager,
-                    outputs,
-                    result_files,
-                    IO.write_results,
-                    to,
-                    silent,
-                )
             end
 
         catch e

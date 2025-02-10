@@ -209,6 +209,9 @@ MPI.Init()
         @testset "test_reload" begin
             include("fullscale_tests/test_reload/test_reload.jl")
         end
+        @testset "test_multistep" begin
+            include("fullscale_tests/test_multistep/test_multistep.jl")
+        end
         @testset "test_dry_run" begin
             include("fullscale_tests/test_dry_run/test_dry_run.jl")
         end

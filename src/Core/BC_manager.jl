@@ -24,6 +24,12 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
     # check bc
     working_bcs = Dict()
     for bc in keys(bcs)
+
+        if !isnothing(datamanager.get_step()) &&
+           bcs[bc]["Step ID"] != datamanager.get_step()
+            continue
+        end
+
         if haskey(bcs[bc], "Coordinate")
             dof = datamanager.get_dof()
             if bcs[bc]["Coordinate"] == "z" && dof < 3
@@ -140,7 +146,8 @@ function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
         bc = bcs[name]
         if !(bc["Type"] in ["Initial", "Dirichlet"]) ||
            bc["Variable"] == "Force Densities" ||
-           bc["Variable"] == "Forces"
+           bc["Variable"] == "Forces" ||
+           !isnothing(datamanager.get_step()) && bc["Step ID"] != datamanager.get_step()
             continue
         end
         field = datamanager.get_field(bc["Variable"], bc["Time"])
