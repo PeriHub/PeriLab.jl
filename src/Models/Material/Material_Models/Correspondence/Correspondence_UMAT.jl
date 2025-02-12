@@ -280,7 +280,7 @@ function compute_stresses(
 
     DFGRD0 = datamanager.get_field("DFGRD0")
     DFGRD1 = datamanager.get_field("Deformation Gradient")
-    JSTEP = datamanager.get_step()
+    JSTEP = datamanager.get_iteration()
     KINC::Int64 = 1
     not_supported_int::Int64 = 0
     for iID in nodes

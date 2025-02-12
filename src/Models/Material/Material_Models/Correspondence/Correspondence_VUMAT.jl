@@ -218,7 +218,7 @@ function compute_stresses(
         strainInc[iID, :] = matrix_to_voigt(strain_increment[iID, :, :])
         stressOld[iID, :] = matrix_to_voigt(stress_N[iID, :, :])
         defGradNew[iID, :] = matrix_to_vector(deformation_gradient[iID, :, :])
-        if datamanager.get_step() == 1
+        if datamanager.get_iteration() == 1
             defGradOld = defGradNew
         end
     end

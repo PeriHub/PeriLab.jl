@@ -1,0 +1,112 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+    Discretization:
+        Type: "Text File"
+        Input Mesh File: "mesh.txt"
+        Node Sets:
+            Left: 1 4 7 10 13 16 19 22 25
+            Right: 3 6 9 12 15 18 21 24 27
+            Bottom: 1 2 3 10 11 12 19 20 21
+            Top: 7 8 9 16 17 18 25 26 27
+            Back: 1 2 3 4 5 6 7 8 9
+            Front: 19 20 21 22 23 24 25 26 27
+            All: 1:27
+    Models:
+        Material Models:
+            Material:
+               Material Model: "Correspondence Elastic"
+               Zero Energy Control: "Global"
+               Symmetry: isotropic
+               Young's Modulus: 43000.0
+               Poisson's Ratio: 0.3
+        Thermal Models:
+            Thermal:
+                Thermal Model: "Heat Transfer"
+                Type: "Bond based"
+                Heat Transfer Coefficient: 100
+                Environmental Temperature: 0
+                Thermal Conductivity: 1000
+    Blocks:
+        block_1:
+            Block ID: 1
+            Material Model: Material
+            Thermal Model: Thermal
+            Density: 7800
+            # Horizon: 0.12
+            Horizon: 1.2
+            Specific Heat Capacity: 1800.
+    Boundary Conditions:
+        BC_1:
+            Coordinate: x
+            Node Set: Right
+            Variable: Displacements
+            Value: 0.01*t
+            Type: Dirichlet
+            Step ID: 2
+        BC_2:
+            Coordinate: z
+            Node Set: Front
+            Variable: Displacements
+            Value: 0
+            Type: Dirichlet
+            Step ID: 2
+        BC_3:
+            Coordinate: x
+            Node Set: Left
+            Variable: Displacements
+            Value: 0
+            Type: Dirichlet
+            Step ID: 2
+        BC_4:
+            Coordinate: y
+            Node Set: Bottom
+            Variable: Displacements
+            Value: 0
+            Type: Dirichlet
+            Step ID: 2
+        Temp Init:
+            Node Set: All
+            Variable: Temperature
+            Value: 20
+            Type: Initial
+            Step ID: 1
+        Temp:
+            Node Set: All
+            Variable: Temperature
+            Value: 20-10*t
+            Type: Initial
+            Step ID: 1
+    Solver:
+      Step 1:
+        Step ID: 1
+        Initial Time: 0.0
+        Final Time: 0.01
+        Numerical Damping: 0.05
+        Material Models: False
+        Thermal Models: True
+        Verlet:
+            # Fixed dt: 0.1
+            Safety Factor: 0.95
+      Step 2:
+        Step ID: 2
+        Initial Time: 0.01
+        Final Time: 0.02
+        Numerical Damping: 0.05
+        Material Models: True
+        Thermal Models: False
+        Verlet:
+            # Fixed dt: 0.1
+            Safety Factor: 0.95
+    Outputs:
+        Output1:
+            Number of Output Steps: 100
+            Output File Type: Exodus
+            Output Filename: multistep
+            Output Variables:
+                Displacements: True
+                Forces: True
+                Number of Neighbors: True
+                Temperature: True

@@ -14,7 +14,8 @@ using .Parameter_Handling:
     get_fem_block,
     get_calculation_options,
     get_angles,
-    get_block_names
+    get_block_names,
+    get_solver_params
 using .Helpers: find_indices, fastdot
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
@@ -48,7 +49,12 @@ Initialize the solver
 - `datamanager::Module`: The data manager module that provides access to data fields and properties.
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
-function init(params::Dict, datamanager::Module, to::TimerOutput)
+function init(
+    params::Dict,
+    datamanager::Module,
+    to::TimerOutput,
+    step_id::Union{Nothing,Int64} = nothing,
+)
     solver_options = Dict()
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
@@ -69,8 +75,10 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     set_angles(datamanager, params, block_nodes_with_neighbors) # includes the Neighbors
-    solver_options["Models"] = get_model_options(params)
-    solver_options["Calculation"] = get_calculation_options(params)
+    solver_params =
+        isnothing(step_id) ? params["Solver"] : get_solver_params(params, step_id)
+    solver_options["Models"] = get_model_options(solver_params)
+    solver_options["Calculation"] = get_calculation_options(solver_params)
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     for iblock in eachindex(block_nodes)
         datamanager = Influence_function.init_influence_function(
@@ -87,22 +95,22 @@ function init(params::Dict, datamanager::Module, to::TimerOutput)
         Model_Factory.init_models(params, datamanager, block_nodes, solver_options, to)
     @debug "Init Boundary Conditions"
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
-    solver_options["Solver"] = get_solver_name(params)
-    if get_solver_name(params) == "Verlet"
-        @debug "Init " * get_solver_name(params)
+    solver_options["Solver"] = get_solver_name(solver_params)
+    if get_solver_name(solver_params) == "Verlet"
+        @debug "Init " * get_solver_name(solver_params)
         @timeit to "init_solver" solver_options["Initial Time"],
         solver_options["dt"],
         solver_options["nsteps"],
         solver_options["Numerical Damping"],
         solver_options["Maximum Damage"] = Verlet.init_solver(
-            params,
+            solver_params,
             datamanager,
             block_nodes,
             "Material" in solver_options["Models"],
             "Thermal" in solver_options["Models"],
         )
     else
-        @error get_solver_name(params) * " is no valid solver."
+        @error get_solver_name(solver_params) * " is no valid solver."
         return nothing
     end
 
