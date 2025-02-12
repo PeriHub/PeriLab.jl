@@ -78,9 +78,8 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
 end
 
 """
-https://link.springer.com/article/10.1007/s10409-021-01055-5
 
-
+[YangS2021](@cite)
 - Bond associated neighborhood is the overlap between nlist[iID] and nlist[nlist[iID][jID]]
 - Filter equal nodes and create a new neighborhoodlist for bond -> bond_nlist
 - calculate K, Kinv and defGrad -> already there if the neighborhood loop is in a function
