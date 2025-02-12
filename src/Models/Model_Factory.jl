@@ -78,6 +78,9 @@ function init_models(
     for model_name in solver_options["Models"]
         datamanager = add_model(datamanager, model_name)
     end
+    for model_name in solver_options["All Models"]
+        datamanager = add_model(datamanager, model_name, true)
+    end
 
     if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
         heat_capacity =
@@ -85,10 +88,12 @@ function init_models(
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
     end
 
-    for (active_model_name, active_model) in pairs(datamanager.get_active_models())
+    for (active_model_name, active_model) in pairs(datamanager.get_active_models(true))
         @info "Init $active_model_name "
         @timeit to "$active_model_name model fields" datamanager =
             active_model.init_fields(datamanager)
+    end
+    for (active_model_name, active_model) in pairs(datamanager.get_active_models())
 
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, active_model_name)
@@ -468,13 +473,14 @@ Includes the models in the datamanager and checks if the model definition is cor
 # Returns
 - `datamanager::Module`: Datamanager
 """
-function add_model(datamanager::Module, model_name::String)
+function add_model(datamanager::Module, model_name::String, all::Bool = false)
     # TODO test missing
     try
         # to catch "Pre_Calculation"
         datamanager.add_active_model(
             replace(model_name, "_" => " ") * " Model",
             eval(Meta.parse(model_name)),
+            all,
         )
         return datamanager
     catch

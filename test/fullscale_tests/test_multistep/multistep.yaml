@@ -17,7 +17,7 @@ PeriLab:
     Models:
         Material Models:
             Material:
-               Material Model: "Correspondence Elastic"
+               Material Model: "PD Solid Elastic"
                Zero Energy Control: "Global"
                Symmetry: isotropic
                Young's Modulus: 43000.0
@@ -43,7 +43,7 @@ PeriLab:
             Coordinate: x
             Node Set: Right
             Variable: Displacements
-            Value: 0.01*t
+            Value: 1*t
             Type: Dirichlet
             Step ID: 2
         BC_2:
@@ -83,22 +83,22 @@ PeriLab:
       Step 1:
         Step ID: 1
         Initial Time: 0.0
-        Final Time: 0.01
+        Final Time: 0.1
         Numerical Damping: 0.05
         Material Models: False
         Thermal Models: True
         Verlet:
-            # Fixed dt: 0.1
+            Fixed dt: 0.01
             Safety Factor: 0.95
       Step 2:
         Step ID: 2
-        Initial Time: 0.01
-        Final Time: 0.02
+        Initial Time: 0.1
+        Final Time: 0.2
         Numerical Damping: 0.05
         Material Models: True
         Thermal Models: False
         Verlet:
-            # Fixed dt: 0.1
+            Fixed dt: 0.001
             Safety Factor: 0.95
     Outputs:
         Output1:

@@ -495,7 +495,7 @@ function run_solver(
                 vNP1 = datamanager.get_field("Velocity", "NP1")
                 deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
             end
-            if "Thermal" in solver_options["Models"]
+            if "Thermal" in solver_options["All Models"]
                 flowN = datamanager.get_field("Heat Flow", "N")
                 flowNP1 = datamanager.get_field("Heat Flow", "NP1")
                 temperatureN = datamanager.get_field("Temperature", "N")
@@ -524,6 +524,10 @@ function run_solver(
             if "Thermal" in solver_options["Models"]
                 temperatureNP1[active_nodes] =
                     temperatureN[active_nodes] + deltaT[active_nodes]
+            else
+                if "Thermal" in solver_options["All Models"] && idt != 1
+                    temperatureNP1[active_nodes] = temperatureN[active_nodes]
+                end
             end
             if "Corrosion" in solver_options["Models"]
                 concentrationNP1[active_nodes] =

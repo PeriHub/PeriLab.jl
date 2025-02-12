@@ -94,6 +94,7 @@ Initialize all parameter in the datamanager and sets them to the default values.
 """
 function initialize_data()
     data["step"] = 0
+    data["max_step"] = 0
     data["nnodes"] = 0
     data["num_controller"] = 0
     data["num_responder"] = 0
@@ -140,6 +141,7 @@ function initialize_data()
     data["rotation"] = false
     data["element_rotation"] = false
     data["active_models"] = OrderedDict{String,Module}()
+    data["all_active_models"] = OrderedDict{String,Module}()
     data["material_models"] = []
     data["damage_models"] = []
     data["NP1_to_N"] = Dict{String,Vector{}}()
@@ -177,6 +179,32 @@ function get_step()
 end
 
 """
+    set_max_step(max_step::Int64)
+
+Set the max_step of the simulation.
+
+# Arguments
+- `max_step::Int64`: The max_step of the simulation.
+
+"""
+function set_max_step(max_step::Union{Int64,Nothing})
+    data["max_step"] = max_step
+end
+
+"""
+    get_max_step()
+
+Get the max_step of the simulation.
+
+# Returns
+- `Int64`: The max_step of the simulation.
+
+"""
+function get_max_step()
+    return data["max_step"]
+end
+
+"""
     set_iteration(iteration::Int64)
 
 Set the iteration of the simulation.
@@ -211,9 +239,15 @@ Add the main modules to an OrderedDict which are active.
 - `key::String`: Name of the model.
 - `active_module::Module`: Module of the active models.
 """
-function add_active_model(key::String, active_module::Module)
-    if !(key in keys(data["active_models"]))
-        data["active_models"][key] = active_module
+function add_active_model(key::String, active_module::Module, all::Bool = false)
+    if all
+        if !(key in keys(data["all_active_models"]))
+            data["all_active_models"][key] = active_module
+        end
+    else
+        if !(key in keys(data["active_models"]))
+            data["active_models"][key] = active_module
+        end
     end
 end
 
@@ -587,8 +621,8 @@ end
 
 Returns a list active model modules.
 """
-function get_active_models()
-    return data["active_models"]
+function get_active_models(all::Bool = false)
+    return all ? data["all_active_models"] : data["active_models"]
 end
 
 """
