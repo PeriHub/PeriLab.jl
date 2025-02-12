@@ -5,7 +5,7 @@
 module Unified_Bondbased_Elastic
 
 """
-Based on the paper https://doi.org/10.1016/j.apm.2024.01.015
+Based on  [GuanJ2024](@cite)
 It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as surface correction alpha_i=0 in Equation 16.
 
 """
