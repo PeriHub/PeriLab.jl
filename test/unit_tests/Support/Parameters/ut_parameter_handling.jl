@@ -590,26 +590,6 @@ end
         PeriLab.Solver_control.Parameter_Handling.get_model_options(params["Solver"])
     @test solver_options == ["Damage", "Pre_Calculation", "Thermal"]
 end
-@testset "ut_get_number_of_blocks" begin
-    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(Dict()))
-    params = Dict("Blocks" => Dict())
-    @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(params))
-    params = Dict("Blocks" => Dict("block_1" => Dict(), "block_2" => Dict()))
-    @test PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(params) == 2
-    params = Dict(
-        "Blocks" => Dict("block_1" => Dict(), "block_2" => Dict(), "block_3" => Dict()),
-    )
-    @test PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(params) == 3
-    params = Dict(
-        "Blocks" => Dict(
-            "block_1" => Dict(),
-            "block_2" => Dict(),
-            "block_3" => Dict(),
-            "block_4" => Dict(),
-        ),
-    )
-    @test PeriLab.Solver_control.Parameter_Handling.get_number_of_blocks(params) == 4
-end
 
 @testset "ut_block_values" begin
     params = Dict("Blocks" => Dict())
@@ -617,10 +597,10 @@ end
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_density(params, 1))
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 1))
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Density"),
+        PeriLab.Solver_control.Parameter_Handling._get_values(params, 1, "Density"),
     )
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "not there"),
+        PeriLab.Solver_control.Parameter_Handling._get_values(params, 1, "not there"),
     )
     params = Dict(
         "Blocks" => Dict(
@@ -632,13 +612,13 @@ end
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_density(params, 1))
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 1))
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Density"),
+        PeriLab.Solver_control.Parameter_Handling._get_values(params, 1, "Density"),
     )
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 2))
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_density(params, 2))
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 2))
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Density"),
+        PeriLab.Solver_control.Parameter_Handling._get_values(params, 2, "Density"),
     )
     params = Dict(
         "Blocks" => Dict(
@@ -650,62 +630,63 @@ end
             "block_2" => Dict("Block ID" => 2, "Density" => 12.3, "Horizon" => 2),
         ),
     )
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Density") == 1
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Density") == 12.3
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(params, 1, "Density") == 1
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(params, 2, "Density") ==
+          12.3
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_values(params, 3, "Density"),
+        PeriLab.Solver_control.Parameter_Handling._get_values(params, 3, "Density"),
     )
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(
         params,
         1,
         "Specific Heat Capacity",
     ) == 3
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_values(
+        PeriLab.Solver_control.Parameter_Handling._get_values(
             params,
             2,
             "Specific Heat Capacity",
         ),
     )
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_values(
+        PeriLab.Solver_control.Parameter_Handling._get_values(
             params,
             3,
             "Specific Heat Capacity",
         ),
     )
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Horizon"),
+        PeriLab.Solver_control.Parameter_Handling._get_values(params, 1, "Horizon"),
     )
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Horizon") == 2
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(params, 2, "Horizon") == 2
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_values(params, 3, "Horizon"),
+        PeriLab.Solver_control.Parameter_Handling._get_values(params, 3, "Horizon"),
     )
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Density") ==
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(params, 1, "Density") ==
           PeriLab.Solver_control.Parameter_Handling.get_density(params, 1)
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Density") ==
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(params, 2, "Density") ==
           PeriLab.Solver_control.Parameter_Handling.get_density(params, 2)
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 3, "Density") ==
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(params, 3, "Density") ==
           PeriLab.Solver_control.Parameter_Handling.get_density(params, 3)
 
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 1, "Horizon") ==
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(params, 1, "Horizon") ==
           PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 1)
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 2, "Horizon") ==
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(params, 2, "Horizon") ==
           PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 2)
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(params, 3, "Horizon") ==
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(params, 3, "Horizon") ==
           PeriLab.Solver_control.Parameter_Handling.get_horizon(params, 3)
 
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(
         params,
         1,
         "Specific Heat Capacity",
     ) == PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 1)
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(
         params,
         2,
         "Specific Heat Capacity",
     ) == PeriLab.Solver_control.Parameter_Handling.get_heat_capacity(params, 2)
-    @test PeriLab.Solver_control.Parameter_Handling.get_values(
+    @test PeriLab.Solver_control.Parameter_Handling._get_values(
         params,
         3,
         "Specific Heat Capacity",
@@ -817,19 +798,12 @@ params = Dict(
 end
 @testset "ut_get_model_parameter" begin
     block_models = Dict{Int32,Dict{String,String}}()
-    for id = 1:2
-        block_models[id] =
-            PeriLab.Solver_control.Parameter_Handling.get_block_models(params, id)
-    end
-    @test block_models[1]["Material Model"] == "A"
-    @test block_models[1]["Damage Model"] == "E"
-    @test block_models[2]["Material Model"] == "B"
     testData = Dict("Material Model" => Dict(), "Damage Model" => Dict())
     @test isnothing(
         PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
             params,
             "Does not exist Model",
-            block_models[1]["Material Model"],
+            "A",
         ),
     )
     @test isnothing(
@@ -850,7 +824,7 @@ end
         PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
             params,
             "Material Model",
-            block_models[1]["Material Model"],
+            "A",
         )
     @test testData["Material Model"]["s"] == 0
     @test testData["Material Model"]["d"] == true
@@ -858,7 +832,7 @@ end
         PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
             params,
             "Material Model",
-            block_models[2]["Material Model"],
+            "B",
         )
     @test testData["Material Model"]["sa"] == [3.2, 2, 3]
     @test testData["Material Model"]["d"] == "true"
@@ -872,7 +846,7 @@ end
         PeriLab.Solver_control.Parameter_Handling.get_model_parameter(
             params,
             "Damage Model",
-            block_models[1]["Damage Model"],
+            "E",
         )
     @test testData["Damage Model"]["ss"] == 0
     @test testData["Damage Model"]["d"] == 1.1

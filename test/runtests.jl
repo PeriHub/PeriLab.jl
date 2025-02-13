@@ -10,7 +10,7 @@ using MPI
 using PeriLab
 Logging.disable_logging(Logging.Error)
 
-# Aqua.test_all(PeriLab, ambiguities = false, stale_deps = (ignore = [:ZipArchives, :JSON3],))
+Aqua.test_all(PeriLab, ambiguities = false, stale_deps = (ignore = [:ZipArchives, :JSON3],))
 
 include("helper.jl")
 
@@ -18,191 +18,191 @@ MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
 
-    # @testset "unit_tests" begin
-    #     @testset "ut_perilab" begin
-    #         include("unit_tests/ut_perilab.jl")
-    #     end
-    #     @testset "FEM" begin
-    #         @testset "ut_FEM_routines" begin
-    #             include("unit_tests/FEM/ut_FEM_routines.jl")
-    #         end
+    @testset "unit_tests" begin
+        @testset "ut_perilab" begin
+            include("unit_tests/ut_perilab.jl")
+        end
+        @testset "FEM" begin
+            @testset "ut_FEM_routines" begin
+                include("unit_tests/FEM/ut_FEM_routines.jl")
+            end
 
-    #         @testset "ut_FEM_Factory" begin
-    #             include("unit_tests/FEM/ut_FEM_Factory.jl")
-    #         end
-    #         @testset "ut_Lagrange_element" begin
-    #             include("unit_tests/FEM/Element_formulation/ut_lagrange_element.jl")
-    #         end
-    #         @testset "ut_Arlequin" begin
-    #             include("unit_tests/FEM/Coupling/ut_Arlequin.jl")
-    #         end
-    #     end
-    #     @testset "Compute" begin
-    #         @testset "ut_compute_global_values" begin
-    #             include("unit_tests/Compute/ut_compute_global_values.jl")
-    #         end
-    #         @testset "ut_compute_field_values" begin
-    #             include("unit_tests/Compute/ut_compute_field_values.jl")
-    #         end
-    #     end
-    #     @testset "Support" begin
-    #         @testset "Parameters" begin
-    #             @testset "ut_parameter_handling" begin
-    #                 include("unit_tests/Support/Parameters/ut_parameter_handling.jl")
-    #             end
-    #         end
+            @testset "ut_FEM_Factory" begin
+                include("unit_tests/FEM/ut_FEM_Factory.jl")
+            end
+            @testset "ut_Lagrange_element" begin
+                include("unit_tests/FEM/Element_formulation/ut_lagrange_element.jl")
+            end
+            @testset "ut_Arlequin" begin
+                include("unit_tests/FEM/Coupling/ut_Arlequin.jl")
+            end
+        end
+        @testset "Compute" begin
+            @testset "ut_compute_global_values" begin
+                include("unit_tests/Compute/ut_compute_global_values.jl")
+            end
+            @testset "ut_compute_field_values" begin
+                include("unit_tests/Compute/ut_compute_field_values.jl")
+            end
+        end
+        @testset "Support" begin
+            @testset "Parameters" begin
+                @testset "ut_parameter_handling" begin
+                    include("unit_tests/Support/Parameters/ut_parameter_handling.jl")
+                end
+            end
 
-    #         @testset "ut_helpers" begin
-    #             include("unit_tests/Support/ut_helpers.jl")
-    #         end
+            @testset "ut_helpers" begin
+                include("unit_tests/Support/ut_helpers.jl")
+            end
 
-    #         @testset "ut_geometry" begin
-    #             include("unit_tests/Support/ut_geometry.jl")
-    #         end
-    #     end
-    #     @testset "Core" begin
-    #         @testset "ut_data_manager" begin
-    #             include("unit_tests/Core/ut_data_manager.jl")
-    #         end
-    #         @testset "ut_influence_function" begin
-    #             include("unit_tests/Core/ut_Influence_function.jl")
-    #         end
-    #         @testset "Solver" begin
+            @testset "ut_geometry" begin
+                include("unit_tests/Support/ut_geometry.jl")
+            end
+        end
+        @testset "Core" begin
+            @testset "ut_data_manager" begin
+                include("unit_tests/Core/ut_data_manager.jl")
+            end
+            @testset "ut_influence_function" begin
+                include("unit_tests/Core/ut_Influence_function.jl")
+            end
+            @testset "Solver" begin
 
-    #             @testset "ut_Solver_control" begin
-    #                 include("unit_tests/Core/Solver/ut_Solver_control.jl")
-    #             end
+                @testset "ut_Solver_control" begin
+                    include("unit_tests/Core/Solver/ut_Solver_control.jl")
+                end
 
-    #             @testset "ut_Verlet" begin
-    #                 include("unit_tests/Core/Solver/ut_Verlet.jl")
-    #             end
+                @testset "ut_Verlet" begin
+                    include("unit_tests/Core/Solver/ut_Verlet.jl")
+                end
 
-    #         end
-    #         @testset "Module_inclusion" begin
-    #             include("unit_tests/Core/Module_inclusion/ut_set_Modules.jl")
-    #         end
-    #         @testset "ut_BC_manager" begin
-    #             include("unit_tests/Core/ut_BC_manager.jl")
-    #         end
-    #     end
-    #     @testset "IO" begin
+            end
+            @testset "Module_inclusion" begin
+                include("unit_tests/Core/Module_inclusion/ut_set_Modules.jl")
+            end
+            @testset "ut_BC_manager" begin
+                include("unit_tests/Core/ut_BC_manager.jl")
+            end
+        end
+        @testset "IO" begin
 
-    #         @testset "ut_exodus_export" begin
-    #             include("unit_tests/IO/ut_exodus_export.jl")
-    #         end
-    #         @testset "ut_read_inputdeck" begin
-    #             include("unit_tests/IO/ut_read_inputdeck.jl")
-    #         end
-    #         @testset "ut_IO" begin
-    #             include("unit_tests/IO/ut_IO.jl")
-    #         end
+            @testset "ut_exodus_export" begin
+                include("unit_tests/IO/ut_exodus_export.jl")
+            end
+            @testset "ut_read_inputdeck" begin
+                include("unit_tests/IO/ut_read_inputdeck.jl")
+            end
+            @testset "ut_IO" begin
+                include("unit_tests/IO/ut_IO.jl")
+            end
 
-    #         @testset "ut_mesh_data" begin
-    #             include("unit_tests/IO/ut_mesh_data.jl")
-    #         end
+            @testset "ut_mesh_data" begin
+                include("unit_tests/IO/ut_mesh_data.jl")
+            end
 
-    #         @testset "ut_bond_filter" begin
-    #             include("unit_tests/IO/ut_bond_filter.jl")
-    #         end
-    #         @testset "ut_logging" begin
-    #             include("unit_tests/IO/ut_logging.jl")
-    #         end
-    #     end
-    #     @testset "MPI" begin
-    #         @testset "ut_MPI" begin
-    #             include("unit_tests/MPI_communication/ut_MPI_call.jl")
-    #         end
+            @testset "ut_bond_filter" begin
+                include("unit_tests/IO/ut_bond_filter.jl")
+            end
+            @testset "ut_logging" begin
+                include("unit_tests/IO/ut_logging.jl")
+            end
+        end
+        @testset "MPI" begin
+            @testset "ut_MPI" begin
+                include("unit_tests/MPI_communication/ut_MPI_call.jl")
+            end
 
-    #     end
-    #     @testset "Models" begin
-    #         @testset "ut_templates" begin
-    #             include("unit_tests/Models/ut_templates.jl")
-    #         end
-    #         @testset "Additive" begin
-    #             @testset "ut_Additive_Factory" begin
-    #                 include("unit_tests/Models/Additive/ut_Additive_Factory.jl")
-    #             end
-    #         end
-    #         @testset "Corrosion" begin
-    #             @testset "ut_Corrosion_Factory" begin
-    #                 include("unit_tests/Models/Corrosion/ut_Corrosion_Factory.jl")
-    #             end
-    #         end
-    #         @testset "Thermal" begin
-    #             @testset "ut_Thermal_Factory" begin
-    #                 include("unit_tests/Models/Thermal/ut_Thermal_Factory.jl")
-    #             end
-    #             @testset "ut_Thermal_Flow" begin
-    #                 include("unit_tests/Models/Thermal/ut_Thermal_flow.jl")
-    #             end
-    #             @testset "ut_Thermal_Expansion" begin
-    #                 include("unit_tests/Models/Thermal/ut_Thermal_expansion.jl")
-    #             end
-    #             @testset "ut_Heat_transfer" begin
-    #                 include("unit_tests/Models/Thermal/ut_Heat_transfer.jl")
-    #             end
-    #             @testset "ut_HETVAL" begin
-    #                 include("unit_tests/Models/Thermal/ut_HETVAL.jl")
-    #             end
-    #         end
+        end
+        @testset "Models" begin
+            @testset "ut_templates" begin
+                include("unit_tests/Models/ut_templates.jl")
+            end
+            @testset "Additive" begin
+                @testset "ut_Additive_Factory" begin
+                    include("unit_tests/Models/Additive/ut_Additive_Factory.jl")
+                end
+            end
+            @testset "Corrosion" begin
+                @testset "ut_Corrosion_Factory" begin
+                    include("unit_tests/Models/Corrosion/ut_Corrosion_Factory.jl")
+                end
+            end
+            @testset "Thermal" begin
+                @testset "ut_Thermal_Factory" begin
+                    include("unit_tests/Models/Thermal/ut_Thermal_Factory.jl")
+                end
+                @testset "ut_Thermal_Flow" begin
+                    include("unit_tests/Models/Thermal/ut_Thermal_flow.jl")
+                end
+                @testset "ut_Thermal_Expansion" begin
+                    include("unit_tests/Models/Thermal/ut_Thermal_expansion.jl")
+                end
+                @testset "ut_Heat_transfer" begin
+                    include("unit_tests/Models/Thermal/ut_Heat_transfer.jl")
+                end
+                @testset "ut_HETVAL" begin
+                    include("unit_tests/Models/Thermal/ut_HETVAL.jl")
+                end
+            end
 
-    #         @testset "ut_Model_Factory" begin
-    #             include("unit_tests/Models/ut_Model_Factory.jl")
-    #         end
-    #         @testset "ut_Pre_calculation" begin
-    #             include(
-    #                 "unit_tests/Models/Pre_calculation/ut_pre_bond_associated_correspondence.jl",
-    #             )
-    #         end
-    #         @testset "ut_Damage" begin
-    #             include("unit_tests/Models/Damage/ut_Damage_Factory.jl")
-    #             include("unit_tests/Models/Damage/ut_Energy_release.jl")
-    #         end
-    #         @testset "ut_Material" begin
-    #             @testset "ut_Material_Factory" begin
-    #                 include("unit_tests/Models/Material/ut_Material_Factory.jl")
-    #             end
-    #             @testset "ut_control" begin
-    #                 include(
-    #                     "unit_tests/Models/Material/Zero_Energy_Control/ut_global_control.jl",
-    #                 )
-    #             end
-    #             @testset "ut_material_basis" begin
-    #                 include("unit_tests/Models/Material/ut_material_basis.jl")
-    #             end
-    #             @testset "ut_bond_based" begin
-    #                 include(
-    #                     "unit_tests/Models/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl",
-    #                 )
-    #             end
-    #             @testset "ut_correspondence" begin
-    #                 include(
-    #                     "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl",
-    #                 )
-    #                 include(
-    #                     "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_Plastic.jl",
-    #                 )
-    #                 include(
-    #                     "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_UMAT.jl",
-    #                 )
-    #                 include(
-    #                     "unit_tests/Models/Material/Material_Models/Correspondence/ut_Bond_Associated_Correspondence.jl",
-    #                 )
-    #             end
-    #             @testset "ut_ordinary" begin
-    #                 include(
-    #                     "unit_tests/Models/Material/Material_Models/Ordinary/ut_ordinary.jl",
-    #                 )
-    #                 include(
-    #                     "unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Elastic.jl",
-    #                 )
-    #                 include(
-    #                     "unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Plastic.jl",
-    #                 )
-    #             end
-    #         end
-    #     end
-    # end
+            @testset "ut_Model_Factory" begin
+                include("unit_tests/Models/ut_Model_Factory.jl")
+            end
+            @testset "ut_Pre_calculation" begin
+                include(
+                    "unit_tests/Models/Pre_calculation/ut_pre_bond_associated_correspondence.jl",
+                )
+            end
+            @testset "ut_Damage" begin
+                include("unit_tests/Models/Damage/ut_Damage_Factory.jl")
+                include("unit_tests/Models/Damage/ut_Energy_release.jl")
+            end
+            @testset "ut_Material" begin
+                @testset "ut_Material_Factory" begin
+                    include("unit_tests/Models/Material/ut_Material_Factory.jl")
+                end
+                @testset "ut_control" begin
+                    include(
+                        "unit_tests/Models/Material/Zero_Energy_Control/ut_global_control.jl",
+                    )
+                end
+                @testset "ut_material_basis" begin
+                    include("unit_tests/Models/Material/ut_material_basis.jl")
+                end
+                @testset "ut_bond_based" begin
+                    include(
+                        "unit_tests/Models/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl",
+                    )
+                end
+                @testset "ut_correspondence" begin
+                    include(
+                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl",
+                    )
+                    include(
+                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_Plastic.jl",
+                    )
+                    include(
+                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_UMAT.jl",
+                    )
+                    include(
+                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Bond_Associated_Correspondence.jl",
+                    )
+                end
+                @testset "ut_ordinary" begin
+                    include(
+                        "unit_tests/Models/Material/Material_Models/Ordinary/ut_ordinary.jl",
+                    )
+                    include(
+                        "unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Elastic.jl",
+                    )
+                    include(
+                        "unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Plastic.jl",
+                    )
+                end
+            end
+        end
+    end
 
     # Logging.disable_logging(Logging.Debug - 2000)
     @testset "fullscale_tests" begin
@@ -303,6 +303,9 @@ MPI.Init()
         # end
         @testset "test_FEM" begin
             include("fullscale_tests/test_FEM/test_FEM.jl")
+        end
+        @testset "test_vumat" begin
+            include("fullscale_tests/test_vumat/test_vumat.jl")
         end
     end
 
