@@ -315,16 +315,17 @@ function main(
                 IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
 
             steps = get_solver_steps(params)
+            datamanager.set_max_step(steps[end])
             for step_id in steps
                 if !isnothing(step_id)
                     @info "Step: " * string(step_id) * " of " * string(length(steps))
                 end
+                datamanager.set_step(step_id)
                 @info "Init Solver"
                 @timeit to "Solver_control.init" block_nodes,
                 bcs,
                 datamanager,
                 solver_options = Solver_control.init(params, datamanager, to, step_id)
-                datamanager.set_step(step_id)
                 @timeit to "IO.init orientations" datamanager =
                     IO.init_orientations(datamanager)
                 IO.show_block_summary(
@@ -342,16 +343,18 @@ function main(
                     datamanager,
                 )
                 @debug "Init write results"
-                @timeit to "IO.init_write_results" result_files, outputs =
-                    IO.init_write_results(
-                        params,
-                        output_dir,
-                        filedirectory,
-                        datamanager,
-                        solver_options["nsteps"],
-                        PERILAB_VERSION,
-                    )
-                Logging_module.set_result_files(result_files)
+                if isnothing(step_id) || step_id == 1
+                    @timeit to "IO.init_write_results" result_files, outputs =
+                        IO.init_write_results(
+                            params,
+                            output_dir,
+                            filedirectory,
+                            datamanager,
+                            solver_options["nsteps"],
+                            PERILAB_VERSION,
+                        )
+                    Logging_module.set_result_files(result_files)
+                end
                 if verbose
                     fields = datamanager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"

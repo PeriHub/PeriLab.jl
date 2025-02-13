@@ -32,7 +32,13 @@ function create_result_file(
     num_node_sets::Int64,
     num_elements::Int64 = 0,
     topology::Union{Nothing,Matrix{Int64}} = nothing,
+    init::Bool = true,
 )
+
+    if !init
+        exo_db = ExodusDatabase(filename, "rw")
+        return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
+    end
 
     if isfile(filename)
         rm(filename)

@@ -24,7 +24,6 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
     # check bc
     working_bcs = Dict()
     for bc in keys(bcs)
-
         if haskey(bcs[bc], "Step ID")
             if !isnothing(datamanager.get_step()) &&
                bcs[bc]["Step ID"] != datamanager.get_step()
@@ -153,7 +152,6 @@ function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
             continue
         end
         field = datamanager.get_field(bc["Variable"], bc["Time"])
-
         if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
                 @views field_to_apply_bc =
