@@ -46,7 +46,14 @@ global expected_structure = Dict(
                     "Element Type" => [String, true],
                     "Degree" => [Union{String,Int64}, true],
                     "Material Model" => [String, true],
-                    "Coupling" => [Dict{Any,Any}("Coupling Type" => [String, true]), false],
+                    "Coupling" => [
+                        Dict{Any,Any}(
+                            "Coupling Type" => [String, true],
+                            "PD Weight" => [Union{Float64,Int64}, false],
+                            "Kappa" => [Union{Float64,Int64}, false],
+                        ),
+                        false,
+                    ],
                 ),
                 false,
             ],
@@ -275,6 +282,7 @@ global expected_structure = Dict(
                                     "Number of State Variables" => [Int64, false],
                                     "Number of Properties" => [Int64, false],
                                     "Predefined Field Names" => [String, false],
+                                    "State Factor ID" => [Int64, false],
                                 ),
                                 true,
                             ],

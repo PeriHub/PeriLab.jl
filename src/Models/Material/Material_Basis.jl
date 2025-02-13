@@ -99,7 +99,15 @@ function get_all_elastic_moduli(
     poissons_field = datamanager.has_key("Poisson's_Ratio")
     shear_field = datamanager.has_key("Shear_Modulus")
 
-    any_field_allocated = bulk_field | youngs_field | poissons_field | shear_field
+    state_factor = haskey(parameter, "State Factor ID")
+
+    if state_factor
+        parameter["State Factor ID"] =
+            datamanager.get_field("State Variables")[:, parameter["State Factor ID"]]
+    end
+
+    any_field_allocated =
+        bulk_field | youngs_field | poissons_field | shear_field | state_factor
 
     bulk = haskey(parameter, "Bulk Modulus") | bulk_field
     youngs = haskey(parameter, "Young's Modulus") | youngs_field

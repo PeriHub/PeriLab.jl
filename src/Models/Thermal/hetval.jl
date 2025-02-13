@@ -195,27 +195,29 @@ function init_model(
 
     if haskey(thermal_parameter, "Predefined Field Names")
         field_names = split(thermal_parameter["Predefined Field Names"], " ")
-        fields = datamanager.create_constant_node_field(
-            "Predefined Fields",
-            Float64,
-            length(field_names),
-        )
-        for (id, field_name) in enumerate(field_names)
-            if !datamanager.has_key(String(field_name))
-                @error "Predefined field ''$field_name'' is not defined in the mesh file."
-                return nothing
-            end
-            # view or copy and than deleting the old one
-            # TODO check if an existing field is a bool.
-            fields[:, id] = datamanager.get_field(String(field_name))
-
-        end
-        datamanager.create_constant_node_field(
-            "Predefined Fields Increment",
-            Float64,
-            length(field_names),
-        )
+    else
+        field_names = ["Volume"] #Use any if not defined!
     end
+    fields = datamanager.create_constant_node_field(
+        "Predefined Fields",
+        Float64,
+        length(field_names),
+    )
+    for (id, field_name) in enumerate(field_names)
+        if !datamanager.has_key(String(field_name))
+            @error "Predefined field ''$field_name'' is not defined in the mesh file."
+            return nothing
+        end
+        # view or copy and than deleting the old one
+        # TODO check if an existing field is a bool.
+        fields[:, id] = datamanager.get_field(String(field_name))
+
+    end
+    datamanager.create_constant_node_field(
+        "Predefined Fields Increment",
+        Float64,
+        length(field_names),
+    )
 
     return datamanager
 end

@@ -52,6 +52,8 @@ function run_perilab(filename, cores, compare, folder_name = ""; reload = false)
         else
             mv("exodiff.log", filename * "_exodiff.log", force = true)
         end
+    else
+        rm(filename * ".e")
     end
 end
 

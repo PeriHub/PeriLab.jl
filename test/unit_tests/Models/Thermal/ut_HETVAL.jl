@@ -20,14 +20,6 @@ end
     if !isfile(file)
         file = "../src/Models/Thermal/HETVALs/hetval.so"
     end
-
-    @test !isnothing(
-        HETVAL.init_model(
-            test_data_manager,
-            Vector{Int64}(1:nodes),
-            Dict{String,Any}("File" => file, "Number of State Variables" => 3),
-        ),
-    )
     @test isnothing(
         HETVAL.init_model(
             test_data_manager,

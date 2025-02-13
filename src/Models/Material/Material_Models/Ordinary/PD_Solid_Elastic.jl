@@ -219,9 +219,14 @@ function elastic(
     bond_force_deviatoric_part::Vector{Vector{Float64}},
     bond_force_isotropic_part::Vector{Vector{Float64}},
 )
-
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
+
+    if haskey(material, "State Factor ID")
+        shear_modulus .*= material["State Factor ID"]
+        bulk_modulus .*= material["State Factor ID"]
+    end
+
     symmetry::String = get_symmetry(material)
     # kappa::Float64 = 0
     # gamma::Float64 = 0
