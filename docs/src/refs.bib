@@ -13,6 +13,30 @@ eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/pamm.202300033},
 abstract = {Abstract This paper introduces a novel framework for analyzing additive manufacturing processes. By employing a peridynamic mesh-free implementation, it overcomes certain limitations encountered with finite element-based approaches in regard to defects and fractures. The framework includes the implementation of thermodynamical material behavior and a novel boundary detection algorithm, as the outer surface area will undergo changes during the manufacturing process. The proposed methods are thoroughly validated, and a comprehensive example is provided as a demonstration.}
 }
 
+@article{YangS2021,
+  author = {Yang, Siyang and Gu, Xin and Zhang, Qing and Xia, Xiaozhou},
+  year = {2021},
+  date = {2021-07-01},
+  title = {Bond-associated non-ordinary state-based peridynamic model for multiple spalling simulation of concrete},
+  journal = {Acta Mechanica Sinica},
+  volume = {37},
+  number = {7},
+  pages = {1104--1135},
+  doi = {10.1007/s10409-021-01055-5},
+ }
+
+@article{GuanJ2024,
+title = {{A unified bond–based peridynamic model without limitation of Poisson's ratio}},
+journal = {Applied Mathematical Modelling},
+volume = {128},
+pages = {609-629},
+year = {2024},
+issn = {0307-904X},
+doi = {10.1016/j.apm.2024.01.015},
+author = {Jinwei Guan and Li Guo},
+keywords = {Peridynamics, Poisson's ratio, Deformation analysis, Brittle fracture},
+}
+
 
 @Book{WillbergC2013,
   title     = {{Development of a new isogeometric finite element and its application for Lamb wave based structural health monitoring}},
@@ -67,34 +91,19 @@ abstract = {Abstract This paper introduces a novel framework for analyzing addit
   doi       = {10.25673/3921},
   keywords  = {own},
   school    = {Otto-von-Guericke-University of Magdeburg, Fortschritt-Berichte VDI Reihe 20, Nr. 446, D\"{u}sseldorf: VDI Verlag, ISBN: 978-3-18-344620-9},
-  url       = {http://dx.doi.org/10.25673/3921},
-}
-@article{YangS2021,
-  author = {Yang, Siyang and Gu, Xin and Zhang, Qing and Xia, Xiaozhou},
-  year = {2021},
-  date = {2021-07-01},
-  title = {Bond-associated non-ordinary state-based peridynamic model for multiple spalling simulation of concrete},
-  journal = {Acta Mechanica Sinica},
-  volume = {37},
-  number = {7},
-  pages = {1104--1135},
-  abstract = {The non-ordinary state-based peridynamic (NOSB PD) model has the capability of incorporating existing constitutive relationships in the classical continuum mechanics. In the present work, we first develop an NOSB PD model corresponding to the Johnson–Holmquist II (JH-2) constitutive damage model, which can describe the severe damage of concrete under intense impact compression. Besides, the numerical oscillation problem of the NOSB PD caused by zero-energy mode is analyzed and hence a bond-associated non-ordinary state-based peridynamic (BA-NOSB PD) model is adopted to remove the oscillation. Then, the elastic deformation of a three-dimensional bar is analyzed to verify the capability of BA-NOSB PD in eliminating the numerical oscillation. Furthermore, concrete spalling caused by the interaction of incident compression wave and reflected tension wave is simulated. The dynamic tensile fracture process of concrete multiple spalling is accurately reproduced for several examples according to the spalling number and spalling thickness analysis, illustrating the approach can well simulate and analyze the concrete spalling discontinuities.},
-  issn = {1614-3116},
-  doi = {10.1007/s10409-021-01055-5},
-  url = {https://doi.org/10.1007/s10409-021-01055-5}
 }
 
-@article{GuanJ2024,
-title = {A unified bond–based peridynamic model without limitation of Poisson's ratio},
-journal = {Applied Mathematical Modelling},
-volume = {128},
-pages = {609-629},
-year = {2024},
-issn = {0307-904X},
-doi = {https://doi.org/10.1016/j.apm.2024.01.015},
-author = {Jinwei Guan and Li Guo},
-keywords = {Peridynamics, Poisson's ratio, Deformation analysis, Brittle fracture},
+@article{WillbergC2024,
+author={Willberg, Christian and Hesse, Jan-Timo and Pernatii, Anna},
+title={{PeriLab - Peridynamic Laboratory}},
+journal={SoftwareX},
+year={2024},
+publisher={Elsevier},
+volume={26},
+issn={2352-7110},
+doi={10.1016/j.softx.2024.101700}
 }
+
 
 
 
@@ -106,7 +115,6 @@ pages = {101322},
 year = {2023},
 issn = {2352-7110},
 doi = {10.1016/j.softx.2023.101322},
-url = {https://www.sciencedirect.com/science/article/pii/S2352711023000183},
 author = {Christian Willberg and Jan-Timo Hesse and Marc Garbade and Martin Rädel and Falk Heinecke and Andreas Schuster and Anna Pernatii},
 keywords = {Peridynamics, User material, UMAT, Interface, Material modeling, Damage model},
 abstract = {User materials (UMAT) in finite element codes allow the researchers or engineers to apply their own material routines. Simple software interfaces are specified to represent the material behavior in software. In order to use these already existing and often validated models to Peridynamics a UMAT interface is presented. It allows the simplified use of already existing material routines in the peridynamic framework Peridigm. The interface is based on the Abaqus UMAT definition and allows the integration of Fortran routines directly into Peridigm. The integration of already existing UMAT routines based in Peridigm eliminates the need for redevelopment and reprogramming material models from classical continuum mechanics theory. In addition, the same material model implementations are applicable in finite element as well as peridynamic simulations. This opens up new possibilities for analysis, verification and comparison. With this interface many material routines can be reused and applied to progressive failure analysis. The source code is stored in a GitHub repository.}
@@ -152,7 +160,6 @@ pages = {1-23},
 year = {2014},
 issn = {0022-5096},
 doi = {10.1016/j.jmps.2013.10.011},
-url = {https://www.sciencedirect.com/science/article/pii/S0022509613002196},
 author = {Selda Oterkus and Erdogan Madenci and Abigail Agwai},
 keywords = {Peridynamics, Thermal, Deformation, Coupled, Thermomechanics},
 abstract = {This study concerns the derivation of the coupled peridynamic (PD) thermomechanics equations based on thermodynamic considerations. The generalized peridynamic model for fully coupled thermomechanics is derived using the conservation of energy and the free-energy function. Subsequently, the bond-based coupled PD thermomechanics equations are obtained by reducing the generalized formulation. These equations are also cast into their nondimensional forms. After describing the numerical solution scheme, solutions to certain coupled thermomechanical problems with known previous solutions are presented.}
@@ -188,6 +195,119 @@ abstract = {This study presents the derivation of ordinary state-based peridynam
   doi      = {10.1155/2021/7782326},
 }
 
+@Article{WanJ2019,
+  author                   = {Wan, Ji and Chen, Zhuang and Chu, Xihua and Liu, Hui},
+  title                    = {Improved method for zero-energy mode suppression in peridynamic correspondence model},
+  journal                  = {Acta Mechanica Sinica},
+  Volume                   = {35},
+  year                     = {2019},
+  Pages                    = {1021--1035},
+  issn                     = {1614-3116},
+  doi                      = {10.1007/s10409-019-00873-y}
+}
+
+@article{TupekMR2014b,
+  Title                    = {An extended constitutive correspondence formulation of peridynamics based on nonlinear bond-strain measures},
+  Author                   = {{Tupek}, M.~R. and {Radovitzky}, R.},
+  Journal                  = {Journal of the Mechanics and Physics of Solids},
+  Year                     = {2014},
+  Volume                   = {65},
+  Number                   = {Supplement C},
+  Pages                    = {82--92},
+  DOI                      = {10.1016/j.jmps.2013.12.012},
+  ISSN                     = {0022-5096},
+  Keywords                 = {Peridynamics, Extended constitutive correspondence, Nonlinear strain measures, Matter interpenetration},
+}
+
+@phdthesis{TupekMR2014,
+  Title                    = {Extension of the peridynamic theory of solids for the simulation of materials under extreme loadings},
+  Author                   = {Michael R. Tupek},
+  School                   = {Massachusetts Intitute of Technology},
+  Year                     = {2014},
+  URL                      = {https://dspace.mit.edu/handle/1721.1/87481},
+}
+
+
+
+@article{WuCT2014,
+  Title                    = {Kinematic constraints in the state-based peridynamics with mixed local/nonlocal gradient approximations},
+  Author                   = {C.T. Wu},
+  Journal                  = {Computational Mechanics},
+  Year                     = {2014},
+  Month                    = {Nov},
+  Day                      = {01},
+  Volume                   = {54},
+  Number                   = {5},
+  Pages                    = {1255--1267},
+  Doi                      = {10.1007/s00466-014-1055-8},
+  ISSN                     = {1432-0924},
+  Url                      = {https://doi.org/10.1007/s00466-014-1055-8},
+  Keywords                 = {},
+}
+
+@Article{WuCT2015,
+  author    = {C.T. Wu and B. Ren},
+  journal   = {Computer Methods in Applied Mechanics and Engineering},
+  title     = {A stabilized non-ordinary state-based peridynamics for the nonlocal ductile material failure analysis in metal machining process},
+  year      = {2015},
+  issn      = {0045-7825},
+  pages     = {197--215},
+  volume    = {291},
+  doi       = {10.1016/j.cma.2015.03.003},
+  keywords  = {State-based peridynamics, Mixed local/nonlocal approximation, Stabilization, Machining},
+  publisher = {The Royal Society},
+  url       = {http://www.sciencedirect.com/science/article/pii/S0045782515000948},
+}
+
+@article{LiP2018,
+  Title                    = {A stabilized non-ordinary state-based peridynamic model},
+  Author                   = {P. Li and Z.M. Hao and W.Q. Zhen},
+  Journal                  = {Computer Methods in Applied Mechanics and Engineering},
+  Year                     = {2018},
+  Month                    = {},
+  Day                      = {},
+  Volume                   = {339},
+  Number                   = {},
+  Pages                    = {262--280},
+  DOI                      = {10.1016/j.cma.2018.05.002},
+  ISSN                     = {0045-7825},
+  URL                      = {http://www.sciencedirect.com/science/article/pii/S0045782518302378},
+  Keywords                 = {State-based peridynamics, Zero-energy modes, Stabilization, Damage},
+}
+
+@article{ChenH2018,
+  Title                    = {Bond-associated deformation gradients for peridynamic correspondence model},
+  Author                   = {Hailong Chen},
+  Journal                  = {Mechanics Research Communications},
+  Year                     = {2018},
+  Volume                   = {90},
+  Pages                    = {34--41},
+  DOI                      = {10.1016/j.mechrescom.2018.04.004},
+  ISSN                     = {0093-6413},
+   Keywords                 = {Peridynamics, State-based peridynamics, Correspondence material model, Material Instability, Zero-energy modes, Deformation gradient},
+}
+@Article{BreitenfeldMS2014,
+  author   = {M.S. Breitenfeld and P.H. Geubelle and Olaf Weckner and Stewart A. Silling},
+  journal  = {Computer Methods in Applied Mechanics and Engineering},
+  title    = {Non-ordinary state-based peridynamic analysis of stationary crack problems},
+  year     = {2014},
+  issn     = {0045-7825},
+  pages    = {233--250},
+  volume   = {272},
+  doi      = {10.1016/j.cma.2014.01.002},
+  keywords = {Peridynamics, Nonlocal, Meshless, Fracture},
+}
+@article{SillingSA2017,
+  Title                    = {Stability of peridynamic correspondence material models and their particle discretizations},
+  Author                   = {Silling, Stewart A.},
+  Journal                  = {Computer Methods in Applied Mechanics and Engineering},
+  Year                     = {2017},
+  Volume                   = {332},
+  Number                   = {},
+  Pages                    = {42--57},
+  DOI                      = {10.1016/j.cma.2017.03.043},
+  ISSN                     = {0045-7825}
+}
 @article{TrageserJ2020,
 author={Trageser, Jeremy
 and Seleson, Pablo},
@@ -201,7 +321,6 @@ number={3},
 pages={278-288},
 issn={2522-8978},
 doi={10.1007/s42102-019-00021-x},
-url={https://doi.org/10.1007/s42102-019-00021-x}
 }
 
 @phdthesis{WillbergC2012,
@@ -244,19 +363,6 @@ url={https://doi.org/10.1007/s42102-019-00021-x}
   mrnumber  = {0167642}
 }
 
-
-@article{WillbergC2024,
-title = {{PeriLab — Peridynamic Laboratory}},
-journal = {SoftwareX},
-volume = {26},
-pages = {101700},
-year = {2024},
-issn = {2352-7110},
-doi = {https://doi.org/10.1016/j.softx.2024.101700},
-url = {https://www.sciencedirect.com/science/article/pii/S2352711024000712},
-author = {Christian Willberg and Jan-Timo Hesse and Anna Pernatii},
-
-}
 
 @article{PernatiiA2024,
 author = {Pernatii, Anna and Filiurskyi, Danylo and Gabbert, Ulrich and Hesse, Jan-Timo and Willberg, Christian},
