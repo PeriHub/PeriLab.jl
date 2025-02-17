@@ -220,9 +220,9 @@ function compute_crititical_time_step(
         if mechanical
             bulk_modulus =
                 datamanager.get_property(iblock, "Material Model", "Bulk Modulus")
-            g_xy = datamanager.get_property(iblock, "Material Model", "Shear Modulus XY")
-            g_yz = datamanager.get_property(iblock, "Material Model", "Shear Modulus YZ")
-            g_xz = datamanager.get_property(iblock, "Material Model", "Shear Modulus XZ")
+            nu_xy = datamanager.get_property(iblock, "Material Model", "Poisson's Ratio XY")
+            nu_yz = datamanager.get_property(iblock, "Material Model", "Poisson's Ratio YZ")
+            nu_xz = datamanager.get_property(iblock, "Material Model", "Poisson's Ratio XZ")
             E_x = datamanager.get_property(iblock, "Material Model", "Young's Modulus X")
             E_y = datamanager.get_property(iblock, "Material Model", "Young's Modulus Y")
             E_z = datamanager.get_property(iblock, "Material Model", "Young's Modulus Z")
@@ -230,34 +230,28 @@ function compute_crititical_time_step(
             c_55 = datamanager.get_property(iblock, "Material Model", "C55")
             c_66 = datamanager.get_property(iblock, "Material Model", "C66")
             if !isnothing(bulk_modulus)
-                t = compute_mechanical_critical_time_step(
-                    block_nodes[iblock],
-                    datamanager,
-                    bulk_modulus,
-                )
-                critical_time_step = test_timestep(t, critical_time_step)
-            elseif !isnothing(g_xy) && !isnothing(g_yz) && !isnothing(g_xz)
-                K_x = E_x * g_xy / (3 * (3 * g_xy - E_x))
-                K_y = E_y * g_yz / (3 * (3 * g_yz - E_y))
-                K_z = E_z * g_xz / (3 * (3 * g_xz - E_z))
-                t = compute_mechanical_critical_time_step(
-                    block_nodes[iblock],
-                    datamanager,
-                    maximum([K_x, K_y, K_z]),
-                )
-                critical_time_step = test_timestep(t, critical_time_step)
-                #TODO: temporary solution!!!
+                bulk_modulus = bulk_modulus
+            elseif !isnothing(nu_xy) && !isnothing(nu_yz) && !isnothing(nu_xz)
+                s11 = 1 / E_x
+                s22 = 1 / E_y
+                s33 = 1 / E_z
+                s12 = -nu_xy / E_x
+                s23 = -nu_yz / E_z
+                s13 = -nu_xz / E_z
+                bulk_modulus = 1 / (s11 + s22 + s33 + 2 * (s12 + s23 + s13))
             elseif !isnothing(c_44) && !isnothing(c_55) && !isnothing(c_66)
-                t = compute_mechanical_critical_time_step(
-                    block_nodes[iblock],
-                    datamanager,
-                    maximum([c_44 / 2, c_55 / 2, c_66 / 2]),
-                )
-                critical_time_step = test_timestep(t, critical_time_step)
+                bulk_modulus = maximum([c_44 / 2, c_55 / 2, c_66 / 2])
+                #TODO: temporary solution!!!
             else
                 @error "No time step for material is determined because of missing properties."
                 return nothing
             end
+            t = compute_mechanical_critical_time_step(
+                block_nodes[iblock],
+                datamanager,
+                bulk_modulus,
+            )
+            critical_time_step = test_timestep(t, critical_time_step)
 
         end
     end
