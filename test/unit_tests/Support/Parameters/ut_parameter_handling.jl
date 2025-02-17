@@ -748,12 +748,12 @@ end
         "Solver" => Dict(
             "Initial Time" => 0.0,
             "Final Time" => 1.0,
-            "External" => Dict("Safety Factor" => 0.95, "Fixed dt" => 1e-3),
+            "Static" => Dict("Safety Factor" => 0.95, "Fixed dt" => 1e-3),
             "Numerical Damping" => 5e-6,
         ),
     )
     @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params["Solver"]) ==
-          "External"
+          "Static"
 end
 
 path = "./test/unit_tests/Support/Parameters/"

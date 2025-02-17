@@ -72,10 +72,10 @@ Get the name of the solver
 function get_solver_name(params::Dict)
     if haskey(params, "Verlet")
         return "Verlet"
-    elseif haskey(params, "External")
-        return "External"
+    elseif haskey(params, "Static")
+        return "Static"
     end
-    @error "Wrong or missing solvername. Verlet and External are the options."
+    @error "Wrong or missing solvername. Verlet and Static are the options."
     return nothing
 end
 
