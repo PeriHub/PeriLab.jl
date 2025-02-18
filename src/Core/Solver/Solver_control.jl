@@ -19,6 +19,7 @@ using .Parameter_Handling:
 using .Helpers: find_indices, fastdot
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
+include("Static_solver.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
 include("../../FEM/FEM_Factory.jl")
@@ -114,11 +115,27 @@ function init(
         solver_options["Numerical Damping"],
         solver_options["Maximum Damage"] = Verlet.init_solver(
             solver_params,
+            bcs,
             datamanager,
             block_nodes,
             "Material" in solver_options["Models"],
             "Thermal" in solver_options["Models"],
         )
+    elseif solver_options["Solver"] == "Static"
+        @debug "Init " * get_solver_name(solver_params)
+        @timeit to "init_solver" solver_options["Initial Time"],
+        solver_options["dt"],
+        solver_options["nsteps"],
+        solver_options["Numerical Damping"],
+        solver_options["Maximum Damage"] = Static_solver.init_solver(
+            solver_params,
+            bcs,
+            datamanager,
+            block_nodes,
+            "Material" in solver_options["Models"],
+            "Thermal" in solver_options["Models"],
+        )
+
     else
         @error get_solver_name(solver_params) * " is no valid solver."
         return nothing
@@ -297,8 +314,20 @@ function solver(
             to,
             silent,
         )
+    elseif solver_options["Solver"] == "Static"
+        return Static_solver.run_solver(
+            solver_options,
+            block_nodes,
+            bcs,
+            datamanager,
+            outputs,
+            result_files,
+            synchronise_field,
+            write_results,
+            to,
+            silent,
+        )
     end
-
 end
 
 """
