@@ -28,7 +28,7 @@ include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")
 include("../../Compute/compute_field_values.jl")
 using .Model_Factory
-using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann
+using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, apply_bc_dirichlet_force
 using .Helpers: matrix_style
 using .Logging_module: print_table
 export init_solver
@@ -356,7 +356,7 @@ function init_solver(
 
         print_table(data, datamanager)
     end
-    return initial_time, dt, nsteps, numerical_damping, max_damage
+    return initial_time, dt, nsteps, numerical_damping, max_damage, Dict()
 end
 
 """
@@ -575,7 +575,7 @@ function run_solver(
             )
             # synch
             @timeit to "apply_bc_dirichlet_force" datamanager =
-                Boundary_conditions.apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
+                apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, step_time) #-> von neumann
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes =

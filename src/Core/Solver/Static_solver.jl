@@ -30,7 +30,8 @@ include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")
 include("../../Compute/compute_field_values.jl")
 using .Model_Factory
-using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
+using .Boundary_conditions:
+    apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, apply_bc_dirichlet_force
 using .Helpers: matrix_style
 using .Logging_module: print_table
 export init_solver
@@ -102,24 +103,32 @@ function init_solver(
         dt = (final_time - initial_time) / (nsteps - 1)
     end
     comm = datamanager.get_comm()
+    # not needed here
     numerical_damping = get_numerical_damping(params)
     max_damage = get_max_damage(params)
-
-    if !haskey(params["Static"], "Solution tolerance")
-        params["Solution tolerance"] = 1e-7
+    solver_specifics = Dict(
+        "Solution tolerance" => 1e-7,
+        "Residual tolerance" => 1e-7,
+        "Maximum number of iterations" => 1,
+        "Show static iteration" => false,
+    )
+    if haskey(params["Static"], "Solution tolerance")
+        solver_specifics["Solution tolerance"] = params["Static"]["Solution tolerance"]
     end
-    if !haskey(params["Static"], "Residual tolerance")
-        params["Residual tolerance"] = 1e-7
+    if haskey(params["Static"], "Residual tolerance")
+        solver_specifics["Residual tolerance"] = params["Static"]["Residual tolerance"]
     end
-    if !haskey(params["Static"], "Maximum number of iterations")
-        params["Maximum number of iterations"] = 10
+    if haskey(params["Static"], "Maximum number of iterations")
+        solver_specifics["Maximum number of iterations"] =
+            params["Static"]["Maximum number of iterations"]
     end
-    if !haskey(params["Static"], "Show static iteration")
-        params["Show static iteration"] = false
+    if haskey(params["Static"], "Show static iteration")
+        solver_specifics["Show static iteration"] =
+            params["Static"]["Show static iteration"]
     end
     dof = datamanager.get_dof()
     residual = datamanager.create_constant_node_field("Residual", Float64, dof)
-    start_u = datamanager.create_constant_node_field("Start value", Float64, dof)
+    start_u = datamanager.create_constant_node_field("Start Value", Float64, dof)
     Boundary_conditions.find_bc_free_dof(datamanager, bcs)
 
 
@@ -140,7 +149,6 @@ function init_solver(
             data = vcat(
                 data,
                 [
-                    "Minimal time increment" "."^10 dt "s"
                     "Time increment" "."^10 dt "s"
                 ],
             )
@@ -149,19 +157,14 @@ function init_solver(
             data,
             [
                 "Number of steps" "."^10 nsteps ""
-                "Numerical Damping" "."^10 numerical_damping ""
             ],
         )
 
         print_table(data, datamanager)
     end
 
-    return initial_time, dt, nsteps, numerical_damping, max_damage
+    return initial_time, dt, nsteps, numerical_damping, max_damage, solver_specifics
 end
-
-
-
-
 
 function run_solver(
     solver_options::Dict{Any,Any},
@@ -198,34 +201,33 @@ function run_solver(
     damage_init::Bool = false
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
-    bc_free_dof = datamanger.get_bc_free_dof()
+    bc_free_dof = datamanager.get_bc_free_dof()
 
-    xtol = params["Solution tolerance"]
-
-    ftol = params["Residual tolerance"]
-    iterations = params["Maximum number of iterations"]
-
-    show_trace = params["Show static iteration"]
-
-    nnodes = datamanager.get_nnodes()
-    start_u[node_set, :] = coor[node_set, :] * 1e-3
+    xtol = solver_options["Solver specifics"]["Solution tolerance"]
+    ftol = solver_options["Solver specifics"]["Residual tolerance"]
+    iterations = solver_options["Solver specifics"]["Maximum number of iterations"]
+    show_trace = solver_options["Solver specifics"]["Show static iteration"]
     uN = datamanager.get_field("Displacements", "N")
-    uNP1 = datamanager.get_field("Displacements", "NP1")
     resdiual = datamanager.get_field("Residual")
     start_u = datamanager.get_field("Start Value")
     for idt in iter
         uN = datamanager.get_field("Displacements", "N")
         datamanager.set_iteration(idt)
+        foreach(t -> start_u[t...] = uN[t...], bc_free_dof)
 
-        start_u[bc_free_dof, :] = uN[bc_free_dof, :]
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,
                 U,
                 datamanager,
                 bc_free_dof,
-                start_time + step_time,
+                bcs,
+                block_nodes,
+                dt,
+                step_time,
+                solver_options,
                 synchronise_field,
+                to,
             ),
             start_u;
             xtol = xtol,
@@ -243,8 +245,6 @@ function run_solver(
             outputs,
             datamanager,
         )
-
-
 
         if rank == 0 && !silent && datamanager.get_cancel()
             set_multiline_postfix(iter, "Simulation canceled!")
@@ -266,36 +266,49 @@ function run_solver(
     return result_files
 end
 
-function residual!(residual, U, datamanager, node_set, step_time, synchronise_field)
+function residual!(
+    residual,
+    U,
+    datamanager,
+    bc_free_dof,
+    bcs,
+    block_nodes,
+    dt,
+    step_time,
+    solver_options,
+    synchronise_field,
+    to,
+)
+
     external_forces = datamanager.get_field("External Forces")
     external_force_densities = datamanager.get_field("External Force Densities")
     volume = datamanager.get_field("Volume")
     active_list = datamanager.get_field("Active")
-    bc_free_dofs = datamanager.get_bc_free_dof()
+
     uNP1 = datamanager.get_field("Displacements", "NP1")
 
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
     forces = datamanager.get_field("Forces", "NP1")
     force_densities = datamanager.get_field("Force Densities", "NP1")
-
+    coor = datamanager.get_field("Coordinates")
     active_nodes = datamanager.get_field("Active Nodes")
     active_nodes = find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
     # one step more, because of init step (time = 0)
     # displacement  from interface
 
 
-    datamanager = Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
-    datamanager = Boundary_conditions.apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
+    datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
+    datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
     external_force_densities += external_forces ./ volume
 
-    foreach(t -> uNP1[t...] = U[t...], bc_free_dofs)
+    foreach(t -> uNP1[t...] = U[t...], bc_free_dof)
 
     @views deformed_coorNP1[active_nodes, :] =
         coor[active_nodes, :] .+ uNP1[active_nodes, :]
 
     datamanager.synch_manager(synchronise_field, "upload_to_cores")
     # synch
-    datamanager = PeriLab.Solver_control.Model_Factory.compute_models(
+    datamanager = Model_Factory.compute_models(
         datamanager,
         block_nodes,
         dt,
@@ -318,7 +331,7 @@ function residual!(residual, U, datamanager, node_set, step_time, synchronise_fi
     # Richtung muss mit rein
     foreach(
         t -> residual[t...] = -force_densities[t...] + external_force_densities[t...],
-        bc_free_dofs,
+        bc_free_dof,
     )
 
     @views forces[active_nodes, :] =

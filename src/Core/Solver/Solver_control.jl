@@ -113,7 +113,8 @@ function init(
         solver_options["dt"],
         solver_options["nsteps"],
         solver_options["Numerical Damping"],
-        solver_options["Maximum Damage"] = Verlet.init_solver(
+        solver_options["Maximum Damage"],
+        solver_options["Solver specifics"] = Verlet.init_solver(
             solver_params,
             bcs,
             datamanager,
@@ -127,7 +128,8 @@ function init(
         solver_options["dt"],
         solver_options["nsteps"],
         solver_options["Numerical Damping"],
-        solver_options["Maximum Damage"] = Static_solver.init_solver(
+        solver_options["Maximum Damage"],
+        solver_options["Solver specifics"] = Static_solver.init_solver(
             solver_params,
             bcs,
             datamanager,
