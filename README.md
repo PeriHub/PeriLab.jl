@@ -76,7 +76,11 @@ A few basic examples of `PeriLab` can be found in the [examples](https://github.
 
 - 🧲 **Multimodels**: PeriLab supports multimodels simulations, combining different types of peridynamics and damage models to create a comprehensive simulation environment.
 
+- 🔌 **Subroutine Interfaces**: Subroutines, such as UMAT, VUMAT and HETVAL are usable as material models
+
 - ⚡ **MPI**: PeriLab supports parallel computing using Message Passing Interface (MPI) technology to improve simulation performance on high-performance clusters.
+
+- 🔁 **Multistep simulations**: PeriLab supports the definition of multiple solver steps, allowing to combine different enviromental conditions in a single run.
 
 - 💻 **HPC capabilities**: PeriLab is designed for high-performance computing (HPC) environments, allowing users to run large-scale simulations efficiently.
 

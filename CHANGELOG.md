@@ -8,12 +8,30 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.3] - 2025-02-18
+
+### Added
+
+- Multistep Solver #231
+- VUMAT interface
+- Documentations #232 #229 #228
+
+### Fixed
+
+- Critical time step estimation for orthotropic materials
+- "Safety factor" warning
+
+### Changed
+
+- Deformation gradient is only calculated when needed
+- PeriLab Banner width
+
 ## [1.3.2] - 2025-02-05
 
 ### Fixed
 
 - Hooke matrix calculation for orthotropic materials
-- Zero Energy Control with rotations
+- Zero Energy Control with rotations #226
 - HEATVAL interface speed
 
 ## [1.3.1] - 2025-02-02
