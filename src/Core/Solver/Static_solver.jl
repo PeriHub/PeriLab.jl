@@ -79,14 +79,28 @@ function init_solver(
     mechanical::Bool,
     thermo::Bool,
 )
-    # @info "======================="
+    # @info "==============================="
     # @info "==== NLsolve Static Solver ===="
-    # @info "======================="
+    # @info "==============================="
 
     initial_time = get_initial_time(params)
     final_time = get_final_time(params)
     fixed_dt = get_fixed_dt(params)
-
+    if fixed_dt == -1.0
+        if haskey(params, "nstep")
+            nsteps = params["nstep"]
+            dt = (final_time - initial_time) / (nsteps - 1)
+        else
+            nsteps = Int64(1)
+            dt = final_time - initial_time
+        end
+    else
+        if haskey(params, "nstep")
+            @warn "nsteps and fixed dt is defined. Fixed dt is used and nsteps from yaml ignored."
+        end
+        nsteps = Int64(round((final_time - initial_time) / fixed_dt) + 1)
+        dt = (final_time - initial_time) / (nsteps - 1)
+    end
     comm = datamanager.get_comm()
     numerical_damping = get_numerical_damping(params)
     max_damage = get_max_damage(params)
@@ -126,7 +140,7 @@ function init_solver(
             data = vcat(
                 data,
                 [
-                    "Minimal time increment" "."^10 min_dt "s"
+                    "Minimal time increment" "."^10 dt "s"
                     "Time increment" "."^10 dt "s"
                 ],
             )
@@ -141,6 +155,7 @@ function init_solver(
 
         print_table(data, datamanager)
     end
+
     return initial_time, dt, nsteps, numerical_damping, max_damage
 end
 
@@ -182,7 +197,7 @@ function run_solver(
     max_damage::Float64 = 0
     damage_init::Bool = false
     rank = datamanager.get_rank()
-    iter = PeriLab.Solver_control.Helpers.progress_bar(rank, nsteps, silent)
+    iter = progress_bar(rank, nsteps, silent)
     bc_free_dof = datamanger.get_bc_free_dof()
 
     xtol = params["Solution tolerance"]
@@ -219,9 +234,9 @@ function run_solver(
             show_trace = show_trace,
         )
 
-        #datamanager = PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
+        #datamanager = Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
 
-        @timeit to "write_results" result_files = PeriLab.IO.write_results(
+        @timeit to "write_results" result_files = write_results(
             result_files,
             start_time + step_time,
             max_damage,
