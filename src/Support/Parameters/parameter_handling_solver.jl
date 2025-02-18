@@ -26,15 +26,19 @@ Get the solver steps
 - `solver_steps::List`: The solver steps
 """
 function get_solver_steps(params::Dict)
+    if !haskey(params, "Multistep Solver")
+        return [nothing]
+    end
     step_id = []
-    for step_name in keys(params["Solver"])
-        if typeof(params["Solver"][step_name]) == Dict{Any,Any} &&
-           haskey(params["Solver"][step_name], "Step ID")
-            append!(step_id, params["Solver"][step_name]["Step ID"])
+    for step_name in keys(params["Multistep Solver"])
+        if typeof(params["Multistep Solver"][step_name]) == Dict{Any,Any} &&
+           haskey(params["Multistep Solver"][step_name], "Step ID")
+            append!(step_id, params["Multistep Solver"][step_name]["Step ID"])
         end
     end
     if length(step_id) == 0
-        return [nothing]
+        @error "No solver steps defined"
+        return nothing
     end
     return sort!(step_id)
 end
@@ -50,9 +54,9 @@ Get the solver parameters
 - `solver_params::Dict`: The solver parameters
 """
 function get_solver_params(params::Dict, step_id)
-    for step_name in keys(params["Solver"])
-        if params["Solver"][step_name]["Step ID"] == step_id
-            return params["Solver"][step_name]
+    for step_name in keys(params["Multistep Solver"])
+        if params["Multistep Solver"][step_name]["Step ID"] == step_id
+            return params["Multistep Solver"][step_name]
         end
     end
     @error "Step ID $step_id not found"

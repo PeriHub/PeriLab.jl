@@ -387,7 +387,7 @@ global expected_structure = Dict(
                 ),
                 false,
             ],
-            "Solver" => [
+            "Multistep Solver" => [
                 Dict{Any,Any}(
                     "Any" => [
                         Dict{Any,Any}(
