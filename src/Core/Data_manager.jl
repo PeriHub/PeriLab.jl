@@ -56,7 +56,7 @@ export remove_active_model
 export set_step
 export set_iteration
 export set_accuracy_order
-export set_bc_free_dofs
+export set_bc_free_dof
 export set_block_list
 export set_crit_values_matrix
 export set_coupling_dict
@@ -207,7 +207,7 @@ function get_bc_free_dof()
 end
 
 """
-    get_bc_free_dof(values::Vector{Tuple{Int64, Int64}})
+    set_bc_free_dof(values::Vector{Tuple{Int64, Int64}})
 
 Set all dof without displacment boundary conditions.
 
@@ -215,7 +215,7 @@ Set all dof without displacment boundary conditions.
 -
 
 """
-function get_bc_free_dof(values::Vector{Tuple{Int64,Int64}})
+function set_bc_free_dof(values::Vector{Tuple{Int64,Int64}})
     data["BC_free_dof"] = values
 end
 
