@@ -265,7 +265,7 @@ function compute_crititical_time_step(
 end
 
 """
-    init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
@@ -273,6 +273,7 @@ This function sets up the Verlet solver for a simulation by initializing various
 
 # Arguments
 - `params::Dict`: A dictionary containing simulation parameters.
+- `bcs::Dict{Any,Any}`: Boundary conditions
 - `datamanager::Module`: The data manager module that provides access to required data fields and properties.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
@@ -295,6 +296,7 @@ This function may depend on the following functions:
 """
 function init_solver(
     params::Dict,
+    bcs::Dict{Any,Any},
     datamanager::Module,
     block_nodes::Dict{Int64,Vector{Int64}},
     mechanical::Bool,
