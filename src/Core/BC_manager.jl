@@ -30,7 +30,9 @@ function find_bc_free_dof(datamanager::Module, bcs::Dict{Any,Any})
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     for bc in values(bcs)
         if bc["Variable"] == "Displacements" && bc["Type"] == "Dirichlet"
-            act = [(node, dof_mapping[bc["Coordinate"]]) for node in bc["Node Set"]]
+            act = Vector{Tuple{Int64,Int64}}([
+                (node, dof_mapping[bc["Coordinate"]]) for node in bc["Node Set"]
+            ])
             bc_free_dof = setdiff(bc_free_dof, act)
         end
     end
