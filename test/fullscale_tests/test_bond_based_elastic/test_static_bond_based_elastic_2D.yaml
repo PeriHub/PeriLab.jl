@@ -54,10 +54,9 @@ PeriLab:
     Solve For Displacement: True
     Initial Time: 0.0
     Final Time: 5.0e-6
-    Fixed dt: 1e-6
-    External:
-      Safety Factor: 1.0
-
+    Static:
+      NLSolve: true
+      Fixed dt: 1e-6
   Outputs:
     Output1:
       Output Filename: "test_static_bond_based_elastic_2D"
