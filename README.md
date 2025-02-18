@@ -159,6 +159,10 @@ $ mpiexecjl -n 2 julia --project=./ -e "using PeriLab; PeriLab.main()" examples/
 
 Now, you've successfully installed PeriLab using the official Perihub/Perilab Docker image. You can start running your own peridynamic simulations within the container.
 
+## Web Framework `PeriHub` 🖥️
+
+PeriLab is also included as a ready to use application in the [PeriHub](https://github.com/PeriHub/PeriHub) web framework.
+
 ## `PeriLab` on `JuliaHub`
 
 Experience the convenience of using PeriLab as a ready-to-use application on JuliaHub. Simply create an [account](https://juliahub.com), navigate to the [applications page](https://juliahub.com/ui/Applications), and add the repository URL: https://github.com/PeriHub/PeriLab.jl.
