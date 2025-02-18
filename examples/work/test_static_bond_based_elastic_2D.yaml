@@ -42,7 +42,7 @@ PeriLab:
       Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "y"
-      Value: "0.1*t^2"
+      Value: "0.1*t"
       Type: Dirichlet
     BC_2:
       Variable: "Displacements"
@@ -50,26 +50,14 @@ PeriLab:
       Coordinate: "y"
       Value: "0.0"
       Type: Dirichlet
-    BC_3:
-      Variable: "Displacements"
-      Node Set: "Node Set 2"
-      Coordinate: "x"
-      Value: "0.0"
-      Type: Dirichlet
-    BC_4:
-      Variable: "Displacements"
-      Node Set: "Node Set 1"
-      Coordinate: "x"
-      Value: "0.0"
-      Type: Dirichlet
   Solver:
     Solve For Displacement: True
     Initial Time: 0.0
     Final Time: 5.0e-6
-    Static:
-      NLSolve: true
-      Fixed dt: 1e-6
-      Show solver iteration: true
+    Fixed dt: 1e-5
+    Verlet:
+      Safety Factor: 1.0
+
   Outputs:
     Output1:
       Output Filename: "test_static_bond_based_elastic_2D"

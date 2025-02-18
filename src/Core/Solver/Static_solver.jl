@@ -110,7 +110,7 @@ function init_solver(
         "Solution tolerance" => 1e-7,
         "Residual tolerance" => 1e-7,
         "Maximum number of iterations" => 1,
-        "Show static iteration" => false,
+        "Show solver iteration" => false,
     )
     if haskey(params["Static"], "Solution tolerance")
         solver_specifics["Solution tolerance"] = params["Static"]["Solution tolerance"]
@@ -122,9 +122,9 @@ function init_solver(
         solver_specifics["Maximum number of iterations"] =
             params["Static"]["Maximum number of iterations"]
     end
-    if haskey(params["Static"], "Show static iteration")
-        solver_specifics["Show static iteration"] =
-            params["Static"]["Show static iteration"]
+    if haskey(params["Static"], "Show solver iteration")
+        solver_specifics["Show solver iteration"] =
+            params["Static"]["Show solver iteration"]
     end
     dof = datamanager.get_dof()
     residual = datamanager.create_constant_node_field("Residual", Float64, dof)
@@ -206,15 +206,17 @@ function run_solver(
     xtol = solver_options["Solver specifics"]["Solution tolerance"]
     ftol = solver_options["Solver specifics"]["Residual tolerance"]
     iterations = solver_options["Solver specifics"]["Maximum number of iterations"]
-    show_trace = solver_options["Solver specifics"]["Show static iteration"]
+    show_trace = solver_options["Solver specifics"]["Show solver iteration"]
     uN = datamanager.get_field("Displacements", "N")
     resdiual = datamanager.get_field("Residual")
     start_u = datamanager.get_field("Start Value")
-    for idt in iter
-        uN = datamanager.get_field("Displacements", "N")
-        datamanager.set_iteration(idt)
-        foreach(t -> start_u[t...] = uN[t...], bc_free_dof)
+    coor = datamanager.get_field("Coordinates")
 
+    for idt in iter
+
+        datamanager.set_iteration(idt)
+        #datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
+        start_u = copy(uN)
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,
@@ -302,9 +304,12 @@ function residual!(
     external_force_densities += external_forces ./ volume
 
     foreach(t -> uNP1[t...] = U[t...], bc_free_dof)
+    #println(uNP1[5:8, :], U[5:8, :])
 
     @views deformed_coorNP1[active_nodes, :] =
         coor[active_nodes, :] .+ uNP1[active_nodes, :]
+
+    force_densities .= 0 # TODO check where to put it for iterative solver
 
     datamanager.synch_manager(synchronise_field, "upload_to_cores")
     # synch
@@ -327,10 +332,12 @@ function residual!(
     #active_nodes =            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
 
     # check_inf_or_nan(force_densities, "Forces")
-
+    println("U", U[5:8, :])
+    println("F", force_densities[5:8, :])
     # Richtung muss mit rein
+    residual .= 0
     foreach(
-        t -> residual[t...] = -force_densities[t...] + external_force_densities[t...],
+        t -> residual[t...] = force_densities[t...] + external_force_densities[t...],
         bc_free_dof,
     )
 
