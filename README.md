@@ -76,7 +76,11 @@ A few basic examples of `PeriLab` can be found in the [examples](https://github.
 
 - 🧲 **Multimodels**: PeriLab supports multimodels simulations, combining different types of peridynamics and damage models to create a comprehensive simulation environment.
 
+- 🔌 **Subroutine Interfaces**: Subroutines, such as UMAT, VUMAT and HETVAL are usable as material models
+
 - ⚡ **MPI**: PeriLab supports parallel computing using Message Passing Interface (MPI) technology to improve simulation performance on high-performance clusters.
+
+- 🔁 **Multistep simulations**: PeriLab supports the definition of multiple solver steps, allowing to combine different enviromental conditions in a single run.
 
 - 💻 **HPC capabilities**: PeriLab is designed for high-performance computing (HPC) environments, allowing users to run large-scale simulations efficiently.
 
@@ -154,6 +158,10 @@ $ mpiexecjl -n 2 julia --project=./ -e "using PeriLab; PeriLab.main()" examples/
    Replace `<path_to_local_simulations_directory>` with the absolute path to a local directory where you want to store your PeriLab simulations. This command will open a new terminal session inside the Docker container.
 
 Now, you've successfully installed PeriLab using the official Perihub/Perilab Docker image. You can start running your own peridynamic simulations within the container.
+
+## Web Framework `PeriHub` 🖥️
+
+PeriLab is also included as a ready to use application in the [PeriHub](https://github.com/PeriHub/PeriHub) web framework.
 
 ## `PeriLab` on `JuliaHub`
 

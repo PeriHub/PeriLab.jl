@@ -79,7 +79,7 @@ PeriLab:
             Value: 20-10*t
             Type: Initial
             Step ID: 1
-    Solver:
+    Multistep Solver:
       Step 1:
         Step ID: 1
         Initial Time: 0.0
