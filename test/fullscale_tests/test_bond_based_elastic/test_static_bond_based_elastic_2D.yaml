@@ -70,7 +70,9 @@ PeriLab:
       NLSolve: true
       Fixed dt: 1e-6
       Maximum number of iterations: 10
-      Show solver iteration: true
+      Show solver iteration: false
+      Residual tolerance: 1e-8
+      Solution tolerance: 1e-8
   Outputs:
     Output1:
       Output Filename: "test_static_bond_based_elastic_2D"
