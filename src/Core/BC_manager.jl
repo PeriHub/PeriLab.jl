@@ -6,9 +6,39 @@ module Boundary_conditions
 export init_BCs
 export apply_bc_dirichlet
 export apply_bc_neumann
+export find_bc_free_dof
 include("../Support/Parameters/parameter_handling.jl")
 
 using .Parameter_Handling: get_bc_definitions
+
+
+
+"""
+    find_bc_free_dof(datamanager::Module, bcs::Dict{String,Any})
+Finds all dof without a displacement boundary condition. This tuple vector is stored in the datamanager.
+
+# Arguments
+- `datamanager::Module`: The data manager module
+- `bcs::Dict{String,Any}`: The boundary conditions
+# Returns
+
+"""
+function find_bc_free_dof(datamanager::Module, bcs::Dict{Any,Any})
+    nnodes = datamanager.get_nnodes()
+    dof = datamanager.get_dof()
+    bc_free_dof = vec([(i, j) for i = 1:nnodes, j = 1:dof])
+    dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
+    for bc in values(bcs)
+        if bc["Variable"] == "Displacements" && bc["Type"] == "Dirichlet"
+            act = Vector{Tuple{Int64,Int64}}([
+                (node, dof_mapping[bc["Coordinate"]]) for node in bc["Node Set"]
+            ])
+            bc_free_dof = setdiff(bc_free_dof, act)
+        end
+    end
+    datamanager.set_bc_free_dof(bc_free_dof)
+end
+
 """
     check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module
 

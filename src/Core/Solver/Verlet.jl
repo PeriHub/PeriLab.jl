@@ -28,7 +28,7 @@ include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")
 include("../../Compute/compute_field_values.jl")
 using .Model_Factory
-using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann
+using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, apply_bc_dirichlet_force
 using .Helpers: matrix_style
 using .Logging_module: print_table
 export init_solver
@@ -259,7 +259,7 @@ function compute_crititical_time_step(
 end
 
 """
-    init_solver(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
+    init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
 
@@ -267,6 +267,7 @@ This function sets up the Verlet solver for a simulation by initializing various
 
 # Arguments
 - `params::Dict`: A dictionary containing simulation parameters.
+- `bcs::Dict{Any,Any}`: Boundary conditions
 - `datamanager::Module`: The data manager module that provides access to required data fields and properties.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes.
 - `mechanical::Bool`: If `true`, mechanical properties are considered in the calculation.
@@ -289,6 +290,7 @@ This function may depend on the following functions:
 """
 function init_solver(
     params::Dict,
+    bcs::Dict{Any,Any},
     datamanager::Module,
     block_nodes::Dict{Int64,Vector{Int64}},
     mechanical::Bool,
@@ -348,7 +350,7 @@ function init_solver(
 
         print_table(data, datamanager)
     end
-    return initial_time, dt, nsteps, numerical_damping, max_damage
+    return initial_time, dt, nsteps, numerical_damping, max_damage, Dict()
 end
 
 """
@@ -567,7 +569,7 @@ function run_solver(
             )
             # synch
             @timeit to "apply_bc_dirichlet_force" datamanager =
-                Boundary_conditions.apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
+                apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, step_time) #-> von neumann
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes =

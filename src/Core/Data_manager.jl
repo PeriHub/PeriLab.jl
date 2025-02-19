@@ -20,6 +20,7 @@ export initialize_data
 export get_active_models
 export get_all_field_keys
 export has_key
+export get_bc_free_dof
 export get_step
 export get_iteration
 export get_accuracy_order
@@ -55,6 +56,7 @@ export remove_active_model
 export set_step
 export set_iteration
 export set_accuracy_order
+export set_bc_free_dof
 export set_block_list
 export set_crit_values_matrix
 export set_coupling_dict
@@ -146,6 +148,7 @@ function initialize_data()
     data["damage_models"] = []
     data["NP1_to_N"] = Dict{String,Vector{}}()
     data["coupling_fe_nodes"] = []
+    data["BC_free_dof"] = []
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -189,6 +192,31 @@ Set the max_step of the simulation.
 """
 function set_max_step(max_step::Union{Int64,Nothing})
     data["max_step"] = max_step
+end
+"""
+    get_bc_free_dof()
+
+Get all dof without displacment boundary conditions.
+
+# Returns
+- `Vector{Tuple{Int64, Int64}}`: The point and dof without boundary condition.
+
+"""
+function get_bc_free_dof()
+    return data["BC_free_dof"]
+end
+
+"""
+    set_bc_free_dof(values::Vector{Tuple{Int64, Int64}})
+
+Set all dof without displacment boundary conditions.
+
+# Returns
+-
+
+"""
+function set_bc_free_dof(values::Vector{Tuple{Int64,Int64}})
+    data["BC_free_dof"] = values
 end
 
 """

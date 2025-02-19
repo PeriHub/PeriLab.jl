@@ -26,7 +26,7 @@ $$\mathbf{K}_z=\kappa\begin{bmatrix}
 Following [PernatiiA2023](@cite) for the Arlequng method the equation of motion of the coupled system in discretized form looks as follows:
 
 
-$$\mathbf{K}_z=\kappa\begin{bmatrix}
+$$\kappa\begin{bmatrix}
 \frac{\alpha}{V_{el}}\mathbf{M}_{FE} &  \\
  & (1-\alpha)\rho_{PD}
 \end{bmatrix}\begin{bmatrix}
