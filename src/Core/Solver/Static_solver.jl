@@ -211,12 +211,20 @@ function run_solver(
     resdiual = datamanager.get_field("Residual")
     start_u = datamanager.get_field("Start Value")
     coor = datamanager.get_field("Coordinates")
-
+    external_forces = datamanager.get_field("External Forces")
+    external_force_densities = datamanager.get_field("External Force Densities")
+    force_densities = datamanager.get_field("Force Densities", "NP1")
+    forces = datamanager.get_field("Forces", "NP1")
+    volume = datamanager.get_field("Volume")
+    active_nodes = datamanager.get_field("Active Nodes")
+    active_list = datamanager.get_field("Active")
     for idt in iter
 
         datamanager.set_iteration(idt)
         #datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
-        start_u = copy(uN)
+        datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
+        external_force_densities += external_forces ./ volume
+        start_u = copy(uN) .+ 0.001
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,
@@ -237,6 +245,10 @@ function run_solver(
             iterations = iterations,
             show_trace = show_trace,
         )
+        active_nodes =
+            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
+        @views forces[active_nodes, :] =
+            force_densities[active_nodes, :] .* volume[active_nodes]
 
         #datamanager = Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
 
@@ -282,26 +294,23 @@ function residual!(
     to,
 )
 
-    external_forces = datamanager.get_field("External Forces")
-    external_force_densities = datamanager.get_field("External Force Densities")
-    volume = datamanager.get_field("Volume")
     active_list = datamanager.get_field("Active")
 
     uNP1 = datamanager.get_field("Displacements", "NP1")
 
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
-    forces = datamanager.get_field("Forces", "NP1")
+
     force_densities = datamanager.get_field("Force Densities", "NP1")
     coor = datamanager.get_field("Coordinates")
     active_nodes = datamanager.get_field("Active Nodes")
     active_nodes = find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
+    external_force_densities = datamanager.get_field("External Force Densities")
     # one step more, because of init step (time = 0)
     # displacement  from interface
 
 
     datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
-    datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
-    external_force_densities += external_forces ./ volume
+
 
     foreach(t -> uNP1[t...] = U[t...], bc_free_dof)
     #println(uNP1[5:8, :], U[5:8, :])
@@ -332,8 +341,7 @@ function residual!(
     #active_nodes =            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
 
     # check_inf_or_nan(force_densities, "Forces")
-    println("U", U[5:8, :])
-    println("F", force_densities[5:8, :])
+
     # Richtung muss mit rein
     residual .= 0
     foreach(
@@ -341,8 +349,7 @@ function residual!(
         bc_free_dof,
     )
 
-    @views forces[active_nodes, :] =
-        force_densities[active_nodes, :] .* volume[active_nodes]
+
 end
 
 

@@ -69,6 +69,7 @@ PeriLab:
     Static:
       NLSolve: true
       Fixed dt: 1e-6
+      Maximum number of iterations: 10
       Show solver iteration: true
   Outputs:
     Output1:
