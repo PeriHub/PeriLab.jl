@@ -33,10 +33,11 @@ function find_bc_free_dof(datamanager::Module, bcs::Dict{Any,Any})
             act = Vector{Tuple{Int64,Int64}}([
                 (node, dof_mapping[bc["Coordinate"]]) for node in bc["Node Set"]
             ])
+
             bc_free_dof = setdiff(bc_free_dof, act)
         end
     end
-    datamanager.set_bc_free_dof(bc_free_dof)
+    datamanager.set_bc_free_dof([(t[1] + (t[2] - 1) * nnodes) for t in bc_free_dof])
 end
 
 """

@@ -215,7 +215,7 @@ Set all dof without displacment boundary conditions.
 -
 
 """
-function set_bc_free_dof(values::Vector{Tuple{Int64,Int64}})
+function set_bc_free_dof(values::Vector{Int64})
     data["BC_free_dof"] = values
 end
 
