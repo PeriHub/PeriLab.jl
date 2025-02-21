@@ -88,15 +88,15 @@ function init_solver(
     final_time = get_final_time(params)
     fixed_dt = get_fixed_dt(params)
     if fixed_dt == -1.0
-        if haskey(params, "nstep")
-            nsteps = params["nstep"]
+        if haskey(params, "nsteps")
+            nsteps = params["nsteps"]
             dt = (final_time - initial_time) / (nsteps - 1)
         else
             nsteps = Int64(1)
             dt = final_time - initial_time
         end
     else
-        if haskey(params, "nstep")
+        if haskey(params, "nsteps")
             @warn "nsteps and fixed dt is defined. Fixed dt is used and nsteps from yaml ignored."
         end
         nsteps = Int64(round((final_time - initial_time) / fixed_dt) + 1)
@@ -109,9 +109,13 @@ function init_solver(
     solver_specifics = Dict(
         "Solution tolerance" => 1e-7,
         "Residual tolerance" => 1e-7,
-        "Maximum number of iterations" => 1,
+        "Maximum number of iterations" => 100,
         "Show solver iteration" => false,
+        "Residual scaling" => 1e6,
     )
+    if haskey(params["Static"], "Residual scaling")
+        solver_specifics["Residual scaling"] = params["Static"]["Residual scaling"]
+    end
     if haskey(params["Static"], "Solution tolerance")
         solver_specifics["Solution tolerance"] = params["Static"]["Solution tolerance"]
     end
@@ -137,6 +141,9 @@ function init_solver(
             "Static Solver" "" "" ""
             "Initial time" "."^10 initial_time "s"
             "Final time" "."^10 final_time "s"
+            "Maximum number of iterations" "."^10 solver_specifics["Maximum number of iterations"] ""
+            "Solution tolerance" "."^10 solver_specifics["Solution tolerance"] ""
+            "Residual tolerance" "."^10 solver_specifics["Residual tolerance"] ""
         ]
         if fixed_dt != -1.0
             data = vcat(
@@ -202,12 +209,13 @@ function run_solver(
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     bc_free_dof = datamanager.get_bc_free_dof()
-
+    scaling = solver_options["Solver specifics"]["Residual scaling"]
     xtol = solver_options["Solver specifics"]["Solution tolerance"]
     ftol = solver_options["Solver specifics"]["Residual tolerance"]
     iterations = solver_options["Solver specifics"]["Maximum number of iterations"]
     show_trace = solver_options["Solver specifics"]["Show solver iteration"]
     uN = datamanager.get_field("Displacements", "N")
+    uNP1 = datamanager.get_field("Displacements", "NP1")
     resdiual = datamanager.get_field("Residual")
     start_u = datamanager.get_field("Start Value")
     coor = datamanager.get_field("Coordinates")
@@ -224,7 +232,8 @@ function run_solver(
         #datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
         datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
         external_force_densities += external_forces ./ volume
-        start_u = copy(uN) .+ 0.001
+        start_u = copy(uN)
+        datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,
@@ -238,13 +247,19 @@ function run_solver(
                 solver_options,
                 synchronise_field,
                 to,
+                scaling,
             ),
             start_u;
             xtol = xtol,
             ftol = ftol,
             iterations = iterations,
             show_trace = show_trace,
+            extended_trace = false,
+            method = :anderson,
         )
+
+        # method=:newton, linsolve=KrylovJL_GMRES()
+        # method=:broyden
         active_nodes =
             find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
         @views forces[active_nodes, :] =
@@ -292,11 +307,10 @@ function residual!(
     solver_options,
     synchronise_field,
     to,
+    scaling,
 )
 
     active_list = datamanager.get_field("Active")
-
-    uNP1 = datamanager.get_field("Displacements", "NP1")
 
     deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
 
@@ -307,18 +321,21 @@ function residual!(
     external_force_densities = datamanager.get_field("External Force Densities")
     # one step more, because of init step (time = 0)
     # displacement  from interface
+    # Set bond damages to original state
+    datamanager.switch_bonds!(
+        datamanager.get_field("Bond Damage", "N"),
+        datamanager.get_field("Bond Damage", "NP1"),
+    )
 
-
-    datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
-
-
-    foreach(t -> uNP1[t...] = U[t...], bc_free_dof)
+    uNP1 = datamanager.get_field("Displacements", "NP1")
+    uNP1[bc_free_dof] = copy(U[bc_free_dof])
+    #foreach(t -> uNP1[t...] = U[t...], bc_free_dof)
     #println(uNP1[5:8, :], U[5:8, :])
 
     @views deformed_coorNP1[active_nodes, :] =
         coor[active_nodes, :] .+ uNP1[active_nodes, :]
 
-    force_densities .= 0 # TODO check where to put it for iterative solver
+    force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
 
     datamanager.synch_manager(synchronise_field, "upload_to_cores")
     # synch
@@ -343,11 +360,11 @@ function residual!(
     # check_inf_or_nan(force_densities, "Forces")
 
     # Richtung muss mit rein
+
     residual .= 0
-    foreach(
-        t -> residual[t...] = force_densities[t...] + external_force_densities[t...],
-        bc_free_dof,
-    )
+    residual[bc_free_dof] =
+        (force_densities[bc_free_dof] + external_force_densities[bc_free_dof]) ./ scaling
+
 
 
 end

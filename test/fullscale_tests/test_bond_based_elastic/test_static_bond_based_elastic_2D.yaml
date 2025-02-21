@@ -42,7 +42,7 @@ PeriLab:
       Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "y"
-      Value: "0.1*t^2"
+      Value: "5.1*t^2"
       Type: Dirichlet
     BC_2:
       Variable: "Displacements"
@@ -66,13 +66,14 @@ PeriLab:
     Solve For Displacement: True
     Initial Time: 0.0
     Final Time: 5.0e-6
+    nsteps: 7
     Static:
       NLSolve: true
-      Fixed dt: 1e-6
-      Maximum number of iterations: 10
-      Show solver iteration: false
+      Maximum number of iterations: 100
+      Show solver iteration: true
       Residual tolerance: 1e-8
       Solution tolerance: 1e-8
+      Residual scaling: 1 # should be for complex problems in the range of the Young's modulus
   Outputs:
     Output1:
       Output Filename: "test_static_bond_based_elastic_2D"
