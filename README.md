@@ -255,9 +255,9 @@ url={https://doi.org/10.1016/j.softx.2024.101700}
 ## Partner
 
 
-| <img src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/dlr.jpg" height="200" title="German Aerospace Center"> | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Logo_h2.svg/1280px-Logo_h2.svg.png" height="200" title="Magdeburg-Stendal University of Applied Science"> |
-|:------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------:|
-| [German Aerospace Center](http://www.dlr.de/sy)                                                                               | [Magdeburg-Stendal University of Applied Science](http://www.h2.de)                                                                  |
+| <img src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/dlr.jpg" height="200" title="German Aerospace Center"> | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Logo_h2.svg/1280px-Logo_h2.svg.png" height="200" title="Magdeburg-Stendal University of Applied Science"> | <img src="https://upload.wikimedia.org/wikipedia/commons/0/01/Otto_von_Guericke_Universit%C3%A4t_Magdeburg_Logo.svg" height="200" title="Otto von Guericke University Magdeburg"> |
+|:------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------:|
+| [German Aerospace Center](http://www.dlr.de/sy)                                                                               | [Magdeburg-Stendal University of Applied Science](http://www.h2.de)                                                                  | [Otto von Guericke University Magdeburg](http://www.ovgu.de)
 
 
 
