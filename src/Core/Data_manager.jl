@@ -95,6 +95,7 @@ const data = Dict()
 Initialize all parameter in the datamanager and sets them to the default values.
 """
 function initialize_data()
+    data["current_time"] = 0.0
     data["step"] = 0
     data["max_step"] = 0
     data["nnodes"] = 0
@@ -154,6 +155,30 @@ function initialize_data()
     fields[Bool] = Dict()
 end
 ###################################
+
+"""
+    set_current_time(time::Float64)
+
+Set the current time of the simulation.
+
+# Arguments
+- `time::Float64`: The current time of the simulation.
+"""
+function set_current_time(time::Union{Float64,Nothing})
+    data["current_time"] = time
+end
+
+"""
+    get_current_time()
+
+Get the current time of the simulation.
+
+# Returns
+- `Float64`: The current time of the simulation.
+"""
+function get_current_time()
+    return data["current_time"]
+end
 
 """
     set_step(step::Int64)

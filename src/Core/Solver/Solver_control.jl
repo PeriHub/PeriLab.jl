@@ -109,33 +109,21 @@ function init(
     solver_options["Solver"] = get_solver_name(solver_params)
     if get_solver_name(solver_params) == "Verlet"
         @debug "Init " * get_solver_name(solver_params)
-        @timeit to "init_solver" solver_options["Initial Time"],
-        solver_options["dt"],
-        solver_options["nsteps"],
-        solver_options["Numerical Damping"],
-        solver_options["Maximum Damage"],
-        solver_options["Solver specifics"] = Verlet.init_solver(
+        @timeit to "init_solver" Verlet.init_solver(
+            solver_options,
             solver_params,
             bcs,
             datamanager,
             block_nodes,
-            "Material" in solver_options["Models"],
-            "Thermal" in solver_options["Models"],
         )
     elseif solver_options["Solver"] == "Static"
         @debug "Init " * get_solver_name(solver_params)
-        @timeit to "init_solver" solver_options["Initial Time"],
-        solver_options["dt"],
-        solver_options["nsteps"],
-        solver_options["Numerical Damping"],
-        solver_options["Maximum Damage"],
-        solver_options["Solver specifics"] = Static_solver.init_solver(
+        @timeit to "init_solver" Static_solver.init_solver(
+            solver_options,
             solver_params,
             bcs,
             datamanager,
             block_nodes,
-            "Material" in solver_options["Models"],
-            "Thermal" in solver_options["Models"],
         )
 
     else

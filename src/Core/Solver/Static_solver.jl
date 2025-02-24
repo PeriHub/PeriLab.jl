@@ -73,18 +73,19 @@ This function may depend on the following functions:
 - `find_and_set_core_value_min` and `find_and_set_core_value_max`: Used to set core values in a distributed computing environment.
 """
 function init_solver(
+    solver_options::Dict{Any,Any},
     params::Dict,
     bcs::Dict{Any,Any},
     datamanager::Module,
     block_nodes::Dict{Int64,Vector{Int64}},
-    mechanical::Bool,
-    thermo::Bool,
 )
     # @info "==============================="
     # @info "==== NLsolve Static Solver ===="
     # @info "==============================="
 
-    initial_time = get_initial_time(params)
+    mechanical = "Material" in solver_options["Models"]
+    thermal = "Thermal" in solver_options["Models"]
+    initial_time = get_initial_time(params, datamanager)
     final_time = get_final_time(params)
     fixed_dt = get_fixed_dt(params)
     if fixed_dt == -1.0
@@ -170,7 +171,13 @@ function init_solver(
         print_table(data, datamanager)
     end
 
-    return initial_time, dt, nsteps, numerical_damping, max_damage, solver_specifics
+    solver_options["Initial Time"] = initial_time
+    solver_options["Final Time"] = final_time
+    solver_options["dt"] = dt
+    solver_options["nsteps"] = nsteps
+    solver_options["Numerical Damping"] = numerical_damping
+    solver_options["Maximum Damage"] = max_damage
+    solver_options["Solver specifics"] = solver_specifics
 end
 
 function run_solver(
@@ -200,9 +207,8 @@ function run_solver(
 
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
-    start_time::Float64 = solver_options["Initial Time"]
+    time::Float64 = solver_options["Initial Time"]
     max_cancel_damage::Float64 = solver_options["Maximum Damage"]
-    step_time::Float64 = 0
     numerical_damping::Float64 = solver_options["Numerical Damping"]
     max_damage::Float64 = 0
     damage_init::Bool = false
@@ -229,11 +235,14 @@ function run_solver(
     for idt in iter
 
         datamanager.set_iteration(idt)
-        #datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
-        datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
+        if "Damage" in solver_options["Models"]
+            damage = datamanager.get_damage("NP1")
+        end
+        #datamanager = apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
+        datamanager = apply_bc_dirichlet_force(bcs, datamanager, time) #-> Dirichlet
         external_force_densities += external_forces ./ volume
         start_u = copy(uN)
-        datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
+        datamanager = apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,
@@ -243,7 +252,7 @@ function run_solver(
                 bcs,
                 block_nodes,
                 dt,
-                step_time,
+                time,
                 solver_options,
                 synchronise_field,
                 to,
@@ -257,7 +266,22 @@ function run_solver(
             extended_trace = false,
             method = :anderson,
         )
+        if !sol.x_converged && !sol.f_converged
+            @info "Failed to converge at step $idt: maximum number of iterations reached"
+            datamanager.set_cancel(true)
+        end
+        if rank == 0 && "Damage" in solver_options["Models"] #TODO gather value
+            max_damage = maximum(damage[active_nodes])
+            if max_damage > 0.0
+                datamanager.set_cancel(true)
+            end
+        end
 
+
+        if datamanager.get_cancel()
+            @info "Canceling at step $idt"
+            break
+        end
         # method=:newton, linsolve=KrylovJL_GMRES()
         # method=:broyden
         active_nodes =
@@ -265,28 +289,20 @@ function run_solver(
         @views forces[active_nodes, :] =
             force_densities[active_nodes, :] .* volume[active_nodes]
 
-        #datamanager = Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
+        #datamanager = Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
 
-        @timeit to "write_results" result_files = write_results(
-            result_files,
-            start_time + step_time,
-            max_damage,
-            outputs,
-            datamanager,
-        )
+        @timeit to "write_results" result_files =
+            write_results(result_files, time, max_damage, outputs, datamanager)
 
-        if rank == 0 && !silent && datamanager.get_cancel()
-            set_multiline_postfix(iter, "Simulation canceled!")
-            break
-        end
         @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
 
-        step_time += dt
+        time += dt
+        datamanager.set_current_time(time)
         if idt % ceil(nsteps / 100) == 0
-            @info "Step: $idt / $(nsteps+1) [$step_time s]"
+            @info "Step: $idt / $(nsteps+1) [$time s]"
         end
         # if rank == 0 && !silent
-        #     set_postfix(iter, t=@sprintf("%.4e", step_time))
+        #     set_postfix(iter, t=@sprintf("%.4e", time))
         # end
         MPI.Barrier(comm)
 
@@ -303,7 +319,7 @@ function residual!(
     bcs,
     block_nodes,
     dt,
-    step_time,
+    time,
     solver_options,
     synchronise_field,
     to,
@@ -343,7 +359,7 @@ function residual!(
         datamanager,
         block_nodes,
         dt,
-        step_time,
+        time,
         solver_options["Models"],
         synchronise_field,
         to,
@@ -353,7 +369,7 @@ function residual!(
     datamanager.synch_manager(synchronise_field, "download_from_cores")
     # synch
 
-    # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, step_time) #-> von neumann
+    # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, time) #-> von neumann
     #active_nodes = datamanager.get_field("Active Nodes")
     #active_nodes =            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
 
