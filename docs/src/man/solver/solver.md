@@ -60,5 +60,12 @@ For the time intergration a stable increment has to be determined.
 
 The static solver from [NLsolve.jl](https://github.com/JuliaNLSolvers/NLsolve.jl) has been included. Specifically the [method = :anderson](https://github.com/JuliaNLSolvers/NLsolve.jl#anderson-acceleration) is used.
 
+The solver computes the residual of the internal reaction force densities and the external applied force densities
+$$r =  \left[\underline{\mathbf{T}}_{external} + \underline{\mathbf{T}}_{internal}\right / s_{Residual\,scaling}$$
+
+Right now the default value $m$ of the Anderson acceleration method is chosen.
+
+
+
 !!! warning "Multiphysics"
     Currently only the mechanical solver is included!
