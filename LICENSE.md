@@ -16,6 +16,9 @@ modification, are permitted provided that the following conditions are met:
    contributors may be used to endorse or promote products derived from
    this software without specific prior written permission.
 
+4. This software may not be used by individuals, organizations, or entities that promote or engage in racism, fascism, or the manufacturing of weapons. This explicitly includes, but is not limited to, organizations and movements such as the AfD, Front National, MAGA, and similar groups.
+
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
