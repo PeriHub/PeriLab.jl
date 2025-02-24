@@ -698,8 +698,12 @@ end
         "Solver" => Dict(
             "Initial Time" => 0.0,
             "Final Time" => 1.0,
-            "Verlet" => Dict("Safety Factor" => 0.95, "Fixed dt" => 1e-3),
-            "Numerical Damping" => 5e-6,
+            "Fixed dt" => 1e-3,
+            "Verlet" => Dict(
+                "Safety Factor" => 0.95,
+                "Numerical Damping" => 5e-6,
+                "Fixed dt" => 1e-3,
+            ),
         ),
     )
     @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params["Solver"]) ==
