@@ -34,7 +34,6 @@ PeriLab:
     Thermal Models: True
     Initial Time: 0.0
     Final Time: 2e-5
-    Numerical Damping: 0e-00
     Verlet:
       Safety Factor: 1.00
       Fixed dt: 1e-7

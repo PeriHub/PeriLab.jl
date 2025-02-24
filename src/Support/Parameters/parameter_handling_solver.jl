@@ -160,7 +160,7 @@ Get the fixed time step
 - `nsteps::Int64`: The fixed time step
 """
 function get_nsteps(params::Dict)
-    return get(params[get_solver_name(params)], "Number of Steps", 1)
+    return get(params, "Number of Steps", 1)
 end
 
 """
@@ -174,7 +174,7 @@ Get the numerical damping
 - `numerical_damping::Float64`: The numerical damping
 """
 function get_numerical_damping(params::Dict)
-    return Float64(get(params, "Numerical Damping", 0.0))
+    return Float64(get(params[get_solver_name(params)], "Numerical Damping", 0.0))
 end
 
 """

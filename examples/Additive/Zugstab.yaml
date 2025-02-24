@@ -65,8 +65,6 @@ PeriLab:
     Pre Calculation Models: False
     Initial Time: 0.0
     Final Time: 2700
-    # Final Time: 500
-    # Numerical Damping: 1e-2
     Verlet:
       Fixed dt: 1.0
       Safety Factor: 1.0

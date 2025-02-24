@@ -50,7 +50,6 @@ PeriLab:
   Solver:
     Initial Time: 0.0
     Final Time: 0.8
-    Numerical Damping: 0e-0
     Verlet:
       Safety Factor: 1.00
       Fixed dt: 0.4

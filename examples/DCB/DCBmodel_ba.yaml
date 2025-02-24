@@ -31,13 +31,13 @@ PeriLab:
       Coordinate: y
       Node Set: Node Set 1
       Variable: Displacements
-      Value: 4.4*t
+      Value: 2.4*t
       Type: Dirichlet
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
       Variable: Displacements
-      Value: -4.4*t
+      Value: -2.4*t
       Type: Dirichlet
     # BC_3:
     #   Node Set: Node Set 1 + Node Set 2 + Node Set 3 + Node Set 4
@@ -80,20 +80,23 @@ PeriLab:
     Type: Text File
   Outputs:
     Output1:
-      Number of Output Steps: 100
+      #Number of Output Steps: 3500
+      Output Frequency: 1
       Output File Type: Exodus
-      Output Filename: DCBmodel_Output1
+      Output Filename: DCBmodel_Output_ba
       Output Variables:
         Damage: true
         Displacements: true
         Forces: true
-        Number of Neighbors: true
         External_Displacement: true
+        Cauchy Stress: true
         External_Force: true
+        Plastic Strain: True
+        von Mises Yield Stress: True
     Output2:
       Number of Output Steps: 100
       Output File Type: CSV
-      Output Filename: DCBmodel_Output1
+      Output Filename: DCBmodel_Output_ba
       Output Variables:
         External_Displacement: true
         External_Force: true
@@ -101,23 +104,21 @@ PeriLab:
     Damage Models:
       Damage:
         Damage Model: Critical Energy
-        Critical Value: 0.002
+        Critical Value: 0.02
     Material Models:
       Aluminium:
-        Material Model: PD Solid Elastic
-        Poisson's Ratio: 0.3
-        Symmetry: isotropic plane stress
-        Young's Modulus: 40000.0
-    Pre Calculation Global:
-      Bond Associated Deformation Gradient: false
-      Deformation Gradient: false
-      Deformed Bond Geometry: true
-      Shape Tensor: false
+        Material Model: "Correspondence Elastic" #+Correspondence Plastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 7.0e+5
+        Poisson's Ratio: 0.33
+        Yield Stress: 50
+        Bond Associated: true
+        Accuracy Order: 2
   Solver:
     Damage Models: true
-    Final Time: 0.00043
+    Final Time: 0.000013
     Initial Time: 0.0
     Material Models: true
     Verlet:
-      Safety Factor: 0.95
-      Numerical Damping: 5.0e-06
+      Safety Factor: 0.85
+      Numerical Damping: 5.0e-03

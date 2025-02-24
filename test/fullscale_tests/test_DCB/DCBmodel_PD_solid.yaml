@@ -100,7 +100,7 @@ PeriLab:
     Initial Time: 0.0
     Material Models: true
     Damage Models: true
-    Numerical Damping: 5.0e-06
     Calculate Cauchy: true
     Verlet:
       Safety Factor: 0.9
+      Numerical Damping: 5.0e-06

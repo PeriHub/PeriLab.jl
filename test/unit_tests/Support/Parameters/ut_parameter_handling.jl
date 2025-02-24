@@ -714,15 +714,15 @@ end
           params["Solver"]["Verlet"]["Fixed dt"]
     @test PeriLab.Solver_control.Parameter_Handling.get_numerical_damping(
         params["Solver"],
-    ) == params["Solver"]["Numerical Damping"]
+    ) == params["Solver"]["Verlet"]["Numerical Damping"]
     params = Dict("Solver" => Dict("Verlet" => Dict()))
     @test PeriLab.Solver_control.Parameter_Handling.get_safety_factor(params["Solver"]) == 1
     @test PeriLab.Solver_control.Parameter_Handling.get_fixed_dt(params["Solver"]) == -1.0
     @test PeriLab.Solver_control.Parameter_Handling.get_nsteps(params["Solver"]) == 1
     @test PeriLab.Solver_control.Parameter_Handling.get_nsteps(
         Dict(
-            "Verlet" => Dict("Safety Factor" => 0.95, "Number of Steps" => 6),
-            "Numerical Damping" => 5e-6,
+            "Verlet" => Dict("Safety Factor" => 0.95, "Numerical Damping" => 5e-6),
+            "Number of Steps" => 6,
         ),
     ) == 6
     @test PeriLab.Solver_control.Parameter_Handling.get_numerical_damping(
@@ -748,8 +748,7 @@ end
         "Solver" => Dict(
             "Initial Time" => 0.0,
             "Final Time" => 1.0,
-            "Static" => Dict("Safety Factor" => 0.95, "Fixed dt" => 1e-3),
-            "Numerical Damping" => 5e-6,
+            "Static" => Dict("Residual tolerance" => 1e-3),
         ),
     )
     @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params["Solver"]) ==

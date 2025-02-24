@@ -4,42 +4,41 @@
 
 PeriLab:
   Discretization:
-    Input Mesh File: dogbone.txt
+    Input Mesh File: Dogbone.txt
     Node Sets:
-      Node Set 1: ns_dogbone_1.txt
-      Node Set 2: ns_dogbone_2.txt
+      Node Set 1: ns_Dogbone_1.txt
+      Node Set 2: ns_Dogbone_2.txt
     Type: Text File
   Models:
-    Pre Calculation Global:
+    Pre Calculation:
       Deformed Bond Geometry: true
       Deformation Gradient: false
       Shape Tensor: false
       Bond Associated Deformation Gradient: false
     Material Models:
       PMMA:
-        Material Model: "PD Solid Elastic"
-        #Material Model: "Correspondence Elastic"
-        Symmetry: "isotropic plane stress"
-        Young's Modulus: 7.0e+5
-        Poisson's Ratio: 0.33
-        Zero Energy Control: "Global"
+        Material Model: "Correspondence Elastic" #+Correspondence Plastic"
+        Symmetry: "isotropic plane strain"
+        Bond Associated: true
+        Accuracy Order: 2
+        Bulk Modulus: 2.5e+3
+        Shear Modulus: 1.15e3
+        Yield Stress: 2000
     Damage Models:
       Damage:
-        Critical Value: 10.1
-        Damage Model: Critical Energy
+        Critical Value: 0.01
+        Damage Model: Critical Stretch
   Boundary Conditions:
     BC_1:
       Coordinate: x
       Node Set: Node Set 1
       Variable: Displacements
       Value: 0
-      Type: Dirichlet
     BC_2:
       Coordinate: x
       Node Set: Node Set 2
       Variable: Displacements
-      Value: 0.5*t
-      Type: Dirichlet
+      Value: 0.1*t
   Blocks:
     block_1:
       Block ID: 1
@@ -71,39 +70,41 @@ PeriLab:
     External_Forces:
       Compute Class: "Block_Data"
       Calculation Type: "Sum"
-      Block: "block_1"
+      Block: "block_5"
       Variable: "Forces"
     External_Displacements:
       Compute Class: "Block_Data"
       Calculation Type: "Maximum"
-      Block: "block_1"
+      Block: "block_5"
       Variable: "Displacements"
   Outputs:
     Output:
-      Number of Output Steps: 10
+      Number of Output Steps: 50
       Output File Type: Exodus
-      Output Filename: dogbone
-      Flush File: true
+      Output Filename: Dogbone_Output_plastic_corr_static
       Output Variables:
         Damage: true
         Displacements: true
         Forces: true
-        Number of Neighbors: true
         External_Forces: True
         External_Displacements: True
     Output2:
-      Number of Output Steps: 10
-      Flush File: False
+      Number of Output Steps: 50
       Output File Type: CSV
-      Output Filename: dogbone
+      Output Filename: Dogbone_Output_plastic_corr_static
       Output Variables:
         External_Forces: True
         External_Displacements: True
   Solver:
     Material Models: true
     Damage Models: true
-    Final Time: 1e-7
+    Final Time: 1e-5
     Initial Time: 0.0
-    Verlet:
-      Safety Factor: 1.0
-      Numerical Damping: 0.0005
+    Numerical Damping: 0.0005
+    nsteps: 500
+    Static:
+      NLsolver: true
+      Show solver iteration: true
+      Residual tolerance: 1e-5
+      Solution tolerance: 1e-5
+      #Fixed dt: 1e-8

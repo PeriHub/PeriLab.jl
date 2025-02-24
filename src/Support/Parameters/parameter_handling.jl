@@ -371,17 +371,25 @@ global expected_structure = Dict(
                     "Maximum Damage" => [Float64, false],
                     "Final Time" => [Union{Float64,Int64}, true],
                     "Initial Time" => [Union{Float64,Int64}, true],
-                    "Numerical Damping" => [Union{Float64,Int64}, false],
+                    "Number of Steps" => [Int64, false],
                     "Verlet" => [
                         Dict{Any,Any}(
                             "Safety Factor" => [Union{Float64,Int64}, false],
                             "Fixed dt" => [Union{Float64,Int64}, false],
-                            "Number of Steps" => [Int64, false],
+                            "Numerical Damping" => [Union{Float64,Int64}, false],
                         ),
                         false,
                     ],
-                    "External" => [
-                        Dict{Any,Any}("Number of Steps" => [Int64, false]),
+                    "Static" => [
+                        Dict{Any,Any}(
+                            "Maximum number of iterations" => [Int64, false],
+                            "NLSolve" => [Bool, false],
+                            "Show solver iteration" => [Bool, false],
+                            "Solver Type" => [String, false],
+                            "Residual scaling" => [Union{Float64,Int64}, false],
+                            "Solution tolerance" => [Union{Float64,Int64}, false],
+                            "Residual tolerance" => [Union{Float64,Int64}, false],
+                        ),
                         false,
                     ],
                 ),
@@ -404,17 +412,28 @@ global expected_structure = Dict(
                             "Maximum Damage" => [Float64, false],
                             "Final Time" => [Union{Float64,Int64}, false],
                             "Initial Time" => [Union{Float64,Int64}, false],
-                            "Numerical Damping" => [Union{Float64,Int64}, false],
+                            "Number of Steps" => [Int64, false],
                             "Verlet" => [
                                 Dict{Any,Any}(
                                     "Safety Factor" => [Union{Float64,Int64}, false],
                                     "Fixed dt" => [Union{Float64,Int64}, false],
-                                    "Number of Steps" => [Int64, false],
+                                    "Numerical Damping" =>
+                                        [Union{Float64,Int64}, false],
                                 ),
                                 false,
                             ],
-                            "External" => [
-                                Dict{Any,Any}("Number of Steps" => [Int64, false]),
+                            "Static" => [
+                                Dict{Any,Any}(
+                                    "Maximum number of iterations" => [Int64, false],
+                                    "NLSolve" => [Bool, false],
+                                    "Show solver iteration" => [Bool, false],
+                                    "Solver Type" => [String, false],
+                                    "Residual scaling" => [Union{Float64,Int64}, false],
+                                    "Solution tolerance" =>
+                                        [Union{Float64,Int64}, false],
+                                    "Residual tolerance" =>
+                                        [Union{Float64,Int64}, false],
+                                ),
                                 false,
                             ],
                         ),

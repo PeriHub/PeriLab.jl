@@ -50,9 +50,9 @@ PeriLab:
     Material Models: True
     Initial Time: 0.0
     Final Time: 5.2e-6
-    Numerical Damping: 5e-06
     Verlet:
       Safety Factor: 1.00
+      Numerical Damping: 5e-06
   Outputs:
     Output1:
       Flush File: False

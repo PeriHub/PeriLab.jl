@@ -88,16 +88,16 @@ function init_solver(
     final_time = get_final_time(params)
     fixed_dt = get_fixed_dt(params)
     if fixed_dt == -1.0
-        if haskey(params, "nsteps")
-            nsteps = params["nsteps"]
+        if haskey(params, "Number of Steps")
+            nsteps = params["Number of Steps"]
             dt = (final_time - initial_time) / (nsteps - 1)
         else
             nsteps = Int64(1)
             dt = final_time - initial_time
         end
     else
-        if haskey(params, "nsteps")
-            @warn "nsteps and fixed dt is defined. Fixed dt is used and nsteps from yaml ignored."
+        if haskey(params, "Number of Steps")
+            @warn "''Number of Steps'' and ''Fixed dt'' are defined. ''Fixed dt'' is used and ''Number of Steps'' from yaml is ignored."
         end
         nsteps = Int64(round((final_time - initial_time) / fixed_dt) + 1)
         dt = (final_time - initial_time) / (nsteps - 1)
