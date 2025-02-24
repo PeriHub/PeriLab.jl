@@ -323,8 +323,8 @@ function residual!(
     # displacement  from interface
     # Set bond damages to original state
     datamanager.switch_bonds!(
-        datamanager.get_field("Bond Damage", "N"),
         datamanager.get_field("Bond Damage", "NP1"),
+        datamanager.get_field("Bond Damage", "N"),
     )
 
     uNP1 = datamanager.get_field("Displacements", "NP1")
