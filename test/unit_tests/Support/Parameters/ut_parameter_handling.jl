@@ -720,7 +720,7 @@ end
           params["Solver"]["Verlet"]["Fixed dt"]
     @test PeriLab.Solver_control.Parameter_Handling.get_numerical_damping(
         params["Solver"],
-    ) == params["Solver"]["Numerical Damping"]
+    ) == params["Solver"]["Verlet"]["Numerical Damping"]
     params = Dict("Solver" => Dict("Verlet" => Dict()))
     @test PeriLab.Solver_control.Parameter_Handling.get_safety_factor(params["Solver"]) == 1
     @test PeriLab.Solver_control.Parameter_Handling.get_fixed_dt(params["Solver"]) == -1.0
