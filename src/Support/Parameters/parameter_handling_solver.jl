@@ -84,21 +84,28 @@ function get_solver_name(params::Dict)
 end
 
 """
-    get_initial_time(params::Dict)
+    get_initial_time(params::Dict, datamanager::Module)
 
 Get the initial time
 
 # Arguments
 - `params::Dict`: The parameters dictionary.
+- `datamanager::Module`: The data manager module
 # Returns
 - `initial_time::Float64`: The initial time
 """
-function get_initial_time(params::Dict)
+function get_initial_time(params::Dict, datamanager::Module)
 
+    current_time = datamanager.get_current_time()
     if haskey(params, "Initial Time")
+        if Float64(params["Initial Time"]) <= current_time
+            return current_time
+        end
         return Float64(params["Initial Time"])
     end
-
+    if current_time != 0.0
+        return current_time
+    end
     @error "No initial time defined"
 end
 

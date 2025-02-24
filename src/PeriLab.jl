@@ -320,12 +320,21 @@ function main(
                 if !isnothing(step_id)
                     @info "Step: " * string(step_id) * " of " * string(length(steps))
                 end
+                datamanager.set_cancel(false)
                 datamanager.set_step(step_id)
                 @info "Init Solver"
                 @timeit to "Solver_control.init" block_nodes,
                 bcs,
                 datamanager,
                 solver_options = Solver_control.init(params, datamanager, to, step_id)
+                if datamanager.get_current_time() >= solver_options["Final Time"]
+                    @info "Step " * string(step_id) * " skipped."
+                    continue
+                end
+                if datamanager.get_current_time() < solver_options["Initial Time"]
+                    @info "Initial time not reached. Skipping step " * string(step_id)
+                    continue
+                end
                 @timeit to "IO.init orientations" datamanager =
                     IO.init_orientations(datamanager)
                 IO.show_block_summary(

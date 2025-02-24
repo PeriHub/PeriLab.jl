@@ -179,7 +179,8 @@ function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
         if !(bc["Type"] in ["Initial", "Dirichlet"]) ||
            bc["Variable"] == "Force Densities" ||
            bc["Variable"] == "Forces" ||
-           !isnothing(datamanager.get_step()) && bc["Step ID"] != datamanager.get_step()
+           !isnothing(datamanager.get_step()) &&
+           haskey(bc, "Step ID") && bc["Step ID"] != datamanager.get_step()
             continue
         end
         field = datamanager.get_field(bc["Variable"], bc["Time"])

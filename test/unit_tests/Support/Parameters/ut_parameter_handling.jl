@@ -710,8 +710,10 @@ end
           "Verlet"
     @test PeriLab.Solver_control.Parameter_Handling.get_final_time(params["Solver"]) ==
           params["Solver"]["Final Time"]
-    @test PeriLab.Solver_control.Parameter_Handling.get_initial_time(params["Solver"]) ==
-          params["Solver"]["Initial Time"]
+    @test PeriLab.Solver_control.Parameter_Handling.get_initial_time(
+        params["Solver"],
+        test_data_manager,
+    ) == params["Solver"]["Initial Time"]
     @test PeriLab.Solver_control.Parameter_Handling.get_safety_factor(params["Solver"]) ==
           params["Solver"]["Verlet"]["Safety Factor"]
     @test PeriLab.Solver_control.Parameter_Handling.get_fixed_dt(params["Solver"]) ==
@@ -735,6 +737,7 @@ end
     @test isnothing(
         PeriLab.Solver_control.Parameter_Handling.get_initial_time(
             Dict("Solver" => Dict()),
+            test_data_manager,
         ),
     )
     @test isnothing(
@@ -757,6 +760,12 @@ end
     )
     @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params["Solver"]) ==
           "Static"
+    params = Dict("Solver" => Dict("Initial Time" => 1.0))
+    test_data_manager.set_current_time(2.0)
+    @test PeriLab.Solver_control.Parameter_Handling.get_initial_time(
+        params["Solver"],
+        test_data_manager,
+    ) == 2.0
 end
 
 path = "./test/unit_tests/Support/Parameters/"
