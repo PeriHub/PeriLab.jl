@@ -130,7 +130,7 @@ PeriLab:
     Initial Time: 0.0
     Material Models: true
     Damage Models: true
-    Calculate von Mises: true
+    Calculate von Mises stress: true
     Calculate Cauchy: true
     Calculate Strain: true
     Verlet:

@@ -222,10 +222,10 @@ function elastic(
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
 
-    if haskey(material, "State Factor ID")
-        shear_modulus .*= material["State Factor ID"]
-        bulk_modulus .*= material["State Factor ID"]
-    end
+    # if haskey(material, "State Factor ID")
+    #     shear_modulus .*=datamanager.get_field("State Variables")[:, material["State Factor ID"]]
+    #     bulk_modulus .*=datamanager.get_field("State Variables")[:, material["State Factor ID"]]
+    # end
 
     symmetry::String = get_symmetry(material)
     # kappa::Float64 = 0

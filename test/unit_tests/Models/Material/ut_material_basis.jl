@@ -203,6 +203,7 @@ end
         "Young's Modulus" => 0,
         "Shear Modulus" => 0,
         "Poisson's Ratio" => 0,
+        "Symmetry" => "isotropic",
     )
     test = get_all_elastic_moduli(
         test_data_manager,

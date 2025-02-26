@@ -323,7 +323,7 @@ function rotate_fourth_order_tensor(
     dof::Int64,
     back::Bool,
 )
-    rot = Geometry.rotation_tensor(angles)
+    rot = Geometry.rotation_tensor(angles, dof)
     @views R = rot[1:dof, 1:dof]
     if back
         fourth_order_rotation(R', C)

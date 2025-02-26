@@ -240,6 +240,7 @@ function init_results_in_exodus(
     global_used = length(global_output_names) > 0
 
     if global_used
+        # write_number_of_variables(exo, GlobalVariable, length(global_output_names))
         write_names(exo, GlobalVariable, global_output_names)
         write_values(exo, GlobalVariable, 1, zeros(Float64, length(global_output_names)))
     end

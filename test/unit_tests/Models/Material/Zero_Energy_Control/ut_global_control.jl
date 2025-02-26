@@ -44,13 +44,13 @@ end
     @test Global_zero_energy_control.rotate_fourth_order_tensor(
         zeros(3),
         zeros(2, 2, 2, 2),
-        2,
+        3,
         true,
     ) == testval
     @test Global_zero_energy_control.rotate_fourth_order_tensor(
         zeros(3),
         zeros(2, 2, 2, 2),
-        2,
+        3,
         false,
     ) == testval
 end

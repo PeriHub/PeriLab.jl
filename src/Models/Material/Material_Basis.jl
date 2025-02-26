@@ -101,11 +101,6 @@ function get_all_elastic_moduli(
 
     state_factor = haskey(parameter, "State Factor ID")
 
-    if state_factor
-        parameter["State Factor ID"] =
-            datamanager.get_field("State Variables")[:, parameter["State Factor ID"]]
-    end
-
     any_field_allocated =
         bulk_field | youngs_field | poissons_field | shear_field | state_factor
 
@@ -168,6 +163,9 @@ function get_all_elastic_moduli(
             end
             return
         end
+    else
+        @warn "Material symmetry is not defined, assuming isotropic material"
+        parameter["Symmetry"] = "isotropic"
     end
 
     # tbd non isotropic material check
