@@ -121,7 +121,7 @@ end
 @testset "rotate_second_order_tensor" begin
 
     angles = [0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles)
+    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 2)
     tensor = zeros(2, 2)
     tensor[1, 1] = 1
     dof = 2
@@ -133,7 +133,7 @@ end
     )
     @test tensorTest == tensor
     angles = [90.0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles)
+    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 2)
     tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
         Matrix{Float64}(rot),
         tensor,
@@ -153,7 +153,7 @@ end
     @test tensorTest == tensor
 
     angles = [0, 0, 0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles)
+    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 3)
     tensor = zeros(3, 3)
     tensor[1, 1] = 1
     dof = 3
@@ -166,7 +166,7 @@ end
     )
     @test tensorTest == tensor
     angles = [0, 0, 90.0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles)
+    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 3)
     tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
         Matrix{Float64}(rot),
         tensor,
@@ -191,7 +191,7 @@ end
     @test tensorTest == tensor
 
     angles = [10, 20, 90.0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles)
+    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 3)
     tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
         Matrix{Float64}(rot),
         tensor,

@@ -420,11 +420,19 @@ Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package
 - Rotation tensor
 
 """
-function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}})
+function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}}, dof::Int64)
     if length(angles) == 3
+        if dof != 3
+            @error "Rotation tensor not defined for 2D"
+            return nothing
+        end
         return RotXYZ(angles[1] / 180 * pi, angles[2] / 180 * pi, angles[3] / 180 * pi)
     end
     # return RotXYZ(0, 0, angles[1] / 180 * pi)
+    if dof != 2
+        @error "Rotation tensor not defined for 3D, make sure that you define Angles_x, Angles_y and Angles_z"
+        return nothing
+    end
     return Angle2d(angles[1] / 180 * pi)
 end
 

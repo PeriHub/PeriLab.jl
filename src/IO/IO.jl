@@ -405,7 +405,7 @@ function init_orientations(datamanager::Module)
     angles = datamanager.get_field("Angles")
 
     for iID = 1:nnodes
-        rotation_tensor_N[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
+        rotation_tensor_N[iID, :, :] = Geometry.rotation_tensor(angles[iID, :], dof)
         rotation_tensor_NP1[iID, :, :] = rotation_tensor_N[iID, :, :]
 
         if dof == 2
@@ -455,14 +455,14 @@ function init_write_results(
     block_Id = datamanager.get_field("Block_Id")
 
     comm = datamanager.get_comm()
-    
+
     block_list = datamanager.get_block_list()
     if datamanager.get_max_rank() > 1
         all_block_list = gather_values(comm, block_list)
         if datamanager.get_rank() == 0
             block_list = unique(vcat(all_block_list...))
         end
-        block_list = send_value(comm,0,block_list)
+        block_list = send_value(comm, 0, block_list)
     end
 
     nsets = datamanager.get_nsets()
@@ -907,14 +907,14 @@ function show_mpi_summary(
 
     block_Id = datamanager.get_field("Block_Id")
     block_list = datamanager.get_block_list()
-    
+
     block_list = datamanager.get_block_list()
     if datamanager.get_max_rank() > 1
         all_block_list = gather_values(comm, block_list)
         if datamanager.get_rank() == 0
             block_list = unique(vcat(all_block_list...))
         end
-        block_list = send_value(comm,0,block_list)
+        block_list = send_value(comm, 0, block_list)
     end
 
     nlist = datamanager.get_nlist()
