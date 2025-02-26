@@ -17,9 +17,34 @@ using .Material_Basis:
     get_von_mises_yield_stress,
     get_strain,
     compute_Piola_Kirchhoff_stress,
-    apply_pointwise_E
+    apply_pointwise_E,
+    init_local_damping_due_to_damage
 ## include("../../../../src/PeriLab.jl")
 ## using .PeriLab
+
+@testset "ut_init_local_damping_due_to_damage" begin
+    test_data_manager = PeriLab.Data_manager
+    test_data_manager.initialize_data()
+    test_data_manager.set_num_controller(3)
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn .= 2
+    @test isnothing(
+        init_local_damping_due_to_damage(
+            test_data_manager,
+            [1:2],
+            Dict(),
+            Dict("Local Damping" => Dict()),
+        ),
+    )
+    @test isnothing(
+        init_local_damping_due_to_damage(
+            test_data_manager,
+            [1:2],
+            Dict(),
+            Dict("Local Damping" => Dict("Representative Young's modulus" => 0)),
+        ),
+    )
+end
 
 @testset "ut_apply_pointwise_E" begin
     nodes = 2:3

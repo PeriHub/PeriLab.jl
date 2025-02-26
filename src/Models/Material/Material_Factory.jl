@@ -7,7 +7,12 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 include("Material_Basis.jl")
 using LinearAlgebra
 using .Material_Basis:
-    get_all_elastic_moduli, distribute_forces!, check_symmetry, get_all_elastic_moduli
+    get_all_elastic_moduli,
+    distribute_forces!,
+    check_symmetry,
+    get_all_elastic_moduli,
+    init_local_damping_due_to_damage,
+    local_damping_due_to_damage
 using .Set_modules
 using TimerOutputs
 using StaticArrays
@@ -22,6 +27,20 @@ export determine_isotropic_parameter
 export distribute_force_densities
 export init_fields
 export fields_for_local_synchronization
+export compute_local_damping
+export init_local_damping
+
+function compute_local_damping(datamanager::Module, nodes, params, dt)
+    return local_damping_due_to_damage(datamanager, nodes, params, dt)
+end
+function init_local_damping(datamanager, nodes, material_parameter, damage_parameter)
+    return init_local_damping_due_to_damage(
+        datamanager,
+        nodes,
+        material_parameter,
+        damage_parameter,
+    )
+end
 
 """
     init_fields(datamanager::Module)

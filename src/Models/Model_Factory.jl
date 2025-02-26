@@ -104,6 +104,17 @@ function init_models(
                     active_model_name,
                     block,
                 )
+                if active_model_name == "Damage Model" && haskey(
+                    datamanager.get_properties(block, active_model_name),
+                    "Local Damping",
+                )
+                    Material.init_local_damping(
+                        datamanager,
+                        block_nodes[block],
+                        datamanager.get_properties(block, "Material Model"),
+                        datamanager.get_properties(block, "Damage Model"),
+                    )
+                end
                 # put it in datamanager
             end
         end
@@ -295,14 +306,31 @@ function compute_models(
         end
     end
     if "Material" in options
-        active_nodes = datamanager.get_field("Active Nodes")
-        active_nodes =
-            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
         if fem_option
             # FEM active means FEM nodes
             active_nodes = find_active_nodes(fe_nodes, active_nodes, active_nodes, false)
         end
+        if "Damage" in options
+            for (block, nodes) in pairs(block_nodes)
 
+                if haskey(
+                    datamanager.get_properties(block, "Damage Model"),
+                    "Local Damping",
+                )
+                    active_nodes = datamanager.get_field("Active Nodes")
+                    active_nodes = find_active_nodes(active_list, active_nodes, nodes)
+                    @timeit to "local_damping_due_to_damage" Material.compute_local_damping(
+                        datamanager,
+                        active_nodes,
+                        datamanager.get_properties(block, "Damage Model")["Local Damping"],
+                        dt,
+                    )
+                end
+            end
+        end
+        active_nodes = datamanager.get_field("Active Nodes")
+        active_nodes =
+            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
         @timeit to "distribute_force_densities" Material.distribute_force_densities(
             datamanager,
             active_nodes,
