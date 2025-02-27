@@ -359,11 +359,16 @@ function main(
                             output_dir,
                             filedirectory,
                             datamanager,
-                            solver_options["nsteps"],
                             PERILAB_VERSION,
                         )
                     Logging_module.set_result_files(result_files)
                 end
+                IO.set_output_frequency(
+                    params,
+                    datamanager,
+                    solver_options["nsteps"],
+                    step_id,
+                )
                 if verbose
                     fields = datamanager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"

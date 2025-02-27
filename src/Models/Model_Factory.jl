@@ -89,11 +89,11 @@ function init_models(
     end
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models(true))
-        @info "Init $active_model_name "
         @timeit to "$active_model_name model fields" datamanager =
             active_model.init_fields(datamanager)
     end
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
+        @info "Init $active_model_name"
 
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, active_model_name)

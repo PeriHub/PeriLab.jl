@@ -208,6 +208,7 @@ function run_solver(
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     time::Float64 = solver_options["Initial Time"]
+    step_time::Float64 = 0
     max_cancel_damage::Float64 = solver_options["Maximum Damage"]
     numerical_damping::Float64 = solver_options["Numerical Damping"]
     max_damage::Float64 = 0
@@ -239,10 +240,10 @@ function run_solver(
             damage = datamanager.get_damage("NP1")
         end
         #datamanager = apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
-        datamanager = apply_bc_dirichlet_force(bcs, datamanager, time) #-> Dirichlet
+        datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
         external_force_densities += external_forces ./ volume
         start_u = copy(uN)
-        datamanager = apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
+        datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,
@@ -297,6 +298,7 @@ function run_solver(
         @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
 
         time += dt
+        step_time += dt
         datamanager.set_current_time(time)
         if idt % ceil(nsteps / 100) == 0
             @info "Step: $idt / $(nsteps+1) [$time s]"

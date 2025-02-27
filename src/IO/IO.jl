@@ -438,7 +438,6 @@ function init_write_results(
     output_dir::String,
     path::String,
     datamanager::Module,
-    nsteps::Int64,
     PERILAB_VERSION::String,
 )
     filenames = get_output_filenames(params, output_dir)
@@ -525,8 +524,6 @@ function init_write_results(
     end
 
     coords = vcat(transpose(coordinates[1:nnodes, :]))
-    output_frequencies = get_output_frequency(params, nsteps)
-    output_frequency = []
     for id in eachindex(result_files)
 
         if result_files[id]["type"] == "Exodus"
@@ -544,22 +541,53 @@ function init_write_results(
                 elem_global_ids,
             )
         end
-        push!(
-            output_frequency,
-            Dict{String,Int64}(
-                "Counter" => 0,
-                "Output Frequency" => output_frequencies[id],
-                "Step" => 1,
-            ),
-        )
 
         if outputs[id]["flush_file"]
             close_result_file(result_files[id])
         end
     end
-    datamanager.set_output_frequency(output_frequency)
 
     return result_files, outputs
+end
+
+"""
+    set_output_frequency(params::Dict, datamanager::Module, nsteps::Int64, step_id::Int64)
+
+Sets the output frequency.
+
+# Arguments
+- `params::Dict`: The parameters
+- `datamanager::Module`: The datamanager
+- `nsteps::Int64`: The number of steps
+- `step_id::Int64`: The step id
+"""
+function set_output_frequency(
+    params::Dict,
+    datamanager::Module,
+    nsteps::Int64,
+    step_id::Union{Nothing,Int64} = nothing,
+)
+    output_frequencies = get_output_frequency(params, nsteps)
+    if isnothing(step_id) || step_id == 1
+        output_frequency = []
+        for id in eachindex(output_frequencies)
+            push!(
+                output_frequency,
+                Dict{String,Int64}(
+                    "Counter" => 0,
+                    "Output Frequency" => output_frequencies[id],
+                    "Step" => 1,
+                ),
+            )
+        end
+    else
+        output_frequency = datamanager.get_output_frequency()
+        for id in eachindex(output_frequencies)
+            output_frequency[id]["Output Frequency"] = output_frequencies[id]
+            output_frequency[id]["Counter"] = 0
+        end
+    end
+    datamanager.set_output_frequency(output_frequency)
 end
 
 """
