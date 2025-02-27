@@ -12,6 +12,7 @@ export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
 export distribute_forces!
+export local_damping_due_to_damage
 export flaw_function
 export matrix_to_voigt
 export voigt_to_matrix
@@ -25,7 +26,66 @@ export get_strain
 export compute_Piola_Kirchhoff_stress
 export apply_pointwise_E
 export compute_bond_based_constants
+export init_local_damping_due_to_damage
+export local_damping_due_to_damage
+function local_damping_due_to_damage(datamanager::Module, nodes, params, dt)
+    damage = datamanager.get_field("Damage", "NP1")
+    nlist = datamanager.get_nlist()
+    density = datamanager.get_field("Density")
 
+    deformed_bond_lengthN = datamanager.get_field("Deformed Bond Length", "N")
+    deformed_bond_lengthNP1 = datamanager.get_field("Deformed Bond Length", "NP1")
+    deformend_bond_geometry = datamanager.get_field("Deformed Bond Geometry", "NP1")
+    local_damping = params["Damping coefficient"]
+    force_densities = datamanager.get_field("Force Densities", "NP1")
+    volume = datamanager.get_field("Volume")
+    E = params["Representative Young's modulus"]
+    constant = datamanager.get_field("Bond Based Constant")
+    t = zeros(Float64, datamanager.get_dof())
+
+    for iID in nodes
+        v0 = sqrt(E / density[iID])
+        for (jID, nID) in enumerate(nlist[iID])
+            avg_damage = 0.5 * (damage[iID] - damage[nID])
+
+            t =
+                local_damping *
+                E *
+                constant[iID] *
+                avg_damage *
+                (deformed_bond_lengthNP1[iID][jID] - deformed_bond_lengthN[iID][jID]) /
+                (dt * v0) * deformend_bond_geometry[iID][jID] /
+                deformed_bond_lengthNP1[iID][jID]
+
+            force_densities[iID, :] += t * volume[nID]
+            force_densities[nID, :] -= t * volume[iID]
+
+        end
+    end
+
+
+end
+
+function init_local_damping_due_to_damage(
+    datamanager::Module,
+    nodes,
+    material_parameter,
+    damage_parameter,
+)
+    if !haskey(damage_parameter["Local Damping"], "Representative Young's modulus")
+        @error "Representative Young's modulus is missing."
+        return nothing
+    end
+    if !haskey(damage_parameter["Local Damping"], "Damping coefficient")
+        @error "Damping coefficient is missing."
+        return nothing
+    end
+    @info "Local damping is active with damping coefficient $(damage_parameter["Local Damping"]["Damping coefficient"])"
+    constant = datamanager.create_constant_node_field("Bond Based Constant", Float64, 1)
+    horizon = datamanager.get_field("Horizon")
+    symmetry::String = get_symmetry(material_parameter)
+    compute_bond_based_constants(nodes, symmetry, constant, horizon)
+end
 
 
 function compute_bond_based_constants(nodes, symmetry, constant, horizon)
