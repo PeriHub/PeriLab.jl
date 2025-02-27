@@ -122,6 +122,7 @@ function initialize_data()
         "Pre Calculation Model" => Dict(),
         "Corrosion Model" => Dict(),
         "Additive Model" => Dict(),
+        "Surface Correction" => Dict(),
     )
     data["filedirectory"] = ""
     data["inverse_nlist"] = []

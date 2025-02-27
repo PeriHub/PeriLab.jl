@@ -7,6 +7,7 @@ include("../Support/Helpers.jl")
 
 using .Helpers:
     check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert, determinant
+include("./Surface_correction/Surface_correction.jl")
 include("./Additive/Additive_Factory.jl")
 include("./Corrosion/Corrosion_Factory.jl")
 include("./Damage/Damage_Factory.jl")
@@ -22,6 +23,7 @@ using .Corrosion
 using .Damage
 using .Material
 using .Pre_Calculation
+using .Surface_correction: init_surface_correction, compute_surface_correction
 using .Thermal
 # in future FEM will be outside of the Model_Factory
 using .FEM
@@ -49,6 +51,7 @@ function init_models(
     datamanager::Module,
     block_nodes::Dict{Int64,Vector{Int64}},
     solver_options::Dict,
+    synchronise_field,
     to::TimerOutput,
 )
     # TODO integrate this correctly
@@ -119,6 +122,9 @@ function init_models(
             end
         end
     end
+
+    datamanager =
+        init_surface_correction(datamanager, params, local_synch, synchronise_field)
 
     if solver_options["Calculation"]["Calculate Cauchy"] |
        solver_options["Calculation"]["Calculate von Mises stress"]
@@ -331,6 +337,7 @@ function compute_models(
         active_nodes = datamanager.get_field("Active Nodes")
         active_nodes =
             find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
+        compute_surface_correction(datamanager, active_nodes)
         @timeit to "distribute_force_densities" Material.distribute_force_densities(
             datamanager,
             active_nodes,
