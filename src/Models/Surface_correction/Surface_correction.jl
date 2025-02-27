@@ -7,6 +7,16 @@ export init_surface_correction
 export compute_surface_correction
 
 function compute_surface_correction(datamanager::Module, nodes)
+    params = datamanager.get_properties(1, "Surface Correction")
+    if !params["Type"]
+        return
+    end
+    if params["Type"] == "Volume Correction"
+        return compute_surface_volume_correction(datamanager, nodes)
+    end
+end
+
+function compute_surface_volume_correction(datamanager::Module, nodes)
     nlist = datamanager.get_nlist()
     bond_force = datamanager.get_field("Bond Forces")
     volume_correction = datamanager.get_field("Volume Correction")
@@ -15,7 +25,6 @@ function compute_surface_correction(datamanager::Module, nodes)
             bond_force[iID][jID][:] .*= volume_correction[iID][jID]
         end
     end
-
 end
 
 
@@ -27,14 +36,32 @@ function init_surface_correction(
 )
 
     if !haskey(params, "Surface Correction")
+        params["Surface Correction"] = Dict("Type" => false)
+        for block_id in datamanager.get_block_list()
+            datamanager.set_properties(
+                block_id,
+                "Surface Correction",
+                params["Surface Correction"],
+            )
+        end
         return datamanager
     end
     if !haskey(params["Surface Correction"], "Type")
         @error "Surface Correction needs a Type definition"
         return nothing
     end
+    for block_id in datamanager.get_block_list()
+        datamanager.set_properties(
+            block_id,
+            "Surface Correction",
+            params["Surface Correction"],
+        )
+    end
     if params["Surface Correction"]["Type"] == "Volume Correction"
         return init_volumen_correction(datamanager, params, local_synch, synchronise_field)
+    else
+        @error "Type $(params["Surface Correction"]["Type"]) not defined for surface correction."
+        return nothing
     end
 end
 

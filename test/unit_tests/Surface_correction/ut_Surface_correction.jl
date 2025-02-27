@@ -14,7 +14,7 @@ using Test
     test_data_manager.set_dof(3)
     test_data_manager.set_num_controller(4)
     mod_struct = PeriLab.Solver_control.Model_Factory
-    @test PeriLab.mod_struct.init_surface_correction(
+    @test mod_struct.init_surface_correction(
         test_data_manager,
         Dict(),
         "local_synch",
@@ -23,7 +23,7 @@ using Test
     @test isnothing(
         mod_struct.init_surface_correction(
             test_data_manager,
-            Dict("Surface Correction" => 0),
+            Dict("Surface Correction" => Dict("a" => 0)),
             "local_synch",
             "synchronise_field",
         ),
