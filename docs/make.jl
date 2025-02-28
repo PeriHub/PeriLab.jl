@@ -49,7 +49,7 @@ makedocs(
                 "FEM"=>"theory/theory_FEM.md",
                 "Finite Element - Peridynamics coupling"=>"theory/theory_FEM_PD_coupling.md",
             ],
-            "Modelling strategies"=>Any["Surface Correction"=>"theory/surface_correction.md",],
+            "Modelling strategies"=>Any["Surface Correction"=>"theory/theory_surface_correction.md",],
         ],
         "FAQ"=>"lib/faq.md",
         "Glossar"=>"lib/glossar.md",
