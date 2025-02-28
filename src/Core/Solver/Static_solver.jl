@@ -271,13 +271,6 @@ function run_solver(
             @info "Failed to converge at step $idt: maximum number of iterations reached"
             datamanager.set_cancel(true)
         end
-        if rank == 0 && "Damage" in solver_options["Models"] #TODO gather value
-            max_damage = maximum(damage[active_nodes])
-            if max_damage > 0.0
-                datamanager.set_cancel(true)
-            end
-        end
-
 
         if datamanager.get_cancel()
             @info "Canceling at step $idt"

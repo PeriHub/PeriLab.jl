@@ -89,6 +89,7 @@ function init_models(
     end
 
     for (active_model_name, active_model) in pairs(datamanager.get_active_models(true))
+        @debug "Init $active_model_name fields"
         @timeit to "$active_model_name model fields" datamanager =
             active_model.init_fields(datamanager)
     end
