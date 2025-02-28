@@ -217,7 +217,7 @@ MPI.Init()
         #     include("fullscale_tests/test_reload/test_reload.jl")
         # end
         @testset "test_surface_correction" begin
-            include("fullscale_tests/test_volume_correction/.jl")
+            include("fullscale_tests/test_Surface_correction/test_surface_correction.jl")
         end
         @testset "test_multistep" begin
             include("fullscale_tests/test_multistep/test_multistep.jl")

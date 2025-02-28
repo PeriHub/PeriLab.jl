@@ -27,36 +27,30 @@ function compute_surface_volume_correction(datamanager::Module, nodes)
     end
 end
 
-
 function init_surface_correction(
     datamanager::Module,
     params::Dict,
     local_synch,
     synchronise_field,
 )
-
+    # check if surface correction exists
     if !haskey(params, "Surface Correction")
+        # if not set it to false
         params["Surface Correction"] = Dict("Type" => false)
-        for block_id in datamanager.get_block_list()
-            datamanager.set_properties(
-                block_id,
-                "Surface Correction",
-                params["Surface Correction"],
-            )
-        end
+        datamanager.set_properties("Surface Correction", params["Surface Correction"])
         return datamanager
     end
+    # check if type exists; if not its an error
     if !haskey(params["Surface Correction"], "Type")
         @error "Surface Correction needs a Type definition"
         return nothing
     end
-    for block_id in datamanager.get_block_list()
-        datamanager.set_properties(
-            block_id,
-            "Surface Correction",
-            params["Surface Correction"],
-        )
+    # needed for multi-step, because if type is false its not a valid model
+    datamanager.set_properties("Surface Correction", params["Surface Correction"])
+    if !params["Surface Correction"]["Type"]
+        return datamanager
     end
+
     if params["Surface Correction"]["Type"] == "Volume Correction"
         return init_volumen_correction(datamanager, params, local_synch, synchronise_field)
     else
@@ -64,7 +58,6 @@ function init_surface_correction(
         return nothing
     end
 end
-
 
 function init_volumen_correction(datamanager, params, local_synch, synchronise_field)
 
@@ -98,10 +91,4 @@ function init_volumen_correction(datamanager, params, local_synch, synchronise_f
     end
     return datamanager
 end
-
-
-
-
-
-
 end
