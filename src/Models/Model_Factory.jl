@@ -337,7 +337,14 @@ function compute_models(
         active_nodes = datamanager.get_field("Active Nodes")
         active_nodes =
             find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
-        compute_surface_correction(datamanager, active_nodes)
+
+        compute_surface_correction(
+            datamanager,
+            active_nodes,
+            local_synch,
+            synchronise_field,
+        )
+
         @timeit to "distribute_force_densities" Material.distribute_force_densities(
             datamanager,
             active_nodes,

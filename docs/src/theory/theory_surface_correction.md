@@ -19,3 +19,5 @@ $$\mathbf{t}_{corr} =\lambda_{corr}\mathbf{t}$$
 
 !!! warn "Only mechanical"
     Surface correction is right now only applied for mechanical properties.
+
+You can apply the surface correction initialy for all outer surfaces and continuous, for cracks or additive manufacturing.
