@@ -8,7 +8,7 @@ export compute_surface_correction
 
 function compute_surface_correction(datamanager::Module, nodes)
     params = datamanager.get_properties(1, "Surface Correction")
-    if !params["Type"]
+    if isnothing(params["Type"])
         return
     end
     if params["Type"] == "Volume Correction"
@@ -36,7 +36,7 @@ function init_surface_correction(
     # check if surface correction exists
     if !haskey(params, "Surface Correction")
         # if not set it to false
-        params["Surface Correction"] = Dict("Type" => false)
+        params["Surface Correction"] = Dict("Type" => nothing)
         datamanager.set_properties("Surface Correction", params["Surface Correction"])
         return datamanager
     end
@@ -47,7 +47,7 @@ function init_surface_correction(
     end
     # needed for multi-step, because if type is false its not a valid model
     datamanager.set_properties("Surface Correction", params["Surface Correction"])
-    if !params["Surface Correction"]["Type"]
+    if isnothing(params["Surface Correction"]["Type"])
         return datamanager
     end
 
