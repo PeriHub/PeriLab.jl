@@ -477,6 +477,7 @@ function run_solver(
     dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["nsteps"]
     time::Float64 = solver_options["Initial Time"]
+    step_time::Float64 = 0
     max_cancel_damage::Float64 = solver_options["Maximum Damage"]
     numerical_damping::Float64 = solver_options["Numerical Damping"]
     max_damage::Float64 = 0
@@ -536,7 +537,7 @@ function run_solver(
                     concentrationN[active_nodes] + delta_concentration[active_nodes]
             end
             @timeit to "apply_bc_dirichlet" datamanager =
-                Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
+                Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
             if "Material" in solver_options["Models"]
@@ -575,7 +576,7 @@ function run_solver(
             )
             # synch
             @timeit to "apply_bc_dirichlet_force" datamanager =
-                apply_bc_dirichlet_force(bcs, datamanager, time) #-> Dirichlet
+                apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, time) #-> von neumann
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes =
@@ -661,6 +662,7 @@ function run_solver(
             @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
 
             time += dt
+            step_time += dt
             datamanager.set_current_time(time)
 
             if idt % ceil(nsteps / 100) == 0

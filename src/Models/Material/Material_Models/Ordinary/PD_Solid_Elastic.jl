@@ -139,6 +139,13 @@ function compute_model(
     # isotropic; deviatoric; all
     weighted_volume = datamanager.get_field("Weighted Volume")
     theta = datamanager.get_field("Dilatation")
+    state_factor = nothing
+    if haskey(material_parameter, "State Factor ID")
+        state_factor = datamanager.get_field("State Variables")[
+            :,
+            material_parameter["State Factor ID"],
+        ]
+    end
 
     # optimizing, because if no damage it has not to be updated
     # TBD update_list should be used here as in shape_tensor.jl
@@ -175,6 +182,7 @@ function compute_model(
         material_parameter,
         bond_force_deviatoric_part,
         bond_force_isotropic_part,
+        state_factor,
     )
     add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
     @timeit to "get_bond_forces" bond_force =
@@ -218,14 +226,15 @@ function elastic(
     material::Dict,
     bond_force_deviatoric_part::Vector{Vector{Float64}},
     bond_force_isotropic_part::Vector{Vector{Float64}},
+    state_factor::Union{Nothing,Vector{Float64}} = nothing,
 )
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
 
-    # if haskey(material, "State Factor ID")
-    #     shear_modulus .*=datamanager.get_field("State Variables")[:, material["State Factor ID"]]
-    #     bulk_modulus .*=datamanager.get_field("State Variables")[:, material["State Factor ID"]]
-    # end
+    if !isnothing(state_factor)
+        shear_modulus .*= state_factor
+        bulk_modulus .*= state_factor
+    end
 
     symmetry::String = get_symmetry(material)
     # kappa::Float64 = 0
