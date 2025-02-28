@@ -117,4 +117,3 @@ PeriLab:
     Verlet:
       Safety Factor: 1.00
       Fixed dt: 1e-3
-      Numerical Damping: 0e-00

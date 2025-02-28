@@ -129,3 +129,8 @@ The information is stored in the [params dictionary](@ref "Parameters")
   - **Safety Factor/Fixed dt/Number of Steps**: Numeric values representing Verlet solver parameters. (Float64 or Int64, optional)
 - **External**: Dictionary of external solver parameters.
   - **Number of Steps**: Numeric value representing the number of steps. (Int64, optional)
+
+
+## `Surface Correction (optional)`
+- **Type**: String defining what model is used, currently only Volume Correction is included
+- **Update**: Bool defining if the surface is updated during the solving process, taking changes as fracture or additive processes into account

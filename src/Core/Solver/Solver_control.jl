@@ -102,8 +102,14 @@ function init(
     @debug "Read properties"
     read_properties(params, datamanager, "Material" in solver_options["Models"])
     @debug "Init models"
-    @timeit to "init_models" datamanager =
-        Model_Factory.init_models(params, datamanager, block_nodes, solver_options, to)
+    @timeit to "init_models" datamanager = Model_Factory.init_models(
+        params,
+        datamanager,
+        block_nodes,
+        solver_options,
+        synchronise_field,
+        to,
+    )
     @debug "Init Boundary Conditions"
     @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
     solver_options["Solver"] = get_solver_name(solver_params)

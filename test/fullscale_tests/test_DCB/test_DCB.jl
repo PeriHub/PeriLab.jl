@@ -10,8 +10,9 @@ cd("fullscale_tests/" * folder_name) do
     run_perilab("DCBmodel_correspondence", 1, true, folder_name)
     run_perilab("DCBmodel_UMAT", 1, true, folder_name)
     run_perilab("DCBmodel_PD_solid", 1, true, folder_name)
+    run_perilab("DCBmodel_PD_solid_local_damping", 1, true, folder_name)
     # run_perilab("DCBmodel_PD_solid_switch", 1, true, folder_name)
     run_perilab("DCBmodel_PD_solid_temp_depended", 1, true, folder_name)
     run_perilab("DCBmodel_correspondence_bond_associated", 1, true, folder_name)
-
+    run_perilab("DCBmodel_correspondence_surface_correction", 1, true, folder_name)
 end

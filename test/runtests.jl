@@ -60,8 +60,13 @@ MPI.Init()
                 include("unit_tests/Support/ut_geometry.jl")
             end
         end
+        @testset "Surface Correction" begin
+            @testset "ut_Surface_correction" begin
+                include("unit_tests/Surface_correction/ut_Surface_correction.jl")
+            end
+        end
         @testset "Core" begin
-            @testset "ut_data_manager" begin
+            @testset "ut_Surface_correction" begin
                 include("unit_tests/Core/ut_data_manager.jl")
             end
             @testset "ut_influence_function" begin
@@ -114,6 +119,7 @@ MPI.Init()
             end
 
         end
+
         @testset "Models" begin
             @testset "ut_templates" begin
                 include("unit_tests/Models/ut_templates.jl")
@@ -123,6 +129,7 @@ MPI.Init()
                     include("unit_tests/Models/Additive/ut_Additive_Factory.jl")
                 end
             end
+
             @testset "Corrosion" begin
                 @testset "ut_Corrosion_Factory" begin
                     include("unit_tests/Models/Corrosion/ut_Corrosion_Factory.jl")
@@ -209,6 +216,9 @@ MPI.Init()
         # @testset "test_reload" begin
         #     include("fullscale_tests/test_reload/test_reload.jl")
         # end
+        @testset "test_surface_correction" begin
+            include("fullscale_tests/test_Surface_correction/test_Surface_correction.jl")
+        end
         @testset "test_multistep" begin
             include("fullscale_tests/test_multistep/test_multistep.jl")
         end
