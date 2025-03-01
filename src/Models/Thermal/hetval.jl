@@ -68,20 +68,16 @@ function compute_model(
     DPRED = datamanager.get_field("Predefined Fields Increment")
 
     for iID in nodes
-        STATEV_temp = statev[iID, :]
-        FLUX_temp = [flux_N[iID], flux_NP1[iID]]
         HETVAL_interface(
             CMNAME,
             [temp_N[iID], temp_NP1[iID] - temp_N[iID]],
             [time, time + dt],
             dt,
-            STATEV_temp,
-            FLUX_temp,
+            statev[iID, :],
+            [flux_N[iID], flux_NP1[iID]],
             PREDEF[iID, :],
             DPRED[iID, :],
         )
-        statev[iID, :] = STATEV_temp
-        flux_NP1[iID] = FLUX_temp[2]
     end
 
     return datamanager
