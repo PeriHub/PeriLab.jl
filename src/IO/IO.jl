@@ -53,8 +53,8 @@ function merge_exodus_files(result_files::Vector{Dict}, output_dir::String)
             filename = split(basename(filename), ".")[1] * ".e"
             new_path = joinpath(output_dir, filename)
             if abspath(filename) != abspath(new_path)
-                mv(filename, new_path, force = true)
-                mv("epu.log", joinpath(output_dir, "epu.log"), force = true)
+                mv(filename, new_path, force=true)
+                mv("epu.log", joinpath(output_dir, "epu.log"), force=true)
             end
         end
     end
@@ -565,7 +565,7 @@ function set_output_frequency(
     params::Dict,
     datamanager::Module,
     nsteps::Int64,
-    step_id::Union{Nothing,Int64} = nothing,
+    step_id::Union{Nothing,Int64}=nothing,
 )
     output_frequencies = get_output_frequency(params, nsteps)
     if isnothing(step_id) || step_id == 1
@@ -699,6 +699,8 @@ Get global values.
 """
 function get_global_values(output::Dict, datamanager::Module)
     global_values = []
+    block_ids = datamanager.get_field("Block_Id")
+    block_list = datamanager.get_block_list()
     for varname in keys(sort!(OrderedDict(output)))
         compute_class = output[varname]["compute_params"]["Compute Class"]
         calculation_type = output[varname]["compute_params"]["Calculation Type"]
@@ -712,18 +714,19 @@ function get_global_values(output::Dict, datamanager::Module)
         end
         if compute_class == "Block_Data"
             block = output[varname]["compute_params"]["Block"]
-            block_id = parse(Int, block[7:end])
-            global_value, nnodes =
-                calculate_block(datamanager, fieldname, dof, calculation_type, block_id)
+            if block in block_list
+                block_id = block_ids[findfirst(==(block), block_list)]
+            else
+                error("ERROR: Block name '$block' not found. Available blocks: $(join(block_list, ", "))")
+            end
+            global_value, nnodes = calculate_block(datamanager, fieldname, dof, calculation_type, block_id)
         elseif compute_class == "Node_Set_Data"
             node_set = output[varname]["nodeset"]
             node_list = datamanager.get_local_nodes(node_set)
-            global_value, nnodes =
-                calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_list)
+            global_value, nnodes = calculate_nodelist(datamanager, fieldname, dof, calculation_type, node_list)
         end
         if datamanager.get_max_rank() > 1
-            global_value =
-                find_global_core_value!(global_value, calculation_type, nnodes, datamanager)
+            global_value = find_global_core_value!(global_value, calculation_type, nnodes, datamanager)
         end
         append!(global_values, global_value)
     end
@@ -877,29 +880,29 @@ function show_block_summary(
             push!(full_df, new_row)
         end
         if !silent
-            pretty_table(full_df; show_subheader = false)
+            pretty_table(full_df; show_subheader=false)
             stream = Logging_module.get_log_stream(2)
             if !isnothing(stream)
-                pretty_table(stream, full_df; show_subheader = false)
+                pretty_table(stream, full_df; show_subheader=false)
             end
         else
             stream = Logging_module.get_log_stream(1)
             if !isnothing(stream)
-                pretty_table(stream, full_df; show_subheader = false)
+                pretty_table(stream, full_df; show_subheader=false)
             end
         end
     else
         if log_file != ""
             if !silent
-                pretty_table(df; show_subheader = false)
+                pretty_table(df; show_subheader=false)
                 stream = Logging_module.get_log_stream(2)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_subheader=false)
                 end
             else
                 stream = Logging_module.get_log_stream(1)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_subheader=false)
                 end
             end
         end
@@ -973,29 +976,29 @@ function show_mpi_summary(
     if rank == 0
         merged_df = vcat(all_dfs...)
         if !silent
-            pretty_table(merged_df; show_subheader = false)
+            pretty_table(merged_df; show_subheader=false)
             stream = Logging_module.get_log_stream(2)
             if !isnothing(stream)
-                pretty_table(stream, merged_df; show_subheader = false)
+                pretty_table(stream, merged_df; show_subheader=false)
             end
         else
             stream = Logging_module.get_log_stream(1)
             if !isnothing(stream)
-                pretty_table(stream, merged_df; show_subheader = false)
+                pretty_table(stream, merged_df; show_subheader=false)
             end
         end
     else
         if log_file != ""
             if !silent
-                pretty_table(df; show_subheader = false)
+                pretty_table(df; show_subheader=false)
                 stream = Logging_module.get_log_stream(2)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_subheader=false)
                 end
             else
                 stream = Logging_module.get_log_stream(1)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_subheader=false)
                 end
             end
         end
