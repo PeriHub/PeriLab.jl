@@ -23,6 +23,7 @@ If you want to provide a code change, please:
 * Jan-Timo Hesse
 * Felix Winkelmann
 * Anna Pernatii
+* Francisco A. Yapor Genao
 
 ## What can I contribute?
 
