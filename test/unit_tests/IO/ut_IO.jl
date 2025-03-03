@@ -28,6 +28,10 @@ test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
 block_Id = test_data_manager.get_field("Block_Id")
 test_data_manager.create_node_field("Displacements", Float64, 2)
 test_data_manager.create_node_field("Forces", Float64, 6)
+
+block_list = ["block_1", "block_2"]
+test_data_manager.set_block_list(block_list)
+
 params = Dict(
     "Outputs" => Dict(
         "Output1" => Dict(
