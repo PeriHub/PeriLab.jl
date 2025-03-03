@@ -264,7 +264,7 @@ function run_solver(
         #datamanager = apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
         datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
         external_force_densities += external_forces ./ volume
-        start_u = copy(uN)
+
         datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
         sol = nlsolve(
             (residual, U) -> residual!(
@@ -289,6 +289,7 @@ function run_solver(
             extended_trace = false,
             method = :anderson,
         )
+        start_u = copy(uNP1)
         if !sol.x_converged && !sol.f_converged
             @info "Failed to converge at step $idt: maximum number of iterations reached"
             datamanager.set_cancel(true)
