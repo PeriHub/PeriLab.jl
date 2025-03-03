@@ -88,6 +88,7 @@ function init_solver(
     initial_time = get_initial_time(params, datamanager)
     final_time = get_final_time(params)
     fixed_dt = get_fixed_dt(params)
+    dof = datamanager.get_dof()
     if fixed_dt == -1.0
         if haskey(params, "Number of Steps")
             nsteps = params["Number of Steps"]
@@ -113,6 +114,8 @@ function init_solver(
         "Maximum number of iterations" => 100,
         "Show solver iteration" => false,
         "Residual scaling" => 1e6,
+        "m" => 5,
+        "Linear Start Value" => zeros(2 * dof),
     )
     if haskey(params["Static"], "Residual scaling")
         solver_specifics["Residual scaling"] = params["Static"]["Residual scaling"]
@@ -131,11 +134,30 @@ function init_solver(
         solver_specifics["Show solver iteration"] =
             params["Static"]["Show solver iteration"]
     end
-    dof = datamanager.get_dof()
-    residual = datamanager.create_constant_node_field("Residual", Float64, dof)
-    start_u = datamanager.create_constant_node_field("Start Value", Float64, dof)
-    Boundary_conditions.find_bc_free_dof(datamanager, bcs)
+    if haskey(params["Static"], "m")
+        solver_specifics["m"] = params["Static"]["m"]
+    end
+    if haskey(params["Static"], "Linear Start Value")
+        solver_specifics["Linear Start Value"] = params["Static"]["Linear Start Value"]
+    end
 
+
+    residual = datamanager.create_constant_node_field("Residual", Float64, dof)
+
+    if !("Start_Values" in datamanager.get_all_field_keys())
+
+        start_u = datamanager.create_constant_node_field("Start_Values", Float64, dof)
+        coor = datamanager.get_field("Coordinates")
+        ls = solver_specifics["Linear Start Value"]
+
+        for idof = 1:dof
+            start_u[:, idof] =
+                (ls[2*idof-1] - ls[2*idof]) /
+                (maximum(coor[:, idof]) - minimum(coor[:, idof])) .* coor[:, idof]
+        end
+    end
+
+    Boundary_conditions.find_bc_free_dof(datamanager, bcs)
 
     if datamanager.get_rank() == 0
         data = [
@@ -224,7 +246,7 @@ function run_solver(
     uN = datamanager.get_field("Displacements", "N")
     uNP1 = datamanager.get_field("Displacements", "NP1")
     resdiual = datamanager.get_field("Residual")
-    start_u = datamanager.get_field("Start Value")
+    start_u = datamanager.get_field("Start_Values")
     coor = datamanager.get_field("Coordinates")
     external_forces = datamanager.get_field("External Forces")
     external_force_densities = datamanager.get_field("External Force Densities")
