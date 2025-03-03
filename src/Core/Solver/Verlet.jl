@@ -635,19 +635,13 @@ function run_solver(
                 delta_concentration[active_nodes] =
                     -concentration_fluxNP1[active_nodes] .* dt
             end
-            if rank == 0 && "Damage" in solver_options["Models"] #TODO gather value
+            if "Damage" in solver_options["Models"] #TODO gather value
                 max_damage = maximum(damage[active_nodes])
                 if max_damage > max_cancel_damage
-                    if !silent
-                        set_multiline_postfix(iter, "Maximum damage reached!")
-                    end
                     datamanager.set_cancel(true)
                 end
                 if !damage_init && max_damage > 0
                     damage_init = true
-                    if !silent
-                        # set_multiline_postfix(iter, "Bond damage initiated!")
-                    end
                 end
             end
             @timeit to "write_results" result_files =
