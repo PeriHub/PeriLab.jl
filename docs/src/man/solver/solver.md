@@ -66,6 +66,9 @@ $$r =  \left[\underline{\mathbf{T}}_{external} + \underline{\mathbf{T}}_{interna
 
 Right now the default value $m$ of the Anderson acceleration method is chosen.
 
+$s_{Residual\,scaling}$ should be in the range of the Young's modulus and is than scaled by the volume.
+
+$$s_{Residual\,scaling} /= minimum(volume)^2$$
 
 
 !!! warning "Multiphysics"
@@ -74,6 +77,7 @@ Right now the default value $m$ of the Anderson acceleration method is chosen.
 ---
 
 **Start Value**
+
 The start value defines the values taken for the first iteration. The default is zero. Two options are possible. The first option defines start values in the mesh file. The name is
 
     start_values_x
@@ -94,4 +98,11 @@ where $A$ are amplitude values chosen by the user.
 
 With these values the field ''start_values'' is computed as
 
-$$start\_value(x,y,z (optional))= \frac{\text{max}(start_{val})-\text{min}(start_{val})}{\text{max}(coordinates)-\text{min}(coordinates)}coordinates$$
+
+$$start\_value(x,y,z (optional))= \frac{a(x,y,z(optional))\dot coordinates+n(x,y,z(optional))}{nsteps}$$
+
+$$a(x,y,z (optional))=\frac{\text{max}(start_{val})-\text{min}(start_{val})}{\text{max}(coordinates)-\text{min}(coordinates)}$$
+
+and
+
+$$n(x,y,z (optional))=\text{max}(start_{val})-a(x,y,z (optional))\text{max}(coordinates)$$

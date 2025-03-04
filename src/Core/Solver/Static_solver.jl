@@ -12,7 +12,6 @@ using LoopVectorization
 using PrettyTables
 using Logging
 
-
 include("../../Support/Helpers.jl")
 using .Helpers: check_inf_or_nan, find_active_nodes, progress_bar
 include("../../Support/Parameters/parameter_handling.jl")
@@ -105,6 +104,7 @@ function init_solver(
         dt = (final_time - initial_time) / (nsteps - 1)
     end
     comm = datamanager.get_comm()
+
     # not needed here
     numerical_damping = get_numerical_damping(params)
     max_damage = get_max_damage(params)
@@ -118,7 +118,9 @@ function init_solver(
         "Linear Start Value" => zeros(2 * dof),
     )
     if haskey(params["Static"], "Residual scaling")
-        solver_specifics["Residual scaling"] = params["Static"]["Residual scaling"]
+        volume = datamanager.get_field("Volume")
+        solver_specifics["Residual scaling"] =
+            params["Static"]["Residual scaling"] / minimum(volume) / minimum(volume)
     end
     if haskey(params["Static"], "Solution tolerance")
         solver_specifics["Solution tolerance"] = params["Static"]["Solution tolerance"]
@@ -138,7 +140,8 @@ function init_solver(
         solver_specifics["m"] = params["Static"]["m"]
     end
     if haskey(params["Static"], "Linear Start Value")
-        solver_specifics["Linear Start Value"] = params["Static"]["Linear Start Value"]
+        solver_specifics["Linear Start Value"] =
+            parse.(Float64, split(params["Static"]["Linear Start Value"]))
     end
 
 
@@ -151,12 +154,14 @@ function init_solver(
         ls = solver_specifics["Linear Start Value"]
 
         for idof = 1:dof
-            start_u[:, idof] =
-                (ls[2*idof-1] - ls[2*idof]) /
-                (maximum(coor[:, idof]) - minimum(coor[:, idof])) .* coor[:, idof]
+            m =
+                (ls[2*idof] - ls[2*idof-1]) /
+                (maximum(coor[:, idof]) - minimum(coor[:, idof]))
+            n = ls[2*idof] - m * maximum(coor[:, idof])
+            start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps
         end
     end
-
+    check_inf_or_nan(start_u, "Start_Values")
     Boundary_conditions.find_bc_free_dof(datamanager, bcs)
 
     if datamanager.get_rank() == 0
@@ -216,13 +221,6 @@ function run_solver(
 )
 
     atexit(() -> datamanager.set_cancel(true))
-
-    #show_trace = solver_options["Show iterations"]
-    show_trace = false
-
-    xtol = 1e-6  # Genauigkeit der Lösung
-    ftol = 1e-6  # Genauigkeit der Funktion
-    iterations = 50  # Max. Anzahl an Iterationen
 
     coor = datamanager.get_field("Coordinates")
     comm = datamanager.get_comm()
@@ -288,6 +286,7 @@ function run_solver(
             show_trace = show_trace,
             extended_trace = false,
             method = :anderson,
+            m = solver_options["Solver specifics"]["m"],
         )
         start_u = copy(uNP1)
         if !sol.x_converged && !sol.f_converged

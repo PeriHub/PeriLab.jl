@@ -85,6 +85,7 @@ PeriLab:
       Output Variables:
         Damage: true
         Displacements: true
+        Cauchy Stress: True
         Forces: true
         External_Forces: True
         External_Displacements: True
@@ -102,15 +103,14 @@ PeriLab:
     Damage Models: false
     Final Time: 1
     Initial Time: 0.0
-    Numerical Damping: 0.0005
-    Number of Steps: 5000
+    Number of Steps: 50
     Static:
       NLsolver: true
       Show solver iteration: true
       Residual tolerance: 1e-6
       Solution tolerance: 1e-6
-      Linear Start Value: 0 0.002 -0.0002 0.0002
-      Residual scaling: 5000 # should be for complex problems in the range of the Young's modulus
-      m: 8
+      Linear Start Value: 0 0.105 0.0 -0.0333
+      Residual scaling: 70000 # should be for complex problems in the range of the Young's modulus
+      m: 10
 
       #Fixed dt: 1e-8
