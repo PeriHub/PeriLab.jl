@@ -85,6 +85,7 @@ PeriLab:
       Output Variables:
         Damage: true
         Displacements: true
+        Cauchy Stress: True
         Forces: true
         External_Forces: True
         External_Displacements: True
@@ -95,16 +96,21 @@ PeriLab:
       Output Variables:
         External_Forces: True
         External_Displacements: True
+  Surface Correction:
+    Type: Volume Correction
   Solver:
     Material Models: true
-    Damage Models: true
-    Final Time: 1e-5
+    Damage Models: false
+    Final Time: 1
     Initial Time: 0.0
-    Numerical Damping: 0.0005
-    nsteps: 500
+    Number of Steps: 50
     Static:
       NLsolver: true
       Show solver iteration: true
-      Residual tolerance: 1e-5
-      Solution tolerance: 1e-5
+      Residual tolerance: 1e-6
+      Solution tolerance: 1e-6
+      Linear Start Value: 0 0.105 0.0 -0.0333
+      Residual scaling: 70000 # should be for complex problems in the range of the Young's modulus
+      m: 10
+
       #Fixed dt: 1e-8

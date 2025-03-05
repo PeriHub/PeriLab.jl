@@ -49,7 +49,6 @@ PeriLab:
       Value: "0.0"
       Type: Dirichlet
   Solver:
-    Surface Corretion Model: true
     Initial Time: 0.0
     Final Time: 5.0e-6
     Verlet:

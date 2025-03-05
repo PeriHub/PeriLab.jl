@@ -57,7 +57,8 @@ For the time intergration a stable increment has to be determined.
 | Show solver iteration  | Bool | Yes | Shows additional information |
 | Residual scaling  | Float | Yes | Scales the residual and the variable in same order, e.g. if you have linear elastic problem $u=\frac{Fl}{EA}$ your scaling should be in the order of $EA$ |
 | Solver Type  | String | Yes | not implmented yet |
-
+| m | Int | Yes | Only for Anderson solver;  It does not use Jacobian information or linesearch, but has a history whose size is controlled by the m parameter: $m=0$ corresponds to the simple fixed-point iteration above, and higher values use a larger history size to accelerate the iterations. Higher values of m usually increase the speed of convergence, but increase the storage and computation requirements and might lead to instabilities.  |
+| Linear Start Value | Vector{Float} | Yes | Defines start and end values of a linear function over the length of the model (detailed explanation in the text) |
 The static solver from [NLsolve.jl](https://github.com/JuliaNLSolvers/NLsolve.jl) has been included. Specifically the [method = :anderson](https://github.com/JuliaNLSolvers/NLsolve.jl#anderson-acceleration) is used.
 
 The solver computes the residual of the internal reaction force densities and the external applied force densities
@@ -65,7 +66,43 @@ $$r =  \left[\underline{\mathbf{T}}_{external} + \underline{\mathbf{T}}_{interna
 
 Right now the default value $m$ of the Anderson acceleration method is chosen.
 
+$s_{Residual\,scaling}$ should be in the range of the Young's modulus and is than scaled by the volume.
+
+$$s_{Residual\,scaling} /= minimum(volume)^2$$
 
 
 !!! warning "Multiphysics"
     Currently only the mechanical solver is included!
+
+---
+
+**Start Value**
+
+The start value defines the values taken for the first iteration. The default is zero. Two options are possible. The first option defines start values in the mesh file. The name is
+
+    start_values_x
+    start_values_y
+    start_values_z (optional)
+
+These numbers are stored in the datamanager and are used for the iteration.
+
+The alternative is to define a Linear Start Value as it is given as option in the list above. This list defines values for 3D as
+
+$$start_{val} = [A_{x-min}\,A_{x-max}\,A_{y-min}\,A_{y-max}\,A_{z-min}\,A_{z-max}]$$
+
+and for 2D
+
+$$start_{val} = [A_{x-min}\,A_{x-max}\,A_{y-min}\,A_{y-max}]$$
+
+where $A$ are amplitude values chosen by the user.
+
+With these values the field ''start_values'' is computed as
+
+
+$$start\_value(x,y,z (optional))= \frac{a(x,y,z(optional))\dot coordinates+n(x,y,z(optional))}{nsteps}$$
+
+$$a(x,y,z (optional))=\frac{\text{max}(start_{val})-\text{min}(start_{val})}{\text{max}(coordinates)-\text{min}(coordinates)}$$
+
+and
+
+$$n(x,y,z (optional))=\text{max}(start_{val})-a(x,y,z (optional))\text{max}(coordinates)$$
