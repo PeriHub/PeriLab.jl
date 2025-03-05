@@ -170,20 +170,35 @@ Apply the boundary conditions
 # Returns
 - `datamanager::Module`: Datamanager
 """
-function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
+function apply_bc_dirichlet(
+    allowed_variables::Vector{String},
+    bcs::Dict,
+    datamanager::Module,
+    time::Float64,
+)
     dof = datamanager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     coordinates = datamanager.get_field("Coordinates")
     for name in keys(bcs)
         bc = bcs[name]
-        if !(bc["Type"] in ["Initial", "Dirichlet"]) ||
-           bc["Variable"] == "Force Densities" ||
-           bc["Variable"] == "Forces" ||
-           !isnothing(datamanager.get_step()) &&
-           haskey(bc, "Step ID") && bc["Step ID"] != datamanager.get_step()
+        if !(bc["Type"] in ["Initial", "Dirichlet"])
             continue
         end
-        field = datamanager.get_field(bc["Variable"], bc["Time"])
+        if !(bc["Variable"] in allowed_variables)
+            continue
+        end
+        if !isnothing(datamanager.get_step()) &&
+           haskey(bc, "Step ID") &&
+           bc["Step ID"] != datamanager.get_step()
+            continue
+        end
+        if bc["Variable"] == "Forces"
+            field = datamanager.get_field("External Forces")
+        elseif bc["Variable"] == "Force Densities"
+            field = datamanager.get_field("External Force Densities")
+        else
+            field = datamanager.get_field(bc["Variable"], bc["Time"])
+        end
         if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
                 @views field_to_apply_bc =
@@ -212,55 +227,6 @@ function apply_bc_dirichlet(bcs::Dict, datamanager::Module, time::Float64)
                 bc["Initial"],
                 name,
             )
-        end
-
-    end
-    return datamanager
-end
-
-"""
-apply_bc_dirichlet_force(bcs::Dict, datamanager::Module, time::Float64)
-
-Apply the boundary conditions
-
-# Arguments
-- `bcs::Dict{Any,Any}`: The boundary conditions
-- `datamanager::Module`: Datamanager
-- `time::Float64`: The current time
-# Returns
-- `datamanager::Module`: Datamanager
-"""
-function apply_bc_dirichlet_force(bcs::Dict, datamanager::Module, time::Float64)
-    dof = datamanager.get_dof()
-    dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
-    coordinates = datamanager.get_field("Coordinates")
-    for name in keys(bcs)
-        bc = bcs[name]
-        if bc["Type"] != "Dirichlet"
-            continue
-        end
-        if bc["Variable"] == "Forces"
-            field = datamanager.get_field("External Forces")
-        elseif bc["Variable"] == "Force Densities"
-            field = datamanager.get_field("External Force Densities")
-        else
-            continue
-        end
-
-        if haskey(dof_mapping, bc["Coordinate"])
-            @views field_to_apply_bc = field[bc["Node Set"], dof_mapping[bc["Coordinate"]]]
-            eval_bc!(
-                field_to_apply_bc,
-                bc["Value"],
-                coordinates[bc["Node Set"], :],
-                time,
-                dof,
-                bc["Initial"],
-                name,
-            )
-        else
-            @error "Coordinate in boundary condition must be x,y or z."
-            return nothing
         end
 
     end
