@@ -446,6 +446,7 @@ end
     @test sum(disp) == 0
     bcs = PeriLab.Solver_control.Boundary_conditions.init_BCs(params, test_data_manager)
     PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+        ["Displacements", "Temperature"],
         bcs,
         test_data_manager,
         0.0,
@@ -459,6 +460,7 @@ end
         [0 0 0; 0 0 5; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5; 0 0 0; 0 0 0; 0 0 5],
     )
     PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+        ["Displacements", "Temperature"],
         bcs,
         test_data_manager,
         0.2,
@@ -482,6 +484,7 @@ end
     temperature .= 0
     disp .= 0
     PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+        ["Displacements", "Temperature"],
         bcs,
         test_data_manager,
         0.2,
@@ -502,6 +505,7 @@ end
     bcs = PeriLab.Solver_control.Boundary_conditions.init_BCs(params, test_data_manager)
     @test isnothing(
         PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+            ["Displacements", "Temperature"],
             bcs,
             test_data_manager,
             0.2,
@@ -522,7 +526,8 @@ end
     )
     bcs = PeriLab.Solver_control.Boundary_conditions.init_BCs(params, test_data_manager)
 
-    PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet_force(
+    PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+        ["Forces", "Force Densities"],
         bcs,
         test_data_manager,
         0.0,
@@ -554,7 +559,8 @@ end
     )
     bcs = PeriLab.Solver_control.Boundary_conditions.init_BCs(params, test_data_manager)
 
-    PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet_force(
+    PeriLab.Solver_control.Boundary_conditions.apply_bc_dirichlet(
+        ["Forces", "Force Densities"],
         bcs,
         test_data_manager,
         0.0,

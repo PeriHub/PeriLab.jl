@@ -29,8 +29,7 @@ include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")
 include("../../Compute/compute_field_values.jl")
 using .Model_Factory
-using .Boundary_conditions:
-    apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof, apply_bc_dirichlet_force
+using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 using .Helpers: matrix_style
 using .Logging_module: print_table
 export init_solver
@@ -260,10 +259,16 @@ function run_solver(
             damage = datamanager.get_damage("NP1")
         end
         #datamanager = apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
-        datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time + dt) #-> Dirichlet
+        datamanager = apply_bc_dirichlet(
+            ["Forces", "Force Densities"],
+            bcs,
+            datamanager,
+            step_time + dt,
+        ) #-> Dirichlet
         external_force_densities += external_forces ./ volume
 
-        datamanager = apply_bc_dirichlet(bcs, datamanager, step_time + dt) #-> Dirichlet
+        datamanager =
+            apply_bc_dirichlet(["Displacements"], bcs, datamanager, step_time + dt) #-> Dirichlet
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,

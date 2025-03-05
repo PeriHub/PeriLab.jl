@@ -28,7 +28,7 @@ include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")
 include("../../Compute/compute_field_values.jl")
 using .Model_Factory
-using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, apply_bc_dirichlet_force
+using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann
 using .Helpers: matrix_style
 using .Logging_module: print_table
 export init_solver
@@ -521,6 +521,7 @@ function run_solver(
                 @views vNP1[active_nodes, :] =
                     (1 - numerical_damping) .* vN[active_nodes, :] .+
                     0.5 * dt .* a[active_nodes, :]
+                datamanager = apply_bc_dirichlet(["Velocity"], bcs, datamanager, step_time)
                 @views uNP1[active_nodes, :] =
                     uN[active_nodes, :] .+ dt .* vNP1[active_nodes, :]
             end
@@ -536,8 +537,12 @@ function run_solver(
                 concentrationNP1[active_nodes] =
                     concentrationN[active_nodes] + delta_concentration[active_nodes]
             end
-            @timeit to "apply_bc_dirichlet" datamanager =
-                Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
+            datamanager = apply_bc_dirichlet(
+                ["Displacements", "Temperature"],
+                bcs,
+                datamanager,
+                step_time,
+            ) #-> Dirichlet
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
             if "Material" in solver_options["Models"]
@@ -575,14 +580,18 @@ function run_solver(
                 "download_from_cores",
             )
             # synch
-            @timeit to "apply_bc_dirichlet_force" datamanager =
-                apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
+            datamanager = apply_bc_dirichlet(
+                ["Forces", "Force Densities"],
+                bcs,
+                datamanager,
+                step_time,
+            ) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, time) #-> von neumann
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes =
                 find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
             if "Material" in solver_options["Models"]
-                (force_densities, "Forces")
+                check_inf_or_nan(force_densities, "Forces")
 
                 if fem_option
                     # edit external force densities won't work so easy, because the corresponded volume is in detJ
@@ -635,19 +644,13 @@ function run_solver(
                 delta_concentration[active_nodes] =
                     -concentration_fluxNP1[active_nodes] .* dt
             end
-            if rank == 0 && "Damage" in solver_options["Models"] #TODO gather value
+            if "Damage" in solver_options["Models"] #TODO gather value
                 max_damage = maximum(damage[active_nodes])
                 if max_damage > max_cancel_damage
-                    if !silent
-                        set_multiline_postfix(iter, "Maximum damage reached!")
-                    end
                     datamanager.set_cancel(true)
                 end
                 if !damage_init && max_damage > 0
                     damage_init = true
-                    if !silent
-                        # set_multiline_postfix(iter, "Bond damage initiated!")
-                    end
                 end
             end
             @timeit to "write_results" result_files =
