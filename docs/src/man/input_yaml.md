@@ -124,12 +124,13 @@ The information is stored in the [params dictionary](@ref "Parameters")
 - **Calculate Strain** : Boolean values indicating whether to calculate strain for deformation gradient and shape tensor calculations (optional).
 - **Maximum Damage**: Numeric value representing the maximum damage. (Float64, optional)
 - **Final Time/Initial Time**: Numeric values representing the final and initial time. (Float64 or Int64, required)
-- **Numerical Damping**: Numeric value representing numerical damping. (Float64 or Int64, optional)
+- **Fixed dt/Number of Steps**: Numeric values defining the step width. (Float64 or Int64, optional)
 - **Verlet**: Dictionary of Verlet solver parameters.
-  - **Safety Factor/Fixed dt/Number of Steps**: Numeric values representing Verlet solver parameters. (Float64 or Int64, optional)
-- **External**: Dictionary of external solver parameters.
+  - **Safety Factor**: Numeric values representing Verlet solver parameters. (Float64 or Int64, optional)
+  - **Numerical Damping**: Numeric value representing numerical damping. (Float64 or Int64, optional)
+- **Static**: Dictionary of Static solver parameters.
   - **Number of Steps**: Numeric value representing the number of steps. (Int64, optional)
-
+  - **NLsolve,Solution tolerance  | Float, Residual tolerance, Maximum number of iterations, Show solver iteration, Residual scaling, Solver Type, m, Linear Start Value** Numeric values representing Static solver parameters. (Float64, Bool, String or Int64, optional)
 
 ## `Surface Correction (optional)`
 - **Type**: String defining what model is used, currently only Volume Correction is included

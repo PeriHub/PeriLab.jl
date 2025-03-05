@@ -53,11 +53,11 @@ For the time intergration a stable increment has to be determined.
 | NLsolve  | Bool | Yes | Place Holder |
 | Solution tolerance  | Float | Yes | Defines how much change between two iterations of the solution variable is allowed. |
 | Residual tolerance  | Float | Yes |  Defines how much change between two iterations of the maximum residual variable is allowed. |
-| Maximum number of iterations  | Bool | Yes | Maximum number of iteration of the solver. |
+| Maximum number of iterations  | Int | Yes | Maximum number of iteration of the solver. |
 | Show solver iteration  | Bool | Yes | Shows additional information |
-| Residual scaling  | Float | Yes | Scales the residual and the variable in same order, e.g. if you have linear elastic problem $u=\frac{Fl}{EA}$ your scaling should be in the order of $EA$ |
+| Residual scaling  | Float | Yes | Scales the residual and the variable in same order. Should be in the range of the Young's modulus. |
 | Solver Type  | String | Yes | not implmented yet |
-| m | Int | Yes | Only for Anderson solver;  It does not use Jacobian information or linesearch, but has a history whose size is controlled by the m parameter: $m=0$ corresponds to the simple fixed-point iteration above, and higher values use a larger history size to accelerate the iterations. Higher values of m usually increase the speed of convergence, but increase the storage and computation requirements and might lead to instabilities.  |
+| m | Int | Yes | Only for Anderson solver;  It does not use Jacobian information or linesearch, but has a history whose size is controlled by the m parameter: $m=0$ corresponds to the simple fixed-point iteration above, and higher values use a larger history size to accelerate the iterations. Higher values of m usually increase the speed of convergence, but increase the storage and computation requirements and might lead to instabilities. $m=15$ is set as standard value.|
 | Linear Start Value | Vector{Float} | Yes | Defines start and end values of a linear function over the length of the model (detailed explanation in the text) |
 The static solver from [NLsolve.jl](https://github.com/JuliaNLSolvers/NLsolve.jl) has been included. Specifically the [method = :anderson](https://github.com/JuliaNLSolvers/NLsolve.jl#anderson-acceleration) is used.
 

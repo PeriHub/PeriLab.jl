@@ -114,7 +114,7 @@ function init_solver(
         "Maximum number of iterations" => 100,
         "Show solver iteration" => false,
         "Residual scaling" => 1e6,
-        "m" => 5,
+        "m" => 15,
         "Linear Start Value" => zeros(2 * dof),
     )
     if haskey(params["Static"], "Residual scaling")
@@ -260,10 +260,10 @@ function run_solver(
             damage = datamanager.get_damage("NP1")
         end
         #datamanager = apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
-        datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time) #-> Dirichlet
+        datamanager = apply_bc_dirichlet_force(bcs, datamanager, step_time + dt) #-> Dirichlet
         external_force_densities += external_forces ./ volume
 
-        datamanager = apply_bc_dirichlet(bcs, datamanager, step_time) #-> Dirichlet
+        datamanager = apply_bc_dirichlet(bcs, datamanager, step_time + dt) #-> Dirichlet
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,
@@ -288,6 +288,7 @@ function run_solver(
             method = :anderson,
             m = solver_options["Solver specifics"]["m"],
         )
+
         start_u = copy(uNP1)
         if !sol.x_converged && !sol.f_converged
             @info "Failed to converge at step $idt: maximum number of iterations reached"
