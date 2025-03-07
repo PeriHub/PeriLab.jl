@@ -63,10 +63,9 @@ PeriLab:
       Value: "0.0"
       Type: Dirichlet
   Solver:
-    Solve For Displacement: True
     Initial Time: 0.0
     Final Time: 5.0e-6
-    nsteps: 7
+    Number of Steps: 7
     Static:
       NLSolve: true
       Maximum number of iterations: 100
@@ -75,9 +74,10 @@ PeriLab:
       Solution tolerance: 1e-8
       Residual scaling: 1 # should be for complex problems in the range of the Young's modulus
       Linear Start Value: 0 0 0 0
-      m: 5
+      m: 6
   Outputs:
     Output1:
+      Output File Type: Exodus
       Output Filename: "test_static_bond_based_elastic_2D"
       Output Frequency: 1
       Output Variables:
