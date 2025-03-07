@@ -72,7 +72,11 @@ A few basic examples of `PeriLab` can be found in the [examples](https://github.
 
 - 🔨 **Damage models**: Damage models such as critical stretch or an energy based criterium are included to simulate different types of damage, such as crack propagation or delamination, in their peridynamic simulations.
 
+- 👬 **FEM/PD coupling**: Coupling between Peridynamics and the Finite element method is supported.
+
 - 🔥 **Additive Manufacturing**: PeriLab supports additive manufacturing, allowing users to create custom additive models for their simulations.
+
+- 🔑 **Solver**: Different solvers like `Verlet` or `Static` can be utilized, swiching between those is also supported.
 
 - 🧲 **Multimodels**: PeriLab supports multimodels simulations, combining different types of peridynamics and damage models to create a comprehensive simulation environment.
 
@@ -81,6 +85,8 @@ A few basic examples of `PeriLab` can be found in the [examples](https://github.
 - ⚡ **MPI**: PeriLab supports parallel computing using Message Passing Interface (MPI) technology to improve simulation performance on high-performance clusters.
 
 - 🔁 **Multistep simulations**: PeriLab supports the definition of multiple solver steps, allowing to combine different enviromental conditions in a single run.
+
+- 📐 **Surface Correction**: PeriLab provides tools for surface correction, such as the `Volume correction` method.
 
 - 💻 **HPC capabilities**: PeriLab is designed for high-performance computing (HPC) environments, allowing users to run large-scale simulations efficiently.
 
@@ -177,13 +183,11 @@ Hit the __Start__ button and wait for the job to finish, the results will be ava
 
 Here are some exciting tasks on our roadmap:
 
-- 🔑 **Quasi-static solver**: A future development for PeriLab is extending its capabilities with a more robust quasi-static solver for larger systems and complex boundary conditions.
+- 💧 **Corrosion**: The simulation of corrosive materials will be added to PeriLab
 
 - 👊 **Contact**: An upcoming feature in PeriLab is enhancing contact modeling to support advanced features like friction, adhesion, and contact forces based on temperature or other variables.
 
 - ➕ **More material and damage models**: PeriLab's future development plans include adding more sophisticated material models (e.g., viscoelastic-plastic) and damage models, expanding the software's applicability to a wider range of real-world phenomena.
-
-- 👬 **FEM/PD coupling**: A future enhancement for PeriLab is improving its FEM/PD coupling functionality by implementing more advanced techniques, such as a seamless data exchange between FEM and PD domains.
 
 - ✂️ **Distribution logic**: As part of its ongoing development, PeriLab will continue to incorporate new distribution logic for improved performance and reduced computational resources.
 
