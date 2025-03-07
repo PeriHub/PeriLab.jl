@@ -118,8 +118,7 @@ function init_solver(
     )
     if haskey(params["Static"], "Residual scaling")
         volume = datamanager.get_field("Volume")
-        solver_specifics["Residual scaling"] =
-            params["Static"]["Residual scaling"] / minimum(volume) / minimum(volume)
+        solver_specifics["Residual scaling"] = params["Static"]["Residual scaling"]# / minimum(volume) / minimum(volume)
     end
     if haskey(params["Static"], "Solution tolerance")
         solver_specifics["Solution tolerance"] = params["Static"]["Solution tolerance"]
@@ -308,6 +307,8 @@ function run_solver(
         # method=:broyden
         active_nodes =
             find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
+        force_densities = datamanager.get_field("Force Densities", "NP1")
+
         @views forces[active_nodes, :] =
             force_densities[active_nodes, :] .* volume[active_nodes]
 
@@ -361,15 +362,14 @@ function residual!(
     # one step more, because of init step (time = 0)
     # displacement  from interface
     # Set bond damages to original state
-    datamanager.switch_bonds!(
-        datamanager.get_field("Bond Damage", "NP1"),
-        datamanager.get_field("Bond Damage", "N"),
-    )
+    # datamanager.switch_bonds!(
+    #     datamanager.get_field("Bond Damage", "NP1"),
+    #     datamanager.get_field("Bond Damage", "N"),
+    # )
 
     uNP1 = datamanager.get_field("Displacements", "NP1")
     uNP1[bc_free_dof] = copy(U[bc_free_dof])
-    #foreach(t -> uNP1[t...] = U[t...], bc_free_dof)
-    #println(uNP1[5:8, :], U[5:8, :])
+
 
     @views deformed_coorNP1[active_nodes, :] =
         coor[active_nodes, :] .+ uNP1[active_nodes, :]
@@ -399,7 +399,7 @@ function residual!(
     # check_inf_or_nan(force_densities, "Forces")
 
     # Richtung muss mit rein
-
+    #println("adsads", force_densities[bc_free_dof] + external_force_densities[bc_free_dof])
     residual .= 0
     residual[bc_free_dof] =
         (force_densities[bc_free_dof] + external_force_densities[bc_free_dof]) ./ scaling

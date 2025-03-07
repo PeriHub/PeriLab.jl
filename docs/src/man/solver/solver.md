@@ -62,7 +62,7 @@ For the time intergration a stable increment has to be determined.
 The static solver from [NLsolve.jl](https://github.com/JuliaNLSolvers/NLsolve.jl) has been included. Specifically the [method = :anderson](https://github.com/JuliaNLSolvers/NLsolve.jl#anderson-acceleration) is used.
 
 The solver computes the residual of the internal reaction force densities and the external applied force densities
-$$r =  \left[\underline{\mathbf{T}}_{external} + \underline{\mathbf{T}}_{internal}\right / s_{Residual\,scaling}$$
+$$r =  \left[\underline{\mathbf{T}}_{external} + \underline{\mathbf{T}}_{internal}\right] / s_{Residual\,scaling}$$
 
 Right now the default value $m$ of the Anderson acceleration method is chosen.
 
@@ -99,7 +99,7 @@ where $A$ are amplitude values chosen by the user.
 With these values the field ''start_values'' is computed as
 
 
-$$start\_value(x,y,z (optional))= \frac{a(x,y,z(optional))\dot coordinates+n(x,y,z(optional))}{nsteps}$$
+$$start\_value(x,y,z (optional))= \frac{a(x,y,z(optional))\cdot coordinates+n(x,y,z(optional))}{nsteps}$$
 
 $$a(x,y,z (optional))=\frac{\text{max}(start_{val})-\text{min}(start_{val})}{\text{max}(coordinates)-\text{min}(coordinates)}$$
 
