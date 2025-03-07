@@ -288,7 +288,7 @@ function run_solver(
             xtol = xtol,
             ftol = ftol,
             iterations = iterations,
-            show_trace = show_trace,
+            show_trace = show_trace & silent,
             extended_trace = false,
             method = :anderson,
             m = m,
