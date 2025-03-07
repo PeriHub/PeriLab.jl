@@ -60,7 +60,6 @@ function compute_model(
     update_list = datamanager.get_field("Update")
     undeformed_bond_length = datamanager.get_field("Bond Length")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    nneighbors = datamanager.get_field("Number of Neighbors")
     block_ids = datamanager.get_field("Block_Id")
     critical_field = datamanager.has_key("Critical_Value")
     if critical_field
@@ -74,7 +73,7 @@ function compute_model(
         inter_critical_stretch::Array{Float64,3} = datamanager.get_crit_values_matrix()
     end
     for iID in nodes
-        for jID in nneighbors[iID]
+        for jID in eachindex(nlist[iID])
             stretch =
                 (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) /
                 undeformed_bond_length[iID][jID]
@@ -96,7 +95,7 @@ function compute_model(
                 stretch = abs(stretch)
             end
             if stretch > crit_stretch
-                bond_damageNP1[iID][jID, :] .= 0.0
+                bond_damageNP1[iID][jID] = 0.0
                 update_list[iID] = true
             end
         end
