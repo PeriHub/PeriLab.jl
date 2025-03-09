@@ -265,8 +265,7 @@ url={https://doi.org/10.1016/j.softx.2024.101700}
 |<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Logo_h2.svg/1280px-Logo_h2.svg.png" height="200" title="Magdeburg-Stendal University of Applied Science"> |
 [Magdeburg-Stendal University of Applied Science](http://www.h2.de)                                                                  |
  <img src="https://www.cd.ovgu.de/cd_media/CD_OVGU/Downloads/Logo_jpg_png_svg_EPS_pdf/Logodownload/OVGU_Logo-download-1-p-1960.jpeg" height="200" title="Otto von Guericke University Magdeburg"> |
-|
-[Otto von Guericke University Magdeburg](http://www.ovgu.de)|
+|[Otto von Guericke University Magdeburg](http://www.ovgu.de)|
 
 
 
