@@ -101,7 +101,7 @@ PeriLab:
       Solve For Displacement: True
       Initial Time: 0.0
       Final Time: 0.0002
-      nsteps: 7
+      Number of Steps: 7
       Static:
         NLSolve: true
         Maximum number of iterations: 200

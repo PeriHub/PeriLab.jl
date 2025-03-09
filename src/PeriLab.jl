@@ -366,7 +366,7 @@ function main(
                 IO.set_output_frequency(
                     params,
                     datamanager,
-                    solver_options["nsteps"],
+                    solver_options["Number of Steps"],
                     step_id,
                 )
                 if verbose
@@ -375,8 +375,8 @@ function main(
                     @info fields
                 end
                 if dry_run
-                    nsteps = solver_options["nsteps"]
-                    solver_options["nsteps"] = 10
+                    nsteps = solver_options["Number of Steps"]
+                    solver_options["Number of Steps"] = 10
                     elapsed_time = @elapsed begin
                         @timeit to "Solver" result_files = Solver_control.solver(
                             solver_options,

@@ -389,6 +389,8 @@ global expected_structure = Dict(
                             "Residual scaling" => [Union{Float64,Int64}, false],
                             "Solution tolerance" => [Union{Float64,Int64}, false],
                             "Residual tolerance" => [Union{Float64,Int64}, false],
+                            "Linear Start Value" => [String, false],
+                            "m" => [Int64, false],
                         ),
                         false,
                     ],
@@ -433,6 +435,8 @@ global expected_structure = Dict(
                                         [Union{Float64,Int64}, false],
                                     "Residual tolerance" =>
                                         [Union{Float64,Int64}, false],
+                                    "Linear Start Value" => [String, false],
+                                    "m" => [Int64, false],
                                 ),
                                 false,
                             ],

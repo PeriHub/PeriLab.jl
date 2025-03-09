@@ -199,7 +199,7 @@ function init_solver(
     solver_options["Initial Time"] = initial_time
     solver_options["Final Time"] = final_time
     solver_options["dt"] = dt
-    solver_options["nsteps"] = nsteps
+    solver_options["Number of Steps"] = nsteps
     solver_options["Numerical Damping"] = numerical_damping
     solver_options["Maximum Damage"] = max_damage
     solver_options["Solver specifics"] = solver_specifics
@@ -224,7 +224,7 @@ function run_solver(
     comm = datamanager.get_comm()
 
     dt::Float64 = solver_options["dt"]
-    nsteps::Int64 = solver_options["nsteps"]
+    nsteps::Int64 = solver_options["Number of Steps"]
     time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
     max_cancel_damage::Float64 = solver_options["Maximum Damage"]
@@ -239,6 +239,7 @@ function run_solver(
     ftol = solver_options["Solver specifics"]["Residual tolerance"]
     iterations = solver_options["Solver specifics"]["Maximum number of iterations"]
     show_trace = solver_options["Solver specifics"]["Show solver iteration"]
+    m = solver_options["Solver specifics"]["m"]
     uN = datamanager.get_field("Displacements", "N")
     uNP1 = datamanager.get_field("Displacements", "NP1")
     resdiual = datamanager.get_field("Residual")
@@ -290,7 +291,7 @@ function run_solver(
             show_trace = show_trace,
             extended_trace = false,
             method = :anderson,
-            m = solver_options["Solver specifics"]["m"],
+            m = m,
         )
 
         start_u = copy(uNP1)

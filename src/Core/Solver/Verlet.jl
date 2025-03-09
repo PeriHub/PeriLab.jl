@@ -354,7 +354,7 @@ function init_solver(
     solver_options["Initial Time"] = initial_time
     solver_options["Final Time"] = final_time
     solver_options["dt"] = dt
-    solver_options["nsteps"] = nsteps
+    solver_options["Number of Steps"] = nsteps
     solver_options["Numerical Damping"] = numerical_damping
     solver_options["Maximum Damage"] = max_damage
     solver_options["Solver specifics"] = Dict()
@@ -475,7 +475,7 @@ function run_solver(
     active = datamanager.get_field("Active")
 
     dt::Float64 = solver_options["dt"]
-    nsteps::Int64 = solver_options["nsteps"]
+    nsteps::Int64 = solver_options["Number of Steps"]
     time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
     max_cancel_damage::Float64 = solver_options["Maximum Damage"]

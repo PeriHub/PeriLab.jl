@@ -117,6 +117,7 @@ function init_model(
     datamanager.create_node_field("Dissipated inelastic energy", Float64, 1)
     datamanager.create_node_field("Stretch", Float64, ntens)
     datamanager.create_node_field("defGrad", Float64, ndi + 2 * nshr)
+    datamanager.create_node_field("Temperature", Float64, 1)
 
     return datamanager
 end
