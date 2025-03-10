@@ -8,6 +8,25 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.4] - 2023-03-10
+
+### Added
+
+- Surface correction #240
+- Static solver start solution
+- Static to verlet switch #238
+
+### Fixed
+
+- Critical stretch damage model
+- Static solver
+- Global vlues clculation
+- VUMAT without temperature models
+
+### Changed
+
+- Boundary cnditions function
+
 ## [1.3.3] - 2025-02-18
 
 ### Added
