@@ -72,7 +72,7 @@ PeriLab:
       Show solver iteration: true
       Residual tolerance: 1e-8
       Solution tolerance: 1e-8
-      Residual scaling: 1 # should be for complex problems in the range of the Young's modulus
+      Residual scaling: 2 # should be for complex problems in the range of the Young's modulus
       Linear Start Value: 0 0 0 0
       m: 6
   Outputs:
