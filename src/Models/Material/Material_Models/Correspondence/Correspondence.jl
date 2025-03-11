@@ -309,7 +309,6 @@ function calculate_bond_force(
     bond_force::Vector{Vector{Vector{Float64}}},
 )
     if dof == 2
-
         calculate_bond_force_2d!(
             bond_force,
             nodes,
@@ -360,7 +359,7 @@ function calculate_bond_force_2d!(
                 b_fi = zero(eltype(temp))
                 @inbounds @fastmath for jdof = 1:2
                     b_fi +=
-                        temp[jdof, idof] *
+                        temp[idof, jdof] *
                         bond_damage[iID][jID] *
                         undeformed_bond[iID][jID][jdof]
                 end
@@ -399,7 +398,7 @@ function calculate_bond_force_3d!(
                 b_fi = zero(eltype(temp))
                 @inbounds @fastmath for jdof = 1:3
                     @views b_fi +=
-                        temp[jdof, idof] *
+                        temp[idof, jdof] *
                         bond_damage[iID][jID] *
                         undeformed_bond[iID][jID][jdof]
                 end
