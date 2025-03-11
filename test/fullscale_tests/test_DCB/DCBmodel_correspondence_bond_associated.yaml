@@ -95,7 +95,6 @@ PeriLab:
         Material Model: "Correspondence Elastic"
         Accuracy Order: 1
         Bond Associated: true
-        Bond Horizon: 0.42
         Symmetry: isotropic plane stress
         Young's Modulus: 70000.0
         Poisson's Ratio: 0.3

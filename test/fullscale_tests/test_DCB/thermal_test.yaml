@@ -92,7 +92,6 @@ PeriLab:
       Aluminium:
         Material Model: "Correspondence Elastic"
         Bond Associated: false
-        Bond Horizon: 0.42
         Zero Energy Control: "Global"
         Symmetry: isotropic plane stress
         Young's Modulus: 70000.0
