@@ -259,16 +259,11 @@ function run_solver(
             damage = datamanager.get_damage("NP1")
         end
         #datamanager = apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
-        datamanager = apply_bc_dirichlet(
-            ["Forces", "Force Densities"],
-            bcs,
-            datamanager,
-            step_time + dt,
-        ) #-> Dirichlet
+        datamanager =
+            apply_bc_dirichlet(["Forces", "Force Densities"], bcs, datamanager, step_time) #-> Dirichlet
         external_force_densities += external_forces ./ volume
 
-        datamanager =
-            apply_bc_dirichlet(["Displacements"], bcs, datamanager, step_time + dt) #-> Dirichlet
+        datamanager = apply_bc_dirichlet(["Displacements"], bcs, datamanager, step_time) #-> Dirichlet
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,
@@ -298,6 +293,18 @@ function run_solver(
         if !sol.x_converged && !sol.f_converged
             @info "Failed to converge at step $idt: maximum number of iterations reached"
             datamanager.set_cancel(true)
+        end
+
+        if "Damage" in solver_options["Models"]
+            max_damage = maximum(damage[active_nodes])
+            @info max_damage
+            if max_damage > max_cancel_damage
+                @info "Maximum damage reached at step $idt: $max_damage"
+                datamanager.set_cancel(true)
+            end
+            if !damage_init && max_damage > 0
+                damage_init = true
+            end
         end
 
         if datamanager.get_cancel()
