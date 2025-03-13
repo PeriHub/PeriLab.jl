@@ -214,7 +214,7 @@ end
 
     test_data_manager = PeriLab.Solver_control.FEM.init_FEM(params, test_data_manager)
     elements = Vector{Int64}([1, 2])
-    test_data_manager = PeriLab.Solver_control.FEM.eval(
+    test_data_manager = PeriLab.Solver_control.FEM.eval_FEM(
         test_data_manager,
         elements,
         test_data_manager.get_properties(1, "FEM"),
@@ -246,7 +246,7 @@ end
     displacements[5, 2] = 0.5
     displacements[6, 1] = 1
     displacements[6, 2] = 0.5
-    test_data_manager = PeriLab.Solver_control.FEM.eval(
+    test_data_manager = PeriLab.Solver_control.FEM.eval_FEM(
         test_data_manager,
         elements,
         test_data_manager.get_properties(1, "FEM"),

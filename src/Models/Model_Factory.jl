@@ -298,7 +298,7 @@ function compute_models(
         @timeit to "FEM" begin
             nelements = datamanager.get_num_elements()
 
-            @timeit to "eval" datamanager = FEM.eval(
+            @timeit to "eval" datamanager = FEM.eval_FEM(
                 datamanager,
                 Vector{Int64}(1:nelements),
                 datamanager.get_properties(1, "FEM"),

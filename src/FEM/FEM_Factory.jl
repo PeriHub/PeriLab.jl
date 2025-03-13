@@ -14,16 +14,16 @@ using .FEM_routines:
     create_B_matrix,
     create_B_matrix
 include("./Coupling/Coupling_Factory.jl")
-using .Coupling_PD_FEM
-#include("../Models/Material/Material_Basis.jl")
-#using .Material_Basis: voigt_to_matrix
+
 # in future using set modules for material
 # test case is correspondence material
 include("./../Models/Material/Material_Models/Correspondence/Correspondence_Elastic.jl")
 using .Correspondence_Elastic
-
-
+using .Coupling_PD_FEM
 using .Set_modules
+export init_FEM
+export eval_FEM
+
 global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
 Set_modules.include_files(module_list)
 
@@ -41,6 +41,7 @@ function init_FEM(complete_params::Dict, datamanager::Module)
         @error "The FEM material model $(params["Material Model"]) is not defined"
         return nothing
     end
+    @info "Initialize FEM"
     datamanager.set_property(
         "FEM",
         "Material Model",
@@ -143,7 +144,7 @@ function init_FEM(complete_params::Dict, datamanager::Module)
     B_matrix = create_B_matrix(elements, dof, B_elem, jacobian, B_matrix)
 
     datamanager = get_FEM_nodes(datamanager, topology)
-
+    @info "End FEM init"
     return datamanager
 
 end
@@ -172,7 +173,7 @@ function valid_models(params::Dict)
     return true
 end
 
-function eval(
+function eval_FEM(
     datamanager::Module,
     elements::Union{SubArray,Vector{Int64}},
     params::Dict,
