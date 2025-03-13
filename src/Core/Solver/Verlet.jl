@@ -497,6 +497,7 @@ function run_solver(
                 vN = datamanager.get_field("Velocity", "N")
                 vNP1 = datamanager.get_field("Velocity", "NP1")
                 deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
+                forces = datamanager.get_field("Forces", "NP1")
             end
             if "Thermal" in solver_options["All Models"]
                 flowN = datamanager.get_field("Heat Flow", "N")
@@ -603,8 +604,6 @@ function run_solver(
                         1:datamanager.get_nnodes(),
                     )
 
-
-                    forces = datamanager.get_field("Forces", "NP1")
                     forces[active_nodes, :] += external_forces[active_nodes, :]
                     force_densities[active_nodes, :] +=
                         external_force_densities[active_nodes, :] .+
@@ -620,7 +619,7 @@ function run_solver(
                         false,
                     )
                 end
-
+                forces[active_nodes, :] += external_forces[active_nodes, :]
                 @views force_densities[active_nodes, :] +=
                     external_force_densities[active_nodes, :] .+
                     external_forces[active_nodes, :] ./ volume[active_nodes]
