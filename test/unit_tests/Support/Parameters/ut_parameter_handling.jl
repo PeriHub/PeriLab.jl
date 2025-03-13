@@ -192,17 +192,18 @@ end
 @testset "ut_get_external_topology_name" begin
     params = Dict("Discretization" => Dict())
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_external_topology_name(params),
+        PeriLab.Solver_control.Parameter_Handling.get_external_topology_name(params, ""),
     )
     params = Dict("Discretization" => Dict("Input External Topology" => Dict()))
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_external_topology_name(params),
+        PeriLab.Solver_control.Parameter_Handling.get_external_topology_name(params, ""),
     )
     name = randstring(12)
     params =
         Dict("Discretization" => Dict("Input External Topology" => Dict("File" => name)))
-    @test PeriLab.Solver_control.Parameter_Handling.get_external_topology_name(params) ==
-          name
+    @test isnothing(
+        PeriLab.Solver_control.Parameter_Handling.get_external_topology_name(params, ""),
+    )
 end
 @testset "ut_get_mesh_name" begin
     params = Dict("Discretization" => Dict())

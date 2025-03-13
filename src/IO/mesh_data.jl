@@ -1030,9 +1030,9 @@ function load_and_evaluate_mesh(
     check_types_in_dataframe(mesh)
 
     external_topology = nothing
-    if !isnothing(get_external_topology_name(params))
+    if !isnothing(get_external_topology_name(params, path))
         external_topology =
-            read_external_topology(joinpath(path, get_external_topology_name(params)))
+            read_external_topology(joinpath(path, get_external_topology_name(params, path)))
     end
     if !isnothing(external_topology)
         @info "External topology files was read."

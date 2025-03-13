@@ -9,16 +9,17 @@ export get_header
 using AbaqusReader
 using Exodus
 """
-    get_external_topology_name(params::Dict)
+    get_external_topology_name(params::Dict, path)
 
 Returns the name of the mesh file from the parameters
 
 # Arguments
 - `params::Dict`: The parameters
+- `path::String`: Path of the working folder
 # Returns
 - `String`: The name of the finite element topology file
 """
-function get_external_topology_name(params::Dict)
+function get_external_topology_name(params::Dict, path)
     check = haskey(params["Discretization"], "Input External Topology")
     if !check
         return nothing
@@ -26,6 +27,11 @@ function get_external_topology_name(params::Dict)
     check = haskey(params["Discretization"]["Input External Topology"], "File")
     if !check
         @error "Input External Topology is defined without a file where to find it."
+        return nothing
+    end
+    filename = joinpath(path, params["Discretization"]["Input External Topology"]["File"])
+    if !isfile(filename)
+        @error "External topology file: ''$filename'' does not exist"
         return nothing
     end
     return params["Discretization"]["Input External Topology"]["File"]
