@@ -156,7 +156,7 @@ function init_solver(
                 (ls[2*idof] - ls[2*idof-1]) /
                 (maximum(coor[:, idof]) - minimum(coor[:, idof]))
             n = ls[2*idof] - m * maximum(coor[:, idof])
-            start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps
+            start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps .* final_time
         end
     end
     check_inf_or_nan(start_u, "Start_Values")
@@ -275,7 +275,6 @@ function run_solver(
                 U,
                 datamanager,
                 bc_free_dof,
-                bcs,
                 block_nodes,
                 dt,
                 time,
@@ -341,7 +340,6 @@ function residual!(
     U,
     datamanager,
     bc_free_dof,
-    bcs,
     block_nodes,
     dt,
     time,
@@ -371,11 +369,11 @@ function residual!(
     uNP1 = datamanager.get_field("Displacements", "NP1")
     uNP1[bc_free_dof] = copy(U[bc_free_dof])
 
-
-    @views deformed_coorNP1[active_nodes, :] =
-        coor[active_nodes, :] .+ uNP1[active_nodes, :]
+    forces = datamanager.get_field("Forces", "NP1")
+    @views deformed_coorNP1[bc_free_dof] = coor[bc_free_dof] .+ uNP1[bc_free_dof]
 
     force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
+    forces[:, :] .= 0
 
     datamanager.synch_manager(synchronise_field, "upload_to_cores")
     # synch
