@@ -105,7 +105,7 @@ Returns the node sets from the parameters
 # Returns
 - `nsets::Dict{String,Any}`: The node sets
 """
-function get_node_sets(params::Dict, path::String)
+function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
     nsets = Dict{String,Vector{Int64}}()
     type = get(params["Discretization"], "Type", "Text File")
     if type == "Exodus"
@@ -164,6 +164,16 @@ function get_node_sets(params::Dict, path::String)
         elseif occursin(":", nodesets[entry])
             nodes = eval(Meta.parse(nodesets[entry]))
             nsets[entry] = collect(nodes)
+        elseif occursin("mesh[!,", nodesets[entry])
+            nodes = []
+            global mesh = mesh_df
+            for id = 1:size(mesh, 1)
+                global i = id
+                if eval(Meta.parse(nodesets[entry]))
+                    push!(nodes, i)
+                end
+            end
+            nsets[entry] = nodes
         else
             nodes = split(nodesets[entry])
             nsets[entry] = parse.(Int, nodes)

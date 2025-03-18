@@ -57,7 +57,7 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
     for bc in keys(bcs)
         if haskey(bcs[bc], "Step ID")
             if !isnothing(datamanager.get_step()) &&
-               bcs[bc]["Step ID"] != datamanager.get_step()
+               !(string(datamanager.get_step()) in split(string(bcs[bc]["Step ID"]), ","))
                 continue
             end
         end
@@ -186,11 +186,6 @@ function apply_bc_dirichlet(
             continue
         end
         if !(bc["Variable"] in allowed_variables)
-            continue
-        end
-        if !isnothing(datamanager.get_step()) &&
-           haskey(bc, "Step ID") &&
-           bc["Step ID"] != datamanager.get_step()
             continue
         end
         if bc["Variable"] == "Forces"

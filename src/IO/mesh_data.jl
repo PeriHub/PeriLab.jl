@@ -1022,11 +1022,11 @@ function load_and_evaluate_mesh(
         else
             mesh = read_mesh(txt_file, params)
         end
-        nsets = get_node_sets(params, path)
+        nsets = get_node_sets(params, path, mesh)
     else
         @debug "Read node sets"
         @timeit to "read_mesh" mesh = read_mesh(filename, params)
-        nsets = get_node_sets(params, path)
+        nsets = get_node_sets(params, path, mesh)
     end
     nnodes = size(mesh, 1) + 1
     mesh, surface_ns = extrude_surface_mesh(mesh, params)

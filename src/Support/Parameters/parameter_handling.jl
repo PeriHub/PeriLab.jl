@@ -22,7 +22,7 @@ global expected_structure = Dict(
                     "Any" => [
                         Dict{Any,Any}(
                             "Block ID" => [Int64, true],
-                            "Step ID" => [Int64, false],
+                            "Step ID" => [Union{Int64,String}, false],
                             "Density" => [Union{Float64,Int64}, true],
                             "Horizon" => [Union{Float64,Int64}, true],
                             "Specific Heat Capacity" => [Union{Float64,Int64}, false],
@@ -410,7 +410,7 @@ global expected_structure = Dict(
                 Dict{Any,Any}(
                     "Any" => [
                         Dict{Any,Any}(
-                            "Step ID" => [Int64, false],
+                            "Step ID" => [Union{Int64,String}, false],
                             "Additive Models" => [Bool, false],
                             "Corrosion Models" => [Bool, false],
                             "Damage Models" => [Bool, false],
