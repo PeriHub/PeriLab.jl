@@ -450,6 +450,7 @@ end
         bcs,
         test_data_manager,
         0.0,
+        0.0,
     )
     temperature = test_data_manager.get_field("Temperature")
     disp = test_data_manager.get_field("Displacements", "NP1")
@@ -463,6 +464,7 @@ end
         ["Displacements", "Temperature"],
         bcs,
         test_data_manager,
+        0.2,
         0.2,
     )
     temperature = test_data_manager.get_field("Temperature")
@@ -488,6 +490,7 @@ end
         bcs,
         test_data_manager,
         0.2,
+        0.2,
     )
     @test sum(temperature) == 0
     @test sum(disp) == 0
@@ -508,6 +511,7 @@ end
             ["Displacements", "Temperature"],
             bcs,
             test_data_manager,
+            0.2,
             0.2,
         ),
     )
@@ -530,6 +534,7 @@ end
         ["Forces", "Force Densities"],
         bcs,
         test_data_manager,
+        0.0,
         0.0,
     )
     force_densities = test_data_manager.get_field("External Forces")
@@ -564,6 +569,7 @@ end
         bcs,
         test_data_manager,
         0.0,
+        0.0,
     )
     ext_force_densities = test_data_manager.get_field("External Force Densities")
     @test ext_force_densities == [
@@ -594,11 +600,21 @@ end
     )
     bcs = PeriLab.Solver_control.Boundary_conditions.init_BCs(params, test_data_manager)
 
-    PeriLab.Solver_control.Boundary_conditions.apply_bc_neumann(bcs, test_data_manager, 0.0)
+    PeriLab.Solver_control.Boundary_conditions.apply_bc_neumann(
+        bcs,
+        test_data_manager,
+        0.0,
+        0.0,
+    )
     density = test_data_manager.get_field("Density")
     @test density == [10.0, 0.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-    PeriLab.Solver_control.Boundary_conditions.apply_bc_neumann(bcs, test_data_manager, 0.0)
+    PeriLab.Solver_control.Boundary_conditions.apply_bc_neumann(
+        bcs,
+        test_data_manager,
+        0.0,
+        0.0,
+    )
     density = test_data_manager.get_field("Density")
     @test density == [20.0, 0.0, 20.0, 20.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 

@@ -302,7 +302,7 @@ function init_solver(
     mechanical = "Material" in solver_options["Models"]
     thermal = "Thermal" in solver_options["Models"]
     initial_time = get_initial_time(params, datamanager)
-    final_time = get_final_time(params)
+    final_time = get_final_time(params, datamanager)
     safety_factor = get_safety_factor(params)
     fixed_dt = get_fixed_dt(params)
     if fixed_dt == -1.0
@@ -521,7 +521,8 @@ function run_solver(
                 @views vNP1[active_nodes, :] =
                     (1 - numerical_damping) .* vN[active_nodes, :] .+
                     0.5 * dt .* a[active_nodes, :]
-                datamanager = apply_bc_dirichlet(["Velocity"], bcs, datamanager, step_time)
+                datamanager =
+                    apply_bc_dirichlet(["Velocity"], bcs, datamanager, time, step_time)
                 @views uNP1[active_nodes, :] =
                     uN[active_nodes, :] .+ dt .* vNP1[active_nodes, :]
             end
@@ -541,6 +542,7 @@ function run_solver(
                 ["Displacements", "Temperature"],
                 bcs,
                 datamanager,
+                time,
                 step_time,
             ) #-> Dirichlet
             #needed because of optional deformation_gradient, Deformed bonds, etc.
@@ -584,6 +586,7 @@ function run_solver(
                 ["Forces", "Force Densities"],
                 bcs,
                 datamanager,
+                time,
                 step_time,
             ) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, time) #-> von neumann

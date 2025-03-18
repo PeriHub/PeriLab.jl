@@ -84,7 +84,7 @@ function init_solver(
     mechanical = "Material" in solver_options["Models"]
     thermal = "Thermal" in solver_options["Models"]
     initial_time = get_initial_time(params, datamanager)
-    final_time = get_final_time(params)
+    final_time = get_final_time(params, datamanager)
     fixed_dt = get_fixed_dt(params)
     dof = datamanager.get_dof()
     if fixed_dt == -1.0
@@ -255,15 +255,18 @@ function run_solver(
     for idt in iter
 
         datamanager.set_iteration(idt)
-        if "Damage" in solver_options["Models"]
-            damage = datamanager.get_damage("NP1")
-        end
         #datamanager = apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
-        datamanager =
-            apply_bc_dirichlet(["Forces", "Force Densities"], bcs, datamanager, step_time) #-> Dirichlet
+        datamanager = apply_bc_dirichlet(
+            ["Forces", "Force Densities"],
+            bcs,
+            datamanager,
+            time,
+            step_time,
+        ) #-> Dirichlet
         external_force_densities += external_forces ./ volume
 
-        datamanager = apply_bc_dirichlet(["Displacements"], bcs, datamanager, step_time) #-> Dirichlet
+        datamanager =
+            apply_bc_dirichlet(["Displacements"], bcs, datamanager, time, step_time) #-> Dirichlet
         sol = nlsolve(
             (residual, U) -> residual!(
                 residual,
@@ -294,8 +297,13 @@ function run_solver(
             @info "Failed to converge at step $idt: maximum number of iterations reached"
             datamanager.set_cancel(true)
         end
+        # method=:newton, linsolve=KrylovJL_GMRES()
+        # method=:broyden
+        active_nodes =
+            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
 
         if "Damage" in solver_options["Models"]
+            damage = datamanager.get_damage("NP1")
             max_damage = maximum(damage[active_nodes])
             @info max_damage
             if max_damage > max_cancel_damage
@@ -311,10 +319,7 @@ function run_solver(
             @info "Canceling at step $idt"
             break
         end
-        # method=:newton, linsolve=KrylovJL_GMRES()
-        # method=:broyden
-        active_nodes =
-            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
+
         force_densities = datamanager.get_field("Force Densities", "NP1")
 
         @views forces[active_nodes, :] =

@@ -116,13 +116,17 @@ Get the final time
 
 # Arguments
 - `params::Dict`: The parameters dictionary.
+- `datamanager::Module`: The data manager module
 # Returns
 - `final_time::Float64`: The final time
 """
-function get_final_time(params::Dict)
+function get_final_time(params::Dict, datamanager::Module)
 
     if haskey(params, "Final Time")
         return Float64(params["Final Time"])
+    end
+    if haskey(params, "Additional Time")
+        return datamanager.get_current_time() + Float64(params["Additional Time"])
     end
     @error "No final time defined"
 end

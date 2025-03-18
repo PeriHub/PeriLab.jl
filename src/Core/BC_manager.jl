@@ -175,6 +175,7 @@ function apply_bc_dirichlet(
     bcs::Dict,
     datamanager::Module,
     time::Float64,
+    step_time::Float64,
 )
     dof = datamanager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
@@ -208,6 +209,7 @@ function apply_bc_dirichlet(
                     bc["Value"],
                     coordinates[bc["Node Set"], :],
                     time,
+                    step_time,
                     dof,
                     bc["Initial"],
                     name,
@@ -223,6 +225,7 @@ function apply_bc_dirichlet(
                 bc["Value"],
                 coordinates[bc["Node Set"], :],
                 time,
+                step_time,
                 dof,
                 bc["Initial"],
                 name,
@@ -245,7 +248,7 @@ Apply the boundary conditions
 # Returns
 - `datamanager::Module`: Datamanager
 """
-function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
+function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64, step_time::Float64)
     # Currently not supported
     dof = datamanager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
@@ -266,6 +269,7 @@ function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
                     bc["Value"],
                     coordinates[bc["Node Set"], :],
                     time,
+                    step_time,
                     dof,
                     bc["Initial"],
                     name,
@@ -282,6 +286,7 @@ function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
                 bc["Value"],
                 coordinates[bc["Node Set"], :],
                 time,
+                step_time,
                 dof,
                 bc["Initial"],
                 name,
@@ -334,6 +339,7 @@ function eval_bc!(
     bc::Union{Float64,Int64,String},
     coordinates::Union{Matrix{Float64},Matrix{Int64}},
     time::Float64,
+    step_time::Float64,
     dof::Int64,
     initial::Bool,
     name::String = "BC_1",
@@ -355,6 +361,7 @@ function eval_bc!(
     global y = coordinates[:, 2]
     global z = zeros(eltype(x), length(x))
     global t = time
+    global st = step_time
 
     if dof > 2
         z = coordinates[:, 3]

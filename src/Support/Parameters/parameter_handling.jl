@@ -413,6 +413,7 @@ global expected_structure = Dict(
                             "Maximum Damage" => [Float64, false],
                             "Final Time" => [Union{Float64,Int64}, false],
                             "Initial Time" => [Union{Float64,Int64}, false],
+                            "Additional Time" => [Union{Float64,Int64}, false],
                             "Number of Steps" => [Int64, false],
                             "Verlet" => [
                                 Dict{Any,Any}(
