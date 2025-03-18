@@ -8,6 +8,7 @@ using DataFrames
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 using OrderedCollections: OrderedDict
 using PrettyTables
+include("gcode.jl")
 include("../Support/Helpers.jl")
 using .Helpers: fastdot
 include("./logging.jl")
@@ -805,7 +806,7 @@ function read_mesh(filename::String, params::Dict)
 
         return mesh_df, nsets
 
-    elseif params["Discretization"]["Type"] == "Text File"
+    elseif params["Discretization"]["Type"] in ["Text File", "Gcode"]
         return csv_reader(filename)
     else
         @error "Discretization type not supported"
@@ -1010,13 +1011,21 @@ function load_and_evaluate_mesh(
     to::TimerOutput,
 )
 
+    filename = joinpath(path, Parameter_Handling.get_mesh_name(params))
     if params["Discretization"]["Type"] == "Abaqus"
-        filename = joinpath(path, Parameter_Handling.get_mesh_name(params))
         @timeit to "read_mesh" mesh, nsets = read_mesh(filename, params)
+    elseif params["Discretization"]["Type"] == "Gcode"
+        txt_file = replace(filename, ".gcode" => ".txt")
+        @info txt_file
+        if params["Discretization"]["Gcode"]["Overwrite Mesh"] || !isfile(txt_file)
+            mesh = get_gcode_mesh(filename, params)
+        else
+            mesh = read_mesh(txt_file, params)
+        end
+        nsets = get_node_sets(params, path)
     else
         @debug "Read node sets"
-        @timeit to "read_mesh" mesh =
-            read_mesh(joinpath(path, Parameter_Handling.get_mesh_name(params)), params)
+        @timeit to "read_mesh" mesh = read_mesh(filename, params)
         nsets = get_node_sets(params, path)
     end
     nnodes = size(mesh, 1) + 1

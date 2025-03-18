@@ -146,6 +146,16 @@ global expected_structure = Dict(
                         ),
                         false,
                     ],
+                    "Gcode" => [
+                        Dict{Any,Any}(
+                            "Overwrite Mesh" => [Bool, true],
+                            "dx" => [Union{Float64,Int64}, true],
+                            "dy" => [Union{Float64,Int64}, true],
+                            "Width" => [Union{Float64,Int64}, true],
+                            "Scale" => [Union{Float64,Int64}, true],
+                        ),
+                        false,
+                    ],
                 ),
                 true,
             ],
