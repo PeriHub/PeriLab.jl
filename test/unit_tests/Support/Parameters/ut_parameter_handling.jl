@@ -6,6 +6,7 @@
 using Test
 using Random
 using Dierckx
+using DataFrames
 
 # include("../../../../src/PeriLab.jl")
 # using .PeriLab
@@ -961,8 +962,11 @@ end
     lenNumbers = length(numbers)
     params = Dict("Discretization" => Dict())
 
-    @test PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "") ==
-          Dict{String,Any}()
+    @test PeriLab.Solver_control.Parameter_Handling.get_node_sets(
+        params,
+        "",
+        DataFrame(x = []),
+    ) == Dict{String,Any}()
     params = Dict(
         "Discretization" => Dict(
             "Node Sets" => Dict("Nset_1" => "1 2 3 4 5 6 7", "Nset_2" => filename),
@@ -976,7 +980,11 @@ end
     end
     close(file)
 
-    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "")
+    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(
+        params,
+        "",
+        DataFrame(x = []),
+    )
     @test "Nset_1" in keys(nsets)
     @test "Nset_2" in keys(nsets)
     @test length(nsets["Nset_1"]) == 7
@@ -992,7 +1000,11 @@ end
         "Discretization" =>
             Dict("Node Sets" => Dict("Nset_1" => "1:7", "Nset_2" => filename)),
     )
-    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "")
+    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(
+        params,
+        "",
+        DataFrame(x = []),
+    )
     @test length(nsets["Nset_1"]) == 7
     for i = 1:7
         @test nsets["Nset_1"][i] == i
@@ -1004,14 +1016,22 @@ end
     file = open(filename, "w")
     println(file, "header: global_id")
     close(file)
-    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "")
+    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(
+        params,
+        "",
+        DataFrame(x = []),
+    )
     @test haskey(nsets, "Nset_1")
     @test !haskey(nsets, "Nset_2")
     rm(filename)
     filename = "test.txt"
     file = open(filename, "w")
     close(file)
-    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(params, "")
+    nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(
+        params,
+        "",
+        DataFrame(x = []),
+    )
     @test haskey(nsets, "Nset_1")
     @test !haskey(nsets, "Nset_2")
     rm(filename)
@@ -1027,6 +1047,7 @@ end
     nsets = PeriLab.Solver_control.Parameter_Handling.get_node_sets(
         params,
         "unit_tests/Support/Parameters",
+        DataFrame(x = []),
     )
     @test "Set-1" in keys(nsets)
     @test "Set-2" in keys(nsets)
