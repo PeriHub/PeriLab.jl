@@ -30,22 +30,55 @@ end
     unit = ones(Float64, 3)
     dof = 2
     time::Float64 = 2
+    step_time::Float64 = 2
     coor = zeros(3, 3)
     bc = Int64(10)
     values = ones(Float64, 3)
-    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(
+        values,
+        bc,
+        coor,
+        time,
+        step_time,
+        dof,
+        false,
+    )
     @test (10 * unit) == values
     values = ones(Float64, 3)
     bc = Float64(10)
-    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(
+        values,
+        bc,
+        coor,
+        time,
+        step_time,
+        dof,
+        false,
+    )
     @test (10 * unit) == values
     values = ones(Float64, 3)
     bc = Float64(10)
-    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(
+        values,
+        bc,
+        coor,
+        time,
+        step_time,
+        dof,
+        false,
+    )
     @test (10 * unit) == values
     values = ones(Float64, 3)
     bc = string(10)
-    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(
+        values,
+        bc,
+        coor,
+        time,
+        step_time,
+        dof,
+        false,
+    )
     @test (10 * unit) == values
     values = ones(Float64, 3)
     bc = "x"
@@ -56,6 +89,7 @@ end
             bc,
             coor,
             time,
+            step_time,
             dof,
             false,
         )
@@ -64,11 +98,27 @@ end
     end
     dof = 3
     bc = "t"
-    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(
+        values,
+        bc,
+        coor,
+        time,
+        step_time,
+        dof,
+        false,
+    )
     @test (time * unit) == values
     values = ones(Float64, 3)
     bc = "t*x"
-    PeriLab.Solver_control.Boundary_conditions.eval_bc!(values, bc, coor, time, dof, false)
+    PeriLab.Solver_control.Boundary_conditions.eval_bc!(
+        values,
+        bc,
+        coor,
+        time,
+        step_time,
+        dof,
+        false,
+    )
     @test (time .* coor[:, 1]) == values
     values = ones(Float64, 3)
     for t = 0:4
@@ -78,6 +128,7 @@ end
                 values,
                 bc,
                 coor,
+                Float64(t),
                 Float64(t),
                 dof,
                 false,
@@ -89,6 +140,7 @@ end
                 values,
                 bc,
                 coor,
+                Float64(t),
                 Float64(t),
                 dof,
                 false,
@@ -105,6 +157,7 @@ end
                 bc,
                 coor,
                 Float64(t),
+                Float64(t),
                 dof,
                 false,
             )
@@ -114,6 +167,7 @@ end
                 values,
                 bc,
                 coor,
+                Float64(t),
                 Float64(t),
                 dof,
                 true,
@@ -125,6 +179,7 @@ end
                 values,
                 bc,
                 coor,
+                Float64(t),
                 Float64(t),
                 dof,
                 true,
@@ -139,6 +194,7 @@ end
         bc,
         Matrix{Float64}(undef, 0, 0),
         time,
+        step_time,
         dof,
         false,
     )

@@ -708,8 +708,10 @@ end
     )
     @test PeriLab.Solver_control.Parameter_Handling.get_solver_name(params["Solver"]) ==
           "Verlet"
-    @test PeriLab.Solver_control.Parameter_Handling.get_final_time(params["Solver"]) ==
-          params["Solver"]["Final Time"]
+    @test PeriLab.Solver_control.Parameter_Handling.get_final_time(
+        params["Solver"],
+        test_data_manager,
+    ) == params["Solver"]["Final Time"]
     @test PeriLab.Solver_control.Parameter_Handling.get_initial_time(
         params["Solver"],
         test_data_manager,
@@ -741,10 +743,16 @@ end
         ),
     )
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_final_time(Dict("Solver" => Dict())),
+        PeriLab.Solver_control.Parameter_Handling.get_final_time(
+            Dict("Solver" => Dict()),
+            test_data_manager,
+        ),
     )
     @test isnothing(
-        PeriLab.Solver_control.Parameter_Handling.get_final_time(Dict("Solver" => Dict())),
+        PeriLab.Solver_control.Parameter_Handling.get_final_time(
+            Dict("Solver" => Dict()),
+            test_data_manager,
+        ),
     )
     @test isnothing(
         PeriLab.Solver_control.Parameter_Handling.get_solver_name(
