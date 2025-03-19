@@ -5,11 +5,10 @@
 using LinearAlgebra
 using AbaqusReader
 using DataFrames
-using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 using OrderedCollections: OrderedDict
 using PrettyTables
 include("../Support/Helpers.jl")
-using .Helpers: fastdot
+using .Helpers: fastdot, get_nearest_neighbors
 include("./logging.jl")
 using .Logging_module: print_table
 
@@ -1555,25 +1554,14 @@ function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vect
         data[i, :] = values(mesh[!, coor[i]])
     end
     block_ids = unique(mesh[!, "block_id"])
-    max_horizon = maximum(get_horizon(params, block_id) for block_id in block_ids)
-    nhs = GridNeighborhoodSearch{dof}(search_radius = max_horizon, n_points = nnodes)
-    initialize_grid!(nhs, data)
-
+    # TODO include mesh horizon
     for iID = 1:nnodes
-        neighbors = []
-        foreach_neighbor(
-            data,
-            data,
-            nhs,
-            iID,
-            search_radius = get_horizon(params, mesh[!, "block_id"][iID]),
-        ) do i, j, _, L
-            if i != j
-                push!(neighbors, j)
-            end
-        end
-        neighborList[iID] = neighbors
+        radius = zeros(Float64, nnodes)
+        radius[iID] = get_horizon(params, mesh[!, "block_id"][iID])
     end
+    neighborList = get_nearest_neighbors(1:nnodes, dof, data, data, radius, neighborList)
+
+
     return neighborList
 end
 

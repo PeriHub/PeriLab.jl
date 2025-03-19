@@ -38,7 +38,160 @@ export fast_mul!
 export mat_mul!
 export get_mapping
 export mat_mul_transpose_mat!
+export get_ring
+export get_hexagon
 
+function get_nearest_neighbors(
+    nodes,
+    dof,
+    system_coordinates,
+    neighbor_coordinates,
+    radius,
+    neighborList,
+)
+
+    nhs = GridNeighborhoodSearch{dof}(
+        search_radius = maximum(radius),
+        n_points = length(nodes),
+    )
+    initialize_grid!(nhs, data)
+
+    for iID in nodes
+        neighbors = []
+        foreach_neighbor(
+            system_coordinates,# System coordinates
+            neighbor_coordinates,# Potential neighbor coordinates
+            nhs,
+            iID,
+            search_radius = radius[iID],
+        ) do i, j, _, L
+            if i != j
+                push!(neighbors, j)
+            end
+        end
+        neighborList[iID] = neighbors
+    end
+    return neighborList
+end
+
+function find_point_in_polygon(point, coor, topo)
+    return Point(point[1], point[2]) in get_ring(coor, topo)
+end
+
+function find_point_in_hexagon(point, coor, topo)
+    return Point(point[1], point[2], point[3]) in get_hexagon(coor, topo)
+end
+
+"""
+    get_hexagon(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
+
+# Description
+This function gives the hexahedron model back to compute centroids of this surface and check if a point lies inside. The el_topology has to be transformed from PeriLab notation, to avoid overlapping.
+
+# Arguments
+- `coor::Union{Matrix{Float64},Matrix{Int64}}`: Coordinates.
+- `topo::Vector{Int64}`: el_topology of an element.
+# Returns
+- `Hexahedron`: eight point hexahedron.
+
+"""
+function get_hexagon(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
+    return Hexahedron(
+        Point(coor[topo[1], 1], coor[topo[1], 2], coor[topo[1], 3]),
+        Point(coor[topo[2], 1], coor[topo[2], 2], coor[topo[2], 3]),
+        Point(coor[topo[4], 1], coor[topo[4], 2], coor[topo[4], 3]),
+        Point(coor[topo[3], 1], coor[topo[3], 2], coor[topo[3], 3]),
+        Point(coor[topo[5], 1], coor[topo[5], 2], coor[topo[5], 3]),
+        Point(coor[topo[6], 1], coor[topo[6], 2], coor[topo[6], 3]),
+        Point(coor[topo[8], 1], coor[topo[8], 2], coor[topo[8], 3]),
+        Point(coor[topo[7], 1], coor[topo[7], 2], coor[topo[7], 3]),
+    )
+end
+
+"""
+    get_ring(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
+
+# Description
+This function gives the ring model back to compute centroids of this surface and check if a point lies inside. The el_topology has to be transformed from PeriLab notation, to avoid overlapping.
+
+# Arguments
+- `coor::Union{Matrix{Float64},Matrix{Int64}}`: Coordinates.
+- `topo::Vector{Int64}`: el_topology of an element.
+# Returns
+- `Ring`: four point closed surface.
+
+"""
+function get_ring(coor::Union{Matrix{Float64},Matrix{Int64}}, topo::Vector{Int64})
+    return Ring(
+        Point(coor[topo[1], 1], coor[topo[1], 2]),
+        Point(coor[topo[2], 1], coor[topo[2], 2]),
+        Point(coor[topo[4], 1], coor[topo[4], 2]),
+        Point(coor[topo[3], 1], coor[topo[3], 2]),
+    )
+end
+
+function get_centroid(el, dof)
+    c = centroid(el)
+    if dof == 2
+        return ustrip(c.coords.x), ustrip(c.coords.y)
+    else
+        return ustrip(c.coords.x), ustrip(c.coords.y), ustrip(c.coords.z)
+    end
+end
+"""
+    create_centroid_and_search_radius(coor::Union{Matrix{Float64},Matrix{Int64}},
+                                      el_topology::Matrix{Int64},
+                                      dof::Int64,
+                                      fu)
+
+Computes the centroid and search radius for each element in a given mesh.
+
+# Arguments
+- `coor::Union{Matrix{Float64}, Matrix{Int64}}`:   A matrix of size `(N x dof)`, where each row represents the coordinates of a point in the space.
+- `el_topology::Matrix{Int64}`:   A matrix of size `(M x num_nodes)`, where each row contains the indices of points that define an element.
+- `dof::Int64`:   The number of spatial dimensions (degrees of freedom), e.g., `2` for 2D and `3` for 3D.
+- `fu`:   A function of four point 2D surface or eight point 3D volume.
+
+# Returns
+- `el_centroid::Matrix{Float64}`:
+  A matrix of size `(M × dof)`, where each row represents the centroid of an element.
+- `search_radius::Vector{Float64}`:
+  A vector of size `M`, where each entry is the maximum distance from the element centroid to any of its nodes.
+"""
+function create_centroid_and_search_radius(
+    coor::Union{Matrix{Float64},Matrix{Int64}},
+    el_topology::Matrix{Int64},
+    dof::Int64,
+    fu,
+)
+    el_centroid = zeros(Float64, size(el_topology)[1], dof)
+    search_radius = zeros(Float64, size(el_topology)[1])
+    for iel in eachindex(el_topology[:, 1])
+        topo = el_topology[iel, :]
+        el_centroid[iel, :] .= get_centroid(fu(coor, topo), dof)
+        search_radius[iel] =
+            maximum([norm(el_centroid[iel, :] .- p) for p in coor[topo, :]])
+    end
+    return el_centroid, search_radius
+end
+
+function find_point_in_element(el_topology, near_points, coor, fu, coupling_dict)
+
+    @inbounds @fastmath for iel ∈ axes(el_topology, 1)
+        topo = el_topology[iel, :]
+        for point in near_points[iel]
+            if haskey(coupling_dict, point)
+                # only of elment per point for coupling
+                break
+            end
+            if fu(coor[point, :], coor, topo)
+                coupling_dict[point] = iel
+                break
+            end
+        end
+    end
+    return coupling_dict
+end
 
 
 function get_mapping(dof::Int64)
