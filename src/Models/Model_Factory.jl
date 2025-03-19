@@ -91,10 +91,12 @@ function init_models(
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
     end
 
-    for (active_model_name, active_model) in pairs(datamanager.get_active_models(true))
-        @debug "Init $active_model_name fields"
-        @timeit to "$active_model_name model fields" datamanager =
-            active_model.init_fields(datamanager)
+    if isnothing(datamanager.get_step()) || datamanager.get_step() == 1
+        for (active_model_name, active_model) in pairs(datamanager.get_active_models(true))
+            @debug "Init $active_model_name fields"
+            @timeit to "$active_model_name model fields" datamanager =
+                active_model.init_fields(datamanager)
+        end
     end
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         @info "Init $active_model_name"
