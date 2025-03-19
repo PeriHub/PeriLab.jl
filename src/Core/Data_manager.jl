@@ -407,7 +407,7 @@ function create_bond_field(
     dof::Int64,
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
-    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
+    set_NP1_to_N(name, type)
     return create_field(name * "N", type, "Bond_Field", dof, default_value),
     create_field(name * "NP1", type, "Bond_Field", dof, default_value)
 end
@@ -419,8 +419,7 @@ function create_bond_field(
     dof::Int64,
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
-
-    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
+    set_NP1_to_N(name, type)
     return create_field(name * "N", type, "Bond_Field", dof, default_value, VectorOrArray),
     create_field(name * "NP1", type, "Bond_Field", dof, default_value, VectorOrArray)
 end
@@ -478,7 +477,7 @@ function create_free_size_field(
     dof::Tuple,
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
-    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(vartype)]
+    set_NP1_to_N(name, vartype)
     return create_field(name * "N", vartype, "Free_Size_Field", dof, default_value),
     create_field(name * "NP1", vartype, "Free_Size_Field", dof, default_value)
 end
@@ -573,8 +572,7 @@ function create_node_field(
     dof::Int64,
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
-
-    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
+    set_NP1_to_N(name, type)
     return create_field(name * "N", type, "Node_Field", dof, default_value),
     create_field(name * "NP1", type, "Node_Field", dof, default_value)
 end
@@ -586,7 +584,7 @@ function create_node_field(
     dof::Int64,
     default_value::Union{Int64,Float64,Bool} = 0.0,
 )
-    data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
+    set_NP1_to_N(name, type)
     return create_field(name * "N", type, "Node_Field", dof, default_value, VectorOrArray),
     create_field(name * "NP1", type, "Node_Field", dof, default_value, VectorOrArray)
 end
@@ -1773,6 +1771,21 @@ end
 function switch_bonds!(field_N, field_NP1)
     for fieldID in eachindex(field_NP1)
         copyto!(field_N[fieldID], field_NP1[fieldID])
+    end
+end
+
+"""
+    set_NP1_to_N(name::String, type::Type)
+
+Sets the NP1_to_N dataset
+
+# Arguments
+- `name`::String: The name of the field.
+- `type`::Type The field type
+"""
+function set_NP1_to_N(name::String, type::Type)
+    if !has_key(name)
+        data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
     end
 end
 

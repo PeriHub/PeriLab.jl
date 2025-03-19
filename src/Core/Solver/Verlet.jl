@@ -530,7 +530,7 @@ function run_solver(
                 temperatureNP1[active_nodes] =
                     temperatureN[active_nodes] + deltaT[active_nodes]
             else
-                if "Thermal" in solver_options["All Models"] && idt != 1
+                if "Thermal" in solver_options["All Models"]
                     temperatureNP1[active_nodes] = temperatureN[active_nodes]
                 end
             end
