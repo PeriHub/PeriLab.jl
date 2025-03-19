@@ -36,7 +36,7 @@ function compute_FEM(
     dof = datamanager.get_dof()
 
     forces = datamanager.get_field("Forces", "NP1")
-    displacement = datamanager.get_field("Displacements", "NP1")
+    uNP1 = datamanager.get_field("Displacements", "NP1")
     strain_N = datamanager.get_field("Element Strain", "N")
     strain_NP1 = datamanager.get_field("Element Strain", "NP1")
     stress_N = datamanager.get_field("Element Stress", "N")
@@ -52,6 +52,7 @@ function compute_FEM(
 
     stress_temp = @MVector zeros(3 * dof - 3)
     le::Int64 = 0
+
     for id_el in elements
         topo = view(topology, id_el, :)
         le = dof * length(topo)
@@ -60,7 +61,7 @@ function compute_FEM(
         for id_int in eachindex(B_matrix[1, :, 1, 1])
 
             strain_NP1[id_el, id_int, :] =
-                B_matrix[id_el, id_int, :, :]' * reshape((displacement[topo, :])', le)
+                B_matrix[id_el, id_int, :, :]' * reshape((uNP1[topo, :])', le)
             strain_increment[id_el, id_int, :] =
                 strain_NP1[id_el, id_int, :] - strain_N[id_el, id_int, :]
 
@@ -92,6 +93,7 @@ function compute_FEM(
                 #stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
             end
             # specific force density
+
             forces[topo, :] -=
                 reshape(
                     B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .*

@@ -215,7 +215,6 @@ function force_densities(datamanager, nodes)
     force_densities = datamanager.get_field("Force Densities", "NP1")
     #forces[nodes, :] ./= volume[nodes] # unclear why its needed here
     force_densities[nodes, :] = forces[nodes, :] ./ volume[nodes]
-
 end
 
 end
