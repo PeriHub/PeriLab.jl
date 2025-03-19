@@ -583,6 +583,9 @@ function validate_yaml(params::Dict)
         validate_structure_recursive(expected_structure, params, validate, checked_keys)
     #Check if all keys have been checked
     for key in all_keys
+        if typeof(key) == Int64
+            continue
+        end
         if !(key in checked_keys) && !contains(key, "Property_")
             @warn "Key not known - $key, going to ignore it"
         end

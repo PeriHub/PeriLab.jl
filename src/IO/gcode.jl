@@ -454,13 +454,24 @@ function write_pd_mesh(dataobject)
            distance_along_line >= -pd_mesh["width"] / 2
             time_to_activation = distance_along_line / v
             pd_mesh["used_ids"][neighbors[i]] = true
+            block_id = 1
+            if !isnothing(pd_mesh["blocks"])
+                global x = pd_mesh["point"][1]
+                global y = pd_mesh["point"][2]
+                global z = dataobject["z"]
+                for block in pd_mesh["blocks"]
+                    if eval(Meta.parse(block[2]))
+                        block_id = block[1]
+                    end
+                end
+            end
             push!(
                 pd_mesh["mesh_df"],
                 [
                     pd_mesh["point"][1],
                     pd_mesh["point"][2],
                     dataobject["z"],
-                    1,
+                    block_id,
                     pd_mesh["volume"],
                     time_to_activation + dataobject["previous_time"],
                 ],
@@ -475,6 +486,8 @@ function get_gcode_mesh(gcode_file::String, params::Dict)
     dy = params["Discretization"]["Gcode"]["dy"]
     scale = params["Discretization"]["Gcode"]["Scale"]
     width = params["Discretization"]["Gcode"]["Width"]
+    blocks =
+        haskey(params, "Blocks") ? params["Discretization"]["Gcode"]["Blocks"] : nothing
 
     discretization = [dx * scale, dy * scale]
 
@@ -512,6 +525,7 @@ function get_gcode_mesh(gcode_file::String, params::Dict)
     pd_mesh["previous_extruding"] = 0
     pd_mesh["used_ids"] = fill(false, nnodes)
     pd_mesh["width"] = width
+    pd_mesh["blocks"] = blocks
 
     pd_mesh["mesh_df"] = DataFrame(
         x = Float64[],
