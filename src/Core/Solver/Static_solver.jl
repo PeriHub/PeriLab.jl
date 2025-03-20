@@ -367,10 +367,14 @@ function residual!(
     # )
 
     uNP1 = datamanager.get_field("Displacements", "NP1")
-    uNP1[bc_free_dof] = copy(U[bc_free_dof])
+    uNP1[bc_free_dof] .= U[bc_free_dof]
+
+    # bc_dof = setdiff(1:length(uNP1), bc_free_dof)
+
+    #U[bc_dof] .= uNP1[bc_dof]
 
     forces = datamanager.get_field("Forces", "NP1")
-    @views deformed_coorNP1[bc_free_dof] = coor[bc_free_dof] .+ uNP1[bc_free_dof]
+    @views deformed_coorNP1[:] .= coor[:] + uNP1[:]
 
     force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
     forces[:, :] .= 0
