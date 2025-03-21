@@ -366,6 +366,10 @@ global expected_structure = Dict(
                     ],
                 ),
             ],
+            "Surface Correction" => [
+                Dict{Any,Any}("Type" => [String, true], "Update" => [Bool, false]),
+                false,
+            ],
             "Solver" => [
                 Dict{Any,Any}(
                     "Additive Models" => [Bool, false],
