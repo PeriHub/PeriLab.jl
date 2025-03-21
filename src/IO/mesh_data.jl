@@ -1547,20 +1547,19 @@ function neighbors(mesh::DataFrame, params::Dict, coor::Union{Vector{Int64},Vect
     @info "Init Neighborhoodlist"
     nnodes = length(mesh[!, coor[1]])
     dof = length(coor)
-    data = zeros(dof, nnodes)
+    data = zeros(nnodes, dof)
     neighborList = fill(Vector{Int64}([]), nnodes)
 
     for i = 1:dof
-        data[i, :] = values(mesh[!, coor[i]])
+        data[:, i] = values(mesh[!, coor[i]])
     end
     block_ids = unique(mesh[!, "block_id"])
     # TODO include mesh horizon
+    radius = zeros(Float64, nnodes)
     for iID = 1:nnodes
-        radius = zeros(Float64, nnodes)
         radius[iID] = get_horizon(params, mesh[!, "block_id"][iID])
     end
     neighborList = get_nearest_neighbors(1:nnodes, dof, data, data, radius, neighborList)
-
 
     return neighborList
 end

@@ -5,12 +5,14 @@
 module Helpers
 
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
+using Meshes
 using Tensors
 using Dierckx
 using ProgressBars
 using LinearAlgebra
 using StaticArrays
 using LoopVectorization
+using Unitful
 global A2x2 = MMatrix{2,2}(zeros(Float64, 2, 2))
 global A3x3 = MMatrix{3,3}(zeros(Float64, 3, 3))
 global A6x6 = MMatrix{6,6}(zeros(Float64, 6, 6))
@@ -43,29 +45,30 @@ export get_hexagon
 
 function get_nearest_neighbors(
     nodes,
-    dof,
+    dof::Int64,
     system_coordinates,
     neighbor_coordinates,
     radius,
     neighborList,
+    diffent_lists = false,
 )
 
     nhs = GridNeighborhoodSearch{dof}(
         search_radius = maximum(radius),
         n_points = length(nodes),
     )
-    initialize_grid!(nhs, data)
+    initialize_grid!(nhs, neighbor_coordinates')
 
     for iID in nodes
         neighbors = []
         foreach_neighbor(
-            system_coordinates,# System coordinates
-            neighbor_coordinates,# Potential neighbor coordinates
+            system_coordinates',# System coordinates -> must be transpose for the datamanager definition
+            neighbor_coordinates',# Potential neighbor coordinates -> must be transpose for the datamanager definition
             nhs,
             iID,
             search_radius = radius[iID],
         ) do i, j, _, L
-            if i != j
+            if i != j || diffent_lists
                 push!(neighbors, j)
             end
         end
@@ -73,6 +76,7 @@ function get_nearest_neighbors(
     end
     return neighborList
 end
+
 
 function find_point_in_polygon(point, coor, topo)
     return Point(point[1], point[2]) in get_ring(coor, topo)
