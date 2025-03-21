@@ -27,14 +27,10 @@ function element_name()
     return "element Template"
 end
 
-
-function init_element(
-    datamanager::Module,
-    elements::Union{SubArray,Vector{Int64}},
-    element_params::Dict,
-    p::Vector{Int64},
-)
-
+function init_element(datamanager::Module,
+                      elements::Union{SubArray,Vector{Int64}},
+                      element_params::Dict,
+                      p::Vector{Int64})
 end
 """
   compute_element(datamanager, nodes, element_parameter, time, dt)
@@ -53,13 +49,11 @@ Example:
 ```julia
   ```
 """
-function compute_element(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    element_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-)
+function compute_element(datamanager::Module,
+                         nodes::Union{SubArray,Vector{Int64}},
+                         element_parameter::Dict,
+                         time::Float64,
+                         dt::Float64)
     @info "Please write a element name in element_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_element(datamanager, nodes, element_parameter, time, dt) function."
@@ -69,7 +63,6 @@ function compute_element(
 end
 
 function shape_function()
-
 end
 
 end

@@ -12,24 +12,22 @@ using NearestNeighbors
 function sub_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{T}) where {T<:Number}
     @assert length(C) == length(A) == length(B)
 
-    @inbounds for i ∈ eachindex(A)
+    @inbounds for i in eachindex(A)
         C[i] = A[i] - B[i]
     end
 end
 
 function normalize_in_place!(B::Vector{T}, A::Vector{T}) where {T<:Number}
     nrm = norm(A)
-    @inbounds for i ∈ eachindex(A)
+    @inbounds for i in eachindex(A)
         B[i] = A[i] / nrm
     end
 end
-function closest_point_to_vector(
-    start_point::Vector{Float64},
-    dir::Vector{Float64},
-    point::Vector{Float64},
-    closest_point::Vector{Float64},
-    point_diff::Vector{Float64},
-)
+function closest_point_to_vector(start_point::Vector{Float64},
+                                 dir::Vector{Float64},
+                                 point::Vector{Float64},
+                                 closest_point::Vector{Float64},
+                                 point_diff::Vector{Float64})
 
     # Calculate the distance from the point to the line segment
     distance_along_line = dot(point_diff, dir) / dot(dir, dir)
@@ -38,8 +36,8 @@ function closest_point_to_vector(
     closest_point .= start_point .+ (dir .* distance_along_line)
 
     # Calculate the distance from the closest point to the point
-    distance_to_closest_point =
-        sqrt((point[1] - closest_point[1])^2 + (point[2] - closest_point[2])^2)
+    distance_to_closest_point = sqrt((point[1] - closest_point[1])^2 +
+                                     (point[2] - closest_point[2])^2)
 
     return distance_along_line, distance_to_closest_point
 end
@@ -94,15 +92,12 @@ julia> parseLine("G10 X5.Y3. E6.", false)
  "E6."
 ```
 """
-function parseLine(
-    line::String,
-    returnPair::Bool = true,
-)::Array{Union{String,Pair{String,String}},1}
+function parseLine(line::String,
+                   returnPair::Bool = true)::Array{Union{String,Pair{String,String}},1}
     line = stripComments(line)
 
     # Match commands
-    gcode_regex =
-        r"/(%.*)|({.*)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))|([a-zA-Z][0-9\+\-\.]+)|(\*[0-9]+)/igm"
+    gcode_regex = r"/(%.*)|({.*)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))|([a-zA-Z][0-9\+\-\.]+)|(\*[0-9]+)/igm"
 
     # array of matched strings
     matches = collect(String(m.match) for m in eachmatch(gcode_regex, line))
@@ -221,11 +216,9 @@ function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict())
             @warn layer_heights
         end
         @info "Layers: $(myPrinter["layers"])"
-        return ndgrid(
-            myPrinter["x_min"]:discretization[1]:myPrinter["x_max"],
-            myPrinter["y_min"]:discretization[2]:myPrinter["y_max"],
-        ),
-        layer_heights[1]
+        return ndgrid(myPrinter["x_min"]:discretization[1]:myPrinter["x_max"],
+                      myPrinter["y_min"]:discretization[2]:myPrinter["y_max"]),
+               layer_heights[1]
     end
     # Show printer data after print with some interesting stats
     # @show myPrinter;
@@ -239,11 +232,11 @@ function move(cmds, dataobject)
 end
 
 function check_min_max(dataobject, str)
-    if dataobject[str] > dataobject[str*"_max"]
-        dataobject[str*"_max"] = dataobject[str]
+    if dataobject[str] > dataobject[str * "_max"]
+        dataobject[str * "_max"] = dataobject[str]
     end
-    if dataobject[str] < dataobject[str*"_min"]
-        dataobject[str*"_min"] = dataobject[str]
+    if dataobject[str] < dataobject[str * "_min"]
+        dataobject[str * "_min"] = dataobject[str]
     end
 end
 
@@ -384,11 +377,9 @@ function write_pd_mesh(dataobject)
     normalize_in_place!(pd_mesh["dir"], pd_mesh["point_diff"])
     neighbors = []
     if distance <= min(pd_mesh["discretization"][1], pd_mesh["discretization"][2])
-        idxs = inrange(
-            pd_mesh["balltree"],
-            pd_mesh["point"],
-            max(pd_mesh["discretization"][1], pd_mesh["discretization"][2]),
-        )
+        idxs = inrange(pd_mesh["balltree"],
+                       pd_mesh["point"],
+                       max(pd_mesh["discretization"][1], pd_mesh["discretization"][2]))
         # add idxs if distance is less than or equal to discretization
         for i in eachindex(idxs)
             push!(neighbors, idxs[i])
@@ -396,30 +387,24 @@ function write_pd_mesh(dataobject)
     else
         # @info pd_mesh["start_point"]
         # @info pd_mesh["point"]
-        dx =
-            pd_mesh["start_point"][1] > pd_mesh["point"][1] ?
-            -pd_mesh["discretization"][1] : pd_mesh["discretization"][1]
-        dy =
-            pd_mesh["start_point"][2] > pd_mesh["point"][2] ?
-            -pd_mesh["discretization"][2] : pd_mesh["discretization"][2]
-        (xg, yg) = ndgrid(
-            pd_mesh["start_point"][1]:dx:pd_mesh["point"][1],
-            pd_mesh["start_point"][2]:dy:pd_mesh["point"][2],
-        )
+        dx = pd_mesh["start_point"][1] > pd_mesh["point"][1] ?
+             -pd_mesh["discretization"][1] : pd_mesh["discretization"][1]
+        dy = pd_mesh["start_point"][2] > pd_mesh["point"][2] ?
+             -pd_mesh["discretization"][2] : pd_mesh["discretization"][2]
+        (xg, yg) = ndgrid(pd_mesh["start_point"][1]:dx:pd_mesh["point"][1],
+                          pd_mesh["start_point"][2]:dy:pd_mesh["point"][2])
         nnodes = length(xg)
         # @info nnodes
         grid = zeros(2, nnodes + 1)
-        for i = 1:nnodes
+        for i in 1:nnodes
             grid[1, i] = xg[i]
             grid[2, i] = yg[i]
         end
         grid[1, end] = pd_mesh["point"][1]
         grid[2, end] = pd_mesh["point"][2]
-        idxs = inrange(
-            pd_mesh["balltree"],
-            grid,
-            max(pd_mesh["discretization"][1], pd_mesh["discretization"][2]),
-        )
+        idxs = inrange(pd_mesh["balltree"],
+                       grid,
+                       max(pd_mesh["discretization"][1], pd_mesh["discretization"][2]))
         # @info length(idxs)
         # for i in eachindex(xg)
         #     idxs, dists = knn(pd_mesh["balltree"], grid, 4, true)
@@ -442,13 +427,11 @@ function write_pd_mesh(dataobject)
         pd_mesh["point"][1] = pd_mesh["grid"][1, neighbors[i]]
         pd_mesh["point"][2] = pd_mesh["grid"][2, neighbors[i]]
         sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
-        distance_along_line, distance_to_closest_point = closest_point_to_vector(
-            pd_mesh["start_point"],
-            pd_mesh["dir"],
-            pd_mesh["point"],
-            pd_mesh["closest_point"],
-            pd_mesh["point_diff"],
-        )
+        distance_along_line, distance_to_closest_point = closest_point_to_vector(pd_mesh["start_point"],
+                                                                                 pd_mesh["dir"],
+                                                                                 pd_mesh["point"],
+                                                                                 pd_mesh["closest_point"],
+                                                                                 pd_mesh["point_diff"])
         if distance_to_closest_point <= pd_mesh["width"] / 2 &&
            distance_along_line <= distance &&
            distance_along_line >= -pd_mesh["width"] / 2
@@ -465,29 +448,26 @@ function write_pd_mesh(dataobject)
                     end
                 end
             end
-            push!(
-                pd_mesh["mesh_df"],
-                [
-                    pd_mesh["point"][1],
-                    pd_mesh["point"][2],
-                    dataobject["z"],
-                    block_id,
-                    pd_mesh["volume"],
-                    time_to_activation + dataobject["previous_time"],
-                ],
-            )
+            push!(pd_mesh["mesh_df"],
+                  [
+                      pd_mesh["point"][1],
+                      pd_mesh["point"][2],
+                      dataobject["z"],
+                      block_id,
+                      pd_mesh["volume"],
+                      time_to_activation + dataobject["previous_time"]
+                  ])
         end
     end
 end
 
 function get_gcode_mesh(gcode_file::String, params::Dict)
-
     dx = params["Discretization"]["Gcode"]["dx"]
     dy = params["Discretization"]["Gcode"]["dy"]
     scale = params["Discretization"]["Gcode"]["Scale"]
     width = params["Discretization"]["Gcode"]["Width"]
-    blocks =
-        haskey(params, "Blocks") ? params["Discretization"]["Gcode"]["Blocks"] : nothing
+    blocks = haskey(params, "Blocks") ? params["Discretization"]["Gcode"]["Blocks"] :
+             nothing
 
     discretization = [dx * scale, dy * scale]
 
@@ -501,7 +481,7 @@ function get_gcode_mesh(gcode_file::String, params::Dict)
 
     grid = zeros(2, nnodes)
 
-    for i = 1:nnodes
+    for i in 1:nnodes
         grid[1, i] = grid_x[i]
         grid[2, i] = grid_y[i]
     end
@@ -527,14 +507,12 @@ function get_gcode_mesh(gcode_file::String, params::Dict)
     pd_mesh["width"] = width
     pd_mesh["blocks"] = blocks
 
-    pd_mesh["mesh_df"] = DataFrame(
-        x = Float64[],
-        y = Float64[],
-        z = Float64[],
-        block_id = Int64[],
-        volume = Float64[],
-        Activation_Time = Float64[],
-    )
+    pd_mesh["mesh_df"] = DataFrame(x = Float64[],
+                                   y = Float64[],
+                                   z = Float64[],
+                                   block_id = Int64[],
+                                   volume = Float64[],
+                                   Activation_Time = Float64[])
     pd_mesh["closest_point"] = zeros(2)
     pd_mesh["dir"] = zeros(2)
     pd_mesh["start_point"] = zeros(2)

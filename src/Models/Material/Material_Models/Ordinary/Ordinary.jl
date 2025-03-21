@@ -35,26 +35,21 @@ Compute the weighted volume for each node, [SillingSA2007](@cite). Taken from Pe
 # Returns
 - `weighted_volume::Vector{Float64}`: Vector containing the computed weighted volume for each node.
 """
-function compute_weighted_volume(
-    weighted_volume::Vector{Float64},
-    nodes::Union{SubArray,Vector{Int64}},
-    nlist::Vector{Vector{Int64}},
-    undeformed_bond_length::Vector{Vector{Float64}},
-    bond_damage::Vector{Vector{Float64}},
-    omega::Vector{Vector{Float64}},
-    volume::Vector{Float64},
-)
-
+function compute_weighted_volume(weighted_volume::Vector{Float64},
+                                 nodes::Union{SubArray,Vector{Int64}},
+                                 nlist::Vector{Vector{Int64}},
+                                 undeformed_bond_length::Vector{Vector{Float64}},
+                                 bond_damage::Vector{Vector{Float64}},
+                                 omega::Vector{Vector{Float64}},
+                                 volume::Vector{Float64})
     for iID in nodes
         wv = zero(eltype(weighted_volume))
         @inbounds @fastmath for (jID, nID) in enumerate(nlist[iID])
-
-            wv +=
-                omega[iID][jID] *
-                bond_damage[iID][jID] *
-                undeformed_bond_length[iID][jID] *
-                undeformed_bond_length[iID][jID] *
-                volume[nID]
+            wv += omega[iID][jID] *
+                  bond_damage[iID][jID] *
+                  undeformed_bond_length[iID][jID] *
+                  undeformed_bond_length[iID][jID] *
+                  volume[nID]
         end
         # in Peridigm the weighted volume is for some reason independend from damages
         weighted_volume[iID] = wv
@@ -83,15 +78,12 @@ Calculate the forces on the bonds in a peridynamic material.
 - `bond_force::Vector{Matrix{Float64}}`: Vector containing the resulting forces on the bonds.
 """
 
-
-function get_bond_forces(
-    nodes::Union{SubArray,Vector{Int64}},
-    bond_force_length::Union{SubArray,Vector{Vector{Float64}}},
-    deformed_bond::Vector{Vector{Vector{Float64}}},
-    deformed_bond_length::Vector{Vector{Float64}},
-    bond_force::Vector{Vector{Vector{Float64}}},
-    temp::Vector{Vector{Float64}},
-)
+function get_bond_forces(nodes::Union{SubArray,Vector{Int64}},
+                         bond_force_length::Union{SubArray,Vector{Vector{Float64}}},
+                         deformed_bond::Vector{Vector{Vector{Float64}}},
+                         deformed_bond_length::Vector{Vector{Float64}},
+                         bond_force::Vector{Vector{Vector{Float64}}},
+                         temp::Vector{Vector{Float64}})
     div_in_place!(temp, bond_force_length, deformed_bond_length)
     for iID in nodes
         mul_in_place!(bond_force[iID], deformed_bond[iID], temp[iID])
@@ -114,19 +106,19 @@ Calculate the symmetry parameters based on the given material symmetry. These pa
 - `gamma::Float64`: Gamma parameter.
 - `kappa::Float64`: Kappa parameter.
 """
-function calculate_symmetry_params(
-    symmetry::String,
-    shear_modulus::Union{Float64,SubArray,Vector{Float64}},
-    bulk_modulus::Union{Float64,SubArray,Vector{Float64}},
-)
+function calculate_symmetry_params(symmetry::String,
+                                   shear_modulus::Union{Float64,SubArray,Vector{Float64}},
+                                   bulk_modulus::Union{Float64,SubArray,Vector{Float64}})
     three_bulk_modulus = 3 .* bulk_modulus
     # from Peridigm damage model. to be checked with literature
     if symmetry == "plane stress"
         return 8 .* shear_modulus,
-        4.0 .* shear_modulus ./ (three_bulk_modulus + 4.0 .* shear_modulus),
-        4.0 .* bulk_modulus .* shear_modulus ./ (three_bulk_modulus + 4.0 .* shear_modulus)
+               4.0 .* shear_modulus ./ (three_bulk_modulus + 4.0 .* shear_modulus),
+               4.0 .* bulk_modulus .* shear_modulus ./
+               (three_bulk_modulus + 4.0 .* shear_modulus)
     elseif symmetry == "plane strain"
-        return 8 .* shear_modulus, 2 / 3, (12.0 .* bulk_modulus - 4.0 .* shear_modulus) ./ 9
+        return 8 .* shear_modulus, 2 / 3, (12.0 .* bulk_modulus - 4.0 .* shear_modulus) ./
+                                          9
     else
         return 15 .* shear_modulus, 1, three_bulk_modulus
     end
@@ -150,18 +142,16 @@ Calculate the dilatation for each node, [SillingSA2007](@cite).
 # Returns
 - `theta::Vector{Float64}`: Dilatation.
 """
-function compute_dilatation(
-    nodes::Union{SubArray,Vector{Int64}},
-    nneighbors::Vector{Int64},
-    nlist::Vector{Vector{Int64}},
-    undeformed_bond_length::Vector{Vector{Float64}},
-    deformed_bond_length::Vector{Vector{Float64}},
-    bond_damage::Vector{Vector{Float64}},
-    volume::Vector{Float64},
-    weighted_volume::Vector{Float64},
-    omega::Vector{Vector{Float64}},
-    theta,
-)
+function compute_dilatation(nodes::Union{SubArray,Vector{Int64}},
+                            nneighbors::Vector{Int64},
+                            nlist::Vector{Vector{Int64}},
+                            undeformed_bond_length::Vector{Vector{Float64}},
+                            deformed_bond_length::Vector{Vector{Float64}},
+                            bond_damage::Vector{Vector{Float64}},
+                            volume::Vector{Float64},
+                            weighted_volume::Vector{Float64},
+                            omega::Vector{Vector{Float64}},
+                            theta)
     for iID in nodes
         if weighted_volume[iID] == 0
             # @warn "Weighted volume is zero for local point ID: $iID"
@@ -170,16 +160,13 @@ function compute_dilatation(
         end
         th = zero(eltype(theta))
         @inbounds @fastmath for jID in eachindex(nlist[iID])
-            th +=
-                omega[iID][jID] *
-                bond_damage[iID][jID] *
-                undeformed_bond_length[iID][jID] *
-                (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) *
-                volume[nlist[iID][jID]]
-
+            th += omega[iID][jID] *
+                  bond_damage[iID][jID] *
+                  undeformed_bond_length[iID][jID] *
+                  (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) *
+                  volume[nlist[iID][jID]]
         end
         theta[iID] = 3 * th / weighted_volume[iID]
     end
-
 end
 end

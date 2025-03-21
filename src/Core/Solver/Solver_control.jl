@@ -7,15 +7,15 @@ module Solver_control
 include("../../Support/Parameters/parameter_handling.jl")
 include("../../Support/Helpers.jl")
 using .Parameter_Handling:
-    get_density,
-    get_horizon,
-    get_solver_name,
-    get_model_options,
-    get_fem_block,
-    get_calculation_options,
-    get_angles,
-    get_block_names,
-    get_solver_params
+                           get_density,
+                           get_horizon,
+                           get_solver_name,
+                           get_model_options,
+                           get_fem_block,
+                           get_calculation_options,
+                           get_angles,
+                           get_block_names,
+                           get_solver_params
 using .Helpers: find_indices, fastdot
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
@@ -50,12 +50,10 @@ Initialize the solver
 - `datamanager::Module`: The data manager module that provides access to data fields and properties.
 - `solver_options::Dict{String,Any}`: A dictionary containing solver options.
 """
-function init(
-    params::Dict,
-    datamanager::Module,
-    to::TimerOutput,
-    step_id::Union{Nothing,Int64} = nothing,
-)
+function init(params::Dict,
+              datamanager::Module,
+              to::TimerOutput,
+              step_id::Union{Nothing,Int64} = nothing)
     solver_options = Dict()
     nnodes = datamanager.get_nnodes()
     num_responder = datamanager.get_num_responder()
@@ -76,61 +74,51 @@ function init(
     density = set_density(params, block_nodes_with_neighbors, density) # includes the neighbors
     horizon = set_horizon(params, block_nodes_with_neighbors, horizon) # includes the neighbors
     set_angles(datamanager, params, block_nodes_with_neighbors) # includes the Neighbors
-    solver_params =
-        isnothing(step_id) ? params["Solver"] : get_solver_params(params, step_id)
+    solver_params = isnothing(step_id) ? params["Solver"] :
+                    get_solver_params(params, step_id)
     solver_options["Models"] = get_model_options(solver_params)
     solver_options["All Models"] = get_model_options(solver_params)
     if !isnothing(step_id)
-        for step = 1:datamanager.get_max_step()
-            append!(
-                solver_options["All Models"],
-                get_model_options(get_solver_params(params, step)),
-            )
+        for step in 1:datamanager.get_max_step()
+            append!(solver_options["All Models"],
+                    get_model_options(get_solver_params(params, step)))
         end
         solver_options["All Models"] = unique(solver_options["All Models"])
     end
     solver_options["Calculation"] = get_calculation_options(solver_params)
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     for iblock in eachindex(block_nodes)
-        datamanager = Influence_function.init_influence_function(
-            block_nodes[iblock],
-            datamanager,
-            params["Discretization"],
-        )
+        datamanager = Influence_function.init_influence_function(block_nodes[iblock],
+                                                                 datamanager,
+                                                                 params["Discretization"])
     end
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
     @debug "Read properties"
     read_properties(params, datamanager, "Material" in solver_options["Models"])
     @debug "Init models"
-    @timeit to "init_models" datamanager = Model_Factory.init_models(
-        params,
-        datamanager,
-        block_nodes,
-        solver_options,
-        synchronise_field,
-        to,
-    )
+    @timeit to "init_models" datamanager=Model_Factory.init_models(params,
+                                                                   datamanager,
+                                                                   block_nodes,
+                                                                   solver_options,
+                                                                   synchronise_field,
+                                                                   to)
     @debug "Init Boundary Conditions"
-    @timeit to "init_BCs" bcs = Boundary_conditions.init_BCs(params, datamanager)
+    @timeit to "init_BCs" bcs=Boundary_conditions.init_BCs(params, datamanager)
     solver_options["Solver"] = get_solver_name(solver_params)
     if get_solver_name(solver_params) == "Verlet"
         @debug "Init " * get_solver_name(solver_params)
-        @timeit to "init_solver" Verlet.init_solver(
-            solver_options,
-            solver_params,
-            bcs,
-            datamanager,
-            block_nodes,
-        )
+        @timeit to "init_solver" Verlet.init_solver(solver_options,
+                                                    solver_params,
+                                                    bcs,
+                                                    datamanager,
+                                                    block_nodes)
     elseif solver_options["Solver"] == "Static"
         @debug "Init " * get_solver_name(solver_params)
-        @timeit to "init_solver" Static_solver.init_solver(
-            solver_options,
-            solver_params,
-            bcs,
-            datamanager,
-            block_nodes,
-        )
+        @timeit to "init_solver" Static_solver.init_solver(solver_options,
+                                                           solver_params,
+                                                           bcs,
+                                                           datamanager,
+                                                           block_nodes)
 
     else
         @error get_solver_name(solver_params) * " is no valid solver."
@@ -139,11 +127,9 @@ function init(
 
     if datamanager.fem_active()
         datamanager = FEM.init_FEM(params, datamanager)
-        datamanager = FEM.Coupling_PD_FEM.init_coupling(
-            datamanager,
-            1:datamanager.get_nnodes(),
-            params,
-        )
+        datamanager = FEM.Coupling_PD_FEM.init_coupling(datamanager,
+                                                        1:datamanager.get_nnodes(),
+                                                        params)
     end
     if !datamanager.has_key("Active")
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)
@@ -285,44 +271,37 @@ Runs the solver.
 # Returns
 - `result_files`: A vector of updated result files
 """
-function solver(
-    solver_options::Dict{Any,Any},
-    block_nodes::Dict{Int64,Vector{Int64}},
-    bcs::Dict{Any,Any},
-    datamanager::Module,
-    outputs::Dict{Int64,Dict{}},
-    result_files::Vector{Dict},
-    write_results,
-    to,
-    silent::Bool,
-)
-
+function solver(solver_options::Dict{Any,Any},
+                block_nodes::Dict{Int64,Vector{Int64}},
+                bcs::Dict{Any,Any},
+                datamanager::Module,
+                outputs::Dict{Int64,Dict{}},
+                result_files::Vector{Dict},
+                write_results,
+                to,
+                silent::Bool)
     if solver_options["Solver"] == "Verlet"
-        return Verlet.run_solver(
-            solver_options,
-            block_nodes,
-            bcs,
-            datamanager,
-            outputs,
-            result_files,
-            synchronise_field,
-            write_results,
-            to,
-            silent,
-        )
+        return Verlet.run_solver(solver_options,
+                                 block_nodes,
+                                 bcs,
+                                 datamanager,
+                                 outputs,
+                                 result_files,
+                                 synchronise_field,
+                                 write_results,
+                                 to,
+                                 silent)
     elseif solver_options["Solver"] == "Static"
-        return Static_solver.run_solver(
-            solver_options,
-            block_nodes,
-            bcs,
-            datamanager,
-            outputs,
-            result_files,
-            synchronise_field,
-            write_results,
-            to,
-            silent,
-        )
+        return Static_solver.run_solver(solver_options,
+                                        block_nodes,
+                                        bcs,
+                                        datamanager,
+                                        outputs,
+                                        result_files,
+                                        synchronise_field,
+                                        write_results,
+                                        to,
+                                        silent)
     end
 end
 
@@ -341,14 +320,12 @@ Synchronises field.
 # Returns
 - `nothing`
 """
-function synchronise_field(
-    comm,
-    synch_fields::Dict,
-    overlap_map,
-    get_field,
-    synch_field::String,
-    direction::String,
-)
+function synchronise_field(comm,
+                           synch_fields::Dict,
+                           overlap_map,
+                           get_field,
+                           synch_field::String,
+                           direction::String)
     # might not needed
     if !haskey(synch_fields, synch_field)
         @error "Field $synch_field does not exist in synch_field dictionary"
@@ -357,12 +334,10 @@ function synchronise_field(
     if direction == "download_from_cores"
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field, synch_fields[synch_field]["time"])
-            return synch_responder_to_controller(
-                comm,
-                overlap_map,
-                vector,
-                synch_fields[synch_field]["dof"],
-            )
+            return synch_responder_to_controller(comm,
+                                                 overlap_map,
+                                                 vector,
+                                                 synch_fields[synch_field]["dof"])
         end
         return nothing
     end
@@ -370,19 +345,15 @@ function synchronise_field(
         if synch_fields[synch_field][direction]
             vector = get_field(synch_field, synch_fields[synch_field]["time"])
             if occursin("Bond", synch_field)
-                return synch_controller_bonds_to_responder_flattened(
-                    comm,
-                    overlap_map,
-                    vector,
-                    synch_fields[synch_field]["dof"],
-                )
+                return synch_controller_bonds_to_responder_flattened(comm,
+                                                                     overlap_map,
+                                                                     vector,
+                                                                     synch_fields[synch_field]["dof"])
             else
-                return synch_controller_to_responder(
-                    comm,
-                    overlap_map,
-                    vector,
-                    synch_fields[synch_field]["dof"],
-                )
+                return synch_controller_to_responder(comm,
+                                                     overlap_map,
+                                                     vector,
+                                                     synch_fields[synch_field]["dof"])
             end
         end
         return nothing
@@ -403,7 +374,6 @@ Sets the active models to false if they are deactivated in the solver. They can 
 - `datamanager`
 """
 function remove_models(datamanager::Module, solver_options::Vector{String})
-
     check = replace.(solver_options .* " Model", "_" => " ")
     for active_model_name in keys(datamanager.get_active_models())
         if !(active_model_name in check)

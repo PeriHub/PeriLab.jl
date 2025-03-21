@@ -13,7 +13,6 @@ export init_model
 export init_fields
 export fields_for_local_synchronization
 
-
 """
 init_fields(datamanager::Module)
 
@@ -45,21 +44,16 @@ Computes the corrosion models
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    model_param::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
-
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       model_param::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64,
+                       to::TimerOutput)
     mod = datamanager.get_model_module(model_param["Corrosion Model"])
     return mod.compute_model(datamanager, nodes, model_param, time, dt)
-
 end
-
 
 """
     init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
@@ -79,13 +73,12 @@ Initialize a corrosion models.
 datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+                    block::Int64)
     model_param = datamanager.get_properties(block, "Corrosion Model")
-    mod = Set_modules.create_module_specifics(
-        model_param["Corrosion Model"],
-        module_list,
-        "corrosion_name",
-    )
+    mod = Set_modules.create_module_specifics(model_param["Corrosion Model"],
+                                              module_list,
+                                              "corrosion_name")
     if isnothing(mod)
         @error "No corrosion model of name " * model_param["Corrosion Model"] * " exists."
         return nothing
@@ -94,7 +87,6 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     datamanager = mod.init_model(datamanager, nodes, model_param, block)
     return datamanager
 end
-
 
 """
     fields_for_local_synchronization(datamanager, model, block)

@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 using Test
-include(
-    "../../../../../../src/Models/Material/Material_Models/Correspondence/Correspondence_Plastic.jl",
-)
-
+include("../../../../../../src/Models/Material/Material_Models/Correspondence/Correspondence_Plastic.jl")
 
 @testset "get_name&fe_support" begin
     @test Correspondence_Plastic.correspondence_name() == "Correspondence Plastic"

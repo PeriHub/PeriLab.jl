@@ -20,15 +20,12 @@ function get_FE_material_model(params::Dict, name::String)
     return params["Material Models"][params["FEM"][name]["Material Model"]]
 end
 
-function compute_FEM(
-    datamanager::Module,
-    elements::Union{SubArray,Vector{Int64}},
-    params::Dict,
-    compute_stresses,
-    time::Float64,
-    dt::Float64,
-)
-
+function compute_FEM(datamanager::Module,
+                     elements::Union{SubArray,Vector{Int64}},
+                     params::Dict,
+                     compute_stresses,
+                     time::Float64,
+                     dt::Float64)
     rotation::Bool = datamanager.get_element_rotation()
     if rotation
         rotation_tensor = datamanager.get_field("Rotation Tensor")
@@ -58,11 +55,10 @@ function compute_FEM(
         nnodes::Int64 = length(topo)
 
         for id_int in eachindex(B_matrix[1, :, 1, 1])
-
-            strain_NP1[id_el, id_int, :] =
-                B_matrix[id_el, id_int, :, :]' * reshape((displacement[topo, :])', le)
-            strain_increment[id_el, id_int, :] =
-                strain_NP1[id_el, id_int, :] - strain_N[id_el, id_int, :]
+            strain_NP1[id_el, id_int, :] = B_matrix[id_el, id_int, :, :]' *
+                                           reshape((displacement[topo, :])', le)
+            strain_increment[id_el, id_int, :] = strain_NP1[id_el, id_int, :] -
+                                                 strain_N[id_el, id_int, :]
 
             if rotation
                 #tbd
@@ -72,16 +68,20 @@ function compute_FEM(
 
             # in future this part must be changed -> using set Modules
 
-            stress_NP1[id_el, id_int, :], datamanager = compute_stresses(
-                datamanager,
-                dof,
-                params["Material Model"],
-                time,
-                dt,
-                strain_increment[id_el, id_int, :],
-                stress_N[id_el, id_int, :],
-                stress_NP1[id_el, id_int, :],
-            )
+            stress_NP1[id_el, id_int, :], datamanager = compute_stresses(datamanager,
+                                                                         dof,
+                                                                         params["Material Model"],
+                                                                         time,
+                                                                         dt,
+                                                                         strain_increment[id_el,
+                                                                                          id_int,
+                                                                                          :],
+                                                                         stress_N[id_el,
+                                                                                  id_int,
+                                                                                  :],
+                                                                         stress_NP1[id_el,
+                                                                                    id_int,
+                                                                                    :])
 
             #specifics = Dict{String,String}("Call Function" => "compute_stresses", "Name" => "material_name") -> tbd
             # material_model is missing
@@ -92,12 +92,10 @@ function compute_FEM(
                 #stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
             end
             # specific force density
-            forces[topo, :] -=
-                reshape(
-                    B_matrix[id_el, id_int, :, :] * stress_NP1[id_el, id_int, :] .*
-                    det_jacobian[id_el, id_int],
-                    (dof, nnodes),
-                )' #./ volume[topo]
+            forces[topo, :] -= reshape(B_matrix[id_el, id_int, :, :] *
+                                       stress_NP1[id_el, id_int, :] .*
+                                       det_jacobian[id_el, id_int],
+                                       (dof, nnodes))' #./ volume[topo]
             # if you do not use permutedims you will get some index errors
             stress_temp .+= stress_NP1[id_el, id_int, :] .* det_jacobian[id_el, id_int]
         end
@@ -106,30 +104,28 @@ function compute_FEM(
         temp = permutedims(cauchy_stress[topo, :, :], (2, 3, 1))
         temp[:, :, 1:nnodes] .= voigt_to_matrix(stress_temp)
         # no avering over element borders
-        cauchy_stress[topo, :, :] =
-            permutedims(temp[:, :, 1:nnodes], (3, 1, 2)) ./ sum(det_jacobian[id_el, :])
+        cauchy_stress[topo, :, :] = permutedims(temp[:, :, 1:nnodes], (3, 1, 2)) ./
+                                    sum(det_jacobian[id_el, :])
         stress_temp .= 0
     end
     return datamanager
 end
 
-function get_lumped_mass(
-    elements::Vector{Int64},
-    dof::Int64,
-    topology::Matrix{Int64},
-    N::Array{Float64,3},
-    determinant_jacobian::Matrix{Float64},
-    rho::Vector{Float64},
-    lumped_mass::Vector{Float64},
-)
+function get_lumped_mass(elements::Vector{Int64},
+                         dof::Int64,
+                         topology::Matrix{Int64},
+                         N::Array{Float64,3},
+                         determinant_jacobian::Matrix{Float64},
+                         rho::Vector{Float64},
+                         lumped_mass::Vector{Float64})
     for id_int in eachindex(N[:, 1, 1])
         temp = N[id_int, :, :] * N[id_int, :, :]'
         for id_el in elements
             nnodes = length(topology[id_el, :])
             mean_rho = mean(rho[topology[id_el, :]])
-            for i_node = 1:nnodes
-                lumped_mass[topology[id_el, i_node]] +=
-                    sum(temp[(i_node-1)*dof+1, :]) .* mean_rho
+            for i_node in 1:nnodes
+                lumped_mass[topology[id_el, i_node]] += sum(temp[(i_node - 1) * dof + 1, :]) .*
+                                                        mean_rho
                 # no volume is needed, because the time integration is done F/V
                 #* determinant_jacobian[id_el, id_int]
             end
@@ -137,8 +133,6 @@ function get_lumped_mass(
     end
     return lumped_mass
 end
-
-
 
 """
     get_weights_and_integration_points(dof::Int64, p::Vector{Int64})
@@ -160,10 +154,9 @@ p = [2, 3, 1]
 x, w = get_weights_and_integration_points(dof, p)
 """
 function get_weights_and_integration_points(dof::Int64, num_int::Vector{Int64})
-
     x::Matrix{Float64} = zeros(Float64, maximum(num_int), dof)
     w::Matrix{Float64} = zeros(Float64, maximum(num_int), dof)
-    for idof = 1:dof
+    for idof in 1:dof
         x[1:num_int[idof], idof], w[1:num_int[idof], idof] = gausslegendre(num_int[idof])
     end
     return w, x
@@ -189,26 +182,24 @@ p = [2, 3]
 value = rand(3, dof)
 result = get_multi_dimensional_integration_points(dof, p, value)
 """
-function get_multi_dimensional_integration_point_data(
-    dof::Int64,
-    num_int::Vector{Int64},
-    value::Matrix{Float64},
-)
+function get_multi_dimensional_integration_point_data(dof::Int64,
+                                                      num_int::Vector{Int64},
+                                                      value::Matrix{Float64})
     count::Int64 = 0
     integration_point::Matrix{Float64} = zeros(prod(num_int), dof)
 
     if dof == 2
-        for jID = 1:num_int[2]
-            for iID = 1:num_int[1]
+        for jID in 1:num_int[2]
+            for iID in 1:num_int[1]
                 count += 1
                 integration_point[count, 1] = value[iID, 1]
                 integration_point[count, 2] = value[jID, 2]
             end
         end
     elseif dof == 3
-        for kID = 1:num_int[3]
-            for jID = 1:num_int[2]
-                for iID = 1:num_int[1]
+        for kID in 1:num_int[3]
+            for jID in 1:num_int[2]
+                for iID in 1:num_int[1]
                     count += 1
                     integration_point[count, 1] = value[iID, 1]
                     integration_point[count, 2] = value[jID, 2]
@@ -223,27 +214,24 @@ function get_multi_dimensional_integration_point_data(
     return integration_point
 end
 
-
-function get_Jacobian(
-    elements::Vector{Int64},
-    dof::Int64,
-    topology::Matrix{Int64},
-    coordinates::Matrix{Float64},
-    B::Array{Float64,3},
-    jacobian::Array{Float64,4},
-    determinant_jacobian::Matrix{Float64},
-)
-
+function get_Jacobian(elements::Vector{Int64},
+                      dof::Int64,
+                      topology::Matrix{Int64},
+                      coordinates::Matrix{Float64},
+                      B::Array{Float64,3},
+                      jacobian::Array{Float64,4},
+                      determinant_jacobian::Matrix{Float64})
     mapping = Vector{Int64}(1:dof:length(B[1, :, 1]))
     for id_el in elements
         for id_int in eachindex(B[:, 1, 1])
-            for idof = 1:dof
-                for jdof = 1:dof
-
-                    jacobian[id_el, id_int, idof, jdof] = dot(
-                        coordinates[topology[id_el, :], idof],
-                        B[id_int, mapping.+(jdof-1), jdof],
-                    )
+            for idof in 1:dof
+                for jdof in 1:dof
+                    jacobian[id_el, id_int, idof, jdof] = dot(coordinates[topology[id_el,
+                                                                                   :],
+                                                                          idof],
+                                                              B[id_int,
+                                                                mapping .+ (jdof - 1),
+                                                                jdof])
                 end
             end
 
@@ -254,13 +242,12 @@ function get_Jacobian(
                        " in local element $id_el, and must be greater zero."
                 return nothing, nothing
             end
-            jacobian[id_el, id_int, :, :] =
-                invert(jacobian[id_el, id_int, :, :], "Jacobian in FEM Module is singular.")
+            jacobian[id_el, id_int, :, :] = invert(jacobian[id_el, id_int, :, :],
+                                                   "Jacobian in FEM Module is singular.")
         end
     end
     return jacobian, determinant_jacobian
 end
-
 
 function get_polynomial_degree(params::Dict, dof::Int64)
     if !haskey(params, "Degree")
@@ -285,7 +272,6 @@ function get_polynomial_degree(params::Dict, dof::Int64)
         return nothing
     end
 end
-
 
 """
     create_element_matrices()
@@ -315,8 +301,8 @@ N^TN*\rho give than the mass matrix and B^TCB the stiffness matrix [WillbergC201
 function create_element_matrices(dof::Int64, p::Vector{Int64}, create_matrices)
     num_int = get_number_of_integration_points(p, dof)
     weights, integration_points = get_weights_and_integration_points(dof, num_int)
-    ip_coordinates =
-        get_multi_dimensional_integration_point_data(dof, num_int, integration_points)
+    ip_coordinates = get_multi_dimensional_integration_point_data(dof, num_int,
+                                                                  integration_points)
 
     if isnothing(ip_coordinates)
         return nothing, nothing
@@ -325,11 +311,9 @@ function create_element_matrices(dof::Int64, p::Vector{Int64}, create_matrices)
     return create_matrices(dof, num_int, p, ip_weights, ip_coordinates)
 end
 
-
-
 function get_number_of_integration_points(p::Vector{Int64}, dof::Int64)
     num_int::Vector{Int64} = zeros(Int64, dof)
-    for idof = 1:dof
+    for idof in 1:dof
         if p[idof] == 1
             num_int[idof] = 2
             continue
@@ -339,22 +323,23 @@ function get_number_of_integration_points(p::Vector{Int64}, dof::Int64)
     return num_int
 end
 
-
-function create_B_matrix(
-    elements::Vector{Int64},
-    dof::Int64,
-    B_elem::Array,
-    jacobian::Array{Float64,4},
-    B::Array{Float64,4},
-)
+function create_B_matrix(elements::Vector{Int64},
+                         dof::Int64,
+                         B_elem::Array,
+                         jacobian::Array{Float64,4},
+                         B::Array{Float64,4})
     # size of B (num_elem, num_integration_points, dof*nodes, 3*dof-2)
     nnodes::Int64 = length(B[1, 1, :, 1]) / dof
     for id_el in elements
         for id_int in eachindex(B[1, :, 1, 1])
-            for id_nodes = 1:nnodes
-                B[id_el, id_int, (id_nodes-1)*dof+1:(id_nodes)*dof, :] =
-                    jacobian[id_el, id_int, :, :] *
-                    B_elem[id_int, (id_nodes-1)*dof+1:id_nodes*dof, :]
+            for id_nodes in 1:nnodes
+                B[id_el, id_int, ((id_nodes - 1) * dof + 1):((id_nodes) * dof), :] = jacobian[id_el,
+                                                                                              id_int,
+                                                                                              :,
+                                                                                              :] *
+                                                                                     B_elem[id_int,
+                                                                                            ((id_nodes - 1) * dof + 1):(id_nodes * dof),
+                                                                                            :]
             end
         end
     end

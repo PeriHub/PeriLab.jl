@@ -48,15 +48,12 @@ Example:
 ```julia
 ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    thermal_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-)
-
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       thermal_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64)
     CMNAME::Cstring = malloc_cstring(thermal_parameter["HETVAL Material Name"])
     temp_N = datamanager.get_field("Temperature", "N")
     temp_NP1 = datamanager.get_field("Temperature", "NP1")
@@ -68,16 +65,14 @@ function compute_model(
     DPRED = datamanager.get_field("Predefined Fields Increment")
 
     for iID in nodes
-        HETVAL_interface(
-            CMNAME,
-            [temp_N[iID], temp_NP1[iID] - temp_N[iID]],
-            [time, time + dt],
-            dt,
-            statev[iID, :],
-            [flux_N[iID], flux_NP1[iID]],
-            PREDEF[iID, :],
-            DPRED[iID, :],
-        )
+        HETVAL_interface(CMNAME,
+                         [temp_N[iID], temp_NP1[iID] - temp_N[iID]],
+                         [time, time + dt],
+                         dt,
+                         statev[iID, :],
+                         [flux_N[iID], flux_NP1[iID]],
+                         PREDEF[iID, :],
+                         DPRED[iID, :])
     end
 
     return datamanager
@@ -101,38 +96,32 @@ HETVAL interface
 # Returns
 - `datamanager`: Datamanager
 """
-function HETVAL_interface(
-    CMNAME::Cstring,
-    TEMP::Vector{Float64},
-    TIME::Vector{Float64},
-    DTIME::Float64,
-    STATEV::Vector{Float64},
-    FLUX::Vector{Float64},
-    PREDEF::Vector{Float64},
-    DPRED::Vector{Float64},
-)
-    ccall(
-        (:hetval_, hetval_file_path),
-        Cvoid,
-        (
-            Cstring,
-            Ptr{Float64},
-            Ptr{Float64},
-            Ref{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-        ),
-        CMNAME,
-        TEMP,
-        TIME,
-        DTIME,
-        STATEV,
-        FLUX,
-        PREDEF,
-        DPRED,
-    )
+function HETVAL_interface(CMNAME::Cstring,
+                          TEMP::Vector{Float64},
+                          TIME::Vector{Float64},
+                          DTIME::Float64,
+                          STATEV::Vector{Float64},
+                          FLUX::Vector{Float64},
+                          PREDEF::Vector{Float64},
+                          DPRED::Vector{Float64})
+    ccall((:hetval_, hetval_file_path),
+          Cvoid,
+          (Cstring,
+           Ptr{Float64},
+           Ptr{Float64},
+           Ref{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64}),
+          CMNAME,
+          TEMP,
+          TIME,
+          DTIME,
+          STATEV,
+          FLUX,
+          PREDEF,
+          DPRED)
 end
 
 """
@@ -148,11 +137,9 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    thermal_parameter::Dict,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    thermal_parameter::Dict)
     # set to 1 to avoid a later check if the state variable field exists or not
     num_state_vars::Int64 = 1
     if !haskey(thermal_parameter, "File")
@@ -160,8 +147,8 @@ function init_model(
         return nothing
     end
     directory = datamanager.get_directory()
-    thermal_parameter["File"] =
-        joinpath(joinpath(pwd(), directory), thermal_parameter["File"])
+    thermal_parameter["File"] = joinpath(joinpath(pwd(), directory),
+                                         thermal_parameter["File"])
     global hetval_file_path = thermal_parameter["File"]
     if !isfile(thermal_parameter["File"])
         @error "File $(thermal_parameter["File"]) does not exist, please check name and directory."
@@ -186,7 +173,6 @@ function init_model(
         thermal_parameter["HETVAL name"] = "HETVAL"
     end
 
-
     dof = datamanager.get_dof()
 
     if haskey(thermal_parameter, "Predefined Field Names")
@@ -194,11 +180,9 @@ function init_model(
     else
         field_names = ["Volume"] #Use any if not defined!
     end
-    fields = datamanager.create_constant_node_field(
-        "Predefined Fields",
-        Float64,
-        length(field_names),
-    )
+    fields = datamanager.create_constant_node_field("Predefined Fields",
+                                                    Float64,
+                                                    length(field_names))
     for (id, field_name) in enumerate(field_names)
         if !datamanager.has_key(String(field_name))
             @error "Predefined field ''$field_name'' is not defined in the mesh file."
@@ -207,13 +191,10 @@ function init_model(
         # view or copy and than deleting the old one
         # TODO check if an existing field is a bool.
         fields[:, id] = datamanager.get_field(String(field_name))
-
     end
-    datamanager.create_constant_node_field(
-        "Predefined Fields Increment",
-        Float64,
-        length(field_names),
-    )
+    datamanager.create_constant_node_field("Predefined Fields Increment",
+                                           Float64,
+                                           length(field_names))
 
     return datamanager
 end
@@ -235,7 +216,6 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
     return datamanager
 end
 
-
 """
 
   function is taken from here
@@ -243,11 +223,9 @@ end
 """
 function malloc_cstring(s::String)
     n = sizeof(s) + 1 # size in bytes + NUL terminator
-    return GC.@preserve s @ccall memcpy(
-        Libc.malloc(n)::Cstring,
-        s::Cstring,
-        n::Csize_t,
-    )::Cstring
+    return GC.@preserve s @ccall memcpy(Libc.malloc(n)::Cstring,
+                                        s::Cstring,
+                                        n::Csize_t)::Cstring
 end
 
 end

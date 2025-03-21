@@ -34,16 +34,12 @@ function init_coupling(datamanager::Module, nodes, complete_params::Dict)
 end
 
 function compute_coupling(datamanager::Module, fem_params::Dict)
-
     if !haskey(fem_params, "Coupling")
         return datamanager
     end
     coupling_model = fem_params["Coupling"]["Coupling Type"]
     mod = datamanager.get_model_module(coupling_model)
     return mod.compute_coupling(datamanager, fem_params)
-
 end
-
-
 
 end

@@ -115,15 +115,13 @@ function initialize_data()
     data["field_types"] = Dict()
     data["field_names"] = Vector{String}([])
     data["fields_to_synch"] = Dict()
-    data["local_fields_to_synch"] = Dict(
-        "Material Model" => Dict(),
-        "Damage Model" => Dict(),
-        "Thermal Model" => Dict(),
-        "Pre Calculation Model" => Dict(),
-        "Corrosion Model" => Dict(),
-        "Additive Model" => Dict(),
-        "Surface Correction" => Dict(),
-    )
+    data["local_fields_to_synch"] = Dict("Material Model" => Dict(),
+                                         "Damage Model" => Dict(),
+                                         "Thermal Model" => Dict(),
+                                         "Pre Calculation Model" => Dict(),
+                                         "Corrosion Model" => Dict(),
+                                         "Additive Model" => Dict(),
+                                         "Surface Correction" => Dict())
     data["filedirectory"] = ""
     data["inverse_nlist"] = []
     data["model_modules"] = OrderedDict{String,Module}()
@@ -133,7 +131,7 @@ function initialize_data()
         "Deformed Bond Geometry",
         "Shape Tensor",
         "Deformation Gradient",
-        "Bond Associated Correspondence",
+        "Bond Associated Correspondence"
     ]
     data["coupling_dict"] = Dict{Int64,Int64}()
     data["output_frequency"] = []
@@ -305,7 +303,6 @@ function add_active_model(key::String, active_module::Module, all::Bool = false)
     end
 end
 
-
 """
     get_accuracy_order()
 
@@ -327,7 +324,6 @@ function get_comm()
     return data["commMPi"]
 end
 
-
 """
     get_coupling_dict()
 
@@ -345,9 +341,6 @@ Get the FE nodes involved in the coupling
 function get_coupling_fe_nodes()
     return data["coupling_fe_nodes"]
 end
-
-
-
 
 function get_directory()
     return data["filedirectory"]
@@ -401,27 +394,24 @@ Example:
 create_bond_field("stress", Float64, 6)  # creates a stress bond field with 6 degrees of freedom
 ```
 """
-function create_bond_field(
-    name::String,
-    type::Type,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_bond_field(name::String,
+                           type::Type,
+                           dof::Int64,
+                           default_value::Union{Int64,Float64,Bool} = 0.0)
     set_NP1_to_N(name, type)
     return create_field(name * "N", type, "Bond_Field", dof, default_value),
-    create_field(name * "NP1", type, "Bond_Field", dof, default_value)
+           create_field(name * "NP1", type, "Bond_Field", dof, default_value)
 end
 
-function create_bond_field(
-    name::String,
-    type::Type,
-    VectorOrArray::String,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_bond_field(name::String,
+                           type::Type,
+                           VectorOrArray::String,
+                           dof::Int64,
+                           default_value::Union{Int64,Float64,Bool} = 0.0)
     set_NP1_to_N(name, type)
     return create_field(name * "N", type, "Bond_Field", dof, default_value, VectorOrArray),
-    create_field(name * "NP1", type, "Bond_Field", dof, default_value, VectorOrArray)
+           create_field(name * "NP1", type, "Bond_Field", dof, default_value,
+                        VectorOrArray)
 end
 
 """
@@ -443,43 +433,35 @@ Example:
 create_constant_bond_field("density", Float64, 1)  # creates a density constant bond field
 ```
 """
-function create_constant_bond_field(
-    name::String,
-    type::Type,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_constant_bond_field(name::String,
+                                    type::Type,
+                                    dof::Int64,
+                                    default_value::Union{Int64,Float64,Bool} = 0.0)
     return create_field(name, type, "Bond_Field", dof, default_value)
 end
 
-function create_constant_bond_field(
-    name::String,
-    type::Type,
-    VectorOrArray::String,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_constant_bond_field(name::String,
+                                    type::Type,
+                                    VectorOrArray::String,
+                                    dof::Int64,
+                                    default_value::Union{Int64,Float64,Bool} = 0.0)
     return create_field(name, type, "Bond_Field", dof, default_value, VectorOrArray)
 end
 
-function create_constant_free_size_field(
-    name::String,
-    vartype::Type,
-    dof::Tuple,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_constant_free_size_field(name::String,
+                                         vartype::Type,
+                                         dof::Tuple,
+                                         default_value::Union{Int64,Float64,Bool} = 0.0)
     return create_field(name, vartype, "Free_Size_Field", dof, default_value)
 end
 
-function create_free_size_field(
-    name::String,
-    vartype::Type,
-    dof::Tuple,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_free_size_field(name::String,
+                                vartype::Type,
+                                dof::Tuple,
+                                default_value::Union{Int64,Float64,Bool} = 0.0)
     set_NP1_to_N(name, vartype)
     return create_field(name * "N", vartype, "Free_Size_Field", dof, default_value),
-    create_field(name * "NP1", vartype, "Free_Size_Field", dof, default_value)
+           create_field(name * "NP1", vartype, "Free_Size_Field", dof, default_value)
 end
 
 """
@@ -501,21 +483,17 @@ Example:
 create_constant_node_field("temperature", Float64, 1)  # creates a temperature constant node field
 ```
 """
-function create_constant_node_field(
-    name::String,
-    type::Type,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_constant_node_field(name::String,
+                                    type::Type,
+                                    dof::Int64,
+                                    default_value::Union{Int64,Float64,Bool} = 0.0)
     return create_field(name, type, "Node_Field", dof, default_value)
 end
-function create_constant_node_field(
-    name::String,
-    type::Type,
-    VectorOrArray::String,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_constant_node_field(name::String,
+                                    type::Type,
+                                    VectorOrArray::String,
+                                    dof::Int64,
+                                    default_value::Union{Int64,Float64,Bool} = 0.0)
     return create_field(name, type, "Node_Field", dof, default_value, VectorOrArray)
 end
 
@@ -538,12 +516,10 @@ Example:
 create_constant_element_field("temperature", Float64, 1)  # creates a temperature constant element field
 ```
 """
-function create_constant_element_field(
-    name::String,
-    type::Type,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_constant_element_field(name::String,
+                                       type::Type,
+                                       dof::Int64,
+                                       default_value::Union{Int64,Float64,Bool} = 0.0)
     return create_field(name, type, "Element_Field", dof, default_value)
 end
 
@@ -566,27 +542,24 @@ Example:
 create_node_field("displacement", Float64, 3)  # creates a displacement node field with 3 degrees of freedom
 ```
 """
-function create_node_field(
-    name::String,
-    type::Type,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_node_field(name::String,
+                           type::Type,
+                           dof::Int64,
+                           default_value::Union{Int64,Float64,Bool} = 0.0)
     set_NP1_to_N(name, type)
     return create_field(name * "N", type, "Node_Field", dof, default_value),
-    create_field(name * "NP1", type, "Node_Field", dof, default_value)
+           create_field(name * "NP1", type, "Node_Field", dof, default_value)
 end
 
-function create_node_field(
-    name::String,
-    type::Type,
-    VectorOrArray::String,
-    dof::Int64,
-    default_value::Union{Int64,Float64,Bool} = 0.0,
-)
+function create_node_field(name::String,
+                           type::Type,
+                           VectorOrArray::String,
+                           dof::Int64,
+                           default_value::Union{Int64,Float64,Bool} = 0.0)
     set_NP1_to_N(name, type)
     return create_field(name * "N", type, "Node_Field", dof, default_value, VectorOrArray),
-    create_field(name * "NP1", type, "Node_Field", dof, default_value, VectorOrArray)
+           create_field(name * "NP1", type, "Node_Field", dof, default_value,
+                        VectorOrArray)
 end
 
 """
@@ -603,14 +576,12 @@ Create a field with the given `name` for the specified `vartype`. If the field a
 # Returns
 The field with the given `name` and specified characteristics.
 """
-function create_field(
-    name::String,
-    vartype::Type,
-    bond_or_node::String,
-    dof::Union{Int64,Tuple},
-    default_value::Union{Int64,Float64,Bool},
-    VectorOrArray::String = "Vector",
-)
+function create_field(name::String,
+                      vartype::Type,
+                      bond_or_node::String,
+                      dof::Union{Int64,Tuple},
+                      default_value::Union{Int64,Float64,Bool},
+                      VectorOrArray::String = "Vector")
     if has_key(name)
         if size(_get_field(name), 1) != data["nnodes"]
             @warn "Field $name exists already with different size. Predefined field is returned"
@@ -638,7 +609,7 @@ function create_field(
                 fields[vartype][name] = [fill(value, (n, dof, dof)) for n in nBonds]
             else
                 # fields[vartype][name] = [fill(value, (n, dof)) for n in nBonds]
-                fields[vartype][name] = [[fill(value, dof) for j = 1:n] for n in nBonds]
+                fields[vartype][name] = [[fill(value, dof) for j in 1:n] for n in nBonds]
             end
         end
     elseif bond_or_node == "Element_Field"
@@ -653,8 +624,8 @@ function create_field(
     end
     get_function = () -> fields[vartype][name]
     data["field_types"][name] = vartype
-    data["field_array_type"][name] =
-        Dict("Type" => VectorOrArray, "Dof" => dof, "get_function" => get_function)
+    data["field_array_type"][name] = Dict("Type" => VectorOrArray, "Dof" => dof,
+                                          "get_function" => get_function)
     data["field_names"] = Vector{String}(collect(keys(data["field_types"])))
     return get_function()
 end
@@ -751,7 +722,6 @@ Returns the field with the given name and time.
 - `field::Field`: The field with the given name and time.
 """
 function get_field(name::String, time::String = "constant")
-
     if time == "constant"
         return _get_field(name)
     elseif time == "N"
@@ -885,11 +855,9 @@ get_local_nodes()  # returns local nodes or if they do not exist at the core an 
 ```
 """
 function get_local_nodes(global_nodes)
-    return [
-        data["glob_to_loc"][global_node] for
-        global_node in global_nodes if global_node in keys(data["glob_to_loc"])
-    ]
-
+    return [data["glob_to_loc"][global_node]
+            for
+            global_node in global_nodes if global_node in keys(data["glob_to_loc"])]
 end
 
 function get_model_module(entry::Union{String,SubString})
@@ -1208,17 +1176,20 @@ This function initializes the properties dictionary. Order of dictionary defines
 - `keys(properties[1])`: The keys of the properties dictionary in defined order for the Model_Factory.jl.
 """
 function init_properties()
-
     block_list = get_block_list()
-    for iblock = 1:length(block_list)
-        data["properties"][iblock] = OrderedDict{String,Dict}(
-            "Additive Model" => Dict{String,Any}(),
-            "Damage Model" => Dict{String,Any}(),
-            "Pre Calculation Model" => Dict{String,Any}(),
-            "Thermal Model" => Dict{String,Any}(),
-            "Corrosion Model" => Dict{String,Any}(),
-            "Material Model" => Dict{String,Any}(),
-        )
+    for iblock in 1:length(block_list)
+        data["properties"][iblock] = OrderedDict{String,Dict}("Additive Model" => Dict{String,
+                                                                                       Any}(),
+                                                              "Damage Model" => Dict{String,
+                                                                                     Any}(),
+                                                              "Pre Calculation Model" => Dict{String,
+                                                                                              Any}(),
+                                                              "Thermal Model" => Dict{String,
+                                                                                      Any}(),
+                                                              "Corrosion Model" => Dict{String,
+                                                                                        Any}(),
+                                                              "Material Model" => Dict{String,
+                                                                                       Any}())
     end
     return collect(keys(data["properties"][1]))
 end
@@ -1251,7 +1222,6 @@ function set_accuracy_order(value::Int64)
     data["accuracy_order"] = value
 end
 
-
 """
     set_block_list(blocks::Union{SubArray,Vector{Int64}})
 
@@ -1276,7 +1246,6 @@ function set_crit_values_matrix(crit_values::Array{Float64,3})
     data["crit_values_matrix"] = crit_values
 end
 
-
 """
     set_coupling_dict(coupling_dict::Dict{Int64,Int64})
 
@@ -1288,7 +1257,6 @@ Sets the FE - PD couplings. PD nodes -> FE Elements.
 function set_coupling_dict(coupling_dict::Dict{Int64,Int64})
     data["coupling_dict"] = coupling_dict
 end
-
 
 """
     set_coupling_fe_nodes()
@@ -1436,7 +1404,6 @@ Set the number of node sets.
 - `n::Int64`: The number of node sets to be set.
 """
 function set_nnsets(n::Int64)
-
     data["nnsets"] = n
 end
 
@@ -1542,7 +1509,6 @@ function set_property(property::String, value_name::String, value)
     end
 end
 
-
 """
     set_properties(block_id, property, values)
 
@@ -1583,7 +1549,6 @@ Sets the rank globally.
 function set_rank(value::Int64)
     data["rank"] = value
 end
-
 
 function set_model_module(entry::Union{String,SubString}, mod::Module)
     data["model_modules"][entry] = mod
@@ -1705,27 +1670,21 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["fields_to_synch"][name] = Dict{String,Any}(
-            "upload_to_cores" => upload_to_cores,
-            "download_from_cores" => download_from_cores,
-            "dof" => dof,
-            "time" => "constant",
-        )
+        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
+                                                         "download_from_cores" => download_from_cores,
+                                                         "dof" => dof,
+                                                         "time" => "constant")
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name, "NP1")
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["fields_to_synch"][name] = Dict{String,Any}(
-            "upload_to_cores" => upload_to_cores,
-            "download_from_cores" => download_from_cores,
-            "dof" => length(field[1, :, :]),
-            "time" => "NP1",
-        )
+        data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
+                                                         "download_from_cores" => download_from_cores,
+                                                         "dof" => length(field[1, :, :]),
+                                                         "time" => "NP1")
     end
-
 end
-
 
 """
     set_local_synch(model, name, download_from_cores, upload_to_cores, dof=0)
@@ -1747,25 +1706,22 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["local_fields_to_synch"][model][name] = Dict{String,Any}(
-            "upload_to_cores" => upload_to_cores,
-            "download_from_cores" => download_from_cores,
-            "dof" => dof,
-            "time" => "constant",
-        )
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
+                                                                      "download_from_cores" => download_from_cores,
+                                                                      "dof" => dof,
+                                                                      "time" => "constant")
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name, "NP1")
         if dof == 0
             dof = length(field[1, :, :])
         end
-        data["local_fields_to_synch"][model][name] = Dict{String,Any}(
-            "upload_to_cores" => upload_to_cores,
-            "download_from_cores" => download_from_cores,
-            "dof" => length(field[1, :, :]),
-            "time" => "NP1",
-        )
+        data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
+                                                                      "download_from_cores" => download_from_cores,
+                                                                      "dof" => length(field[1,
+                                                                                            :,
+                                                                                            :]),
+                                                                      "time" => "NP1")
     end
-
 end
 
 function switch_bonds!(field_N, field_NP1)
@@ -1803,8 +1759,8 @@ function switch_NP1_to_N()
             switch_bonds!(field_N, field_NP1)
             continue
         end
-        data["NP1_to_N"][key][1], data["NP1_to_N"][key][2] =
-            data["NP1_to_N"][key][2], data["NP1_to_N"][key][1]
+        data["NP1_to_N"][key][1], data["NP1_to_N"][key][2] = data["NP1_to_N"][key][2],
+                                                             data["NP1_to_N"][key][1]
         field_NP1 = get_field(key, "NP1")
         if field_NP1[1] isa AbstractVector || field_NP1[1] isa AbstractArray
             fill_in_place!(field_NP1, data["NP1_to_N"][key][3], active)
@@ -1827,14 +1783,12 @@ function synch_manager(synchronise_field, direction::String)
     synch_fields = get_synch_fields()
     # @debug synch_fields
     for synch_field in keys(synch_fields)
-        synchronise_field(
-            get_comm(),
-            synch_fields,
-            get_overlap_map(),
-            get_field,
-            synch_field,
-            direction,
-        )
+        synchronise_field(get_comm(),
+                          synch_fields,
+                          get_overlap_map(),
+                          get_field,
+                          synch_field,
+                          direction)
     end
 end
 end

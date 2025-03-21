@@ -15,7 +15,7 @@ end
     nodes = 1:10   # beide
     nFEnodes = 6            # number of FE nodes
     nodesFE = nodes[1:nFEnodes, 1]
-    nodesPD = nodes[nFEnodes+1:end, 1]
+    nodesPD = nodes[(nFEnodes + 1):end, 1]
     topology = Array{Int64}(zeros(2, 4))
     topology[1, :] = [1, 2, 6, 4]
     topology[2, :] = [6, 4, 5, 3]
@@ -32,12 +32,10 @@ end
     coordinates[9, :] = [0.5, 1.5]
     coordinates[10, :] = [1.5, 1.5]    #PD
     topo_mapping = Arlequin_coupling.topo_closed_loop([1, 1])
-    test_dict = Arlequin_coupling.find_point_in_elements(
-        coordinates,
-        topology,
-        topo_mapping,
-        nodesPD,
-    )
+    test_dict = Arlequin_coupling.find_point_in_elements(coordinates,
+                                                         topology,
+                                                         topo_mapping,
+                                                         nodesPD)
     @test collect(keys(test_dict)) == [7, 8]
     @test test_dict[7] == 2
     @test test_dict[8] == 1
@@ -49,7 +47,7 @@ end
     nodes = 1:10   # beide
     nFEnodes = 6            # number of FE nodes
     nodesFE = nodes[1:nFEnodes, 1]
-    nodesPD = nodes[nFEnodes+1:end, 1]
+    nodesPD = nodes[(nFEnodes + 1):end, 1]
     topology = Array{Int64}(zeros(2, 4))
     topology[1, :] = [1, 2, 4, 6]
     topology[2, :] = [6, 4, 3, 5]
@@ -70,37 +68,29 @@ end
     p = [1, 1]
     dof = 2
 
-    test_mat = Arlequin_coupling.compute_coupling_matrix(
-        coordinates,
-        topology,
-        7,
-        2,
-        kappa,
-        p,
-        dof,
-    )
+    test_mat = Arlequin_coupling.compute_coupling_matrix(coordinates,
+                                                         topology,
+                                                         7,
+                                                         2,
+                                                         kappa,
+                                                         p,
+                                                         dof)
 
-    @test test_mat == [
-        1.0 -0.25 -0.25 -0.25 -0.25
-        -0.25 0.0625 0.0625 0.0625 0.0625
-        -0.25 0.0625 0.0625 0.0625 0.0625
-        -0.25 0.0625 0.0625 0.0625 0.0625
-        -0.25 0.0625 0.0625 0.0625 0.0625
-    ]
-    test_mat = Arlequin_coupling.compute_coupling_matrix(
-        coordinates,
-        topology,
-        8,
-        1,
-        kappa,
-        p,
-        dof,
-    )
-    @test test_mat == [
-        1.0 -0.25 -0.25 -0.25 -0.25
-        -0.25 0.0625 0.0625 0.0625 0.0625
-        -0.25 0.0625 0.0625 0.0625 0.0625
-        -0.25 0.0625 0.0625 0.0625 0.0625
-        -0.25 0.0625 0.0625 0.0625 0.0625
-    ]
+    @test test_mat == [1.0 -0.25 -0.25 -0.25 -0.25
+           -0.25 0.0625 0.0625 0.0625 0.0625
+           -0.25 0.0625 0.0625 0.0625 0.0625
+           -0.25 0.0625 0.0625 0.0625 0.0625
+           -0.25 0.0625 0.0625 0.0625 0.0625]
+    test_mat = Arlequin_coupling.compute_coupling_matrix(coordinates,
+                                                         topology,
+                                                         8,
+                                                         1,
+                                                         kappa,
+                                                         p,
+                                                         dof)
+    @test test_mat == [1.0 -0.25 -0.25 -0.25 -0.25
+           -0.25 0.0625 0.0625 0.0625 0.0625
+           -0.25 0.0625 0.0625 0.0625 0.0625
+           -0.25 0.0625 0.0625 0.0625 0.0625
+           -0.25 0.0625 0.0625 0.0625 0.0625]
 end

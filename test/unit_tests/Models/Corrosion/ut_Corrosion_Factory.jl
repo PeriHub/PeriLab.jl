@@ -6,6 +6,4 @@ include("../../../../src/Models/Corrosion/Corrosion_Factory.jl")
 # include("../../../../src/Core/Data_manager.jl")
 using Test
 using .Corrosion
-@testset "test_empty" begin
-
-end
+@testset "test_empty" begin end

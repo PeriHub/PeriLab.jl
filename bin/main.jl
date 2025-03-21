@@ -30,15 +30,13 @@ debug = get(ENV, "debug", "false") == "true"
 silent = get(ENV, "silent", "false") == "true"
 reload = get(ENV, "reload", "false") == "true"
 
-PeriLab.main(
-    filename;
-    output_dir = "./results",
-    dryrun = dryrun,
-    verbose = verbose,
-    debug = debug,
-    silent = silent,
-    reload = reload,
-)
+PeriLab.main(filename;
+             output_dir = "./results",
+             dryrun = dryrun,
+             verbose = verbose,
+             debug = debug,
+             silent = silent,
+             reload = reload,)
 
 zip_filename = "results.zip"
 zip_folder(output_dir, zip_filename)

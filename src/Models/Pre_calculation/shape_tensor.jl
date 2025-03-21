@@ -33,7 +33,6 @@ function pre_calculation_name()
     return "Shape Tensor"
 end
 
-
 """
     init_model(datamanager, nodes, parameter)
 
@@ -47,12 +46,10 @@ Inits the shape tensor calculation.
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    parameter::Union{Dict,OrderedDict},
-    block::Int64,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    parameter::Union{Dict,OrderedDict},
+                    block::Int64)
     dof = datamanager.get_dof()
     datamanager.create_constant_node_field("Shape Tensor", Float64, "Matrix", dof)
     datamanager.create_constant_node_field("Inverse Shape Tensor", Float64, "Matrix", dof)
@@ -70,13 +67,10 @@ Compute the shape tensor.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    parameter::Union{Dict,OrderedDict},
-    block::Int64,
-)
-
+function compute(datamanager::Module,
+                 nodes::Union{SubArray,Vector{Int64}},
+                 parameter::Union{Dict,OrderedDict},
+                 block::Int64)
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
@@ -88,21 +82,17 @@ function compute(
     active_nodes = datamanager.get_field("Active Nodes")
     active_nodes = find_active_nodes(update_list, active_nodes, nodes)
 
-    compute_shape_tensors!(
-        shape_tensor,
-        inverse_shape_tensor,
-        active_nodes,
-        nlist,
-        volume,
-        omega,
-        bond_damage,
-        undeformed_bond,
-    )
+    compute_shape_tensors!(shape_tensor,
+                           inverse_shape_tensor,
+                           active_nodes,
+                           nlist,
+                           volume,
+                           omega,
+                           bond_damage,
+                           undeformed_bond)
 
     return datamanager
 end
-
-
 
 """
     fields_for_local_synchronization(datamanager::Module, model::String)

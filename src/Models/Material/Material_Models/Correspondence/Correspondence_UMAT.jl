@@ -51,11 +51,9 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    material_parameter::Dict)
     # set to 1 to avoid a later check if the state variable field exists or not
     num_state_vars::Int64 = 1
     if !haskey(material_parameter, "File")
@@ -63,8 +61,8 @@ function init_model(
         return nothing
     end
     directory = datamanager.get_directory()
-    material_parameter["File"] =
-        joinpath(joinpath(pwd(), directory), material_parameter["File"])
+    material_parameter["File"] = joinpath(joinpath(pwd(), directory),
+                                          material_parameter["File"])
     global umat_file_path = material_parameter["File"]
     if !isfile(material_parameter["File"])
         @error "File $(material_parameter["File"]) does not exist, please check name and directory."
@@ -82,10 +80,10 @@ function init_model(
     end
     # properties include the material properties, etc.
     num_props = material_parameter["Number of Properties"]
-    properties =
-        datamanager.create_constant_free_size_field("Properties", Float64, (num_props, 1))
+    properties = datamanager.create_constant_free_size_field("Properties", Float64,
+                                                             (num_props, 1))
 
-    for iID = 1:num_props
+    for iID in 1:num_props
         if !haskey(material_parameter, "Property_$iID")
             @warn "Property_$iID is missing. Make sure that all properties are defined."
             properties[iID] = 0.0
@@ -107,47 +105,34 @@ function init_model(
         material_parameter["UMAT name"] = "UMAT"
     end
 
-
     dof = datamanager.get_dof()
-    sse =
-        datamanager.create_constant_node_field("Specific Elastic Strain Energy", Float64, 1)
+    sse = datamanager.create_constant_node_field("Specific Elastic Strain Energy", Float64,
+                                                 1)
     spd = datamanager.create_constant_node_field("Specific Plastic Dissipation", Float64, 1)
-    scd = datamanager.create_constant_node_field(
-        "Specific Creep Dissipation Energy",
-        Float64,
-        1,
-    )
-    rpl = datamanager.create_constant_node_field(
-        "Volumetric heat generation per unit time",
-        Float64,
-        1,
-    )
-    DDSDDT = datamanager.create_constant_node_field(
-        "Variation of the stress increments with respect to the temperature",
-        Float64,
-        3 * dof - 3,
-    )
-    DRPLDE = datamanager.create_constant_node_field(
-        "Variation of RPL with respect to the strain increment",
-        Float64,
-        3 * dof - 3,
-    )
-    DRPLDT = datamanager.create_constant_node_field(
-        "Variation of RPL with respect to the temperature",
-        Float64,
-        1,
-    )
+    scd = datamanager.create_constant_node_field("Specific Creep Dissipation Energy",
+                                                 Float64,
+                                                 1)
+    rpl = datamanager.create_constant_node_field("Volumetric heat generation per unit time",
+                                                 Float64,
+                                                 1)
+    DDSDDT = datamanager.create_constant_node_field("Variation of the stress increments with respect to the temperature",
+                                                    Float64,
+                                                    3 * dof - 3)
+    DRPLDE = datamanager.create_constant_node_field("Variation of RPL with respect to the strain increment",
+                                                    Float64,
+                                                    3 * dof - 3)
+    DRPLDT = datamanager.create_constant_node_field("Variation of RPL with respect to the temperature",
+                                                    Float64,
+                                                    1)
     DFGRD0 = datamanager.create_constant_node_field("DFGRD0", Float64, "Matrix", dof)
     # is already initialized if thermal problems are adressed
     datamanager.create_node_field("Temperature", Float64, 1)
     deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)
     if haskey(material_parameter, "Predefined Field Names")
         field_names = split(material_parameter["Predefined Field Names"], " ")
-        fields = datamanager.create_constant_node_field(
-            "Predefined Fields",
-            Float64,
-            length(field_names),
-        )
+        fields = datamanager.create_constant_node_field("Predefined Fields",
+                                                        Float64,
+                                                        length(field_names))
         for (id, field_name) in enumerate(field_names)
             if !datamanager.has_key(String(field_name))
                 @error "Predefined field ''$field_name'' is not defined in the mesh file."
@@ -156,22 +141,17 @@ function init_model(
             # view or copy and than deleting the old one
             # TODO check if an existing field is a bool.
             fields[:, id] = datamanager.get_field(String(field_name))
-
         end
-        datamanager.create_constant_node_field(
-            "Predefined Fields Increment",
-            Float64,
-            length(field_names),
-        )
+        datamanager.create_constant_node_field("Predefined Fields Increment",
+                                               Float64,
+                                               length(field_names))
     end
 
     rot_N, rot_NP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
-    zStiff = datamanager.create_constant_node_field(
-        "Zero Energy Stiffness",
-        Float64,
-        "Matrix",
-        dof,
-    )
+    zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness",
+                                                    Float64,
+                                                    "Matrix",
+                                                    dof)
 
     return datamanager
 end
@@ -220,17 +200,15 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Union{SubArray,Array{Float64,3}},
-    stress_N::Union{SubArray,Array{Float64,3}},
-    stress_NP1::Union{SubArray,Array{Float64,3}},
-)
+function compute_stresses(datamanager::Module,
+                          nodes::Union{SubArray,Vector{Int64}},
+                          dof::Int64,
+                          material_parameter::Dict,
+                          time::Float64,
+                          dt::Float64,
+                          strain_increment::Union{SubArray,Array{Float64,3}},
+                          stress_N::Union{SubArray,Array{Float64,3}},
+                          stress_NP1::Union{SubArray,Array{Float64,3}})
     # the notation from the Abaqus Fortran subroutine is used.
     nstatev = material_parameter["Number of State Variables"]
     nprops = material_parameter["Number of Properties"]
@@ -244,9 +222,7 @@ function compute_stresses(
     SPD = datamanager.get_field("Specific Plastic Dissipation")
     SCD = datamanager.get_field("Specific Creep Dissipation Energy")
     RPL = datamanager.get_field("Volumetric heat generation per unit time")
-    DDSDDT = datamanager.get_field(
-        "Variation of the stress increments with respect to the temperature",
-    )
+    DDSDDT = datamanager.get_field("Variation of the stress increments with respect to the temperature")
     DRPLDE = datamanager.get_field("Variation of RPL with respect to the strain increment")
     DRPLDT = datamanager.get_field("Variation of RPL with respect to the temperature")
     strain_N = datamanager.get_field("Strain", "N")
@@ -292,45 +268,43 @@ function compute_stresses(
         DDSDDT_temp = DDSDDT[iID, :]
         DRPLDE_temp = DRPLDE[iID, :]
         DRPLDT_temp = DRPLDT[iID]
-        UMAT_interface(
-            stress_temp,
-            STATEV_temp,
-            DDSDDE,
-            SSE_temp,
-            SPD_temp,
-            SCD_temp,
-            RPL_temp,
-            DDSDDT_temp,
-            DRPLDE_temp,
-            DRPLDT_temp,
-            matrix_to_voigt(strain_N[iID, :, :]),
-            matrix_to_voigt(strain_increment[iID, :, :]),
-            [time, time + dt],
-            dt,
-            temp[iID],
-            dtemp[iID],
-            PREDEF[iID, :],
-            DPRED[iID, :],
-            CMNAME,
-            ndi,
-            nshr,
-            ntens,
-            nstatev,
-            Vector{Float64}(props[:]),
-            nprops,
-            coords[iID, :],
-            DROT[iID, :, :],
-            not_supported_float,
-            not_supported_float,
-            DFGRD0[iID, :, :],
-            DFGRD1[iID, :, :],
-            iID,
-            not_supported_int,
-            not_supported_int,
-            not_supported_int,
-            JSTEP,
-            KINC,
-        )
+        UMAT_interface(stress_temp,
+                       STATEV_temp,
+                       DDSDDE,
+                       SSE_temp,
+                       SPD_temp,
+                       SCD_temp,
+                       RPL_temp,
+                       DDSDDT_temp,
+                       DRPLDE_temp,
+                       DRPLDT_temp,
+                       matrix_to_voigt(strain_N[iID, :, :]),
+                       matrix_to_voigt(strain_increment[iID, :, :]),
+                       [time, time + dt],
+                       dt,
+                       temp[iID],
+                       dtemp[iID],
+                       PREDEF[iID, :],
+                       DPRED[iID, :],
+                       CMNAME,
+                       ndi,
+                       nshr,
+                       ntens,
+                       nstatev,
+                       Vector{Float64}(props[:]),
+                       nprops,
+                       coords[iID, :],
+                       DROT[iID, :, :],
+                       not_supported_float,
+                       not_supported_float,
+                       DFGRD0[iID, :, :],
+                       DFGRD1[iID, :, :],
+                       iID,
+                       not_supported_int,
+                       not_supported_int,
+                       not_supported_int,
+                       JSTEP,
+                       KINC)
 
         statev[iID, :] = STATEV_temp
         SSE[iID] = SSE_temp
@@ -403,125 +377,119 @@ UMAT interface
 # Returns
 - `datamanager`: Datamanager
 """
-function UMAT_interface(
-    STRESS::Vector{Float64},
-    STATEV::Vector{Float64},
-    DDSDDE::Matrix{Float64},
-    SSE::Float64,
-    SPD::Float64,
-    SCD::Float64,
-    RPL::Float64,
-    DDSDDT::Vector{Float64},
-    DRPLDE::Vector{Float64},
-    DRPLDT::Float64,
-    STRAN::Union{Vector{Float64},SVector{3,Float64}},
-    DSTRAN::Union{Vector{Float64},SVector{3,Float64}},
-    TIME::Vector{Float64},
-    DTIME::Float64,
-    TEMP::Float64,
-    DTEMP::Float64,
-    PREDEF::Vector{Float64},
-    DPRED::Vector{Float64},
-    CMNAME::Cstring,
-    NDI::Int64,
-    NSHR::Int64,
-    NTENS::Int64,
-    NSTATEV::Int64,
-    PROPS::Vector{Float64},
-    NPROPS::Int64,
-    COORDS::Vector{Float64},
-    DROT::Matrix{Float64},
-    PNEWDT::Float64,
-    CELENT::Float64,
-    DFGRD0::Matrix{Float64},
-    DFGRD1::Matrix{Float64},
-    NOEL::Int64,
-    NPT::Int64,
-    LAYER::Int64,
-    KSPT::Int64,
-    JSTEP::Int64,
-    KINC::Int64,
-)
-    ccall(
-        (:umat_, umat_file_path),
-        Cvoid,
-        (
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ref{Float64},
-            Ref{Float64},
-            Ref{Float64},
-            Ref{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ref{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ref{Float64},
-            Ref{Float64},
-            Ref{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Cstring,
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ptr{Float64},
-            Ref{Int64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ref{Float64},
-            Ref{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-        ),
-        STRESS,
-        STATEV,
-        DDSDDE,
-        SSE,
-        SPD,
-        SCD,
-        RPL,
-        DDSDDT,
-        DRPLDE,
-        DRPLDT,
-        STRAN,
-        DSTRAN,
-        TIME,
-        DTIME,
-        TEMP,
-        DTEMP,
-        PREDEF,
-        DPRED,
-        CMNAME,
-        NDI,
-        NSHR,
-        NTENS,
-        NSTATEV,
-        PROPS,
-        NPROPS,
-        COORDS,
-        DROT,
-        PNEWDT,
-        CELENT,
-        DFGRD0,
-        DFGRD1,
-        NOEL,
-        NPT,
-        LAYER,
-        KSPT,
-        JSTEP,
-        KINC,
-    )
+function UMAT_interface(STRESS::Vector{Float64},
+                        STATEV::Vector{Float64},
+                        DDSDDE::Matrix{Float64},
+                        SSE::Float64,
+                        SPD::Float64,
+                        SCD::Float64,
+                        RPL::Float64,
+                        DDSDDT::Vector{Float64},
+                        DRPLDE::Vector{Float64},
+                        DRPLDT::Float64,
+                        STRAN::Union{Vector{Float64},SVector{3,Float64}},
+                        DSTRAN::Union{Vector{Float64},SVector{3,Float64}},
+                        TIME::Vector{Float64},
+                        DTIME::Float64,
+                        TEMP::Float64,
+                        DTEMP::Float64,
+                        PREDEF::Vector{Float64},
+                        DPRED::Vector{Float64},
+                        CMNAME::Cstring,
+                        NDI::Int64,
+                        NSHR::Int64,
+                        NTENS::Int64,
+                        NSTATEV::Int64,
+                        PROPS::Vector{Float64},
+                        NPROPS::Int64,
+                        COORDS::Vector{Float64},
+                        DROT::Matrix{Float64},
+                        PNEWDT::Float64,
+                        CELENT::Float64,
+                        DFGRD0::Matrix{Float64},
+                        DFGRD1::Matrix{Float64},
+                        NOEL::Int64,
+                        NPT::Int64,
+                        LAYER::Int64,
+                        KSPT::Int64,
+                        JSTEP::Int64,
+                        KINC::Int64)
+    ccall((:umat_, umat_file_path),
+          Cvoid,
+          (Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ref{Float64},
+           Ref{Float64},
+           Ref{Float64},
+           Ref{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ref{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ref{Float64},
+           Ref{Float64},
+           Ref{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Cstring,
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ptr{Float64},
+           Ref{Int64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ref{Float64},
+           Ref{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64}),
+          STRESS,
+          STATEV,
+          DDSDDE,
+          SSE,
+          SPD,
+          SCD,
+          RPL,
+          DDSDDT,
+          DRPLDE,
+          DRPLDT,
+          STRAN,
+          DSTRAN,
+          TIME,
+          DTIME,
+          TEMP,
+          DTEMP,
+          PREDEF,
+          DPRED,
+          CMNAME,
+          NDI,
+          NSHR,
+          NTENS,
+          NSTATEV,
+          PROPS,
+          NPROPS,
+          COORDS,
+          DROT,
+          PNEWDT,
+          CELENT,
+          DFGRD0,
+          DFGRD1,
+          NOEL,
+          NPT,
+          LAYER,
+          KSPT,
+          JSTEP,
+          KINC)
 end
 
 """
@@ -539,19 +507,18 @@ function set_subroutine_caller(sub_name::String)
     return eval(Meta.parse(":" * (lowercase(sub_name)) * "_"))
 end
 
-function compute_stresses_ba(
-    datamanager::Module,
-    nodes,
-    nlist,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}},
-)
-
+function compute_stresses_ba(datamanager::Module,
+                             nodes,
+                             nlist,
+                             dof::Int64,
+                             material_parameter::Dict,
+                             time::Float64,
+                             dt::Float64,
+                             strain_increment::Union{SubArray,Array{Float64,3},
+                                                     Vector{Float64}},
+                             stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
+                             stress_NP1::Union{SubArray,Array{Float64,3},
+                                               Vector{Float64}})
     @error "$(correspondence_name()) not yet implemented for bond associated."
 end
 
@@ -562,11 +529,9 @@ end
 """
 function malloc_cstring(s::String)
     n = sizeof(s) + 1 # size in bytes + NUL terminator
-    return GC.@preserve s @ccall memcpy(
-        Libc.malloc(n)::Cstring,
-        s::Cstring,
-        n::Csize_t,
-    )::Cstring
+    return GC.@preserve s @ccall memcpy(Libc.malloc(n)::Cstring,
+                                        s::Cstring,
+                                        n::Csize_t)::Cstring
 end
 
 """

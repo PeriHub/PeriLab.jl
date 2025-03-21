@@ -7,7 +7,6 @@ include("../../../../src/Models/Thermal/Thermal_Factory.jl")
 using .Thermal
 # include("../../../../src/Core/Data_manager.jl")
 
-
 @testset "init_fields" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
@@ -25,18 +24,15 @@ using .Thermal
     @test "TemperatureNP1" in field_keys
     @test "Heat FlowN" in field_keys
     @test "Heat FlowNP1" in field_keys
-
 end
 @testset "init_model" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_block_list(["1", "2"])
     test_data_manager.init_properties()
-    test_data_manager.set_properties(
-        1,
-        "Thermal Model",
-        Dict("Thermal Model" => "Heat Transfer"),
-    )
+    test_data_manager.set_properties(1,
+                                     "Thermal Model",
+                                     Dict("Thermal Model" => "Heat Transfer"))
     Thermal.init_model(test_data_manager, [1], 1)
     test_data_manager.set_properties(2, "Thermal Model", Dict("Thermal Model" => "Missing"))
     @test isnothing(Thermal.init_model(test_data_manager, [1], 2))

@@ -33,5 +33,4 @@ end
     test_data_manager.set_property(1, "Material Model", "E", 1)
     @test isnothing(Material.init_model(test_data_manager, Vector{Int64}(1:4), 1))
     @test isnothing(Material.init_model(test_data_manager, Vector{Int64}(1:4), 2))
-
 end

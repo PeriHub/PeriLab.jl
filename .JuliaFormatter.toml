@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-folder_name = basename(@__FILE__)[1:(end - 3)]
-cd("fullscale_tests/" * folder_name) do
-    run_perilab("thermal_flow", 1, true, folder_name)
-end
+style = "sciml"
+yas_style_nesting = true
+whitespace_typedefs = false

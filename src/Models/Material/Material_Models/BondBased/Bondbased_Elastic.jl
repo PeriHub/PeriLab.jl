@@ -34,7 +34,6 @@ function fe_support()
     return false
 end
 
-
 """
   init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
@@ -48,20 +47,15 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    material_parameter::Dict)
     constant = datamanager.create_constant_node_field("Bond Based Constant", Float64, 1)
     horizon = datamanager.get_field("Horizon")
     symmetry::String = get_symmetry(material_parameter)
     compute_bond_based_constants(nodes, symmetry, constant, horizon)
     return datamanager
 end
-
-
-
 
 """
     material_name()
@@ -71,7 +65,6 @@ Returns the name of the material model.
 function material_name()
     return "Bond-based Elastic"
 end
-
 
 """
     compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
@@ -87,16 +80,13 @@ Calculate the elastic bond force for each node.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
-
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       material_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64,
+                       to::TimerOutput)
     constant = datamanager.get_field("Bond Based Constant")
 
     undeformed_bond_length = datamanager.get_field("Bond Length")
@@ -107,8 +97,8 @@ function compute_model(
 
     E = material_parameter["Young's Modulus"]
 
-    dependend_value, dependent_field =
-        is_dependent("Young's Modulus", material_parameter, datamanager)
+    dependend_value, dependent_field = is_dependent("Young's Modulus", material_parameter,
+                                                    datamanager)
 
     for iID in nodes
         if any(deformed_bond_length[iID] .== 0)
@@ -116,14 +106,12 @@ function compute_model(
             return nothing
         end
         # Calculate the bond force
-        compute_bb_force!(
-            bond_force[iID],
-            0.5 * constant[iID],
-            bond_damage[iID],
-            deformed_bond_length[iID],
-            undeformed_bond_length[iID],
-            deformed_bond[iID],
-        )
+        compute_bb_force!(bond_force[iID],
+                          0.5 * constant[iID],
+                          bond_damage[iID],
+                          deformed_bond_length[iID],
+                          undeformed_bond_length[iID],
+                          deformed_bond[iID])
         #bond_force[iID] =
         #    (
         #        0.5 .* constant[iID] .* bond_damage[iID] .*
@@ -141,23 +129,19 @@ function compute_model(
     return datamanager
 end
 
-function compute_bb_force!(
-    bond_force,
-    constant,
-    bond_damage,
-    deformed_bond_length,
-    undeformed_bond_length,
-    deformed_bond,
-)
-    @inbounds @fastmath for i ∈ axes(bond_force, 1)
-        @inbounds @fastmath for j ∈ axes(bond_force, 2)
-            bond_force[i, j] =
-                (
-                    constant *
-                    bond_damage[i] *
-                    (deformed_bond_length[i] - undeformed_bond_length[i]) /
-                    undeformed_bond_length[i]
-                ) * deformed_bond[i, j] / deformed_bond_length[i]
+function compute_bb_force!(bond_force,
+                           constant,
+                           bond_damage,
+                           deformed_bond_length,
+                           undeformed_bond_length,
+                           deformed_bond)
+    @inbounds @fastmath for i in axes(bond_force, 1)
+        @inbounds @fastmath for j in axes(bond_force, 2)
+            bond_force[i, j] = (constant *
+                                bond_damage[i] *
+                                (deformed_bond_length[i] - undeformed_bond_length[i]) /
+                                undeformed_bond_length[i]) * deformed_bond[i, j] /
+                               deformed_bond_length[i]
         end
     end
 end

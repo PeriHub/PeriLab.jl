@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-
-
 using Test
 using TimerOutputs
 using DataFrames
@@ -42,7 +40,6 @@ using DataFrames
     @test length(data[:, 1]) == 324
     @test data[!, "block_id"][1] == 1
     @test isapprox(data[!, "volume"][1], 0.03314393939393944, atol = 1e-15)
-
 end
 
 @testset "ut_check_dataframe" begin
@@ -66,16 +63,15 @@ end
     @test PeriLab.IO.check_for_duplicate_in_dataframe(data)
 end
 
-
 @testset "ut_create_consistent_neighborhoodlist" begin
     path = "./unit_tests/IO/"
 
-    external_topology =
-        PeriLab.IO.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
+    external_topology = PeriLab.IO.read_external_topology(joinpath(path,
+                                                                   "example_FE_mesh.txt"))
     if isnothing(external_topology)
         path = "./test/unit_tests/IO/"
-        external_topology =
-            PeriLab.IO.read_external_topology(joinpath(path, "example_FE_mesh.txt"))
+        external_topology = PeriLab.IO.read_external_topology(joinpath(path,
+                                                                       "example_FE_mesh.txt"))
     end
     dof::Int64 = 2
     params = Dict()
@@ -92,12 +88,13 @@ end
         [10],
         [2],
         [3],
-        [1, 12],
+        [1, 12]
     ]
 
-
-    nlist_test, topology, nodes_to_element =
-        PeriLab.IO.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+    nlist_test, topology, nodes_to_element = PeriLab.IO.create_consistent_neighborhoodlist(external_topology,
+                                                                                           params,
+                                                                                           nlist,
+                                                                                           dof)
 
     @test topology[1] == [1, 2, 3, 4]
     @test topology[2] == [3, 4, 5, 6]
@@ -117,9 +114,8 @@ end
         [10],
         [2],
         [],
-        [1, 12],
+        [1, 12]
     ]
-
 
     params = Dict("Add Neighbor Search" => false)
     nlist = [
@@ -134,10 +130,12 @@ end
         [10],
         [2],
         [3],
-        [1, 12],
+        [1, 12]
     ]
-    nlist, topology, nodes_to_element =
-        PeriLab.IO.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+    nlist, topology, nodes_to_element = PeriLab.IO.create_consistent_neighborhoodlist(external_topology,
+                                                                                      params,
+                                                                                      nlist,
+                                                                                      dof)
 
     @test nlist == [
         [2, 3, 4],
@@ -151,9 +149,8 @@ end
         [10],
         [2],
         [],
-        [1, 12],
+        [1, 12]
     ]
-
 
     params = Dict("Add Neighbor Search" => true)
     nlist = [
@@ -168,10 +165,12 @@ end
         [10],
         [2],
         [3],
-        [1, 12],
+        [1, 12]
     ]
-    nlist, topology, nodes_to_element =
-        PeriLab.IO.create_consistent_neighborhoodlist(external_topology, params, nlist, dof)
+    nlist, topology, nodes_to_element = PeriLab.IO.create_consistent_neighborhoodlist(external_topology,
+                                                                                      params,
+                                                                                      nlist,
+                                                                                      dof)
 
     @test topology[1] == [1, 2, 3, 4]
     @test topology[2] == [3, 4, 5, 6]
@@ -191,7 +190,7 @@ end
         [10],
         [2],
         [3],
-        [1, 12],
+        [1, 12]
     ]
 end
 @testset "ut_element_distribution" begin
@@ -217,16 +216,17 @@ end
     @test length(element_distribution) == 2
     @test element_distribution[1] == [2]
     @test element_distribution[2] == [3, 1]
-
 end
 @testset "ut_get_local_element_topology" begin
-
     test_data_manager = PeriLab.Data_manager
     topology::Vector{Vector{Int64}} = [[1, 2, 3, 4], [3, 4, 2, 1]]
-    distribution::Vector{Vector{Int64}} =
-        [[2, 3, 4, 1], [1, 2, 3, 4], [5, 6, 3, 2, 8, 1, 4]]
-    test_data_manager =
-        PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[1])
+    distribution::Vector{Vector{Int64}} = [
+        [2, 3, 4, 1],
+        [1, 2, 3, 4],
+        [5, 6, 3, 2, 8, 1, 4]
+    ]
+    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology,
+                                                              distribution[1])
     topo = test_data_manager.get_field("FE Topology")
 
     @test topo[1, 1] == 4
@@ -237,8 +237,8 @@ end
     @test topo[2, 2] == 3
     @test topo[2, 3] == 1
     @test topo[2, 4] == 4
-    test_data_manager =
-        PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[2])
+    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology,
+                                                              distribution[2])
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 1
     @test topo[1, 2] == 2
@@ -248,8 +248,8 @@ end
     @test topo[2, 2] == 4
     @test topo[2, 3] == 2
     @test topo[2, 4] == 1
-    test_data_manager =
-        PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[3])
+    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager, topology,
+                                                              distribution[3])
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 6
     @test topo[1, 2] == 4
@@ -260,11 +260,9 @@ end
     @test topo[2, 3] == 4
     @test topo[2, 4] == 6
 
-    test_data_manager = PeriLab.IO.get_local_element_topology(
-        test_data_manager,
-        Vector([Vector{Int64}([])]),
-        distribution[3],
-    )
+    test_data_manager = PeriLab.IO.get_local_element_topology(test_data_manager,
+                                                              Vector([Vector{Int64}([])]),
+                                                              distribution[3])
     # nothing happens, because no field is initialized
     topo = test_data_manager.get_field("FE Topology")
     @test topo[1, 1] == 6
@@ -278,9 +276,8 @@ end
 
     topology = [[1, 2, 3, 4], [3, 4, 2, 1, 3]]
 
-    @test isnothing(
-        PeriLab.IO.get_local_element_topology(test_data_manager, topology, distribution[3]),
-    )
+    @test isnothing(PeriLab.IO.get_local_element_topology(test_data_manager, topology,
+                                                          distribution[3]))
 end
 @testset "ut_create_distribution" begin
     distribution, point_to_core = PeriLab.IO.create_distribution(4, 1)
@@ -357,13 +354,11 @@ end
     df = DataFrame(data)
     @test isnothing(PeriLab.IO.check_mesh_elements(df, 2))
 
-    data = Dict(
-        "x" => [1.0, 1.1, 3],
-        "y" => [25, 30, 22],
-        "volume" => [1, 1, 1],
-        "block_id" => [1, 1, 1],
-        "active" => [true, true, false],
-    )
+    data = Dict("x" => [1.0, 1.1, 3],
+                "y" => [25, 30, 22],
+                "volume" => [1, 1, 1],
+                "block_id" => [1, 1, 1],
+                "active" => [true, true, false])
 
     df = DataFrame(data)
     mesh_info_dict = PeriLab.IO.check_mesh_elements(df, 2)
@@ -379,17 +374,15 @@ end
     @test mesh_info_dict["Volume"]["Type"] == Int64
     @test mesh_info_dict["active"]["Mesh ID"] == ["active"]
     @test mesh_info_dict["active"]["Type"] == Bool
-    data = Dict(
-        "x" => [1, 1, 3],
-        "y" => [25, 30, 22],
-        "z" => [25, 30, 22],
-        "volume" => [1.2, 0.8, 1],
-        "block_id" => [1, 2, 1],
-        "active_x" => [true, true, false],
-        "active_y" => [true, true, false],
-        "active_z" => [true, true, false],
-        "field" => [1.0, 3.3, 2.3],
-    )
+    data = Dict("x" => [1, 1, 3],
+                "y" => [25, 30, 22],
+                "z" => [25, 30, 22],
+                "volume" => [1.2, 0.8, 1],
+                "block_id" => [1, 2, 1],
+                "active_x" => [true, true, false],
+                "active_y" => [true, true, false],
+                "active_z" => [true, true, false],
+                "field" => [1.0, 3.3, 2.3])
     df = DataFrame(data)
     mesh_info_dict = PeriLab.IO.check_mesh_elements(df, 3)
     @test mesh_info_dict["Coordinates"]["Mesh ID"] == ["x", "y", "z"]
@@ -402,7 +395,6 @@ end
     @test mesh_info_dict["active"]["Type"] == Bool
     @test mesh_info_dict["field"]["Mesh ID"] == ["field"]
     @test mesh_info_dict["field"]["Type"] == Float64
-
 end
 @testset "ut__init_overlap_map_" begin
     overlap_map = PeriLab.IO._init_overlap_map_(1)
@@ -427,10 +419,10 @@ end
 
 @testset "ut_create_overlap_map" begin
     distribution = Vector([
-        Vector{Int64}([1, 2, 3]),
-        Vector{Int64}([2, 3, 4]),
-        Vector{Int64}([4, 1, 3]),
-    ])
+                              Vector{Int64}([1, 2, 3]),
+                              Vector{Int64}([2, 3, 4]),
+                              Vector{Int64}([4, 1, 3])
+                          ])
     size::Int64 = 3
     ptc = [1, 2, 2, 3]
     overlap_map = PeriLab.IO.create_overlap_map(distribution, ptc, size)
@@ -442,8 +434,8 @@ end
     @test overlap_map[1][3]["Controller"] == overlap_map[3][1]["Responder"]
     @test overlap_map[2][3]["Controller"] == overlap_map[3][2]["Responder"]
 
-    for i = 1:3
-        for j = 1:3
+    for i in 1:3
+        for j in 1:3
             if i != j
                 if overlap_map[i][j]["Responder"] != [] &&
                    overlap_map[i][j]["Controller"] != []
@@ -461,7 +453,6 @@ end
     @test overlap_map[1][3]["Responder"] == []
     @test overlap_map[2][3]["Controller"] == [3]
     @test overlap_map[2][3]["Responder"] == [4]
-
 end
 @testset "ut_get_local_overlap_map" begin
     overlap_map = PeriLab.IO._init_overlap_map_(3)
@@ -501,15 +492,14 @@ end
 end
 
 @testset "ut_neighbors" begin
-
     nlist = fill(Vector{Int64}([]), 4)
-    for i = 1:4
-        nlist[i] = Vector{Int64}(collect(1:3*i*i-2))
+    for i in 1:4
+        nlist[i] = Vector{Int64}(collect(1:(3 * i * i - 2)))
     end
 
     length_nlist = PeriLab.IO.get_number_of_neighbornodes(nlist, false)
 
-    for i = 1:4
+    for i in 1:4
         @test length_nlist[i] == 3 * i * i - 2
     end
     nlist[1] = []
@@ -518,30 +508,25 @@ end
 end
 
 @testset "ut_glob_to_loc" begin
-
     distribution = [1, 2, 3, 4, 5]
     glob_to_loc = PeriLab.IO.glob_to_loc(distribution)
     len = length(distribution)
     #check trivial case of global and local are identical
-    for id = 1:len
+    for id in 1:len
         @test distribution[id] == glob_to_loc[id]
     end
     @test length(distribution) == length(glob_to_loc)
     # reverse -> glob_to_loc_to_glob
     distribution = [1, 4, 2, 5, 6]
     glob_to_loc = PeriLab.IO.glob_to_loc(distribution)
-    for id = 1:len
+    for id in 1:len
         @test distribution[id] == distribution[glob_to_loc[distribution[id]]]
     end
-
 end
 
 @testset "ut_define_nsets" begin
-
-    nsets_predef = Dict{String,Vector{Int64}}(
-        "Nset_2" => [11, 12, 13, 44, 125],
-        "Nset_1" => [1, 2, 3, 4, 5, 6, 7],
-    )
+    nsets_predef = Dict{String,Vector{Int64}}("Nset_2" => [11, 12, 13, 44, 125],
+                                              "Nset_1" => [1, 2, 3, 4, 5, 6, 7])
 
     test_data_manager = PeriLab.Data_manager
     @test test_data_manager.get_nnsets() == 0
@@ -550,7 +535,6 @@ end
     nsets = test_data_manager.get_nsets()
     @test nsets["Nset_1"] == [1, 2, 3, 4, 5, 6, 7]
     @test nsets["Nset_2"] == [11, 12, 13, 44, 125]
-
 end
 
 @testset "ut_get_bond_geometry" begin
@@ -558,8 +542,8 @@ end
     test_data_manager.set_num_controller(3)
     test_data_manager.set_num_responder(0)
     test_data_manager.set_dof(2)
-    length_nlist =
-        test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    length_nlist = test_data_manager.create_constant_node_field("Number of Neighbors",
+                                                                Int64, 1)
     length_nlist .= [2, 2, 2]
     nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 
@@ -577,17 +561,15 @@ end
     nnodes = test_data_manager.get_nnodes()
     nlist = test_data_manager.get_field("Neighborhoodlist")
     coor = test_data_manager.get_field("Coordinates")
-    undeformed_bond =
-        test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
-    undeformed_bond_length =
-        test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
-    PeriLab.IO.Geometry.bond_geometry!(
-        undeformed_bond,
-        undeformed_bond_length,
-        Vector(1:nnodes),
-        nlist,
-        coor,
-    )
+    undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
+                                                                   dof)
+    undeformed_bond_length = test_data_manager.create_constant_bond_field("Bond Length",
+                                                                          Float64, 1)
+    PeriLab.IO.Geometry.bond_geometry!(undeformed_bond,
+                                       undeformed_bond_length,
+                                       Vector(1:nnodes),
+                                       nlist,
+                                       coor)
 
     @test undeformed_bond[1][1][1] == 1
     @test undeformed_bond[1][1][2] == 0
@@ -627,20 +609,16 @@ end
         [0, 0, 1],
         [1, 0, 1],
         [1, 1, 1],
-        [0, 1, 1],
+        [0, 1, 1]
     ]
     @test PeriLab.IO.calculate_volume("Hex8", vertices) == 1
-
 end
 
 @testset "ut_extrude_surface_mesh" begin
-
-    mesh = DataFrame(
-        x = [0.0, 1.0, 0.0, 1.0],
-        y = [0.0, 0.0, 1.0, 1.0],
-        volume = [0.2, 0.2, 0.2, 0.2],
-        block_id = [1, 1, 1, 1],
-    )
+    mesh = DataFrame(x = [0.0, 1.0, 0.0, 1.0],
+                     y = [0.0, 0.0, 1.0, 1.0],
+                     volume = [0.2, 0.2, 0.2, 0.2],
+                     block_id = [1, 1, 1, 1])
 
     params = Dict("Discretization" => Dict("Bla" => "Bla"))
 
@@ -649,75 +627,67 @@ end
     @test mesh == mesh_return
     @test isnothing(node_sets)
 
-    params = Dict(
-        "Discretization" => Dict(
-            "Surface Extrusion" => Dict(
-                "Direction" => "X",
-                "Step_X" => 1.0,
-                "Step_Y" => 1.0,
-                "Step_Z" => 1.0,
-                "Number" => 2,
-            ),
-        ),
-    )
+    params = Dict("Discretization" => Dict("Surface Extrusion" => Dict("Direction" => "X",
+                                                                       "Step_X" => 1.0,
+                                                                       "Step_Y" => 1.0,
+                                                                       "Step_Z" => 1.0,
+                                                                       "Number" => 2)))
 
-    mesh_expected = DataFrame(
-        x = [
-            0.0,
-            1.0,
-            0.0,
-            1.0,
-            2.0,
-            2.0,
-            2.0,
-            3.0,
-            3.0,
-            3.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -2.0,
-            -2.0,
-            -2.0,
-        ],
-        y = [
-            0.0,
-            0.0,
-            1.0,
-            1.0,
-            0.0,
-            1.0,
-            2.0,
-            0.0,
-            1.0,
-            2.0,
-            0.0,
-            1.0,
-            2.0,
-            0.0,
-            1.0,
-            2.0,
-        ],
-        volume = [
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-        ],
-        block_id = [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3],
-    )
+    mesh_expected = DataFrame(x = [
+                                  0.0,
+                                  1.0,
+                                  0.0,
+                                  1.0,
+                                  2.0,
+                                  2.0,
+                                  2.0,
+                                  3.0,
+                                  3.0,
+                                  3.0,
+                                  -1.0,
+                                  -1.0,
+                                  -1.0,
+                                  -2.0,
+                                  -2.0,
+                                  -2.0
+                              ],
+                              y = [
+                                  0.0,
+                                  0.0,
+                                  1.0,
+                                  1.0,
+                                  0.0,
+                                  1.0,
+                                  2.0,
+                                  0.0,
+                                  1.0,
+                                  2.0,
+                                  0.0,
+                                  1.0,
+                                  2.0,
+                                  0.0,
+                                  1.0,
+                                  2.0
+                              ],
+                              volume = [
+                                  0.2,
+                                  0.2,
+                                  0.2,
+                                  0.2,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0
+                              ],
+                              block_id = [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3])
 
     mesh_return, node_sets = PeriLab.IO.extrude_surface_mesh(mesh, params)
 
@@ -725,89 +695,85 @@ end
     @test node_sets ==
           Dict("Extruded_2" => [6, 7, 8, 9, 10, 11], "Extruded_1" => [0, 1, 2, 3, 4, 5])
 
-    mesh = DataFrame(
-        x = [0.0, 1.0, 0.0, 1.0],
-        y = [0.0, 0.0, 1.0, 1.0],
-        z = [0.0, 0.0, 0.0, 0.0],
-        volume = [0.2, 0.2, 0.2, 0.2],
-        block_id = [1, 1, 1, 1],
-    )
+    mesh = DataFrame(x = [0.0, 1.0, 0.0, 1.0],
+                     y = [0.0, 0.0, 1.0, 1.0],
+                     z = [0.0, 0.0, 0.0, 0.0],
+                     volume = [0.2, 0.2, 0.2, 0.2],
+                     block_id = [1, 1, 1, 1])
 
-    mesh_expected = DataFrame(
-        x = [
-            0.0,
-            1.0,
-            0.0,
-            1.0,
-            2.0,
-            2.0,
-            2.0,
-            3.0,
-            3.0,
-            3.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -2.0,
-            -2.0,
-            -2.0,
-        ],
-        y = [
-            0.0,
-            0.0,
-            1.0,
-            1.0,
-            0.0,
-            1.0,
-            2.0,
-            0.0,
-            1.0,
-            2.0,
-            0.0,
-            1.0,
-            2.0,
-            0.0,
-            1.0,
-            2.0,
-        ],
-        z = [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        volume = [
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-        ],
-        block_id = [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3],
-    )
+    mesh_expected = DataFrame(x = [
+                                  0.0,
+                                  1.0,
+                                  0.0,
+                                  1.0,
+                                  2.0,
+                                  2.0,
+                                  2.0,
+                                  3.0,
+                                  3.0,
+                                  3.0,
+                                  -1.0,
+                                  -1.0,
+                                  -1.0,
+                                  -2.0,
+                                  -2.0,
+                                  -2.0
+                              ],
+                              y = [
+                                  0.0,
+                                  0.0,
+                                  1.0,
+                                  1.0,
+                                  0.0,
+                                  1.0,
+                                  2.0,
+                                  0.0,
+                                  1.0,
+                                  2.0,
+                                  0.0,
+                                  1.0,
+                                  2.0,
+                                  0.0,
+                                  1.0,
+                                  2.0
+                              ],
+                              z = [
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0
+                              ],
+                              volume = [
+                                  0.2,
+                                  0.2,
+                                  0.2,
+                                  0.2,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0,
+                                  1.0
+                              ],
+                              block_id = [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3])
 
     mesh_return, node_sets = PeriLab.IO.extrude_surface_mesh(mesh, params)
 

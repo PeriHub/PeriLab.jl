@@ -22,7 +22,7 @@ Get the names of the blocks.
 function get_block_names(params::Dict, block_ids::Vector{Int64})
     param_block_ids = [v["Block ID"] for v in values(params["Blocks"])]
     block_list = Vector{String}()
-    for id = 1:maximum(param_block_ids)
+    for id in 1:maximum(param_block_ids)
         if !(id in block_ids)
             @warn "Block with ID $id is not defined in the provided mesh"
             continue
@@ -121,10 +121,10 @@ function get_angles(params::Dict, block_id::Int64, dof::Int64)
         return _get_values(params, block_id, "Angle X")
     elseif dof == 3
         return [
-            _get_values(params, block_id, "Angle X"),
-            _get_values(params, block_id, "Angle Y"),
-            _get_values(params, block_id, "Angle Z"),
-        ]
+                _get_values(params, block_id, "Angle X"),
+                _get_values(params, block_id, "Angle Y"),
+                _get_values(params, block_id, "Angle Z")
+                ]
     end
 end
 
@@ -141,12 +141,10 @@ Get the value of a block.
 # Returns
 - `value::Float64`: The value of the block
 """
-function _get_values(
-    params::Dict,
-    block_id::Int64,
-    valueName::String,
-    defaultValue::Union{Float64,Bool,Nothing} = nothing,
-)
+function _get_values(params::Dict,
+                     block_id::Int64,
+                     valueName::String,
+                     defaultValue::Union{Float64,Bool,Nothing} = nothing)
     for block_name in keys(params["Blocks"])
         if params["Blocks"][block_name]["Block ID"] == block_id
             if haskey(params["Blocks"][block_name], valueName)

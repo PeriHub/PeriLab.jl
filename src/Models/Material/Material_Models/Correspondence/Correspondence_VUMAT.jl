@@ -6,7 +6,8 @@ module Correspondence_VUMAT
 using StaticArrays
 include("../../Material_Basis.jl")
 using .Material_Basis:
-    voigt_to_matrix, matrix_to_voigt, get_Hooke_matrix, matrix_to_vector, vector_to_matrix
+                       voigt_to_matrix, matrix_to_voigt, get_Hooke_matrix, matrix_to_vector,
+                       vector_to_matrix
 include("../../../../Support/Geometry.jl")
 include("../Zero_Energy_Control/global_control.jl")
 using .Global_zero_energy_control: global_zero_energy_mode_stiffness
@@ -52,11 +53,9 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    material_parameter::Dict)
     # set to 1 to avoid a later check if the state variable field exists or not
     num_state_vars::Int64 = 1
     if !haskey(material_parameter, "File")
@@ -64,8 +63,8 @@ function init_model(
         return nothing
     end
     directory = datamanager.get_directory()
-    material_parameter["File"] =
-        joinpath(joinpath(pwd(), directory), material_parameter["File"])
+    material_parameter["File"] = joinpath(joinpath(pwd(), directory),
+                                          material_parameter["File"])
     global vumat_file_path = material_parameter["File"]
     if !isfile(material_parameter["File"])
         @error "File $(material_parameter["File"]) does not exist, please check name and directory."
@@ -83,10 +82,10 @@ function init_model(
     end
     # properties include the material properties, etc.
     num_props = material_parameter["Number of Properties"]
-    properties =
-        datamanager.create_constant_free_size_field("Properties", Float64, (num_props, 1))
+    properties = datamanager.create_constant_free_size_field("Properties", Float64,
+                                                             (num_props, 1))
 
-    for iID = 1:num_props
+    for iID in 1:num_props
         if !haskey(material_parameter, "Property_$iID")
             @warn "Property_$iID is missing. Make sure that all properties are defined."
             properties[iID] = 0.0
@@ -107,7 +106,6 @@ function init_model(
     if !haskey(material_parameter, "VUMAT name")
         material_parameter["VUMAT name"] = "VUMAT"
     end
-
 
     dof = datamanager.get_dof()
     ndi = dof
@@ -166,17 +164,15 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Union{SubArray,Array{Float64,3}},
-    stress_N::Union{SubArray,Array{Float64,3}},
-    stress_NP1::Union{SubArray,Array{Float64,3}},
-)
+function compute_stresses(datamanager::Module,
+                          nodes::Union{SubArray,Vector{Int64}},
+                          dof::Int64,
+                          material_parameter::Dict,
+                          time::Float64,
+                          dt::Float64,
+                          strain_increment::Union{SubArray,Array{Float64,3}},
+                          stress_N::Union{SubArray,Array{Float64,3}},
+                          stress_NP1::Union{SubArray,Array{Float64,3}})
     nnodes = length(nodes)
     # Number of normal stress components at this point
     ndi = dof
@@ -214,7 +210,6 @@ function compute_stresses(
     enerInelasOld = datamanager.get_field("Dissipated inelastic energy", "N")
     enerInelasNew = datamanager.get_field("Dissipated inelastic energy", "NP1")
 
-
     for iID in nodes
         strainInc[iID, :] = matrix_to_voigt(strain_increment[iID, :, :])
         stressOld[iID, :] = matrix_to_voigt(stress_N[iID, :, :])
@@ -223,41 +218,39 @@ function compute_stresses(
             defGradOld = defGradNew
         end
     end
-    VUMAT_interface(
-        nnodes,
-        ndi,
-        nshr,
-        nstatev,
-        nfieldv,
-        nprops,
-        lanneal,
-        0.0, #TODO: might be wrong
-        time,
-        dt,
-        cmname,
-        coordMp,
-        charLength,
-        Vector{Float64}(props[:]),
-        density,
-        strainInc,
-        relSpinInc,
-        tempOld,
-        stretchOld,
-        defGradOld,
-        fieldOld,
-        stressOld,
-        stateOld,
-        enerInternOld,
-        enerInelasOld,
-        tempNew,
-        stretchNew,
-        defGradNew,
-        fieldNew,
-        stressNew,
-        stateNew,
-        enerInternNew,
-        enerInelasNew,
-    )
+    VUMAT_interface(nnodes,
+                    ndi,
+                    nshr,
+                    nstatev,
+                    nfieldv,
+                    nprops,
+                    lanneal,
+                    0.0, #TODO: might be wrong
+                    time,
+                    dt,
+                    cmname,
+                    coordMp,
+                    charLength,
+                    Vector{Float64}(props[:]),
+                    density,
+                    strainInc,
+                    relSpinInc,
+                    tempOld,
+                    stretchOld,
+                    defGradOld,
+                    fieldOld,
+                    stressOld,
+                    stateOld,
+                    enerInternOld,
+                    enerInelasOld,
+                    tempNew,
+                    stretchNew,
+                    defGradNew,
+                    fieldNew,
+                    stressNew,
+                    stateNew,
+                    enerInternNew,
+                    enerInelasNew)
     for iID in nodes
         stress_NP1[iID, :, :] = voigt_to_matrix(stressNew[iID, :])
     end
@@ -308,113 +301,107 @@ VUMAT interface
 # Returns
 - `datamanager`: Datamanager
 """
-function VUMAT_interface(
-    nblock::Int64,
-    ndir::Int64,
-    nshr::Int64,
-    nstatev::Int64,
-    nfieldv::Int64,
-    nprops::Int64,
-    lanneal::Int64,
-    stepTime::Float64,
-    totalTime::Float64,
-    dt::Float64,
-    cmname::Cstring,
-    coordMp::Matrix{Float64},
-    charLength::Vector{Float64},
-    props::Vector{Float64},
-    density::Vector{Float64},
-    strainInc::Matrix{Float64},
-    relSpinInc::Matrix{Float64},
-    tempOld::Vector{Float64},
-    stretchOld::Matrix{Float64},
-    defGradOld::Matrix{Float64},
-    fieldOld::Matrix{Float64},
-    stressOld::Matrix{Float64},
-    stateOld::Matrix{Float64},
-    enerInternOld::Vector{Float64},
-    enerInelasOld::Vector{Float64},
-    tempNew::Vector{Float64},
-    stretchNew::Matrix{Float64},
-    defGradNew::Matrix{Float64},
-    fieldNew::Matrix{Float64},
-    stressNew::Matrix{Float64},
-    stateNew::Matrix{Float64},
-    enerInternNew::Vector{Float64},
-    enerInelasNew::Vector{Float64},
-)
-    ccall(
-        (:vumat_, vumat_file_path),
-        Cvoid,
-        (
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Int64},
-            Ref{Float64},
-            Ref{Float64},
-            Ref{Float64},
-            Cstring,
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-            Ptr{Float64},
-        ),
-        nblock,
-        ndir,
-        nshr,
-        nstatev,
-        nfieldv,
-        nprops,
-        lanneal,
-        stepTime,
-        totalTime,
-        dt,
-        cmname,
-        coordMp,
-        charLength,
-        props,
-        density,
-        strainInc,
-        relSpinInc,
-        tempOld,
-        stretchOld,
-        defGradOld,
-        fieldOld,
-        stressOld,
-        stateOld,
-        enerInternOld,
-        enerInelasOld,
-        tempNew,
-        stretchNew,
-        defGradNew,
-        fieldNew,
-        stressNew,
-        stateNew,
-        enerInternNew,
-        enerInelasNew,
-    )
+function VUMAT_interface(nblock::Int64,
+                         ndir::Int64,
+                         nshr::Int64,
+                         nstatev::Int64,
+                         nfieldv::Int64,
+                         nprops::Int64,
+                         lanneal::Int64,
+                         stepTime::Float64,
+                         totalTime::Float64,
+                         dt::Float64,
+                         cmname::Cstring,
+                         coordMp::Matrix{Float64},
+                         charLength::Vector{Float64},
+                         props::Vector{Float64},
+                         density::Vector{Float64},
+                         strainInc::Matrix{Float64},
+                         relSpinInc::Matrix{Float64},
+                         tempOld::Vector{Float64},
+                         stretchOld::Matrix{Float64},
+                         defGradOld::Matrix{Float64},
+                         fieldOld::Matrix{Float64},
+                         stressOld::Matrix{Float64},
+                         stateOld::Matrix{Float64},
+                         enerInternOld::Vector{Float64},
+                         enerInelasOld::Vector{Float64},
+                         tempNew::Vector{Float64},
+                         stretchNew::Matrix{Float64},
+                         defGradNew::Matrix{Float64},
+                         fieldNew::Matrix{Float64},
+                         stressNew::Matrix{Float64},
+                         stateNew::Matrix{Float64},
+                         enerInternNew::Vector{Float64},
+                         enerInelasNew::Vector{Float64})
+    ccall((:vumat_, vumat_file_path),
+          Cvoid,
+          (Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Int64},
+           Ref{Float64},
+           Ref{Float64},
+           Ref{Float64},
+           Cstring,
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64},
+           Ptr{Float64}),
+          nblock,
+          ndir,
+          nshr,
+          nstatev,
+          nfieldv,
+          nprops,
+          lanneal,
+          stepTime,
+          totalTime,
+          dt,
+          cmname,
+          coordMp,
+          charLength,
+          props,
+          density,
+          strainInc,
+          relSpinInc,
+          tempOld,
+          stretchOld,
+          defGradOld,
+          fieldOld,
+          stressOld,
+          stateOld,
+          enerInternOld,
+          enerInelasOld,
+          tempNew,
+          stretchNew,
+          defGradNew,
+          fieldNew,
+          stressNew,
+          stateNew,
+          enerInternNew,
+          enerInelasNew)
 end
 
 """
@@ -432,19 +419,18 @@ function set_subroutine_caller(sub_name::String)
     return eval(Meta.parse(":" * (lowercase(sub_name)) * "_"))
 end
 
-function compute_stresses_ba(
-    datamanager::Module,
-    nodes,
-    nlist,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}},
-)
-
+function compute_stresses_ba(datamanager::Module,
+                             nodes,
+                             nlist,
+                             dof::Int64,
+                             material_parameter::Dict,
+                             time::Float64,
+                             dt::Float64,
+                             strain_increment::Union{SubArray,Array{Float64,3},
+                                                     Vector{Float64}},
+                             stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
+                             stress_NP1::Union{SubArray,Array{Float64,3},
+                                               Vector{Float64}})
     @error "$(correspondence_name()) not yet implemented for bond associated."
 end
 
@@ -455,11 +441,9 @@ end
 """
 function malloc_cstring(s::String)
     n = sizeof(s) + 1 # size in bytes + NUL terminator
-    return GC.@preserve s @ccall memcpy(
-        Libc.malloc(n)::Cstring,
-        s::Cstring,
-        n::Csize_t,
-    )::Cstring
+    return GC.@preserve s @ccall memcpy(Libc.malloc(n)::Cstring,
+                                        s::Cstring,
+                                        n::Csize_t)::Cstring
 end
 
 """

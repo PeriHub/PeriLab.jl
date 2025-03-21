@@ -53,12 +53,10 @@ else
     println("Parameter not found.")
 end
 """
-function get_model_parameter(
-    params::Dict,
-    model::String,
-    id::String,
-    directory::String = "",
-)
+function get_model_parameter(params::Dict,
+                             model::String,
+                             id::String,
+                             directory::String = "")
     if !haskey(params["Models"], model * "s")
         @error model *
                " is defined in blocks, but no " *
@@ -66,23 +64,24 @@ function get_model_parameter(
                "s definition block exists"
         return nothing
     end
-    if haskey(params["Models"][model*"s"], id)
-        file_keys = find_data_files(params["Models"][model*"s"][id])
+    if haskey(params["Models"][model * "s"], id)
+        file_keys = find_data_files(params["Models"][model * "s"][id])
         for file_key in file_keys
-            data, header = csv_reader_temporary(
-                joinpath(directory, params["Models"][model*"s"][id][file_key]),
-            )
-            for i = 2:size(data, 2)
+            data, header = csv_reader_temporary(joinpath(directory,
+                                                         params["Models"][model * "s"][id][file_key]))
+            for i in 2:size(data, 2)
                 if header[i] != replace(file_key, " " => "_")
                     continue
                 end
-                params["Models"][model*"s"][id][file_key] = Dict()
-                params["Models"][model*"s"][id][file_key]["Field"] = header[1]
-                params["Models"][model*"s"][id][file_key]["Data"] =
-                    interpolation(data[!, 1], data[!, i])
+                params["Models"][model * "s"][id][file_key] = Dict()
+                params["Models"][model * "s"][id][file_key]["Field"] = header[1]
+                params["Models"][model * "s"][id][file_key]["Data"] = interpolation(data[!,
+                                                                                         1],
+                                                                                    data[!,
+                                                                                         i])
             end
         end
-        return params["Models"][model*"s"][id]
+        return params["Models"][model * "s"][id]
     else
         @error model *
                " model with name " *
@@ -95,18 +94,15 @@ function get_model_parameter(
 end
 function csv_reader_temporary(filename::String)
     header_line, header = get_header(filename)
-    return CSV.read(
-        filename,
-        DataFrame;
-        delim = " ",
-        ignorerepeated = true,
-        header = header,
-        skipto = header_line + 1,
-        comment = "#",
-    ),
-    header
+    return CSV.read(filename,
+                    DataFrame;
+                    delim = " ",
+                    ignorerepeated = true,
+                    header = header,
+                    skipto = header_line + 1,
+                    comment = "#",),
+           header
 end
-
 
 function find_data_files(params::Dict)
     file_keys = []

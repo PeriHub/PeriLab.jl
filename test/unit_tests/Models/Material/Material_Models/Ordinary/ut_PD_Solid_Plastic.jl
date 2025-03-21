@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 using Test
-include(
-    "../../../../../../src/Models/Material/Material_Models/Ordinary/PD_Solid_Plastic.jl",
-)
+include("../../../../../../src/Models/Material/Material_Models/Ordinary/PD_Solid_Plastic.jl")
 #include("../../../../../../src/PeriLab.jl")
 #using .PeriLab
 
@@ -14,7 +12,6 @@ include(
 end
 
 @testset "ut_init_model" begin
-
     nodes = 2
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
@@ -29,34 +26,28 @@ end
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
 
     nn .= 1
-    @test isnothing(
-        PD_Solid_Plastic.init_model(test_data_manager, Vector{Int64}(1:nodes), Dict()),
-    )
+    @test isnothing(PD_Solid_Plastic.init_model(test_data_manager, Vector{Int64}(1:nodes),
+                                                Dict()))
 
-    test_data_manager = PD_Solid_Plastic.init_model(
-        test_data_manager,
-        Vector{Int64}(1:nodes),
-        Dict("Yield Stress" => 5.3),
-    )
+    test_data_manager = PD_Solid_Plastic.init_model(test_data_manager,
+                                                    Vector{Int64}(1:nodes),
+                                                    Dict("Yield Stress" => 5.3))
     yield = test_data_manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 25 * 5.3 * 5.3 / (8 * pi * 3^5))
     @test isapprox(yield[2], 25 * 5.3 * 5.3 / (8 * pi * 2^5))
 
-    test_data_manager = PD_Solid_Plastic.init_model(
-        test_data_manager,
-        Vector{Int64}(1:nodes),
-        Dict("Yield Stress" => 2.2, "Symmetry" => "plane stress"),
-    )
+    test_data_manager = PD_Solid_Plastic.init_model(test_data_manager,
+                                                    Vector{Int64}(1:nodes),
+                                                    Dict("Yield Stress" => 2.2,
+                                                         "Symmetry" => "plane stress"))
     yield = test_data_manager.get_field("Yield Value")
 
     @test isapprox(yield[1], 225 * 2.2 * 2.2 / (24 * pi * 3^4))
     @test isapprox(yield[2], 225 * 2.2 * 2.2 / (24 * pi * 2^4))
-
 end
 
 @testset "ut_plastic" begin
-
     nodes = [1, 2]
     td_norm = [2.0, 2.0]
     yield_value = [1.0, 1.0]
@@ -67,17 +58,15 @@ end
     deviatoric_plastic_extension_state = [[0.0, 0.0], [0.0, 0.0]]
     bond_force_deviatoric = [[0.0, 0.0], [0.0, 0.0]]
 
-    (bond_force_deviatoric, deviatoric_plastic_extension_state) = PD_Solid_Plastic.plastic(
-        nodes,
-        td_norm,
-        yield_value,
-        lambdaNP1,
-        alpha,
-        omega,
-        bond_damage,
-        deviatoric_plastic_extension_state,
-        bond_force_deviatoric,
-    )
+    (bond_force_deviatoric, deviatoric_plastic_extension_state) = PD_Solid_Plastic.plastic(nodes,
+                                                                                           td_norm,
+                                                                                           yield_value,
+                                                                                           lambdaNP1,
+                                                                                           alpha,
+                                                                                           omega,
+                                                                                           bond_damage,
+                                                                                           deviatoric_plastic_extension_state,
+                                                                                           bond_force_deviatoric)
     @test bond_force_deviatoric == [[0.0, 0.0], [0.0, 0.0]]
     @test deviatoric_plastic_extension_state == [[0.0, 0.0], [0.0, 0.0]]
 end

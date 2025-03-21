@@ -38,7 +38,7 @@ function init_fields(datamanager::Module)
     nnodes = datamanager.get_nnodes()
     if !datamanager.has_key("Active")
         active = datamanager.create_constant_node_field("Active", Bool, 1, false)
-        for iID = 1:nnodes
+        for iID in 1:nnodes
             bond_damageN[iID] .= 0
             bond_damageNP1[iID] .= 0
         end
@@ -64,21 +64,16 @@ Computes the addtive models
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    model_param::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
-
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       model_param::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64,
+                       to::TimerOutput)
     mod = datamanager.get_model_module(model_param["Additive Model"])
     return mod.compute_model(datamanager, nodes, model_param, block, time, dt)
-
 end
-
 
 """
     init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
@@ -98,13 +93,12 @@ Initialize the additive models.
 datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+                    block::Int64)
     model_param = datamanager.get_properties(block, "Additive Model")
-    mod = Set_modules.create_module_specifics(
-        model_param["Additive Model"],
-        module_list,
-        "additive_name",
-    )
+    mod = Set_modules.create_module_specifics(model_param["Additive Model"],
+                                              module_list,
+                                              "additive_name")
     if isnothing(mod)
         @error "No additive model of name " * model_param["Additive Model"] * " exists."
         return nothing

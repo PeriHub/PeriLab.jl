@@ -31,16 +31,16 @@ end
 end
 
 @testset "ut_get_paraview_coordinates" begin
-    for i = 1:3
+    for i in 1:3
         @test get_paraview_coordinates(1, i) == "x"
         @test get_paraview_coordinates(2, i) == "y"
         @test get_paraview_coordinates(3, i) == "z"
     end
     @test isnothing(get_paraview_coordinates(3, 10))
 
-    for ref = 4:9
-        for i = 1:3
-            for j = 1:3
+    for ref in 4:9
+        for i in 1:3
+            for j in 1:3
                 @test get_paraview_coordinates((i - 1) * 3 + j, ref) ==
                       paraview_specifics(i) * paraview_specifics(j)
             end
@@ -122,150 +122,106 @@ test_data_manager.set_nset("Nset_2", [5])
 
 nsets = test_data_manager.get_nsets()
 coords = vcat(transpose(coordinates))
-outputs = Dict(
-    "Fields" => Dict(
-        "Forcesxx" => Dict(
-            "fieldname" => "Forces",
-            "time" => "NP1",
-            "global_var" => false,
-            "dof" => 1,
-            "type" => Float64,
-        ),
-        "Forcesxy" => Dict(
-            "fieldname" => "Forces",
-            "time" => "NP1",
-            "global_var" => false,
-            "dof" => 1,
-            "type" => Float64,
-        ),
-        "Forcesxz" => Dict(
-            "fieldname" => "Forces",
-            "time" => "NP1",
-            "global_var" => false,
-            "dof" => 1,
-            "type" => Float64,
-        ),
-        "Forcesyx" => Dict(
-            "fieldname" => "Forces",
-            "time" => "NP1",
-            "global_var" => false,
-            "dof" => 1,
-            "type" => Float64,
-        ),
-        "Forcesyy" => Dict(
-            "fieldname" => "Forces",
-            "time" => "NP1",
-            "global_var" => false,
-            "dof" => 1,
-            "type" => Float64,
-        ),
-        "Forcesyz" => Dict(
-            "fieldname" => "Forces",
-            "time" => "NP1",
-            "global_var" => false,
-            "dof" => 1,
-            "type" => Float64,
-        ),
-        "Displacements" => Dict(
-            "fieldname" => "Displacements",
-            "time" => "NP1",
-            "global_var" => false,
-            "dof" => 1,
-            "type" => Float64,
-        ),
-        "External_Displacements" => Dict(
-            "fieldname" => "Displacements",
-            "time" => "NP1",
-            "global_var" => true,
-            "dof" => 1,
-            "type" => Float64,
-            "compute_params" => Dict(
-                "Compute Class" => "Block_Data",
-                "Calculation Type" => "Maximum",
-                "Block" => "block_1",
-                "Variable" => "Displacements",
-            ),
-        ),
-        "External_Forces" => Dict(
-            "fieldname" => "Forces",
-            "time" => "NP1",
-            "global_var" => true,
-            "dof" => 3,
-            "type" => Float64,
-            "compute_params" => Dict(
-                "Compute Class" => "Node_Set_Data",
-                "Calculation Type" => "Minimum",
-                "Node Set" => 1,
-                "Variable" => "DisplacementsNP1",
-            ),
-        ),
-    ),
-)
-computes = Dict(
-    "Fields" => Dict(
-        "External_Displacements" => Dict(
-            "fieldname" => "Displacements",
-            "time" => "NP1",
-            "global_var" => true,
-            "dof" => 1,
-            "type" => Float64,
-            "compute_params" => Dict(
-                "Compute Class" => "Block_Data",
-                "Calculation Type" => "Maximum",
-                "Block" => "block_1",
-                "Variable" => "DisplacementsNP1",
-            ),
-        ),
-        "External_Forces" => Dict(
-            "fieldname" => "Forces",
-            "time" => "NP1",
-            "global_var" => true,
-            "dof" => 3,
-            "type" => Float64,
-            "compute_params" => Dict(
-                "Compute Class" => "Node_Set_Data",
-                "Calculation Type" => "Minimum",
-                "Node Set" => 1,
-                "Variable" => "DisplacementsNP1",
-            ),
-        ),
-    ),
-)
+outputs = Dict("Fields" => Dict("Forcesxx" => Dict("fieldname" => "Forces",
+                                                   "time" => "NP1",
+                                                   "global_var" => false,
+                                                   "dof" => 1,
+                                                   "type" => Float64),
+                                "Forcesxy" => Dict("fieldname" => "Forces",
+                                                   "time" => "NP1",
+                                                   "global_var" => false,
+                                                   "dof" => 1,
+                                                   "type" => Float64),
+                                "Forcesxz" => Dict("fieldname" => "Forces",
+                                                   "time" => "NP1",
+                                                   "global_var" => false,
+                                                   "dof" => 1,
+                                                   "type" => Float64),
+                                "Forcesyx" => Dict("fieldname" => "Forces",
+                                                   "time" => "NP1",
+                                                   "global_var" => false,
+                                                   "dof" => 1,
+                                                   "type" => Float64),
+                                "Forcesyy" => Dict("fieldname" => "Forces",
+                                                   "time" => "NP1",
+                                                   "global_var" => false,
+                                                   "dof" => 1,
+                                                   "type" => Float64),
+                                "Forcesyz" => Dict("fieldname" => "Forces",
+                                                   "time" => "NP1",
+                                                   "global_var" => false,
+                                                   "dof" => 1,
+                                                   "type" => Float64),
+                                "Displacements" => Dict("fieldname" => "Displacements",
+                                                        "time" => "NP1",
+                                                        "global_var" => false,
+                                                        "dof" => 1,
+                                                        "type" => Float64),
+                                "External_Displacements" => Dict("fieldname" => "Displacements",
+                                                                 "time" => "NP1",
+                                                                 "global_var" => true,
+                                                                 "dof" => 1,
+                                                                 "type" => Float64,
+                                                                 "compute_params" => Dict("Compute Class" => "Block_Data",
+                                                                                          "Calculation Type" => "Maximum",
+                                                                                          "Block" => "block_1",
+                                                                                          "Variable" => "Displacements")),
+                                "External_Forces" => Dict("fieldname" => "Forces",
+                                                          "time" => "NP1",
+                                                          "global_var" => true,
+                                                          "dof" => 3,
+                                                          "type" => Float64,
+                                                          "compute_params" => Dict("Compute Class" => "Node_Set_Data",
+                                                                                   "Calculation Type" => "Minimum",
+                                                                                   "Node Set" => 1,
+                                                                                   "Variable" => "DisplacementsNP1"))))
+computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" => "Displacements",
+                                                                  "time" => "NP1",
+                                                                  "global_var" => true,
+                                                                  "dof" => 1,
+                                                                  "type" => Float64,
+                                                                  "compute_params" => Dict("Compute Class" => "Block_Data",
+                                                                                           "Calculation Type" => "Maximum",
+                                                                                           "Block" => "block_1",
+                                                                                           "Variable" => "DisplacementsNP1")),
+                                 "External_Forces" => Dict("fieldname" => "Forces",
+                                                           "time" => "NP1",
+                                                           "global_var" => true,
+                                                           "dof" => 3,
+                                                           "type" => Float64,
+                                                           "compute_params" => Dict("Compute Class" => "Node_Set_Data",
+                                                                                    "Calculation Type" => "Minimum",
+                                                                                    "Node Set" => 1,
+                                                                                    "Variable" => "DisplacementsNP1"))))
 
-exo1 = create_result_file(
-    filename2,
-    nnodes,
-    dof,
-    maximum(block_Id),
-    length(nsets),
-    2,
-    topology,
-)
-exo1["file"] = init_results_in_exodus(
-    exo1["file"],
-    outputs,
-    coords,
-    block_Id[1:nnodes],
-    ["Block_1", "Block_2"],
-    nsets,
-    [1, 2, 3, 4, 5],
-    "1.0.0",
-    fem_block,
-    topology,
-    [1, 2],
-)
+exo1 = create_result_file(filename2,
+                          nnodes,
+                          dof,
+                          maximum(block_Id),
+                          length(nsets),
+                          2,
+                          topology)
+exo1["file"] = init_results_in_exodus(exo1["file"],
+                                      outputs,
+                                      coords,
+                                      block_Id[1:nnodes],
+                                      ["Block_1", "Block_2"],
+                                      nsets,
+                                      [1, 2, 3, 4, 5],
+                                      "1.0.0",
+                                      fem_block,
+                                      topology,
+                                      [1, 2])
 rm(filename2)
 exo = create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
-exo["file"] = init_results_in_exodus(
-    exo["file"],
-    outputs,
-    coords,
-    block_Id[1:nnodes],
-    ["Block_1", "Block_2"],
-    nsets,
-    [1, 2, 3, 4, 5],
-    "1.0.0",
-)
+exo["file"] = init_results_in_exodus(exo["file"],
+                                     outputs,
+                                     coords,
+                                     block_Id[1:nnodes],
+                                     ["Block_1", "Block_2"],
+                                     nsets,
+                                     [1, 2, 3, 4, 5],
+                                     "1.0.0")
 result_files = []
 push!(result_files, exo)
 result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 2, 2.2)
@@ -296,7 +252,6 @@ result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 6, 6.7)
     @test read_name(exo["file"], Block, 2) == "Block_2"
 end
 
-
 test_data_manager.create_node_field("Forces", Float64, 6)
 test_data_manager.create_node_field("Displacements", Float64, 1)
 force = test_data_manager.get_field("Forces", "NP1")
@@ -309,10 +264,10 @@ disp[3] = 2.1
 disp[4] = -1.8
 disp[5] = 0
 
-nodal_outputs =
-    Dict(key => value for (key, value) in outputs["Fields"] if (!value["global_var"]))
-exo["file"] =
-    write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs, test_data_manager)
+nodal_outputs = Dict(key => value
+                     for (key, value) in outputs["Fields"] if (!value["global_var"]))
+exo["file"] = write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs,
+                                            test_data_manager)
 
 test_disp_step_zero = read_values(exo["file"], NodalVariable, 1, 1, "Displacements")
 
@@ -328,28 +283,28 @@ test_disp_step_one = read_values(exo["file"], NodalVariable, 2, 1, 1)
     end
 
     ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesxx")
-    for id = 1:4
+    for id in 1:4
         @test ftest[id] == 0
     end
     @test ftest[5] / 3.3 - 1 < 1e-8
     ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesxy")
-    for id = 1:4
+    for id in 1:4
         @test ftest[id] == 0
     end
     @test ftest[5] / 3.3 - 1 < 1e-8
     ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesxz")
-    for id = 1:4
+    for id in 1:4
         @test ftest[id] == 0
     end
     @test ftest[5] / 3.3 - 1 < 1e-8
     ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesyx")
-    for id = 1:4
+    for id in 1:4
         @test ftest[id] == 0
     end
     @test ftest[5] / 3.3 - 1 < 1e-8
 
     ftest = read_values(exo["file"], NodalVariable, 2, 1, "Forcesyy")
-    for id = 1:4
+    for id in 1:4
         @test ftest[id] == 0
     end
     @test ftest[5] / 3.3 - 1 < 1e-8
@@ -360,7 +315,6 @@ test_disp_step_one = read_values(exo["file"], NodalVariable, 2, 1, 1)
     @test ftest[3] / 2.3 - 1 < 1e-8
     @test ftest[4] == 0
     @test ftest[5] / 3.3 - 1 < 1e-8
-
 end
 
 csvfilename = "./tmp/" * "test_2.csv"
@@ -370,7 +324,6 @@ csv_file = create_result_file(csvfilename, computes)
 exo["file"] = write_global_results_in_exodus(exo["file"], 2, [0.1, 0.2])
 
 @testset "ut_write_global_results_in_exodus" begin
-
     global_vars = read_names(exo["file"], GlobalVariable)
     @test global_vars[1] == "External_Displacements"
     @test global_vars[2] == "External_Forces"
@@ -378,7 +331,6 @@ exo["file"] = write_global_results_in_exodus(exo["file"], 2, [0.1, 0.2])
     ftest = read_values(exo["file"], GlobalVariable, 2)
     @test ftest[1] == 0.1
     @test ftest[2] == 0.2
-
 end
 
 @testset "ut_merge_exodus_file" begin
@@ -394,12 +346,9 @@ end
 write_global_results_in_csv(csv_file["file"], 1.0, [0.1, 0.2])
 #TODO: check if the csv file is correct
 @testset "ut_write_global_results_in_csv" begin
-
     @test isfile(csv_file["filename"])
     @test csv_file["file"] isa IOStream
-
 end
-
 
 close(exo["file"])
 close(csv_file["file"])

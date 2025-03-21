@@ -12,7 +12,6 @@ export get_output_filenames
 export get_output_type
 export check_for_duplicates
 
-
 """
     check_for_duplicates(filenames)
 
@@ -163,12 +162,10 @@ Gets the output fieldnames.
 # Returns
 - `output_fieldnames::Vector{String}`: The output fieldnames
 """
-function get_output_fieldnames(
-    outputs::Dict,
-    variables::Vector{String},
-    computes::Vector{String},
-    output_type::String,
-)
+function get_output_fieldnames(outputs::Dict,
+                               variables::Vector{String},
+                               computes::Vector{String},
+                               output_type::String)
     return_outputs = []
     for output in keys(outputs)
         if !isa(outputs[output], Bool)
@@ -217,16 +214,13 @@ function get_outputs(params::Dict, variables::Vector{String}, compute_names::Vec
             output_type = get_output_type(outputs, output)
             if (haskey(outputs[output], "Output Variables")) &&
                (length(outputs[output]["Output Variables"]) > 0)
-                outputs[output]["fieldnames"] = get_output_fieldnames(
-                    outputs[output]["Output Variables"],
-                    variables,
-                    compute_names,
-                    output_type,
-                )
+                outputs[output]["fieldnames"] = get_output_fieldnames(outputs[output]["Output Variables"],
+                                                                      variables,
+                                                                      compute_names,
+                                                                      output_type)
             else
                 @warn "No output variables are defined for " * output * "."
             end
-
         end
     end
     return outputs
@@ -244,20 +238,17 @@ Gets the output frequency.
 - `freq::Vector{Int64}`: The output frequency
 """
 function get_output_frequency(params::Dict, nsteps::Int64)
-
     freq = zeros(1)
     if haskey(params::Dict, "Outputs")
         outputs = params["Outputs"]
         freq = zeros(Int64, length(keys(outputs)))
         for (id, output) in enumerate(keys(outputs))
-            output_options =
-                Dict("Output Frequency" => false, "Number of Output Steps" => false)
+            output_options = Dict("Output Frequency" => false,
+                                  "Number of Output Steps" => false)
             freq[id] = 1
 
-            if (
-                haskey(outputs[output], "Output Frequency") &&
-                haskey(outputs[output], "Number of Output Steps")
-            )
+            if (haskey(outputs[output], "Output Frequency") &&
+                haskey(outputs[output], "Number of Output Steps"))
                 output_options["Number of Output Steps"] = true
                 @warn "Double output step / frequency definition. First option is used. ''Output Frequency'' is ignored."
             else
@@ -280,7 +271,6 @@ function get_output_frequency(params::Dict, nsteps::Int64)
                 end
             end
         end
-
     end
 
     return freq

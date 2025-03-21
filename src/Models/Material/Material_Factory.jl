@@ -7,12 +7,12 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 include("Material_Basis.jl")
 using LinearAlgebra
 using .Material_Basis:
-    get_all_elastic_moduli,
-    distribute_forces!,
-    check_symmetry,
-    get_all_elastic_moduli,
-    init_local_damping_due_to_damage,
-    local_damping_due_to_damage
+                       get_all_elastic_moduli,
+                       distribute_forces!,
+                       check_symmetry,
+                       get_all_elastic_moduli,
+                       init_local_damping_due_to_damage,
+                       local_damping_due_to_damage
 using .Set_modules
 using TimerOutputs
 using StaticArrays
@@ -34,12 +34,10 @@ function compute_local_damping(datamanager::Module, nodes, params, dt)
     return local_damping_due_to_damage(datamanager, nodes, params, dt)
 end
 function init_local_damping(datamanager, nodes, material_parameter, damage_parameter)
-    return init_local_damping_due_to_damage(
-        datamanager,
-        nodes,
-        material_parameter,
-        damage_parameter,
-    )
+    return init_local_damping_due_to_damage(datamanager,
+                                            nodes,
+                                            material_parameter,
+                                            damage_parameter)
 end
 
 """
@@ -63,8 +61,8 @@ function init_fields(datamanager::Module)
     datamanager.create_node_field("Velocity", Float64, dof)
     datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
     datamanager.create_constant_bond_field("Temporary Bond Field", Float64, 1)
-    deformed_coorN, deformed_coorNP1 =
-        datamanager.create_node_field("Deformed Coordinates", Float64, dof)
+    deformed_coorN, deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates",
+                                                                     Float64, dof)
     deformed_coorN = copy(datamanager.get_field("Coordinates"))
     deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
     datamanager.create_node_field("Displacements", Float64, dof)
@@ -80,7 +78,6 @@ function init_fields(datamanager::Module)
     return datamanager
 end
 
-
 """
     init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
 
@@ -93,7 +90,8 @@ Initializes the material model.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+                    block::Int64)
     model_param = datamanager.get_properties(block, "Material Model")
     if !haskey(model_param, "Material Model")
         @error "Block " * string(block) * " has no material model defined."
@@ -109,11 +107,9 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
     material_models = map(r -> strip(r), material_models)
 
     for material_model in material_models
-        mod = Set_modules.create_module_specifics(
-            material_model,
-            module_list,
-            "material_name",
-        )
+        mod = Set_modules.create_module_specifics(material_model,
+                                                  module_list,
+                                                  "material_name")
         if isnothing(mod)
             @error "No material of name " * material_model * " exists."
         end
@@ -130,9 +126,8 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, b
         for iID in nodes
             if length(nlist_filtered_ids[iID]) != 0
                 for neighborID in nlist_filtered_ids[iID]
-                    bond_norm[iID][neighborID] .*= sign(
-                        dot((bond_geometry[iID][neighborID]), bond_norm[iID][neighborID]),
-                    )
+                    bond_norm[iID][neighborID] .*= sign(dot((bond_geometry[iID][neighborID]),
+                                                            bond_norm[iID][neighborID]))
                 end
             end
         end
@@ -183,21 +178,18 @@ Computes the material models
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    model_param::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
-
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       model_param::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64,
+                       to::TimerOutput)
     if occursin("Correspondence", model_param["Material Model"])
         mod = datamanager.get_model_module("Correspondence")
 
-        datamanager =
-            mod.compute_model(datamanager, nodes, model_param, block, time, dt, to)
+        datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt,
+                                        to)
         return datamanager
     end
     material_models = split(model_param["Material Model"], "+")
@@ -205,8 +197,8 @@ function compute_model(
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
 
-        datamanager =
-            mod.compute_model(datamanager, nodes, model_param, block, time, dt, to)
+        datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt,
+                                        to)
     end
     return datamanager
 end
@@ -251,10 +243,8 @@ Distribute the force densities.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function distribute_force_densities(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-)
+function distribute_force_densities(datamanager::Module,
+                                    nodes::Union{SubArray,Vector{Int64}})
     nlist = datamanager.get_nlist()
     nlist_filtered_ids = datamanager.get_filtered_nlist()
     bond_force = datamanager.get_field("Bond Forces")
@@ -265,20 +255,17 @@ function distribute_force_densities(
     if !isnothing(nlist_filtered_ids)
         bond_norm = datamanager.get_field("Bond Norm")
         displacements = datamanager.get_field("Displacements", "NP1")
-        force_densities = distribute_forces!(
-            force_densities,
-            nodes,
-            nlist,
-            nlist_filtered_ids,
-            bond_force,
-            volume,
-            bond_damage,
-            displacements,
-            bond_norm,
-        )
+        force_densities = distribute_forces!(force_densities,
+                                             nodes,
+                                             nlist,
+                                             nlist_filtered_ids,
+                                             bond_force,
+                                             volume,
+                                             bond_damage,
+                                             displacements,
+                                             bond_norm)
     else
         distribute_forces!(force_densities, nodes, nlist, bond_force, volume, bond_damage)
     end
-
 end
 end

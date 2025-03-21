@@ -7,7 +7,6 @@ using Test
 #include("../../../src/PeriLab.jl")
 #import .PeriLab
 
-
 @testset "ut_init_surface_correction" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
@@ -19,18 +18,12 @@ using Test
     block_iD .= 1
     mod_struct = PeriLab.Solver_control.Model_Factory
 
-    @test mod_struct.init_surface_correction(
-        test_data_manager,
-        Dict(),
-        "local_synch",
-        "synchronise_field",
-    ) == test_data_manager
-    @test isnothing(
-        mod_struct.init_surface_correction(
-            test_data_manager,
-            Dict("Surface Correction" => Dict("a" => 0)),
-            "local_synch",
-            "synchronise_field",
-        ),
-    )
+    @test mod_struct.init_surface_correction(test_data_manager,
+                                             Dict(),
+                                             "local_synch",
+                                             "synchronise_field") == test_data_manager
+    @test isnothing(mod_struct.init_surface_correction(test_data_manager,
+                                                       Dict("Surface Correction" => Dict("a" => 0)),
+                                                       "local_synch",
+                                                       "synchronise_field"))
 end

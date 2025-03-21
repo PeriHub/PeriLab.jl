@@ -25,8 +25,8 @@ function write_mesh(x_end, y_end, dx, dy)
     node_set = []
 
     # Loop through x and y coordinates to create the mesh
-    for x = 0:dx:x_end
-        for y = 0:dy:y_end
+    for x in 0:dx:x_end
+        for y in 0:dy:y_end
             block_id = 1
 
             # Determine block_id based on x coordinate

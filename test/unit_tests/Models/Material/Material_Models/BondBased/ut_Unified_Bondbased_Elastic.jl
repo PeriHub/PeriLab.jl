@@ -1,9 +1,7 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-include(
-    "../../../../../../src/Models/Material/Material_Models/BondBased/Unified_Bondbased_Elastic.jl",
-)
+include("../../../../../../src/Models/Material/Material_Models/BondBased/Unified_Bondbased_Elastic.jl")
 
 using .Unified_Bondbased_Elastic
 using Test
@@ -28,21 +26,15 @@ end
     volume = [1.0, 1.0, 1.0]
 
     # Call the function
-    Unified_Bondbased_Elastic.compute_bond_based_strain(
-        bb_strain,
-        deformed_bond,
-        undeformed_bond,
-        bond_damage,
-        nlist,
-        volume,
-    )
+    Unified_Bondbased_Elastic.compute_bond_based_strain(bb_strain,
+                                                        deformed_bond,
+                                                        undeformed_bond,
+                                                        bond_damage,
+                                                        nlist,
+                                                        volume)
 
     # Assert expected results
-    @test bb_strain == [
-        0.575 0.4999999999999999 0.4428571428571428
-        0.7874999999999999 0.6666666666666667 0.5821428571428571
-        0.9999999999999998 0.8333333333333333 0.7214285714285713
-    ]
-
-
+    @test bb_strain == [0.575 0.4999999999999999 0.4428571428571428
+           0.7874999999999999 0.6666666666666667 0.5821428571428571
+           0.9999999999999998 0.8333333333333333 0.7214285714285713]
 end

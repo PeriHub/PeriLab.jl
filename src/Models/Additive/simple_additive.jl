@@ -51,15 +51,12 @@ Example:
 ```julia
 ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    additive_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-)
-
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       additive_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64)
     nlist = datamanager.get_nlist()
     inverse_nlist = datamanager.get_inverse_nlist()
     activation_time = datamanager.get_field("Activation_Time")
@@ -80,7 +77,7 @@ function compute_model(
             flux[iID] = add_flux[iID] / dt
             nlist_temp = nlist[iID]
             nn = number_of_neighbors[iID]
-            for jID = 1:nn
+            for jID in 1:nn
                 @views neighborID = nlist_temp[jID]
                 if activation_time[neighborID] > time
                     continue
@@ -110,13 +107,10 @@ Inits the simple additive model.
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    additive_parameter::Dict,
-    block::Int64,
-)
-
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    additive_parameter::Dict,
+                    block::Int64)
     add_flux = datamanager.create_constant_node_field("Additive Heat Flux", Float64, 1)
     heat_capacity = datamanager.get_field("Specific Heat Capacity")
     density = datamanager.get_field("Density")

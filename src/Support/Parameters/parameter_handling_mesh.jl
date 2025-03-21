@@ -116,11 +116,12 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
         for (id, entry) in enumerate(nset_names)
             nset_nodes = Vector{Int64}(read_set(exo, NodeSet, id).nodes)
             if length(entry) == 0
-                nsets["Set-"*string(id)] =
-                    findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+                nsets["Set-" * string(id)] = findall(row -> all(val -> any(val .==
+                                                                           nset_nodes), row),
+                                                     conn)
             else
-                nsets[entry] =
-                    findall(row -> all(val -> any(val .== nset_nodes), row), conn)
+                nsets[entry] = findall(row -> all(val -> any(val .== nset_nodes), row),
+                                       conn)
             end
             # end
         end
@@ -139,7 +140,6 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
         if nodesets[entry] isa Int64 || nodesets[entry] isa Int32
             nsets[entry] = [nodesets[entry]]
         elseif occursin(".txt", nodesets[entry])
-
             if isnothing(get_header(joinpath(path, nodesets[entry])))
                 @warn "Node set file " *
                       nodesets[entry] *
@@ -147,13 +147,11 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
                 continue
             end
             header_line, header = get_header(joinpath(path, nodesets[entry]))
-            nodes = CSV.read(
-                joinpath(path, nodesets[entry]),
-                DataFrame;
-                delim = " ",
-                header = false,
-                skipto = header_line + 1,
-            )
+            nodes = CSV.read(joinpath(path, nodesets[entry]),
+                             DataFrame;
+                             delim = " ",
+                             header = false,
+                             skipto = header_line + 1,)
             if size(nodes) == (0, 0)
                 @error "Node set file is empty " *
                        joinpath(path, nodesets[entry]) *
@@ -167,7 +165,7 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
         elseif occursin("mesh[!,", nodesets[entry])
             nodes = []
             global mesh = mesh_df
-            for id = 1:size(mesh, 1)
+            for id in 1:size(mesh, 1)
                 global i = id
                 if eval(Meta.parse(nodesets[entry]))
                     push!(nodes, i)

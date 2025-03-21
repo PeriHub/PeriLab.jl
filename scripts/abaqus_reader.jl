@@ -46,9 +46,9 @@ function extrude_surface_mesh(mesh::DataFrame, direction, step, number)
 
     node_sets = Dict("Extruded_1" => [], "Extruded_2" => [])
 
-    for i = coord_max+step:step:coord_max+step*number,
-        j = row_min:step:row_max+step,
-        k = min_z:step:max_z+step
+    for i in (coord_max + step):step:(coord_max + step * number),
+        j in row_min:step:(row_max + step),
+        k in min_z:step:(max_z + step)
 
         if direction == "X"
             push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
@@ -61,9 +61,9 @@ function extrude_surface_mesh(mesh::DataFrame, direction, step, number)
 
     block_id += 1
 
-    for i = coord_min-step:-step:coord_min-step*number,
-        j = row_min:step:row_max+step,
-        k = min_z:step:max_z+step
+    for i in (coord_min - step):(-step):(coord_min - step * number),
+        j in row_min:step:(row_max + step),
+        k in min_z:step:(max_z + step)
 
         if direction == "X"
             push!(mesh, (x = i, y = j, z = k, volume = volume, block_id = block_id))
@@ -134,7 +134,7 @@ function hex8_volume(hex_vertices::Vector{Vector{Float64}})
         [hex_vertices[2], hex_vertices[3], hex_vertices[4], hex_vertices[7]],
         [hex_vertices[2], hex_vertices[5], hex_vertices[6], hex_vertices[7]],
         [hex_vertices[4], hex_vertices[5], hex_vertices[7], hex_vertices[8]],
-        [hex_vertices[2], hex_vertices[4], hex_vertices[5], hex_vertices[7]],
+        [hex_vertices[2], hex_vertices[4], hex_vertices[5], hex_vertices[7]]
     ]
 
     volumes = []
@@ -159,7 +159,7 @@ function wedge6_volume(wedge_vertices::Vector{Vector{Float64}})
     tets = [
         [wedge_vertices[1], wedge_vertices[2], wedge_vertices[3], wedge_vertices[4]],
         [wedge_vertices[2], wedge_vertices[3], wedge_vertices[4], wedge_vertices[5]],
-        [wedge_vertices[3], wedge_vertices[4], wedge_vertices[5], wedge_vertices[6]],
+        [wedge_vertices[3], wedge_vertices[4], wedge_vertices[5], wedge_vertices[6]]
     ]
 
     volumes = []
@@ -184,7 +184,7 @@ function area_of_polygon(vertices)
     n = length(vertices)
     area = 0.0
 
-    for i = 1:n
+    for i in 1:n
         j = mod(i, n) + 1
         area += (vertices[i][1] + vertices[j][1]) * (vertices[i][2] - vertices[j][2])
     end
@@ -209,11 +209,9 @@ function read(filename)
     end
     @info "Abaqus mesh with $dof DOF"
 
-    mesh_df = ifelse(
-        dof == 2,
-        DataFrame(x = [], y = [], volume = [], block_id = Int[]),
-        DataFrame(x = [], y = [], z = [], volume = [], block_id = Int[]),
-    )
+    mesh_df = ifelse(dof == 2,
+                     DataFrame(x = [], y = [], volume = [], block_id = Int[]),
+                     DataFrame(x = [], y = [], z = [], volume = [], block_id = Int[]))
 
     id = 1
     block_id = 1
@@ -237,21 +235,15 @@ function read(filename)
             volume = calculate_volume(string(element_type), vertices)
             center = sum(vertices) / size(vertices)[1]
             if dof == 2
-                push!(
-                    mesh_df,
-                    (x = center[1], y = center[2], volume = volume, block_id = block_id),
-                )
+                push!(mesh_df,
+                      (x = center[1], y = center[2], volume = volume, block_id = block_id))
             else
-                push!(
-                    mesh_df,
-                    (
-                        x = center[1],
-                        y = center[2],
-                        z = center[3],
-                        volume = volume,
-                        block_id = block_id,
-                    ),
-                )
+                push!(mesh_df,
+                      (x = center[1],
+                       y = center[2],
+                       z = center[3],
+                       volume = volume,
+                       block_id = block_id))
             end
             push!(element_written, element_id)
             id += 1
@@ -286,7 +278,6 @@ function read(filename)
     nodes = nothing
     elements = nothing
     element_sets = nothing
-
 end
 
 read("INPUTFILE.inp")

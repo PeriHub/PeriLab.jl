@@ -7,22 +7,18 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
 
-
 @testset "ut_calculate_Q" begin
-
     accuracy_order = 1
     dof = 2
     undeformed_bond = [1.0, 2.0]
     horizon = 3.0
     expected_Q = [1.0 / 3.0, 2.0 / 3.0]
     Q = zeros(2)
-    Q = Pre_Bond_Associated_Correspondence.calculate_Q(
-        accuracy_order,
-        dof,
-        undeformed_bond,
-        horizon,
-        Q,
-    )
+    Q = Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
+                                                       dof,
+                                                       undeformed_bond,
+                                                       horizon,
+                                                       Q)
 
     @test isapprox(Q, expected_Q)
 
@@ -35,16 +31,14 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
         0.6666666666666666,
         0.1111111111111111,
         0.2222222222222222,
-        0.4444444444444444,
+        0.4444444444444444
     ]
     Q = zeros(5)
-    Q = Pre_Bond_Associated_Correspondence.calculate_Q(
-        accuracy_order,
-        dof,
-        undeformed_bond,
-        horizon,
-        Q,
-    )
+    Q = Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
+                                                       dof,
+                                                       undeformed_bond,
+                                                       horizon,
+                                                       Q)
 
     @test isapprox(Q, expected_Q)
 
@@ -61,16 +55,14 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
         0.5555555555555556,
         0.4444444444444444,
         1.1111111111111112,
-        2.777777777777778,
+        2.777777777777778
     ]
     Q = zeros(9)
-    Q = Pre_Bond_Associated_Correspondence.calculate_Q(
-        accuracy_order,
-        dof,
-        undeformed_bond,
-        horizon,
-        Q,
-    )
+    Q = Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
+                                                       dof,
+                                                       undeformed_bond,
+                                                       horizon,
+                                                       Q)
 
     @test isapprox(Q, expected_Q)
     Q = zeros(3)
@@ -84,7 +76,6 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
     @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [0, 0, 1]
 end
-
 
 @testset "ut_compute_weighted_volume" begin
     test_data_manager = PeriLab.Data_manager
@@ -110,22 +101,18 @@ end
     bond_damage[1][:] .= 1
     omega = test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
     omega[1][:] = [1.0, 0.8, 0.6]
-    weighted_volume =
-        test_data_manager.create_constant_node_field("Weighted Volume", Float64, 1)
+    weighted_volume = test_data_manager.create_constant_node_field("Weighted Volume",
+                                                                   Float64, 1)
 
-
-    Pre_Bond_Associated_Correspondence.compute_weighted_volume!(
-        weighted_volume,
-        nodes,
-        nlist,
-        volume,
-        bond_damage,
-        omega,
-    )
+    Pre_Bond_Associated_Correspondence.compute_weighted_volume!(weighted_volume,
+                                                                nodes,
+                                                                nlist,
+                                                                volume,
+                                                                bond_damage,
+                                                                omega)
 
     expected_weighted_volume = sum(bond_damage[1][:] .* omega[1][:] .* volume[nlist[1]])
     @test isapprox(weighted_volume[1], expected_weighted_volume)
-
 end
 
 @testset "ut_compute_Lagrangian_gradient_weights" begin
@@ -138,32 +125,30 @@ end
     omega = [[1.0, 1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
     undeformed_bond = [
         [[1.0, 0.0], [0.0, 1.0], [1.0, 2.0], [0.2, 1.0], [2.0, 1.0]],
-        [[-6.0, 8.5], [6.0, 1.5], [6.0, 2.5], [-0.9, 0.8], [1.0, -0.9], [0.0, -0.9]],
+        [[-6.0, 8.5], [6.0, 1.5], [6.0, 2.5], [-0.9, 0.8], [1.0, -0.9], [0.0, -0.9]]
     ]
     volume = [1.0, 2.0, 1.0, 1.0, 1.0, 4.0, 1.0, 1.0]
     gradient_weights = [
         [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
-        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0 0.0]],
+        [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0 0.0]]
     ]
     Q = zeros(5)
     Minv = zeros(5, 5)
     M = zeros(5, 5)
 
-    Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(
-        nodes,
-        dof,
-        accuracy_order,
-        volume,
-        nlist,
-        horizon,
-        bond_damage,
-        omega,
-        Q,
-        M,
-        Minv,
-        undeformed_bond,
-        gradient_weights,
-    )
+    Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes,
+                                                                           dof,
+                                                                           accuracy_order,
+                                                                           volume,
+                                                                           nlist,
+                                                                           horizon,
+                                                                           bond_damage,
+                                                                           omega,
+                                                                           Q,
+                                                                           M,
+                                                                           Minv,
+                                                                           undeformed_bond,
+                                                                           gradient_weights)
 
     @test isapprox(gradient_weights[1][1], [0.5000000000000014, -0.24999999999999992])
     @test isapprox(gradient_weights[1][2], [-2.5000000000000817, -1.000000000000037])

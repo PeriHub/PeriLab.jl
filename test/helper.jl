@@ -18,11 +18,10 @@ function run_perilab(filename, cores, compare, folder_name = ""; reload = false)
     if cores == 1
         PeriLab.main(filename * ".yaml"; silent = true, reload = reload)
     else
-        fn =
-            """using PeriLab; PeriLab.main(""" *
-            '"' *
-            filename *
-            """.yaml"; silent = true)"""
+        fn = """using PeriLab; PeriLab.main(""" *
+             '"' *
+             filename *
+             """.yaml"; silent = true)"""
         command = `$(Base.julia_cmd()) -e "$(fn)"`
         mpiexec() do exe  # MPI wrapper
             cmd = `$exe -n $cores $command`
@@ -33,17 +32,13 @@ function run_perilab(filename, cores, compare, folder_name = ""; reload = false)
     if compare
         same = false
         if cores == 1
-            same = exodiff(
-                filename * ".e",
-                "./Reference/" * filename * ".e";
-                command_file = folder_name * ".cmd",
-            )
+            same = exodiff(filename * ".e",
+                           "./Reference/" * filename * ".e";
+                           command_file = folder_name * ".cmd",)
         else
-            same = exodiff(
-                filename * ".e",
-                "./Reference/" * filename * ".e",
-                ["-p", "-f", folder_name * ".cmd"],
-            )
+            same = exodiff(filename * ".e",
+                           "./Reference/" * filename * ".e",
+                           ["-p", "-f", folder_name * ".cmd"])
         end
         @test same
         if same
@@ -105,7 +100,7 @@ function run_mpi_test(filename, cores, check, folder_name = "")
 end
 
 function check_test_json(cores)
-    for i = 1:cores
+    for i in 1:cores
         @testset "core $i" begin
             failed = false
             data = JSON3.read(read("test_results_$(i-1).json", String))

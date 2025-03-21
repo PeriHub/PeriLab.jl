@@ -28,7 +28,6 @@ function pre_calculation_name()
     return "pre_calculation Template"
 end
 
-
 """
     fields_for_local_synchronization(datamanager::Module, model::String)
 
@@ -63,12 +62,10 @@ Example:
 ```julia
   ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    Pre_calculation_parameter::Dict,
-    block::Int64,
-)
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       Pre_calculation_parameter::Dict,
+                       block::Int64)
     @info "Please write a possible precalculation routines in pre_calculation_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(datamanager, nodes, Pre_calculation_parameter, time, dt) function."
@@ -90,13 +87,10 @@ Inits the calculation.
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    parameter::Union{Dict,OrderedDict},
-    block::Int64,
-)
-
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    parameter::Union{Dict,OrderedDict},
+                    block::Int64)
     return datamanager
 end
 

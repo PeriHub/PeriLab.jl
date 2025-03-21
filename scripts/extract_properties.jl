@@ -23,7 +23,7 @@ function main()
                 push!(properties, parse(Float64, strip(value)))
                 id += 1
             end
-            for i = 1:8-id
+            for i in 1:(8 - id)
                 push!(properties, nothing)
             end
         end

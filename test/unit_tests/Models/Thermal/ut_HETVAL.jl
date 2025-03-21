@@ -20,42 +20,29 @@ end
     if !isfile(file)
         file = "../src/Models/Thermal/HETVALs/hetval.so"
     end
-    @test isnothing(
-        HETVAL.init_model(
-            test_data_manager,
-            Vector{Int64}(1:nodes),
-            Dict{String,Any}("File" => file * "_not_there"),
-        ),
-    )
+    @test isnothing(HETVAL.init_model(test_data_manager,
+                                      Vector{Int64}(1:nodes),
+                                      Dict{String,Any}("File" => file * "_not_there")))
 
-    @test isnothing(
-        HETVAL.init_model(test_data_manager, Vector{Int64}(1:nodes), Dict{String,Any}()),
-    )
+    @test isnothing(HETVAL.init_model(test_data_manager, Vector{Int64}(1:nodes),
+                                      Dict{String,Any}()))
 
-    @test isnothing(
-        HETVAL.init_model(
-            test_data_manager,
-            Vector{Int64}(1:nodes),
-            Dict{String,Any}(
-                "File" => file,
-                "Predefined Field Names" => "test_field_2 test_field_3",
-            ),
-        ),
-    )
+    @test isnothing(HETVAL.init_model(test_data_manager,
+                                      Vector{Int64}(1:nodes),
+                                      Dict{String,Any}("File" => file,
+                                                       "Predefined Field Names" => "test_field_2 test_field_3")))
 
     test_1 = test_data_manager.create_constant_node_field("test_field_2", Float64, 1)
     test_1[1] = 7.3
     test_2 = test_data_manager.create_constant_node_field("test_field_3", Float64, 1)
     test_2 .= 3
-    mat_dict = Dict{String,Any}(
-        "File" => file,
-        "HETVAL name" => "test_sub",
-        "Number of Properties" => 3,
-        "Property_1" => 2,
-        "Property_2" => 2,
-        "Property_3" => 2.4,
-        "Predefined Field Names" => "test_field_2 test_field_3",
-    )
+    mat_dict = Dict{String,Any}("File" => file,
+                                "HETVAL name" => "test_sub",
+                                "Number of Properties" => 3,
+                                "Property_1" => 2,
+                                "Property_2" => 2,
+                                "Property_3" => 2.4,
+                                "Predefined Field Names" => "test_field_2 test_field_3")
     HETVAL.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
     fields = test_data_manager.get_field("Predefined Fields")
     inc = test_data_manager.get_field("Predefined Fields Increment")
@@ -66,14 +53,12 @@ end
     @test fields[1, 2] == test_2[1]
     @test fields[2, 2] == test_2[2]
     @test mat_dict["HETVAL name"] == "test_sub"
-    mat_dict = Dict{String,Any}(
-        "File" => file,
-        "Number of Properties" => 3,
-        "Property_1" => 2,
-        "Property_2" => 2,
-        "Property_3" => 2.4,
-        "Predefined Field Names" => "test_field_2 test_field_3",
-    )
+    mat_dict = Dict{String,Any}("File" => file,
+                                "Number of Properties" => 3,
+                                "Property_1" => 2,
+                                "Property_2" => 2,
+                                "Property_3" => 2.4,
+                                "Predefined Field Names" => "test_field_2 test_field_3")
     @test !haskey(mat_dict, "HETVAL name")
     HETVAL.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
     @test haskey(mat_dict, "HETVAL name")

@@ -9,9 +9,8 @@ using Test
 
 @testset "init_influence_function" begin
     test_data_manager = PeriLab.Data_manager
-    @test PeriLab.Solver_control.Influence_function.init_influence_function(
-        Vector{Int64}(1:2),
-        test_data_manager,
-        Dict(),
-    ) == test_data_manager
+    @test PeriLab.Solver_control.Influence_function.init_influence_function(Vector{Int64}(1:2),
+                                                                            test_data_manager,
+                                                                            Dict()) ==
+          test_data_manager
 end

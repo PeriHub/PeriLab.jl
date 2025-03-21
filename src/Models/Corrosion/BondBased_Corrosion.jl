@@ -45,23 +45,19 @@ Example:
 ```julia
   ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    corrosion_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-)
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       corrosion_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64)
     concentrationN = datamanager.get_field("Concentration", "N")
     concentrationNP1 = datamanager.get_field("Concentration", "NP1")
     concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
     concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
 
-
     return datamanager
 end
-
 
 """
     init_model(datamanager, nodes, block::Int64, corrosion_parameter)
@@ -77,16 +73,12 @@ Inits the bond-based corrosion model. This template has to be copied, the file r
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    corrosion_parameter::Dict,
-    block::Int64,
-)
-
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    corrosion_parameter::Dict,
+                    block::Int64)
     return datamanager
 end
-
 
 """
     fields_for_local_synchronization(datamanager::Module, model::String)

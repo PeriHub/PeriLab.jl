@@ -6,7 +6,8 @@ module Arlequin_coupling
 include("../Element_formulation/Lagrange_element.jl")
 include("../FEM_routines.jl")
 using .Lagrange_element:
-    define_lagrangian_grid_space, get_recursive_lagrange_shape_functions
+                         define_lagrangian_grid_space,
+                         get_recursive_lagrange_shape_functions
 using .FEM_routines: get_polynomial_degree
 include("../../Support/Helpers.jl")
 using .Helpers: find_active_nodes
@@ -36,12 +37,10 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     lumped_mass = datamanager.get_field("Lumped Mass Matrix")
 
     # TODO memory efficiency; create a mapping field and allocate only the memory of length coupling nodes
-    coupling_matrix = datamanager.create_constant_node_field(
-        "Coupling Matrix",
-        Float64,
-        "Matrix",
-        (prod(p .+ 1) + 1),
-    )
+    coupling_matrix = datamanager.create_constant_node_field("Coupling Matrix",
+                                                             Float64,
+                                                             "Matrix",
+                                                             (prod(p .+ 1) + 1))
 
     if any(x -> x > 1, p)
         @error "Coupling is supported only for linear elements yet."
@@ -61,15 +60,13 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     # point should be inside element -> for Arlequin; more stable
     rho = datamanager.get_field("Density")
     for (coupling_node, coupling_element) in pairs(coupling_dict)
-        coupling_matrix[coupling_node, :, :] = compute_coupling_matrix(
-            coordinates,
-            topology,
-            coupling_node,
-            coupling_element,
-            kappa,
-            p,
-            dof,
-        )
+        coupling_matrix[coupling_node, :, :] = compute_coupling_matrix(coordinates,
+                                                                       topology,
+                                                                       coupling_node,
+                                                                       coupling_element,
+                                                                       kappa,
+                                                                       p,
+                                                                       dof)
         rho[coupling_node] *= (1 - weight_coefficient)
     end
     datamanager.set_coupling_dict(coupling_dict)
@@ -81,22 +78,21 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     return datamanager
 end
 
-
 function topo_closed_loop(pn)
     mapping = Int64[]
 
-    for ip = 1:pn[1]+1
+    for ip in 1:(pn[1] + 1)
         push!(mapping, ip)
     end
-    for ip = 2:pn[2]+1
+    for ip in 2:(pn[2] + 1)
         push!(mapping, ip * (pn[1] + 1))
     end
 
-    for ip = 2:pn[1]+1
+    for ip in 2:(pn[1] + 1)
         push!(mapping, (pn[1] + 1) * (pn[2] + 1) - ip + 1)
     end
 
-    for ip = 1:pn[2]-1
+    for ip in 1:(pn[2] - 1)
         push!(mapping, (pn[1] + 1) * pn[2] + 1 - (pn[1] + 1) * ip)
     end
 
@@ -125,13 +121,12 @@ function compute_coupling(datamanager::Module, fem_params::Dict)
 
     # TODO weights are not correct here see EQ(1)
     for (coupling_node, coupling_element) in pairs(coupling_dict)
-
         topo = vcat(coupling_node, topology[coupling_element, :])
         force_densities[coupling_node, :] .*= (1 - weight_coefficient)
         vol = vcat(volume[coupling_node], volume[topology[coupling_element, :]])
 
-        force_densities[topo, :] -=
-            coupling_matrix[coupling_node, :, :] * displacements[topo, :] ./ vol
+        force_densities[topo, :] -= coupling_matrix[coupling_node, :, :] *
+                                    displacements[topo, :] ./ vol
 
         #force_densities[topo, :] +=
 
@@ -141,18 +136,15 @@ function compute_coupling(datamanager::Module, fem_params::Dict)
     end
 
     return datamanager
-
 end
 
-function compute_coupling_matrix(
-    coordinates,
-    topology,
-    point_val,
-    element_number,
-    kappa,
-    p,
-    dof,
-)
+function compute_coupling_matrix(coordinates,
+                                 topology,
+                                 point_val,
+                                 element_number,
+                                 kappa,
+                                 p,
+                                 dof)
     # only one point per call
     # Point coordinates
     x_point = coordinates[point_val, 1]
@@ -218,24 +210,21 @@ function find_point_in_elements(coordinates, topology, topo_mapping, points_to_c
     # Will store which element each point is in ->
     point_locations = Dict{Int64,Int64}()
     if length(coordinates[1, :]) == 2
-        coor =
-            [(coordinates[i, 1], coordinates[i, 2]) for i in eachindex(coordinates[:, 1])]
+        coor = [(coordinates[i, 1], coordinates[i, 2])
+                for i in eachindex(coordinates[:, 1])]
     else
-        coor = [
-            (coordinates[i, 1], coordinates[i, 2], coordinates[i, 3]) for
-            i in eachindex(coordinates[:, 1])
-        ]
+        coor = [(coordinates[i, 1], coordinates[i, 2], coordinates[i, 3])
+                for
+                i in eachindex(coordinates[:, 1])]
     end
     # Iterate through points to check
     for point_index in points_to_check
         # Check each element
         for element_index in eachindex(topology[:, 1])
             # Check if point is in this element
-            if point_in_polygon(
-                coor[point_index],
-                coor,
-                topology[element_index, topo_mapping],
-            )
+            if point_in_polygon(coor[point_index],
+                                coor,
+                                topology[element_index, topo_mapping])
                 point_locations[point_index] = element_index
                 break
             end
@@ -246,10 +235,13 @@ function find_point_in_elements(coordinates, topology, topo_mapping, points_to_c
 end
 
 function point_in_polygon(point, coor, topo)
-    faces = NTuple{length(topo),Tuple{Tuple{Float64,Float64},Tuple{Float64,Float64}}}(
-        i < length(topo) ? (coor[topo[i]], coor[topo[i+1]]) :
-        (coor[topo[end]], coor[topo[1]]) for i in eachindex(topo)
-    )
+    faces = NTuple{length(topo),Tuple{Tuple{Float64,Float64},Tuple{Float64,Float64}}}(i <
+                                                                                      length(topo) ?
+                                                                                      (coor[topo[i]],
+                                                                                       coor[topo[i + 1]]) :
+                                                                                      (coor[topo[end]],
+                                                                                       coor[topo[1]])
+                                                                                      for i in eachindex(topo))
     start = (minimum(t -> t[1], coor), minimum(t -> t[2], coor))
     stop = (maximum(t -> t[1], coor), maximum(t -> t[2], coor))
     if pinpoly(point, faces, start, stop) == 0

@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 using Test
-include(
-    "../../../../../../src/Models/Material/Material_Models/Ordinary/PD_Solid_Elastic.jl",
-)
-
+include("../../../../../../src/Models/Material/Material_Models/Ordinary/PD_Solid_Elastic.jl")
 
 @testset "get_name&fe_support" begin
     @test PD_Solid_Elastic.material_name() == "PD Solid Elastic"

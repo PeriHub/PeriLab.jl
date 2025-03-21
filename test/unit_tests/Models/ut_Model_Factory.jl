@@ -13,38 +13,30 @@ using Test
     block_list = ["block_1", "block_2", "block_3"]
     test_data_manager.set_block_list(block_list)
     prop_keys = test_data_manager.init_properties()
-    params = Dict(
-        "Blocks" => Dict(
-            "block_1" => Dict("Block ID" => 1, "Material Model" => "a"),
-            "block_2" => Dict("Block ID" => 2, "Material Model" => "c"),
-            "block_3" => Dict(
-                "Block ID" => 3,
-                "Material Model" => "a",
-                "Damage Model" => "a",
-                "Thermal Model" => "therm",
-                "Additive Model" => "add",
-            ),
-        ),
-        "Models" => Dict(
-            "Material Models" => Dict(
-                "a" => Dict("value" => 1),
-                "c" => Dict("value" => [1 2], "value2" => 1),
-            ),
-            "Damage Models" => Dict(
-                "a" => Dict("value" => 3),
-                "c" => Dict("value" => [1 2], "value2" => 1),
-            ),
-            "Thermal Models" => Dict("therm" => Dict("value" => "hot", "bool" => true)),
-            "Additive Models" => Dict("add" => Dict("value" => "ad", "bool" => false)),
-        ),
-    )
+    params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
+                                                     "Material Model" => "a"),
+                                   "block_2" => Dict("Block ID" => 2,
+                                                     "Material Model" => "c"),
+                                   "block_3" => Dict("Block ID" => 3,
+                                                     "Material Model" => "a",
+                                                     "Damage Model" => "a",
+                                                     "Thermal Model" => "therm",
+                                                     "Additive Model" => "add")),
+                  "Models" => Dict("Material Models" => Dict("a" => Dict("value" => 1),
+                                                             "c" => Dict("value" => [1 2],
+                                                                         "value2" => 1)),
+                                   "Damage Models" => Dict("a" => Dict("value" => 3),
+                                                           "c" => Dict("value" => [1 2],
+                                                                       "value2" => 1)),
+                                   "Thermal Models" => Dict("therm" => Dict("value" => "hot",
+                                                                            "bool" => true)),
+                                   "Additive Models" => Dict("add" => Dict("value" => "ad",
+                                                                           "bool" => false))))
 
-    Model_Factory.get_block_model_definition(
-        params,
-        block_list,
-        prop_keys,
-        test_data_manager.set_properties,
-    )
+    Model_Factory.get_block_model_definition(params,
+                                             block_list,
+                                             prop_keys,
+                                             test_data_manager.set_properties)
 
     @test test_data_manager.get_property(1, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
@@ -71,42 +63,33 @@ end
     block_list = ["block_1", "block_2", "block_3"]
     test_data_manager_read_properties.set_block_list(block_list)
 
-    params = Dict(
-        "Blocks" => Dict(
-            "block_1" => Dict("Block ID" => 1, "Material Model" => "a"),
-            "block_2" => Dict("Block ID" => 2, "Material Model" => "c"),
-            "block_3" => Dict(
-                "Block ID" => 3,
-                "Material Model" => "a",
-                "Damage Model" => "a",
-                "Thermal Model" => "therm",
-            ),
-        ),
-        "Models" => Dict(
-            "Material Models" => Dict(
-                "a" => Dict("value" => 1, "name" => "t4", "Material Model" => "Test"),
-                "c" => Dict(
-                    "value" => [1 2],
-                    "value2" => 1,
-                    "name" => "t4",
-                    "Material Model" => "Test",
-                ),
-            ),
-            "Damage Models" => Dict(
-                "a" => Dict("value" => 3, "name" => "t"),
-                "c" => Dict("value" => [1 2], "value2" => 1, "name" => "t2"),
-            ),
-            "Thermal Models" => Dict(
-                "therm" => Dict("value" => "hot", "bool" => true, "name" => "t3"),
-            ),
-        ),
-    )
+    params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
+                                                     "Material Model" => "a"),
+                                   "block_2" => Dict("Block ID" => 2,
+                                                     "Material Model" => "c"),
+                                   "block_3" => Dict("Block ID" => 3,
+                                                     "Material Model" => "a",
+                                                     "Damage Model" => "a",
+                                                     "Thermal Model" => "therm")),
+                  "Models" => Dict("Material Models" => Dict("a" => Dict("value" => 1,
+                                                                         "name" => "t4",
+                                                                         "Material Model" => "Test"),
+                                                             "c" => Dict("value" => [1 2],
+                                                                         "value2" => 1,
+                                                                         "name" => "t4",
+                                                                         "Material Model" => "Test")),
+                                   "Damage Models" => Dict("a" => Dict("value" => 3,
+                                                                       "name" => "t"),
+                                                           "c" => Dict("value" => [1 2],
+                                                                       "value2" => 1,
+                                                                       "name" => "t2")),
+                                   "Thermal Models" => Dict("therm" => Dict("value" => "hot",
+                                                                            "bool" => true,
+                                                                            "name" => "t3"))))
     Model_Factory.read_properties(params, test_data_manager_read_properties, false)
 
-
-    @test isnothing(
-        test_data_manager_read_properties.get_property(1, "Material Model", "value"),
-    )
+    @test isnothing(test_data_manager_read_properties.get_property(1, "Material Model",
+                                                                   "value"))
     @test test_data_manager_read_properties.get_property(3, "Damage Model", "value") ==
           params["Models"]["Damage Models"]["a"]["value"]
     @test test_data_manager_read_properties.get_property(3, "Thermal Model", "value") ==

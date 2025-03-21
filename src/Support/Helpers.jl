@@ -39,8 +39,6 @@ export mat_mul!
 export get_mapping
 export mat_mul_transpose_mat!
 
-
-
 function get_mapping(dof::Int64)
     if dof == 2
         return (1, 1), (2, 2), (2, 1)
@@ -54,8 +52,8 @@ end
 
 function matrix_diff!(s3, nodes, s2, s1)
     @views for iID in nodes
-        @inbounds @fastmath @views for m ∈ axes(s1[iID, :, :], 1),
-            n ∈ axes(s1[iID, :, :], 2)
+        @inbounds @fastmath @views for m in axes(s1[iID, :, :], 1),
+                                       n in axes(s1[iID, :, :], 2)
 
             s3[iID, m, n] = s2[iID, m, n] - s1[iID, m, n]
         end
@@ -63,9 +61,9 @@ function matrix_diff!(s3, nodes, s2, s1)
 end
 
 function fast_mul!(stress_NP1, C, strain_increment, stress_N, mapping)
-    @inbounds @fastmath for m ∈ axes(C, 1)
+    @inbounds @fastmath for m in axes(C, 1)
         sNP1 = stress_N[mapping[m]...]
-        for k ∈ axes(C, 2)
+        for k in axes(C, 2)
             sNP1 += C[m, k] * strain_increment[mapping[k]...]
         end
         stress_NP1[mapping[m]...] = sNP1
@@ -74,35 +72,33 @@ function fast_mul!(stress_NP1, C, strain_increment, stress_N, mapping)
 end
 
 function mat_mul!(C, A, B)
-    @inbounds @fastmath for m ∈ axes(A, 1), n ∈ axes(B, 2)
+    @inbounds @fastmath for m in axes(A, 1), n in axes(B, 2)
         Cmn = zero(eltype(C))
-        for k ∈ axes(A, 2)
+        for k in axes(A, 2)
             Cmn += A[m, k] * B[k, n]
         end
         C[m, n] = Cmn
     end
 end
 function mat_mul_transpose_mat!(C, A, B)
-    @inbounds @fastmath for m ∈ axes(A, 1), n ∈ axes(B, 2)
+    @inbounds @fastmath for m in axes(A, 1), n in axes(B, 2)
         Cmn = zero(eltype(C))
-        @inbounds @fastmath for k ∈ axes(A, 2)
+        @inbounds @fastmath for k in axes(A, 2)
             Cmn += A[k, m] * B[k, n]
         end
         C[m, n] = 0.5 * Cmn
     end
 end
-function add_in_place!(
-    C,
-    A::Vector{Vector{T}},
-    B::Vector{Vector{T}},
-    factor = 1,
-) where {T<:Number}
+function add_in_place!(C,
+                       A::Vector{Vector{T}},
+                       B::Vector{Vector{T}},
+                       factor = 1) where {T<:Number}
     m = length(A)
     n = length(A[1])
 
-    for i = 1:n
-        for j = 1:n
-            for k = 1:m
+    for i in 1:n
+        for j in 1:n
+            for k in 1:m
                 C[i, j] += A[k][i] * B[k][j] * factor
             end
         end
@@ -133,55 +129,50 @@ function mul_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{Bool}) where {T<:Nu
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
-    @inbounds for i ∈ eachindex(A)
+    @inbounds for i in eachindex(A)
         C[i] = A[i] * B[i]
     end
 end
-function mul_in_place!(
-    C::Vector{Vector{T}},
-    A::Vector{Vector{T}},
-    B::Vector{T},
-) where {T<:Number}
+function mul_in_place!(C::Vector{Vector{T}},
+                       A::Vector{Vector{T}},
+                       B::Vector{T}) where {T<:Number}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
-    @inbounds for i ∈ eachindex(A)
-        @inbounds for j ∈ eachindex(A[i])
+    @inbounds for i in eachindex(A)
+        @inbounds for j in eachindex(A[i])
             C[i][j] = A[i][j] * B[i]
         end
     end
 end
-function sub_in_place!(
-    C::Vector{Vector{Vector{T}}},
-    A::Vector{Vector{Vector{T}}},
-    B::Vector{Vector{Vector{T}}},
-) where {T<:Number}
+function sub_in_place!(C::Vector{Vector{Vector{T}}},
+                       A::Vector{Vector{Vector{T}}},
+                       B::Vector{Vector{Vector{T}}}) where {T<:Number}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
-    @inbounds for i ∈ eachindex(A)
-        @inbounds for j ∈ eachindex(A[i])
+    @inbounds for i in eachindex(A)
+        @inbounds for j in eachindex(A[i])
             C[i][j] .= A[i][j] .- B[i][j]
         end
     end
 end
-function add_in_place!(
-    C::Vector{Vector{T}},
-    A::Vector{Vector{T}},
-    B::Vector{Vector{T}},
-) where {T<:Number}
+function add_in_place!(C::Vector{Vector{T}},
+                       A::Vector{Vector{T}},
+                       B::Vector{Vector{T}}) where {T<:Number}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
-    @inbounds for i ∈ eachindex(A)
+    @inbounds for i in eachindex(A)
         C[i] .= A[i] .+ B[i]
     end
 end
-function div_in_place!(C::Vector{T}, A::Vector{T}, B::T, absolute = false) where {T<:Number}
+function div_in_place!(C::Vector{T}, A::Vector{T}, B::T,
+                       absolute = false) where {T<:Number}
     # Check if dimensions match
     @assert length(C) == length(A)
 
-    @inbounds for i ∈ eachindex(A)
+    @inbounds for i in eachindex(A)
         if absolute
             C[i] = abs(A[i]) / B
         else
@@ -189,22 +180,20 @@ function div_in_place!(C::Vector{T}, A::Vector{T}, B::T, absolute = false) where
         end
     end
 end
-function div_in_place!(
-    C::Vector{Vector{T}},
-    A::Vector{Vector{T}},
-    B::Vector{Vector{T}},
-) where {T<:Number}
+function div_in_place!(C::Vector{Vector{T}},
+                       A::Vector{Vector{T}},
+                       B::Vector{Vector{T}}) where {T<:Number}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
-    @inbounds for i ∈ eachindex(A)
+    @inbounds for i in eachindex(A)
         C[i] .= A[i] ./ B[i]
     end
 end
 function fastdot(a::AbstractArray, b::AbstractArray, absolute = false)
     c = zero(eltype(a))
     @assert length(a) == length(b)
-    @inbounds @simd for i ∈ eachindex(a, b)
+    @inbounds @simd for i in eachindex(a, b)
         if absolute
             c += abs(a[i]) * abs(b[i])
         else
@@ -213,25 +202,21 @@ function fastdot(a::AbstractArray, b::AbstractArray, absolute = false)
     end
     c
 end
-function fill_in_place!(
-    A::Union{Vector{Vector{T}},Vector{Array{T,3}}},
-    value::T,
-    active::Vector{Bool},
-) where {T<:Number}
-    @inbounds for i ∈ eachindex(A)
+function fill_in_place!(A::Union{Vector{Vector{T}},Vector{Array{T,3}}},
+                        value::T,
+                        active::Vector{Bool}) where {T<:Number}
+    @inbounds for i in eachindex(A)
         if active[i]
             A[i] .= value
         end
     end
 end
-function fill_in_place!(
-    A::Vector{Vector{Vector{T}}},
-    value::T,
-    active::Vector{Bool},
-) where {T<:Number}
-    @inbounds for i ∈ eachindex(A)
+function fill_in_place!(A::Vector{Vector{Vector{T}}},
+                        value::T,
+                        active::Vector{Bool}) where {T<:Number}
+    @inbounds for i in eachindex(A)
         if active[i]
-            @inbounds for j ∈ eachindex(A[i])
+            @inbounds for j in eachindex(A[i])
                 A[i][j] .= value
             end
         end
@@ -271,7 +256,7 @@ function qdim(order::Int64, dof::Int64)
         @error "Accuracy order must be greater than zero."
         return nothing
     end
-    return sum(binomial(i + dof - 1, dof - 1) for i = 1:order)
+    return sum(binomial(i + dof - 1, dof - 1) for i in 1:order)
 end
 
 """
@@ -288,7 +273,6 @@ Returns the indices of `vector` that are equal to `what`.
 function find_indices(vector, what)
     return findall(item -> item == what, vector)
 end
-
 
 """
     get_active_update_nodes(active::Vector{Bool}, update_list::Vector{Bool}, nodes::Vector{Int64}, index::Vector{Int64})
@@ -314,13 +298,10 @@ function get_active_update_nodes(active, update, nodes, index)
     return view(index, 1:count)
 end
 
-
-function find_active_nodes(
-    active,
-    active_nodes::Union{Vector{Int64},SubArray},
-    nodes,
-    false_or_true::Bool = true,
-)
+function find_active_nodes(active,
+                           active_nodes::Union{Vector{Int64},SubArray},
+                           nodes,
+                           false_or_true::Bool = true)
     count::Int64 = 0
     for node in nodes
         if active[node] == false_or_true
@@ -330,7 +311,6 @@ function find_active_nodes(
     end
     return view(active_nodes, 1:count)
 end
-
 
 """
     find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
@@ -344,10 +324,8 @@ Returns a list of files in `folder_path` that end with `file_ending`.
 - `file_list::Vector{String}`: The list of files that end with `file_ending`.
 """
 function find_files_with_ending(folder_path::AbstractString, file_ending::AbstractString)
-    file_list = filter(
-        x -> isfile(joinpath(folder_path, x)) && endswith(x, file_ending),
-        readdir(folder_path),
-    )
+    file_list = filter(x -> isfile(joinpath(folder_path, x)) && endswith(x, file_ending),
+                       readdir(folder_path))
     return file_list
 end
 
@@ -385,7 +363,6 @@ Include a scalar or an array and reshape it to style needed for LinearAlgebra pa
 - `Array`: The reshaped array
 """
 function matrix_style(A)
-
     if length(size(A)) == 0
         A = [A]
     end
@@ -447,13 +424,10 @@ function find_inverse_bond_id(nlist::Vector{Vector{Int64}})
     return inverse_nlist
 end
 
-function get_dependent_value(
-    datamanager::Module,
-    field_name::String,
-    parameter::Dict,
-    iID::Int64 = 1,
-)
-
+function get_dependent_value(datamanager::Module,
+                             field_name::String,
+                             parameter::Dict,
+                             iID::Int64 = 1)
     dependend_value, dependent_field = is_dependent(field_name, parameter, datamanager)
 
     return dependend_value ?
@@ -473,10 +447,8 @@ function is_dependent(field_name::String, damage_parameter::Dict, datamanager::M
     return false, nothing
 end
 
-function interpolation(
-    x::Union{Vector{Float64},Vector{Int64}},
-    y::Union{Vector{Float64},Vector{Int64}},
-)
+function interpolation(x::Union{Vector{Float64},Vector{Int64}},
+                       y::Union{Vector{Float64},Vector{Int64}})
     k = 3
     if length(x) <= k
         k = length(x) - 1
@@ -484,11 +456,9 @@ function interpolation(
     return Dict("spl" => Spline1D(x, y, k = k), "min" => minimum(x), "max" => maximum(x))
 end
 
-function interpol_data(
-    x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
-    values::Dict{String,Any},
-    warning_flag::Bool = true,
-)
+function interpol_data(x::Union{Vector{Float64},Vector{Int64},Float64,Int64},
+                       values::Dict{String,Any},
+                       warning_flag::Bool = true)
     if warning_flag
         if values["min"] > minimum(x)
             @warn "Interpolation value is below interpolation range. Using minimum value of dataset."
@@ -513,17 +483,15 @@ Invert a n x n matrix. Throws an error if A is singular.
 # Returns
 - inverted matrix or nothing if not inverable.
 """
-function invert(
-    A::Union{Matrix{Float64},Matrix{Int64},SubArray{Float64},SubArray{Int64},MMatrix},
-    error_message::String = "Matrix is singular",
-)
+function invert(A::Union{Matrix{Float64},Matrix{Int64},SubArray{Float64},SubArray{Int64},
+                         MMatrix},
+                error_message::String = "Matrix is singular")
     try
         return inv(smat(A))
     catch
         @error error_message
         return nothing
     end
-
 end
 
 function determinant(A)
@@ -539,21 +507,17 @@ function smat(A)
     return A
 end
 
-function find_local_neighbors(
-    nID::Int64,
-    coordinates::Union{SubArray,Matrix{Float64},Matrix{Int64}},
-    nlist::Union{Vector{Int64},SubArray{Int64}},
-    bond_horizon::Union{Float64,Int64},
-)
+function find_local_neighbors(nID::Int64,
+                              coordinates::Union{SubArray,Matrix{Float64},Matrix{Int64}},
+                              nlist::Union{Vector{Int64},SubArray{Int64}},
+                              bond_horizon::Union{Float64,Int64})
     # excludes right now iID node in the coordinates list. Because it is an abritrary sublist it should be fine.
     # saving faster than recalculation?
-    nlist_without_neighbor = view(nlist[nlist.!=nID], :)
+    nlist_without_neighbor = view(nlist[nlist .!= nID], :)
     data = transpose(coordinates[nlist_without_neighbor, :])
     nnodes = length(nlist_without_neighbor)
-    nhs = GridNeighborhoodSearch{size(coordinates)[2]}(
-        search_radius = bond_horizon,
-        n_points = nnodes,
-    )
+    nhs = GridNeighborhoodSearch{size(coordinates)[2]}(search_radius = bond_horizon,
+                                                       n_points = nnodes)
     initialize_grid!(nhs, data)
     neighborList = []
     foreach_neighbor(coordinates[nID, :], data, nhs, 1) do i, j, _, L
@@ -561,7 +525,6 @@ function find_local_neighbors(
     end
     return neighborList
 end
-
 
 """
     progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
@@ -579,12 +542,11 @@ function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
     # Check if rank is equal to 0.
     if rank == 0 && !silent
         # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
-        return ProgressBar(1:nsteps+1)
+        return ProgressBar(1:(nsteps + 1))
     end
     # If rank is not 0, return a range from 1 to nsteps + 1.
-    return 1:nsteps+1
+    return 1:(nsteps + 1)
 end
-
 
 """
     rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
@@ -599,15 +561,13 @@ Rotates the matrix.
 # Returns
 - `matrix::SubArray`: Matrix.
 """
-function rotate(
-    nodes::Union{SubArray,Vector{Int64}},
-    matrix::Union{SubArray,Array{Float64,3}},
-    rot::Union{SubArray,Array{Float64,3}},
-    back::Bool,
-)
+function rotate(nodes::Union{SubArray,Vector{Int64}},
+                matrix::Union{SubArray,Array{Float64,3}},
+                rot::Union{SubArray,Array{Float64,3}},
+                back::Bool)
     for iID in nodes
-        matrix[iID, :, :] =
-            rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :], back)
+        matrix[iID, :, :] = rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :],
+                                                       back)
     end
     return matrix
 end
@@ -634,16 +594,13 @@ function rotate_second_order_tensor(R::Matrix{Float64}, tensor::Matrix{Float64},
     return tensor
 end
 
-function rotation(
-    R::Union{Adjoint{Float64,Matrix{Float64}},Matrix{Float64}},
-    tensor::Matrix{Float64},
-)
-
-    @inbounds @fastmath for m ∈ axes(tensor, 1)
-        @inbounds @fastmath for n ∈ axes(tensor, 1)
+function rotation(R::Union{Adjoint{Float64,Matrix{Float64}},Matrix{Float64}},
+                  tensor::Matrix{Float64})
+    @inbounds @fastmath for m in axes(tensor, 1)
+        @inbounds @fastmath for n in axes(tensor, 1)
             tmn = zero(eltype(tensor))
-            @inbounds @fastmath for i ∈ axes(tensor, 1)
-                @inbounds @fastmath for j ∈ axes(tensor, 1)
+            @inbounds @fastmath for i in axes(tensor, 1)
+                @inbounds @fastmath for j in axes(tensor, 1)
                     tmn += tensor[i, j] * R[i, m] * R[j, n]
                 end
             end

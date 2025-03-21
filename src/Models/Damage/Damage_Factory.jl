@@ -17,7 +17,6 @@ export init_interface_crit_values
 export init_model
 export init_fields
 
-
 """
     init_fields(datamanager::Module)
 
@@ -55,16 +54,13 @@ Computes the damage model
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    model_param::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
-
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       model_param::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64,
+                       to::TimerOutput)
     mod = datamanager.get_model_module(model_param["Damage Model"])
     datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt)
 
@@ -74,7 +70,6 @@ function compute_model(
 
     return damage_index(datamanager, nodes, datamanager.get_filtered_nlist())
 end
-
 
 """
     fields_for_local_synchronization(datamanager, model, block)
@@ -106,11 +101,9 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 - `datamanager::Data_manager`: all model data
 - `nodes::Union{SubArray, Vector{Int64}}`: corresponding nodes to this model
 """
-function damage_index(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    nlist_filtered_ids::Vector{Vector{Int64}},
-)
+function damage_index(datamanager::Module,
+                      nodes::Union{SubArray,Vector{Int64}},
+                      nlist_filtered_ids::Vector{Vector{Int64}})
     bond_damageNP1 = datamanager.get_bond_damage("NP1")
     for iID in nodes
         bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 1
@@ -128,11 +121,10 @@ function damage_index(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
 end
 
 function compute_index(damage, nodes, volume, nlist, bond_damage)
-
     @inbounds @fastmath for iID in nodes
         undamaged_volume = zero(Float64)
         totalDamage = zero(Float64)
-        @views @inbounds @fastmath for jID ∈ axes(nlist[iID], 1)
+        @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
             @views undamaged_volume += volume[nlist[iID][jID]]
             @views totalDamage += (1 - bond_damage[iID][jID]) * volume[nlist[iID][jID]]
         end
@@ -141,7 +133,6 @@ function compute_index(damage, nodes, volume, nlist, bond_damage)
         end
     end
 end
-
 
 """
     init_interface_crit_values(datamanager::Module, params::Dict, block_id::Int64)
@@ -155,28 +146,23 @@ Initialize the critical values
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function init_interface_crit_values(
-    datamanager::Module,
-    damage_parameter::Dict,
-    block_id::Int64,
-)
+function init_interface_crit_values(datamanager::Module,
+                                    damage_parameter::Dict,
+                                    block_id::Int64)
     if !haskey(damage_parameter, "Interblock Damage")
         return datamanager
     end
     max_block_id = length(datamanager.get_block_list())
     inter_critical_value = datamanager.get_crit_values_matrix()
     if inter_critical_value == fill(-1, (1, 1, 1))
-        inter_critical_value = fill(
-            Float64(damage_parameter["Critical Value"]),
-            (max_block_id, max_block_id, max_block_id),
-        )
+        inter_critical_value = fill(Float64(damage_parameter["Critical Value"]),
+                                    (max_block_id, max_block_id, max_block_id))
     end
-    for block_iId = 1:max_block_id
-        for block_jId = 1:max_block_id
+    for block_iId in 1:max_block_id
+        for block_jId in 1:max_block_id
             critical_value_name = "Interblock Critical Value $(block_iId)_$block_jId"
             if haskey(damage_parameter["Interblock Damage"], critical_value_name)
-                inter_critical_value[block_iId, block_jId, block_id] =
-                    damage_parameter["Interblock Damage"][critical_value_name]
+                inter_critical_value[block_iId, block_jId, block_id] = damage_parameter["Interblock Damage"][critical_value_name]
             end
         end
     end
@@ -196,11 +182,9 @@ Initialize the anisotropic critical values
 # Returns
 - `datamanager::Module`: The datamanager
 """
-function init_aniso_crit_values(
-    datamanager::Module,
-    damage_parameter::Dict,
-    block_id::Int64,
-)
+function init_aniso_crit_values(datamanager::Module,
+                                damage_parameter::Dict,
+                                block_id::Int64)
     aniso_crit::Dict{Int64,Any} = Dict()
 
     crit_0 = damage_parameter["Critical Value"]
@@ -241,16 +225,15 @@ Initialize the damage models.
 datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+                    block::Int64)
     model_param = datamanager.get_properties(block, "Damage Model")
     # if haskey(model_param, "Anisotropic Damage")
     #     datamanager.create_bond_field("Bond Damage Anisotropic", Float64, datamanager.get_dof(), 1)
     # end
-    mod = Set_modules.create_module_specifics(
-        model_param["Damage Model"],
-        module_list,
-        "damage_name",
-    )
+    mod = Set_modules.create_module_specifics(model_param["Damage Model"],
+                                              module_list,
+                                              "damage_name")
 
     if isnothing(mod)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
