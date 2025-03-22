@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-using YAML
+using YAML: load_file
 
 export read_input_file
 
@@ -19,7 +19,7 @@ Reads the input deck from a yaml file
 """
 function read_input(filename::String)
     try
-        return YAML.load_file(filename)
+        return load_file(filename)
     catch e
         # if isa(e, YAML.ParserError)
         #     @error "Yaml Parser Error. Make sure the yaml file is valid."
