@@ -186,11 +186,10 @@ function find_point_in_element(el_topology, near_points, coor, fu, coupling_dict
         for point in near_points[iel]
             if haskey(coupling_dict, point)
                 # only of elment per point for coupling
-                break
+                continue
             end
             if fu(coor[point, :], coor, topo)
                 coupling_dict[point] = iel
-                break
             end
         end
     end

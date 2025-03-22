@@ -16,7 +16,8 @@ using .Helpers:
     get_ring,
     get_hexagon,
     create_centroid_and_search_radius,
-    get_nearest_neighbors
+    get_nearest_neighbors,
+    find_point_in_element
 using LinearAlgebra
 
 
@@ -36,7 +37,7 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
         @info "Weight for coupling is set to 0.5."
     end
 
-    el_topology = datamanager.get_field("FE el_topology")
+    el_topology = datamanager.get_field("FE Topology")
     coordinates = datamanager.get_field("Coordinates")
 
     pd_nodes = datamanager.get_field("PD Nodes")
@@ -132,7 +133,7 @@ end
 
 function compute_coupling(datamanager::Module, fem_params::Dict)
     dof = datamanager.get_dof()
-    el_topology = datamanager.get_field("FE el_topology")
+    el_topology = datamanager.get_field("FE Topology")
     force_densities = datamanager.get_field("Force Densities", "NP1")
     displacements = datamanager.get_field("Displacements", "NP1")
     volume = datamanager.get_field("Volume")
@@ -240,17 +241,25 @@ function find_point_in_elements(coordinates, el_topology, points_to_check, dof)
     el_centroid, search_radius =
         create_centroid_and_search_radius(coordinates, el_topology, dof, fu)
     near_points = fill(Vector{Int64}([]), length(search_radius))
-    near_points = get_nearest_neighbors(
+
+    @views near_points = get_nearest_neighbors(
         1:length(search_radius),
         dof,
         el_centroid,
-        points_to_check,
+        coordinates[points_to_check, :],
         search_radius,
         near_points,
+        true,
     )
     # nearest neighbors -> centroid ID is equal to the element
 
-    return find_point_in_element(el_topology, near_points, coordinates, fu, Dict())
+    return find_point_in_element(
+        el_topology,
+        near_points,
+        coordinates,
+        inside_check,
+        Dict{Int64,Int64}(),
+    )
 end
 
 

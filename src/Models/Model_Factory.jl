@@ -208,10 +208,15 @@ function compute_models(
                 active_model_name != "Additive Model",
             )
 
-            if fem_option
+            if fem_option # TODO might lead to problems in 3D
                 # find all non-FEM nodes in active nodes
-                active_nodes =
-                    find_active_nodes(fe_nodes, active_nodes, active_nodes, false)
+                active_nodes = datamanager.get_field("Active Nodes")
+                active_nodes = find_active_nodes(
+                    fe_nodes,
+                    active_nodes,
+                    1:datamanager.get_nnodes(),
+                    false,
+                )
                 if active_nodes == []
                     continue
                 end
@@ -259,8 +264,13 @@ function compute_models(
             active_nodes = find_active_nodes(active_list, active_nodes, nodes)
             if fem_option
                 # FEM active means FEM nodes
-                active_nodes =
-                    find_active_nodes(fe_nodes, active_nodes, active_nodes, false)
+                active_nodes = datamanager.get_field("Active Nodes")
+                active_nodes = find_active_nodes(
+                    fe_nodes,
+                    active_nodes,
+                    1:datamanager.get_nnodes(),
+                    false,
+                )
                 if active_nodes == []
                     continue
                 end
@@ -306,17 +316,14 @@ function compute_models(
                 dt,
             )
             active_nodes = datamanager.get_field("Active Nodes")
+
             FEM.force_densities(
                 datamanager,
-                find_active_nodes(fe_nodes, active_nodes, active_nodes, true),
+                find_active_nodes(fe_nodes, active_nodes, 1:datamanager.get_nnodes(), true),
             )
         end
     end
     if "Material" in options
-        if fem_option
-            # FEM active means FEM nodes
-            active_nodes = find_active_nodes(fe_nodes, active_nodes, active_nodes, false)
-        end
         if "Damage" in options
             for (block, nodes) in pairs(block_nodes)
 
@@ -325,7 +332,15 @@ function compute_models(
                     "Local Damping",
                 )
                     active_nodes = datamanager.get_field("Active Nodes")
-                    active_nodes = find_active_nodes(active_list, active_nodes, nodes)
+                    if fem_option
+                        active_nodes = find_active_nodes(
+                            active_list,
+                            active_nodes,
+                            find_active_nodes(fe_nodes, active_nodes, nodes),
+                        )
+                    else
+                        find_active_nodes(active_list, active_nodes, nodes)
+                    end
                     @timeit to "local_damping_due_to_damage" Material.compute_local_damping(
                         datamanager,
                         active_nodes,
