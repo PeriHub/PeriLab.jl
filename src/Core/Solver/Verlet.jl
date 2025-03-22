@@ -286,7 +286,7 @@ function init_solver(solver_options::Dict{Any,Any},
     mechanical = "Material" in solver_options["Models"]
     thermal = "Thermal" in solver_options["Models"]
     initial_time = get_initial_time(params, datamanager)
-    final_time = get_final_time(params)
+    final_time = get_final_time(params, datamanager)
     safety_factor = get_safety_factor(params)
     fixed_dt = get_fixed_dt(params)
     if fixed_dt == -1.0
@@ -489,7 +489,8 @@ function run_solver(solver_options::Dict{Any,Any},
                 @views vNP1[active_nodes, :] = (1 - numerical_damping) .*
                                                vN[active_nodes, :] .+
                                                0.5 * dt .* a[active_nodes, :]
-                datamanager = apply_bc_dirichlet(["Velocity"], bcs, datamanager, step_time)
+                datamanager = apply_bc_dirichlet(["Velocity"], bcs, datamanager, time,
+                                                 step_time)
                 @views uNP1[active_nodes, :] = uN[active_nodes, :] .+
                                                dt .* vNP1[active_nodes, :]
             end
@@ -497,7 +498,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 temperatureNP1[active_nodes] = temperatureN[active_nodes] +
                                                deltaT[active_nodes]
             else
-                if "Thermal" in solver_options["All Models"] && idt != 1
+                if "Thermal" in solver_options["All Models"]
                     temperatureNP1[active_nodes] = temperatureN[active_nodes]
                 end
             end
@@ -507,7 +508,7 @@ function run_solver(solver_options::Dict{Any,Any},
             end
             datamanager = apply_bc_dirichlet(["Displacements", "Temperature"],
                                              bcs,
-                                             datamanager,
+                                             datamanager, time,
                                              step_time) #-> Dirichlet
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
@@ -540,7 +541,7 @@ function run_solver(solver_options::Dict{Any,Any},
             # synch
             datamanager = apply_bc_dirichlet(["Forces", "Force Densities"],
                                              bcs,
-                                             datamanager,
+                                             datamanager, time,
                                              step_time) #-> Dirichlet
             # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, time) #-> von neumann
             active_nodes = datamanager.get_field("Active Nodes")

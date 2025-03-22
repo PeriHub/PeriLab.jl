@@ -31,15 +31,15 @@ end
     coordinates[8, :] = [1.5, 0.5]     #PD
     coordinates[9, :] = [0.5, 1.5]
     coordinates[10, :] = [1.5, 1.5]    #PD
-    (coordinates, el_topology, pd_nodes, dof)
 
     test_dict = Arlequin_coupling.find_point_in_elements(coordinates,
                                                          topology,
                                                          nodesPD,
                                                          2)
-    @test collect(keys(test_dict)) == [7, 8]
-    @test test_dict[7] == 2
-    @test test_dict[8] == 1
+    @test collect(keys(test_dict)) == [4, 2, 1]
+    @test test_dict[4] == 1
+    @test test_dict[2] == 1
+    @test test_dict[1] == 1
 end
 
 @testset "ut_compute_coupling_matrix" begin

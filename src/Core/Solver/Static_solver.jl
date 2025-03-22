@@ -237,7 +237,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                          step_time) #-> Dirichlet
         external_force_densities += external_forces ./ volume
 
-        datamanager = apply_bc_dirichlet(["Displacements"], bcs, datamanager,
+        datamanager = apply_bc_dirichlet(["Displacements"], bcs, datamanager, time,
                                          step_time + dt) #-> Dirichlet
         sol = nlsolve((residual, U) -> residual!(residual,
                                                  U,
@@ -291,8 +291,6 @@ function run_solver(solver_options::Dict{Any,Any},
 
         @views forces[active_nodes, :] = force_densities[active_nodes, :] .*
                                          volume[active_nodes]
-
-        #datamanager = Boundary_conditions.apply_bc_dirichlet(bcs, datamanager, time) #-> Dirichlet
 
         @timeit to "write_results" result_files=write_results(result_files, time,
                                                               max_damage, outputs,
@@ -351,6 +349,7 @@ function residual!(residual,
                                                uNP1[active_nodes, :]
 
     force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
+    forces = datamanager.get_field("Forces", "NP1")
     forces[:, :] .= 0
 
     datamanager.synch_manager(synchronise_field, "upload_to_cores")
