@@ -6,20 +6,20 @@ module Arlequin_coupling
 include("../Element_formulation/Lagrange_element.jl")
 include("../FEM_routines.jl")
 using .Lagrange_element:
-    define_lagrangian_grid_space, get_recursive_lagrange_shape_functions
+                         define_lagrangian_grid_space,
+                         get_recursive_lagrange_shape_functions
 using .FEM_routines: get_polynomial_degree
 include("../../Support/Helpers.jl")
 using .Helpers:
-    find_active_nodes,
-    find_point_in_polygon,
-    find_point_in_hexagon,
-    get_ring,
-    get_hexagon,
-    create_centroid_and_search_radius,
-    get_nearest_neighbors,
-    find_point_in_element
+                find_active_nodes,
+                find_point_in_polygon,
+                find_point_in_hexagon,
+                get_ring,
+                get_hexagon,
+                create_centroid_and_search_radius,
+                get_nearest_neighbors,
+                find_point_in_element
 using LinearAlgebra
-
 
 export coupling_name
 export init_coupling_model
@@ -45,21 +45,17 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     pd_nodes = find_active_nodes(fe_nodes, pd_nodes, nodes, false)
     if haskey(fe_params["Coupling"], "Coupling Block")
         @info "Pre defined coupling region is block $(fe_params["Coupling"]["Coupling Block"])"
-        pd_nodes = get_coupling_zone(
-            pd_nodes,
-            datamanager.get_field("Block_Id"),
-            fe_params["Coupling"]["Coupling Block"],
-        )
+        pd_nodes = get_coupling_zone(pd_nodes,
+                                     datamanager.get_field("Block_Id"),
+                                     fe_params["Coupling"]["Coupling Block"])
     end
     lumped_mass = datamanager.get_field("Lumped Mass Matrix")
 
     # TODO memory efficiency; create a mapping field and allocate only the memory of length coupling nodes
-    coupling_matrix = datamanager.create_constant_node_field(
-        "Coupling Matrix",
-        Float64,
-        "Matrix",
-        (prod(p .+ 1) + 1),
-    )
+    coupling_matrix = datamanager.create_constant_node_field("Coupling Matrix",
+                                                             Float64,
+                                                             "Matrix",
+                                                             (prod(p .+ 1) + 1))
 
     if any(x -> x > 1, p)
         @error "Coupling is supported only for linear elements yet."
@@ -80,15 +76,13 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     rho = datamanager.get_field("Density")
     @info "Create Coupling Matrix"
     for (coupling_node, coupling_element) in pairs(coupling_dict)
-        coupling_matrix[coupling_node, :, :] = compute_coupling_matrix(
-            coordinates,
-            el_topology,
-            coupling_node,
-            coupling_element,
-            kappa,
-            p,
-            dof,
-        )
+        coupling_matrix[coupling_node, :, :] = compute_coupling_matrix(coordinates,
+                                                                       el_topology,
+                                                                       coupling_node,
+                                                                       coupling_element,
+                                                                       kappa,
+                                                                       p,
+                                                                       dof)
         rho[coupling_node] *= (1 - weight_coefficient)
     end
     datamanager.set_coupling_dict(coupling_dict)
@@ -100,25 +94,24 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     return datamanager
 end
 
-
 function get_coupling_zone(pd_nodes, blocks, ref_block)
     return [pd_nodes[i] for i in eachindex(blocks) if blocks[i] == ref_block]
 end
 function topo_closed_loop(pn)
     mapping = Int64[]
 
-    for ip = 1:pn[1]+1
+    for ip in 1:(pn[1] + 1)
         push!(mapping, ip)
     end
-    for ip = 2:pn[2]+1
+    for ip in 2:(pn[2] + 1)
         push!(mapping, ip * (pn[1] + 1))
     end
 
-    for ip = 2:pn[1]+1
+    for ip in 2:(pn[1] + 1)
         push!(mapping, (pn[1] + 1) * (pn[2] + 1) - ip + 1)
     end
 
-    for ip = 1:pn[2]-1
+    for ip in 1:(pn[2] - 1)
         push!(mapping, (pn[1] + 1) * pn[2] + 1 - (pn[1] + 1) * ip)
     end
 
@@ -147,13 +140,12 @@ function compute_coupling(datamanager::Module, fem_params::Dict)
 
     # TODO weights are not correct here see EQ(1)
     for (coupling_node, coupling_element) in pairs(coupling_dict)
-
         topo = vcat(coupling_node, el_topology[coupling_element, :])
         force_densities[coupling_node, :] .*= (1 - weight_coefficient)
         vol = vcat(volume[coupling_node], volume[el_topology[coupling_element, :]])
 
-        force_densities[topo, :] -=
-            coupling_matrix[coupling_node, :, :] * displacements[topo, :] ./ vol
+        force_densities[topo, :] -= coupling_matrix[coupling_node, :, :] *
+                                    displacements[topo, :] ./ vol
 
         #force_densities[topo, :] +=
 
@@ -163,19 +155,15 @@ function compute_coupling(datamanager::Module, fem_params::Dict)
     end
 
     return datamanager
-
 end
 
-
-function compute_coupling_matrix(
-    coordinates,
-    el_topology,
-    point_val,
-    element_number,
-    kappa,
-    p,
-    dof,
-)
+function compute_coupling_matrix(coordinates,
+                                 el_topology,
+                                 point_val,
+                                 element_number,
+                                 kappa,
+                                 p,
+                                 dof)
     # only one point per call
     # Point coordinates
     x_point = coordinates[point_val, 1]
@@ -229,7 +217,6 @@ function compute_coupling_matrix(
     return local_coupl_matrix
 end
 
-
 function find_point_in_elements(coordinates, el_topology, points_to_check, dof)
     if dof == 2
         fu = get_ring
@@ -238,33 +225,26 @@ function find_point_in_elements(coordinates, el_topology, points_to_check, dof)
         fu = get_hexagon
         inside_check = find_point_in_hexagon
     end
-    el_centroid, search_radius =
-        create_centroid_and_search_radius(coordinates, el_topology, dof, fu)
+    el_centroid, search_radius = create_centroid_and_search_radius(coordinates, el_topology,
+                                                                   dof, fu)
     near_points = fill(Vector{Int64}([]), length(search_radius))
 
-    @views near_points = get_nearest_neighbors(
-        1:length(search_radius),
-        dof,
-        el_centroid,
-        coordinates[points_to_check, :],
-        search_radius,
-        near_points,
-        true,
-    )
+    @views near_points = get_nearest_neighbors(1:length(search_radius),
+                                               dof,
+                                               el_centroid,
+                                               coordinates[points_to_check, :],
+                                               search_radius,
+                                               near_points,
+                                               true)
     # nearest neighbors -> centroid ID is equal to the element
 
-    return find_point_in_element(
-        el_topology,
-        near_points,
-        coordinates,
-        inside_check,
-        Dict{Int64,Int64}(),
-    )
+    return find_point_in_element(el_topology,
+                                 near_points,
+                                 coordinates,
+                                 inside_check,
+                                 Dict{Int64,Int64}())
 end
 
-
 ## TODO does only work if the PD point is not on a FE - point, line or surface (3D)
-
-
 
 end

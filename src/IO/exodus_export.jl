@@ -24,17 +24,14 @@ Creates a exodus file for the results
 # Returns
 - `result_file::Dict{String,Any}`: A dictionary containing the filename and the exodus file
 """
-function create_result_file(
-    filename::Union{AbstractString,String},
-    num_nodes::Int64,
-    num_dim::Int64,
-    num_elem_blks::Int64,
-    num_node_sets::Int64,
-    num_elements::Int64 = 0,
-    topology::Union{Nothing,Matrix{Int64}} = nothing,
-    init::Bool = true,
-)
-
+function create_result_file(filename::Union{AbstractString,String},
+                            num_nodes::Int64,
+                            num_dim::Int64,
+                            num_elem_blks::Int64,
+                            num_node_sets::Int64,
+                            num_elements::Int64 = 0,
+                            topology::Union{Nothing,Matrix{Int64}} = nothing,
+                            init::Bool = true)
     if !init
         exo_db = ExodusDatabase(filename, "rw")
         return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
@@ -54,20 +51,16 @@ function create_result_file(
         num_elems = num_nodes - length(element_nodes) + num_elements
     end
     num_side_sets = 0
-    init = Initialization{
-        Int32(num_dim),
-        Int32(num_nodes),
-        Int32(num_elems),
-        Int32(num_elem_blks),
-        Int32(num_node_sets),
-        Int32(num_side_sets),
-    }()
+    init = Initialization{Int32(num_dim),
+                          Int32(num_nodes),
+                          Int32(num_elems),
+                          Int32(num_elem_blks),
+                          Int32(num_node_sets),
+                          Int32(num_side_sets)}()
     @info "Create output " * filename
-    exo_db = ExodusDatabase{maps_int_type,ids_int_type,bulk_int_type,float_type}(
-        filename,
-        "w",
-        init,
-    )
+    exo_db = ExodusDatabase{maps_int_type,ids_int_type,bulk_int_type,float_type}(filename,
+                                                                                 "w",
+                                                                                 init)
     return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
 end
 
@@ -112,7 +105,6 @@ function get_paraview_coordinates(dof::Int64, refDof::Int64)
 
     @error "not exportable yet as one variable"
     return nothing
-
 end
 
 """
@@ -147,19 +139,17 @@ Initializes the results in exodus
 # Returns
 - `result_file::Dict{String,Any}`: The result file
 """
-function init_results_in_exodus(
-    exo::ExodusDatabase,
-    output::Dict{},
-    coords::Union{Matrix{Int64},Matrix{Float64}},
-    block_Id::Vector{Int64},
-    block_list::Vector{String},
-    nsets::Dict{String,Vector{Int64}},
-    global_ids::Vector{Int64},
-    PERILAB_VERSION::String,
-    fem_block::Union{Nothing,Vector{Bool}} = nothing,
-    topology::Union{Nothing,Matrix{Int64}} = nothing,
-    elem_global_ids::Union{Nothing,Vector{Int64}} = nothing,
-)
+function init_results_in_exodus(exo::ExodusDatabase,
+                                output::Dict{},
+                                coords::Union{Matrix{Int64},Matrix{Float64}},
+                                block_Id::Vector{Int64},
+                                block_list::Vector{String},
+                                nsets::Dict{String,Vector{Int64}},
+                                global_ids::Vector{Int64},
+                                PERILAB_VERSION::String,
+                                fem_block::Union{Nothing,Vector{Bool}} = nothing,
+                                topology::Union{Nothing,Matrix{Int64}} = nothing,
+                                elem_global_ids::Union{Nothing,Vector{Int64}} = nothing)
     qa = Matrix{String}(undef, 1, 4)
     qa[1] = "PeriLab"
     qa[2] = "$PERILAB_VERSION"
@@ -170,7 +160,7 @@ function init_results_in_exodus(
     info = [
         "PeriLab Version $PERILAB_VERSION, under BSD License",
         "Copyright (c) 2023, Christian Willberg, Jan-Timo Hesse",
-        "compiled with Julia Version " * string(VERSION),
+        "compiled with Julia Version " * string(VERSION)
     ]
     write_info(exo, info)
 
@@ -199,7 +189,7 @@ function init_results_in_exodus(
             if fem_block[conn[1]]
                 # fem_conn = topology[conn, :]'
                 fem_conn = Matrix(topology')
-                fem_conn[end-1:end, :] .= fem_conn[[end; end - 1], :]
+                fem_conn[(end - 1):end, :] .= fem_conn[[end; end - 1], :]
                 write_block(exo, block, "QUAD4", fem_conn)
                 write_name(exo, Block, block, block_name)
             else
@@ -223,10 +213,10 @@ function init_results_in_exodus(
 
     # output structure var_name -> [fieldname, exodus id, field dof]
 
-    nodal_outputs =
-        Dict(key => value for (key, value) in output["Fields"] if (!value["global_var"]))
-    global_outputs =
-        Dict(key => value for (key, value) in output["Fields"] if (value["global_var"]))
+    nodal_outputs = Dict(key => value
+                         for (key, value) in output["Fields"] if (!value["global_var"]))
+    global_outputs = Dict(key => value
+                          for (key, value) in output["Fields"] if (value["global_var"]))
     nodal_output_names = collect(keys(sort!(OrderedDict(nodal_outputs))))
     global_output_names = collect(keys(sort!(OrderedDict(global_outputs))))
     # write_number_of_variables(exo, NodalVariable, length(nodal_output_names))
@@ -277,12 +267,10 @@ Writes the nodal results in the exodus file
 # Returns
 - `exo::ExodusDatabase`: The exodus file
 """
-function write_nodal_results_in_exodus(
-    exo::ExodusDatabase,
-    step::Int64,
-    output::Dict,
-    datamanager::Module,
-)
+function write_nodal_results_in_exodus(exo::ExodusDatabase,
+                                       step::Int64,
+                                       output::Dict,
+                                       datamanager::Module)
     #write_values
     nnodes = datamanager.get_nnodes()
     for varname in keys(output)
@@ -292,10 +280,9 @@ function write_nodal_results_in_exodus(
         if haskey(output[varname], "dof")
             var = convert(Array{Float64}, field[1:nnodes, output[varname]["dof"]])
         else
-            var = convert(
-                Array{Float64},
-                field[1:nnodes, output[varname]["i_dof"], output[varname]["j_dof"]],
-            )
+            var = convert(Array{Float64},
+                          field[1:nnodes, output[varname]["i_dof"],
+                                output[varname]["j_dof"]])
         end
         # interface does not work with Int yet 28//08//2023
         write_values(exo, NodalVariable, step, varname, var)
@@ -316,7 +303,6 @@ Writes the global results in the exodus file
 - `exo::ExodusDatabase`: The exodus file
 """
 function write_global_results_in_exodus(exo::ExodusDatabase, step::Int64, global_values)
-
     write_values(exo, GlobalVariable, step, Vector{Float64}(global_values))
     return exo
 end

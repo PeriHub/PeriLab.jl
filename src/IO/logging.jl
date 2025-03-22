@@ -29,7 +29,6 @@ Set the log file.
 - `log_file::String`: The log file.
 """
 function set_log_file(filename::String, debug::Bool, rank::Int64, size::Int64)
-
     if size > 1
         if debug
             return split(filename, ".")[1] *
@@ -49,7 +48,6 @@ function set_log_file(filename::String, debug::Bool, rank::Int64, size::Int64)
            "_" *
            Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") *
            ".log"
-
 end
 
 """
@@ -107,7 +105,8 @@ function close_result_file(result_file::Dict)
     return false
 end
 
-function close_result_files(result_files::Union{Vector{Dict},Vector{Dict{String,IOStream}}})
+function close_result_files(result_files::Union{Vector{Dict},
+                                                Vector{Dict{String,IOStream}}})
     for result_file in result_files
         try
             close_result_file(result_file)
@@ -129,50 +128,41 @@ Print the table.
 """
 function print_table(data::Matrix, datamanager::Module)
     if !datamanager.get_silent()
-        pretty_table(
-            data;
-            body_hlines = [1],
-            body_hlines_format = Tuple('─' for _ = 1:4),
-            cell_alignment = Dict((1, 1) => :l),
-            formatters = ft_printf("%10.1f", 2),
-            highlighters = (hl_cell([(1, 1)], crayon"bold"), hl_col(2, crayon"dark_gray")),
-            show_header = false,
-            tf = tf_borderless,
-        )
+        pretty_table(data;
+                     body_hlines = [1],
+                     body_hlines_format = Tuple('─' for _ in 1:4),
+                     cell_alignment = Dict((1, 1) => :l),
+                     formatters = ft_printf("%10.1f", 2),
+                     highlighters = (hl_cell([(1, 1)], crayon"bold"),
+                                     hl_col(2, crayon"dark_gray")),
+                     show_header = false,
+                     tf = tf_borderless,)
         stream = Logging_module.get_log_stream(2)
         if !isnothing(stream)
-            pretty_table(
-                stream,
-                data;
-                body_hlines = [1],
-                body_hlines_format = Tuple('─' for _ = 1:4),
-                cell_alignment = Dict((1, 1) => :l),
-                formatters = ft_printf("%10.1f", 2),
-                highlighters = (
-                    hl_cell([(1, 1)], crayon"bold"),
-                    hl_col(2, crayon"dark_gray"),
-                ),
-                show_header = false,
-                tf = tf_borderless,
-            )
+            pretty_table(stream,
+                         data;
+                         body_hlines = [1],
+                         body_hlines_format = Tuple('─' for _ in 1:4),
+                         cell_alignment = Dict((1, 1) => :l),
+                         formatters = ft_printf("%10.1f", 2),
+                         highlighters = (hl_cell([(1, 1)], crayon"bold"),
+                                         hl_col(2, crayon"dark_gray")),
+                         show_header = false,
+                         tf = tf_borderless,)
         end
     else
         stream = Logging_module.get_log_stream(1)
         if !isnothing(stream)
-            pretty_table(
-                stream,
-                data;
-                body_hlines = [1],
-                body_hlines_format = Tuple('─' for _ = 1:4),
-                cell_alignment = Dict((1, 1) => :l),
-                formatters = ft_printf("%10.1f", 2),
-                highlighters = (
-                    hl_cell([(1, 1)], crayon"bold"),
-                    hl_col(2, crayon"dark_gray"),
-                ),
-                show_header = false,
-                tf = tf_borderless,
-            )
+            pretty_table(stream,
+                         data;
+                         body_hlines = [1],
+                         body_hlines_format = Tuple('─' for _ in 1:4),
+                         cell_alignment = Dict((1, 1) => :l),
+                         formatters = ft_printf("%10.1f", 2),
+                         highlighters = (hl_cell([(1, 1)], crayon"bold"),
+                                         hl_col(2, crayon"dark_gray")),
+                         show_header = false,
+                         tf = tf_borderless,)
         end
     end
 end
@@ -217,7 +207,6 @@ Initialize the logging.
 - `size::Int64`: The size.
 """
 function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, size::Int64)
-
     global log_file
 
     log_file = set_log_file(filename, debug, rank, size)
@@ -231,24 +220,20 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
         if debug
             file_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
-                    println(
-                        io,
-                        "[",
-                        args.level,
-                        "] ",
-                        args._module,
-                        ", ",
-                        args.line,
-                        " | ",
-                        args.message,
-                    )
+                    println(io,
+                            "[",
+                            args.level,
+                            "] ",
+                            args._module,
+                            ", ",
+                            args.line,
+                            " | ",
+                            args.message)
                 end
             end
             filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
-            demux_logger = TeeLogger(
-                MinLevelLogger(filtered_logger, Logging.Debug),
-                MinLevelLogger(file_logger, Logging.Debug),
-            )
+            demux_logger = TeeLogger(MinLevelLogger(filtered_logger, Logging.Debug),
+                                     MinLevelLogger(file_logger, Logging.Debug))
         elseif silent
             io = open(log_file, "a")
             redirect_stderr(io)
@@ -263,10 +248,8 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
                     exit()
                 end
             end
-            demux_logger = TeeLogger(
-                MinLevelLogger(file_logger, Logging.Debug),
-                MinLevelLogger(error_logger, Logging.Info),
-            )
+            demux_logger = TeeLogger(MinLevelLogger(file_logger, Logging.Debug),
+                                     MinLevelLogger(error_logger, Logging.Info))
         else
             file_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level in [Logging.Info, Logging.Warn, Logging.Error, Logging.Debug]
@@ -280,11 +263,9 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
                 end
             end
             filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
-            demux_logger = TeeLogger(
-                MinLevelLogger(filtered_logger, Logging.Info),
-                MinLevelLogger(file_logger, Logging.Debug),
-                MinLevelLogger(error_logger, Logging.Info),
-            )
+            demux_logger = TeeLogger(MinLevelLogger(filtered_logger, Logging.Info),
+                                     MinLevelLogger(file_logger, Logging.Debug),
+                                     MinLevelLogger(error_logger, Logging.Info))
         end
     catch e
         if e isa SystemError

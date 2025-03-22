@@ -42,11 +42,9 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    material_parameter::Dict)
     return datamanager
 end
 
@@ -69,8 +67,6 @@ println(material_name())
 function material_name()
     return "Material Template"
 end
-
-
 
 """
     fields_for_local_synchronization(datamanager::Module, model::String)
@@ -106,15 +102,13 @@ Example:
 ```julia
 ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       material_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64,
+                       to::TimerOutput)
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model() and init_model() function."

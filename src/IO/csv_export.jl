@@ -18,7 +18,6 @@ Creates a csv file for the results
 - `Dict`: The result file
 """
 function create_result_file(filename::String, outputs::Dict)
-
     if isfile(filename)
         rm(filename)
     end
@@ -50,5 +49,4 @@ function write_global_results_in_csv(csv_file::IOStream, time::Float64, global_v
     end
     value_string = value_string * "\n"
     write(csv_file, value_string)
-
 end

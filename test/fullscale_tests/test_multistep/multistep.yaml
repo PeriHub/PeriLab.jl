@@ -43,7 +43,7 @@ PeriLab:
       Coordinate: x
       Node Set: Right
       Variable: Displacements
-      Value: 1*t
+      Value: 1*st
       Type: Dirichlet
       Step ID: 2
     BC_2:

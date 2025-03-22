@@ -5,20 +5,20 @@
 using Test
 include("../../../../src/Models/Material/Material_Basis.jl")
 using .Material_Basis:
-    get_value,
-    get_all_elastic_moduli,
-    get_Hooke_matrix,
-    distribute_forces!,
-    flaw_function,
-    matrix_to_voigt,
-    voigt_to_matrix,
-    check_symmetry,
-    get_symmetry,
-    get_von_mises_yield_stress,
-    get_strain,
-    compute_Piola_Kirchhoff_stress,
-    apply_pointwise_E,
-    init_local_damping_due_to_damage
+                       get_value,
+                       get_all_elastic_moduli,
+                       get_Hooke_matrix,
+                       distribute_forces!,
+                       flaw_function,
+                       matrix_to_voigt,
+                       voigt_to_matrix,
+                       check_symmetry,
+                       get_symmetry,
+                       get_von_mises_yield_stress,
+                       get_strain,
+                       compute_Piola_Kirchhoff_stress,
+                       apply_pointwise_E,
+                       init_local_damping_due_to_damage
 ## include("../../../../src/PeriLab.jl")
 ## using .PeriLab
 
@@ -28,22 +28,14 @@ using .Material_Basis:
     test_data_manager.set_num_controller(3)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn .= 2
-    @test isnothing(
-        init_local_damping_due_to_damage(
-            test_data_manager,
-            [1:2],
-            Dict(),
-            Dict("Local Damping" => Dict()),
-        ),
-    )
-    @test isnothing(
-        init_local_damping_due_to_damage(
-            test_data_manager,
-            [1:2],
-            Dict(),
-            Dict("Local Damping" => Dict("Representative Young's modulus" => 0)),
-        ),
-    )
+    @test isnothing(init_local_damping_due_to_damage(test_data_manager,
+                                                     [1:2],
+                                                     Dict(),
+                                                     Dict("Local Damping" => Dict())))
+    @test isnothing(init_local_damping_due_to_damage(test_data_manager,
+                                                     [1:2],
+                                                     Dict(),
+                                                     Dict("Local Damping" => Dict("Representative Young's modulus" => 0))))
 end
 
 @testset "ut_apply_pointwise_E" begin
@@ -79,117 +71,77 @@ end
     dof = 2
     nlist = [[2, 3], [1, 3]]
     nBonds = fill(dof, 2)
-    bond_force = [[fill(1.0, dof) for j = 1:n] for n in nBonds]
+    bond_force = [[fill(1.0, dof) for j in 1:n] for n in nBonds]
     volume = [1.0, 1.0, 1.0]
     bond_damage = [fill(0.5, n) for n in nBonds]
     force_densities = zeros(3, 2)
 
     expected_force_densities = copy(force_densities)
     for iID in nodes
-        expected_force_densities[iID, :] .+= transpose(
-            sum(
-                bond_damage[iID] .* mapreduce(permutedims, vcat, bond_force[iID]) .*
-                volume[nlist[iID]],
-                dims = 1,
-            ),
-        )
-        expected_force_densities[nlist[iID], :] .-=
-            bond_damage[iID] .* mapreduce(permutedims, vcat, bond_force[iID]) .* volume[iID]
+        expected_force_densities[iID, :] .+= transpose(sum(bond_damage[iID] .*
+                                                           mapreduce(permutedims, vcat,
+                                                                     bond_force[iID]) .*
+                                                           volume[nlist[iID]],
+                                                           dims = 1))
+        expected_force_densities[nlist[iID], :] .-= bond_damage[iID] .*
+                                                    mapreduce(permutedims, vcat,
+                                                              bond_force[iID]) .*
+                                                    volume[iID]
     end
 
     distribute_forces!(force_densities, nodes, nlist, bond_force, volume, bond_damage)
     @test force_densities ≈ expected_force_densities
 end
 @testset "ut_flaw_function" begin
-
     stress::Float64 = 5.3
     @test flaw_function(Dict(), Vector{Float64}([1, 2]), stress) == stress
 
-    @test isnothing(
-        flaw_function(Dict("Flaw Function" => Dict()), Vector{Float64}([1, 2]), stress),
-    )
-    @test isnothing(
-        flaw_function(
-            Dict("Flaw Function" => Dict("Active" => false)),
-            Vector{Float64}([1, 2]),
-            stress,
-        ),
-    )
-    @test flaw_function(
-        Dict("Flaw Function" => Dict("Active" => false, "Function" => "Pre-defined")),
-        Vector{Float64}([1, 2]),
-        stress,
-    ) == stress
-    @test isnothing(
-        flaw_function(
-            Dict(
-                "Flaw Function" => Dict(
-                    "Active" => true,
-                    "Function" => "Pre-defined",
-                    "Flaw Location X" => 1.1,
-                    "Flaw Location Y" => 1.1,
-                    "Flaw Magnitude" => 1.3,
-                    "Flaw Size" => 0.2,
-                ),
-            ),
-            Vector{Float64}([1, 2]),
-            stress,
-        ),
-    )
-    @test isnothing(
-        flaw_function(
-            Dict(
-                "Flaw Function" => Dict(
-                    "Active" => true,
-                    "Function" => "Pre-defined",
-                    "Flaw Location X" => 1.1,
-                    "Flaw Location Y" => 1.1,
-                    "Flaw Magnitude" => -1.3,
-                    "Flaw Size" => 0.2,
-                ),
-            ),
-            Vector{Float64}([1, 2]),
-            stress,
-        ),
-    )
+    @test isnothing(flaw_function(Dict("Flaw Function" => Dict()), Vector{Float64}([1, 2]),
+                                  stress))
+    @test isnothing(flaw_function(Dict("Flaw Function" => Dict("Active" => false)),
+                                  Vector{Float64}([1, 2]),
+                                  stress))
+    @test flaw_function(Dict("Flaw Function" => Dict("Active" => false,
+                                                     "Function" => "Pre-defined")),
+                        Vector{Float64}([1, 2]),
+                        stress) == stress
+    @test isnothing(flaw_function(Dict("Flaw Function" => Dict("Active" => true,
+                                                               "Function" => "Pre-defined",
+                                                               "Flaw Location X" => 1.1,
+                                                               "Flaw Location Y" => 1.1,
+                                                               "Flaw Magnitude" => 1.3,
+                                                               "Flaw Size" => 0.2)),
+                                  Vector{Float64}([1, 2]),
+                                  stress))
+    @test isnothing(flaw_function(Dict("Flaw Function" => Dict("Active" => true,
+                                                               "Function" => "Pre-defined",
+                                                               "Flaw Location X" => 1.1,
+                                                               "Flaw Location Y" => 1.1,
+                                                               "Flaw Magnitude" => -1.3,
+                                                               "Flaw Size" => 0.2)),
+                                  Vector{Float64}([1, 2]),
+                                  stress))
 
-    @test isapprox(
-        flaw_function(
-            Dict(
-                "Flaw Function" => Dict(
-                    "Active" => true,
-                    "Function" => "Pre-defined",
-                    "Flaw Location X" => 1.1,
-                    "Flaw Location Y" => 1.1,
-                    "Flaw Magnitude" => 0.3,
-                    "Flaw Size" => 0.2,
-                ),
-            ),
-            Vector{Float64}([1, 2]),
-            stress,
-        ),
-        5.29999999,
-    )
+    @test isapprox(flaw_function(Dict("Flaw Function" => Dict("Active" => true,
+                                                              "Function" => "Pre-defined",
+                                                              "Flaw Location X" => 1.1,
+                                                              "Flaw Location Y" => 1.1,
+                                                              "Flaw Magnitude" => 0.3,
+                                                              "Flaw Size" => 0.2)),
+                                 Vector{Float64}([1, 2]),
+                                 stress),
+                   5.29999999)
 
-    @test isapprox(
-        flaw_function(
-            Dict(
-                "Flaw Function" => Dict(
-                    "Active" => true,
-                    "Function" => "Pre-defined",
-                    "Flaw Location X" => 1.1,
-                    "Flaw Location Y" => 1.1,
-                    "Flaw Location Z" => 2.1,
-                    "Flaw Magnitude" => 0.3,
-                    "Flaw Size" => 0.2,
-                ),
-            ),
-            Vector{Float64}([1, 2, 3]),
-            stress,
-        ),
-        5.29999999,
-    )
-
+    @test isapprox(flaw_function(Dict("Flaw Function" => Dict("Active" => true,
+                                                              "Function" => "Pre-defined",
+                                                              "Flaw Location X" => 1.1,
+                                                              "Flaw Location Y" => 1.1,
+                                                              "Flaw Location Z" => 2.1,
+                                                              "Flaw Magnitude" => 0.3,
+                                                              "Flaw Size" => 0.2)),
+                                 Vector{Float64}([1, 2, 3]),
+                                 stress),
+                   5.29999999)
 
     #  @test flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "x*x")), Vector{Float64}([1, 2]), stress) == 1
 end
@@ -221,116 +173,94 @@ end
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(3)
-    ref_parameter = Dict(
-        "Material Model" => "PD Solid Elastic",
-        "Bulk Modulus" => 0,
-        "Computed" => true,
-        "Young's Modulus" => 0,
-        "Shear Modulus" => 0,
-        "Poisson's Ratio" => 0,
-        "Symmetry" => "isotropic",
-    )
-    test = get_all_elastic_moduli(
-        test_data_manager,
-        Dict{String,Any}("Material Model" => "PD Solid Elastic"),
-    )
+    ref_parameter = Dict("Material Model" => "PD Solid Elastic",
+                         "Bulk Modulus" => 0,
+                         "Computed" => true,
+                         "Young's Modulus" => 0,
+                         "Shear Modulus" => 0,
+                         "Poisson's Ratio" => 0,
+                         "Symmetry" => "isotropic")
+    test = get_all_elastic_moduli(test_data_manager,
+                                  Dict{String,Any}("Material Model" => "PD Solid Elastic"))
     @test isnothing(test)
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Bulk Modulus" => 1000,
-        "Young's Modulus" => 10,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Bulk Modulus" => 1000,
+                                 "Young's Modulus" => 10)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Bulk Modulus" => 1,
-        "Shear Modulus" => 10,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Bulk Modulus" => 1,
+                                 "Shear Modulus" => 10)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Bulk Modulus" => 1,
-        "Shear Modulus" => 10,
-        "Poisson's Ratio" => 0.2,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Bulk Modulus" => 1,
+                                 "Shear Modulus" => 10,
+                                 "Poisson's Ratio" => 0.2)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
-    parameter =
-        Dict{String,Any}("Material Model" => "PD Solid Elastic", "Bulk Modulus" => 10)
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Bulk Modulus" => 10)
     @test isnothing(get_all_elastic_moduli(test_data_manager, parameter))
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Bulk Modulus" => 10,
-        "Shear Modulus" => 10,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Bulk Modulus" => 10,
+                                 "Shear Modulus" => 10)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Young's Modulus"] == Float64(22.5)
     @test parameter["Poisson's Ratio"] == Float64(0.125)
     @test parameter["Bulk Modulus"] == 10
     @test parameter["Shear Modulus"] == 10
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Bulk Modulus" => 5,
-        "Shear Modulus" => 1.25,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Bulk Modulus" => 5,
+                                 "Shear Modulus" => 1.25)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Young's Modulus"] / 3.4615384615384617 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] / 0.45454545454545453 - 1 < 1e-7
     @test parameter["Bulk Modulus"] == 5
     @test parameter["Shear Modulus"] == Float64(1.25)
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Bulk Modulus" => 5,
-        "Young's Modulus" => 1.25,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Bulk Modulus" => 5,
+                                 "Young's Modulus" => 1.25)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Shear Modulus"] / 4.2857142857142855e-1 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] / 0.4583333333333333 - 1 < 1e-7
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Poisson's Ratio" => 0.45,
-        "Shear Modulus" => 1.25,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Poisson's Ratio" => 0.45,
+                                 "Shear Modulus" => 1.25)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Young's Modulus"] / 3.625e+0 - 1 < 1e-8
     @test parameter["Bulk Modulus"] / 1.2083333333333336e+1 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] == Float64(0.45)
     @test parameter["Shear Modulus"] == Float64(1.25)
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Young's Modulus" => 5,
-        "Poisson's Ratio" => 0.125,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Young's Modulus" => 5,
+                                 "Poisson's Ratio" => 0.125)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Bulk Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
     @test parameter["Shear Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] == Float64(0.125)
     @test parameter["Young's Modulus"] == 5
 
-    parameter =
-        Dict{String,Any}("Material Model" => "Bond-based Elastic", "Young's Modulus" => 5)
+    parameter = Dict{String,Any}("Material Model" => "Bond-based Elastic",
+                                 "Young's Modulus" => 5)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Bulk Modulus"] == 5
     @test parameter["Shear Modulus"] == 1.875
     @test parameter["Poisson's Ratio"] == Float64(1 / 3)
     @test parameter["Young's Modulus"] == 5
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "Bond-based Elastic",
-        "Young's Modulus" => 5,
-        "Poisson's Ratio" => 0.125,
-    )
+    parameter = Dict{String,Any}("Material Model" => "Bond-based Elastic",
+                                 "Young's Modulus" => 5,
+                                 "Poisson's Ratio" => 0.125)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Bulk Modulus"] == 5
     @test parameter["Shear Modulus"] == 1.875
@@ -338,19 +268,17 @@ end
     @test parameter["Young's Modulus"] == 5
 
     test_data_manager.create_constant_node_field("Bulk_Modulus", Float64, 1, 10)
-    parameter =
-        Dict{String,Any}("Material Model" => "PD Solid Elastic", "Shear Modulus" => 10)
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Shear Modulus" => 10)
     get_all_elastic_moduli(test_data_manager, parameter)
     @test parameter["Young's Modulus"] == [22.5, 22.5, 22.5]
     @test parameter["Poisson's Ratio"] == [0.125, 0.125, 0.125]
     @test parameter["Bulk Modulus"] == [10, 10, 10]
     @test parameter["Shear Modulus"] == [10, 10, 10]
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "Unified Bond-based Elastic",
-        "Young's Modulus" => 5,
-        "Poisson's Ratio" => 0.125,
-    )
+    parameter = Dict{String,Any}("Material Model" => "Unified Bond-based Elastic",
+                                 "Young's Modulus" => 5,
+                                 "Poisson's Ratio" => 0.125)
     get_all_elastic_moduli(test_data_manager, parameter)
 
     @test parameter["Young's Modulus"] == [22.5, 22.5, 22.5]
@@ -358,31 +286,25 @@ end
     @test parameter["Bulk Modulus"] == [10, 10, 10]
     @test parameter["Shear Modulus"] == [10, 10, 10]
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Symmetry" => "Anisotropic",
-        "C11" => 5,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Symmetry" => "Anisotropic",
+                                 "C11" => 5)
     @test isnothing(get_all_elastic_moduli(test_data_manager, parameter))
 
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Symmetry" => "Orthotropic",
-        "Young's Modulus X" => 5,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Symmetry" => "Orthotropic",
+                                 "Young's Modulus X" => 5)
     @test isnothing(get_all_elastic_moduli(test_data_manager, parameter))
 end
 
 @testset "get_Hooke_matrix" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Bulk Modulus" => 5,
-        "Shear Modulus" => 1.25,
-        "Poisson's Ratio" => 0.2,
-        "Compute_Hook" => false,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Bulk Modulus" => 5,
+                                 "Shear Modulus" => 1.25,
+                                 "Poisson's Ratio" => 0.2,
+                                 "Compute_Hook" => false)
     get_all_elastic_moduli(test_data_manager, parameter)
 
     symmetry = "isotropic"
@@ -390,10 +312,10 @@ end
     nu = parameter["Poisson's Ratio"]
     temp = 1 / ((1 + nu) * (1 - 2 * nu))
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
-    for iID = 1:3
+    for iID in 1:3
         @test isapprox(C[iID, iID], E * (1 - nu) * temp)
-        @test C[iID+3, iID+3] == (1 - 2 * nu) * temp * E
-        for jID = 1:3
+        @test C[iID + 3, iID + 3] == (1 - 2 * nu) * temp * E
+        for jID in 1:3
             if iID != jID
                 @test isapprox(C[iID, jID], E * nu * temp)
             end
@@ -402,9 +324,9 @@ end
 
     symmetry = "isotropic plane strain"
     C2D = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
-    for iID = 1:2
+    for iID in 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
-        for jID = 1:2
+        for jID in 1:2
             if iID != jID
                 @test C2D[iID, jID] / (E * nu * temp) - 1 < 1e-7
             end
@@ -414,9 +336,9 @@ end
 
     symmetry = "missing"
     C2D = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
-    for iID = 1:2
+    for iID in 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
-        for jID = 1:2
+        for jID in 1:2
             if iID != jID
                 @test C2D[iID, jID] / (E * nu * temp) - 1 < 1e-7
             end
@@ -431,17 +353,17 @@ end
     C2D_test[3, 3] = Cinv[6, 6]
     C2D_test = inv(C2D_test)
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
-    for iID = 1:3
-        for jID = 1:3
+    for iID in 1:3
+        for jID in 1:3
             if C2D_test[iID, jID] != 0
                 @test C[iID, jID] / C2D_test[iID, jID] - 1 < 1e-7
             end
         end
     end
 
-    for iID = 1:6
-        for jID = 1:6
-            parameter["C"*string(iID)*string(jID)] = iID * jID + jID
+    for iID in 1:6
+        for jID in 1:6
+            parameter["C" * string(iID) * string(jID)] = iID * jID + jID
         end
     end
 
@@ -450,22 +372,22 @@ end
 
     symmetry = "anisotropic"
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
-    for iID = 1:6
-        for jID = 1:6
+    for iID in 1:6
+        for jID in 1:6
             @test C[iID, jID] == C[jID, iID]
             if jID >= iID
-                @test C[iID, jID] == parameter["C"*string(iID)*string(jID)]
+                @test C[iID, jID] == parameter["C" * string(iID) * string(jID)]
             end
         end
     end
 
     symmetry = "anisotropic plane strain"
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
-    for iID = 1:2
-        for jID = 1:2
+    for iID in 1:2
+        for jID in 1:2
             @test C[iID, jID] == C[jID, iID]
             if jID >= iID
-                @test C[iID, jID] == parameter["C"*string(iID)*string(jID)]
+                @test C[iID, jID] == parameter["C" * string(iID) * string(jID)]
             end
         end
     end
@@ -488,19 +410,17 @@ end
     #TODO: Check above
 
     symmetry = "Orthotropic"
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Young's Modulus X" => 5,
-        "Young's Modulus Y" => 6,
-        "Young's Modulus Z" => 7,
-        "Poisson's Ratio XY" => 0.1,
-        "Poisson's Ratio YZ" => 0.2,
-        "Poisson's Ratio XZ" => 0.3,
-        "Shear Modulus XY" => 1,
-        "Shear Modulus YZ" => 2,
-        "Shear Modulus XZ" => 3,
-        "Compute_Hook" => true,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Young's Modulus X" => 5,
+                                 "Young's Modulus Y" => 6,
+                                 "Young's Modulus Z" => 7,
+                                 "Poisson's Ratio XY" => 0.1,
+                                 "Poisson's Ratio YZ" => 0.2,
+                                 "Poisson's Ratio XZ" => 0.3,
+                                 "Shear Modulus XY" => 1,
+                                 "Shear Modulus YZ" => 2,
+                                 "Shear Modulus XZ" => 3,
+                                 "Compute_Hook" => true)
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
     @test C[1, 1] == 5.9692770078477215
     @test C[1, 2] == 1.2773417932876945
@@ -516,29 +436,25 @@ end
     @test C[6, 6] == 2
 
     symmetry = "Orthotropic"
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Young's Modulus X" => 7000,
-        "Young's Modulus Y" => 7000,
-        "Young's Modulus Z" => 7000,
-        "Poisson's Ratio XY" => 0.3,
-        "Poisson's Ratio YZ" => 0.3,
-        "Poisson's Ratio XZ" => 0.3,
-        "Shear Modulus XY" => 2000,
-        "Shear Modulus YZ" => 2000,
-        "Shear Modulus XZ" => 2000,
-        "Compute_Hook" => true,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Young's Modulus X" => 7000,
+                                 "Young's Modulus Y" => 7000,
+                                 "Young's Modulus Z" => 7000,
+                                 "Poisson's Ratio XY" => 0.3,
+                                 "Poisson's Ratio YZ" => 0.3,
+                                 "Poisson's Ratio XZ" => 0.3,
+                                 "Shear Modulus XY" => 2000,
+                                 "Shear Modulus YZ" => 2000,
+                                 "Shear Modulus XZ" => 2000,
+                                 "Compute_Hook" => true)
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
 
     symmetry = "isotropic"
-    parameter = Dict{String,Any}(
-        "Material Model" => "PD Solid Elastic",
-        "Young's Modulus" => 7000,
-        "Poisson's Ratio" => 0.3,
-        "Shear Modulus" => 2000,
-        "Compute_Hook" => true,
-    )
+    parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
+                                 "Young's Modulus" => 7000,
+                                 "Poisson's Ratio" => 0.3,
+                                 "Shear Modulus" => 2000,
+                                 "Compute_Hook" => true)
     @test C == get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
 end
 

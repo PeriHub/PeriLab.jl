@@ -10,7 +10,6 @@ export pre_calculation_name
 export init_model
 export compute
 
-
 """
     pre_calculation_name()
 
@@ -44,12 +43,10 @@ Inits the deformation gradient calculation.
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    parameter::Union{Dict,OrderedDict},
-    block::Int64,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    parameter::Union{Dict,OrderedDict},
+                    block::Int64)
     dof = datamanager.get_dof()
     datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
     return datamanager
@@ -66,12 +63,10 @@ Compute the deformation gradient.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    parameter::Union{Dict,OrderedDict},
-    block::Int64,
-)
+function compute(datamanager::Module,
+                 nodes::Union{SubArray,Vector{Int64}},
+                 parameter::Union{Dict,OrderedDict},
+                 block::Int64)
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
     omega = datamanager.get_field("Influence Function")
@@ -81,22 +76,19 @@ function compute(
     deformation_gradient = datamanager.get_field("Deformation Gradient")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
     dof = datamanager.get_dof()
-    compute_deformation_gradients!(
-        deformation_gradient,
-        nodes,
-        dof,
-        nlist,
-        volume,
-        omega,
-        bond_damage,
-        deformed_bond,
-        undeformed_bond,
-        inverse_shape_tensor,
-    )
+    compute_deformation_gradients!(deformation_gradient,
+                                   nodes,
+                                   dof,
+                                   nlist,
+                                   volume,
+                                   omega,
+                                   bond_damage,
+                                   deformed_bond,
+                                   undeformed_bond,
+                                   inverse_shape_tensor)
 
     return datamanager
 end
-
 
 """
     fields_for_local_synchronization(datamanager::Module, model::String)

@@ -44,12 +44,10 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-    block::Int64,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    material_parameter::Dict,
+                    block::Int64)
     return datamanager
 end
 
@@ -72,8 +70,6 @@ println(correspondence_name())
 function correspondence_name()
     return "Correspondence Template"
 end
-
-
 
 """
     fields_for_local_synchronization(datamanager::Module, model::String)
@@ -116,18 +112,16 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(
-    datamanager::Module,
-    iID::Int64,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Union{SubArray,Array{Float64,3}},
-    stress_N::Union{SubArray,Array{Float64,3}},
-    stress_NP1::Union{SubArray,Array{Float64,3}},
-    iID_jID_nID::Tuple = (),
-)
+function compute_stresses(datamanager::Module,
+                          iID::Int64,
+                          dof::Int64,
+                          material_parameter::Dict,
+                          time::Float64,
+                          dt::Float64,
+                          strain_increment::Union{SubArray,Array{Float64,3}},
+                          stress_N::Union{SubArray,Array{Float64,3}},
+                          stress_NP1::Union{SubArray,Array{Float64,3}},
+                          iID_jID_nID::Tuple = ())
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model() and init_model() function."
@@ -157,35 +151,29 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(
-    datamanager::Module,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Vector{Float64},
-    stress_N::Vector{Float64},
-    stress_NP1::Vector{Float64},
-)
-
-
-
+function compute_stresses(datamanager::Module,
+                          dof::Int64,
+                          material_parameter::Dict,
+                          time::Float64,
+                          dt::Float64,
+                          strain_increment::Vector{Float64},
+                          stress_N::Vector{Float64},
+                          stress_NP1::Vector{Float64})
     return stress_NP1, datamanager
 end
 
-function compute_stresses_ba(
-    datamanager::Module,
-    nodes,
-    nlist,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}},
-)
-
+function compute_stresses_ba(datamanager::Module,
+                             nodes,
+                             nlist,
+                             dof::Int64,
+                             material_parameter::Dict,
+                             time::Float64,
+                             dt::Float64,
+                             strain_increment::Union{SubArray,Array{Float64,3},
+                                                     Vector{Float64}},
+                             stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
+                             stress_NP1::Union{SubArray,Array{Float64,3},
+                                               Vector{Float64}})
     @error "$(correspondence_name()) not yet implemented for bond associated."
 end
 

@@ -26,7 +26,6 @@ function thermal_model_name()
     return "Heat Transfer"
 end
 
-
 """
     init_model(datamanager, nodes, thermal_parameter)
 
@@ -41,12 +40,9 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    thermal_parameter::Dict,
-)
-
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    thermal_parameter::Dict)
     return datamanager
 end
 
@@ -67,14 +63,12 @@ Example:
 ```julia
 ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    thermal_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-)
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       thermal_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64)
     dof = datamanager.get_dof()
     volume = datamanager.get_field("Volume")
     kappa = thermal_parameter["Heat Transfer Coefficient"]
@@ -89,15 +83,13 @@ function compute_model(
     nlist = datamanager.get_nlist()
     dx = 1.0
 
-    specific_volume = calculate_specific_volume(
-        nodes,
-        nlist,
-        volume,
-        active,
-        specific_volume,
-        dof,
-        horizon,
-    )
+    specific_volume = calculate_specific_volume(nodes,
+                                                nlist,
+                                                volume,
+                                                active,
+                                                specific_volume,
+                                                dof,
+                                                horizon)
     for iID in nodes
         if !surface_nodes[iID]
             continue
@@ -108,8 +100,8 @@ function compute_model(
             elseif dof == 3
                 dx = volume[iID]^(1 / 3)
             end
-            heat_flow[iID] +=
-                (kappa * (temperature[iID] - Tenv)) / dx * floor(specific_volume[iID])
+            heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx *
+                              floor(specific_volume[iID])
         else
             surface_nodes[iID] = false
         end
@@ -133,16 +125,13 @@ Calculates the specific volume.
 # Returns
 - `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function calculate_specific_volume(
-    nodes::Union{SubArray,Vector{Int64}},
-    nlist::Union{SubArray,Vector{Vector{Int64}}},
-    volume::Vector{Float64},
-    active::Vector{Bool},
-    specific_volume::Vector{Float64},
-    dof::Int64,
-    horizon::Vector{Float64},
-)
-
+function calculate_specific_volume(nodes::Union{SubArray,Vector{Int64}},
+                                   nlist::Union{SubArray,Vector{Vector{Int64}}},
+                                   volume::Vector{Float64},
+                                   active::Vector{Bool},
+                                   specific_volume::Vector{Float64},
+                                   dof::Int64,
+                                   horizon::Vector{Float64})
     for iID in nodes
         neighbor_volume = 0.0
         for (jID, neighborID) in enumerate(nlist[iID])

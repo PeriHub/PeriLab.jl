@@ -25,22 +25,15 @@ end
 @testset "ut_invert" begin
     # @test isnothing(PeriLab.Solver_control.Helpers.invert(zeros(Float64, 3, 3)))
     # @test isnothing(PeriLab.Solver_control.Helpers.invert(zeros(Int64, 3, 3)))
-    @test isnothing(
-        PeriLab.Solver_control.Helpers.invert(
-            zeros(Float64, 4, 4),
-            "test Float is singular.",
-        ),
-    )
-    @test isnothing(
-        PeriLab.Solver_control.Helpers.invert(zeros(Int64, 4, 4), "test Int is singular."),
-    )
+    @test isnothing(PeriLab.Solver_control.Helpers.invert(zeros(Float64, 4, 4),
+                                                          "test Float is singular."))
+    @test isnothing(PeriLab.Solver_control.Helpers.invert(zeros(Int64, 4, 4),
+                                                          "test Int is singular."))
     @test PeriLab.Solver_control.Helpers.invert([1 0; 0 1]) == inv([1 0; 0 1])
-    @test PeriLab.Solver_control.Helpers.invert(
-        [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
-        "test Int is singular.",
-    ) == inv([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
+    @test PeriLab.Solver_control.Helpers.invert([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
+                                                "test Int is singular.") ==
+          inv([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
 end
-
 
 @testset "ut_find_local_neighbors" begin
     coordinates = zeros(Float64, 5, 2)
@@ -59,35 +52,26 @@ end
 
     bond_horizon::Float64 = 1
 
-    @test PeriLab.Solver_control.Helpers.find_local_neighbors(
-        5,
-        coordinates,
-        nlist,
-        bond_horizon,
-    ) == []
+    @test PeriLab.Solver_control.Helpers.find_local_neighbors(5,
+                                                              coordinates,
+                                                              nlist,
+                                                              bond_horizon) == []
     bond_horizon = 2.6
-    @test PeriLab.Solver_control.Helpers.find_local_neighbors(
-        5,
-        coordinates,
-        nlist,
-        bond_horizon,
-    ) == [2, 3, 4]
-    @test PeriLab.Solver_control.Helpers.find_local_neighbors(
-        2,
-        coordinates,
-        nlist,
-        bond_horizon,
-    ) == [3, 4, 5]
+    @test PeriLab.Solver_control.Helpers.find_local_neighbors(5,
+                                                              coordinates,
+                                                              nlist,
+                                                              bond_horizon) == [2, 3, 4]
+    @test PeriLab.Solver_control.Helpers.find_local_neighbors(2,
+                                                              coordinates,
+                                                              nlist,
+                                                              bond_horizon) == [3, 4, 5]
 end
 @testset "ut_fastdot" begin
     a = rand(3)
     b = rand(3)
     PeriLab.Solver_control.Helpers.fastdot(a, b) == dot(a, b)
-
-
 end
 @testset "ut_get_mapping" begin
-
     @test isnothing(PeriLab.Solver_control.Helpers.get_mapping(4))
 end
 
@@ -117,39 +101,31 @@ end
     @test PeriLab.Solver_control.Helpers.qdim(10, 3) == 285
 end
 
-
 @testset "rotate_second_order_tensor" begin
-
     angles = [0]
     rot = PeriLab.IO.Geometry.rotation_tensor(angles, 2)
     tensor = zeros(2, 2)
     tensor[1, 1] = 1
     dof = 2
     back = true
-    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
-        Matrix{Float64}(rot),
-        tensor,
-        back,
-    )
+    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
+                                                                           tensor,
+                                                                           back)
     @test tensorTest == tensor
     angles = [90.0]
     rot = PeriLab.IO.Geometry.rotation_tensor(angles, 2)
-    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
-        Matrix{Float64}(rot),
-        tensor,
-        back,
-    )
+    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
+                                                                           tensor,
+                                                                           back)
 
     @test isapprox(tensorTest[1, 1] + 1, 1) # plus one, because of how approx works
     @test isapprox(tensorTest[1, 2] + 1, 1)
     @test isapprox(tensorTest[2, 1] + 1, 1)
     @test isapprox(tensorTest[2, 2] + 1, 1)
     back = false
-    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
-        Matrix{Float64}(rot),
-        tensor,
-        back,
-    )
+    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
+                                                                           tensor,
+                                                                           back)
     @test tensorTest == tensor
 
     angles = [0, 0, 0]
@@ -159,19 +135,15 @@ end
     dof = 3
 
     back = true
-    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
-        Matrix{Float64}(rot),
-        tensor,
-        back,
-    )
+    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
+                                                                           tensor,
+                                                                           back)
     @test tensorTest == tensor
     angles = [0, 0, 90.0]
     rot = PeriLab.IO.Geometry.rotation_tensor(angles, 3)
-    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
-        Matrix{Float64}(rot),
-        tensor,
-        back,
-    )
+    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
+                                                                           tensor,
+                                                                           back)
     @test isapprox(tensorTest[1, 1] + 1, 1) # plus one, because of how approx works
     @test isapprox(tensorTest[1, 2] + 1, 1)
     @test isapprox(tensorTest[1, 3] + 1, 1)
@@ -183,27 +155,20 @@ end
     @test isapprox(tensorTest[3, 3] + 1, 1)
 
     back = false
-    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
-        Matrix{Float64}(rot),
-        tensor,
-        back,
-    )
+    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
+                                                                           tensor,
+                                                                           back)
     @test tensorTest == tensor
 
     angles = [10, 20, 90.0]
     rot = PeriLab.IO.Geometry.rotation_tensor(angles, 3)
-    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
-        Matrix{Float64}(rot),
-        tensor,
-        true,
-    )
-    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(
-        Matrix{Float64}(rot),
-        tensor,
-        false,
-    )
+    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
+                                                                           tensor,
+                                                                           true)
+    tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
+                                                                           tensor,
+                                                                           false)
     @test tensorTest == tensor
-
 end
 
 @testset "ut_interpolation" begin
@@ -211,18 +176,14 @@ end
     y = [-1.0, 0.0, 7.0, 26.0, 63.0]  # x.^3 - 1.
     values_dict = Dict()
     values_dict["value"] = PeriLab.Solver_control.Helpers.interpolation(x, y)
-    @test isapprox(
-        PeriLab.Solver_control.Helpers.interpol_data([1.5, 2.5], values_dict["value"])[1],
-        2.375,
-    )
-    @test isapprox(
-        PeriLab.Solver_control.Helpers.interpol_data([1.5, 2.5], values_dict["value"])[2],
-        14.625,
-    )
-    @test isapprox(
-        PeriLab.Solver_control.Helpers.interpol_data(1.5, values_dict["value"]),
-        2.375,
-    )
+    @test isapprox(PeriLab.Solver_control.Helpers.interpol_data([1.5, 2.5],
+                                                                values_dict["value"])[1],
+                   2.375)
+    @test isapprox(PeriLab.Solver_control.Helpers.interpol_data([1.5, 2.5],
+                                                                values_dict["value"])[2],
+                   14.625)
+    @test isapprox(PeriLab.Solver_control.Helpers.interpol_data(1.5, values_dict["value"]),
+                   2.375)
     @test PeriLab.Solver_control.Helpers.interpol_data(-1, values_dict["value"]) ==
           minimum(y)
     @test PeriLab.Solver_control.Helpers.interpol_data([-1, -8], values_dict["value"]) ==
@@ -251,28 +212,21 @@ end
     # Test case 1: Empty input
     @test isempty(PeriLab.Solver_control.Helpers.find_active_nodes(Bool[], index, 1:0))
     # Test case 2: All elements are active
-    @test PeriLab.Solver_control.Helpers.find_active_nodes(
-        [true, true, true],
-        index,
-        1:3,
-    ) == [1, 2, 3]
+    @test PeriLab.Solver_control.Helpers.find_active_nodes([true, true, true],
+                                                           index,
+                                                           1:3) == [1, 2, 3]
     # Test case 3: No elements are active
-    @test isempty(
-        PeriLab.Solver_control.Helpers.find_active_nodes([false, false, false], index, 1:3),
-    )
+    @test isempty(PeriLab.Solver_control.Helpers.find_active_nodes([false, false, false],
+                                                                   index, 1:3))
 
-    @test PeriLab.Solver_control.Helpers.find_active_nodes(
-        [false, false, false],
-        index,
-        1:3,
-        false,
-    ) == [1, 2, 3]
+    @test PeriLab.Solver_control.Helpers.find_active_nodes([false, false, false],
+                                                           index,
+                                                           1:3,
+                                                           false) == [1, 2, 3]
     # Test case 4: Mix of active and inactive elements
-    @test PeriLab.Solver_control.Helpers.find_active_nodes(
-        [false, true, false, true, true],
-        index,
-        1:5,
-    ) == [2, 4, 5]
+    @test PeriLab.Solver_control.Helpers.find_active_nodes([false, true, false, true, true],
+                                                           index,
+                                                           1:5) == [2, 4, 5]
     # Test case 5: SubList of active and inactive elements
     list = [false, true, false, true, true]
     @test PeriLab.Solver_control.Helpers.find_active_nodes(list[[2, 3, 5]], index, 1:3) ==
@@ -303,7 +257,6 @@ end
     @test inverse_nlist[2][1] == 1
     @test inverse_nlist[2][3] == 2
     @test inverse_nlist[3][2] == 2
-
 end
 
 @testset "ut_check_inf_or_nan" begin
@@ -347,7 +300,6 @@ end
     touch(joinpath(tmpdir, "file4.csv"))
     mkdir(joinpath(tmpdir, "subdir"))
 
-
     # Test case 1: Find .txt files
     @test PeriLab.Solver_control.Helpers.find_files_with_ending(tmpdir, ".txt") ==
           ["file1.txt", "file2.txt"]
@@ -371,10 +323,10 @@ end
 @testset "ut_progress_bar" begin
     nsteps::Int64 = rand(1:100)
     @test PeriLab.Solver_control.Helpers.progress_bar(rand(1:100), nsteps, true) ==
-          1:nsteps+1
+          1:(nsteps + 1)
     @test PeriLab.Solver_control.Helpers.progress_bar(rand(1:100), nsteps, false) ==
-          1:nsteps+1
-    @test PeriLab.Solver_control.Helpers.progress_bar(0, nsteps, true) == 1:nsteps+1
+          1:(nsteps + 1)
+    @test PeriLab.Solver_control.Helpers.progress_bar(0, nsteps, true) == 1:(nsteps + 1)
     @test typeof(PeriLab.Solver_control.Helpers.progress_bar(0, nsteps, false)) ==
           ProgressBar
     @test length(PeriLab.Solver_control.Helpers.progress_bar(0, nsteps, false)) ==
@@ -391,75 +343,57 @@ end
     update_nodes = test_data_manager.create_constant_node_field("Update Nodes", Int64, 1)
     block_nodes = Dict(1 => [1, 2], 2 => [3, 4])
     block = 1
-    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
-        active,
-        update_list,
-        block_nodes[block],
-        update_nodes,
-    ) == [1, 2]
+    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(active,
+                                                                 update_list,
+                                                                 block_nodes[block],
+                                                                 update_nodes) == [1, 2]
     block = 2
-    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
-        active,
-        update_list,
-        block_nodes[block],
-        update_nodes,
-    ) == [3, 4]
+    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(active,
+                                                                 update_list,
+                                                                 block_nodes[block],
+                                                                 update_nodes) == [3, 4]
     update_list[3] = false
     block = 1
-    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
-        active,
-        update_list,
-        block_nodes[block],
-        update_nodes,
-    ) == [1, 2]
+    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(active,
+                                                                 update_list,
+                                                                 block_nodes[block],
+                                                                 update_nodes) == [1, 2]
     block = 2
-    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
-        active,
-        update_list,
-        block_nodes[block],
-        update_nodes,
-    ) == [4]
+    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(active,
+                                                                 update_list,
+                                                                 block_nodes[block],
+                                                                 update_nodes) == [4]
 
     active[3] = false
     block = 1
-    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
-        active,
-        update_list,
-        block_nodes[block],
-        update_nodes,
-    ) == [1, 2]
+    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(active,
+                                                                 update_list,
+                                                                 block_nodes[block],
+                                                                 update_nodes) == [1, 2]
     block = 2
-    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
-        active,
-        update_list,
-        block_nodes[block],
-        update_nodes,
-    ) == [4]
+    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(active,
+                                                                 update_list,
+                                                                 block_nodes[block],
+                                                                 update_nodes) == [4]
     update_list[3] = true
-    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
-        active,
-        update_list,
-        block_nodes[block],
-        update_nodes,
-    ) == [4]
+    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(active,
+                                                                 update_list,
+                                                                 block_nodes[block],
+                                                                 update_nodes) == [4]
     block = 1
     update_list[3] = false
     update_list[4] = false
-    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
-        active,
-        update_list,
-        block_nodes[block],
-        update_nodes,
-    ) == [1, 2]
+    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(active,
+                                                                 update_list,
+                                                                 block_nodes[block],
+                                                                 update_nodes) == [1, 2]
     block = 2
     active[3] = false
     active[4] = false
-    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(
-        active,
-        update_list,
-        block_nodes[block],
-        update_nodes,
-    ) == []
+    @test PeriLab.Solver_control.Helpers.get_active_update_nodes(active,
+                                                                 update_list,
+                                                                 block_nodes[block],
+                                                                 update_nodes) == []
 end
 
 @testset "ut_get_MMatrix" begin
@@ -513,7 +447,6 @@ end
     @test PeriLab.Solver_control.Helpers.is_dependent("Value", params, test_data_manager) ==
           (false, nothing)
     params = Dict("Value" => Dict("Field" => "Non_Existent"))
-    @test isnothing(
-        PeriLab.Solver_control.Helpers.is_dependent("Value", params, test_data_manager),
-    )
+    @test isnothing(PeriLab.Solver_control.Helpers.is_dependent("Value", params,
+                                                                test_data_manager))
 end

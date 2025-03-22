@@ -8,7 +8,20 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.3.4] - 2023-03-10
+## [1.3.5] - 2025-03-19
+
+### Added
+
+- Additional Time parameter for multistep analysis
+- Block and nodeset definition via input deck
+- Gcode files as input mesh
+
+### Fixed
+
+- Bond force calculation for correspondence models
+- Init fields will only be called once
+
+## [1.3.4] - 2025-03-10
 
 ### Added
 

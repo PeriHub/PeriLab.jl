@@ -3,9 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 function get_node_header()
-
     return "header: global_id\n"
-
 end
 function get_mesh_header(dof = 2)
     if dof == 2

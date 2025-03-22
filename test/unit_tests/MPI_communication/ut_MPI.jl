@@ -10,7 +10,6 @@ using TimerOutputs
 include("../../../src/MPI_communication/MPI_communication.jl")
 include("../../../src/Models/Material/Material_Models/BondBased/Bondbased_Elastic.jl")
 
-
 function push_test!(dict::Dict, test::Bool, file::String, line::Int)
     push!(dict["tests"], test)
     push!(dict["line"], "$file:$line")
@@ -33,7 +32,6 @@ push_test!(test, (value == 1), @__FILE__, @__LINE__)
 value = rank + 1
 value = find_and_set_core_value_max(comm, value)
 push_test!(test, (ncores == value), @__FILE__, @__LINE__)
-
 
 test = test_dict["ut_send_value"] = Dict("tests" => [], "line" => [])
 if rank == 0
@@ -79,12 +77,10 @@ if rank != 0
     push_test!(test, (recv_msg[3] == 2), @__FILE__, @__LINE__)
 end
 
-push_test!(
-    test,
-    (isnothing(send_single_value_from_vector(comm, 0, [1], String))),
-    @__FILE__,
-    @__LINE__
-)
+push_test!(test,
+           (isnothing(send_single_value_from_vector(comm, 0, [1], String))),
+           @__FILE__,
+           @__LINE__)
 if ncores == 3
     include("../../../src/Core/Data_manager.jl")
     include("../../../src/IO/IO.jl")
@@ -139,10 +135,8 @@ if ncores == 3
         C[3] = 3
         D[1, 1] = 2
         E[2] = true
-
     end
     if rank == 1
-
         A[1] = 1
         A[2] = 88
         A[3] = 1.6
@@ -178,9 +172,8 @@ if ncores == 3
     E = synch_responder_to_controller(comm, overlap_map, E, 1)
 
     if rank == 0
-        test =
-            test_dict["synch_responder_to_controller_rank_0"] =
-                Dict("tests" => [], "line" => [])
+        test = test_dict["synch_responder_to_controller_rank_0"] = Dict("tests" => [],
+                                                                        "line" => [])
         push_test!(test, (A[1] == Float64(-2.3 + 1.4)), @__FILE__, @__LINE__)
         push_test!(test, (A[2] == 3), @__FILE__, @__LINE__)
         push_test!(test, (A[3] == 5), @__FILE__, @__LINE__)
@@ -195,9 +188,8 @@ if ncores == 3
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
     end
     if rank == 1
-        test =
-            test_dict["synch_responder_to_controller_rank_1"] =
-                Dict("tests" => [], "line" => [])
+        test = test_dict["synch_responder_to_controller_rank_1"] = Dict("tests" => [],
+                                                                        "line" => [])
         push_test!(test, (A[1] == 3 + 1), @__FILE__, @__LINE__)
         push_test!(test, (A[2] == Float64(88 + 5 + 1.1)), @__FILE__, @__LINE__)
         push_test!(test, (A[3] == Float64(1.6)), @__FILE__, @__LINE__)
@@ -213,9 +205,8 @@ if ncores == 3
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
     end
     if rank == 2
-        test =
-            test_dict["synch_responder_to_controller_rank_2"] =
-                Dict("tests" => [], "line" => [])
+        test = test_dict["synch_responder_to_controller_rank_2"] = Dict("tests" => [],
+                                                                        "line" => [])
         push_test!(test, (A[1] == Float64(1.6)), @__FILE__, @__LINE__)
         push_test!(test, (A[2] == Float64(-2.3)), @__FILE__, @__LINE__)
         push_test!(test, (A[3] == Float64(1.1)), @__FILE__, @__LINE__)
@@ -245,9 +236,8 @@ if ncores == 3
     D = synch_controller_to_responder(comm, overlap_map, D, 5)
     E = synch_controller_to_responder(comm, overlap_map, E, 1)
     if rank == 0
-        test =
-            test_dict["synch_controller_to_responder_rank_0"] =
-                Dict("tests" => [], "line" => [])
+        test = test_dict["synch_controller_to_responder_rank_0"] = Dict("tests" => [],
+                                                                        "line" => [])
         push_test!(test, isapprox(A[1], Float64(-0.9)), @__FILE__, @__LINE__)
         push_test!(test, (A[2] == Float64(4)), @__FILE__, @__LINE__)
         push_test!(test, (A[3] == Float64(94.1)), @__FILE__, @__LINE__)
@@ -264,35 +254,26 @@ if ncores == 3
         push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_0"] = Dict("tests" => [], "line" => [])
-        push_test!(
-            test,
-            (IO.find_global_core_value!(0, "Sum", 1, test_data_manager) == 3),
-            @__FILE__,
-            @__LINE__
-        )
-        push_test!(
-            test,
-            (IO.find_global_core_value!(0, "Maximum", 1, test_data_manager) == 2),
-            @__FILE__,
-            @__LINE__
-        )
-        push_test!(
-            test,
-            (IO.find_global_core_value!(0, "Minimum", 1, test_data_manager) == 0),
-            @__FILE__,
-            @__LINE__
-        )
-        push_test!(
-            test,
-            (IO.find_global_core_value!(0, "Average", 1, test_data_manager) == 1),
-            @__FILE__,
-            @__LINE__
-        )
+        push_test!(test,
+                   (IO.find_global_core_value!(0, "Sum", 1, test_data_manager) == 3),
+                   @__FILE__,
+                   @__LINE__)
+        push_test!(test,
+                   (IO.find_global_core_value!(0, "Maximum", 1, test_data_manager) == 2),
+                   @__FILE__,
+                   @__LINE__)
+        push_test!(test,
+                   (IO.find_global_core_value!(0, "Minimum", 1, test_data_manager) == 0),
+                   @__FILE__,
+                   @__LINE__)
+        push_test!(test,
+                   (IO.find_global_core_value!(0, "Average", 1, test_data_manager) == 1),
+                   @__FILE__,
+                   @__LINE__)
     end
     if rank == 1
-        test =
-            test_dict["synch_controller_to_responder_rank_1"] =
-                Dict("tests" => [], "line" => [])
+        test = test_dict["synch_controller_to_responder_rank_1"] = Dict("tests" => [],
+                                                                        "line" => [])
         push_test!(test, (A[1] == Float64(4.0)), @__FILE__, @__LINE__)
         push_test!(test, (A[2] == Float64(94.1)), @__FILE__, @__LINE__)
         push_test!(test, (A[3] == Float64(1.6)), @__FILE__, @__LINE__)
@@ -310,35 +291,26 @@ if ncores == 3
         push_test!(test, (E[2] == true), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_1"] = Dict("tests" => [], "line" => [])
-        push_test!(
-            test,
-            (IO.find_global_core_value!(1, "Sum", 1, test_data_manager) == 3),
-            @__FILE__,
-            @__LINE__
-        )
-        push_test!(
-            test,
-            (IO.find_global_core_value!(1, "Maximum", 1, test_data_manager) == 2),
-            @__FILE__,
-            @__LINE__
-        )
-        push_test!(
-            test,
-            (IO.find_global_core_value!(1, "Minimum", 1, test_data_manager) == 0),
-            @__FILE__,
-            @__LINE__
-        )
-        push_test!(
-            test,
-            (IO.find_global_core_value!(1, "Average", 1, test_data_manager) == 1),
-            @__FILE__,
-            @__LINE__
-        )
+        push_test!(test,
+                   (IO.find_global_core_value!(1, "Sum", 1, test_data_manager) == 3),
+                   @__FILE__,
+                   @__LINE__)
+        push_test!(test,
+                   (IO.find_global_core_value!(1, "Maximum", 1, test_data_manager) == 2),
+                   @__FILE__,
+                   @__LINE__)
+        push_test!(test,
+                   (IO.find_global_core_value!(1, "Minimum", 1, test_data_manager) == 0),
+                   @__FILE__,
+                   @__LINE__)
+        push_test!(test,
+                   (IO.find_global_core_value!(1, "Average", 1, test_data_manager) == 1),
+                   @__FILE__,
+                   @__LINE__)
     end
     if rank == 2
-        test =
-            test_dict["synch_controller_to_responder_rank_2"] =
-                Dict("tests" => [], "line" => [])
+        test = test_dict["synch_controller_to_responder_rank_2"] = Dict("tests" => [],
+                                                                        "line" => [])
         push_test!(test, (A[1] == Float64(1.6)), @__FILE__, @__LINE__)
         push_test!(test, isapprox(A[2], Float64(-0.9)), @__FILE__, @__LINE__)
         push_test!(test, (A[3] == Float64(94.1)), @__FILE__, @__LINE__)
@@ -360,30 +332,22 @@ if ncores == 3
         push_test!(test, (E[2] == false), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_2"] = Dict("tests" => [], "line" => [])
-        push_test!(
-            test,
-            (IO.find_global_core_value!(2, "Sum", 1, test_data_manager) == 3),
-            @__FILE__,
-            @__LINE__
-        )
-        push_test!(
-            test,
-            (IO.find_global_core_value!(2, "Maximum", 1, test_data_manager) == 2),
-            @__FILE__,
-            @__LINE__
-        )
-        push_test!(
-            test,
-            (IO.find_global_core_value!(2, "Minimum", 1, test_data_manager) == 0),
-            @__FILE__,
-            @__LINE__
-        )
-        push_test!(
-            test,
-            (IO.find_global_core_value!(2, "Average", 1, test_data_manager) == 1),
-            @__FILE__,
-            @__LINE__
-        )
+        push_test!(test,
+                   (IO.find_global_core_value!(2, "Sum", 1, test_data_manager) == 3),
+                   @__FILE__,
+                   @__LINE__)
+        push_test!(test,
+                   (IO.find_global_core_value!(2, "Maximum", 1, test_data_manager) == 2),
+                   @__FILE__,
+                   @__LINE__)
+        push_test!(test,
+                   (IO.find_global_core_value!(2, "Minimum", 1, test_data_manager) == 0),
+                   @__FILE__,
+                   @__LINE__)
+        push_test!(test,
+                   (IO.find_global_core_value!(2, "Average", 1, test_data_manager) == 1),
+                   @__FILE__,
+                   @__LINE__)
     end
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn .= 2
@@ -393,63 +357,56 @@ if ncores == 3
     bf = test_data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
 
     bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1, 1)
-    dbN, dbNP1 =
-        test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof, 1)
+    dbN, dbNP1 = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof,
+                                                     1)
     dbdN, dbdNP1 = test_data_manager.create_bond_field("Deformed Bond Length", Float64, 1)
     bg = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
     bd = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1, 1)
-    for iID = 1:nodes
-        for jID = 1:nn[iID]
+    for iID in 1:nodes
+        for jID in 1:nn[iID]
             dbdNP1[iID][jID] = 1 + (-1)^iID * 0.1
         end
     end
 
-    test_data_manager = Bondbased_Elastic.init_model(
-        test_data_manager,
-        Vector{Int64}(1:nodes),
-        Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0),
-    )
-    test_data_manager = Bondbased_Elastic.compute_model(
-        test_data_manager,
-        Vector{Int64}(1:nodes),
-        Dict("Bulk Modulus" => 1.0, "Young's Modulus" => 1.0),
-        1,
-        0.0,
-        0.0,
-        to,
-    )
+    test_data_manager = Bondbased_Elastic.init_model(test_data_manager,
+                                                     Vector{Int64}(1:nodes),
+                                                     Dict("Bulk Modulus" => 1.0,
+                                                          "Young's Modulus" => 1.0))
+    test_data_manager = Bondbased_Elastic.compute_model(test_data_manager,
+                                                        Vector{Int64}(1:nodes),
+                                                        Dict("Bulk Modulus" => 1.0,
+                                                             "Young's Modulus" => 1.0),
+                                                        1,
+                                                        0.0,
+                                                        0.0,
+                                                        to)
 
     bf = test_data_manager.get_field("Bond Forces")
 
     synch_controller_bonds_to_responder(comm, overlap_map, bf, dof)
 
     if rank == 0
-        test =
-            test_dict["synch_controller_bonds_to_responder_rank_0"] =
-                Dict("tests" => [], "line" => [])
+        test = test_dict["synch_controller_bonds_to_responder_rank_0"] = Dict("tests" => [],
+                                                                              "line" => [])
         # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
     end
 
     synch_controller_bonds_to_responder_flattened(comm, overlap_map, bf, dof)
     if rank == 0
-        test =
-            test_dict["synch_controller_bonds_to_responder_flattened_rank_0"] =
-                Dict("tests" => [], "line" => [])
+        test = test_dict["synch_controller_bonds_to_responder_flattened_rank_0"] = Dict("tests" => [],
+                                                                                        "line" => [])
         # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
     end
 
     solver_options = Dict("Models" => ["Material"])
-    params = Dict(
-        "Blocks" => Dict(
-            "block_1" => Dict("Block ID" => 1, "Material Model" => "Test 1"),
-            "block_2" => Dict("Block ID" => 2, "Material Model" => "Test 2"),
-        ),
-    )
+    params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
+                                                     "Material Model" => "Test 1"),
+                                   "block_2" => Dict("Block ID" => 2,
+                                                     "Material Model" => "Test 2")))
     IO.show_block_summary(solver_options, params, "", false, comm, test_data_manager)
     IO.show_block_summary(solver_options, params, "", true, comm, test_data_manager)
     IO.show_mpi_summary("", false, comm, test_data_manager)
     IO.show_mpi_summary("", true, comm, test_data_manager)
-
 end
 
 open("test_results_$rank.json", "w") do f

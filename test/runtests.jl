@@ -17,7 +17,6 @@ include("helper.jl")
 MPI.Init()
 
 @testset ExtendedTestSet "PeriLab" begin
-
     @testset "unit_tests" begin
         @testset "ut_perilab" begin
             include("unit_tests/ut_perilab.jl")
@@ -73,7 +72,6 @@ MPI.Init()
                 include("unit_tests/Core/ut_Influence_function.jl")
             end
             @testset "Solver" begin
-
                 @testset "ut_Solver_control" begin
                     include("unit_tests/Core/Solver/ut_Solver_control.jl")
                 end
@@ -81,7 +79,6 @@ MPI.Init()
                 @testset "ut_Verlet" begin
                     include("unit_tests/Core/Solver/ut_Verlet.jl")
                 end
-
             end
             @testset "Module_inclusion" begin
                 include("unit_tests/Core/Module_inclusion/ut_set_Modules.jl")
@@ -91,7 +88,6 @@ MPI.Init()
             end
         end
         @testset "IO" begin
-
             @testset "ut_exodus_export" begin
                 include("unit_tests/IO/ut_exodus_export.jl")
             end
@@ -117,7 +113,6 @@ MPI.Init()
             @testset "ut_MPI" begin
                 include("unit_tests/MPI_communication/ut_MPI_call.jl")
             end
-
         end
 
         @testset "Models" begin
@@ -157,9 +152,7 @@ MPI.Init()
                 include("unit_tests/Models/ut_Model_Factory.jl")
             end
             @testset "ut_Pre_calculation" begin
-                include(
-                    "unit_tests/Models/Pre_calculation/ut_pre_bond_associated_correspondence.jl",
-                )
+                include("unit_tests/Models/Pre_calculation/ut_pre_bond_associated_correspondence.jl")
             end
             @testset "ut_Damage" begin
                 include("unit_tests/Models/Damage/ut_Damage_Factory.jl")
@@ -170,42 +163,24 @@ MPI.Init()
                     include("unit_tests/Models/Material/ut_Material_Factory.jl")
                 end
                 @testset "ut_control" begin
-                    include(
-                        "unit_tests/Models/Material/Zero_Energy_Control/ut_global_control.jl",
-                    )
+                    include("unit_tests/Models/Material/Zero_Energy_Control/ut_global_control.jl")
                 end
                 @testset "ut_material_basis" begin
                     include("unit_tests/Models/Material/ut_material_basis.jl")
                 end
                 @testset "ut_bond_based" begin
-                    include(
-                        "unit_tests/Models/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl",
-                    )
+                    include("unit_tests/Models/Material/Material_Models/BondBased/ut_Bondbased_Elastic.jl")
                 end
                 @testset "ut_correspondence" begin
-                    include(
-                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl",
-                    )
-                    include(
-                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_Plastic.jl",
-                    )
-                    include(
-                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_UMAT.jl",
-                    )
-                    include(
-                        "unit_tests/Models/Material/Material_Models/Correspondence/ut_Bond_Associated_Correspondence.jl",
-                    )
+                    include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl")
+                    include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_Plastic.jl")
+                    include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_UMAT.jl")
+                    include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Bond_Associated_Correspondence.jl")
                 end
                 @testset "ut_ordinary" begin
-                    include(
-                        "unit_tests/Models/Material/Material_Models/Ordinary/ut_ordinary.jl",
-                    )
-                    include(
-                        "unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Elastic.jl",
-                    )
-                    include(
-                        "unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Plastic.jl",
-                    )
+                    include("unit_tests/Models/Material/Material_Models/Ordinary/ut_ordinary.jl")
+                    include("unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Elastic.jl")
+                    include("unit_tests/Models/Material/Material_Models/Ordinary/ut_PD_Solid_Plastic.jl")
                 end
             end
         end
@@ -277,24 +252,16 @@ MPI.Init()
             include("fullscale_tests/test_hetval/test_hetval.jl")
         end
         @testset "test_Correspondence_Elastic" begin
-            include(
-                "fullscale_tests/test_correspondence_elastic/test_correspondence_elastic.jl",
-            )
+            include("fullscale_tests/test_correspondence_elastic/test_correspondence_elastic.jl")
         end
         @testset "test_Correspondence_Elastic_Plastic" begin
-            include(
-                "fullscale_tests/test_correspondence_elastic_plastic/test_correspondence_elastic_plastic.jl",
-            )
+            include("fullscale_tests/test_correspondence_elastic_plastic/test_correspondence_elastic_plastic.jl")
         end
         @testset "test_Correspondence_Elastic_with_zero_E_control" begin
-            include(
-                "fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control.jl",
-            )
+            include("fullscale_tests/test_correspondence_elastic_with_zero_E_control/test_correspondence_elastic_with_zero_E_control.jl")
         end
         @testset "test_Correspondence_Elastic_3D" begin
-            include(
-                "fullscale_tests/test_correspondence_elastic_3D/test_correspondence_elastic_3D.jl",
-            )
+            include("fullscale_tests/test_correspondence_elastic_3D/test_correspondence_elastic_3D.jl")
         end
         @testset "test_DCB" begin
             include("fullscale_tests/test_DCB/test_DCB.jl")
@@ -318,8 +285,6 @@ MPI.Init()
             include("fullscale_tests/test_vumat/test_vumat.jl")
         end
     end
-
-
 end
 
 MPI.Finalize()

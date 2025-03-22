@@ -5,14 +5,14 @@ module FEM
 include("../Core/Module_inclusion/set_Modules.jl")
 include("./FEM_routines.jl")
 using .FEM_routines:
-    compute_FEM,
-    create_element_matrices,
-    get_Jacobian,
-    get_number_of_integration_points,
-    get_lumped_mass,
-    get_polynomial_degree,
-    create_B_matrix,
-    create_B_matrix
+                     compute_FEM,
+                     create_element_matrices,
+                     get_Jacobian,
+                     get_number_of_integration_points,
+                     get_lumped_mass,
+                     get_polynomial_degree,
+                     create_B_matrix,
+                     create_B_matrix
 include("./Coupling/Coupling_Factory.jl")
 
 # in future using set modules for material
@@ -42,11 +42,9 @@ function init_FEM(complete_params::Dict, datamanager::Module)
         return nothing
     end
     @info "Initialize FEM"
-    datamanager.set_property(
-        "FEM",
-        "Material Model",
-        complete_params["Models"]["Material Models"][params["Material Model"]],
-    )
+    datamanager.set_property("FEM",
+                             "Material Model",
+                             complete_params["Models"]["Material Models"][params["Material Model"]])
 
     dof = datamanager.get_dof()
     nelements = datamanager.get_num_elements()
@@ -61,55 +59,48 @@ function init_FEM(complete_params::Dict, datamanager::Module)
         return nothing
     end
     num_int = get_number_of_integration_points(p, dof)
-    N = datamanager.create_constant_free_size_field(
-        "N Matrix",
-        Float64,
-        (prod(num_int), prod(p .+ 1) * dof, dof),
-    )
+    N = datamanager.create_constant_free_size_field("N Matrix",
+                                                    Float64,
+                                                    (prod(num_int), prod(p .+ 1) * dof,
+                                                     dof))
 
-    B_matrix = datamanager.create_constant_free_size_field(
-        "B Matrix",
-        Float64,
-        (nelements, prod(num_int), prod(p .+ 1) * dof, 3 * dof - 3),
-    )
+    B_matrix = datamanager.create_constant_free_size_field("B Matrix",
+                                                           Float64,
+                                                           (nelements, prod(num_int),
+                                                            prod(p .+ 1) * dof,
+                                                            3 * dof - 3))
 
-    strainN, strainNP1 = datamanager.create_free_size_field(
-        "Element Strain",
-        Float64,
-        (nelements, prod(num_int), 3 * dof - 3),
-    )
-    stressN, stressNP1 = datamanager.create_free_size_field(
-        "Element Stress",
-        Float64,
-        (nelements, prod(num_int), 3 * dof - 3),
-    )
-    strain_increment = datamanager.create_constant_free_size_field(
-        "Element Strain Increment",
-        Float64,
-        (nelements, prod(num_int), 3 * dof - 3),
-    )
+    strainN, strainNP1 = datamanager.create_free_size_field("Element Strain",
+                                                            Float64,
+                                                            (nelements, prod(num_int),
+                                                             3 * dof - 3))
+    stressN, stressNP1 = datamanager.create_free_size_field("Element Stress",
+                                                            Float64,
+                                                            (nelements, prod(num_int),
+                                                             3 * dof - 3))
+    strain_increment = datamanager.create_constant_free_size_field("Element Strain Increment",
+                                                                   Float64,
+                                                                   (nelements,
+                                                                    prod(num_int),
+                                                                    3 * dof - 3))
 
-    specifics = Dict{String,String}(
-        "Call Function" => "create_element_matrices",
-        "Name" => "element_name",
-    )
+    specifics = Dict{String,String}("Call Function" => "create_element_matrices",
+                                    "Name" => "element_name")
     # B_elem only temporary
-    N[:], B_elem = create_element_matrices(
-        dof,
-        p,
-        Set_modules.create_module_specifics(params["Element Type"], module_list, specifics),
-    )
+    N[:], B_elem = create_element_matrices(dof,
+                                           p,
+                                           Set_modules.create_module_specifics(params["Element Type"],
+                                                                               module_list,
+                                                                               specifics))
     if isnothing(N) || isnothing(B_matrix)
         return nothing
     end
-    specifics =
-        Dict{String,String}("Call Function" => "init_element", "Name" => "element_name")
-    datamanager = Set_modules.create_module_specifics(
-        params["Element Type"],
-        module_list,
-        specifics,
-        (datamanager, elements, params, p),
-    )
+    specifics = Dict{String,String}("Call Function" => "init_element",
+                                    "Name" => "element_name")
+    datamanager = Set_modules.create_module_specifics(params["Element Type"],
+                                                      module_list,
+                                                      specifics,
+                                                      (datamanager, elements, params, p))
 
     elements = Vector{Int64}(1:nelements)
     topology = datamanager.get_field("FE Topology")
@@ -117,36 +108,31 @@ function init_FEM(complete_params::Dict, datamanager::Module)
         @error "Size of topology and polynomial degree does not match."
         return nothing
     end
-    jacobian = datamanager.create_constant_free_size_field(
-        "Element Jacobi Matrix",
-        Float64,
-        (nelements, prod(num_int), dof, dof),
-    )
-    determinant_jacobian = datamanager.create_constant_free_size_field(
-        "Element Jacobi Determinant",
-        Float64,
-        (nelements, prod(num_int)),
-    )
-    jacobian, determinant_jacobian = get_Jacobian(
-        elements,
-        dof,
-        topology,
-        coordinates,
-        B_elem,
-        jacobian,
-        determinant_jacobian,
-    )
+    jacobian = datamanager.create_constant_free_size_field("Element Jacobi Matrix",
+                                                           Float64,
+                                                           (nelements, prod(num_int), dof,
+                                                            dof))
+    determinant_jacobian = datamanager.create_constant_free_size_field("Element Jacobi Determinant",
+                                                                       Float64,
+                                                                       (nelements,
+                                                                        prod(num_int)))
+    jacobian, determinant_jacobian = get_Jacobian(elements,
+                                                  dof,
+                                                  topology,
+                                                  coordinates,
+                                                  B_elem,
+                                                  jacobian,
+                                                  determinant_jacobian)
 
     lumped_mass = datamanager.create_constant_node_field("Lumped Mass Matrix", Float64, 1)
     rho = datamanager.get_field("Density")
-    lumped_mass =
-        get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho, lumped_mass)
+    lumped_mass = get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho,
+                                  lumped_mass)
     B_matrix = create_B_matrix(elements, dof, B_elem, jacobian, B_matrix)
 
     datamanager = get_FEM_nodes(datamanager, topology)
     @info "End FEM init"
     return datamanager
-
 end
 
 function valid_models(params::Dict)
@@ -155,7 +141,6 @@ function valid_models(params::Dict)
     end
     if haskey(params, "Damage Model")
         @warn "Damage models are not supported for FEM"
-
     end
     if haskey(params, "Thermal Model")
         @warn "Thermal models are not supported for FEM yet"
@@ -173,21 +158,17 @@ function valid_models(params::Dict)
     return true
 end
 
-function eval_FEM(
-    datamanager::Module,
-    elements::Union{SubArray,Vector{Int64}},
-    params::Dict,
-    time::Float64,
-    dt::Float64,
-)
-    return compute_FEM(
-        datamanager,
-        elements,
-        params,
-        Correspondence_Elastic.compute_stresses,
-        time,
-        dt,
-    )
+function eval_FEM(datamanager::Module,
+                  elements::Union{SubArray,Vector{Int64}},
+                  params::Dict,
+                  time::Float64,
+                  dt::Float64)
+    return compute_FEM(datamanager,
+                       elements,
+                       params,
+                       Correspondence_Elastic.compute_stresses,
+                       time,
+                       dt)
 end
 
 function get_FEM_nodes(datamanager::Module, topology::Matrix{Int64})

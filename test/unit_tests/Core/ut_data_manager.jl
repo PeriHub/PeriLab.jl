@@ -76,10 +76,9 @@ end
     @test test_data_manager.get_local_nodes([1, 4]) == [3]
 end
 
-
 @testset "get_set_functions" begin
     test_data_manager = PeriLab.Data_manager
-    for i = 1:20
+    for i in 1:20
         test_data_manager.set_dof(i)
         @test test_data_manager.get_dof() == i
         test_data_manager.set_num_controller(i)
@@ -162,7 +161,6 @@ end
     @test test_data_manager.fem_active() == false
 end
 
-
 @testset "ut_number_of_elements" begin
     test_data_manager.set_num_elements(5)
     @test test_data_manager.get_num_elements() == 5
@@ -185,7 +183,6 @@ end
 end
 
 @testset "get_field" begin
-
     A = test_data_manager.get_field("A")
     @test typeof(A[1]) == Float64
     @test length(A) == test_data_manager.data["nnodes"] == num_controller + num_responder
@@ -226,7 +223,7 @@ end
 
     I = test_data_manager.get_field("I", "NP1")
     @test typeof(I[1][1][1]) == Int64
-    for i = 1:num_controller+num_responder
+    for i in 1:(num_controller + num_responder)
         @test length(I[i]) == nn[i]
     end
     @test length(I[1][1]) == 7
@@ -256,21 +253,19 @@ end
     @test size(test) == (5,)
     test = test_data_manager.create_constant_node_field("BMatrix", Float64, 3)
     @test size(test) == (50, 3)
-    test =
-        test_data_manager.create_constant_free_size_field("Test_size", Float64, (2, 3, 3))
+    test = test_data_manager.create_constant_free_size_field("Test_size", Float64,
+                                                             (2, 3, 3))
     @test size(test) == (2, 3, 3)
-    test = test_data_manager.create_constant_free_size_field(
-        "Test_size_2",
-        Float64,
-        (2, 3, 3, 4),
-    )
+    test = test_data_manager.create_constant_free_size_field("Test_size_2",
+                                                             Float64,
+                                                             (2, 3, 3, 4))
     @test size(test) == (2, 3, 3, 4)
     test = test_data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
     @test size(test) == (5, 3, 3)
     test = test_data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
     @test size(test) == (5, 3, 3)
-    test, test2 =
-        test_data_manager.create_free_size_field("Test_size_4", Float64, (3, 3, 1, 3))
+    test, test2 = test_data_manager.create_free_size_field("Test_size_4", Float64,
+                                                           (3, 3, 1, 3))
     @test size(test) == (3, 3, 1, 3)
     @test size(test2) == (3, 3, 1, 3)
     @test "Test_size_4N" in test_data_manager.get_all_field_keys()
@@ -439,7 +434,6 @@ test_data_manager.create_constant_node_field("Active", Bool, 1, true)
     @test INP1[2][1][3] == 0
     # bonds
     @test IN[2][1][3] == 5
-
 end
 
 @testset "ut_nodesets" begin
@@ -499,9 +493,8 @@ end
           Dict("E" => [3 1 2; 1 2 3; 1 3 4])
     @test test_data_manager.get_properties(1, "") == Dict()
     @test !test_data_manager.check_property(1, "This is not a property")
-    @test isnothing(
-        test_data_manager.get_property(1, "Thermal Model", "This is not a property"),
-    )
+    @test isnothing(test_data_manager.get_property(1, "Thermal Model",
+                                                   "This is not a property"))
     test_data_manager.set_properties("FEM", Dict("A" => 2, "C" => "Model"))
     @test test_data_manager.get_properties(1, "FEM") == Dict("A" => 2, "C" => "Model")
     @test test_data_manager.get_properties(2, "FEM") == Dict("A" => 2, "C" => "Model")
@@ -513,9 +506,9 @@ end
     # @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}
     # @test length(inv_nlist) == 0
     test_data_manager.set_inverse_nlist([
-        Dict{Int64,Int64}(1 => 2),
-        Dict{Int64,Int64}(1 => 2, 2 => 1),
-    ])
+                                            Dict{Int64,Int64}(1 => 2),
+                                            Dict{Int64,Int64}(1 => 2, 2 => 1)
+                                        ])
     inv_nlist = test_data_manager.get_inverse_nlist()
     @test typeof(inv_nlist) == Vector{Dict{Int64,Int64}}
     @test length(inv_nlist) == 2
@@ -548,7 +541,6 @@ end
     angles = test_data_manager.get_field("Element Angles")
     @test rotation
     @test angles == test_angles
-
 end
 
 @testset "ut_cancel" begin
@@ -565,7 +557,6 @@ end
     @test test_data_manager.get_crit_values_matrix() == crit_values
 end
 
-
 @testset "ut_initialize_data" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.create_node_field("test4", Float64, 3)
@@ -577,7 +568,6 @@ end
 end
 
 @testset "get_field_alloc" begin
-
     test_data_manager.initialize_data()
     test_data_manager.set_dof(2)
     num_controller = 3
@@ -600,29 +590,25 @@ end
     alloc += @allocated test_data_manager.create_bond_field("G", Bool, 1)
     alloc += @allocated test_data_manager.create_constant_bond_field("H", Float64, 4)
     alloc += @allocated test_data_manager.create_bond_field("I", Int64, 7)
-    alloc +=
-        @allocated test_data_manager.create_constant_free_size_field("J", Float64, (2, 3))
+    alloc += @allocated test_data_manager.create_constant_free_size_field("J", Float64,
+                                                                          (2, 3))
     alloc += @allocated test_data_manager.create_constant_node_field("K", Float64, 3)
-    alloc += @allocated test_data_manager.create_constant_free_size_field(
-        "L",
-        Float64,
-        (2, 3, 3),
-    )
-    alloc += @allocated test_data_manager.create_constant_free_size_field(
-        "M",
-        Float64,
-        (2, 3, 3, 4),
-    )
-    alloc +=
-        @allocated test_data_manager.create_constant_node_field("N", Float64, "Matrix", 3)
-    alloc +=
-        @allocated test_data_manager.create_constant_node_field("O", Float64, "Matrix", 3)
+    alloc += @allocated test_data_manager.create_constant_free_size_field("L",
+                                                                          Float64,
+                                                                          (2, 3, 3))
+    alloc += @allocated test_data_manager.create_constant_free_size_field("M",
+                                                                          Float64,
+                                                                          (2, 3, 3, 4))
+    alloc += @allocated test_data_manager.create_constant_node_field("N", Float64, "Matrix",
+                                                                     3)
+    alloc += @allocated test_data_manager.create_constant_node_field("O", Float64, "Matrix",
+                                                                     3)
     alloc += @allocated test_data_manager.create_free_size_field("P", Float64, (3, 3, 1, 3))
     alloc += @allocated test_data_manager.create_node_field("Q", Float64, "Matrix", 3)
-    alloc +=
-        @allocated test_data_manager.create_constant_free_size_field("R", Int64, (50, 3))
-    alloc +=
-        @allocated test_data_manager.create_constant_bond_field("S", Float64, "Matrix", 3)
+    alloc += @allocated test_data_manager.create_constant_free_size_field("R", Int64,
+                                                                          (50, 3))
+    alloc += @allocated test_data_manager.create_constant_bond_field("S", Float64, "Matrix",
+                                                                     3)
     alloc += @allocated test_data_manager.create_bond_field("T", Float64, "Matrix", 3)
 
     @test alloc < 10947441 # 1.3684 MB

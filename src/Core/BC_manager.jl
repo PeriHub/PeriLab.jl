@@ -11,8 +11,6 @@ include("../Support/Parameters/parameter_handling.jl")
 
 using .Parameter_Handling: get_bc_definitions
 
-
-
 """
     find_bc_free_dof(datamanager::Module, bcs::Dict{String,Any})
 Finds all dof without a displacement boundary condition. This tuple vector is stored in the datamanager.
@@ -26,13 +24,12 @@ Finds all dof without a displacement boundary condition. This tuple vector is st
 function find_bc_free_dof(datamanager::Module, bcs::Dict{Any,Any})
     nnodes = datamanager.get_nnodes()
     dof = datamanager.get_dof()
-    bc_free_dof = vec([(i, j) for i = 1:nnodes, j = 1:dof])
+    bc_free_dof = vec([(i, j) for i in 1:nnodes, j in 1:dof])
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     for bc in values(bcs)
         if bc["Variable"] == "Displacements" && bc["Type"] == "Dirichlet"
-            act = Vector{Tuple{Int64,Int64}}([
-                (node, dof_mapping[bc["Coordinate"]]) for node in bc["Node Set"]
-            ])
+            act = Vector{Tuple{Int64,Int64}}([(node, dof_mapping[bc["Coordinate"]])
+                                              for node in bc["Node Set"]])
 
             bc_free_dof = setdiff(bc_free_dof, act)
         end
@@ -57,7 +54,7 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
     for bc in keys(bcs)
         if haskey(bcs[bc], "Step ID")
             if !isnothing(datamanager.get_step()) &&
-               bcs[bc]["Step ID"] != datamanager.get_step()
+               !(string(datamanager.get_step()) in split(string(bcs[bc]["Step ID"]), ","))
                 continue
             end
         end
@@ -96,7 +93,6 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
             @error "Boundary condition $bc is not valid."
             return nothing
         end
-
     end
     return working_bcs
 end
@@ -140,10 +136,8 @@ function boundary_condition(params::Dict, datamanager)
         bcs_out[bc] = Dict{String,Any}("Node Set" => [])
         for node_set_name in node_set_names
             if haskey(nsets, node_set_name)
-                append!(
-                    bcs_out[bc]["Node Set"],
-                    datamanager.get_local_nodes(nsets[node_set_name]),
-                )
+                append!(bcs_out[bc]["Node Set"],
+                        datamanager.get_local_nodes(nsets[node_set_name]))
                 for entry in keys(bcs_in[bc])
                     if entry != "Node Set"
                         bcs_out[bc][entry] = bcs_in[bc][entry]
@@ -170,12 +164,11 @@ Apply the boundary conditions
 # Returns
 - `datamanager::Module`: Datamanager
 """
-function apply_bc_dirichlet(
-    allowed_variables::Vector{String},
-    bcs::Dict,
-    datamanager::Module,
-    time::Float64,
-)
+function apply_bc_dirichlet(allowed_variables::Vector{String},
+                            bcs::Dict,
+                            datamanager::Module,
+                            time::Float64,
+                            step_time::Float64)
     dof = datamanager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
     coordinates = datamanager.get_field("Coordinates")
@@ -187,11 +180,6 @@ function apply_bc_dirichlet(
         if !(bc["Variable"] in allowed_variables)
             continue
         end
-        if !isnothing(datamanager.get_step()) &&
-           haskey(bc, "Step ID") &&
-           bc["Step ID"] != datamanager.get_step()
-            continue
-        end
         if bc["Variable"] == "Forces"
             field = datamanager.get_field("External Forces")
         elseif bc["Variable"] == "Force Densities"
@@ -201,34 +189,31 @@ function apply_bc_dirichlet(
         end
         if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
-                @views field_to_apply_bc =
-                    field[bc["Node Set"], dof_mapping[bc["Coordinate"]]]
-                eval_bc!(
-                    field_to_apply_bc,
-                    bc["Value"],
-                    coordinates[bc["Node Set"], :],
-                    time,
-                    dof,
-                    bc["Initial"],
-                    name,
-                )
+                @views field_to_apply_bc = field[bc["Node Set"],
+                                                 dof_mapping[bc["Coordinate"]]]
+                eval_bc!(field_to_apply_bc,
+                         bc["Value"],
+                         coordinates[bc["Node Set"], :],
+                         time,
+                         step_time,
+                         dof,
+                         bc["Initial"],
+                         name)
             else
                 @error "Coordinate in boundary condition must be x,y or z."
                 return nothing
             end
         else
             @views field_to_apply_bc = field[bc["Node Set"]]
-            eval_bc!(
-                field_to_apply_bc,
-                bc["Value"],
-                coordinates[bc["Node Set"], :],
-                time,
-                dof,
-                bc["Initial"],
-                name,
-            )
+            eval_bc!(field_to_apply_bc,
+                     bc["Value"],
+                     coordinates[bc["Node Set"], :],
+                     time,
+                     step_time,
+                     dof,
+                     bc["Initial"],
+                     name)
         end
-
     end
     return datamanager
 end
@@ -245,7 +230,7 @@ Apply the boundary conditions
 # Returns
 - `datamanager::Module`: Datamanager
 """
-function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
+function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64, step_time::Float64)
     # Currently not supported
     dof = datamanager.get_dof()
     dof_mapping = Dict{String,Int8}("x" => 1, "y" => 2, "z" => 3)
@@ -259,36 +244,33 @@ function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64)
 
         if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
-                @views field_to_apply_bc =
-                    field[bc["Node Set"], dof_mapping[bc["Coordinate"]]]
-                eval_bc!(
-                    field_to_apply_bc,
-                    bc["Value"],
-                    coordinates[bc["Node Set"], :],
-                    time,
-                    dof,
-                    bc["Initial"],
-                    name,
-                    true,
-                )
+                @views field_to_apply_bc = field[bc["Node Set"],
+                                                 dof_mapping[bc["Coordinate"]]]
+                eval_bc!(field_to_apply_bc,
+                         bc["Value"],
+                         coordinates[bc["Node Set"], :],
+                         time,
+                         step_time,
+                         dof,
+                         bc["Initial"],
+                         name,
+                         true)
             else
                 @error "Coordinate in boundary condition must be x,y or z."
                 return nothing
             end
         else
             @views field_to_apply_bc = field[bc["Node Set"]]
-            eval_bc!(
-                field_to_apply_bc,
-                bc["Value"],
-                coordinates[bc["Node Set"], :],
-                time,
-                dof,
-                bc["Initial"],
-                name,
-                true,
-            )
+            eval_bc!(field_to_apply_bc,
+                     bc["Value"],
+                     coordinates[bc["Node Set"], :],
+                     time,
+                     step_time,
+                     dof,
+                     bc["Initial"],
+                     name,
+                     true)
         end
-
     end
     return datamanager
 end
@@ -304,7 +286,6 @@ Clean up the boundary condition
 - `bc::String`: The cleaned up boundary condition
 """
 function clean_up(bc::String)
-
     bc = replace(bc, ".*" => "*")
     bc = replace(bc, "./" => "/")
     bc = replace(bc, ".+" => "+")
@@ -329,16 +310,15 @@ Working with if-statements
 works for scalars. If you want to evaluate a vector, please use the Julia notation as input
 "ifelse.(x .> y, 10, 20)"
 """
-function eval_bc!(
-    field_values::Union{SubArray,Vector{Float64},Vector{Int64}},
-    bc::Union{Float64,Int64,String},
-    coordinates::Union{Matrix{Float64},Matrix{Int64}},
-    time::Float64,
-    dof::Int64,
-    initial::Bool,
-    name::String = "BC_1",
-    neumann::Bool = false,
-)
+function eval_bc!(field_values::Union{SubArray,Vector{Float64},Vector{Int64}},
+                  bc::Union{Float64,Int64,String},
+                  coordinates::Union{Matrix{Float64},Matrix{Int64}},
+                  time::Float64,
+                  step_time::Float64,
+                  dof::Int64,
+                  initial::Bool,
+                  name::String = "BC_1",
+                  neumann::Bool = false)
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
     # the yaml input allows multiple types. But for further use this input has to be a string
@@ -355,6 +335,7 @@ function eval_bc!(
     global y = coordinates[:, 2]
     global z = zeros(eltype(x), length(x))
     global t = time
+    global st = step_time
 
     if dof > 2
         z = coordinates[:, 3]

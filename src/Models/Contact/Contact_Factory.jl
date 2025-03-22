@@ -23,8 +23,8 @@ Initializes the contact model.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
-
+function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+                    block::Int64)
     return datamanager
 end
 
@@ -43,16 +43,13 @@ Compute the forces of the contact model.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    model_param::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
-
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       model_param::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64,
+                       to::TimerOutput)
     return datamanager
 end
 end

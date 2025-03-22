@@ -48,8 +48,7 @@ function local_damping_due_to_damage(datamanager::Module, nodes, params, dt)
         for (jID, nID) in enumerate(nlist[iID])
             avg_damage = 0.5 * (damage[iID] - damage[nID])
 
-            t =
-                local_damping *
+            t = local_damping *
                 E *
                 constant[iID] *
                 avg_damage *
@@ -59,19 +58,14 @@ function local_damping_due_to_damage(datamanager::Module, nodes, params, dt)
 
             force_densities[iID, :] += t * volume[nID]
             force_densities[nID, :] -= t * volume[iID]
-
         end
     end
-
-
 end
 
-function init_local_damping_due_to_damage(
-    datamanager::Module,
-    nodes,
-    material_parameter,
-    damage_parameter,
-)
+function init_local_damping_due_to_damage(datamanager::Module,
+                                          nodes,
+                                          material_parameter,
+                                          damage_parameter)
     if !haskey(damage_parameter["Local Damping"], "Representative Young's modulus")
         @error "Representative Young's modulus is missing."
         return nothing
@@ -87,7 +81,6 @@ function init_local_damping_due_to_damage(
     compute_bond_based_constants(nodes, symmetry, constant, horizon)
 end
 
-
 function compute_bond_based_constants(nodes, symmetry, constant, horizon)
     for iID in nodes
         if symmetry == "plane stress"
@@ -100,30 +93,24 @@ function compute_bond_based_constants(nodes, symmetry, constant, horizon)
     end
 end
 
-function get_value(
-    datamanager::Module,
-    parameter::Union{Dict{Any,Any},Dict{String,Any}},
-    any_field_allocated::Bool,
-    key::String,
-    field_allocated::Bool,
-)
+function get_value(datamanager::Module,
+                   parameter::Union{Dict{Any,Any},Dict{String,Any}},
+                   any_field_allocated::Bool,
+                   key::String,
+                   field_allocated::Bool)
     if field_allocated
         return datamanager.get_field(replace(key, " " => "_"))
     end
     if any_field_allocated
         if haskey(parameter, key)
-            return datamanager.create_constant_node_field(
-                replace(key, " " => "_"),
-                Float64,
-                1,
-                parameter[key],
-            )
+            return datamanager.create_constant_node_field(replace(key, " " => "_"),
+                                                          Float64,
+                                                          1,
+                                                          parameter[key])
         else
-            return datamanager.create_constant_node_field(
-                replace(key, " " => "_"),
-                Float64,
-                1,
-            )
+            return datamanager.create_constant_node_field(replace(key, " " => "_"),
+                                                          Float64,
+                                                          1)
         end
     elseif haskey(parameter, key)
         return parameter[key]
@@ -140,10 +127,8 @@ Returns the elastic moduli of the material.
 # Arguments
 - `parameter::Union{Dict{Any,Any},Dict{String,Any}}`: The material parameter.
 """
-function get_all_elastic_moduli(
-    datamanager::Module,
-    parameter::Union{Dict{Any,Any},Dict{String,Any}},
-)
+function get_all_elastic_moduli(datamanager::Module,
+                                parameter::Union{Dict{Any,Any},Dict{String,Any}})
     if haskey(parameter, "Computed")
         if parameter["Computed"]
             return nothing
@@ -161,8 +146,8 @@ function get_all_elastic_moduli(
 
     state_factor = haskey(parameter, "State Factor ID")
 
-    any_field_allocated =
-        bulk_field | youngs_field | poissons_field | shear_field | state_factor
+    any_field_allocated = bulk_field | youngs_field | poissons_field | shear_field |
+                          state_factor
 
     bulk = haskey(parameter, "Bulk Modulus") | bulk_field
     youngs = haskey(parameter, "Young's Modulus") | youngs_field
@@ -170,22 +155,18 @@ function get_all_elastic_moduli(
     poissons = haskey(parameter, "Poisson's Ratio") | poissons_field
 
     K = get_value(datamanager, parameter, any_field_allocated, "Bulk Modulus", bulk_field)
-    E = get_value(
-        datamanager,
-        parameter,
-        any_field_allocated,
-        "Young's Modulus",
-        youngs_field,
-    )
+    E = get_value(datamanager,
+                  parameter,
+                  any_field_allocated,
+                  "Young's Modulus",
+                  youngs_field)
     G = get_value(datamanager, parameter, any_field_allocated, "Shear Modulus", shear_field)
 
-    nu = get_value(
-        datamanager,
-        parameter,
-        any_field_allocated,
-        "Poisson's Ratio",
-        poissons_field,
-    )
+    nu = get_value(datamanager,
+                   parameter,
+                   any_field_allocated,
+                   "Poisson's Ratio",
+                   poissons_field)
 
     if bond_based
         nu_fixed = datamanager.get_dof() == 2 ? 1 / 3 : 1 / 4
@@ -198,8 +179,8 @@ function get_all_elastic_moduli(
     end
     if haskey(parameter, "Symmetry")
         if occursin("anisotropic", lowercase(parameter["Symmetry"]))
-            for iID = 1:6
-                for jID = iID:6
+            for iID in 1:6
+                for jID in iID:6
                     if !("C" * string(iID) * string(jID) in keys(parameter))
                         @error "C" * string(iID) * string(jID) * " not defined"
                         return nothing
@@ -288,25 +269,21 @@ Returns the Hooke matrix of the material.
 # Returns
 - `matrix::Matrix{Float64}`: The Hooke matrix.
 """
-function get_Hooke_matrix(
-    datamanager::Module,
-    parameter::Dict,
-    symmetry::String,
-    dof::Int64,
-    ID::Int64 = 1,
-)
+function get_Hooke_matrix(datamanager::Module,
+                          parameter::Dict,
+                          symmetry::String,
+                          dof::Int64,
+                          ID::Int64 = 1)
     """https://www.efunda.com/formulae/solid_mechanics/mat_mechanics/hooke_plane_stress.cfm"""
 
     symmetry = lowercase(symmetry)
     if occursin("anisotropic", symmetry)
         aniso_matrix = get_MMatrix(36)
-        for iID = 1:6
-            for jID = iID:6
-                value = get_dependent_value(
-                    datamanager,
-                    "C" * string(iID) * string(jID),
-                    parameter,
-                )
+        for iID in 1:6
+            for jID in iID:6
+                value = get_dependent_value(datamanager,
+                                            "C" * string(iID) * string(jID),
+                                            parameter)
                 aniso_matrix[iID, jID] = value
                 aniso_matrix[jID, iID] = value
             end
@@ -329,11 +306,8 @@ function get_Hooke_matrix(
         nu_zy = nu_yz * E_z / E_y
         nu_zx = nu_xz * E_z / E_x
 
-        delta =
-            (
-                1 - nu_xy * nu_yx - nu_yz * nu_zy - nu_zx * nu_xz -
-                2 * nu_xy * nu_yz * nu_zx
-            ) / (E_x * E_y * E_z)
+        delta = (1 - nu_xy * nu_yx - nu_yz * nu_zy - nu_zx * nu_xz -
+                 2 * nu_xy * nu_yz * nu_zx) / (E_x * E_y * E_z)
 
         aniso_matrix[1, 1] = (1 - nu_yz * nu_zy) / (E_y * E_z * delta)
         aniso_matrix[2, 2] = (1 - nu_zx * nu_xz) / (E_z * E_x * delta)
@@ -413,7 +387,6 @@ function get_Hooke_matrix(
         matrix[2, 2] = E / (1 - nu * nu)
         matrix[3, 3] = G
         return matrix
-
     end
 end
 
@@ -459,26 +432,21 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::Matrix{Float64}`: The force densities.
 """
-function distribute_forces!(
-    force_densities::Matrix{Float64},
-    nodes::Union{SubArray,Vector{Int64}},
-    nlist::Vector{Vector{Int64}},
-    nlist_filtered_ids::Vector{Vector{Int64}},
-    bond_force::Vector{Vector{Vector{Float64}}},
-    volume::Vector{Float64},
-    bond_damage::Vector{Vector{Float64}},
-    displacements::Matrix{Float64},
-    bond_norm::Vector{Vector{Vector{Float64}}},
-)
-
+function distribute_forces!(force_densities::Matrix{Float64},
+                            nodes::Union{SubArray,Vector{Int64}},
+                            nlist::Vector{Vector{Int64}},
+                            nlist_filtered_ids::Vector{Vector{Int64}},
+                            bond_force::Vector{Vector{Vector{Float64}}},
+                            volume::Vector{Float64},
+                            bond_damage::Vector{Vector{Float64}},
+                            displacements::Matrix{Float64},
+                            bond_norm::Vector{Vector{Vector{Float64}}})
     @inbounds @fastmath for iID in nodes
         bond_mod = copy(bond_norm[iID])
         if length(nlist_filtered_ids[iID]) > 0
             for neighborID in nlist_filtered_ids[iID]
-                if dot(
-                    (displacements[nlist[iID][neighborID], :] - displacements[iID, :]),
-                    bond_norm[iID][neighborID],
-                ) > 0
+                if dot((displacements[nlist[iID][neighborID], :] - displacements[iID, :]),
+                       bond_norm[iID][neighborID]) > 0
                     bond_mod[neighborID] .= 0
                 else
                     bond_mod[neighborID] .= abs.(bond_norm[iID][neighborID])
@@ -486,20 +454,17 @@ function distribute_forces!(
             end
         end
 
-        @views @inbounds @fastmath for jID ∈ axes(nlist[iID], 1)
-            @views @inbounds @fastmath for m ∈ axes(force_densities[iID, :], 1)
+        @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
+            @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
-                force_densities[iID, m] +=
-                    bond_damage[iID][jID] *
-                    bond_force[iID][jID][m] *
-                    volume[nlist[iID][jID]] *
-                    bond_mod[jID][m]
-                force_densities[nlist[iID][jID], m] -=
-                    bond_damage[iID][jID] *
-                    bond_force[iID][jID][m] *
-                    volume[iID] *
-                    bond_mod[jID][m]
-
+                force_densities[iID, m] += bond_damage[iID][jID] *
+                                           bond_force[iID][jID][m] *
+                                           volume[nlist[iID][jID]] *
+                                           bond_mod[jID][m]
+                force_densities[nlist[iID][jID], m] -= bond_damage[iID][jID] *
+                                                       bond_force[iID][jID][m] *
+                                                       volume[iID] *
+                                                       bond_mod[jID][m]
             end
         end
     end
@@ -520,25 +485,21 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::Matrix{Float64}`: The force densities.
 """
-function distribute_forces!(
-    force_densities::Matrix{Float64},
-    nodes::Union{SubArray,Vector{Int64}},
-    nlist::Vector{Vector{Int64}},
-    bond_force::Vector{Vector{Vector{Float64}}},
-    volume::Vector{Float64},
-    bond_damage::Vector{Vector{Float64}},
-)
+function distribute_forces!(force_densities::Matrix{Float64},
+                            nodes::Union{SubArray,Vector{Int64}},
+                            nlist::Vector{Vector{Int64}},
+                            bond_force::Vector{Vector{Vector{Float64}}},
+                            volume::Vector{Float64},
+                            bond_damage::Vector{Vector{Float64}})
     @inbounds @fastmath for iID in nodes
-        @views @inbounds @fastmath for jID ∈ axes(nlist[iID], 1)
-            @views @inbounds @fastmath for m ∈ axes(force_densities[iID, :], 1)
+        @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
+            @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
-                force_densities[iID, m] +=
-                    bond_damage[iID][jID] *
-                    bond_force[iID][jID][m] *
-                    volume[nlist[iID][jID]]
-                force_densities[nlist[iID][jID], m] -=
-                    bond_damage[iID][jID] * bond_force[iID][jID][m] * volume[iID]
-
+                force_densities[iID, m] += bond_damage[iID][jID] *
+                                           bond_force[iID][jID][m] *
+                                           volume[nlist[iID][jID]]
+                force_densities[nlist[iID][jID], m] -= bond_damage[iID][jID] *
+                                                       bond_force[iID][jID][m] * volume[iID]
             end
         end
     end
@@ -558,14 +519,12 @@ function matrix_to_voigt(matrix)
     if length(matrix) == 4
         return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
     elseif length(matrix) == 9
-        return [
-            matrix[1, 1]
-            matrix[2, 2]
-            matrix[3, 3]
-            0.5 * (matrix[2, 3] + matrix[3, 2])
-            0.5 * (matrix[1, 3] + matrix[3, 1])
-            0.5 * (matrix[1, 2] + matrix[2, 1])
-        ]
+        return [matrix[1, 1]
+                matrix[2, 2]
+                matrix[3, 3]
+                0.5 * (matrix[2, 3] + matrix[3, 2])
+                0.5 * (matrix[1, 3] + matrix[3, 1])
+                0.5 * (matrix[1, 2] + matrix[2, 1])]
     else
         @error "Unsupported matrix size for matrix_to_voigt"
         return nothing
@@ -586,11 +545,9 @@ function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
     if length(voigt) == 3
         return @SMatrix [voigt[1] voigt[3]; voigt[3] voigt[2]]
     elseif length(voigt) == 6
-        return @SMatrix [
-            voigt[1] voigt[6] voigt[5]
-            voigt[6] voigt[2] voigt[4]
-            voigt[5] voigt[4] voigt[3]
-        ]
+        return @SMatrix [voigt[1] voigt[6] voigt[5]
+                         voigt[6] voigt[2] voigt[4]
+                         voigt[5] voigt[4] voigt[3]]
     else
         @error "Unsupported matrix size for voigt_to_matrix"
         return nothing
@@ -611,17 +568,15 @@ function matrix_to_vector(matrix)
     if length(matrix) == 4
         return [matrix[1, 1]; matrix[2, 2]; 0.0; matrix[1, 2]; matrix[2, 1]]
     elseif length(matrix) == 9
-        return [
-            matrix[1, 1]
-            matrix[2, 2]
-            matrix[3, 3]
-            matrix[1, 2]
-            matrix[2, 3]
-            matrix[3, 1]
-            matrix[2, 1]
-            matrix[3, 2]
-            matrix[1, 3]
-        ]
+        return [matrix[1, 1]
+                matrix[2, 2]
+                matrix[3, 3]
+                matrix[1, 2]
+                matrix[2, 3]
+                matrix[3, 1]
+                matrix[2, 1]
+                matrix[3, 2]
+                matrix[1, 3]]
     end
 end
 
@@ -637,16 +592,12 @@ Convert a 6x1 vector to a 3x3 matrix
 """
 function vector_to_matrix(vector)
     if length(vector) == 5
-        return @SMatrix [
-            vector[1] vector[3]
-            vector[4] vector[2]
-        ]
+        return @SMatrix [vector[1] vector[3]
+                         vector[4] vector[2]]
     elseif length(vector) == 9
-        return @SMatrix [
-            vector[1] vector[4] vector[9]
-            vector[7] vector[2] vector[5]
-            vector[6] vector[8] vector[3]
-        ]
+        return @SMatrix [vector[1] vector[4] vector[9]
+                         vector[7] vector[2] vector[5]
+                         vector[6] vector[8] vector[3]]
     else
         @error "Unsupported vector size for vector_to_matrix"
         return nothing
@@ -692,11 +643,9 @@ Allows the modification of the yield stress at a specific position. This is typi
 # Returns
 - `stress`::Float64: the modified stresses.
 """
-function flaw_function(
-    params::Dict,
-    coor::Union{Vector{Int64},Vector{Float64},SubArray{Float64}},
-    stress::Float64,
-)
+function flaw_function(params::Dict,
+                       coor::Union{Vector{Int64},Vector{Float64},SubArray{Float64}},
+                       stress::Float64)
     if !haskey(params, "Flaw Function")
         return stress
     end
@@ -724,14 +673,11 @@ function flaw_function(
         if haskey(params["Flaw Function"], "Flaw location Z") && length(coor) == 3
             flaw_location[3] = params["Flaw Function"]["Flaw Location Z"]
         end
-        modified_stress =
-            stress * (
-                1 -
-                flaw_magnitude * exp(
-                    -norm(coor - flaw_location) * norm(coor - flaw_location) / flaw_size /
-                    flaw_size,
-                )
-            )
+        modified_stress = stress * (1 -
+                           flaw_magnitude *
+                           exp(-norm(coor - flaw_location) * norm(coor - flaw_location) /
+                               flaw_size /
+                               flaw_size))
 
     else
         @warn "Not very user friendly right now"
@@ -742,7 +688,6 @@ function flaw_function(
     end
     return modified_stress
 end
-
 
 """
     get_symmetry(material::Dict)
@@ -786,14 +731,12 @@ end
 - `deviatoric_stress_NP1::Matrix{Float64}`: Deviatoric stress
 """
 
-function get_von_mises_yield_stress(
-    von_Mises_stress::Float64,
-    spherical_stress,
-    deviatoric_stress,
-)
+function get_von_mises_yield_stress(von_Mises_stress::Float64,
+                                    spherical_stress,
+                                    deviatoric_stress)
     temp = zero(eltype(deviatoric_stress))
-    @views @inbounds @fastmath for i ∈ axes(deviatoric_stress, 1)
-        for j ∈ axes(deviatoric_stress, 2)
+    @views @inbounds @fastmath for i in axes(deviatoric_stress, 1)
+        for j in axes(deviatoric_stress, 2)
             temp += deviatoric_stress[i, j] * deviatoric_stress[i, j]
         end
     end
@@ -803,26 +746,22 @@ function get_von_mises_yield_stress(
     return von_Mises_stress
 end
 
-function compute_deviatoric_and_spherical_stresses(
-    stress,
-    spherical_stress,
-    deviatoric_stress,
-    dof,
-)
-    @views @inbounds @fastmath for i ∈ axes(stress, 1)
+function compute_deviatoric_and_spherical_stresses(stress,
+                                                   spherical_stress,
+                                                   deviatoric_stress,
+                                                   dof)
+    @views @inbounds @fastmath for i in axes(stress, 1)
         spherical_stress += stress[i, i]
     end
     spherical_stress /= dof
 
-    @views @inbounds @fastmath for i ∈ axes(stress, 1)
-        for j ∈ axes(stress, 2)
+    @views @inbounds @fastmath for i in axes(stress, 1)
+        for j in axes(stress, 2)
             deviatoric_stress[i, j] = stress[i, j]
         end
         deviatoric_stress[i, i] -= spherical_stress
     end
-
 end
-
 
 """
     get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
@@ -833,41 +772,32 @@ end
 # returns
 - `strain::Matrix{Float64}`: Strain
 """
-function get_strain(
-    stress_NP1::Matrix{Float64},
-    hooke_matrix::Union{Matrix{Float64},MMatrix,SMatrix},
-)
+function get_strain(stress_NP1::Matrix{Float64},
+                    hooke_matrix::Union{Matrix{Float64},MMatrix,SMatrix})
     return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
 end
 
-
-function compute_Piola_Kirchhoff_stress(
-    stress::Union{Matrix{Float64},SubArray{Float64}},
-    deformation_gradient::Union{Matrix{Float64},SubArray{Float64}},
-)
+function compute_Piola_Kirchhoff_stress(stress::Union{Matrix{Float64},SubArray{Float64}},
+                                        deformation_gradient::Union{Matrix{Float64},
+                                                                    SubArray{Float64}})
     #50% less memory
-    return determinant(deformation_gradient) .* smat(stress) * invert(
-        deformation_gradient,
-        "Deformation gradient is singular and cannot be inverted.",
-    )
-
+    return determinant(deformation_gradient) .* smat(stress) * invert(deformation_gradient,
+                  "Deformation gradient is singular and cannot be inverted.")
 end
 
 function apply_pointwise_E(nodes, E::Union{Int64,Float64}, bond_force)
     @inbounds @fastmath for i in nodes
-        @views @inbounds @fastmath for j ∈ axes(bond_force, 2)
+        @views @inbounds @fastmath for j in axes(bond_force, 2)
             bond_force[i, j] *= E
         end
     end
 end
 
-function apply_pointwise_E(
-    nodes,
-    E::Union{SubArray,Vector{Float64},Vector{Int64}},
-    bond_force,
-)
+function apply_pointwise_E(nodes,
+                           E::Union{SubArray,Vector{Float64},Vector{Int64}},
+                           bond_force)
     @inbounds @fastmath for i in nodes
-        @views @inbounds @fastmath for j ∈ axes(bond_force, 2)
+        @views @inbounds @fastmath for j in axes(bond_force, 2)
             bond_force[i, j] *= E[i]
         end
     end
@@ -876,12 +806,10 @@ end
 function apply_pointwise_E(nodes, bond_force, dependent_field)
     warning_flag = true
     @inbounds @fastmath for i in nodes
-        E_int = interpol_data(
-            dependent_field[i],
-            damage_parameter["Young's Modulus"]["Data"],
-            warning_flag,
-        )
-        @views @inbounds @fastmath for j ∈ axes(bond_force, 2)
+        E_int = interpol_data(dependent_field[i],
+                              damage_parameter["Young's Modulus"]["Data"],
+                              warning_flag)
+        @views @inbounds @fastmath for j in axes(bond_force, 2)
             bond_force[i, j] *= E_int
         end
     end

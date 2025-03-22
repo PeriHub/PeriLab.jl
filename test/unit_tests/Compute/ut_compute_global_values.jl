@@ -62,7 +62,6 @@ include("../../../src/Compute/compute_global_values.jl")
     matrix[:, 1, 2] .= 4
     nodes = Vector{Int64}(1:2)
     @test calculate_nodelist(test_data_manager, "Matrix", [1, 2], "Sum", nodes) == (8, 2)
-
 end
 
 @testset "ut_global_value_max" begin

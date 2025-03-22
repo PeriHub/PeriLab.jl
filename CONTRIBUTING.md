@@ -41,6 +41,7 @@ We are looking for different kind of contributions:
 
 ### Code style
 
+* We are using the [SciML Style Guide](https://github.com/SciML/SciMLStyle) for code style.
 * Make sure that [pre-commit](https://pre-commit.com/#installation) is installed and run `pre-commit install` before you commit.
 * Functions and variables should be snake_case, e.g. `my_variable`.
 * Functions and variables should clearly describe their purpose and function, e.g. `bond_forces` and not `b_f`.

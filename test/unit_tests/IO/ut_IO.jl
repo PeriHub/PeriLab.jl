@@ -32,33 +32,20 @@ test_data_manager.create_node_field("Forces", Float64, 6)
 block_list = ["block_1", "block_2"]
 test_data_manager.set_block_list(block_list)
 
-params = Dict(
-    "Outputs" => Dict(
-        "Output1" => Dict(
-            "Output Filename" => filename1,
-            "Flush File" => false,
-            "Output Variables" => Dict("Forces" => true),
-        ),
-        "Output2" => Dict(
-            "Output Filename" => filename2,
-            "Flush File" => false,
-            "Output Variables" => Dict("Displacements" => true, "Forces" => true),
-        ),
-        "Output3" => Dict(
-            "Output Filename" => filename3,
-            "Output File Type" => "CSV",
-            "Output Variables" => Dict("External_Displacement" => true),
-        ),
-    ),
-    "Compute Class Parameters" => Dict(
-        "External_Displacement" => Dict(
-            "Block" => "block_1",
-            "Calculation Type" => "Maximum",
-            "Compute Class" => "Block_Data",
-            "Variable" => "Displacements",
-        ),
-    ),
-)
+params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1,
+                                                  "Flush File" => false,
+                                                  "Output Variables" => Dict("Forces" => true)),
+                                "Output2" => Dict("Output Filename" => filename2,
+                                                  "Flush File" => false,
+                                                  "Output Variables" => Dict("Displacements" => true,
+                                                                             "Forces" => true)),
+                                "Output3" => Dict("Output Filename" => filename3,
+                                                  "Output File Type" => "CSV",
+                                                  "Output Variables" => Dict("External_Displacement" => true))),
+              "Compute Class Parameters" => Dict("External_Displacement" => Dict("Block" => "block_1",
+                                                                                 "Calculation Type" => "Maximum",
+                                                                                 "Compute Class" => "Block_Data",
+                                                                                 "Variable" => "Displacements")))
 coordinates[1, 1] = 0
 coordinates[1, 2] = 0
 coordinates[2, 1] = 1
@@ -84,9 +71,9 @@ block_Id[end] = 2
         "Forcesxz",
         "Forcesyx",
         "Forcesyy",
-        "Forcesyz",
+        "Forcesyz"
     ]
-    for i = 2:3
+    for i in 2:3
         dof_force = 0
         dof_disp::Int64 = 0
         for entry in keys(sort(output[i]["Fields"]))
@@ -108,8 +95,8 @@ block_Id[end] = 2
 end
 
 @testset "ut_init_write_result_and_write_results" begin
-    result_files, outputs =
-        PeriLab.IO.init_write_results(params, "", "", test_data_manager, "1.0.0")
+    result_files, outputs = PeriLab.IO.init_write_results(params, "", "", test_data_manager,
+                                                          "1.0.0")
     @test length(result_files) == 3
     @test length(result_files[2]["file"].nodal_var_name_dict) == 6
     entries = collect(keys(result_files[2]["file"].nodal_var_name_dict))
@@ -125,7 +112,7 @@ end
         "Forcesxz",
         "Forcesyx",
         "Forcesyy",
-        "Forcesyz",
+        "Forcesyz"
     ]
 
     coords = vcat(transpose(coordinates))
@@ -135,7 +122,7 @@ end
         @test coords == exo_coords
         # @test exo_nsets == []
     end
-    for i = 2:3
+    for i in 2:3
         dofForce = 0
         dofDisp = 0
         for entry in keys(sort(outputs[i]["Fields"]))
@@ -157,7 +144,7 @@ end
     test_data_manager.data["output_frequency"] = [
         Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1),
         Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1),
-        Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1),
+        Dict{String,Int64}("Counter" => 0, "Output Frequency" => 1, "Step" => 1)
     ]
     PeriLab.IO.write_results(result_files, 1.5, 0.0, outputs, test_data_manager)
 
@@ -272,41 +259,27 @@ end
     block_Id .+= 1
     block_Id[end] = 2
     test_data_manager.set_block_list(["block_1", "block_2"])
-    solver_options = Dict(
-        "Models" => (
-            "Material Models" => true,
-            "Damage Models" => true,
-            "Additive Models" => true,
-            "Thermal Models" => true,
-            "Corrosion Models" => true,
-        ),
-    )
-    params = Dict(
-        "Blocks" => Dict(
-            "block_1" => Dict(
-                "Material Models" => true,
-                "Damage Models" => true,
-                "Additive Models" => true,
-                "Thermal Models" => true,
-                "Corrosion Models" => true,
-            ),
-            "block_2" => Dict(
-                "Material Models" => true,
-                "Damage Models" => false,
-                "Additive Models" => false,
-                "Thermal Models" => false,
-                "Corrosion Models" => false,
-            ),
-        ),
-    )
-    PeriLab.IO.show_block_summary(
-        solver_options,
-        params,
-        "",
-        false,
-        comm,
-        test_data_manager,
-    )
+    solver_options = Dict("Models" => ("Material Models" => true,
+                                       "Damage Models" => true,
+                                       "Additive Models" => true,
+                                       "Thermal Models" => true,
+                                       "Corrosion Models" => true))
+    params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true,
+                                                     "Damage Models" => true,
+                                                     "Additive Models" => true,
+                                                     "Thermal Models" => true,
+                                                     "Corrosion Models" => true),
+                                   "block_2" => Dict("Material Models" => true,
+                                                     "Damage Models" => false,
+                                                     "Additive Models" => false,
+                                                     "Thermal Models" => false,
+                                                     "Corrosion Models" => false)))
+    PeriLab.IO.show_block_summary(solver_options,
+                                  params,
+                                  "",
+                                  false,
+                                  comm,
+                                  test_data_manager)
 end
 
 @testset "ut_show_mpi_summary" begin

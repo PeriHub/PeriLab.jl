@@ -33,7 +33,6 @@ function fe_support()
     return true
 end
 
-
 """
   init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
 
@@ -47,11 +46,9 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    material_parameter::Dict)
     return datamanager
 end
 """
@@ -97,61 +94,50 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(
-    datamanager::Module,
-    nodes,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
-    stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}},
-)
+function compute_stresses(datamanager::Module,
+                          nodes,
+                          dof::Int64,
+                          material_parameter::Dict,
+                          time::Float64,
+                          dt::Float64,
+                          strain_increment::Union{SubArray,Array{Float64,3},
+                                                  Vector{Float64}},
+                          stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
+                          stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}})
 
     #@views mapping = get_mapping(dof)
     for iID in nodes
-        @views hookeMatrix = get_Hooke_matrix(
-            datamanager,
-            material_parameter,
-            material_parameter["Symmetry"],
-            dof,
-            iID,
-        )
-        @views fast_mul!(
-            stress_NP1[iID, :, :],
-            hookeMatrix,
-            strain_increment[iID, :, :],
-            stress_N[iID, :, :],
-            get_mapping(dof),
-        )
+        @views hookeMatrix = get_Hooke_matrix(datamanager,
+                                              material_parameter,
+                                              material_parameter["Symmetry"],
+                                              dof,
+                                              iID)
+        @views fast_mul!(stress_NP1[iID, :, :],
+                         hookeMatrix,
+                         strain_increment[iID, :, :],
+                         stress_N[iID, :, :],
+                         get_mapping(dof))
     end
     return stress_NP1, datamanager
 end
 
-
-function compute_stresses_ba(
-    datamanager::Module,
-    nodes,
-    nlist,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment,
-    stress_N,
-    stress_NP1,
-)
-
+function compute_stresses_ba(datamanager::Module,
+                             nodes,
+                             nlist,
+                             dof::Int64,
+                             material_parameter::Dict,
+                             time::Float64,
+                             dt::Float64,
+                             strain_increment,
+                             stress_N,
+                             stress_NP1)
     @views mapping = get_mapping(dof)
     for iID in nodes
-        @views hookeMatrix = get_Hooke_matrix(
-            datamanager,
-            material_parameter,
-            material_parameter["Symmetry"],
-            dof,
-            iID,
-        )
+        @views hookeMatrix = get_Hooke_matrix(datamanager,
+                                              material_parameter,
+                                              material_parameter["Symmetry"],
+                                              dof,
+                                              iID)
         @views for jID in eachindex(nlist[iID])
             @views sNP1 = stress_NP1[iID][jID, :, :]
             @views sInc = strain_increment[iID][jID, :, :]
@@ -161,7 +147,6 @@ function compute_stresses_ba(
     end
     return stress_NP1, datamanager
 end
-
 
 """
     compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
@@ -184,23 +169,18 @@ Example:
 ```julia
 ```
 """
-function compute_stresses(
-    datamanager::Module,
-    dof::Int64,
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-    strain_increment::Vector{Float64},
-    stress_N::Vector{Float64},
-    stress_NP1::Vector{Float64},
-)
-
-    hookeMatrix = get_Hooke_matrix(
-        datamanager,
-        material_parameter,
-        material_parameter["Symmetry"],
-        dof,
-    )
+function compute_stresses(datamanager::Module,
+                          dof::Int64,
+                          material_parameter::Dict,
+                          time::Float64,
+                          dt::Float64,
+                          strain_increment::Vector{Float64},
+                          stress_N::Vector{Float64},
+                          stress_NP1::Vector{Float64})
+    hookeMatrix = get_Hooke_matrix(datamanager,
+                                   material_parameter,
+                                   material_parameter["Symmetry"],
+                                   dof)
 
     return hookeMatrix * strain_increment + stress_N, datamanager
 end

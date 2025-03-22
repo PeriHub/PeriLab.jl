@@ -81,12 +81,10 @@ for module_info in result
 end
 """
 function find_module_files(directory::AbstractString, specific::String)
-
     files_in_folder = find_jl_files(directory)
     module_list = []
     module_name = ""
     for filename in files_in_folder
-
         file = open(filename, "r")
         for line in eachline(file)
             if occursin(r"\bmodule\b", line)
@@ -144,12 +142,10 @@ specifics = Dict("Module1Name" => "module1_function", "Module2Name" => "module2_
 values = (arg1, arg2)
 create_module_specifics("Module1Name", module_list, specifics, values)
 """
-function create_module_specifics(
-    name::Union{String,SubString},
-    module_list::Vector{Any},
-    specifics::Dict{String,String},
-    values::Tuple,
-)
+function create_module_specifics(name::Union{String,SubString},
+                                 module_list::Vector{Any},
+                                 specifics::Dict{String,String},
+                                 values::Tuple)
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * specifics["Name"] * "()"
         if eval(Meta.parse(parse_statement)) == name
@@ -165,11 +161,9 @@ end
     create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),specifics::Dict{String,String}())
     # Returns: the function itself
 """
-function create_module_specifics(
-    name::Union{String,SubString},
-    module_list::Vector{Any},
-    specifics::Dict{String,String},
-)
+function create_module_specifics(name::Union{String,SubString},
+                                 module_list::Vector{Any},
+                                 specifics::Dict{String,String})
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * specifics["Name"] * "()"
         if eval(Meta.parse(parse_statement)) == name
@@ -182,11 +176,9 @@ function create_module_specifics(
     return nothing
 end
 # only module
-function create_module_specifics(
-    name::Union{String,SubString},
-    module_list::Vector{Any},
-    get_model_name::String,
-)
+function create_module_specifics(name::Union{String,SubString},
+                                 module_list::Vector{Any},
+                                 get_model_name::String)
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * get_model_name * "()"
         if eval(Meta.parse(parse_statement)) == name

@@ -46,15 +46,13 @@ Example:
 ```julia
 ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    damage_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       damage_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64,
+                       to::TimerOutput)
     @info "Please write a damage model name in damage_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(datamanager, nodes, damage_parameter, block, time, dt) function."
@@ -96,13 +94,10 @@ Example:
 ```julia
 ```
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    damage_parameter::Dict,
-    block::Int64,
-)
-
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    damage_parameter::Dict,
+                    block::Int64)
     return datamanager
 end
 end

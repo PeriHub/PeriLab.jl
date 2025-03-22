@@ -58,7 +58,7 @@ import .Logging_module
 import .IO
 import .Solver_control
 
-PERILAB_VERSION = "1.3.5"
+PERILAB_VERSION = "1.3.6"
 
 export main
 
@@ -71,38 +71,22 @@ This function prints a banner containing details about the PeriLab application, 
 """
 function print_banner()
     line = []
-    push!(
-        line,
-        styled"{bright_blue:PeriLab.                   }{bright_green:d8b} {bright_blue:888               888       }| {bold:Version}: {underline:$PERILAB_VERSION}",
-    )
-    push!(
-        line,
-        styled"{bright_blue:888   Y88b                 }{bright_green:Y8P} {bright_blue:888               888       }| {bold:Copyright}:",
-    )
-    push!(
-        line,
-        styled"{bright_blue:888    888                     888               888       }|  Dr.-Ing. Christian Willberg (https://orcid.org/0000-0003-2433-9183)",
-    )
-    push!(
-        line,
-        styled"{bright_blue:888   d88P .d88b.  888d888 888 888       8888b.  88888b.   }|  M.Sc. Jan-Timo Hesse (https://orcid.org/0000-0002-3006-1520)",
-    )
-    push!(
-        line,
-        styled"{bright_blue:8888888P\" d8P  Y8b 888P\"   888 888          \"88b 888 \"88b  }| {bold:Contact}: christian.willberg@h2.de, jan-timo.hesse@dlr.de",
-    )
-    push!(
-        line,
-        styled"{bright_blue:888       88888888 888     888 888      .d888888 888  888  }| {bold:GitHub}: https://github.com/PeriHub/PeriLab.jl",
-    )
-    push!(
-        line,
-        styled"{bright_blue:888       Y8b.     888     888 888      888  888 888 d88P  }| {bold:DOI}: 10.1016/j.softx.2024.101700",
-    )
-    push!(
-        line,
-        styled"{bright_blue:888        \"Y8888  888     888 88888888 \"Y888888 88888P\"   }| {bold:License}: BSD-3-Clause",
-    )
+    push!(line,
+          styled"{bright_blue:PeriLab.                   }{bright_green:d8b} {bright_blue:888               888       }| {bold:Version}: {underline:$PERILAB_VERSION}")
+    push!(line,
+          styled"{bright_blue:888   Y88b                 }{bright_green:Y8P} {bright_blue:888               888       }| {bold:Copyright}:")
+    push!(line,
+          styled"{bright_blue:888    888                     888               888       }|  Dr.-Ing. Christian Willberg (https://orcid.org/0000-0003-2433-9183)")
+    push!(line,
+          styled"{bright_blue:888   d88P .d88b.  888d888 888 888       8888b.  88888b.   }|  M.Sc. Jan-Timo Hesse (https://orcid.org/0000-0002-3006-1520)")
+    push!(line,
+          styled"{bright_blue:8888888P\" d8P  Y8b 888P\"   888 888          \"88b 888 \"88b  }| {bold:Contact}: christian.willberg@h2.de, jan-timo.hesse@dlr.de")
+    push!(line,
+          styled"{bright_blue:888       88888888 888     888 888      .d888888 888  888  }| {bold:GitHub}: https://github.com/PeriHub/PeriLab.jl")
+    push!(line,
+          styled"{bright_blue:888       Y8b.     888     888 888      888  888 888 d88P  }| {bold:DOI}: 10.1016/j.softx.2024.101700")
+    push!(line,
+          styled"{bright_blue:888        \"Y8888  888     888 88888888 \"Y888888 88888P\"   }| {bold:License}: BSD-3-Clause")
 
     num_of_chars = 0
     for l in line
@@ -112,7 +96,7 @@ function print_banner()
         if num_of_chars == 0
             println(l)
         else
-            println(split(l, "|")[1][1:end-num_of_chars] * "|" * split(l, "|")[2])
+            println(split(l, "|")[1][1:(end - num_of_chars)] * "|" * split(l, "|")[2])
         end
     end
 end
@@ -195,15 +179,13 @@ function main()::Cint
     end
     MPI.Init()
     for filename in parsed_args["filenames"]
-        main(
-            filename;
-            output_dir = parsed_args["output_dir"],
-            dry_run = parsed_args["dry_run"],
-            verbose = parsed_args["verbose"],
-            debug = parsed_args["debug"],
-            silent = parsed_args["silent"],
-            reload = parsed_args["reload"],
-        )
+        main(filename;
+             output_dir = parsed_args["output_dir"],
+             dry_run = parsed_args["dry_run"],
+             verbose = parsed_args["verbose"],
+             debug = parsed_args["debug"],
+             silent = parsed_args["silent"],
+             reload = parsed_args["reload"],)
     end
     MPI.Finalize()
     return 0
@@ -239,16 +221,13 @@ This function serves as the entry point for the PeriLab application. It calls th
 - `silent::Bool=false`: Whether to run in silent mode.
 - `reload::Bool=false`: Whether to reload the input file.
 """
-function main(
-    filename::String;
-    output_dir::String = "",
-    dry_run::Bool = false,
-    verbose::Bool = false,
-    debug::Bool = false,
-    silent::Bool = false,
-    reload::Bool = false,
-)
-
+function main(filename::String;
+              output_dir::String = "",
+              dry_run::Bool = false,
+              verbose::Bool = false,
+              debug::Bool = false,
+              silent::Bool = false,
+              reload::Bool = false,)
     @timeit to "PeriLab" begin
         if !MPI.Initialized()
             MPI.Init()
@@ -274,8 +253,8 @@ function main(
                 @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n DOI: 10.1016/j.softx.2024.101700\n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
                 @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
                 try
-                    dirty, git_info =
-                        Logging_module.get_current_git_info(joinpath(@__DIR__, ".."))
+                    dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__,
+                                                                                   ".."))
                     if dirty
                         @warn git_info
                     else
@@ -311,8 +290,10 @@ function main(
                 @info "PeriLab started in the reload mode"
             end
             Data_manager.set_silent(silent)
-            @timeit to "IO.initialize_data" datamanager, params =
-                IO.initialize_data(filename, filedirectory, Data_manager, comm, to)
+            @timeit to "IO.initialize_data" datamanager, params=IO.initialize_data(filename,
+                                                                                   filedirectory,
+                                                                                   Data_manager,
+                                                                                   comm, to)
 
             steps = get_solver_steps(params)
             datamanager.set_max_step(steps[end])
@@ -326,7 +307,7 @@ function main(
                 @timeit to "Solver_control.init" block_nodes,
                 bcs,
                 datamanager,
-                solver_options = Solver_control.init(params, datamanager, to, step_id)
+                solver_options=Solver_control.init(params, datamanager, to, step_id)
                 if datamanager.get_current_time() >= solver_options["Final Time"]
                     @info "Step " * string(step_id) * " skipped."
                     continue
@@ -335,40 +316,30 @@ function main(
                     @info "Initial time not reached. Skipping step " * string(step_id)
                     continue
                 end
-                @timeit to "IO.init orientations" datamanager =
-                    IO.init_orientations(datamanager)
-                IO.show_block_summary(
-                    solver_options,
-                    params,
-                    Logging_module.get_log_file(),
-                    silent,
-                    comm,
-                    datamanager,
-                )
-                IO.show_mpi_summary(
-                    Logging_module.get_log_file(),
-                    silent,
-                    comm,
-                    datamanager,
-                )
+                @timeit to "IO.init orientations" datamanager=IO.init_orientations(datamanager)
+                IO.show_block_summary(solver_options,
+                                      params,
+                                      Logging_module.get_log_file(),
+                                      silent,
+                                      comm,
+                                      datamanager)
+                IO.show_mpi_summary(Logging_module.get_log_file(),
+                                    silent,
+                                    comm,
+                                    datamanager)
                 @debug "Init write results"
                 if isnothing(step_id) || step_id == 1
-                    @timeit to "IO.init_write_results" result_files, outputs =
-                        IO.init_write_results(
-                            params,
-                            output_dir,
-                            filedirectory,
-                            datamanager,
-                            PERILAB_VERSION,
-                        )
+                    @timeit to "IO.init_write_results" result_files, outputs=IO.init_write_results(params,
+                                                                                                   output_dir,
+                                                                                                   filedirectory,
+                                                                                                   datamanager,
+                                                                                                   PERILAB_VERSION)
                     Logging_module.set_result_files(result_files)
                 end
-                IO.set_output_frequency(
-                    params,
-                    datamanager,
-                    solver_options["Number of Steps"],
-                    step_id,
-                )
+                IO.set_output_frequency(params,
+                                        datamanager,
+                                        solver_options["Number of Steps"],
+                                        step_id)
                 if verbose
                     fields = datamanager.get_all_field_keys()
                     @info "Found " * string(length(fields)) * " Fields"
@@ -378,17 +349,15 @@ function main(
                     nsteps = solver_options["Number of Steps"]
                     solver_options["Number of Steps"] = 10
                     elapsed_time = @elapsed begin
-                        @timeit to "Solver" result_files = Solver_control.solver(
-                            solver_options,
-                            block_nodes,
-                            bcs,
-                            datamanager,
-                            outputs,
-                            result_files,
-                            IO.write_results,
-                            to,
-                            silent,
-                        )
+                        @timeit to "Solver" result_files=Solver_control.solver(solver_options,
+                                                                               block_nodes,
+                                                                               bcs,
+                                                                               datamanager,
+                                                                               outputs,
+                                                                               result_files,
+                                                                               IO.write_results,
+                                                                               to,
+                                                                               silent)
                     end
 
                     @info "Estimated runtime: " *
@@ -400,17 +369,15 @@ function main(
                           " [b]"
 
                 else
-                    @timeit to "Solver_control.solver" result_files = Solver_control.solver(
-                        solver_options,
-                        block_nodes,
-                        bcs,
-                        datamanager,
-                        outputs,
-                        result_files,
-                        IO.write_results,
-                        to,
-                        silent,
-                    )
+                    @timeit to "Solver_control.solver" result_files=Solver_control.solver(solver_options,
+                                                                                          block_nodes,
+                                                                                          bcs,
+                                                                                          datamanager,
+                                                                                          outputs,
+                                                                                          result_files,
+                                                                                          IO.write_results,
+                                                                                          to,
+                                                                                          silent)
                 end
             end
 

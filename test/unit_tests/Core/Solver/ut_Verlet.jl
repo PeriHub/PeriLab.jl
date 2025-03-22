@@ -45,16 +45,14 @@ length_nlist = test_data_manager.create_constant_node_field("Number of Neighbors
 length_nlist .= 4
 
 nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
-undeformed_bond =
-    test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
-undeformed_bond_length =
-    test_data_manager.create_constant_bond_field("Bond Length", Float64, 1)
-heat_capacity = test_data_manager.create_constant_node_field(
-    "Specific Heat Capacity",
-    Float64,
-    1,
-    18000,
-)
+undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
+                                                               dof)
+undeformed_bond_length = test_data_manager.create_constant_bond_field("Bond Length",
+                                                                      Float64, 1)
+heat_capacity = test_data_manager.create_constant_node_field("Specific Heat Capacity",
+                                                             Float64,
+                                                             1,
+                                                             18000)
 nlist[1] = [2, 3, 4, 5]
 nlist[2] = [1, 3, 4, 5]
 nlist[3] = [1, 2, 4, 5]
@@ -76,13 +74,11 @@ volume = [0.5, 0.5, 0.5, 0.5, 0.5]
 density = [1e-6, 1e-6, 3e-6, 3e-6, 1e-6]
 horizon = [3.1, 3.1, 3.1, 3.1, 3.1]
 
-PeriLab.IO.Geometry.bond_geometry!(
-    undeformed_bond,
-    undeformed_bond_length,
-    Vector(1:nnodes),
-    nlist,
-    coor,
-)
+PeriLab.IO.Geometry.bond_geometry!(undeformed_bond,
+                                   undeformed_bond_length,
+                                   Vector(1:nnodes),
+                                   nlist,
+                                   coor)
 
 blocks = ["1", "2"]
 blocks = test_data_manager.set_block_list(blocks)
@@ -92,25 +88,17 @@ testVal = 72.82376628733019
 
 # from Peridigm
 @testset "ut_mechanical_critical_time_step" begin
-
-    t = PeriLab.Solver_control.Verlet.compute_mechanical_critical_time_step(
-        Vector{Int64}(1:nnodes),
-        test_data_manager,
-        Float64(140.0),
-    )
+    t = PeriLab.Solver_control.Verlet.compute_mechanical_critical_time_step(Vector{Int64}(1:nnodes),
+                                                                            test_data_manager,
+                                                                            Float64(140.0))
     @test t == 1.4142135623730952e25 # not sure if this is right :D
-
 end
 # from Peridigm
 @testset "ut_thermodynamic_crititical_time_step" begin
-
-    t = PeriLab.Solver_control.Verlet.compute_thermodynamic_critical_time_step(
-        Vector{Int64}(1:nnodes),
-        test_data_manager,
-        Float64(0.12),
-    )
+    t = PeriLab.Solver_control.Verlet.compute_thermodynamic_critical_time_step(Vector{Int64}(1:nnodes),
+                                                                               test_data_manager,
+                                                                               Float64(0.12))
     @test t == 1e25
-
 end
 
 # test_data_manager.init_properties()

@@ -95,7 +95,6 @@ Get the initial time
 - `initial_time::Float64`: The initial time
 """
 function get_initial_time(params::Dict, datamanager::Module)
-
     current_time = datamanager.get_current_time()
     if haskey(params, "Initial Time")
         if Float64(params["Initial Time"]) <= current_time
@@ -116,13 +115,16 @@ Get the final time
 
 # Arguments
 - `params::Dict`: The parameters dictionary.
+- `datamanager::Module`: The data manager module
 # Returns
 - `final_time::Float64`: The final time
 """
-function get_final_time(params::Dict)
-
+function get_final_time(params::Dict, datamanager::Module)
     if haskey(params, "Final Time")
         return Float64(params["Final Time"])
+    end
+    if haskey(params, "Additional Time")
+        return datamanager.get_current_time() + Float64(params["Additional Time"])
     end
     @error "No final time defined"
 end
@@ -154,7 +156,6 @@ Get the fixed time step
 function get_fixed_dt(params::Dict)
     return Float64(get(params[get_solver_name(params)], "Fixed dt", -1.0))
 end
-
 
 """
     get_nsteps(params::Dict)
@@ -218,32 +219,25 @@ function get_model_options(params::Dict)
     ###
     # TODO here, the order is predefined. Wrong place!
     ###
-    return Vector{String}(
-        filter(
-            !isnothing,
-            [
-                if additive
-                    "Additive"
-                end
-                if damage
-                    "Damage"
-                end
-                if pre_calculation
-                    "Pre_Calculation"
-                end
-                if thermal
-                    "Thermal"
-                end
-                if corrosion
-                    "Corrosion"
-                end
-                if material
-                    "Material"
-                end
-            ],
-        ),
-    )
-
+    return Vector{String}(filter(!isnothing,
+                                 [if additive
+                                      "Additive"
+                                  end
+                                  if damage
+                                      "Damage"
+                                  end
+                                  if pre_calculation
+                                      "Pre_Calculation"
+                                  end
+                                  if thermal
+                                      "Thermal"
+                                  end
+                                  if corrosion
+                                      "Corrosion"
+                                  end
+                                  if material
+                                      "Material"
+                                  end]))
 end
 
 """
@@ -260,9 +254,7 @@ function get_calculation_options(params::Dict)
     cauchy::Bool = get(params, "Calculate Cauchy", false)
     von_mises::Bool = get(params, "Calculate von Mises stress", false)
     strain::Bool = get(params, "Calculate Strain", false)
-    return Dict{String,Any}(
-        "Calculate Cauchy" => cauchy,
-        "Calculate von Mises stress" => von_mises,
-        "Calculate Strain" => strain,
-    )
+    return Dict{String,Any}("Calculate Cauchy" => cauchy,
+                            "Calculate von Mises stress" => von_mises,
+                            "Calculate Strain" => strain)
 end

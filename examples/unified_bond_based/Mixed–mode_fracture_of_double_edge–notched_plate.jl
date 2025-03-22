@@ -14,13 +14,9 @@ notch_y = 0.005
 dx = 0.001
 vol = dx * dx
 
-
-
-
 # Parameter
 x_min, x_max = -0.1, 0.1  # Grenzen in x-Richtung
 y_min, y_max = -0.1, 0.1  # Grenzen in y-Richtung
-
 
 # Gitterpunkte berechnen
 x_vals = x_min:dx:x_max
@@ -28,7 +24,6 @@ y_vals = y_min:dx:y_max
 
 # Alle Kombinationen der (x, y)-Werte in eine Liste speichern
 mesh_entry = [(x, y, 1, vol) for x in x_vals for y in y_vals]
-
 
 # Notches
 notch_left = (-0.1, -0.0025, -0.075, 0.0025)  # (x_min, y_min, x_max, y_max) links
@@ -38,12 +33,10 @@ function in_notch(x, y, notch)
     return x_min ≤ x ≤ x_max && y_min ≤ y ≤ y_max
 end
 
-mesh_entry = [
-    (x, y, 1, vol) for x in x_vals for
-    y in y_vals if !in_notch(x, y, notch_left) && !in_notch(x, y, notch_right)
-]
+mesh_entry = [(x, y, 1, vol) for x in x_vals
+              for
+              y in y_vals if !in_notch(x, y, notch_left) && !in_notch(x, y, notch_right)]
 #scatter([p[1] for p in punkte], [p[2] for p in mesh_entry], legend=false, xlabel="x", ylabel="y")
-
 
 open("mesh_notch.txt", "w") do io
     write(io, mesh)  # Header
@@ -94,7 +87,6 @@ open("nodes_4.txt", "w") do io
         write(io, "$id\n")
     end
 end
-
 
 force = 25000
 

@@ -42,11 +42,9 @@ Initializes the material model.
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    material_parameter::Dict)
     # global dof
     # global rotation
     # global angles
@@ -64,27 +62,21 @@ function init_model(
     material_models = map(r -> strip(r), material_models)
     #occursin("Correspondence", material_name)
     for material_model in material_models
-
-        mod = Set_modules.create_module_specifics(
-            material_model,
-            module_list,
-            "correspondence_name",
-        )
+        mod = Set_modules.create_module_specifics(material_model,
+                                                  module_list,
+                                                  "correspondence_name")
         if isnothing(mod)
             @error "No correspondence material of name " * material_model * " exists."
             return nothing
         end
         datamanager.set_model_module(material_model, mod)
         datamanager = mod.init_model(datamanager, nodes, material_parameter)
-
     end
     if haskey(material_parameter, "Bond Associated") &&
        material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.init_model(
-            datamanager,
-            nodes,
-            material_parameter,
-        )
+        return Bond_Associated_Correspondence.init_model(datamanager,
+                                                         nodes,
+                                                         material_parameter)
     end
     material_parameter["Bond Associated"] = false
     return datamanager
@@ -120,23 +112,18 @@ Returns a user developer defined local synchronization. This happens before each
 # Arguments
 
 """
-function fields_for_local_synchronization(
-    datamanager::Module,
-    model::String,
-    model_param::Dict,
-)
+function fields_for_local_synchronization(datamanager::Module,
+                                          model::String,
+                                          model_param::Dict)
     material_models = split(model_param["Material Model"], "+")
     material_models = map(r -> strip(r), material_models)
     for material_model in material_models
-
         mod = datamanager.get_model_module(material_model)
 
         datamanager = mod.fields_for_local_synchronization(datamanager, model)
         if model_param["Bond Associated"]
-            Bond_Associated_Correspondence.fields_for_local_synchronization(
-                datamanager,
-                model,
-            )
+            Bond_Associated_Correspondence.fields_for_local_synchronization(datamanager,
+                                                                            model)
         end
     end
     return datamanager
@@ -159,26 +146,21 @@ Example:
 ```julia
 ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-    to::TimerOutput,
-)
-
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       material_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64,
+                       to::TimerOutput)
     if material_parameter["Bond Associated"]
-        return Bond_Associated_Correspondence.compute_model(
-            datamanager,
-            nodes,
-            material_parameter,
-            block,
-            time,
-            dt,
-            to,
-        )
+        return Bond_Associated_Correspondence.compute_model(datamanager,
+                                                            nodes,
+                                                            material_parameter,
+                                                            block,
+                                                            time,
+                                                            dt,
+                                                            to)
     end
 
     rotation::Bool = datamanager.get_rotation()
@@ -209,36 +191,31 @@ function compute_model(
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
 
-        stress_NP1, datamanager = mod.compute_stresses(
-            datamanager,
-            nodes,
-            dof,
-            material_parameter,
-            time,
-            dt,
-            strain_increment,
-            stress_N,
-            stress_NP1,
-        )
-
+        stress_NP1, datamanager = mod.compute_stresses(datamanager,
+                                                       nodes,
+                                                       dof,
+                                                       material_parameter,
+                                                       time,
+                                                       dt,
+                                                       strain_increment,
+                                                       stress_N,
+                                                       stress_NP1)
     end
 
     if rotation
         stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
     end
-    bond_force = calculate_bond_force(
-        nodes,
-        dof,
-        deformation_gradient,
-        undeformed_bond,
-        bond_damage,
-        inverse_shape_tensor,
-        stress_NP1,
-        bond_force,
-    )
+    bond_force = calculate_bond_force(nodes,
+                                      dof,
+                                      deformation_gradient,
+                                      undeformed_bond,
+                                      bond_damage,
+                                      inverse_shape_tensor,
+                                      stress_NP1,
+                                      bond_force)
     # TODO general interface, because it might be a flexbile Set_modules interface in future
-    datamanager =
-        zero_energy_mode_compensation(datamanager, nodes, material_parameter, time, dt)
+    datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter,
+                                                time, dt)
     return datamanager
 end
 
@@ -256,13 +233,11 @@ Global - J. Wan et al., "Improved method for zero-energy mode suppression in per
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function zero_energy_mode_compensation(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    material_parameter::Dict,
-    time::Float64,
-    dt::Float64,
-)
+function zero_energy_mode_compensation(datamanager::Module,
+                                       nodes::Union{SubArray,Vector{Int64}},
+                                       material_parameter::Dict,
+                                       time::Float64,
+                                       dt::Float64)
     if !haskey(material_parameter, "Zero Energy Control")
         if time == 0
             @warn "No zero energy control activated for corresponcence."
@@ -271,13 +246,11 @@ function zero_energy_mode_compensation(
     end
     if material_parameter["Zero Energy Control"] ==
        Global_zero_energy_control.control_name()
-        datamanager = Global_zero_energy_control.compute_control(
-            datamanager,
-            nodes,
-            material_parameter,
-            time,
-            dt,
-        )
+        datamanager = Global_zero_energy_control.compute_control(datamanager,
+                                                                 nodes,
+                                                                 material_parameter,
+                                                                 time,
+                                                                 dt)
     end
     return datamanager
 end
@@ -298,115 +271,88 @@ Calculate bond forces for specified nodes based on deformation gradients.
 # Returns
 - `bond_force::Vector{Vector{Vector{Float64}}}`: Bond force.
 """
-function calculate_bond_force(
-    nodes::Union{SubArray,Vector{Int64}},
-    dof::Int64,
-    deformation_gradient::Array{Float64,3},
-    undeformed_bond::Vector{Vector{Vector{Float64}}},
-    bond_damage::Vector{Vector{Float64}},
-    inverse_shape_tensor::Array{Float64,3},
-    stress_NP1::Array{Float64,3},
-    bond_force::Vector{Vector{Vector{Float64}}},
-)
+function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}},
+                              dof::Int64,
+                              deformation_gradient::Array{Float64,3},
+                              undeformed_bond::Vector{Vector{Vector{Float64}}},
+                              bond_damage::Vector{Vector{Float64}},
+                              inverse_shape_tensor::Array{Float64,3},
+                              stress_NP1::Array{Float64,3},
+                              bond_force::Vector{Vector{Vector{Float64}}})
     if dof == 2
-        calculate_bond_force_2d!(
-            bond_force,
-            nodes,
-            deformation_gradient,
-            undeformed_bond,
-            bond_damage,
-            inverse_shape_tensor,
-            stress_NP1,
-        )
+        calculate_bond_force_2d!(bond_force,
+                                 nodes,
+                                 deformation_gradient,
+                                 undeformed_bond,
+                                 bond_damage,
+                                 inverse_shape_tensor,
+                                 stress_NP1)
     elseif dof == 3
-        calculate_bond_force_3d!(
-            bond_force,
-            nodes,
-            deformation_gradient,
-            undeformed_bond,
-            bond_damage,
-            inverse_shape_tensor,
-            stress_NP1,
-        )
-
+        calculate_bond_force_3d!(bond_force,
+                                 nodes,
+                                 deformation_gradient,
+                                 undeformed_bond,
+                                 bond_damage,
+                                 inverse_shape_tensor,
+                                 stress_NP1)
     end
     return bond_force
 end
 
-
-function calculate_bond_force_2d!(
-    bond_force::Vector{Vector{Vector{Float64}}},
-    nodes::Union{SubArray,Vector{Int64}},
-    deformation_gradient::Array{Float64,3},
-    undeformed_bond::Vector{Vector{Vector{Float64}}},
-    bond_damage::Vector{Vector{Float64}},
-    inverse_shape_tensor::Array{Float64,3},
-    stress_NP1::Array{Float64,3},
-)
+function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
+                                  nodes::Union{SubArray,Vector{Int64}},
+                                  deformation_gradient::Array{Float64,3},
+                                  undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                  bond_damage::Vector{Vector{Float64}},
+                                  inverse_shape_tensor::Array{Float64,3},
+                                  stress_NP1::Array{Float64,3})
     @inbounds @fastmath for iID in nodes
-
-        pk_stress = SMatrix{2,2}(
-            compute_Piola_Kirchhoff_stress(
-                stress_NP1[iID, :, :],
-                deformation_gradient[iID, :, :],
-            ),
-        )
+        pk_stress = SMatrix{2,2}(compute_Piola_Kirchhoff_stress(stress_NP1[iID, :, :],
+                                                                deformation_gradient[iID,
+                                                                                     :, :]))
         temp = MMatrix{2,2}(zeros(2, 2))
 
         mat_mul!(temp, pk_stress, @view inverse_shape_tensor[iID, :, :])
-        @views @inbounds @fastmath for jID ∈ axes(bond_damage[iID], 1)
-            @inbounds @fastmath for idof = 1:2
+        @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)
+            @inbounds @fastmath for idof in 1:2
                 b_fi = zero(eltype(temp))
-                @inbounds @fastmath for jdof = 1:2
-                    b_fi +=
-                        temp[idof, jdof] *
-                        bond_damage[iID][jID] *
-                        undeformed_bond[iID][jID][jdof]
+                @inbounds @fastmath for jdof in 1:2
+                    b_fi += temp[idof, jdof] *
+                            bond_damage[iID][jID] *
+                            undeformed_bond[iID][jID][jdof]
                 end
                 bond_force[iID][jID][idof] = b_fi
             end
-
         end
-
     end
     return bond_force
 end
 
-function calculate_bond_force_3d!(
-    bond_force::Vector{Vector{Vector{Float64}}},
-    nodes::Union{SubArray,Vector{Int64}},
-    deformation_gradient::Array{Float64,3},
-    undeformed_bond::Vector{Vector{Vector{Float64}}},
-    bond_damage::Vector{Vector{Float64}},
-    inverse_shape_tensor::Array{Float64,3},
-    stress_NP1::Array{Float64,3},
-)
-
+function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
+                                  nodes::Union{SubArray,Vector{Int64}},
+                                  deformation_gradient::Array{Float64,3},
+                                  undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                  bond_damage::Vector{Vector{Float64}},
+                                  inverse_shape_tensor::Array{Float64,3},
+                                  stress_NP1::Array{Float64,3})
     @inbounds @fastmath for iID in nodes
-
-        pk_stress = SMatrix{3,3}(
-            compute_Piola_Kirchhoff_stress(
-                stress_NP1[iID, :, :],
-                deformation_gradient[iID, :, :],
-            ),
-        )
+        pk_stress = SMatrix{3,3}(compute_Piola_Kirchhoff_stress(stress_NP1[iID, :, :],
+                                                                deformation_gradient[iID,
+                                                                                     :, :]))
         temp = MMatrix{3,3}(zeros(3, 3))
 
         mat_mul!(temp, pk_stress, @view inverse_shape_tensor[iID, :, :])
-        @views @inbounds @fastmath for jID ∈ axes(bond_damage[iID], 1)
-            @inbounds @fastmath for idof = 1:3
+        @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)
+            @inbounds @fastmath for idof in 1:3
                 b_fi = zero(eltype(temp))
-                @inbounds @fastmath for jdof = 1:3
-                    @views b_fi +=
-                        temp[idof, jdof] *
-                        bond_damage[iID][jID] *
-                        undeformed_bond[iID][jID][jdof]
+                @inbounds @fastmath for jdof in 1:3
+                    @views b_fi += temp[idof, jdof] *
+                                   bond_damage[iID][jID] *
+                                   undeformed_bond[iID][jID][jdof]
                 end
                 bond_force[iID][jID][idof] = b_fi
             end
-
         end
-
     end
     return bond_force
 end

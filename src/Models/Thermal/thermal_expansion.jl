@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -36,7 +35,6 @@ function thermal_model_name()
     return "Thermal Expansion"
 end
 
-
 """
     init_model(datamanager, nodes, thermal_parameter)
 
@@ -51,12 +49,9 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    thermal_parameter::Dict,
-)
-
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    thermal_parameter::Dict)
     return datamanager
 end
 
@@ -77,14 +72,12 @@ Example:
 ```julia
 ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    thermal_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-)
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       thermal_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64)
     temperature_NP1 = datamanager.get_field("Temperature", "NP1")
     dof = datamanager.get_dof()
 
@@ -94,7 +87,7 @@ function compute_model(
     if length(alpha) == 1
         alpha_mat = alpha .* I(dof)
     elseif length(alpha) == dof || length(alpha) == 3
-        for i = 1:dof
+        for i in 1:dof
             alpha_mat[i, i] = alpha[i]
         end
     elseif length(alpha) == dof * dof || length(alpha) == 9
@@ -106,12 +99,12 @@ function compute_model(
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
 
     for iID in nodes
-        for j = 1:dof
-            deformed_bond[iID][:][j] .-=
-                temperature_NP1[iID] * alpha_mat[j, j] .* undeformed_bond[iID][:][j]
+        for j in 1:dof
+            deformed_bond[iID][:][j] .-= temperature_NP1[iID] * alpha_mat[j, j] .*
+                                         undeformed_bond[iID][:][j]
         end
-        deformed_bond_length[iID] .-=
-            sum(alpha_mat) / dof * temperature_NP1[iID] .* undeformed_bond_length[iID]
+        deformed_bond_length[iID] .-= sum(alpha_mat) / dof * temperature_NP1[iID] .*
+                                      undeformed_bond_length[iID]
     end
 
     if datamanager.has_key("Deformation Gradient")
@@ -159,17 +152,15 @@ thermal_deformation = Vector{Matrix{Float64}}(zeros(3, 3)) # Initialize thermal_
 
 result = thermal_deformation(nodes, alpha, temperature, undeformed_bond, thermal_deformation)
 """
-function thermal_deformation(
-    nodes::Union{SubArray,Vector{Int64}},
-    alpha::Union{Matrix{Float64},Matrix{Int64}},
-    temperature::Union{Vector{Float64},SubArray},
-    undeformed_bond::Vector{Vector{Vector{Float64}}},
-    thermal_deformation::Vector{Vector{Vector{Float64}}},
-)
+function thermal_deformation(nodes::Union{SubArray,Vector{Int64}},
+                             alpha::Union{Matrix{Float64},Matrix{Int64}},
+                             temperature::Union{Vector{Float64},SubArray},
+                             undeformed_bond::Vector{Vector{Vector{Float64}}},
+                             thermal_deformation::Vector{Vector{Vector{Float64}}})
     for iID in nodes
-        for jID = 1:length(undeformed_bond[iID])
-            thermal_deformation[iID][jID] =
-                -thermal_strain(alpha, temperature[iID]) * undeformed_bond[iID][jID]
+        for jID in 1:length(undeformed_bond[iID])
+            thermal_deformation[iID][jID] = -thermal_strain(alpha, temperature[iID]) *
+                                            undeformed_bond[iID][jID]
         end
     end
     return thermal_deformation
@@ -204,10 +195,8 @@ temperature = 100.0 # Example temperature value
 
 result = thermal_strain(alpha, temperature)
 """
-function thermal_strain(
-    alpha::Union{Matrix{Float64},Matrix{Int64}},
-    temperature::Union{Float64,Int64},
-)
+function thermal_strain(alpha::Union{Matrix{Float64},Matrix{Int64}},
+                        temperature::Union{Float64,Int64})
     return alpha .* temperature
 end
 

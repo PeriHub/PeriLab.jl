@@ -24,6 +24,9 @@ SPDX-License-Identifier: BSD-3-Clause
 [aqua-img]: https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg
 [aqua-url]: https://github.com/JuliaTesting/Aqua.jl
 
+[sciml-img]: https://img.shields.io/static/v1?label=code%20style&message=SciML&color=9558b2&labelColor=389826
+[sciml-url]: https://github.com/SciML/SciMLStyle
+
 [doi-img]: https://zenodo.org/badge/DOI/10.1016/j.softx.2024.101700.svg
 [doi-url]: https://doi.org/10.1016/j.softx.2024.101700
 
@@ -41,7 +44,7 @@ SPDX-License-Identifier: BSD-3-Clause
 
 | **Documentation** | **Build Status** |  **Quality** |
 |:----:|:----:|:----:|
-| [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url] [![][cov-img]][cov-url] | [![][aqua-img]][aqua-url] |
+| [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url] [![][cov-img]][cov-url] | [![][aqua-img]][aqua-url] [![][sciml-img]][sciml-url] |
 | **Deployment** | **License** | **Socials** |
 | [![][release-img]][release-url]  [![][docker-img]][docker-url] | [![][license-img]][license-url] [![][doi-img]][doi-url] | [![][youtube-img]][youtube-url] |
 

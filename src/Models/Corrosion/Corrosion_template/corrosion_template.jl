@@ -44,14 +44,12 @@ Example:
 ```julia
   ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    corrosion_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-)
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       corrosion_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64)
     @info "Please write a corrosion name in corrosion_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(datamanager, nodes, corrosion_parameter, time, dt) function."
@@ -59,7 +57,6 @@ function compute_model(
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
 end
-
 
 """
     init_model(datamanager, nodes, corrosion_parameter)
@@ -75,12 +72,10 @@ Inits the corrosion model. This template has to be copied, the file renamed and 
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    corrosion_parameter::Dict,
-    block::Int64,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    corrosion_parameter::Dict,
+                    block::Int64)
     @info "Please write a corrosion name in corrosion_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(datamanager, nodes, corrosion_parameter, time, dt) function."
@@ -105,6 +100,5 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
     #datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
     return datamanager
 end
-
 
 end

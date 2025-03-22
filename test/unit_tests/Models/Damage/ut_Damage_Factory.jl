@@ -84,8 +84,7 @@ end
 end
 @testset "ut_Damage_factory_exceptions" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.data["properties"][1] =
-        Dict("Damage Model" => Dict("Damage Model" => "not there"))
+    test_data_manager.data["properties"][1] = Dict("Damage Model" => Dict("Damage Model" => "not there"))
     @test isnothing(Damage.init_model(test_data_manager, Vector{Int64}(1:3), 1))
 end
 
@@ -94,14 +93,10 @@ end
     test_data_manager.set_block_list(["2", "3", "1"])
     crit_values_matrix::Array{Float64,3} = fill(-1, (1, 1, 1))
     test_data_manager.set_crit_values_matrix(crit_values_matrix)
-    damage_parameter = Dict(
-        "Critical Value" => 1.0,
-        "Interblock Damage" => Dict(
-            "Interblock Critical Value 1_2" => 0.2,
-            "Interblock Critical Value 2_3" => 0.3,
-            "Interblock Critical Value 2_1" => 0.4,
-        ),
-    )
+    damage_parameter = Dict("Critical Value" => 1.0,
+                            "Interblock Damage" => Dict("Interblock Critical Value 1_2" => 0.2,
+                                                        "Interblock Critical Value 2_3" => 0.3,
+                                                        "Interblock Critical Value 2_1" => 0.4))
     Damage.init_interface_crit_values(test_data_manager, damage_parameter, 1)
     @test test_data_manager.get_crit_values_matrix()[1, 2, 1] == 0.2
     @test test_data_manager.get_crit_values_matrix()[2, 3, 1] == 0.3

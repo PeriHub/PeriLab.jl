@@ -33,7 +33,7 @@ using .Ordinary
         [3, 5, 7, 8, 9],
         [2, 3, 5, 6, 8, 9],
         [5, 6, 7, 9],
-        [2, 3, 4, 5, 6, 7, 8],
+        [2, 3, 4, 5, 6, 7, 8]
     ]
 
     undeformed_bond_length = [
@@ -45,7 +45,7 @@ using .Ordinary
         Float64[2.236068; 1.0; -1.0; 1.4142135; 0.5],
         Float64[2.236068; 2.0; 1.4142135; 1.0; 1.0; 1.118034],
         Float64[1.0; 1.4142135; 1.0; 1.8027756],
-        Float64[2.5; 1.8027756; 2.5; 1.5; 0.5; 1.118034; 1.8027756],
+        Float64[2.5; 1.8027756; 2.5; 1.5; 0.5; 1.118034; 1.8027756]
     ]
 
     bond_damage = [
@@ -57,7 +57,7 @@ using .Ordinary
         [1.0, 1.0, 1.0, 1.0, 1.0],
         [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         [1.0, 1.0, 1.0, 1.0],
-        [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
     ]
 
     omega = [
@@ -69,35 +69,30 @@ using .Ordinary
         [1.0, 1.0, 1.0, 1.0, 1.0],
         [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
         [1.0, 1.0, 1.0, 1.0],
-        [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
     ]
 
-    volume = Float64[
-        0.8615883,
-        0.8615883,
-        0.8615883,
-        0.8615883,
-        0.8615883,
-        0.8615883,
-        0.8615883,
-        0.8615883,
-        0.8615883,
-    ]
+    volume = Float64[0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883,
+                     0.8615883]
     vec = Vector{Int64}(1:nnodes)
-    Ordinary.compute_weighted_volume(
-        weighted_volume,
-        vec,
-        nlist,
-        undeformed_bond_length,
-        bond_damage,
-        omega,
-        volume,
-    )
+    Ordinary.compute_weighted_volume(weighted_volume,
+                                     vec,
+                                     nlist,
+                                     undeformed_bond_length,
+                                     bond_damage,
+                                     omega,
+                                     volume)
 
-    for iID = 1:nnodes
+    for iID in 1:nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
     end
-
 end
 
 nnodes = 2
@@ -125,36 +120,31 @@ nlist[2][1] = 2
 @testset "compute_dilatation" begin
     vec = Vector{Int64}(1:nnodes)
     theta = zeros(Float64, 2)
-    Ordinary.compute_dilatation(
-        vec,
-        nneighbors,
-        nlist,
-        undeformed_bond_length,
-        deformed_bond_length,
-        bond_damage,
-        volume,
-        weighted_volume,
-        omega,
-        theta,
-    )
+    Ordinary.compute_dilatation(vec,
+                                nneighbors,
+                                nlist,
+                                undeformed_bond_length,
+                                deformed_bond_length,
+                                bond_damage,
+                                volume,
+                                weighted_volume,
+                                omega,
+                                theta)
     @test theta[1] == 3.0
     @test theta[2] == 3.0
     weighted_volume[1] = 0
-    Ordinary.compute_dilatation(
-        vec,
-        nneighbors,
-        nlist,
-        undeformed_bond_length,
-        deformed_bond_length,
-        bond_damage,
-        volume,
-        weighted_volume,
-        omega,
-        theta,
-    )
+    Ordinary.compute_dilatation(vec,
+                                nneighbors,
+                                nlist,
+                                undeformed_bond_length,
+                                deformed_bond_length,
+                                bond_damage,
+                                volume,
+                                weighted_volume,
+                                omega,
+                                theta)
     @test theta[1] == 0.0
     @test theta[2] == 3.0
-
 end
 
 @testset "calculate_symmetry_params" begin
@@ -171,19 +161,17 @@ end
     dof = 2
     nBonds = fill(dof, nnodes)
     bond_force_length = [fill(1.0, n) for n in nBonds]
-    deformed_bond = [[fill(0.0, dof) for j = 1:n] for n in nBonds]
+    deformed_bond = [[fill(0.0, dof) for j in 1:n] for n in nBonds]
     deformed_bond[1][1][1] = 1
     deformed_bond[1][2][1] = 1
-    bond_force = [[fill(0.0, dof) for j = 1:n] for n in nBonds]
+    bond_force = [[fill(0.0, dof) for j in 1:n] for n in nBonds]
     temp = [fill(0.0, n) for n in nBonds]
-    bond_force = Ordinary.get_bond_forces(
-        vec,
-        bond_force_length,
-        deformed_bond,
-        deformed_bond_length,
-        bond_force,
-        temp,
-    )
+    bond_force = Ordinary.get_bond_forces(vec,
+                                          bond_force_length,
+                                          deformed_bond,
+                                          deformed_bond_length,
+                                          bond_force,
+                                          temp)
     @test bond_force == [[[0.5, 0.0], [0.5, 0.0]], [[0.0, 0.0], [0.0, 0.0]]]
     # deformed_bond_length[2][1] = 0
     # @test isnothing(

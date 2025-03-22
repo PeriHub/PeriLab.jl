@@ -9,13 +9,13 @@ include("../../Support/Helpers.jl")
 using .Material
 using .Geometry
 using .Helpers:
-    rotate,
-    fastdot,
-    sub_in_place!,
-    div_in_place!,
-    mul_in_place!,
-    interpol_data,
-    is_dependent
+                rotate,
+                fastdot,
+                sub_in_place!,
+                div_in_place!,
+                mul_in_place!,
+                interpol_data,
+                is_dependent
 using LinearAlgebra
 using StaticArrays
 export compute_model
@@ -59,14 +59,12 @@ Example:
 ```julia
 ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    damage_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-)
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       damage_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     block_ids = datamanager.get_field("Block_Id")
@@ -81,14 +79,13 @@ function compute_model(
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     bond_displacements = datamanager.get_field("Bond Displacements")
     critical_field = datamanager.has_key("Critical_Value")
-    critical_energy =
-        critical_field ? datamanager.get_field("Critical_Value") :
-        damage_parameter["Critical Value"]
+    critical_energy = critical_field ? datamanager.get_field("Critical_Value") :
+                      damage_parameter["Critical Value"]
     quad_horizons = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
 
-    dependend_value, dependent_field =
-        is_dependent("Critical Value", damage_parameter, datamanager)
+    dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter,
+                                                    datamanager)
 
     # for anisotropic damage models
     rotation::Bool = datamanager.get_rotation()
@@ -133,13 +130,10 @@ function compute_model(
         bond_force_vec = bond_forces[iID]
         quad_horizon = quad_horizons[iID]
         for jID in eachindex(nlist_temp)
-
             relative_displacement = bond_displacement[jID]
             norm_displacement = fastdot(relative_displacement, relative_displacement)
-            if norm_displacement == 0 || (
-                tension &&
-                deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0
-            )
+            if norm_displacement == 0 || (tension &&
+                deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
                 continue
             end
 
@@ -147,8 +141,7 @@ function compute_model(
 
             # check if the bond also exist at other node, due to different horizons
             try
-                neighbor_bond_force .=
-                    bond_forces[neighborID][inverse_nlist[neighborID][iID]]
+                neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID]]
             catch e
                 # Handle the case when the key doesn't exist
             end
@@ -156,25 +149,22 @@ function compute_model(
             bond_force .= bond_force_vec[jID]
             bond_force_delta .= bond_force .- neighbor_bond_force
 
-
             product = fastdot(bond_force_delta, relative_displacement)
             mul!(projected_force, product / norm_displacement, relative_displacement)
             product = fastdot(projected_force, relative_displacement, true)
             bond_energy = 0.25 * product
 
             if dependend_value
-                critical_energy = interpol_data(
-                    dependent_field[iID],
-                    damage_parameter["Critical Value"]["Data"],
-                    warning_flag,
-                )
+                critical_energy = interpol_data(dependent_field[iID],
+                                                damage_parameter["Critical Value"]["Data"],
+                                                warning_flag)
             end
 
-            @views crit_energy =
-                critical_field ? critical_energy[iID] :
-                inter_block_damage ?
-                inter_critical_energy[block_ids[iID], block_ids[neighborID], block] :
-                critical_energy
+            @views crit_energy = critical_field ? critical_energy[iID] :
+                                 inter_block_damage ?
+                                 inter_critical_energy[block_ids[iID],
+                                                       block_ids[neighborID], block] :
+                                 critical_energy
 
             if aniso_damage
                 rotation_temp = rotation_tensor[iID, :, :]
@@ -185,12 +175,10 @@ function compute_model(
                     mul!(rotated_bond, rotation_temp', deformed_bond[iID][jID])
                 end
                 # Compute bond_norm for all components at once
-                div_in_place!(
-                    bond_norm_all,
-                    rotated_bond,
-                    deformed_bond_length[iID][jID],
-                    true,
-                )
+                div_in_place!(bond_norm_all,
+                              rotated_bond,
+                              deformed_bond_length[iID][jID],
+                              true)
 
                 mul!(temp, bond_energy, bond_norm_all)
                 # Compute the condition for all components at once
@@ -243,7 +231,6 @@ function compute_model(
     return datamanager
 end
 
-
 """
     fields_for_local_synchronization(datamanager::Module, model::String)
 
@@ -280,13 +267,10 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
     return Float64(4 / (pi * horizon^4))
 end
 
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    damage_parameter::Dict,
-    block::Int64,
-)
-
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    damage_parameter::Dict,
+                    block::Int64)
     dof = datamanager.get_dof()
     quad_horizon = datamanager.create_constant_node_field("Quad Horizon", Float64, 1)
     datamanager.create_constant_bond_field("Bond Displacements", Float64, dof)

@@ -31,7 +31,6 @@ function pre_calculation_name()
     return "Deformed Bond Geometry"
 end
 
-
 """
     init_model(datamanager, nodes, parameter)
 
@@ -45,12 +44,10 @@ Inits the bond deformation calculation.
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    parameter::Union{Dict,OrderedDict},
-    block::Int64,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    parameter::Union{Dict,OrderedDict},
+                    block::Int64)
     dof = datamanager.get_dof()
     datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
     datamanager.create_bond_field("Deformed Bond Length", Float64, 1)
@@ -70,27 +67,21 @@ Compute the bond deformation.
 # Returns
 - `datamanager`: Datamanager.
 """
-function compute(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    parameter::Union{Dict,OrderedDict},
-    block::Int64,
-)
+function compute(datamanager::Module,
+                 nodes::Union{SubArray,Vector{Int64}},
+                 parameter::Union{Dict,OrderedDict},
+                 block::Int64)
     nlist = datamanager.get_nlist()
     deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    Geometry.bond_geometry!(
-        deformed_bond,
-        deformed_bond_length,
-        nodes,
-        nlist,
-        deformed_coor,
-    )
+    Geometry.bond_geometry!(deformed_bond,
+                            deformed_bond_length,
+                            nodes,
+                            nlist,
+                            deformed_coor)
     return datamanager
 end
-
-
 
 """
     fields_for_local_synchronization(datamanager::Module, model::String)

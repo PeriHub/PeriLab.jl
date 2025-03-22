@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-
-
-folder_name = basename(@__FILE__)[1:end-3]
+folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
     run_perilab("test_FEM_2d_coupled_Arlequin", 1, true, folder_name)
 end

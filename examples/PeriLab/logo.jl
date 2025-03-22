@@ -5,7 +5,6 @@
 using Images
 
 function write_mesh()
-
     d_x = 10
     d_y = 10
     scale = 0.01
@@ -38,8 +37,8 @@ function write_mesh()
     node_set = []
     # Write the coordinates and parameters to the file
     if !additive
-        for x = 1:d_x:size(img, 2)
-            for y = size(img, 1):-d_y:1
+        for x in 1:d_x:size(img, 2)
+            for y in size(img, 1):(-d_y):1
                 # @info img[y, x]
                 volume = d_x * scale * d_y * scale
                 y_inv = (size(img, 1) - y) * scale
@@ -63,8 +62,8 @@ function write_mesh()
             end
         end
     else
-        for y = size(img, 1):-d_y:1
-            for x = 1:d_x:size(img, 2)
+        for y in size(img, 1):(-d_y):1
+            for x in 1:d_x:size(img, 2)
                 # @info img[y, x]
                 volume = d_x * scale * d_y * scale
                 y_inv = (size(img, 1) - y) * scale

@@ -51,14 +51,12 @@ Example:
 ```julia
 ```
 """
-function compute_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    additive_parameter::Dict,
-    block::Int64,
-    time::Float64,
-    dt::Float64,
-)
+function compute_model(datamanager::Module,
+                       nodes::Union{SubArray,Vector{Int64}},
+                       additive_parameter::Dict,
+                       block::Int64,
+                       time::Float64,
+                       dt::Float64)
     @info "Please write a additive name in additive_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(datamanager, nodes, additive_parameter, time, dt) function."
@@ -66,7 +64,6 @@ function compute_model(
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
 end
-
 
 """
     init_model(datamanager, nodes, additive_parameter)
@@ -82,12 +79,10 @@ Inits the additive model. This template has to be copied, the file renamed and e
 - `datamanager::Data_manager`: Datamanager.
 
 """
-function init_model(
-    datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
-    additive_parameter::Dict,
-    block::Int64,
-)
+function init_model(datamanager::Module,
+                    nodes::Union{SubArray,Vector{Int64}},
+                    additive_parameter::Dict,
+                    block::Int64)
     @info "Please write a additive name in additive_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(datamanager, nodes, additive_parameter, time, dt) function."
@@ -95,7 +90,6 @@ function init_model(
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
 end
-
 
 """
     fields_for_local_synchronization(datamanager::Module, model::String)

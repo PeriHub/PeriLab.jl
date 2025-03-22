@@ -6,7 +6,8 @@ module Model_Factory
 include("../Support/Helpers.jl")
 
 using .Helpers:
-    check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert, determinant
+                check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
+                determinant
 include("./Surface_correction/Surface_correction.jl")
 include("./Additive/Additive_Factory.jl")
 include("./Corrosion/Corrosion_Factory.jl")
@@ -32,7 +33,6 @@ export compute_models
 export init_models
 export read_properties
 
-
 """
     init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
 
@@ -46,20 +46,18 @@ Initialize models
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_models(
-    params::Dict,
-    datamanager::Module,
-    block_nodes::Dict{Int64,Vector{Int64}},
-    solver_options::Dict,
-    synchronise_field,
-    to::TimerOutput,
-)
+function init_models(params::Dict,
+                     datamanager::Module,
+                     block_nodes::Dict{Int64,Vector{Int64}},
+                     solver_options::Dict,
+                     synchronise_field,
+                     to::TimerOutput)
     # TODO integrate this correctly
     rotation = datamanager.get_rotation()
     #if rotation
 
-    rotN, rotNP1 =
-        datamanager.create_node_field("Rotation", Float64, "Matrix", datamanager.get_dof())
+    rotN, rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix",
+                                                 datamanager.get_dof())
     #    for iID in nodes
     #        rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
     #        rotNP1 = copy(rotN)
@@ -71,9 +69,7 @@ function init_models(
         if haskey(params["Models"], "Material Models")
             for mat in keys(params["Models"]["Material Models"])
                 if haskey(params["Models"]["Material Models"][mat], "Accuracy Order")
-                    datamanager.set_accuracy_order(
-                        params["Models"]["Material Models"][mat]["Accuracy Order"],
-                    )
+                    datamanager.set_accuracy_order(params["Models"]["Material Models"][mat]["Accuracy Order"])
                 end
             end
         end
@@ -86,55 +82,52 @@ function init_models(
     end
 
     if "Additive" in solver_options["Models"] || "Thermal" in solver_options["Models"]
-        heat_capacity =
-            datamanager.create_constant_node_field("Specific Heat Capacity", Float64, 1)
+        heat_capacity = datamanager.create_constant_node_field("Specific Heat Capacity",
+                                                               Float64, 1)
         heat_capacity = set_heat_capacity(params, block_nodes, heat_capacity) # includes the neighbors
     end
 
-    for (active_model_name, active_model) in pairs(datamanager.get_active_models(true))
-        @debug "Init $active_model_name fields"
-        @timeit to "$active_model_name model fields" datamanager =
-            active_model.init_fields(datamanager)
+    if isnothing(datamanager.get_step()) || datamanager.get_step() == 1
+        for (active_model_name, active_model) in pairs(datamanager.get_active_models(true))
+            @debug "Init $active_model_name fields"
+            @timeit to "$active_model_name model fields" datamanager=active_model.init_fields(datamanager)
+        end
     end
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         @info "Init $active_model_name"
 
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, active_model_name)
-                @timeit to "init $active_model_name models" datamanager =
-                    active_model.init_model(datamanager, block_nodes[block], block)
-                @timeit to "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(
-                    datamanager,
-                    active_model_name,
-                    block,
-                )
-                if active_model_name == "Damage Model" && haskey(
-                    datamanager.get_properties(block, active_model_name),
-                    "Local Damping",
-                )
-                    Material.init_local_damping(
-                        datamanager,
-                        block_nodes[block],
-                        datamanager.get_properties(block, "Material Model"),
-                        datamanager.get_properties(block, "Damage Model"),
-                    )
+                @timeit to "init $active_model_name models" datamanager=active_model.init_model(datamanager,
+                                                                                                block_nodes[block],
+                                                                                                block)
+                @timeit to "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(datamanager,
+                                                                                                                                           active_model_name,
+                                                                                                                                           block)
+                if active_model_name == "Damage Model" &&
+                   haskey(datamanager.get_properties(block, active_model_name),
+                          "Local Damping")
+                    Material.init_local_damping(datamanager,
+                                                block_nodes[block],
+                                                datamanager.get_properties(block,
+                                                                           "Material Model"),
+                                                datamanager.get_properties(block,
+                                                                           "Damage Model"))
                 end
                 # put it in datamanager
             end
         end
     end
 
-    datamanager =
-        init_surface_correction(datamanager, params, local_synch, synchronise_field)
+    datamanager = init_surface_correction(datamanager, params, local_synch,
+                                          synchronise_field)
 
     if solver_options["Calculation"]["Calculate Cauchy"] |
        solver_options["Calculation"]["Calculate von Mises stress"]
-        datamanager.create_node_field(
-            "Cauchy Stress",
-            Float64,
-            "Matrix",
-            datamanager.get_dof(),
-        )
+        datamanager.create_node_field("Cauchy Stress",
+                                      Float64,
+                                      "Matrix",
+                                      datamanager.get_dof())
     end
     if solver_options["Calculation"]["Calculate Strain"]
         datamanager.create_node_field("Strain", Float64, "Matrix", datamanager.get_dof())
@@ -163,15 +156,13 @@ Computes the models models
 # Returns
 - `datamanager`: The datamanager
 """
-function compute_models(
-    datamanager::Module,
-    block_nodes::Dict{Int64,Vector{Int64}},
-    dt::Float64,
-    time::Float64,
-    options::Vector{String},
-    synchronise_field,
-    to::TimerOutput,
-)
+function compute_models(datamanager::Module,
+                        block_nodes::Dict{Int64,Vector{Int64}},
+                        dt::Float64,
+                        time::Float64,
+                        options::Vector{String},
+                        synchronise_field,
+                        to::TimerOutput)
     fem_option = datamanager.fem_active()
     if fem_option
         fe_nodes = datamanager.get_field("FE Nodes")
@@ -190,52 +181,43 @@ function compute_models(
 
         local_synch(datamanager, active_model_name, "upload_to_cores", synchronise_field)
         # maybe not needed?
-        local_synch(
-            datamanager,
-            active_model_name,
-            "download_from_cores",
-            synchronise_field,
-        )
+        local_synch(datamanager,
+                    active_model_name,
+                    "download_from_cores",
+                    synchronise_field)
 
         for (block, nodes) in pairs(block_nodes)
             # "delete" the view of active nodes
             active_nodes = datamanager.get_field("Active Nodes")
 
-            active_nodes = find_active_nodes(
-                active_list,
-                active_nodes,
-                nodes,
-                active_model_name != "Additive Model",
-            )
+            active_nodes = find_active_nodes(active_list,
+                                             active_nodes,
+                                             nodes,
+                                             active_model_name != "Additive Model")
 
             if fem_option # TODO might lead to problems in 3D
                 # find all non-FEM nodes in active nodes
                 active_nodes = datamanager.get_field("Active Nodes")
-                active_nodes = find_active_nodes(
-                    fe_nodes,
-                    active_nodes,
-                    1:datamanager.get_nnodes(),
-                    false,
-                )
+                active_nodes = find_active_nodes(fe_nodes,
+                                                 active_nodes,
+                                                 1:datamanager.get_nnodes(),
+                                                 false)
                 if active_nodes == []
                     continue
                 end
             end
             if datamanager.check_property(block, active_model_name)
                 # synch
-                @timeit to "compute $active_model_name" datamanager =
-                    active_model.compute_model(
-                        datamanager,
-                        active_nodes,
-                        datamanager.get_properties(block, active_model_name),
-                        block,
-                        time,
-                        dt,
-                        to,
-                    )
+                @timeit to "compute $active_model_name" datamanager=active_model.compute_model(datamanager,
+                                                                                               active_nodes,
+                                                                                               datamanager.get_properties(block,
+                                                                                                                          active_model_name),
+                                                                                               block,
+                                                                                               time,
+                                                                                               dt,
+                                                                                               to)
             end
         end
-
     end
 
     # Why not update_list.=false? -> avoid neighbors
@@ -244,20 +226,16 @@ function compute_models(
         update_list[nodes] .= false
     end
 
-
-
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
         if active_model_name == "Additive Model"
             continue
         end
         local_synch(datamanager, active_model_name, "upload_to_cores", synchronise_field)
         # maybe not needed?
-        local_synch(
-            datamanager,
-            active_model_name,
-            "download_from_cores",
-            synchronise_field,
-        )
+        local_synch(datamanager,
+                    active_model_name,
+                    "download_from_cores",
+                    synchronise_field)
         for (block, nodes) in pairs(block_nodes)
             active_nodes = datamanager.get_field("Active Nodes")
             update_nodes = datamanager.get_field("Update Nodes")
@@ -265,40 +243,33 @@ function compute_models(
             if fem_option
                 # FEM active means FEM nodes
                 active_nodes = datamanager.get_field("Active Nodes")
-                active_nodes = find_active_nodes(
-                    fe_nodes,
-                    active_nodes,
-                    1:datamanager.get_nnodes(),
-                    false,
-                )
+                active_nodes = find_active_nodes(fe_nodes,
+                                                 active_nodes,
+                                                 1:datamanager.get_nnodes(),
+                                                 false)
                 if active_nodes == []
                     continue
                 end
             end
-            update_nodes = get_update_nodes(
-                active_list,
-                update_list,
-                nodes,
-                update_nodes,
-                active_nodes,
-                active_model_name,
-            )
-
+            update_nodes = get_update_nodes(active_list,
+                                            update_list,
+                                            nodes,
+                                            update_nodes,
+                                            active_nodes,
+                                            active_model_name)
 
             # active or all, or does it not matter?
 
             if datamanager.check_property(block, active_model_name)
                 # TODO synch
-                @timeit to "compute $active_model_name" datamanager =
-                    active_model.compute_model(
-                        datamanager,
-                        update_nodes,
-                        datamanager.get_properties(block, active_model_name),
-                        block,
-                        time,
-                        dt,
-                        to,
-                    )
+                @timeit to "compute $active_model_name" datamanager=active_model.compute_model(datamanager,
+                                                                                               update_nodes,
+                                                                                               datamanager.get_properties(block,
+                                                                                                                          active_model_name),
+                                                                                               block,
+                                                                                               time,
+                                                                                               dt,
+                                                                                               to)
             end
         end
     end
@@ -308,72 +279,58 @@ function compute_models(
         @timeit to "FEM" begin
             nelements = datamanager.get_num_elements()
 
-            @timeit to "eval" datamanager = FEM.eval_FEM(
-                datamanager,
-                Vector{Int64}(1:nelements),
-                datamanager.get_properties(1, "FEM"),
-                time,
-                dt,
-            )
+            @timeit to "eval" datamanager=FEM.eval_FEM(datamanager,
+                                                       Vector{Int64}(1:nelements),
+                                                       datamanager.get_properties(1, "FEM"),
+                                                       time,
+                                                       dt)
             active_nodes = datamanager.get_field("Active Nodes")
 
-            FEM.force_densities(
-                datamanager,
-                find_active_nodes(fe_nodes, active_nodes, 1:datamanager.get_nnodes(), true),
-            )
+            FEM.force_densities(datamanager,
+                                find_active_nodes(fe_nodes, active_nodes,
+                                                  1:datamanager.get_nnodes(), true))
         end
     end
     if "Material" in options
         if "Damage" in options
             for (block, nodes) in pairs(block_nodes)
-
-                if haskey(
-                    datamanager.get_properties(block, "Damage Model"),
-                    "Local Damping",
-                )
+                if haskey(datamanager.get_properties(block, "Damage Model"),
+                          "Local Damping")
                     active_nodes = datamanager.get_field("Active Nodes")
                     if fem_option
-                        active_nodes = find_active_nodes(
-                            active_list,
-                            active_nodes,
-                            find_active_nodes(fe_nodes, active_nodes, nodes),
-                        )
+                        active_nodes = find_active_nodes(active_list,
+                                                         active_nodes,
+                                                         find_active_nodes(fe_nodes,
+                                                                           active_nodes,
+                                                                           nodes))
                     else
                         find_active_nodes(active_list, active_nodes, nodes)
                     end
-                    @timeit to "local_damping_due_to_damage" Material.compute_local_damping(
-                        datamanager,
-                        active_nodes,
-                        datamanager.get_properties(block, "Damage Model")["Local Damping"],
-                        dt,
-                    )
+                    @timeit to "local_damping_due_to_damage" Material.compute_local_damping(datamanager,
+                                                                                            active_nodes,
+                                                                                            datamanager.get_properties(block,
+                                                                                                                       "Damage Model")["Local Damping"],
+                                                                                            dt)
                 end
             end
         end
         active_nodes = datamanager.get_field("Active Nodes")
-        active_nodes =
-            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
+        active_nodes = find_active_nodes(active_list, active_nodes,
+                                         1:datamanager.get_nnodes())
 
-        compute_surface_correction(
-            datamanager,
-            active_nodes,
-            local_synch,
-            synchronise_field,
-        )
+        compute_surface_correction(datamanager,
+                                   active_nodes,
+                                   local_synch,
+                                   synchronise_field)
 
-        @timeit to "distribute_force_densities" Material.distribute_force_densities(
-            datamanager,
-            active_nodes,
-        )
-
+        @timeit to "distribute_force_densities" Material.distribute_force_densities(datamanager,
+                                                                                    active_nodes)
     end
 
     if fem_option
-        @timeit to "coupling" datamanager = FEM.Coupling_PD_FEM.compute_coupling(
-            datamanager,
-            datamanager.get_properties(1, "FEM"),
-        )
-
+        @timeit to "coupling" datamanager=FEM.Coupling_PD_FEM.compute_coupling(datamanager,
+                                                                               datamanager.get_properties(1,
+                                                                                                          "FEM"))
     end
 
     #=
@@ -387,14 +344,12 @@ function compute_models(
     return datamanager
 end
 
-function get_update_nodes(
-    active_list,
-    update_list,
-    nodes,
-    update_nodes,
-    active_nodes,
-    active_model_name,
-)
+function get_update_nodes(active_list,
+                          update_list,
+                          nodes,
+                          update_nodes,
+                          active_nodes,
+                          active_model_name)
     if active_model_name == "Damage Model"
         return @view active_nodes[:]
     else
@@ -417,23 +372,19 @@ Special case for pre calculation. It is set to all blocks, if no block definitio
 # Returns
 - `properties`: Properties function.
 """
-function get_block_model_definition(
-    params::Dict,
-    block_list::Vector{String},
-    prop_keys::Vector{String},
-    properties,
-    directory::String = "",
-    material_model::Bool = true,
-)
+function get_block_model_definition(params::Dict,
+                                    block_list::Vector{String},
+                                    prop_keys::Vector{String},
+                                    properties,
+                                    directory::String = "",
+                                    material_model::Bool = true)
     # properties function from datamanager
 
     if haskey(params["Models"], "Pre Calculation Global")
         for block_id in eachindex(block_list)
-            properties(
-                block_id,
-                "Pre Calculation Model",
-                params["Models"]["Pre Calculation Global"],
-            )
+            properties(block_id,
+                       "Pre Calculation Model",
+                       params["Models"]["Pre Calculation Global"])
         end
     end
 
@@ -447,17 +398,14 @@ function get_block_model_definition(
                 continue
             end
             if haskey(block, model)
-                properties(
-                    block_id,
-                    model,
-                    get_model_parameter(params, model, block[model], directory),
-                )
+                properties(block_id,
+                           model,
+                           get_model_parameter(params, model, block[model], directory))
             end
         end
     end
     return properties
 end
-
 
 """
     read_properties(params::Dict, datamanager::Module, material_model::Bool)
@@ -476,25 +424,21 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
     blocks = datamanager.get_block_list()
     prop_keys = datamanager.init_properties()
     directory = datamanager.get_directory()
-    get_block_model_definition(
-        params,
-        blocks,
-        prop_keys,
-        datamanager.set_properties,
-        directory,
-        material_model,
-    )
+    get_block_model_definition(params,
+                               blocks,
+                               prop_keys,
+                               datamanager.set_properties,
+                               directory,
+                               material_model)
     if material_model
         dof = datamanager.get_dof()
         for block in eachindex(blocks)
-            Material.check_material_symmetry(
-                dof,
-                datamanager.get_properties(block, "Material Model"),
-            )
-            Material.determine_isotropic_parameter(
-                datamanager,
-                datamanager.get_properties(block, "Material Model"),
-            )
+            Material.check_material_symmetry(dof,
+                                             datamanager.get_properties(block,
+                                                                        "Material Model"))
+            Material.determine_isotropic_parameter(datamanager,
+                                                   datamanager.get_properties(block,
+                                                                              "Material Model"))
         end
     end
     return datamanager
@@ -535,11 +479,9 @@ function add_model(datamanager::Module, model_name::String, all::Bool = false)
     # TODO test missing
     try
         # to catch "Pre_Calculation"
-        datamanager.add_active_model(
-            replace(model_name, "_" => " ") * " Model",
-            eval(Meta.parse(model_name)),
-            all,
-        )
+        datamanager.add_active_model(replace(model_name, "_" => " ") * " Model",
+                                     eval(Meta.parse(model_name)),
+                                     all)
         return datamanager
     catch
         @error "Model $model_name is not specified and cannot be included."
@@ -547,19 +489,15 @@ function add_model(datamanager::Module, model_name::String, all::Bool = false)
     end
 end
 
-
 function local_synch(datamanager, model, direction, synchronise_field)
     synch_fields = datamanager.get_local_synch_fields(model)
     for synch_field in keys(synch_fields)
-        synchronise_field(
-            datamanager.get_comm(),
-            synch_fields,
-            datamanager.get_overlap_map(),
-            datamanager.get_field,
-            synch_field,
-            direction,
-        )
-
+        synchronise_field(datamanager.get_comm(),
+                          synch_fields,
+                          datamanager.get_overlap_map(),
+                          datamanager.get_field,
+                          synch_field,
+                          direction)
     end
 end
 end

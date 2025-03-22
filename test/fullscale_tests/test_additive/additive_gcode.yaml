@@ -1,0 +1,78 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: "mesh[!, \"x\"][i] < 30"
+      Node Set 2: "mesh[!, \"x\"][i] > 220"
+    Type: "Gcode"
+    Input Mesh File: Zugstab_small.gcode
+    Gcode:
+      Overwrite Mesh: True
+      dx: 1.0
+      dy: 1.0
+      Width: 0.4
+      Scale: 1.0
+      Blocks:
+        2: "x < 75"
+        3: "x > 175"
+  Models:
+    Additive Models:
+      Additive Test:
+        Additive Model: "Simple"
+        Print Temperature: 653.15
+    Thermal Models:
+      Thermal Test:
+        Thermal Model: "Thermal Flow+Heat Transfer"
+        Type: "Bond based"
+        Thermal Conductivity: 0.12
+        Thermal Conductivity Print Bed: 1.2
+        Print Bed Temperature: 298.15
+        Environmental Temperature: 298.15
+        Heat Transfer Coefficient: 15.0e-3
+        Required Specific Volume: 1.3
+  Blocks:
+    Middle:
+      Block ID: 1
+      Material Model: PLA
+      Thermal Model: "Thermal Test"
+      Horizon: 2.0
+      Additive Model: "Additive Test"
+      Specific Heat Capacity: 1800.0e+6
+      Density: 1.31e-9
+    Left:
+      Block ID: 2
+      Material Model: PLA
+      Thermal Model: "Thermal Test"
+      Horizon: 2.0
+      Additive Model: "Additive Test"
+      Specific Heat Capacity: 1800.0e+6
+      Density: 1.31e-9
+    Right:
+      Block ID: 3
+      Material Model: PLA
+      Thermal Model: "Thermal Test"
+      Horizon: 2.0
+      Additive Model: "Additive Test"
+      Specific Heat Capacity: 1800.0e+6
+      Density: 1.31e-9
+  Solver:
+    Additive Models: True
+    Material Models: False
+    Thermal Models: True
+    Initial Time: 0.0
+    Final Time: 810
+    Verlet:
+      Safety Factor: 1.0
+      Fixed dt: 1.0
+  Outputs:
+    Output1:
+      Output Filename: "additive_gcode"
+      Output File Type: Exodus
+      Number of Output Steps: 100
+      Output Variables:
+        Temperature: True
+        Heat Flow: True
+        Active: True
