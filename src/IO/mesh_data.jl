@@ -1494,9 +1494,8 @@ function neighbors(mesh::DataFrame, params::Dict,
     for iID in 1:nnodes
         radius[iID] = get_horizon(params, mesh[!, "block_id"][iID])
     end
-    neighborList = get_nearest_neighbors(1:nnodes, dof, data, data, radius, neighborList)
 
-    return neighborList
+    return get_nearest_neighbors(1:nnodes, dof, data, data, radius, neighborList)
 end
 
 """
