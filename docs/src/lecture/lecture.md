@@ -6,7 +6,7 @@ SPDX-License-Identifier: BSD-3-Clause
 
 ## Lecture Non-local structural mechanics and peridynamics
 
-This lecture currently running as a cooperation between the [Magdeburg-Stendal University of applied sciences](www.h2.de) and the [Otto von Guericke University Magdeburg](www.ovgu.de).
+This lecture currently running as a cooperation between the [Magdeburg-Stendal University of applied sciences](https://www.h2.de) and the [Otto von Guericke University Magdeburg](https://www.ovgu.de).
 
 ---
 
