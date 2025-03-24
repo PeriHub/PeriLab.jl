@@ -191,6 +191,8 @@ function run_solver(solver_options::Dict{Any,Any},
                     result_files::Vector{Dict},
                     synchronise_field,
                     write_results,
+                    compute_parabolic_problems_before_model_evaluation,
+                    compute_parabolic_problems_after_model_evaluation,
                     to::TimerOutputs.TimerOutput,
                     silent::Bool)
     atexit(() -> datamanager.set_cancel(true))
@@ -236,9 +238,17 @@ function run_solver(solver_options::Dict{Any,Any},
                                          time,
                                          step_time) #-> Dirichlet
         external_force_densities += external_forces ./ volume
+        active_nodes = datamanager.get_field("Active Nodes")
+        active_nodes = find_active_nodes(active_list, active_nodes,
+                                         1:datamanager.get_nnodes())
 
-        datamanager = apply_bc_dirichlet(["Displacements"], bcs, datamanager, time,
+        compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
+                                                           solver_options)
+        datamanager = apply_bc_dirichlet(["Displacements", "Temperature"], bcs, datamanager,
+                                         time,
                                          step_time + dt) #-> Dirichlet
+        temperatureNP1 = datamanager.get_field("Temperature", "NP1")
+
         sol = nlsolve((residual, U) -> residual!(residual,
                                                  U,
                                                  datamanager,
@@ -258,6 +268,9 @@ function run_solver(solver_options::Dict{Any,Any},
                       extended_trace = false,
                       method = :anderson,
                       m = m,)
+
+        compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,
+                                                          solver_options, dt)
 
         start_u = copy(uNP1)
         if !sol.x_converged && !sol.f_converged

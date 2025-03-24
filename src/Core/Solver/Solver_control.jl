@@ -16,7 +16,7 @@ using .Parameter_Handling:
                            get_angles,
                            get_block_names,
                            get_solver_params
-using .Helpers: find_indices, fastdot
+using .Helpers: find_indices, fastdot, check_inf_or_nan
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
 include("Static_solver.jl")
@@ -289,6 +289,8 @@ function solver(solver_options::Dict{Any,Any},
                                  result_files,
                                  synchronise_field,
                                  write_results,
+                                 compute_parabolic_problems_before_model_evaluation,
+                                 compute_parabolic_problems_after_model_evaluation,
                                  to,
                                  silent)
     elseif solver_options["Solver"] == "Static"
@@ -300,6 +302,8 @@ function solver(solver_options::Dict{Any,Any},
                                         result_files,
                                         synchronise_field,
                                         write_results,
+                                        compute_parabolic_problems_before_model_evaluation,
+                                        compute_parabolic_problems_after_model_evaluation,
                                         to,
                                         silent)
     end
@@ -381,6 +385,47 @@ function remove_models(datamanager::Module, solver_options::Vector{String})
         end
     end
     return datamanager
+end
+
+## TODO generalize this interface
+
+function compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
+                                                            solver_options)
+    if !("Thermal" in solver_options["Models"]) &&
+       !("Thermal" in solver_options["All Models"])
+        return
+    end
+    temperatureN = datamanager.get_field("Temperature", "N")
+    temperatureNP1 = datamanager.get_field("Temperature", "NP1")
+    deltaT = datamanager.get_field("Delta Temperature")
+    if "Thermal" in solver_options["Models"]
+        temperatureNP1[active_nodes] = temperatureN[active_nodes] + deltaT[active_nodes]
+    else
+        if "Thermal" in solver_options["All Models"]
+            temperatureNP1[active_nodes] = temperatureN[active_nodes]
+        end
+    end
+end
+function compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,
+                                                           solver_options, dt)
+    if !("Thermal" in solver_options["Models"]) &&
+       !("Thermal" in solver_options["All Models"])
+        return
+    end
+    deltaT = datamanager.get_field("Delta Temperature")
+    flowNP1 = datamanager.get_field("Heat Flow", "NP1")
+    density = datamanager.get_field("Density")
+    heat_capacity = datamanager.get_field("Specific Heat Capacity")
+    if "Thermal" in solver_options["Models"]
+        check_inf_or_nan(flowNP1, "Heat Flow")
+        # heat capacity check. if it is zero deltaT = 0
+        @views deltaT[active_nodes] = -flowNP1[active_nodes] .* dt ./
+                                      (density[active_nodes] .*
+                                       heat_capacity[active_nodes])
+        # if fem_option && time == 0
+        #     @warn "Thermal models are not supported for FEM yet."
+        # end
+    end
 end
 
 end

@@ -408,6 +408,8 @@ function run_solver(solver_options::Dict{Any,Any},
                     result_files::Vector{Dict},
                     synchronise_field,
                     write_results,
+                    compute_parabolic_problems_before_model_evaluation,
+                    compute_parabolic_problems_after_model_evaluation,
                     to::TimerOutputs.TimerOutput,
                     silent::Bool)
     atexit(() -> datamanager.set_cancel(true))
@@ -424,10 +426,7 @@ function run_solver(solver_options::Dict{Any,Any},
         external_force_densities = datamanager.get_field("External Force Densities")
         a = datamanager.get_field("Acceleration")
     end
-    if "Thermal" in solver_options["Models"]
-        deltaT = datamanager.get_field("Delta Temperature")
-        heat_capacity = datamanager.get_field("Specific Heat Capacity")
-    end
+
     if "Corrosion" in solver_options["Models"]
         ## TODO field creation not in run
         delta_concentration = datamanager.create_constant_node_field("Delta Concentration",
@@ -466,12 +465,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 deformed_coorN = datamanager.get_field("Deformed Coordinates", "N")
                 forces = datamanager.get_field("Forces", "NP1")
             end
-            if "Thermal" in solver_options["All Models"]
-                flowN = datamanager.get_field("Heat Flow", "N")
-                flowNP1 = datamanager.get_field("Heat Flow", "NP1")
-                temperatureN = datamanager.get_field("Temperature", "N")
-                temperatureNP1 = datamanager.get_field("Temperature", "NP1")
-            end
+
             if "Corrosion" in solver_options["Models"]
                 concentrationN = datamanager.get_field("Concentration", "N")
                 concentrationNP1 = datamanager.get_field("Concentration", "NP1")
@@ -494,14 +488,9 @@ function run_solver(solver_options::Dict{Any,Any},
                 @views uNP1[active_nodes, :] = uN[active_nodes, :] .+
                                                dt .* vNP1[active_nodes, :]
             end
-            if "Thermal" in solver_options["Models"]
-                temperatureNP1[active_nodes] = temperatureN[active_nodes] +
-                                               deltaT[active_nodes]
-            else
-                if "Thermal" in solver_options["All Models"]
-                    temperatureNP1[active_nodes] = temperatureN[active_nodes]
-                end
-            end
+
+            compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
+                                                               solver_options)
             if "Corrosion" in solver_options["Models"]
                 concentrationNP1[active_nodes] = concentrationN[active_nodes] +
                                                  delta_concentration[active_nodes]
@@ -584,16 +573,10 @@ function run_solver(solver_options::Dict{Any,Any},
                 @views forces[active_nodes, :] = force_densities[active_nodes, :] .*
                                                  volume[active_nodes]
             end
-            if "Thermal" in solver_options["Models"]
-                check_inf_or_nan(flowNP1, "Heat Flow")
-                # heat capacity check. if it is zero deltaT = 0
-                @views deltaT[active_nodes] = -flowNP1[active_nodes] .* dt ./
-                                              (density[active_nodes] .*
-                                               heat_capacity[active_nodes])
-                if fem_option && time == 0
-                    @warn "Thermal models are not supported for FEM yet."
-                end
-            end
+
+            compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,
+                                                              solver_options, dt)
+
             if "Corrosion" in solver_options["Models"]
                 delta_concentration[active_nodes] = -concentration_fluxNP1[active_nodes] .*
                                                     dt

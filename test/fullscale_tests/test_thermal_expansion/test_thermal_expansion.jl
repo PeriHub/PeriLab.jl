@@ -4,7 +4,8 @@
 
 folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
-    # run_perilab("thermal_expansion_correspondence", 1, true, folder_name) TODO: Forces infinte
+    #run_perilab("thermal_expansion_correspondence", 1, true, folder_name) TODO: Does not work correctly
     run_perilab("thermal_expansion_PD_Solid", 1, true, folder_name)
+    run_perilab("thermal_expansion_PD_Solid_static", 1, true, folder_name)
     run_perilab("thermal_expansion_bond_based", 1, true, folder_name)
 end
