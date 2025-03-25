@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+include("../../../../src/Models/Contact/Contact_search.jl")
+# include("../../../../src/Core/Data_manager.jl")
+using Test
+using .Corrosion: get_surface_normals, get_surface_connectivity
+@testset "ut_get_surface_normals" begin
+    points_2D = [
+        [0.0, 0.0],    # Unten links
+        [4, 0.0],      # Unten rechts
+        [1, 1],
+        [4, 2],        # Oben rechts
+        [0.0, 2]       # Oben links
+    ]
+
+    @test get_surface_normals(points_2D) == [-0.0 -1.0; -1.0 -0.0; -0.0 1.0; 1.0 -0.0]
+    points_3D = [
+        [0.0, 0.0, 0.0],
+        [2.0, 0.0, 0.0],
+        [2.0, 3.0, 0.0],
+        [0.0, 3.0, 0.0],
+        [0.0, 0.0, 0.5],
+        [2.0, 0.0, 0.5],
+        [2.0, 3.0, 0.5],
+        [0.0, 3.0, 0.5]
+    ]
+    @test get_surface_normals(points_3D) == [-0.0 -0.0 -1.0;
+           -1.0 -0.0 -0.0;
+           -0.0 -1.0 -0.0;
+           -0.0 -0.0 2.0;
+           -0.0 1.0 -0.0;
+           1.0 -0.0 -0.0]
+end
+
+@testset "ut_get_surface_normals" begin
+    points_2D = [
+        [0.0, 0.0],    # Unten links
+        [4, 0.0],      # Unten rechts
+        [1, 1],
+        [0.5, 0.0],    # Unten links
+        [4, 2],        # Oben rechts
+        [0.0, 2]       # Oben links
+    ]
+    test = get_surface_connectivity(points_2D)
+    @test haskey(test, 4)
+    @test test[4] == 1
+end
