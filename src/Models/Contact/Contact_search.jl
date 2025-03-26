@@ -8,10 +8,43 @@ using .Helpers: get_nearest_neighbors
 using LazySets: convex_hull
 
 function init_contact(datamanager, contact_params)
+    if !haskey(contact_params, "Master")
+        @error "Contact model needs a ''Master''"
+        return nothing
+    end
+    if !haskey(contact_params, "Slave")
+        @error "Contact model needs a ''Slave''"
+        return nothing
+    end
+    if contact_params["Master"] == contact_params["Slave"]
+        @error "Contact master and slave are equal. Self contact is not implemented yet."
+        return nothing
+    end
+    block_id = datamanager.get_field("Block_Id")
+    if !(contact_params["Master"] in block_id)
+        @error "Block defintion in master does not exist."
+        return nothing
+    end
+    if !(contact_params["Slave"] in block_id)
+        @error "Block defintion in slave does not exist."
+        return nothing
+    end
     if !haskey(contact_params, "Search Radius")
         @error "Contact model needs a ''Search Radius''"
         return nothing
     end
+    coor = datamanager.get_field("Coordinate")
+    @views connectivity = get_surface_connectivity(Vector{Vector{Float64}}(eachrow(coor)))
+    datamanager.set_connectivity(connectivity)
+    datamanager.set_slave_nodes(collect(keys(connectivity)))
+end
+
+function compute_find_contact(datamanager, contact_params)
+    find_potential_contact_pairs
+    check_if_inside
+
+    #connectivity -> glob to local
+    # distance
 end
 
 function find_potential_contact_pairs(datamanager, contact_params)

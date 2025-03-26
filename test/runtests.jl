@@ -124,6 +124,11 @@ MPI.Init()
                     include("unit_tests/Models/Additive/ut_Additive_Factory.jl")
                 end
             end
+            @testset "Contact" begin
+                @testset "ut_Additive_Factory" begin
+                    include("unit_tests/Models/Contact/ut_Contact_search.jl")
+                end
+            end
 
             @testset "Corrosion" begin
                 @testset "ut_Corrosion_Factory" begin
