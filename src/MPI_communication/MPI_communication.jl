@@ -5,6 +5,16 @@
 import MPI
 
 """
+TODO
+Contact
+send all information to first core and synch to all otherwise
+optimization is possible by reducing it to slave and master. Therefore its only the surface.
+
+Master are known and their core. local to global is know and the sending can occur.
+
+"""
+
+"""
     send_single_value_from_vector(comm::MPI.Comm, controller::Int64, values::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}, type::Type)
 
 Sends a single value from a vector to a controller

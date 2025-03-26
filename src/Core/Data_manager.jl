@@ -88,14 +88,20 @@ export synch_manager
 const fields = Dict()
 const data = Dict()
 ##########################
-
-function set_contact_connectivity(block_id::Int64, connectivity::Dict{Int64,Int64})
-    data["Contact Connectivity"][block_id] = connectivity
+function set_all_positions(all_coordinate)
+    data["All positions"] = all_coordinate
+end
+function get_all_positions()
+    return data["All positions"]
+end
+function set_all_blocks(all_blocks)
+    data["All Blocks"] = all_blocks
 end
 
-function get_contact_nodes(block_id::Int64, nodes::Vector{Int64})
-    data["Contact Nodes"][block_id] = nodes
+function get_all_blocks(all_blocks)
+    return data["All Blocks"]
 end
+
 """
     initialize_data()
 
@@ -158,6 +164,8 @@ function initialize_data()
     data["BC_free_dof"] = []
     data["Contact Nodes"] = Dict{Int64,Vector{Int64}}()
     data["Contact Connectivity"] = Dict{Int64,Dict{Int64,Int64}}()
+    data["All positions"] = []
+    data["All blocks"] = []
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -1271,6 +1279,10 @@ Sets the critical values matrix globally.
 """
 function set_crit_values_matrix(crit_values::Array{Float64,3})
     data["crit_values_matrix"] = crit_values
+end
+
+function set_contact_connectivity(block_id::Int64, connectivity::Dict{Int64,Int64})
+    data["Contact Connectivity"][block_id] = connectivity
 end
 
 """

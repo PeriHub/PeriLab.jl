@@ -7,6 +7,7 @@ using AbaqusReader
 using DataFrames
 using OrderedCollections: OrderedDict
 using PrettyTables
+
 include("gcode.jl")
 include("../Support/Helpers.jl")
 using .Helpers: fastdot, get_nearest_neighbors
@@ -123,7 +124,7 @@ function init_data(params::Dict,
                                             bond_norm,
                                             dof)
         end
-
+        datamanager = contact_basis(datamanager, params, mesh)
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
         datamanager.set_fem(fem_active)
         if fem_active
@@ -172,6 +173,23 @@ function create_and_distribute_bond_norm(comm::MPI.Comm,
     copyto!.(bond_norm_field, bond_norm)
 end
 
+function contact_basis(datamanager::Module, params::Dict, mesh::DataFrame)
+    if !haskey(params["Models"], "Contact")
+        return datamanager
+    end
+    ## All coordinates and block Ids are stored at all cores. Reason is, that you might need them for self contact, etc.
+    mesh_id = ["x", "y"]
+    if datamanager.get_dof() == 3
+        mesh_id = ["x", "y", "z"]
+    end
+
+    points = Matrix(df[:,
+                       mesh_id])
+    blocks = Vector(df[:, "block_id"])
+    datamanager.set_all_coordinates(points)
+    datamanager.set_all_blocks(blocks)
+    return datamanager
+end
 """
     get_local_element_topology(datamanager::Module, topology::Vector{Vector{Int64}}, distribution::Vector{Int64})
 

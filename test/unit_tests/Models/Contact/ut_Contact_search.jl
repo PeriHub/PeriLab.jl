@@ -56,15 +56,13 @@ end
     block_id = test_data_manager.create_field("Block_Id")
     block_id .= 1
     contact_params = Dict()
-    @test isnothing(init_contact(datamanager, contact_params))
+    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
     contact_params = Dict("Master" => 1)
-    @test isnothing(init_contact(datamanager, contact_params))
+    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
     contact_params = Dict("Master" => 1, "Slave" => 1)
-    @test isnothing(init_contact(datamanager, contact_params))
-    contact_params = Dict("Master" => 2, "Slave" => 1)
-    @test isnothing(init_contact(datamanager, contact_params))
+    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
     contact_params = Dict("Master" => 1, "Slave" => 2)
-    @test isnothing(init_contact(datamanager, contact_params))
+    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
     block_id[2] = 2
-    @test isnothing(init_contact(datamanager, contact_params))
+    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
 end

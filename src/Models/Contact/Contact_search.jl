@@ -7,7 +7,83 @@ include("../../Support/Helpers.jl")
 using .Helpers: get_nearest_neighbors
 using LazySets: convex_hull
 
-function init_contact(datamanager, contact_params)
+export init_contact
+export compute_contact_pairs
+
+function compute_contact_pairs(datamanager, contact_params)
+    #synch_all_positions(datamanager)
+    # Single core solution
+    deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
+
+    for iID in 1:datamanager.get_nnodes()
+        all_positions .= deformed_coor
+    end
+    datamanager.set_all_positions(all_positions)
+    #-------------
+
+    near_points = find_potential_contact_pairs(datamanager, contact_params)
+    master_nodes = datamanager.get_contact_nodes(contact_params["Master"])
+    slave_nodes = datamanager.get_contact_nodes(contact_params["Slave"])
+    check_if_inside
+
+    #connectivity -> glob to local
+    # distance
+end
+
+function check_if_inside(masters, slaves, contact_dict)
+    #slaves => neigbhboorhoodlist
+    points_vec = [Vector{Float64}(row) for row in eachrow(slaves)]
+    poly = polyhedron(vrep(points_vec))
+    for master in masters
+        if master in poly
+            contact_dict[master] = slave
+        end
+    end
+end
+
+function find_potential_contact_pairs(datamanager, contact_params)
+    # global IDs
+    all_positions = datamanager.get_all_positions()
+    # optimization of number of positions. Reduction to surface nodes.
+
+    master_nodes = datamanager.get_contact_nodes(contact_params["Master"])
+    slave_nodes = datamanager.get_contact_nodes(contact_params["Slave"])
+    #global_master_nodes = datamanager.loc_to_glob(local_master_nodes)
+    # global_slave_nodes = datamanager.loc_to_glob(local_slave_nodes)
+    nmaster = length(master_nodes)
+    near_points = fill(Vector{Int64}([]), length(search_radius))
+
+    return get_nearest_neighbors(1:nmaster,
+                                 dof::Int64,
+                                 all_positions[master_nodes, :],
+                                 all_positions[slave_nodes, :],
+                                 contact_params["Search Radius"],
+                                 near_points,
+                                 true)
+end
+
+# convex_hull gibt mir die außenpunkte
+# lokale convex hulls bilden, um master slave abzufangen -> inside?
+# überlappung?
+# alternativ bondbased -> abstand der punkte die drinne liegen zu ihren Partnern;
+
+# für kleine Deformationen?
+#E₁ = Ellipsoid(zeros(2), [1 0; 0 2.])
+## den ganzen block als huelle?
+## dann testen
+## dann den nächsten Punkt finden; Radius ist horizont
+## dann funktion aus den ueberlappenden horizonten machen -> bool aus hull
+
+function get_surface_normals(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
+    backend = CDDLib.Library()
+    poly = polyhedron(vrep(points), backend)
+    MixedMatHRep(hr)
+    hrep_form = MixedMatHRep(hrep(poly))
+    return hrep_form.A
+end
+
+function init_contact(datamanager, contact_params, block_nodes)
+    ## block_nodes for all nodes!!!
     if !haskey(contact_params, "Master")
         @error "Contact model needs a ''Master''"
         return nothing
@@ -33,79 +109,48 @@ function init_contact(datamanager, contact_params)
         @error "Contact model needs a ''Search Radius''"
         return nothing
     end
-    coor = datamanager.get_field("Coordinate")
-    @views connectivity = get_surface_connectivity(Vector{Vector{Float64}}(eachrow(coor)))
-    datamanager.set_connectivity(connectivity)
-    datamanager.set_slave_nodes(collect(keys(connectivity)))
+    # global list
+    all_positions = datamanager.get_all_positions()
+    datamanager = datamanager.get_all_blocks()
+    define_contact_points_and_connectivity(datamanager, contact_params["Master"],
+                                           block_nodes)
+    define_contact_points_and_connectivity(datamanager, contact_params["Slave"],
+                                           block_nodes)
+
+    datamanager.set_all_positions()
+    datamanager.blocks()
 end
 
-function compute_find_contact(datamanager, contact_params)
-    find_potential_contact_pairs
-    check_if_inside
-
-    #connectivity -> glob to local
-    # distance
-end
-
-function find_potential_contact_pairs(datamanager, contact_params)
-    # global IDs
-    all_positions = datamanager.get_all_contact_positions()
-    master_nodes = datamanager.get_contact_master()
-    slave_nodes = datamanager.get_contact_master()
-    nmaster = length(master_nodes)
-    near_points = fill(Vector{Int64}([]), length(search_radius))
-
-    near_points = get_nearest_neighbors(1:nmaster,
-                                        dof::Int64,
-                                        all_positions[master_nodes, :],
-                                        all_positions[slave_nodes, :],
-                                        contact_params["Search Radius"],
-                                        near_points,
-                                        true)
-end
-
-function check_if_inside(masters, slaves, contact_dict)
-    #slaves => neigbhboorhoodlist
-    points_vec = [Vector{Float64}(row) for row in eachrow(slaves)]
-    poly = polyhedron(vrep(points_vec))
-    for master in masters
-        if master in poly
-            contact_dict[master] = slave # als vector?
-        end
+function synch_all_positions(datamanager)
+    all_positions = datamanager.get_all_positions()
+    deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
+    mapping = datamanager.local_to_global_contact()
+    for iID in 1:datamanager.get_nnodes()
+        all_positions[mapping[iID], :] .= deformed_coor[iID, :]
     end
+    datamanager.set_all_positions(all_positions)
 end
 
-# convex_hull gibt mir die außenpunkte
-# lokale convex hulls bilden, um master slave abzufangen -> inside?
-# überlappung?
-# alternativ bondbased -> abstand der punkte die drinne liegen zu ihren Partnern;
-
-# für kleine Deformationen?
-#E₁ = Ellipsoid(zeros(2), [1 0; 0 2.])
-## den ganzen block als huelle?
-## dann testen
-## dann den nächsten Punkt finden; Radius ist horizont
-## dann funktion aus den ueberlappenden horizonten machen -> bool aus hull
-
-function get_surface_normals(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
-    backend = CDDLib.Library()
-    poly = polyhedron(vrep(points), backend)
-    MixedMatHRep(hr)
-    hrep_form = MixedMatHRep(hrep(poly))
-    return hrep_form.A
+function define_contact_points_and_connectivity(datamanager::Module, block_id::Int64,
+                                                block_nodes::Dict{Int64,Vector{Int64}})
+    nlist = datamanager.get_nlist()
+    points = Vector{Vector{Float64}}(eachrow(block_nodes[block_id]))
+    @views connectivity = get_surface_connectivity(points, nlist)
+    datamanager.set_contact_connectivity(block_id, connectivity)
+    datamanager.set_contact_nodes(block_id, collect(keys(connectivity)))
 end
 
 """
 function get_surface_connectivity(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
 
-This function finds the point, surface cobination. However, no edge or corner nodes are included, because there are no unique normals.
+This function finds the point, surface cobination. However, no edge or corner nodes are included, because there are no unique normals. Only block outer surfaces will be found
 
 !!! info "limitations"
     This might have limitations if non plane surfaces are used.
 
 """
 function get_surface_connectivity(points::Union{Vector{Vector{Float64}},
-                                                Vector{Vector{Int64}}})
+                                                Vector{Vector{Int64}}}, nlist)
     backend = CDDLib.Library()
     poly = polyhedron(vrep(points), backend)
     # H-Rep abrufen (Facetten als a⋅x ≤ b)
@@ -113,18 +158,34 @@ function get_surface_connectivity(points::Union{Vector{Vector{Float64}},
     normals = hrep_form.A
     offsets = hrep_form.b
     connections = Dict{Int64,Int64}()
-    for (pID, point) in enumerate(points)
+    msg = true
+    for (iID, point) in enumerate(points)
         for id in eachindex(normals[:, 1])
             if abs(dot(normals[id, :], point) - offsets[id]) < 1e-6
-                if haskey(connections, pID)
-                    delete!(connections, pID)
+                if !check_neighbor_position(poly, points, nlist[iID], msg)
                     break
                 end
-                connections[pID] = id
+                if haskey(connections, iID)
+                    delete!(connections, iID)
+                    break
+                end
+                connections[iID] = id
             end
         end
     end
     return connections
 end
 
+function check_neighbor_position(poly, points, nlist::Vector{Int64}, msg::Bool)
+    for nID in nlist
+        if !(points[nID] in poly)
+            if msg
+                msg = false
+                @warn "Make sure that your contact block is large enough. If it is surrounded by non contact blocks some of the points near the edgdes are ignored."
+            end
+            return false
+        end
+    end
+    return true
+end
 end
