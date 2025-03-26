@@ -89,6 +89,13 @@ const fields = Dict()
 const data = Dict()
 ##########################
 
+function set_contact_connectivity(block_id::Int64, connectivity::Dict{Int64,Int64})
+    data["Contact Connectivity"][block_id] = connectivity
+end
+
+function get_contact_nodes(block_id::Int64, nodes::Vector{Int64})
+    data["Contact Nodes"][block_id] = nodes
+end
 """
     initialize_data()
 
@@ -149,6 +156,8 @@ function initialize_data()
     data["NP1_to_N"] = Dict{String,Vector{}}()
     data["coupling_fe_nodes"] = []
     data["BC_free_dof"] = []
+    data["Contact Nodes"] = Dict{Int64,Vector{Int64}}()
+    data["Contact Connectivity"] = Dict{Int64,Dict{Int64,Int64}}()
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -322,6 +331,24 @@ Get the MPI communicator
 """
 function get_comm()
     return data["commMPi"]
+end
+
+"""
+    get_comm()
+
+Get the list of the connection between the surface and the node.
+
+"""
+function get_contact_connectivity()
+    return data["Contact Connectivity"]
+end
+"""
+    get_comm()
+
+Get list of surface nodes of a block.
+"""
+function get_contact_nodes()
+    return data["Contact Nodes"]
 end
 
 """
@@ -1151,19 +1178,19 @@ function get_damage_models()
 end
 
 """
-    loc_to_glob(range::UnitRange{Int64})
+    loc_to_glob(range::Union{UnitRange{Int64}, Vector{Int64}})
 
 Converts the local index to the global index.
 
 # Arguments
-- `range::UnitRange{Int64}`: The range of the local index.
+- `range::Union{UnitRange{Int64}, Vector{Int64}}`: The range of the local index.
 
 Example:
 ```julia
 loc_to_glob(1:10)  # converts the local index to the global index
 ```
 """
-function loc_to_glob(range::UnitRange{Int64})
+function loc_to_glob(range::Union{UnitRange{Int64},Vector{Int64}})
     return data["distribution"][range]
 end
 
