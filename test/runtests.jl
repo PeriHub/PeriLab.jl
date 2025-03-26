@@ -35,6 +35,9 @@ MPI.Init()
             @testset "ut_Arlequin" begin
                 include("unit_tests/FEM/Coupling/ut_Arlequin.jl")
             end
+            @testset "ut_Schwarz_coupling" begin
+                include("unit_tests/FEM/Coupling/ut_Schwarz_coupling.jl")
+            end
         end
         @testset "Compute" begin
             @testset "ut_compute_global_values" begin
