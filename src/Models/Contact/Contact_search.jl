@@ -4,7 +4,7 @@
 
 module Contact_search
 include("../../Support/Helpers.jl")
-using .Helpers: get_nearest_neighbors
+using .Helpers: get_nearest_neighbors, nearest_point_id
 using LazySets: convex_hull
 
 export init_contact
@@ -21,24 +21,25 @@ function compute_contact_pairs(datamanager, contact_params)
     datamanager.set_all_positions(all_positions)
     #-------------
 
-    near_points = find_potential_contact_pairs(datamanager, contact_params)
     master_nodes = datamanager.get_contact_nodes(contact_params["Master"])
     slave_nodes = datamanager.get_contact_nodes(contact_params["Slave"])
-    check_if_inside
-
-    #connectivity -> glob to local
-    # distance
-end
-
-function check_if_inside(masters, slaves, contact_dict)
-    #slaves => neigbhboorhoodlist
-    points_vec = [Vector{Float64}(row) for row in eachrow(slaves)]
-    poly = polyhedron(vrep(points_vec))
-    for master in masters
-        if master in poly
-            contact_dict[master] = slave
+    near_points = find_potential_contact_pairs(datamanager, contact_params)
+    connectivity = datamanager.get_contact_connectivity(contact_params["Slave"])
+    backend = CDDLib.Library()
+    points = Vector{Vector{Float64}}(eachrow(slave_nodes))
+    poly = polyhedron(vrep(points), backend)
+    normals = get_surface_normals(points)
+    for (master_node, slave_nodes) in pairs(near_points)
+        if !(master in poly)
+            continue
         end
+        id = nearest_point_id(all_positions[master_node, :], all_positions[slave_nodes, :])
+        contact_dict[master_node] = id
+        contact_normal[master_node] = normals[connectivity[id]]
+        # shortest
     end
+    datamanager.set_contact_pairs_and_normals(contact_dict, contact_normal)    #connectivity -> glob to local
+    # distance
 end
 
 function find_potential_contact_pairs(datamanager, contact_params)

@@ -42,6 +42,11 @@ export get_mapping
 export mat_mul_transpose_mat!
 export get_ring
 export get_hexagon
+export nearest_point_id
+
+function nearest_point_id(p, points)
+    return argmin(norm.(points .- Ref(p)))
+end
 
 function get_nearest_neighbors(nodes,
                                dof::Int64,

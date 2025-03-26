@@ -1,28 +1,29 @@
 ## Contact
 ## Contact Search
 
+| Parameter | Unit | Description |
+|---|---|---|
+|Search Radius | $[m]$| Radius to get a list of potential contact pairs.|
+|Master| $[-]$| Block ID of the master nodes. |
+|Slave | $[-]$| Block ID of the slave nodes.|
 **Initialization**
 
-Step 1
+- Step 1 -
 Identification of all surface nodes of contact blocks.
-
-Step 2
+- Step 2 -
 All surface nodes are stored in a list. This list exists at all cores with the current position of the surface nodes.
-
-Step 3
+- Step 3 -
 Connect each surface node to a geometrical surface.
 
 ---
 
 **Computation**
 
-Step 1
+- Step 1-
 Perform a nearest neighbor search with a user defined search radius. The result is a list of potential contact pairs.
-
-Step 2
+- Step 2 -
 The surfaces and the polyeder is updated, due to deformation and the surface normals can be computed.
-
-Step 3
+- Step 3 -
 Check if the master point lies inside the polyeder. If so connect this point with the surface normal and its nearest neighbor.
 
 ----
