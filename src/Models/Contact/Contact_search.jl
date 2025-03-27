@@ -5,7 +5,6 @@
 module Contact_search
 include("../../Support/Helpers.jl")
 using .Helpers: get_nearest_neighbors, nearest_point_id
-using LazySets: convex_hull
 
 export init_contact
 export compute_contact_pairs
