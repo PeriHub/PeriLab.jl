@@ -41,6 +41,7 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     fe_nodes = datamanager.get_field("FE Nodes")
     # Defines the coupling block elements as PD nodes with all features
     fe_nodes .= fe_nodes .& (block .!= fe_params["Coupling"]["Coupling Block"])
+    # neighborhood cleaning -> no FEM points outside the coupling block are allowed to be in the list
     return datamanager
 end
 
