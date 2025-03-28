@@ -25,6 +25,7 @@ export get_active_update_nodes
 export find_indices
 export find_inverse_bond_id
 export find_files_with_ending
+export get_block_nodes
 export matrix_style
 export get_fourth_order
 export interpolation
@@ -47,6 +48,25 @@ export nearest_point_id
 
 function nearest_point_id(p, points)
     return argmin(norm.(points .- Ref(p)))
+end
+
+"""
+    get_block_nodes(block_ids, nnodes)
+
+Returns a dictionary mapping block IDs to collections of nodes.
+
+# Arguments
+- `block_ids::Vector{Int64}`: A vector of block IDs
+- `nnodes::Int64`: The number of nodes
+# Returns
+- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
+"""
+function get_block_nodes(block_ids, nnodes)
+    block_nodes = Dict{Int64,Vector{Int64}}()
+    for i in unique(block_ids[1:nnodes])
+        block_nodes[i] = find_indices(block_ids[1:nnodes], i)
+    end
+    return block_nodes
 end
 
 function get_nearest_neighbors(nodes,

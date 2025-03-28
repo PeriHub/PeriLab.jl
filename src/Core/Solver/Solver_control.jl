@@ -16,7 +16,7 @@ using .Parameter_Handling:
                            get_angles,
                            get_block_names,
                            get_solver_params
-using .Helpers: find_indices, fastdot, check_inf_or_nan
+using .Helpers: fastdot, check_inf_or_nan, get_block_nodes
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
 include("Static_solver.jl")
@@ -140,25 +140,6 @@ function init(params::Dict,
 
     @debug "Finished Init Solver"
     return block_nodes, bcs, datamanager, solver_options
-end
-
-"""
-    get_block_nodes(block_ids, nnodes)
-
-Returns a dictionary mapping block IDs to collections of nodes.
-
-# Arguments
-- `block_ids::Vector{Int64}`: A vector of block IDs
-- `nnodes::Int64`: The number of nodes
-# Returns
-- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
-"""
-function get_block_nodes(block_ids, nnodes)
-    block_nodes = Dict{Int64,Vector{Int64}}()
-    for i in unique(block_ids[1:nnodes])
-        block_nodes[i] = find_indices(block_ids[1:nnodes], i)
-    end
-    return block_nodes
 end
 
 """
