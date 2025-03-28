@@ -53,7 +53,7 @@ end
     test_data_manager.initialize_data()
     test_data_manager.set_dof(2)
     test_data_manager.set_num_controller(4)
-    block_id = test_data_manager.create_field("Block_Id")
+    block_id = test_data_manager.create_field("Block_Id", Int64, 1)
     block_id .= 1
     contact_params = Dict()
     @test isnothing(init_contact_search(datamanager, contact_params))
