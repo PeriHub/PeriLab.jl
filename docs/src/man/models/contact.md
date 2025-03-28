@@ -15,6 +15,14 @@ All surface nodes are stored in a list. This list exists at all cores with the c
 - Step 3 -
 Connect each surface node to a geometrical surface.
 
+**List mapping**
+To fill the postion vector with the needed values mappings are needed.
+
+local point ids -> global point id -> reduced contact block point id
+The mapping has to be done in both directions, because the contact forces have to be applied to the local core point id.
+
+
+
 ---
 
 **Computation**
@@ -25,6 +33,11 @@ Perform a nearest neighbor search with a user defined search radius. The result 
 The surfaces and the polyeder is updated, due to deformation and the surface normals can be computed.
 - Step 3 -
 Check if the master point lies inside the polyeder. If so connect this point with the surface normal and its nearest neighbor.
+
+**Synchronization**
+All cores (except core 1) send it's displacement values to core 1. Core 1 sends them back.
+!!! note "Efficiency"
+    Smaller contact areas are more efficient in numerical analysis, because less synchronisation have to occur.
 
 ----
 

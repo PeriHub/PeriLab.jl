@@ -5,9 +5,69 @@
 module Contact_search
 include("../../Support/Helpers.jl")
 using .Helpers: get_nearest_neighbors, nearest_point_id
-
-export init_contact
+using CDDLib, Polyhedra
+export init_contact_search
 export compute_contact_pairs
+
+function init_contact_search(datamanager, contact_params)
+    ## block_nodes for all nodes!!!
+    if !haskey(contact_params, "Master")
+        @error "Contact model needs a ''Master''"
+        return nothing
+    end
+    if !haskey(contact_params, "Slave")
+        @error "Contact model needs a ''Slave''"
+        return nothing
+    end
+    if contact_params["Master"] == contact_params["Slave"]
+        @error "Contact master and slave are equal. Self contact is not implemented yet."
+        return nothing
+    end
+    block_id = datamanager.get_field("Block_Id")
+    if !(contact_params["Master"] in block_id)
+        @error "Block defintion in master does not exist."
+        return nothing
+    end
+    if !(contact_params["Slave"] in block_id)
+        @error "Block defintion in slave does not exist."
+        return nothing
+    end
+    if !haskey(contact_params, "Search Radius")
+        @error "Contact model needs a ''Search Radius''"
+        return nothing
+    end
+    # global list
+    @info "Contact search: Create global position array"
+    all_positions = datamanager.get_all_positions()
+    datamanager = datamanager.get_all_blocks()
+    define_contact_points_and_connectivity(datamanager, contact_params["Master"],
+                                           block_nodes)
+    define_contact_points_and_connectivity(datamanager, contact_params["Slave"],
+                                           block_nodes)
+    filter_all_positions(datamanager)
+    datamanager.set_all_positions()
+    datamanager.blocks()
+    @info "Contact search: Create local contact ids"
+    ## core create_module_specifics
+    # local node ides
+
+end
+
+function filter_all_positions(datamanager)
+    master = data
+end
+
+function create_local_contact_nodes()
+    #specifies the ids at core from the global contact nodes
+    datamanager.get_local_nodes(global_nodes)
+    datamanager.set_local_contact_nodes("Master")
+
+    datamanager.set_local_contact_nodes("Slave")
+end
+
+function create_local_exchange_ids(filtered_all_positions)
+    datamanager.get_local_nodes(filtered_all_positions)
+end
 
 function compute_contact_pairs(datamanager, contact_params)
     #synch_all_positions(datamanager)
@@ -82,45 +142,6 @@ function get_surface_normals(points::Union{Vector{Vector{Float64}},Vector{Vector
     return hrep_form.A
 end
 
-function init_contact(datamanager, contact_params, block_nodes)
-    ## block_nodes for all nodes!!!
-    if !haskey(contact_params, "Master")
-        @error "Contact model needs a ''Master''"
-        return nothing
-    end
-    if !haskey(contact_params, "Slave")
-        @error "Contact model needs a ''Slave''"
-        return nothing
-    end
-    if contact_params["Master"] == contact_params["Slave"]
-        @error "Contact master and slave are equal. Self contact is not implemented yet."
-        return nothing
-    end
-    block_id = datamanager.get_field("Block_Id")
-    if !(contact_params["Master"] in block_id)
-        @error "Block defintion in master does not exist."
-        return nothing
-    end
-    if !(contact_params["Slave"] in block_id)
-        @error "Block defintion in slave does not exist."
-        return nothing
-    end
-    if !haskey(contact_params, "Search Radius")
-        @error "Contact model needs a ''Search Radius''"
-        return nothing
-    end
-    # global list
-    all_positions = datamanager.get_all_positions()
-    datamanager = datamanager.get_all_blocks()
-    define_contact_points_and_connectivity(datamanager, contact_params["Master"],
-                                           block_nodes)
-    define_contact_points_and_connectivity(datamanager, contact_params["Slave"],
-                                           block_nodes)
-
-    datamanager.set_all_positions()
-    datamanager.blocks()
-end
-
 function synch_all_positions(datamanager)
     all_positions = datamanager.get_all_positions()
     deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
@@ -134,6 +155,7 @@ end
 function define_contact_points_and_connectivity(datamanager::Module, block_id::Int64,
                                                 block_nodes::Dict{Int64,Vector{Int64}})
     nlist = datamanager.get_nlist()
+    # falsch
     points = Vector{Vector{Float64}}(eachrow(block_nodes[block_id]))
     @views connectivity = get_surface_connectivity(points, nlist)
     datamanager.set_contact_connectivity(block_id, connectivity)

@@ -5,7 +5,7 @@
 include("../../../../src/Models/Contact/Contact_search.jl")
 # include("../../../../src/Core/Data_manager.jl")
 using Test
-using .Corrosion: get_surface_normals, get_surface_connectivity, init_contact
+using .Contact_search: get_surface_normals, get_surface_connectivity, init_contact_search
 @testset "ut_get_surface_normals" begin
     points_2D = [
         [0.0, 0.0],    # Unten links
@@ -56,13 +56,13 @@ end
     block_id = test_data_manager.create_field("Block_Id")
     block_id .= 1
     contact_params = Dict()
-    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
+    @test isnothing(init_contact_search(datamanager, contact_params))
     contact_params = Dict("Master" => 1)
-    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
+    @test isnothing(init_contact_search(datamanager, contact_params))
     contact_params = Dict("Master" => 1, "Slave" => 1)
-    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
+    @test isnothing(init_contact_search(datamanager, contact_params))
     contact_params = Dict("Master" => 1, "Slave" => 2)
-    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
+    @test isnothing(init_contact_search(datamanager, contact_params))
     block_id[2] = 2
-    @test isnothing(init_contact(datamanager, contact_params, Dict{Int64,Vector{Int64}}()))
+    @test isnothing(init_contact_search(datamanager, contact_params))
 end

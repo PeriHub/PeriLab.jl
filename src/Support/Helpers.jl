@@ -13,6 +13,7 @@ using LinearAlgebra
 using StaticArrays
 using LoopVectorization
 using Unitful
+using CDDLib, Polyhedra
 global A2x2 = MMatrix{2,2}(zeros(Float64, 2, 2))
 global A3x3 = MMatrix{3,3}(zeros(Float64, 3, 3))
 global A6x6 = MMatrix{6,6}(zeros(Float64, 6, 6))

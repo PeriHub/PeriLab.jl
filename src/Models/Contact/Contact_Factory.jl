@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Contact
-
+include("Contact_search.jl")
+using .Contact_search: init_contact_search
 include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "contact_model_name")
@@ -23,8 +24,9 @@ Initializes the contact model.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+function init_model(datamanager::Module, params, nodes::Union{SubArray,Vector{Int64}},
                     block::Int64)
+    init_contact_search(datamanager, params)
     return datamanager
 end
 
