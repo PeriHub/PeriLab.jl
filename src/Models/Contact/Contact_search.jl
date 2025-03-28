@@ -4,13 +4,12 @@
 
 module Contact_search
 include("../../Support/Helpers.jl")
-using .Helpers: get_nearest_neighbors, nearest_point_id
+using .Helpers: get_nearest_neighbors, nearest_point_id, get_block_nodes
 using CDDLib, Polyhedra
 export init_contact_search
 export compute_contact_pairs
 
 function init_contact_search(datamanager, contact_params)
-    ## block_nodes for all nodes!!!
     if !haskey(contact_params, "Master")
         @error "Contact model needs a ''Master''"
         return nothing
@@ -39,7 +38,8 @@ function init_contact_search(datamanager, contact_params)
     # global list
     @info "Contact search: Create global position array"
     all_positions = datamanager.get_all_positions()
-    datamanager = datamanager.get_all_blocks()
+    block_ids = datamanager.get_all_blocks()
+    block_nodes = get_block_nodes(block_ids, length(block_ids))
     define_contact_points_and_connectivity(datamanager, contact_params["Master"],
                                            block_nodes)
     define_contact_points_and_connectivity(datamanager, contact_params["Slave"],
@@ -137,7 +137,6 @@ end
 function get_surface_normals(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
     backend = CDDLib.Library()
     poly = polyhedron(vrep(points), backend)
-    MixedMatHRep(hr)
     hrep_form = MixedMatHRep(hrep(poly))
     return hrep_form.A
 end
