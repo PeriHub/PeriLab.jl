@@ -20,13 +20,22 @@ Initializes the contact model.
 # Arguments
 - `datamanager::Data_manager`: Datamanager
 - `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
-- `block::Int64`: Block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(datamanager::Module, params, nodes::Union{SubArray,Vector{Int64}},
-                    block::Int64)
-    init_contact_search(datamanager, params)
+function init_model(datamanager::Module, params, nodes::Union{SubArray,Vector{Int64}})
+    surface_nodes = fill(Vector{Int64}([]), length(params))
+    for (cm, contact_params) in enumerate(params)
+        init_contact_search(datamanager, contact_params, cm, surface_nodes)
+    end
+
+    #datamanager.create_constant_field("Contact IDs", Int64, ??)
+    # allnodes
+    # cm -> check if inside or not
+    #  reduce allnodes
+
+    # surface_nodes
+    # global ids; all nodes reduced global_id => local_id <=> contact_global
     return datamanager
 end
 

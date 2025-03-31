@@ -4,12 +4,15 @@
 
 module Contact_search
 include("../../Support/Helpers.jl")
-using .Helpers: get_nearest_neighbors, nearest_point_id, get_block_nodes
+using .Helpers: get_nearest_neighbors, nearest_point_id, get_block_nodes, compute_geometry,
+                point_is_inside, compute_surface_nodes, get_surface_information
 using CDDLib, Polyhedra
 export init_contact_search
 export compute_contact_pairs
 
-function init_contact_search(datamanager, contact_params)
+## for one contact pair
+
+function init_contact_search(datamanager, contact_params, cm, surface_nodes)
     if !haskey(contact_params, "Master")
         @error "Contact model needs a ''Master''"
         return nothing
@@ -39,18 +42,86 @@ function init_contact_search(datamanager, contact_params)
     @info "Contact search: Create global position array"
     all_positions = datamanager.get_all_positions()
     block_ids = datamanager.get_all_blocks()
-    block_nodes = get_block_nodes(block_ids, length(block_ids))
-    define_contact_points_and_connectivity(datamanager, contact_params["Master"],
-                                           block_nodes)
-    define_contact_points_and_connectivity(datamanager, contact_params["Slave"],
-                                           block_nodes)
-    filter_all_positions(datamanager)
-    datamanager.set_all_positions()
-    datamanager.blocks()
-    @info "Contact search: Create local contact ids"
-    ## core create_module_specifics
-    # local node ides
+    contact_block_nodes = get_block_nodes(block_ids, length(block_ids))
 
+    # define_contact_points_and_connectivity(datamanager, contact_params["Master"],
+    #                                        block_nodes)
+    # define_contact_points_and_connectivity(datamanager, contact_params["Slave"],
+    #                                        block_nodes)
+
+    # Polyhedra for the master block; can be 2D or 3D
+    poly_master = compute_geometry(all_positions[contact_block_nodes[contact_params["Master"]]])
+    # Polyhedra for the slave block; can be 2D or 3D
+    poly_slave = compute_geometry(all_positions[contact_block_nodes[contact_params["Slave"]]])
+    # filter
+    contact_block_nodes[contact_params["Master"]] = compute_surface_nodes(all_positions[contact_block_nodes[contact_params["Master"]]],
+                                                                          poly_master)
+    contact_block_nodes[contact_params["Slave"]] = compute_surface_nodes(all_positions[blocontact_block_nodesck_nodes[contact_params["Slave"]]],
+                                                                         poly_slave)
+    # global ids
+    surface_nodes[cm] = vcat(contact_block_nodes[contact_params["Master"]],
+                             contact_block_nodes[contact_params["Slave"]])
+    compute_contact_points_surface_connectivity(block_nodes[contact_params["Master"]],
+                                                datamanager,
+                                                contact_params["Master"], all_positions,
+                                                poly_master)
+    compute_contact_points_surface_connectivity(block_nodes[contact_params["Slave"]],
+                                                datamanager,
+                                                contact_params["Slave"], all_positions,
+                                                poly_master)
+    return datamanager
+end
+
+function compute_contact_points_surface_connectivity(datamanager::Module,
+                                                     block_id::Int64,
+                                                     block_nodes::Dict{Int64,Vector{Int64}},
+                                                     all_positions,
+                                                     poly)
+    nlist = datamanager.get_nlist()
+    @views connectivity = get_surface_connectivity(all_positions, block_nodes, nlist, poly)
+    datamanager.set_contact_connectivity(block_id, connectivity)
+    datamanager.set_contact_nodes(block_id, collect(keys(connectivity)))
+end
+
+"""
+    function get_surface_connectivity(points::Union{Vector{Vector{Float64}}, Vector{Vector{Int64}}}, surface_nodes,  nlist, poly)
+
+Identifies the surfaces which are not connected with other surfaces. These nodes are used for the near neighbor search. It is checked if the neighbors are outside the block. This leads to the issue that at boundary edges points lying at the surface are not considered.
+
+!!! info "limitations"
+    This might have limitations if non plane surfaces are used.
+
+
+# Arguments
+- `points::Union{Vector{Vector{Float64}}, Vector{Vector{Int64}}}`: All point coordinates.
+- `surface_nodes::Dict{Int64, Int64}`: dictionary mapping contact block information to the surface nodes of that block.
+- `nlist::Vector{Vector{Int64}}`: Neighborhoodlist
+- `poly`: Polyhedra object 2D or 3D
+# Returns
+- `connections::Dict{Int64,Vector{Int64}}`: connections of the surface node with outer surface
+"""
+function get_surface_connectivity(points::Union{Vector{Vector{Float64}},
+                                                Vector{Vector{Int64}}},
+                                  surface_nodes::Dict{Int64,Int64},
+                                  nlist,
+                                  poly)
+    # H-Rep abrufen (Facetten als a⋅x ≤ b)
+
+    normals, offsets = get_surface_information(poly)
+    connections = Dict{Int64,Int64}()
+    msg = true
+    for (iID, point) in surface_nodes
+        for surface_id in eachindex(offsets)
+            # check to which surface the point is connected && check if all neighbors are inside the block.
+            if isapprox(dot(point, normals[surface_id, :]) - offsets[surface_id], 0;
+                        atol = 1e-6) &&
+               !check_neighbor_position(poly, points, nlist[iID], msg)
+                break
+            end
+            connections[iID] = surface_id
+        end
+    end
+    return connections
 end
 
 function filter_all_positions(datamanager)
@@ -135,10 +206,11 @@ end
 ## dann funktion aus den ueberlappenden horizonten machen -> bool aus hull
 
 function get_surface_normals(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
-    backend = CDDLib.Library()
-    poly = polyhedron(vrep(points), backend)
-    hrep_form = MixedMatHRep(hrep(poly))
-    return hrep_form.A
+    return MixedMatHRep(hrep(polyhedron(vrep(points), CDDLib.Library())))
+end
+
+function get_surface_normals(poly)
+    return MixedMatHRep(hrep(poly)).A
 end
 
 function synch_all_positions(datamanager)
@@ -151,62 +223,4 @@ function synch_all_positions(datamanager)
     datamanager.set_all_positions(all_positions)
 end
 
-function define_contact_points_and_connectivity(datamanager::Module, block_id::Int64,
-                                                block_nodes::Dict{Int64,Vector{Int64}})
-    nlist = datamanager.get_nlist()
-    # falsch
-    points = Vector{Vector{Float64}}(eachrow(block_nodes[block_id]))
-    @views connectivity = get_surface_connectivity(points, nlist)
-    datamanager.set_contact_connectivity(block_id, connectivity)
-    datamanager.set_contact_nodes(block_id, collect(keys(connectivity)))
-end
-
-"""
-function get_surface_connectivity(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
-
-This function finds the point, surface cobination. However, no edge or corner nodes are included, because there are no unique normals. Only block outer surfaces will be found
-
-!!! info "limitations"
-    This might have limitations if non plane surfaces are used.
-
-"""
-function get_surface_connectivity(points::Union{Vector{Vector{Float64}},
-                                                Vector{Vector{Int64}}}, nlist)
-    backend = CDDLib.Library()
-    poly = polyhedron(vrep(points), backend)
-    # H-Rep abrufen (Facetten als a⋅x ≤ b)
-    hrep_form = MixedMatHRep(hrep(poly))
-    normals = hrep_form.A
-    offsets = hrep_form.b
-    connections = Dict{Int64,Int64}()
-    msg = true
-    for (iID, point) in enumerate(points)
-        for id in eachindex(normals[:, 1])
-            if abs(dot(normals[id, :], point) - offsets[id]) < 1e-6
-                if !check_neighbor_position(poly, points, nlist[iID], msg)
-                    break
-                end
-                if haskey(connections, iID)
-                    delete!(connections, iID)
-                    break
-                end
-                connections[iID] = id
-            end
-        end
-    end
-    return connections
-end
-
-function check_neighbor_position(poly, points, nlist::Vector{Int64}, msg::Bool)
-    for nID in nlist
-        if !(points[nID] in poly)
-            if msg
-                msg = false
-                @warn "Make sure that your contact block is large enough. If it is surrounded by non contact blocks some of the points near the edgdes are ignored."
-            end
-            return false
-        end
-    end
-    return true
-end
 end

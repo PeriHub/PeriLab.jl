@@ -20,6 +20,7 @@ global A6x6 = MMatrix{6,6}(zeros(Float64, 6, 6))
 
 export qdim
 export check_inf_or_nan
+export compute_geometry
 export find_active_nodes
 export get_active_update_nodes
 export find_indices
@@ -45,6 +46,55 @@ export mat_mul_transpose_mat!
 export get_ring
 export get_hexagon
 export nearest_point_id
+
+function compute_geometry(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
+    #return polyhedron(vrep(points), CDDLib.Library())
+    return polyhedron(vrep(points))
+end
+
+function compute_surface_nodes(points, poly)
+    facets = get_hull_facets(poly)
+
+    surface_nodes = []
+    for (pID, pcoor) in enumerate(points)
+        for id in eachindex(facets.b)
+            if isapprox(dot(facets.A[id, :], pcoor) - facets.b[id], 0; atol = 1e-6)
+                append!(surface_nodes, pID)
+                break
+            end
+        end
+    end
+    return surface_nodes
+end
+
+function get_surface_normals(poly)
+    return MixedMatHRep(hrep(poly)).A
+end
+
+function get_surface_offset(poly)
+    return MixedMatHRep(hrep(poly)).A
+end
+
+function get_surface_information(poly)
+    return get_surface_normals(poly), get_surface_offset(poly)
+end
+
+function check_neighbor_position(poly, points, nlist::Vector{Int64}, msg::Bool)
+    for nID in nlist
+        if !point_is_inside(points[nID, :], poly)
+            if msg
+                msg = false
+                @warn "Make sure that your contact block is large enough. If it is surrounded by non contact blocks some of the points near the edgdes are ignored."
+            end
+            return false
+        end
+    end
+    return true
+end
+
+function point_is_inside(point, poly)
+    return point in poly
+end
 
 function nearest_point_id(p, points)
     return argmin(norm.(points .- Ref(p)))
