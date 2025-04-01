@@ -1,7 +1,7 @@
 name = "PeriLab"
 uuid = "2ecefcea-59f0-46dd-9cfd-1d2b8cc5f112"
 authors = ["Christian Willberg <christian.willberg@dlr.de>", "Jan-Timo Hesse <jan-timo.hesse@dlr.de>"]
-version = "1.3.6"
+version = "1.3.7"
 
 [deps]
 AbaqusReader = "bc6b9049-e460-56d6-94b4-a597b2c0390d"
