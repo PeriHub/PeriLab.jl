@@ -13,31 +13,7 @@ export compute_contact_pairs
 ## for one contact pair
 
 function init_contact_search(datamanager, contact_params, cm, surface_nodes)
-    if !haskey(contact_params, "Master")
-        @error "Contact model needs a ''Master''"
-        return nothing
-    end
-    if !haskey(contact_params, "Slave")
-        @error "Contact model needs a ''Slave''"
-        return nothing
-    end
-    if contact_params["Master"] == contact_params["Slave"]
-        @error "Contact master and slave are equal. Self contact is not implemented yet."
-        return nothing
-    end
-    block_id = datamanager.get_field("Block_Id")
-    if !(contact_params["Master"] in block_id)
-        @error "Block defintion in master does not exist."
-        return nothing
-    end
-    if !(contact_params["Slave"] in block_id)
-        @error "Block defintion in slave does not exist."
-        return nothing
-    end
-    if !haskey(contact_params, "Search Radius")
-        @error "Contact model needs a ''Search Radius''"
-        return nothing
-    end
+
     # global list
     @info "Contact search: Create global position array"
     all_positions = datamanager.get_all_positions()
