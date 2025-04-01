@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../../src/Models/Contact/Contact_search.jl")
+include("../../../src/Models/Contact/Contact_search.jl")
 # include("../../../../src/Core/Data_manager.jl")
 using Test
 using .Contact_search: get_surface_normals, get_surface_connectivity, init_contact_search
