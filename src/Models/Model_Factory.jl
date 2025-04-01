@@ -9,6 +9,7 @@ using .Helpers:
                 check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
                 determinant
 include("./Surface_correction/Surface_correction.jl")
+include("./Contact/Contact_Factory.jl")
 include("./Additive/Additive_Factory.jl")
 include("./Corrosion/Corrosion_Factory.jl")
 include("./Damage/Damage_Factory.jl")
@@ -26,6 +27,7 @@ using .Material
 using .Pre_Calculation
 using .Surface_correction: init_surface_correction, compute_surface_correction
 using .Thermal
+using .Contact_Factory
 # in future FEM will be outside of the Model_Factory
 using .FEM
 using TimerOutputs
@@ -136,7 +138,15 @@ function init_models(params::Dict,
         datamanager.create_node_field("von Mises Stress", Float64, 1)
     end
 
+    datamanager = check_contact(datamanager, params)
     @info "Finalize Init Models"
+    return datamanager
+end
+
+function check_contact(datamanager::Module, params::Dict)
+    if haskey(params, "Contact")
+        return Contact_Factory.init_contact_model(datamanager, params["Contact"])
+    end
     return datamanager
 end
 
@@ -476,7 +486,6 @@ Includes the models in the datamanager and checks if the model definition is cor
 - `datamanager::Module`: Datamanager
 """
 function add_model(datamanager::Module, model_name::String, all::Bool = false)
-    # TODO test missing
     try
         # to catch "Pre_Calculation"
         datamanager.add_active_model(replace(model_name, "_" => " ") * " Model",

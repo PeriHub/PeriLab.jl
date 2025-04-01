@@ -2,15 +2,16 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Contact
+module Contact_Factory
+using TimerOutputs
 include("Contact_search.jl")
 using .Contact_search: init_contact_search
 include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "contact_model_name")
 Set_modules.include_files(module_list)
-export init_model
-export compute_model
+export init_contact_model
+export compute_contact_model
 
 """
     init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
@@ -23,9 +24,35 @@ Initializes the contact model.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(datamanager::Module, params, nodes::Union{SubArray,Vector{Int64}})
+function init_contact_model(datamanager::Module, params)
+    @info "Init Contact Model"
     surface_nodes = fill(Vector{Int64}([]), length(params))
-    for (cm, contact_params) in enumerate(params)
+    for (cm, contact_params) in pairs(params)
+        if !haskey(contact_params, "Master")
+            @error "Contact model needs a ''Master''"
+            return nothing
+        end
+        if !haskey(contact_params, "Slave")
+            @error "Contact model needs a ''Slave''"
+            return nothing
+        end
+        if contact_params["Master"] == contact_params["Slave"]
+            @error "Contact master and slave are equal. Self contact is not implemented yet."
+            return nothing
+        end
+        block_id = datamanager.get_field("Block_Id")
+        if !(contact_params["Master"] in block_id)
+            @error "Block defintion in master does not exist."
+            return nothing
+        end
+        if !(contact_params["Slave"] in block_id)
+            @error "Block defintion in slave does not exist."
+            return nothing
+        end
+        if !haskey(contact_params, "Search Radius")
+            @error "Contact model needs a ''Search Radius''"
+            return nothing
+        end
         init_contact_search(datamanager, contact_params, cm, surface_nodes)
     end
 
