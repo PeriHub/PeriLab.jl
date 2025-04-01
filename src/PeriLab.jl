@@ -53,7 +53,6 @@ using StyledStrings
 const to = TimerOutput()
 using .Data_manager
 
-# import PrecompileTools
 import .Logging_module
 import .IO
 import .Solver_control
@@ -407,9 +406,5 @@ function main(filename::String;
     end
     @info "PeriLab finished"
 end
-
-# PrecompileTools.@compile_workload begin
-#     main("examples/Small/Input.yaml"; silent=true)
-# end
 
 end # module
