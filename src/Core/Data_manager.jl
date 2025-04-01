@@ -98,7 +98,7 @@ function set_all_blocks(all_blocks)
     data["All Blocks"] = all_blocks
 end
 
-function get_all_blocks(all_blocks)
+function get_all_blocks()
     return data["All Blocks"]
 end
 
