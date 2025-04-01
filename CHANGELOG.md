@@ -8,6 +8,22 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.6] - 2025-04-01
+
+### Added
+
+- [SciML Style](https://github.com/SciML/SciMLStyle)
+- Reference temperature for the thermal expansion model #252
+- Thermal expasion is now also usable with the static solver #248
+
+### Fixed
+
+- Static solver for multistep simulation
+
+### Changed
+
+- Neighborhood search is merged into the 'get_nearest_neighbors' function
+
 ## [1.3.5] - 2025-03-19
 
 ### Added
