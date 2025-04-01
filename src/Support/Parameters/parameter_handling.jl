@@ -710,6 +710,11 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                                Int64},
                                                                                                          false
                                                                                                      ],
+                                                                                                     "Reference Temperature" => [
+                                                                                                         Union{Float64,
+                                                                                                               Int64},
+                                                                                                         false
+                                                                                                     ],
                                                                                                      "Thermal Conductivity Print Bed" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},

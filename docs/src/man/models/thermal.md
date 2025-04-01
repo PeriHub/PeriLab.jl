@@ -7,6 +7,7 @@ The list shows the three main model, thermal expansion, thermal flow and heat tr
 | Type                          | ✔️ | ✔️ | ✔️ |
 | Heat Transfer Coefficient     | ✔️ | ✔️ | ✔️ |
 | Environmental Temperature     | ✔️ | ✔️ | ✔️ |
+| Reference Temperature         | ✔️ |  |  |
 | Thermal Conductivity          |                   |              | ✔️ |
 | Thermal Expansion Coefficient | ✔️ |              |               |
 | Thermal Conductivity Print Bed|                   |              | ✔️ |
@@ -26,6 +27,7 @@ Calculates the thermal expansion of the material.
 | Parameter | Unit | Description |
 |---|---|---|
 |Thermal Expansion Coefficient | $\left[1/K\right]$| [Thermal expansion](https://en.wikipedia.org/wiki/Thermal_expansion) can be a $3\times3$ matrix. |
+|Reference Temperature | $[°K]$ | Reference temperature for the thermal expansion coefficient.
 
 !!! info "Thermal expansion"
     PeriLab supports currently only isotropic thermal expansion.

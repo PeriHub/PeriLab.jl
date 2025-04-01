@@ -15,7 +15,6 @@ PeriLab:
       Thermal test:
         Thermal Model: "Heat Transfer"
         Type: "Bond based"
-        Thermal Expansion Coefficient: 0.22
         Specific Heat Capacity: 1
         Required Specific Volume: 1.1
         Heat Transfer Coefficient: 2000.0

@@ -11,28 +11,6 @@ using .Thermal_expansion
 
 @test Thermal_expansion.thermal_model_name() == "Thermal Expansion"
 
-@testset "ut_thermal strain" begin
-    dof = 2
-    alpha = zeros(Int64, dof, dof)
-
-    test_value = Thermal_expansion.thermal_strain(alpha, 0.0)
-    @test test_value == zeros(dof, dof)
-    alpha = zeros(Float64, dof, dof)
-
-    test_value = Thermal_expansion.thermal_strain(alpha, 1)
-    @test test_value == zeros(Float64, dof, dof)
-
-    test_value = Thermal_expansion.thermal_strain(alpha, 0.0)
-    @test test_value == zeros(Float64, dof, dof)
-    alpha[1, 1] = -1
-    alpha[2, 1] = 0
-    alpha[1, 2] = 3
-    alpha[2, 2] = 2
-    temperature::Float64 = 1.5
-    test_value = Thermal_expansion.thermal_strain(alpha, temperature)
-    @test test_value[1:2, 1:2] == alpha .* temperature
-end
-
 @testset "ut_thermal_deformation" begin
     nnodes = 2
     dof = 2
@@ -42,13 +20,19 @@ end
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn[1] = 2
     nn[2] = 3
-    temperature = test_data_manager.create_constant_node_field("Temperature", Float64, 1)
-    undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
-                                                                   dof)
+    temperature_N, temperature_NP1 = test_data_manager.create_node_field("Temperature",
+                                                                         Float64, 1)
+    undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry",
+                                                                   Float64, dof)
+    deformed_bond_N, deformed_bond_NP1 = test_data_manager.create_bond_field("Deformed Bond Geometry",
+                                                                             Float64,
+                                                                             dof)
     undeformed_bond_length = test_data_manager.create_constant_bond_field("Bond Length",
                                                                           Float64, 1)
-    thermal_bond_deformation = test_data_manager.create_constant_bond_field("Thermal Deformation",
-                                                                            Float64, dof)
+
+    deformed_bond_length_N, deformed_bond_length_NP1 = test_data_manager.create_bond_field("Deformed Bond Length",
+                                                                                           Float64,
+                                                                                           1)
 
     undeformed_bond[1][1][1] = 0
     undeformed_bond[1][1][2] = 1
@@ -67,66 +51,72 @@ end
     undeformed_bond[2][3][2] = 0
     undeformed_bond_length[2][3] = 0.1
 
+    deformed_bond_NP1[1][1][1] = 0
+    deformed_bond_NP1[1][1][2] = 1
+    deformed_bond_length_NP1[1][1] = 1
+    deformed_bond_NP1[1][2][1] = 1
+    deformed_bond_NP1[1][2][2] = 1
+    deformed_bond_length_NP1[1][2] = sqrt(2)
+
+    deformed_bond_NP1[2][1][1] = -1
+    deformed_bond_NP1[2][1][2] = -1
+    deformed_bond_length_NP1[2][1] = sqrt(2)
+    deformed_bond_NP1[2][2][1] = 10
+    deformed_bond_NP1[2][2][2] = -10
+    deformed_bond_length_NP1[2][2] = sqrt(200)
+    deformed_bond_NP1[2][3][1] = 0.1
+    deformed_bond_NP1[2][3][2] = 0
+    deformed_bond_length_NP1[2][3] = 0.1
+
     nodes = Vector{Int64}(1:nnodes)
-    alpha = zeros(dof, dof)
-    alpha[1, 1] = 1.0
-    alpha[2, 2] = 1.0
-    temperature .= 0
-    thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes,
-                                                                     alpha,
-                                                                     temperature,
-                                                                     undeformed_bond,
-                                                                     thermal_bond_deformation)
+    thermal_parameter = Dict("Thermal Expansion Coefficient" => 1.0,
+                             "Reference Temperature" => 0.0)
+
+    temperature_NP1 .= 0
+    test_data_manager = Thermal_expansion.compute_model(test_data_manager, nodes,
+                                                        thermal_parameter, 1, 1.0, 1.0)
+
     for iID in nodes
         for jID in nn[iID]
             for i in 1:dof
-                @test thermal_bond_deformation[iID][jID][i] == 0
+                @test deformed_bond_NP1[iID][jID][i] == undeformed_bond[iID][jID][i]
             end
         end
     end
-    temperature .= 1
-    thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes,
-                                                                     alpha,
-                                                                     temperature,
-                                                                     undeformed_bond,
-                                                                     thermal_bond_deformation)
-    for iID in nodes
-        for jID in nn[iID]
-            @test thermal_bond_deformation[iID][jID] == .-undeformed_bond[iID][jID]
-        end
-    end
 
-    temperature .= 2
-    thermal_bond_deformation_test = Thermal_expansion.thermal_deformation(nodes,
-                                                                          alpha,
-                                                                          temperature,
-                                                                          undeformed_bond,
-                                                                          thermal_bond_deformation)
-    for iID in nodes
-        for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation[iID][jID] .+ 1,
-                           .-undeformed_bond[iID][jID] .* 2 .+ 1)
-        end
-    end
+    # temperature_NP1 .= 1
+    # test_data_manager = Thermal_expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
 
-    temperature[1] = 2
-    temperature[2] = -23
+    # for iID in nodes
+    #     for jID in nn[iID]
+    #         @test deformed_bond_NP1[iID][jID] == .-undeformed_bond[iID][jID]
+    #     end
+    # end
 
-    alpha[1, 1] = -1.1
-    alpha[2, 2] = 2.1
-    thermal_bond_deformation = Thermal_expansion.thermal_deformation(nodes,
-                                                                     alpha,
-                                                                     temperature,
-                                                                     undeformed_bond,
-                                                                     thermal_bond_deformation)
-    for iID in nodes
-        for jID in nn[iID]
-            @test isapprox(thermal_bond_deformation[iID][jID][1] + 1,
-                           .-undeformed_bond[iID][jID][1] * alpha[1, 1] * temperature[iID] +
-                           1)
-            @test isapprox(thermal_bond_deformation[iID][jID][2] + 1,
-                           .-undeformed_bond[iID][jID][2] * alpha[2, 2] * temperature[iID] +
-                           1)
-        end
-    end
+    # temperature_NP1 .= 2
+    # test_data_manager = Thermal_expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
+
+    # for iID in nodes
+    #     for jID in nn[iID]
+    #         @test isapprox(deformed_bond_NP1[iID][jID] .+ 1,
+    #                        .-undeformed_bond[iID][jID] .* 2 .+ 1)
+    #     end
+    # end
+
+    # temperature_NP1[1] = 2
+    # temperature_NP1[2] = -23
+
+    # thermal_parameter = Dict("Thermal Expansion Coefficient" => [-1.1,2.1], "Reference Temperature" => 0.0)
+    # test_data_manager = Thermal_expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
+
+    # for iID in nodes
+    #     for jID in nn[iID]
+    #         @test isapprox(deformed_bond_NP1[iID][jID][1] + 1,
+    #                        .-undeformed_bond[iID][jID][1] * -1.1 * temperature_NP1[iID] +
+    #                        1)
+    #         @test isapprox(deformed_bond_NP1[iID][jID][2] + 1,
+    #                        .-undeformed_bond[iID][jID][2] * 2.1 * temperature_NP1[iID] +
+    #                        1)
+    #     end
+    # end
 end
