@@ -52,6 +52,9 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 function init_model(datamanager::Module,
                     nodes::Union{SubArray,Vector{Int64}},
                     thermal_parameter::Dict)
+    if !haskey(thermal_parameter, "Reference Temperature")
+        @warn "No reference temperature defined. Assuming 0"
+    end
     return datamanager
 end
 
@@ -82,7 +85,10 @@ function compute_model(datamanager::Module,
     dof = datamanager.get_dof()
 
     alpha = thermal_parameter["Thermal Expansion Coefficient"]
-    ref_temp = thermal_parameter["Reference Temperature"]
+    ref_temp = 0.0
+    if haskey(thermal_parameter, "Reference Temperature")
+        ref_temp = thermal_parameter["Reference Temperature"]
+    end
 
     alpha_mat::Matrix{Float64} = @MMatrix zeros(Float64, dof, dof)
     if length(alpha) == 1
