@@ -18,8 +18,9 @@ function init_contact_search(datamanager, contact_params, cm, surface_nodes)
     @info "Contact search: Create global position array"
     all_positions = datamanager.get_all_positions()
     block_ids = datamanager.get_all_blocks()
+    println(block_ids, all_positions)
     contact_block_nodes = get_block_nodes(block_ids, length(block_ids))
-
+    println(contact_block_nodes)
     # define_contact_points_and_connectivity(datamanager, contact_params["Master"],
     #                                        block_nodes)
     # define_contact_points_and_connectivity(datamanager, contact_params["Slave"],
@@ -30,6 +31,7 @@ function init_contact_search(datamanager, contact_params, cm, surface_nodes)
     # Polyhedra for the slave block; can be 2D or 3D
     poly_slave = compute_geometry(all_positions[contact_block_nodes[contact_params["Slave"]]])
     # filter
+
     contact_block_nodes[contact_params["Master"]] = compute_surface_nodes(all_positions[contact_block_nodes[contact_params["Master"]]],
                                                                           poly_master)
     contact_block_nodes[contact_params["Slave"]] = compute_surface_nodes(all_positions[blocontact_block_nodesck_nodes[contact_params["Slave"]]],

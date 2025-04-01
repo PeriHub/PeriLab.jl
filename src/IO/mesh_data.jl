@@ -174,7 +174,7 @@ function create_and_distribute_bond_norm(comm::MPI.Comm,
 end
 
 function contact_basis(datamanager::Module, params::Dict, mesh::DataFrame)
-    if !haskey(params["Models"], "Contact")
+    if !haskey(params, "Contact")
         return datamanager
     end
     ## All coordinates and block Ids are stored at all cores. Reason is, that you might need them for self contact, etc.
@@ -183,10 +183,10 @@ function contact_basis(datamanager::Module, params::Dict, mesh::DataFrame)
         mesh_id = ["x", "y", "z"]
     end
 
-    points = Matrix(df[:,
-                       mesh_id])
-    blocks = Vector(df[:, "block_id"])
-    datamanager.set_all_coordinates(points)
+    points = Matrix(mesh[:,
+                         mesh_id])
+    blocks = Vector(mesh[:, "block_id"])
+    datamanager.set_all_positions(points)
     datamanager.set_all_blocks(blocks)
     return datamanager
 end
