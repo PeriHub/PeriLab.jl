@@ -150,6 +150,8 @@ function init_solver(solver_options::Dict{Any,Any},
             n = ls[2 * idof] - m * maximum(coor[:, idof])
             start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps
         end
+    else
+        start_u = datamanager.get_field("Start_Values")
     end
     check_inf_or_nan(start_u, "Start_Values")
     Boundary_conditions.find_bc_free_dof(datamanager, bcs)
