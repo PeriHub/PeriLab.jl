@@ -47,9 +47,33 @@ export get_ring
 export get_hexagon
 export nearest_point_id
 
-function compute_geometry(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
-    #return polyhedron(vrep(points), CDDLib.Library())
-    return polyhedron(vrep(points))
+"""
+     matrix_to_vector(mat::Union{Matrix{Float64},Matrix{Int64}})
+
+Transforming a matrix representation in a Vector{Vector} representation.
+
+# Arguments
+- `mat::Union{Matrix{Float64},Matrix{Int64}}`: Points which form the polyhedron.
+# Returns
+- ``: transformed data
+"""
+function matrix_to_vector(mat::Union{Matrix{Float64},Matrix{Int64}})
+    return [vec(mat[i, :]) for i in eachindex(axes(mat, 1))]
+end
+
+"""
+    compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
+
+Returns a polyhedron object in 2D or 3D. To do so the matrix form of storing the geometry is transfered in a Vector{Vector}. This form is than transformed in a V-representation of the Polyhedra.jl package.
+
+# Arguments
+- `points::Union{Matrix{Float64},Matrix{Int64}}`: Points which form the polyhedron.
+# Returns
+- ``: polyhedron
+"""
+
+function compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
+    return polyhedron(vrep(matrix_to_vector(points)))
 end
 
 function compute_surface_nodes(points, poly)
