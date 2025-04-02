@@ -26,7 +26,7 @@ Initializes the contact model.
 """
 function init_contact_model(datamanager::Module, params)
     @info "Init Contact Model"
-    surface_nodes = fill(Vector{Int64}([]), length(params))
+    surface_nodes = Dict()
     for (cm, contact_params) in pairs(params)
         if !haskey(contact_params, "Master")
             @error "Contact model needs a ''Master''"
