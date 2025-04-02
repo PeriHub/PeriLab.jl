@@ -27,6 +27,7 @@ PeriLab:
     Material Models:
       Mat_1:
         Material Model: "PD Solid Elastic"
+        Symmetry: "isotropic plane stress"
         Bulk Modulus: 2.5e+3
         Shear Modulus: 1.15e3
   Contact:
