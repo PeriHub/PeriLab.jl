@@ -76,13 +76,13 @@ function compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
     return polyhedron(vrep(matrix_to_vector(points)))
 end
 
-function compute_surface_nodes(points, poly)
-    surface = get_surface_information(poly)
+function compute_surface_nodes(points::Union{Matrix{Float64},Matrix{Int64}}, poly)
+    normals, offset = get_surface_information(poly)
 
     surface_nodes = []
-    for (pID, pcoor) in enumerate(points)
-        for id in eachindex(surface.b)
-            if isapprox(dot(surface.A[id, :], pcoor) - surface.b[id], 0; atol = 1e-6)
+    for pID in eachindex(points[:, 1])
+        for id in eachindex(offset)
+            if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
                 append!(surface_nodes, pID)
                 break
             end
