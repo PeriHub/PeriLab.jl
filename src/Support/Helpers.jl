@@ -77,12 +77,12 @@ function compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
 end
 
 function compute_surface_nodes(points, poly)
-    facets = get_hull_facets(poly)
+    surface = get_surface_information(poly)
 
     surface_nodes = []
     for (pID, pcoor) in enumerate(points)
-        for id in eachindex(facets.b)
-            if isapprox(dot(facets.A[id, :], pcoor) - facets.b[id], 0; atol = 1e-6)
+        for id in eachindex(surface.b)
+            if isapprox(dot(surface.A[id, :], pcoor) - surface.b[id], 0; atol = 1e-6)
                 append!(surface_nodes, pID)
                 break
             end
@@ -96,7 +96,7 @@ function get_surface_normals(poly)
 end
 
 function get_surface_offset(poly)
-    return MixedMatHRep(hrep(poly)).A
+    return MixedMatHRep(hrep(poly)).b
 end
 
 function get_surface_information(poly)
