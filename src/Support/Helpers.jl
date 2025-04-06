@@ -76,19 +76,23 @@ function compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
     return polyhedron(vrep(matrix_to_vector(points)))
 end
 
-function compute_surface_nodes(points::Union{Matrix{Float64},Matrix{Int64}}, poly)
+function compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Matrix{Int64}},
+                                               poly)
     normals, offset = get_surface_information(poly)
-
+    connections = Dict{Int64,Vector{Int64}}()
     surface_nodes = []
     for pID in eachindex(points[:, 1])
         for id in eachindex(offset)
             if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
+                if haskey(connections, pID)
+                    break
+                end
                 append!(surface_nodes, pID)
-                break
+                append!(connections[pID], id)
             end
         end
     end
-    return surface_nodes
+    return surface_nodes, connections
 end
 
 function get_surface_normals(poly)
@@ -122,6 +126,28 @@ end
 
 function nearest_point_id(p, points)
     return argmin(norm.(points .- Ref(p)))
+end
+
+"""
+    remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
+
+Remove multiple keys in a Vector from a Dict.
+
+# Arguments
+- `dict::Dict{Int64,Int64}`: Dictionary with ids
+- `numbers::Vector{Int64}`: Ids to remove
+# Returns
+updated dict
+"""
+
+function remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
+    for num in numbers
+        delete!(dict, num)
+    end
+end
+
+function remove_ids(vec::Vector{Int64}, numbers::Vector{Int64})
+    filter!(x -> !(x in numbers), vec)
 end
 
 """
