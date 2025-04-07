@@ -154,8 +154,9 @@ function initialize_data()
     data["All positions"] = []
     data["All Blocks"] = []
     data["Free Surfaces"] = Dict()
-    data["Free Surface Nodes Connections"] = Dict{Int64,Vector{Int64}}()
+    data["Free Surface Nodes Connections"] = Dict{Int64,Dict{Int64,Vector{Int64}}}()
     data["Free Surface Nodes"] = Dict{Int64,Vector{Int64}}()
+    data["Contact IDs"] = Vector{Int64}([])
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
