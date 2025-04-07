@@ -7,7 +7,7 @@ using MPI
 using DataStructures: OrderedDict
 include("../Support/Helpers.jl")
 using .Helpers: fill_in_place!
-
+include("./Data_manager/data_manager_contact.jl")
 export add_active_model
 export create_bond_field
 export create_constant_free_size_field
@@ -88,19 +88,6 @@ export synch_manager
 const fields = Dict()
 const data = Dict()
 ##########################
-function set_all_positions(all_coordinate)
-    data["All positions"] = all_coordinate
-end
-function get_all_positions()
-    return data["All positions"]
-end
-function set_all_blocks(all_blocks)
-    data["All Blocks"] = all_blocks
-end
-
-function get_all_blocks()
-    return data["All Blocks"]
-end
 
 """
     initialize_data()
@@ -166,6 +153,9 @@ function initialize_data()
     data["Contact Connectivity"] = Dict{Int64,Dict{Int64,Int64}}()
     data["All positions"] = []
     data["All Blocks"] = []
+    data["Free Surfaces"] = Dict()
+    data["Free Surface Nodes Connections"] = Dict{Int64,Vector{Int64}}()
+    data["Free Surface Nodes"] = Dict{Int64,Vector{Int64}}()
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -351,7 +341,7 @@ function get_contact_connectivity()
     return data["Contact Connectivity"]
 end
 """
-    get_comm()
+    get_contact_nodes()
 
 Get list of surface nodes of a block.
 """
