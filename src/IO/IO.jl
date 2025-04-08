@@ -782,13 +782,18 @@ function show_block_summary(solver_options::Dict,
             "Horizon"
         ]
     end
-    df = DataFrame([header => [] for header in headers])
     # tbd
     #types = [Int64, String, String, String, String, Float64, Float64, Int64]
     #df = DataFrame([header => Vector{t}() for (header, t) in zip(headers, types)])
     #---
     block_Id = datamanager.get_field("Block_Id")
     block_list = datamanager.get_block_list()
+
+    if datamanager.fem_active()
+        push!(headers, "PD/FEM")
+    end
+
+    df = DataFrame([header => [] for header in headers])
 
     for id in eachindex(block_list)
         row = [block_list[id]]
@@ -813,6 +818,15 @@ function show_block_summary(solver_options::Dict,
             # get number of nodes
             num_nodes = string(length(findall(x -> x == id, block_Id)))
             push!(row, num_nodes)
+        end
+
+        if datamanager.fem_active()
+            fem_block = get_fem_block(params, id)
+            if fem_block
+                push!(row, "FEM")
+            else
+                push!(row, "PD")
+            end
         end
         push!(df, row)
     end
