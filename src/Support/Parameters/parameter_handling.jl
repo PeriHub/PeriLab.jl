@@ -669,6 +669,47 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                      "State Factor ID" => [
                                                                                                          Int64,
                                                                                                          false
+                                                                                                     ],
+                                                                                                     "Accuracy Order" => [
+                                                                                                         Int64,
+                                                                                                         false
+                                                                                                     ],
+                                                                                                     "Flaw Function" => [
+                                                                                                         Dict{Any,
+                                                                                                              Any}("Active" => [
+                                                                                                                       Bool,
+                                                                                                                       true
+                                                                                                                   ],
+                                                                                                                   "Function" => [
+                                                                                                                       String,
+                                                                                                                       true
+                                                                                                                   ],
+                                                                                                                   "Flaw Size" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Flaw Magnitude" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Flaw Location X" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Flaw Location Y" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Flaw Location Z" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ]),
+                                                                                                         false
                                                                                                      ]),
                                                                                            true
                                                                                        ]),
