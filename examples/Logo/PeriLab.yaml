@@ -1,0 +1,86 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Input Mesh File: PeriLab.txt
+    Type: Text File
+    Node Sets:
+      Node Set 1: ns_PeriLab_1.txt
+      Node Set 2: ns_PeriLab_2.txt
+  Models:
+    Material Models:
+      Material:
+        Material Model: "Bond-based Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 7.0e+5
+        Poisson's Ratio: 0.34
+    Damage Models:
+      Damage:
+        Critical Value: 1e-5
+        Damage Model: Critical Energy
+      Damage_Logo:
+        Critical Value: 1e-6
+        Damage Model: Critical Energy
+  Boundary Conditions:
+    BC_1:
+      Coordinate: x
+      Node Set: Node Set 1
+      Variable: Displacements
+      Value: 0
+      Type: Dirichlet
+    BC_2:
+      Coordinate: x
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: 10*t
+      Type: Dirichlet
+    BC_3:
+      Coordinate: y
+      Node Set: Node Set 2
+      Variable: Displacements
+      Value: 10*t
+      Type: Dirichlet
+  Blocks:
+    block_1:
+      Block ID: 1
+      Density: 1.4e-8
+      Horizon: 0.35
+      Material Model: Material
+      Damage Model: Damage
+    block_2:
+      Block ID: 2
+      Density: 1.4e-8
+      Horizon: 0.35
+      Material Model: Material
+      Damage Model: Damage
+    block_3:
+      Block ID: 3
+      Density: 1.4e-8
+      Horizon: 0.35
+      Material Model: Material
+    block_4:
+      Block ID: 4
+      Density: 1.4e-8
+      Horizon: 0.35
+      Material Model: Material
+  Outputs:
+    Output:
+      Number of Output Steps: 200
+      Output File Type: Exodus
+      Output Filename: PeriLab
+      Flush File: true
+      Output Variables:
+        Damage: true
+        Displacements: true
+        Forces: true
+        Number of Neighbors: true
+  Solver:
+    Material Models: true
+    Damage Models: true
+    Final Time: 2.5e-5
+    Initial Time: 0.0
+    Verlet:
+      Safety Factor: 1.0
+      Numerical Damping: 0.0005

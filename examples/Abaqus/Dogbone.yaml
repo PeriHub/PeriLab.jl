@@ -13,6 +13,7 @@ PeriLab:
         Material Model: PD Solid Elastic
         Young's Modulus: 200000.0
         Poisson's Ratio: 0.34
+        Symmetry: isotropic plane stress
   Blocks:
     block_1:
       Block ID: 1
@@ -35,11 +36,13 @@ PeriLab:
       Node Set: Set-1
       Coordinate: x
       Value: 100*t
+      Type: Dirichlet
     Displacement-2:
       Variable: Displacements
       Node Set: Set-2
       Coordinate: x
       Value: 0
+      Type: Dirichlet
   Outputs:
     Output1:
       Output File Type: Exodus

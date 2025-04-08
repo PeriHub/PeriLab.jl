@@ -11,14 +11,17 @@ PeriLab:
       Horizon: 0.10808756666769913
       Material Model: mat_1
     block_10:
+      Block ID: 10
       Density: 2.78e-07
       Horizon: 0.10520909721162183
       Material Model: mat_10
     block_11:
+      Block ID: 11
       Density: 2.78e-07
       Horizon: 0.10534124295901504
       Material Model: mat_11
     block_12:
+      Block ID: 12
       Density: 2.78e-07
       Horizon: 0.10520909721162187
       Material Model: mat_12

@@ -63,16 +63,19 @@ PeriLab:
       Node Set: "Node Set 1"
       Coordinate: "y"
       Value: "-0.01*t"
+      Type: Dirichlet
     BC_2:
       Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "y"
       Value: "0.01*t"
+      Type: Dirichlet
     BC_3:
       Variable: "Displacements"
       Node Set: "Node Set 3"
       Coordinate: "x"
       Value: "0.05*t"
+      Type: Dirichlet
     BC_4:
       Variable: "Displacements"
       Node Set: "Node Set 4"

@@ -91,8 +91,8 @@ PeriLab:
         External_Displacement: true
         Cauchy Stress: true
         External_Force: true
-        Plastic Strain: True
-        von Mises Yield Stress: True
+        # Plastic Strain: True
+        # von Mises Yield Stress: True
     Output2:
       Number of Output Steps: 100
       Output File Type: CSV
