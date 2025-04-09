@@ -249,7 +249,6 @@ function run_solver(solver_options::Dict{Any,Any},
         datamanager = apply_bc_dirichlet(["Displacements", "Temperature"], bcs, datamanager,
                                          time,
                                          step_time + dt) #-> Dirichlet
-        temperatureNP1 = datamanager.get_field("Temperature", "NP1")
 
         sol = nlsolve((residual, U) -> residual!(residual,
                                                  U,
