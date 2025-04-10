@@ -214,12 +214,12 @@ end
 Initialize the damage models.
 
 # Arguments
-- `datamanager::Module`: The data manager module where the corrosion model will be initialized.
-- `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the corrosion model.
-- `block::Int64`: Block identifier for the corrosion model.
+- `datamanager::Module`: The data manager module where the degradation model will be initialized.
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the degradation model.
+- `block::Int64`: Block identifier for the degradation model.
 
 # Returns
-- `datamanager`: The modified data manager module with the initialized corrosion model.
+- `datamanager`: The modified data manager module with the initialized degradation model.
 
 # Example
 ```julia

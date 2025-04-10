@@ -264,17 +264,17 @@ end
                                        "Damage Models" => true,
                                        "Additive Models" => true,
                                        "Thermal Models" => true,
-                                       "Corrosion Models" => true))
+                                       "Degradation Models" => true))
     params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true,
                                                      "Damage Models" => true,
                                                      "Additive Models" => true,
                                                      "Thermal Models" => true,
-                                                     "Corrosion Models" => true),
+                                                     "Degradation Models" => true),
                                    "block_2" => Dict("Material Models" => true,
                                                      "Damage Models" => false,
                                                      "Additive Models" => false,
                                                      "Thermal Models" => false,
-                                                     "Corrosion Models" => false)))
+                                                     "Degradation Models" => false)))
     PeriLab.IO.show_block_summary(solver_options,
                                   params,
                                   "",

@@ -133,11 +133,6 @@ function compute_model(datamanager::Module,
     # isotropic; deviatoric; all
     weighted_volume = datamanager.get_field("Weighted Volume")
     theta = datamanager.get_field("Dilatation")
-    state_factor = nothing
-    if haskey(material_parameter, "State Factor ID")
-        state_factor = datamanager.get_field("State Variables")[:,
-                                                                material_parameter["State Factor ID"]]
-    end
 
     # optimizing, because if no damage it has not to be updated
     # TBD update_list should be used here as in shape_tensor.jl
@@ -158,18 +153,18 @@ function compute_model(datamanager::Module,
                                                weighted_volume,
                                                omega,
                                                theta)
-    @timeit to "elastic" bond_force_deviatoric_part, bond_force_isotropic_part=elastic(nodes,
-                                                                                       dof,
-                                                                                       undeformed_bond_length,
-                                                                                       deformed_bond_length,
-                                                                                       bond_damage,
-                                                                                       theta,
-                                                                                       weighted_volume,
-                                                                                       omega,
-                                                                                       material_parameter,
-                                                                                       bond_force_deviatoric_part,
-                                                                                       bond_force_isotropic_part,
-                                                                                       state_factor)
+    @timeit to "elastic" bond_force_deviatoric_part,
+                         bond_force_isotropic_part=elastic(nodes,
+                                                           dof,
+                                                           undeformed_bond_length,
+                                                           deformed_bond_length,
+                                                           bond_damage,
+                                                           theta,
+                                                           weighted_volume,
+                                                           omega,
+                                                           material_parameter,
+                                                           bond_force_deviatoric_part,
+                                                           bond_force_isotropic_part)
     add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
     @timeit to "get_bond_forces" bond_force=get_bond_forces(nodes, temp, deformed_bond,
                                                             deformed_bond_length,
@@ -211,23 +206,18 @@ function elastic(nodes::Union{SubArray,Vector{Int64}},
                  omega::Vector{Vector{Float64}},
                  material::Dict,
                  bond_force_deviatoric_part::Vector{Vector{Float64}},
-                 bond_force_isotropic_part::Vector{Vector{Float64}},
-                 state_factor::Union{Nothing,Vector{Float64}} = nothing)
+                 bond_force_isotropic_part::Vector{Vector{Float64}})
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
-
-    if !isnothing(state_factor)
-        shear_modulus .*= state_factor
-        bulk_modulus .*= state_factor
-    end
 
     symmetry::String = get_symmetry(material)
     # kappa::Float64 = 0
     # gamma::Float64 = 0
     # alpha::Float64 = 0
     if shear_modulus isa Float64
-        alpha, gamma, kappa = Ordinary.calculate_symmetry_params(symmetry, shear_modulus,
-                                                                 bulk_modulus)
+        alpha, gamma,
+        kappa = Ordinary.calculate_symmetry_params(symmetry, shear_modulus,
+                                                   bulk_modulus)
     end
     for iID in nodes
         # Calculate alpha and beta
@@ -235,9 +225,10 @@ function elastic(nodes::Union{SubArray,Vector{Int64}},
             continue
         end
         if !(shear_modulus isa Float64)
-            alpha, gamma, kappa = Ordinary.calculate_symmetry_params(symmetry,
-                                                                     shear_modulus[iID],
-                                                                     bulk_modulus[iID])
+            alpha, gamma,
+            kappa = Ordinary.calculate_symmetry_params(symmetry,
+                                                       shear_modulus[iID],
+                                                       bulk_modulus[iID])
         end
         #TODO: deviatoric_deformation needs allocationg, add temp field
         deviatoric_deformation = deformed_bond_length[iID] .- undeformed_bond_length[iID] .-

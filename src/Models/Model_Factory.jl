@@ -10,7 +10,7 @@ using .Helpers:
                 determinant
 include("./Surface_correction/Surface_correction.jl")
 include("./Additive/Additive_Factory.jl")
-include("./Corrosion/Corrosion_Factory.jl")
+include("./Degradation/Degradation_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
@@ -20,7 +20,7 @@ using .Parameter_Handling: get_model_parameter, get_heat_capacity
 # in future FEM will be outside of the Model_Factory
 include("../FEM/FEM_Factory.jl")
 using .Additive
-using .Corrosion
+using .Degradation
 using .Damage
 using .Material
 using .Pre_Calculation

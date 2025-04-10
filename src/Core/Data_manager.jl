@@ -122,7 +122,7 @@ function initialize_data()
                                          "Damage Model" => Dict(),
                                          "Thermal Model" => Dict(),
                                          "Pre Calculation Model" => Dict(),
-                                         "Corrosion Model" => Dict(),
+                                         "Degradation Model" => Dict(),
                                          "Additive Model" => Dict(),
                                          "Surface Correction" => Dict())
     data["filedirectory"] = ""
@@ -1198,8 +1198,8 @@ function init_properties()
                                                                                               Any}(),
                                                               "Thermal Model" => Dict{String,
                                                                                       Any}(),
-                                                              "Corrosion Model" => Dict{String,
-                                                                                        Any}(),
+                                                              "Degradation Model" => Dict{String,
+                                                                                          Any}(),
                                                               "Material Model" => Dict{String,
                                                                                        Any}())
     end

@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # include("../../../src/Core/Data_manager.jl")
-include("../../../src/Models/Corrosion/Corrosion_template/corrosion_template.jl")
+include("../../../src/Models/Degradation/Degradation_template/degradation_template.jl")
 include("../../../src/Models/Additive/Additive_template/additive_template.jl")
 include("../../../src/Models/Damage/Damage_template/damage_template.jl")
 include("../../../src/Models/Material/Material_template/material_template.jl")
@@ -34,15 +34,16 @@ test_data_manager.set_num_controller(3)
           test_data_manager
 end
 
-@testset "ut_corrosion_template" begin
-    @test Corrosion_template.corrosion_name() == "Corrosion Template"
-    @test Corrosion_template.compute_model(test_data_manager,
-                                           Vector{Int64}(1:3),
-                                           Dict(),
-                                           1,
-                                           0.0,
-                                           0.0) == test_data_manager
-    @test Corrosion_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(), 1) ==
+@testset "ut_degradation_template" begin
+    @test Degradation_template.degradation_name() == "Degradation Template"
+    @test Degradation_template.compute_model(test_data_manager,
+                                             Vector{Int64}(1:3),
+                                             Dict(),
+                                             1,
+                                             0.0,
+                                             0.0) == test_data_manager
+    @test Degradation_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict(),
+                                          1) ==
           test_data_manager
 end
 
@@ -97,41 +98,44 @@ end
                                              Dict(),
                                              1) == test_data_manager
 
-    dat, vec = Correspondence_template.compute_stresses(test_data_manager,
-                                                        1,
-                                                        2,
-                                                        Dict(),
-                                                        0.0,
-                                                        0.0,
-                                                        view([1, 2], :, :, :),
-                                                        view([1, 0], :, :, :),
-                                                        view([-1, 2.2], :, :, :))
+    dat,
+    vec = Correspondence_template.compute_stresses(test_data_manager,
+                                                   1,
+                                                   2,
+                                                   Dict(),
+                                                   0.0,
+                                                   0.0,
+                                                   view([1, 2], :, :, :),
+                                                   view([1, 0], :, :, :),
+                                                   view([-1, 2.2], :, :, :))
     @test dat == test_data_manager
     @test vec[1] == -1
     @test vec[2] == 2.2
 
-    dat, vec = Correspondence_template.compute_stresses(test_data_manager,
-                                                        1,
-                                                        2,
-                                                        Dict(),
-                                                        0.0,
-                                                        0.0,
-                                                        view([1, 2], :, :, :),
-                                                        view([1, 0], :, :, :),
-                                                        view([-1, 2.2], :, :, :),
-                                                        (1, 1))
+    dat,
+    vec = Correspondence_template.compute_stresses(test_data_manager,
+                                                   1,
+                                                   2,
+                                                   Dict(),
+                                                   0.0,
+                                                   0.0,
+                                                   view([1, 2], :, :, :),
+                                                   view([1, 0], :, :, :),
+                                                   view([-1, 2.2], :, :, :),
+                                                   (1, 1))
     @test dat == test_data_manager
     @test vec[1] == -1
     @test vec[2] == 2.2
 
-    vec, dat = Correspondence_template.compute_stresses(test_data_manager,
-                                                        2,
-                                                        Dict(),
-                                                        0.0,
-                                                        0.0,
-                                                        [1.0, 2.0],
-                                                        [1.0, 0.0],
-                                                        [-1.0, 2.2])
+    vec,
+    dat = Correspondence_template.compute_stresses(test_data_manager,
+                                                   2,
+                                                   Dict(),
+                                                   0.0,
+                                                   0.0,
+                                                   [1.0, 2.0],
+                                                   [1.0, 0.0],
+                                                   [-1.0, 2.2])
     @test dat == test_data_manager
     @test vec[1] == -1
     @test vec[2] == 2.2

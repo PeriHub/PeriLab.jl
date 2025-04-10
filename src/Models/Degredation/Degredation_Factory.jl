@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Corrosion
+module Degradation
 include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "corrosion_name")
+global module_list = Set_modules.find_module_files(@__DIR__, "degradation_name")
 Set_modules.include_files(module_list)
 using TimerOutputs
 export compute_model
@@ -32,7 +32,7 @@ end
 """
     compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
-Computes the corrosion models
+Computes the degradation models
 
 # Arguments
 - `datamanager::Module`: The datamanager
@@ -51,22 +51,22 @@ function compute_model(datamanager::Module,
                        time::Float64,
                        dt::Float64,
                        to::TimerOutput)
-    mod = datamanager.get_model_module(model_param["Corrosion Model"])
+    mod = datamanager.get_model_module(model_param["Degradation Model"])
     return mod.compute_model(datamanager, nodes, model_param, time, dt)
 end
 
 """
     init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
 
-Initialize a corrosion models.
+Initialize a degradation models.
 
 # Arguments
-- `datamanager::Module`: The data manager module where the corrosion model will be initialized.
-- `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the corrosion model.
-- `block::Int64`: Block identifier for the corrosion model.
+- `datamanager::Module`: The data manager module where the degradation model will be initialized.
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the degradation model.
+- `block::Int64`: Block identifier for the degradation model.
 
 # Returns
-- `datamanager`: The modified data manager module with the initialized corrosion model.
+- `datamanager`: The modified data manager module with the initialized degradation model.
 
 # Example
 ```julia
@@ -75,15 +75,16 @@ datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 """
 function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
                     block::Int64)
-    model_param = datamanager.get_properties(block, "Corrosion Model")
-    mod = Set_modules.create_module_specifics(model_param["Corrosion Model"],
+    model_param = datamanager.get_properties(block, "Degradation Model")
+    mod = Set_modules.create_module_specifics(model_param["Degradation Model"],
                                               module_list,
-                                              "corrosion_name")
+                                              "degradation_name")
     if isnothing(mod)
-        @error "No corrosion model of name " * model_param["Corrosion Model"] * " exists."
+        @error "No degradation model of name " * model_param["Degradation Model"] *
+               " exists."
         return nothing
     end
-    datamanager.set_model_module(model_param["Corrosion Model"], mod)
+    datamanager.set_model_module(model_param["Degradation Model"], mod)
     datamanager = mod.init_model(datamanager, nodes, model_param, block)
     return datamanager
 end
@@ -101,8 +102,8 @@ Defines all synchronization fields for local synchronization
 - `datamanager::Module`: Datamanager.
 """
 function fields_for_local_synchronization(datamanager, model, block)
-    model_param = datamanager.get_properties(block, "Corrosion Model")
-    mod = datamanager.get_model_module(model_param["Corrosion Model"])
+    model_param = datamanager.get_properties(block, "Degradation Model")
+    mod = datamanager.get_model_module(model_param["Degradation Model"])
 
     return mod.fields_for_local_synchronization(datamanager, model)
 end

@@ -4,39 +4,39 @@
 
 module Bondbased_Corrosion
 export compute_model
-export corrosion_name
+export degradation_name
 export init_model
 export fields_for_local_synchronization
 
 """
-    corrosion_name()
+    degradation_name()
 
-Gives the corrosion name. It is needed for comparison with the yaml input deck.
+Gives the degradation name. It is needed for comparison with the yaml input deck.
 
 # Arguments
 
 # Returns
-- `name::String`: The name of the bond-based corrosion model.
+- `name::String`: The name of the bond-based degradation model.
 
 Example:
 ```julia
-println(corrosion_name())
+println(degradation_name())
 "Bond-based Corrosion"
 ```
 """
-function corrosion_name()
+function degradation_name()
     return "Bond-based Corrosion"
 end
 
 """
-    compute_model(datamanager, nodes, corrosion_parameter, block::Int64, time, dt)
+    compute_model(datamanager, nodes, degradation_parameter, block::Int64, time, dt)
 
-Calculates the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the bond-based degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `corrosion parameter::Dict(String, Any)`: Dictionary with corrosion parameter.
+- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
@@ -47,7 +47,7 @@ Example:
 """
 function compute_model(datamanager::Module,
                        nodes::Union{SubArray,Vector{Int64}},
-                       corrosion_parameter::Dict,
+                       degradation_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
@@ -60,14 +60,14 @@ function compute_model(datamanager::Module,
 end
 
 """
-    init_model(datamanager, nodes, block::Int64, corrosion_parameter)
+    init_model(datamanager, nodes, block::Int64, degradation_parameter)
 
-Inits the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the bond-based degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `corrosion parameter::Dict(String, Any)`: Dictionary with corrosion parameter.
+- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
 - `block::Int64`: The current block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
@@ -75,7 +75,7 @@ Inits the bond-based corrosion model. This template has to be copied, the file r
 """
 function init_model(datamanager::Module,
                     nodes::Union{SubArray,Vector{Int64}},
-                    corrosion_parameter::Dict,
+                    degradation_parameter::Dict,
                     block::Int64)
     return datamanager
 end

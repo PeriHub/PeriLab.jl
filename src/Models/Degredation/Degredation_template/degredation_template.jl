@@ -2,40 +2,40 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Corrosion_template
+module Degradation_template
 export compute_model
-export corrosion_name
+export degradation_name
 export init_model
 export fields_for_local_synchronization
 """
-    corrosion_name()
+    degradation_name()
 
-Gives the corrosion name. It is needed for comparison with the yaml input deck.
+Gives the degradation name. It is needed for comparison with the yaml input deck.
 
 # Arguments
 
 # Returns
-- `name::String`: The name of the corrosion model.
+- `name::String`: The name of the degradation model.
 
 Example:
 ```julia
-println(corrosion_name())
-"Corrosion Template"
+println(degradation_name())
+"Degradation Template"
 ```
 """
-function corrosion_name()
-    return "Corrosion Template"
+function degradation_name()
+    return "Degradation Template"
 end
 
 """
-    compute_model(datamanager, nodes, corrosion_parameter, block::Int64, time, dt)
+    compute_model(datamanager, nodes, degradation_parameter, block::Int64, time, dt)
 
-Calculates the corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Calculates the degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `corrosion parameter::Dict(String, Any)`: Dictionary with corrosion parameter.
+- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
@@ -46,27 +46,27 @@ Example:
 """
 function compute_model(datamanager::Module,
                        nodes::Union{SubArray,Vector{Int64}},
-                       corrosion_parameter::Dict,
+                       degradation_parameter::Dict,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    @info "Please write a corrosion name in corrosion_name()."
+    @info "Please write a degradation name in degradation_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(datamanager, nodes, corrosion_parameter, time, dt) function."
-    @info "The datamanager and corrosion_parameter holds all you need to solve your problem on corrosion level."
+    @info "Fill the compute_model(datamanager, nodes, degradation_parameter, time, dt) function."
+    @info "The datamanager and degradation_parameter holds all you need to solve your problem on degradation level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
 end
 
 """
-    init_model(datamanager, nodes, corrosion_parameter)
+    init_model(datamanager, nodes, degradation_parameter)
 
-Inits the corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
-- `corrosion parameter::Dict(String, Any)`: Dictionary with corrosion parameter.
+- `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
 - `block::Int64`: The current block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
@@ -74,12 +74,12 @@ Inits the corrosion model. This template has to be copied, the file renamed and 
 """
 function init_model(datamanager::Module,
                     nodes::Union{SubArray,Vector{Int64}},
-                    corrosion_parameter::Dict,
+                    degradation_parameter::Dict,
                     block::Int64)
-    @info "Please write a corrosion name in corrosion_name()."
+    @info "Please write a degradation name in degradation_name()."
     @info "You can call your routine within the yaml file."
-    @info "Fill the compute_model(datamanager, nodes, corrosion_parameter, time, dt) function."
-    @info "The datamanager and corrosion_parameter holds all you need to solve your problem on corrosion level."
+    @info "Fill the compute_model(datamanager, nodes, degradation_parameter, time, dt) function."
+    @info "The datamanager and degradation_parameter holds all you need to solve your problem on degradation level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
 end

@@ -322,7 +322,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- Corrosion
+- Degradation
 - PrettyTables logging
 - Logging Datetime
 - MPI summary

@@ -1,5 +1,5 @@
 # Module integration
-If you want to integrate your own model check if it suits in one of the predefined classes material, damage, additive, thermal or corrosion. If so check the template folder.
+If you want to integrate your own model check if it suits in one of the predefined classes material, damage, additive, thermal or degradation. If so check the template folder.
 
 !!! info "Material Template"
     Materials have multiple templates, because the correspondence formulation allows additional options.

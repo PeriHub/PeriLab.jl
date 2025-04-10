@@ -125,9 +125,9 @@ MPI.Init()
                 end
             end
 
-            @testset "Corrosion" begin
-                @testset "ut_Corrosion_Factory" begin
-                    include("unit_tests/Models/Corrosion/ut_Corrosion_Factory.jl")
+            @testset "Degradation" begin
+                @testset "ut_Degradation_Factory" begin
+                    include("unit_tests/Models/Degradation/ut_Degradation_Factory.jl")
                 end
             end
             @testset "Thermal" begin
