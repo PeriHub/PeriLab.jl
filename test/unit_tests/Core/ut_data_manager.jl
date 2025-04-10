@@ -264,8 +264,9 @@ end
     @test size(test) == (5, 3, 3)
     test = test_data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
     @test size(test) == (5, 3, 3)
-    test, test2 = test_data_manager.create_free_size_field("Test_size_4", Float64,
-                                                           (3, 3, 1, 3))
+    test,
+    test2 = test_data_manager.create_free_size_field("Test_size_4", Float64,
+                                                     (3, 3, 1, 3))
     @test size(test) == (3, 3, 1, 3)
     @test size(test2) == (3, 3, 1, 3)
     @test "Test_size_4N" in test_data_manager.get_all_field_keys()
@@ -452,18 +453,18 @@ end
     @test nsets["N3"] == [1, 12]
 end
 
-@testset "ut_block_list" begin
-    test_data_manager.set_block_list(Vector{String}())
-    block_list = test_data_manager.get_block_list()
-    @test length(block_list) == 0
-    test_data_manager.set_block_list(["1", "2", "3", "4"])
-    block_list = test_data_manager.get_block_list()
-    @test length(block_list) == 4
-    @test block_list == ["1", "2", "3", "4"]
+@testset "ut_block_name_list" begin
+    test_data_manager.set_block_name_list(Vector{String}())
+    block_name_list = test_data_manager.get_block_name_list()
+    @test length(block_name_list) == 0
+    test_data_manager.set_block_name_list(["1", "2", "3", "4"])
+    block_name_list = test_data_manager.get_block_name_list()
+    @test length(block_name_list) == 4
+    @test block_name_list == ["1", "2", "3", "4"]
 end
 
 @testset "ut_properties" begin
-    test_data_manager.set_block_list(["2", "3", "1"])
+    test_data_manager.set_block_id_list([2, 3, 1])
     test_data_manager.init_properties()
     @test length(test_data_manager.data["properties"]) == 3
     @test isnothing(test_data_manager.get_property(1, "Material Model", "E"))

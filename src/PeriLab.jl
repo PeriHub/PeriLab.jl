@@ -62,13 +62,13 @@ PERILAB_VERSION = "1.3.7"
 export main
 
 """
-    print_banner()
+    print_banner(mpi)
 
 Prints a banner displaying information about the PeriLab application.
 
 This function prints a banner containing details about the PeriLab application, including its name, version, copyright, contact information, and license. It provides a visual introduction to the application.
 """
-function print_banner()
+function print_banner(mpi)
     line = []
     push!(line,
           styled"{bright_blue:PeriLab.                   }{bright_green:d8b} {bright_blue:888               888       }| {bold:Version}: {underline:$PERILAB_VERSION}")
@@ -92,7 +92,7 @@ function print_banner()
         num_of_chars = max(num_of_chars, length(l) - displaysize(stdout)[2])
     end
     for l in line
-        if num_of_chars == 0
+        if num_of_chars == 0 || mpi
             println(l)
         else
             println(split(l, "|")[1][1:(end - num_of_chars)] * "|" * split(l, "|")[2])
@@ -247,13 +247,14 @@ function main(filename::String;
             Logging_module.init_logging(filename, debug, silent, rank, size)
             if rank == 0
                 if !silent
-                    print_banner()
+                    print_banner(size>1)
                 end
                 @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n DOI: 10.1016/j.softx.2024.101700\n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
                 @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
                 try
-                    dirty, git_info = Logging_module.get_current_git_info(joinpath(@__DIR__,
-                                                                                   ".."))
+                    dirty,
+                    git_info = Logging_module.get_current_git_info(joinpath(@__DIR__,
+                                                                            ".."))
                     if dirty
                         @warn git_info
                     else
@@ -289,10 +290,11 @@ function main(filename::String;
                 @info "PeriLab started in the reload mode"
             end
             Data_manager.set_silent(silent)
-            @timeit to "IO.initialize_data" datamanager, params=IO.initialize_data(filename,
-                                                                                   filedirectory,
-                                                                                   Data_manager,
-                                                                                   comm, to)
+            @timeit to "IO.initialize_data" datamanager,
+                                            params=IO.initialize_data(filename,
+                                                                      filedirectory,
+                                                                      Data_manager,
+                                                                      comm, to)
 
             steps = get_solver_steps(params)
             datamanager.set_max_step(steps[end])
@@ -304,9 +306,12 @@ function main(filename::String;
                 datamanager.set_step(step_id)
                 @info "Init Solver"
                 @timeit to "Solver_control.init" block_nodes,
-                bcs,
-                datamanager,
-                solver_options=Solver_control.init(params, datamanager, to, step_id)
+                                                 bcs,
+                                                 datamanager,
+                                                 solver_options=Solver_control.init(params,
+                                                                                    datamanager,
+                                                                                    to,
+                                                                                    step_id)
                 if datamanager.get_current_time() >= solver_options["Final Time"]
                     @info "Step " * string(step_id) * " skipped."
                     continue
@@ -328,11 +333,12 @@ function main(filename::String;
                                     datamanager)
                 @debug "Init write results"
                 if isnothing(step_id) || step_id == 1
-                    @timeit to "IO.init_write_results" result_files, outputs=IO.init_write_results(params,
-                                                                                                   output_dir,
-                                                                                                   filedirectory,
-                                                                                                   datamanager,
-                                                                                                   PERILAB_VERSION)
+                    @timeit to "IO.init_write_results" result_files,
+                                                       outputs=IO.init_write_results(params,
+                                                                                     output_dir,
+                                                                                     filedirectory,
+                                                                                     datamanager,
+                                                                                     PERILAB_VERSION)
                     Logging_module.set_result_files(result_files)
                 end
                 IO.set_output_frequency(params,

@@ -30,7 +30,7 @@ test_data_manager.create_node_field("Displacements", Float64, 2)
 test_data_manager.create_node_field("Forces", Float64, 6)
 
 block_list = ["block_1", "block_2"]
-test_data_manager.set_block_list(block_list)
+test_data_manager.set_block_name_list(block_list)
 
 params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1,
                                                   "Flush File" => false,
@@ -95,8 +95,9 @@ block_Id[end] = 2
 end
 
 @testset "ut_init_write_result_and_write_results" begin
-    result_files, outputs = PeriLab.IO.init_write_results(params, "", "", test_data_manager,
-                                                          "1.0.0")
+    result_files,
+    outputs = PeriLab.IO.init_write_results(params, "", "", test_data_manager,
+                                            "1.0.0")
     @test length(result_files) == 3
     @test length(result_files[2]["file"].nodal_var_name_dict) == 6
     entries = collect(keys(result_files[2]["file"].nodal_var_name_dict))
@@ -177,14 +178,14 @@ end
 end
 
 # @testset "ut_show_block_summary" begin
-#     test_data_manager.set_block_list([1])
+#     test_data_manager.set_block_name_list([1])
 #     solver_options = Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)
 #     params = Dict("Blocks" => Dict("block_1" => Dict("Material Models" => true, "Damage Models" => true, "Additive Models" => true, "Thermal Models" => true)))
 #     PeriLab.IO.show_block_summary(solver_options, params, "test.log", comm, test_data_manager)
 # end
 
 # @testset "ut_show_mpi_summary" begin
-#     test_data_manager.set_block_list([1])
+#     test_data_manager.set_block_name_list([1])
 #     PeriLab.IO.show_mpi_summary("test.log", comm, test_data_manager)
 # end
 
@@ -258,7 +259,7 @@ end
     block_Id = test_data_manager.get_field("Block_Id")
     block_Id .+= 1
     block_Id[end] = 2
-    test_data_manager.set_block_list(["block_1", "block_2"])
+    test_data_manager.set_block_name_list(["block_1", "block_2"])
     solver_options = Dict("Models" => ("Material Models" => true,
                                        "Damage Models" => true,
                                        "Additive Models" => true,

@@ -152,7 +152,7 @@ function init_interface_crit_values(datamanager::Module,
     if !haskey(damage_parameter, "Interblock Damage")
         return datamanager
     end
-    max_block_id = length(datamanager.get_block_list())
+    max_block_id = maximum(datamanager.get_block_id_list())
     inter_critical_value = datamanager.get_crit_values_matrix()
     if inter_critical_value == fill(-1, (1, 1, 1))
         inter_critical_value = fill(Float64(damage_parameter["Critical Value"]),
@@ -162,7 +162,8 @@ function init_interface_crit_values(datamanager::Module,
         for block_jId in 1:max_block_id
             critical_value_name = "Interblock Critical Value $(block_iId)_$block_jId"
             if haskey(damage_parameter["Interblock Damage"], critical_value_name)
-                inter_critical_value[block_iId, block_jId, block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+                inter_critical_value[block_iId, block_jId,
+                                     block_id] = damage_parameter["Interblock Damage"][critical_value_name]
             end
         end
     end

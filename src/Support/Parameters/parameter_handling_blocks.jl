@@ -9,7 +9,7 @@ export get_horizon
 export get_angles
 
 """
-    get_block_names(params::Dict, block_ids::Vector{Int64})
+    get_block_names_and_ids(params::Dict, block_ids::Vector{Int64})
 
 Get the names of the blocks.
 
@@ -19,21 +19,25 @@ Get the names of the blocks.
 # Returns
 - `block_names::Vector{String}`: The names of the blocks.
 """
-function get_block_names(params::Dict, block_ids::Vector{Int64})
+function get_block_names_and_ids(params::Dict, block_ids::Vector{Int64}, mpi::Bool)
     param_block_ids = [v["Block ID"] for v in values(params["Blocks"])]
-    block_list = Vector{String}()
+    block_name_list = Vector{String}()
+    block_id_list = Vector{Int64}()
     for id in 1:maximum(param_block_ids)
         if !(id in block_ids)
-            @warn "Block with ID $id is not defined in the provided mesh"
+            if !mpi
+                @warn "Block with ID $id is not defined in the provided mesh"
+            end
             continue
         end
         for (block, value) in params["Blocks"]
             if value["Block ID"] == id
-                push!(block_list, block)
+                push!(block_name_list, block)
+                push!(block_id_list, id)
             end
         end
     end
-    return block_list
+    return block_name_list, block_id_list
 end
 
 """
@@ -121,10 +125,10 @@ function get_angles(params::Dict, block_id::Int64, dof::Int64)
         return _get_values(params, block_id, "Angle X")
     elseif dof == 3
         return [
-                _get_values(params, block_id, "Angle X"),
-                _get_values(params, block_id, "Angle Y"),
-                _get_values(params, block_id, "Angle Z")
-                ]
+            _get_values(params, block_id, "Angle X"),
+            _get_values(params, block_id, "Angle Y"),
+            _get_values(params, block_id, "Angle Z")
+        ]
     end
 end
 

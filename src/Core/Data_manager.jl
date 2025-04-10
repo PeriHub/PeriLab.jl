@@ -25,7 +25,8 @@ export get_step
 export get_iteration
 export get_accuracy_order
 export get_aniso_crit_values
-export get_block_list
+export get_block_name_list
+export get_block_id_list
 export get_crit_values_matrix
 export get_comm
 export get_coupling_dict
@@ -57,7 +58,8 @@ export set_step
 export set_iteration
 export set_accuracy_order
 export set_bc_free_dof
-export set_block_list
+export set_block_name_list
+export set_block_id_list
 export set_crit_values_matrix
 export set_coupling_dict
 export set_coupling_fe_nodes
@@ -105,7 +107,8 @@ function initialize_data()
     data["nnsets"] = 0
     data["dof"] = 2
     data["fem_option"] = false
-    data["block_list"] = Vector{String}()
+    data["block_name_list"] = Vector{String}()
+    data["block_id_list"] = Vector{Int64}()
     data["distribution"] = []
     data["crit_values_matrix"] = fill(-1, (1, 1, 1))
     data["aniso_crit_values"] = Dict()
@@ -667,12 +670,21 @@ function has_key(field_name::String)
 end
 
 """
-    get_block_list()
+    get_block_name_list()
 
 Returns a list of all block IDs.
 """
-function get_block_list()
-    return data["block_list"]
+function get_block_name_list()
+    return data["block_name_list"]
+end
+
+"""
+    get_block_id_list()
+
+Returns a list of all block IDs.
+"""
+function get_block_id_list()
+    return data["block_id_list"]
 end
 
 """
@@ -1176,8 +1188,8 @@ This function initializes the properties dictionary. Order of dictionary defines
 - `keys(properties[1])`: The keys of the properties dictionary in defined order for the Model_Factory.jl.
 """
 function init_properties()
-    block_list = get_block_list()
-    for iblock in 1:length(block_list)
+    block_id_list = get_block_id_list()
+    for iblock in block_id_list
         data["properties"][iblock] = OrderedDict{String,Dict}("Additive Model" => Dict{String,
                                                                                        Any}(),
                                                               "Damage Model" => Dict{String,
@@ -1223,15 +1235,27 @@ function set_accuracy_order(value::Int64)
 end
 
 """
-    set_block_list(blocks::Union{SubArray,Vector{Int64}})
+    set_block_name_list(blocks_name_list::Vector{String})
 
 Sets the block list globally.
 
 # Arguments
-- `blocks::Union{SubArray,Vector{Int64}}`: The block list.
+- `blocks_name_list::Vector{String}`: The block list.
 """
-function set_block_list(blocks::Vector{String})
-    data["block_list"] = blocks
+function set_block_name_list(blocks_name_list::Vector{String})
+    data["block_name_list"] = blocks_name_list
+end
+
+"""
+    set_block_id_list(blocks_id_list::Vector{Int64})
+
+Sets the block list globally.
+
+# Arguments
+- `blocks_id_list::Vector{Int64}`: The block list.
+"""
+function set_block_id_list(blocks_id_list::Vector{Int64})
+    data["block_id_list"] = blocks_id_list
 end
 
 """
@@ -1759,8 +1783,9 @@ function switch_NP1_to_N()
             switch_bonds!(field_N, field_NP1)
             continue
         end
-        data["NP1_to_N"][key][1], data["NP1_to_N"][key][2] = data["NP1_to_N"][key][2],
-                                                             data["NP1_to_N"][key][1]
+        data["NP1_to_N"][key][1],
+        data["NP1_to_N"][key][2] = data["NP1_to_N"][key][2],
+                                   data["NP1_to_N"][key][1]
         field_NP1 = get_field(key, "NP1")
         if field_NP1[1] isa AbstractVector || field_NP1[1] isa AbstractArray
             fill_in_place!(field_NP1, data["NP1_to_N"][key][3], active)

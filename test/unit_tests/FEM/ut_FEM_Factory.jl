@@ -64,7 +64,7 @@ end
     topology[2, 2] = 5
     topology[2, 3] = 4
     topology[2, 4] = 6
-    test_data_manager.data["block_list"] = [1, 2]
+    test_data_manager.data["block_id_list"] = [1, 2]
     test_data_manager.init_properties()
 
     params = Dict("FEM" => Dict("Degree" => 1,
@@ -159,7 +159,7 @@ end
     topology[2, 2] = 5
     topology[2, 3] = 4
     topology[2, 4] = 6
-    test_data_manager.data["block_list"] = [1, 2]
+    test_data_manager.data["block_id_list"] = [1, 2]
     test_data_manager.init_properties()
 
     params = Dict("FEM" => Dict("Degree" => 1,

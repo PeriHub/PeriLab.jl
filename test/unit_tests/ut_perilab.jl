@@ -6,7 +6,7 @@ using Test
 #using PeriLab
 
 @testset "ut_print_banner" begin
-    PeriLab.print_banner()
+    PeriLab.print_banner(false)
 end
 
 @testset "ut_get_examples" begin

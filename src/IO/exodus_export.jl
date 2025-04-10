@@ -143,7 +143,7 @@ function init_results_in_exodus(exo::ExodusDatabase,
                                 output::Dict{},
                                 coords::Union{Matrix{Int64},Matrix{Float64}},
                                 block_Id::Vector{Int64},
-                                block_list::Vector{String},
+                                all_block_name_list::Vector{String},
                                 nsets::Dict{String,Vector{Int64}},
                                 global_ids::Vector{Int64},
                                 PERILAB_VERSION::String,
@@ -183,7 +183,7 @@ function init_results_in_exodus(exo::ExodusDatabase,
 
     fem_active = !isnothing(topology)
 
-    for (block, block_name) in enumerate(block_list)
+    for (block, block_name) in enumerate(all_block_name_list)
         conn = get_block_nodes(block_Id, block)# virtual elements
         if fem_active
             if fem_block[conn[1]]
