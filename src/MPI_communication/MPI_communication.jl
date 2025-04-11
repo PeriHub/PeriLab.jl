@@ -1,8 +1,21 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
+module MPI_communication
 import MPI
+export send_single_value_from_vector
+export synch_responder_to_controller
+export synch_controller_to_responder
+export synch_controller_bonds_to_responder
+export split_vector
+export synch_controller_bonds_to_responder_flattened
+export send_vector_from_root_to_core_i
+export send_value
+export find_and_set_core_value_min
+export find_and_set_core_value_sum
+export find_and_set_core_value_avg
+export gather_values
+export reduce_values
 
 """
 TODO
@@ -459,4 +472,20 @@ Gather values
 """
 function gather_values(comm::MPI.Comm, value::Any)
     return MPI.gather(value, comm; root = 0)
+end
+
+"""
+    gather_values(comm::MPI.Comm, value::Any)
+
+reduces the value at root
+
+# Arguments
+- `comm::MPI.Comm`: The MPI communicator
+- `value::Any`: The value
+# Returns
+- `recv_msg::Any`: The received message
+"""
+function reduce_values(comm::MPI.Comm, value::Any)
+    return MPI.Reduce(value, MPI.SUM, 0, comm)
+end
 end

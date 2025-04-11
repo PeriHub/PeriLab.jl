@@ -22,6 +22,11 @@ include("Verlet.jl")
 include("Static_solver.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
+using .MPI_communication: synch_responder_to_controller,
+                          synch_controller_to_responder,
+                          synch_controller_bonds_to_responder,
+                          synch_controller_bonds_to_responder_flattened
+
 include("../../FEM/FEM_Factory.jl")
 include("../Influence_function.jl")
 

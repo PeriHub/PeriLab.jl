@@ -24,6 +24,7 @@ using .Parameter_Handling:
                            get_max_damage
 
 include("../../MPI_communication/MPI_communication.jl")
+using .MPI_communication: find_and_set_core_value_min
 include("../BC_manager.jl")
 include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")

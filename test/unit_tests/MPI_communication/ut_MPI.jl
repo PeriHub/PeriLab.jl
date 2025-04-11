@@ -8,6 +8,14 @@ using JSON3
 using TimerOutputs
 
 include("../../../src/MPI_communication/MPI_communication.jl")
+using .MPI_communication: send_single_value_from_vector, synch_responder_to_controller,
+                          synch_controller_to_responder,
+                          synch_controller_bonds_to_responder,
+                          split_vector, synch_controller_bonds_to_responder_flattened,
+                          send_vector_from_root_to_core_i, send_value,
+                          find_and_set_core_value_min, find_and_set_core_value_sum,
+                          find_and_set_core_value_avg, gather_values
+
 include("../../../src/Models/Material/Material_Models/BondBased/Bondbased_Elastic.jl")
 
 function push_test!(dict::Dict, test::Bool, file::String, line::Int)

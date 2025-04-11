@@ -7,6 +7,7 @@ include("../../src/IO/mesh_data.jl")
 using Test
 using MPI
 using .Data_manager
+using .MPI_communication: send_vector_from_root_to_core_i
 
 include("../../src/MPI_communication/MPI_communication.jl")
 MPI.Init()
