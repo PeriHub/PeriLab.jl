@@ -76,23 +76,42 @@ function compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
     return polyhedron(vrep(matrix_to_vector(points)))
 end
 
+"""
+    compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Matrix{Int64}},
+                                               poly, free_surfaces::Vector{Int64})
+
+Computes the surface nodes of the block to create a polyhedron, the points which are connected free surfaces (()).
+This function is used for contact search purposes. The surface nodes are used to compute the polyhedron in an efficient way. The connections and underlying points are needed for the contact algorithm. They are a subset of the surface point and the only ones which can be in contact.
+
+# Arguments
+- `points::Union{Matrix{Float64},Matrix{Int64}}`: Points which form the polyhedron.
+- `poly`: Polyhedron object.
+- `free_surfaces::Vector{Int64}`: List of the free surfaces of the polyhedron.
+
+# Returns
+- `unique(surface_nodes), connections`: unique surface nodes and the connections to the free surfaces. There can be more surface points than connections.
+"""
 function compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Matrix{Int64}},
-                                               poly)
+                                               poly, free_surfaces::Vector{Int64})
     normals, offset = get_surface_information(poly)
     connections = Dict{Int64,Vector{Int64}}()
     surface_nodes = []
     for pID in eachindex(points[:, 1])
         for id in eachindex(offset)
             if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
-                if haskey(connections, pID)
-                    break
-                end
                 append!(surface_nodes, pID)
-                append!(connections[pID], id)
+                if id in free_surfaces
+                    if !haskey(connections, pID)
+                        connections[pID] = Vector{Int64}([id])
+                        continue
+                    end
+                    # connections only to the free surfaces.
+                    append!(connections[pID], id)
+                end
             end
         end
     end
-    return surface_nodes, connections
+    return unique(surface_nodes), connections
 end
 
 function get_surface_normals(poly)

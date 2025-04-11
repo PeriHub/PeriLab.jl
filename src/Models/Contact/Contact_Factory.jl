@@ -4,66 +4,121 @@
 
 module Contact_Factory
 using TimerOutputs
+using LinearAlgebra
+include("../../MPI_communication/MPI_communication.jl")
+using .MPI_communication: reduce_values, send_value
 include("Contact_search.jl")
-using .Contact_search: init_contact_search
+using .Contact_search: init_contact_search, compute_geometry, get_surface_information
+include("../../Support/Helpers.jl")
+using .Helpers: remove_ids, get_block_nodes
 include("../../Core/Module_inclusion/set_Modules.jl")
-using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "contact_model_name")
-Set_modules.include_files(module_list)
+using .Set_modules: find_module_files, include_files
+global module_list = find_module_files(@__DIR__, "contact_model_name")
+include_files(module_list)
 export init_contact_model
 export compute_contact_model
 
 """
-    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}, block::Int64)
+    init_model(datamanager::Module, params)
 
 Initializes the contact model.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `params:`: Contact parameter.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
 function init_contact_model(datamanager::Module, params)
     @info "Init Contact Model"
     surface_nodes = Dict()
+
+    check_valid_contact_model(params, datamanager.get_all_blocks())
+    contact_blocks = get_all_contact_blocks(params)
+    # get all the contact block surface global ids and reduce the exchange positions to this points.
+    # all following functions deal with the local contact position id.
+    global_contact_ids = identify_contact_block_surface_nodes(datamanager, contact_blocks)
+    create_local_contact_id_mapping(datamanager, global_contact_ids)
+    identify_outer_contact_surfaces(datamanager, contact_blocks)
+
     for (cm, contact_params) in pairs(params)
+        init_contact_search(datamanager, contact_params, cm, surface_nodes)
+    end
+    create_contact_fields(datamanager)
+    @info "Finish Init Contact Model"
+    return datamanager
+end
+
+function create_contact_fields(datamanager)
+    dof = datamanager.get_dof()
+    local_ids = datamanager.get_local_contact_ids()
+    npoints = max(length(local_ids), 1)
+    datamanager.create_constant_free_size_field("Contact Forces", Float64, (npoints, dof))
+    #datamanager.create_constant_free_size_field("Contact Pair", Int64, (npoints, dof))
+end
+
+function apply_contact_forces(datamanager)
+    contact_force = datamanager.get_field("Contact Forces")
+    force = datamanager.get_field("Force Densities", "NP1")
+    local_ids = datamanager.get_local_contact_ids()
+    for (id, local_id) in enumerate(values(local_ids))
+        force[local_id, :] .+= contact_force[id, :]
+    end
+    contact_force .= 0.0
+end
+
+function create_local_contact_id_mapping(datamanager, global_contact_ids)
+    mapping = Dict{Int64,Int64}()
+    println(global_contact_ids)
+    for (id, pid) in enumerate(global_contact_ids)
+        local_id = datamanager.get_local_nodes([pid])
+        if local_id == []
+            continue
+        end
+        mapping[local_id[1]] = id
+    end
+
+    datamanager.set_local_contact_ids(mapping)
+end
+
+function get_all_contact_blocks(params)
+    contact_blocks = []
+    for contact_params in values(params)
+        append!(contact_blocks, contact_params["Master"])
+        append!(contact_blocks, contact_params["Slave"])
+    end
+    return sort(unique(contact_blocks))
+end
+
+function check_valid_contact_model(params, block_ids::Vector{Int64})
+    for contact_params in values(params)
         if !haskey(contact_params, "Master")
             @error "Contact model needs a ''Master''"
-            return nothing
+            return false
         end
         if !haskey(contact_params, "Slave")
             @error "Contact model needs a ''Slave''"
-            return nothing
+            return false
         end
         if contact_params["Master"] == contact_params["Slave"]
             @error "Contact master and slave are equal. Self contact is not implemented yet."
-            return nothing
+            return false
         end
-        block_id = datamanager.get_field("Block_Id")
-        if !(contact_params["Master"] in block_id)
+
+        if !(contact_params["Master"] in block_ids)
             @error "Block defintion in master does not exist."
-            return nothing
+            return false
         end
-        if !(contact_params["Slave"] in block_id)
+        if !(contact_params["Slave"] in block_ids)
             @error "Block defintion in slave does not exist."
-            return nothing
+            return false
         end
         if !haskey(contact_params, "Search Radius")
             @error "Contact model needs a ''Search Radius''"
-            return nothing
+            return false
         end
-        init_contact_search(datamanager, contact_params, cm, surface_nodes)
     end
-
-    #datamanager.create_constant_field("Contact IDs", Int64, ??)
-    # allnodes
-    # cm -> check if inside or not
-    #  reduce allnodes
-
-    # surface_nodes
-    # global ids; all nodes reduced global_id => local_id <=> contact_global
-    return datamanager
+    return true
 end
 
 """
@@ -90,4 +145,116 @@ function compute_model(datamanager::Module,
                        to::TimerOutput)
     return datamanager
 end
+
+function identify_contact_block_surface_nodes(datamanager, contact_blocks)
+    global_ids = []
+    points = datamanager.get_all_positions()
+    block_ids = datamanager.get_all_blocks()
+    block_nodes = get_block_nodes(block_ids, length(block_ids))
+    for block in contact_blocks
+        poly = compute_geometry(points[block_nodes[block], :])
+        normals, offsets = get_surface_information(poly)
+        for pID in eachindex(points[:, 1])
+            for id in eachindex(offsets)
+                if isapprox(dot(normals[id, :], points[pID, :]) - offsets[id], 0;
+                            atol = 1e-6)
+                    append!(global_ids, pID)
+                end
+            end
+        end
+    end
+    # create reduced list of data.
+    datamanager.set_all_positions(points[global_ids, :])
+    # global ids list is needed to know the local ids and to organize the exchange between cores.
+    return unique(global_ids)
+end
+
+function identify_outer_contact_surfaces(datamanager, contact_blocks)
+    all_positions = datamanager.get_all_positions()
+    block_ids = datamanager.get_all_blocks()
+    block_nodes = get_block_nodes(block_ids, length(block_ids))
+    free_surfaces = Dict{Int64,Vector{Int64}}()
+    for iID in 1:maximum(keys(block_nodes))
+        poly_i = compute_geometry(all_positions[block_nodes[iID], :])
+        normals_i, offsets_i = get_surface_information(poly_i)
+        free_surfaces[iID] = Vector{Int64}(collect(1:length(offsets_i)))
+    end
+
+    for iID in 1:(maximum(block_ids) - 1)
+        # Polyhedra for the master block; can be 2D or 3D
+        poly_master = compute_geometry(all_positions[block_nodes[iID], :])
+        normals_i, offsets_i = get_surface_information(poly_master)
+        for jID in (iID + 1):maximum(block_ids)
+            # Polyhedra for the slave block; can be 2D or 3D
+            poly_slave = compute_geometry(all_positions[block_nodes[jID], :])
+            normals_j, offsets_j = get_surface_information(poly_slave)
+            ids, jds = get_free_surfs(normals_i, offsets_i, normals_j, offsets_j)
+            remove_ids(free_surfaces[iID], ids)
+            remove_ids(free_surfaces[jID], jds)
+        end
+    end
+    # find the free surfaces of the contact blocks
+    for block in keys(free_surfaces)
+        if !(block in contact_blocks)
+            delete!(free_surfaces, block)
+        end
+    end
+    # store these free surfaces
+    datamanager.set_free_contact_surfaces(free_surfaces)
+end
+
+"""
+    synchronize_contact_points(datamanager::Module)
+
+Synchronises the deformation relevant for contact. These are the deformed coordinates of the surfaces of the contact blocks. The deformed surface vector is set to zero and than filled at each core from data from the deformed coordinate field. To bring it together the vector is summed at the root and send back to all cores.
+
+# Arguments
+- `datamanager::Modul`: datamanager
+# Returns
+- nothing
+"""
+
+function synchronize_contact_points(datamanager::Module)
+    all_positions = datamanager.get_all_positions()
+    all_positions .= 0
+    deformed_coord = datamanager.get_field("Deformed Coordinates", "NP1")
+    local_map = datamanager.get_local_contact_ids()
+
+    for (local_id, exchange_id) in pairs(local_map)
+        all_positions[exchange_position, :] = deformed_coord[local_id, :]
+    end
+    if datamanager.get_max_rank() == 1
+        return
+    end
+    comm = datamanager.get_comm()
+    all_positions = reduce_values(comm, all_positions)
+    all_positions = send_value(comm, 0, all_positions)
+end
+
+function get_local_ids(datamanager::Module)
+    local_map = Dict{Int64,Int64}()
+    global_nodes = datamanager.get_contact_relevant_global_ids()
+    for (id, global_node) in enumerate(global_nodes)
+        local_node = datamanager.get_local_nodes([global_node])
+        if !(local_node == [])
+            local_map[local_node[1]] = id
+        end
+    end
+    datamanager.set_contact_relevant_local_ids(local_map)
+end
+function get_free_surfs(normals_i, offsets_i, normals_j, offsets_j)
+    ids = Vector{Int64}([])
+    jds = Vector{Int64}([])
+    for iID in eachindex(offsets_i)
+        for jID in eachindex(offsets_j)
+            if offsets_i[iID] == offsets_j[jID] && normals_i[iID, :] == normals_j[jID, :]
+                append!(ids, iID)
+                append!(jds, jID)
+                break # only one surface pair can exist
+            end
+        end
+    end
+    return ids, jds
+end
+
 end

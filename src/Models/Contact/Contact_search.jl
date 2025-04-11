@@ -5,7 +5,8 @@
 module Contact_search
 include("../../Support/Helpers.jl")
 using .Helpers: get_nearest_neighbors, nearest_point_id, get_block_nodes, compute_geometry,
-                point_is_inside, compute_surface_nodes, get_surface_information
+                point_is_inside, compute_surface_nodes_and_connections,
+                get_surface_information
 using CDDLib, Polyhedra
 export init_contact_search
 export compute_contact_pairs
@@ -19,44 +20,60 @@ function init_contact_search(datamanager, contact_params, cm, surface_nodes)
     all_positions = datamanager.get_all_positions()
     block_ids = datamanager.get_all_blocks()
 
-    contact_block_nodes = get_block_nodes(block_ids, length(block_ids))
-    # Polyhedra for the master block; can be 2D or 3D
-    poly_master = compute_geometry(all_positions[contact_block_nodes[contact_params["Master"]],
-                                                 :])
-    # Polyhedra for the slave block; can be 2D or 3D
-    poly_slave = compute_geometry(all_positions[contact_block_nodes[contact_params["Slave"]],
-                                                :])
-    # filter
+    block_nodes = get_block_nodes(block_ids, length(block_ids))
 
-    contact_block_nodes[contact_params["Master"]] = compute_surface_nodes(all_positions[contact_block_nodes[contact_params["Master"]],
-                                                                                        :],
-                                                                          poly_master)
-    contact_block_nodes[contact_params["Slave"]] = compute_surface_nodes(all_positions[blocontact_block_nodesck_nodes[contact_params["Slave"]],
-                                                                                       :],
-                                                                         poly_slave)
-    # global ids
-    surface_nodes[cm] = unique(vcat(contact_block_nodes[contact_params["Master"]],
-                                    contact_block_nodes[contact_params["Slave"]]))
-    compute_contact_points_surface_connectivity(block_nodes[contact_params["Master"]],
-                                                datamanager,
-                                                contact_params["Master"], all_positions,
-                                                poly_master)
-    compute_contact_points_surface_connectivity(block_nodes[contact_params["Slave"]],
-                                                datamanager,
-                                                contact_params["Slave"], all_positions,
-                                                poly_master)
+    # find all outer surfaces.
+    free_surfaces = datamanager.get_contact_free_surfaces()
+    master_id = contact_params["Master"]
+    # Polyhedra for the master block; can be 2D or 3D
+    poly_master = compute_geometry(all_positions[block_nodes[master_id], :])
+
+    block_nodes[master_id], connection_master = compute_surface_nodes_and_connections(all_positions[block_nodes[master_id],
+                                                                                                    :],
+                                                                                      poly_master,
+                                                                                      free_surfaces[master_id])
+    slave_id = contact_params["Slave"]
+
+    # Polyhedra for the slave block; can be 2D or 3D
+    poly_slave = compute_geometry(all_positions[block_nodes[slave_id], :])
+    block_nodes[slave_id], connection_slave = compute_surface_nodes_and_connections(all_positions[block_nodes[slave_id],
+                                                                                                  :],
+                                                                                    poly_slave,
+                                                                                    free_surfaces[slave_id])
+    # global ids -> muss gefiltered werden hier -> global all nodesID -> local contact ID ableiten
+    # ich brauche  -> reduced global all nodesID und local nodesID
+    datamanager.set_free_surface_connections(Dict(master_id => connection_master))
+    datamanager.set_free_surface_connections(Dict(slave_id => connection_slave))
+    datamanager.set_free_surface_nodes(Dict(master_id => sort(collect(keys(connection_master)))))
+    datamanager.set_free_surface_nodes(Dict(slave_id => sort(collect(keys(connection_slave)))))
+
+    # do something with block nodes
+
     return datamanager
 end
 
-function compute_contact_points_surface_connectivity(datamanager::Module,
-                                                     block_id::Int64,
-                                                     block_nodes::Dict{Int64,Vector{Int64}},
-                                                     all_positions,
-                                                     poly)
+function set_contact_points_surface_connectivity(datamanager::Module,
+                                                 block_id::Int64,
+                                                 block_nodes::Dict{Int64,Vector{Int64}},
+                                                 all_positions,
+                                                 connections,
+                                                 poly)
     nlist = datamanager.get_nlist()
-    @views connectivity = get_surface_connectivity(all_positions, block_nodes, nlist, poly)
+    @views connections = filter_surface_connectivity(all_positions[block_nodes[block_id],
+                                                                   :],
+                                                     nlist, poly, connections)
     datamanager.set_contact_connectivity(block_id, connectivity)
-    datamanager.set_contact_nodes(block_id, collect(keys(connectivity)))
+    datamanager.set_contact_nodes(block_id, collect(keys(connections)))
+end
+
+"""
+    which_surface()
+
+checks which surface has to be used by checking the number of nodes in the nearest point list. The highest number at one surface, defines the surface.
+
+"""
+
+function which_surface()
 end
 
 """
@@ -76,25 +93,13 @@ Identifies the surfaces which are not connected with other surfaces. These nodes
 # Returns
 - `connections::Dict{Int64,Vector{Int64}}`: connections of the surface node with outer surface
 """
-function get_surface_connectivity(points::Union{Vector{Vector{Float64}},
-                                                Vector{Vector{Int64}}},
-                                  surface_nodes::Dict{Int64,Int64},
-                                  nlist,
-                                  poly)
-    # H-Rep abrufen (Facetten als a⋅x ≤ b)
 
-    normals, offsets = get_surface_information(poly)
-    connections = Dict{Int64,Int64}()
+function filter_surface_connectivity(points::Union{Matrix{Float64},Matrix{Int64}}, nlist,
+                                     connections, poly)
     msg = true
-    for (iID, point) in surface_nodes
-        for surface_id in eachindex(offsets)
-            # check to which surface the point is connected && check if all neighbors are inside the block.
-            if isapprox(dot(point, normals[surface_id, :]) - offsets[surface_id], 0;
-                        atol = 1e-6) &&
-               !check_neighbor_position(poly, points, nlist[iID], msg)
-                break
-            end
-            connections[iID] = surface_id
+    for iID in eachindex(points[:, 1])
+        if !check_neighbor_position(poly, points, nlist[iID], msg)
+            delete!(connections, iID)
         end
     end
     return connections

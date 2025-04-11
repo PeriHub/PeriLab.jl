@@ -15,6 +15,23 @@ All surface nodes are stored in a list. This list exists at all cores with the c
 - Step 3 -
 Connect each surface node to a geometrical surface.
 
+The standard way for points in the parallelization is given here.
+
+$$\begin{bmatrix}1 \\ 2 \\ 3 \\ 4 \\ 5 \\ 6 \\ 7 \end{bmatrix}_{all}\rightarrow\begin{matrix} \begin{bmatrix} 4 \\ 6  \end{bmatrix}_{C1-global}\\
+\begin{bmatrix}1 \\ 2  \\ 7 \end{bmatrix}_{C2-global}\\
+\begin{bmatrix}3\\5\end{bmatrix}_{C3-global}\end{matrix}\leftarrow \rightarrow\begin{matrix} \begin{bmatrix} 1 \\ 2  \end{bmatrix}_{C1-local}\\
+\begin{bmatrix}1 \\ 2  \\ 3 \end{bmatrix}_{C2-local}\\
+\begin{bmatrix}1\\2\end{bmatrix}_{C3-local}\end{matrix}$$
+
+A new mapping is needed to the contact surface exchange list. The local numbering (right above) has to be mapped to the sublist and vice, versa.
+
+$$\begin{bmatrix}1 \\ 2   \\ 6 \\ 7 \end{bmatrix}_{surface}\leftarrow\rightarrow \begin{bmatrix}1 \\ 2  \\ 3 \\ 4  \end{bmatrix}_{surface}\rightarrow \begin{matrix} \begin{bmatrix}  3  \end{bmatrix}_{C1}\\
+\begin{bmatrix}1 \\ 2  \\ 4 \end{bmatrix}_{C2}\\
+\begin{bmatrix}\,\,\,\,\end{bmatrix}_{C3}\end{matrix}\leftarrow \rightarrow\begin{matrix} \begin{bmatrix} 2   \end{bmatrix}_{C1-local}\\
+\begin{bmatrix}1 \\ 2  \\ 3 \end{bmatrix}_{C2-local}\\
+\begin{bmatrix}\,\,\,\,\end{bmatrix}_{C3-local}\end{matrix}$$
+
+
 **List mapping**
 To fill the postion vector with the needed values mappings are needed.
 
