@@ -127,6 +127,7 @@ function initialize_data()
     data["model_modules"] = OrderedDict{String,Module}()
     data["nsets"] = Dict{String,Vector{Int64}}()
     data["overlap_map"] = Dict()
+    data["contact_overlap_map"] = Dict()
     data["pre_calculation_order"] = [
         "Deformed Bond Geometry",
         "Shape Tensor",
@@ -156,7 +157,8 @@ function initialize_data()
     data["Free Surfaces"] = Dict()
     data["Free Surface Nodes Connections"] = Dict{Int64,Dict{Int64,Vector{Int64}}}()
     data["Free Surface Nodes"] = Dict{Int64,Vector{Int64}}()
-    data["Contact IDs"] = Vector{Int64}([])
+    data["Global Contact IDs"] = Vector{Int64}([])
+    data["Local Contact IDs"] = Dict{Int64,Int64}()
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -883,7 +885,8 @@ get_local_nodes()  # returns local nodes or if they do not exist at the core an 
 function get_local_nodes(global_nodes)
     return [data["glob_to_loc"][global_node]
             for
-            global_node in global_nodes if global_node in keys(data["glob_to_loc"])]
+            global_node in global_nodes
+            if global_node in keys(data["glob_to_loc"])]
 end
 
 function get_model_module(entry::Union{String,SubString})

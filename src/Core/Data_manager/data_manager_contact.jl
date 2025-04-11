@@ -4,14 +4,20 @@
 
 export get_all_blocks
 export get_all_positions
+export get_contact_overlap_map
 export get_contact_relevant_global_ids
+export get_local_contact_ids
 export get_free_surface_connections
 export get_free_surface_nodes
+export get_free_contact_surfaces
 export set_all_blocks
 export set_all_positions
+export set_contact_overlap_map
 export set_contact_relevant_global_ids
+export set_local_contact_ids
 export set_free_surface_connections
 export set_free_surface_nodes
+export set_free_contact_surfaces
 function get_all_blocks()
     return data["All Blocks"]
 end
@@ -20,12 +26,25 @@ function get_all_positions()
     return data["All positions"]
 end
 
-function get_free_surfaces()
+function get_contact_free_surfaces()
     return data["Free Surfaces"]
 end
 
+"""
+    get_contact_overlap_map()
+
+Get the contact overlap map
+"""
+function get_contact_overlap_map()
+    return data["contact_overlap_map"]
+end
+
 function get_contact_relevant_global_ids()
-    return data["Contact IDs"]
+    return data["Global Contact IDs"]
+end
+
+function get_local_contact_ids()
+    return data["Local Contact IDs"]
 end
 
 function get_free_surface_nodes()
@@ -44,11 +63,26 @@ function set_all_positions(all_coordinate)
     data["All positions"] = all_coordinate
 end
 
-function set_contact_relevant_global_ids(ids::Vector{Int64})
-    data["Contact IDs"] = ids
+"""
+    set_contact_overlap_map(topo)
+
+Sets the contact overlap map globally.
+
+# Arguments
+- `topo`: The overlap map.
+"""
+function set_contact_overlap_map(topo)
+    data["contact_overlap_map"] = topo
 end
 
-function set_free_surfaces(free_surfaces)
+function set_contact_relevant_global_ids(ids::Vector{Int64})
+    data["Global Contact IDs"] = ids
+end
+
+function set_local_contact_ids(ids::Dict{Int64,Int64})
+    data["Local Contact IDs"] = ids
+end
+function set_free_contact_surfaces(free_surfaces)
     data["Free Surfaces"] = free_surfaces
 end
 
