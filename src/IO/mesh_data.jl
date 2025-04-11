@@ -139,7 +139,7 @@ function init_data(params::Dict,
         end
         @debug "Finish init data"
     end
-    MPI.Barrier(comm)
+    barrier(comm)
     mesh = nothing
     return datamanager, params
 end

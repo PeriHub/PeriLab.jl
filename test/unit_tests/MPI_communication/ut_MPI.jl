@@ -14,7 +14,7 @@ using .MPI_communication: send_single_value_from_vector, synch_responder_to_cont
                           split_vector, synch_controller_bonds_to_responder_flattened,
                           send_vector_from_root_to_core_i, send_value,
                           find_and_set_core_value_min, find_and_set_core_value_sum,
-                          find_and_set_core_value_avg, gather_values
+                          find_and_set_core_value_avg, gather_values, barrier
 
 include("../../../src/Models/Material/Material_Models/BondBased/Bondbased_Elastic.jl")
 
@@ -236,7 +236,7 @@ if ncores == 3
         push_test!(test, (E[2] == false), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
     end
-    MPI.Barrier(comm)
+    barrier(comm)
 
     A = synch_controller_to_responder(comm, overlap_map, A, 1)
     B = synch_controller_to_responder(comm, overlap_map, B, 4)

@@ -16,6 +16,7 @@ export find_and_set_core_value_sum
 export find_and_set_core_value_avg
 export gather_values
 export reduce_values
+export barrier
 
 """
 TODO
@@ -488,4 +489,9 @@ reduces the value at root
 function reduce_values(comm::MPI.Comm, value::Any)
     return MPI.Reduce(value, MPI.SUM, 0, comm)
 end
+
+function barrier(comm)
+    MPI.Barrier(comm)
+end
+
 end
