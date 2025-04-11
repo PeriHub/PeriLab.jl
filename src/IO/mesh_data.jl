@@ -101,7 +101,7 @@ function init_data(params::Dict,
         datamanager = define_nsets(nsets, datamanager)
         # defines the order of the global nodes to the local core nodes
         datamanager.set_distribution(distribution[rank])
-        datamanager.set_glob_to_loc(glob_to_loc(distribution[rank]))
+        datamanager.set_glob_to_loc(create_global_to_local_mapping(distribution[rank]))
         @timeit to "get_local_overlap_map" overlap_map=get_local_overlap_map(overlap_map,
                                                                              distribution,
                                                                              size)
@@ -220,7 +220,7 @@ function get_local_element_topology(datamanager::Module,
     topo = datamanager.create_constant_free_size_field("FE Topology",
                                                        Int64,
                                                        (length(topology), master_len))
-    ilocal = glob_to_loc(distribution)
+    ilocal = create_global_to_local_mapping(distribution)
     for el_id in eachindex(topology)
         topo[el_id, :] = local_nodes_from_dict(ilocal, topology[el_id])
     end
@@ -251,7 +251,7 @@ function get_local_overlap_map(overlap_map,
         return overlap_map
     end
     for irank in 1:ranks
-        ilocal = glob_to_loc(distribution[irank])
+        ilocal = create_global_to_local_mapping(distribution[irank])
         for jrank in 1:ranks
             if irank != jrank
                 overlap_map[irank][jrank]["Responder"] .= local_nodes_from_dict(ilocal,
@@ -265,21 +265,23 @@ function get_local_overlap_map(overlap_map,
 end
 
 """
-    local_nodes_from_dict(glob_to_loc::Dict{Int,Int}, global_nodes::Vector{Int64})
+    local_nodes_from_dict(create_global_to_local_mapping::Dict{Int,Int}, global_nodes::Vector{Int64})
 
 Changes entries in the overlap map from the global numbering to the local computer core one.
 
 # Arguments
-- `glob_to_loc::Dict{Int,Int}`: global to local mapping
+- `create_global_to_local_mapping::Dict{Int,Int}`: global to local mapping
 - `global_nodes::Vector{Int64}`: global nodes
 # Returns
 - `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
 """
-function local_nodes_from_dict(glob_to_loc::Dict{Int,Int}, global_nodes::Vector{Int64})
+function local_nodes_from_dict(create_global_to_local_mapping::Dict{Int,Int},
+                               global_nodes::Vector{Int64})
     return Int64[
-                 glob_to_loc[global_node]
+                 create_global_to_local_mapping[global_node]
                  for
-                 global_node in global_nodes if haskey(glob_to_loc, global_node)
+                 global_node in global_nodes
+                 if haskey(create_global_to_local_mapping, global_node)
                  ]
 end
 
@@ -1820,21 +1822,21 @@ function rectangular_plane_filter(nnodes::Int64,
 end
 
 """
-    glob_to_loc(distribution)
+    create_global_to_local_mapping(distribution)
 
 Get the global to local mapping
 
 # Arguments
 - `distribution`: The distribution
 # Returns
-- `glob_to_loc`: The global to local mapping
+- `create_global_to_local_mapping`: The global to local mapping
 """
-function glob_to_loc(distribution)
-    glob_to_loc = Dict{Int64,Int64}()
+function create_global_to_local_mapping(distribution)
+    create_global_to_local_mapping = Dict{Int64,Int64}()
     for id in eachindex(distribution)
-        glob_to_loc[distribution[id]] = id
+        create_global_to_local_mapping[distribution[id]] = id
     end
-    return glob_to_loc
+    return create_global_to_local_mapping
 end
 
 """

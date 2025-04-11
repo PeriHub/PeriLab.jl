@@ -34,7 +34,7 @@ distribution = [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [7, 8, 9, 10, 11, 12, 3, 4, 5, 
 if rank == 0
     send_msg = [2, 3, 3, 2, 3, 4, 4, 3, 2, 3, 3, 2]
 end
-glob_to_loc = glob_to_loc(distribution)
+create_global_to_local_mapping = create_global_to_local_mapping(distribution)
 @testset "init_data rank $rank" begin
     length_nlist = send_vector_from_root_to_core_i(comm, send_msg, length_nlist,
                                                    distribution)

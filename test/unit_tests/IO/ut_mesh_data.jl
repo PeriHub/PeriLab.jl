@@ -338,9 +338,9 @@ end
 end
 
 @testset "ut_local_nodes_from_dict" begin
-    glob_to_loc = Dict{Int64,Int64}(1 => 2, 2 => 4, 3 => 3, 4 => 1)
+    create_global_to_local_mapping = Dict{Int64,Int64}(1 => 2, 2 => 4, 3 => 3, 4 => 1)
     global_nodes = Vector{Int64}(1:4)
-    test = PeriLab.IO.local_nodes_from_dict(glob_to_loc, global_nodes)
+    test = PeriLab.IO.local_nodes_from_dict(create_global_to_local_mapping, global_nodes)
     @test test == [2, 4, 3, 1]
 end
 @testset "ut_check_mesh_elements" begin
@@ -509,18 +509,19 @@ end
 
 @testset "ut_glob_to_loc" begin
     distribution = [1, 2, 3, 4, 5]
-    glob_to_loc = PeriLab.IO.glob_to_loc(distribution)
+    create_global_to_local_mapping = PeriLab.IO.create_global_to_local_mapping(distribution)
     len = length(distribution)
     #check trivial case of global and local are identical
     for id in 1:len
-        @test distribution[id] == glob_to_loc[id]
+        @test distribution[id] == create_global_to_local_mapping[id]
     end
-    @test length(distribution) == length(glob_to_loc)
+    @test length(distribution) == length(create_global_to_local_mapping)
     # reverse -> glob_to_loc_to_glob
     distribution = [1, 4, 2, 5, 6]
-    glob_to_loc = PeriLab.IO.glob_to_loc(distribution)
+    create_global_to_local_mapping = PeriLab.IO.create_global_to_local_mapping(distribution)
     for id in 1:len
-        @test distribution[id] == distribution[glob_to_loc[distribution[id]]]
+        @test distribution[id] ==
+              distribution[create_global_to_local_mapping[distribution[id]]]
     end
 end
 
