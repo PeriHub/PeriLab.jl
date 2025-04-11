@@ -7,7 +7,9 @@ include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "degradation_name")
 Set_modules.include_files(module_list)
+include("../../Support/Helpers.jl")
 using TimerOutputs
+using .Helpers: find_inverse_bond_id
 export compute_model
 export init_model
 export init_fields
@@ -16,7 +18,7 @@ export fields_for_local_synchronization
 """
 init_fields(datamanager::Module)
 
-Initialize concentration model fields
+Initialize  model fields
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
@@ -24,8 +26,9 @@ Initialize concentration model fields
 - `datamanager::Data_manager`: Datamanager.
 """
 function init_fields(datamanager::Module)
-    datamanager.create_node_field("Concentration", Float64, 1)
-    datamanager.create_node_field("Concentration Flux", Float64, 1)
+    datamanager.create_node_field("Damage", Float64, 1)
+    nlist = datamanager.get_field("Neighborhoodlist")
+    inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     return datamanager
 end
 
@@ -52,7 +55,7 @@ function compute_model(datamanager::Module,
                        dt::Float64,
                        to::TimerOutput)
     mod = datamanager.get_model_module(model_param["Degradation Model"])
-    return mod.compute_model(datamanager, nodes, model_param, time, dt)
+    return mod.compute_model(datamanager, nodes, model_param, block, time, dt)
 end
 
 """

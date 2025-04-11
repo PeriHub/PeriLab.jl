@@ -251,6 +251,9 @@ MPI.Init()
         @testset "test_hetval" begin
             include("fullscale_tests/test_hetval/test_hetval.jl")
         end
+        @testset "test_thermal_decomp" begin
+            include("fullscale_tests/test_thermal_decomp/test_thermal_decomp.jl")
+        end
         @testset "test_Correspondence_Elastic" begin
             include("fullscale_tests/test_correspondence_elastic/test_correspondence_elastic.jl")
         end

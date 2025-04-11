@@ -63,8 +63,6 @@ function init(params::Dict,
     block_name_list,
     block_id_list = get_block_names_and_ids(params, block_ids,
                                             datamanager.get_max_rank() > 1)
-    @debug block_name_list
-    @debug block_id_list
     datamanager.set_block_name_list(block_name_list)
     datamanager.set_block_id_list(block_id_list)
     density = datamanager.create_constant_node_field("Density", Float64, 1)

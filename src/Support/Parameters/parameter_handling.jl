@@ -741,6 +741,10 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                                Int64},
                                                                                                          false
                                                                                                      ],
+                                                                                                     "Allow Surface Change" => [
+                                                                                                         Bool,
+                                                                                                         false
+                                                                                                     ],
                                                                                                      "Thermal Conductivity" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},
@@ -790,6 +794,22 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                          true
                                                                                                      ],
                                                                                                      "Print Temperature" => [
+                                                                                                         Union{Float64,
+                                                                                                               Int64},
+                                                                                                         false
+                                                                                                     ]),
+                                                                                           true
+                                                                                       ]),
+                                                                         false
+                                                                     ],
+                                                                     "Degradation Models" => [
+                                                                         Dict{Any,Any}("Any" => [
+                                                                                           Dict{Any,
+                                                                                                Any}("Degradation Model" => [
+                                                                                                         String,
+                                                                                                         true
+                                                                                                     ],
+                                                                                                     "Decomposition Temperature" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},
                                                                                                          false

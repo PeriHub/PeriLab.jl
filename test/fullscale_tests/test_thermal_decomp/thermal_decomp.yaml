@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1:441
+    Type: "Text File"
+    Input Mesh File: "mesh.txt"
+  Models:
+    Thermal Models:
+      Thermal test:
+        Thermal Model: "Thermal Flow + Heat Transfer"
+        Type: "Bond based"
+        Thermal Conductivity: 0.12
+        Heat Transfer Coefficient: 15.0e-3
+        Environmental Temperature: 200
+        Required Specific Volume: 1.3
+    Degradation Models:
+     Degradation test:
+        Degradation Model: "Thermal Decomposition"
+        Decomposition Temperature: 50
+  Blocks:
+    block_1:
+      Block ID: 1
+      Thermal Model: "Thermal test"
+      Degradation Model: "Degradation test"
+      Density: 1.31e-9
+      Horizon: 0.151
+      Specific Heat Capacity: 1800.0e+6
+  Boundary Conditions:
+    BC_1:
+      Variable: "Temperature"
+      Node Set: "Node Set 1"
+      Value: "10"
+      Type: "Initial"
+  Solver:
+    Material Models: False
+    Thermal Models: True
+    Degradation Models: True
+    Initial Time: 0.0
+    Final Time: 50.0
+    Verlet:
+        Safety Factor: 1.0
+        Fixed dt: 0.01
+  Outputs:
+    Output1:
+      Output Filename: "thermal_decomp"
+      Output File Type: Exodus
+      Number of Output Steps: 100
+      Output Variables:
+        Temperature: True
+        Damage: True
+        Heat Flow: True
+        Active: True
+        Specific Volume: True
+        Surface_Nodes: True

@@ -427,12 +427,6 @@ function run_solver(solver_options::Dict{Any,Any},
         a = datamanager.get_field("Acceleration")
     end
 
-    if "Degradation" in solver_options["Models"]
-        ## TODO field creation not in run
-        delta_concentration = datamanager.create_constant_node_field("Delta Concentration",
-                                                                     Float64, 1)
-    end
-
     fem_option = datamanager.fem_active()
     if fem_option
         lumped_mass = datamanager.get_field("Lumped Mass Matrix")
@@ -466,12 +460,12 @@ function run_solver(solver_options::Dict{Any,Any},
                 forces = datamanager.get_field("Forces", "NP1")
             end
 
-            if "Degradation" in solver_options["Models"]
-                concentrationN = datamanager.get_field("Concentration", "N")
-                concentrationNP1 = datamanager.get_field("Concentration", "NP1")
-                concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
-                concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
-            end
+            # if "Degradation" in solver_options["Models"]
+            #     concentrationN = datamanager.get_field("Concentration", "N")
+            #     concentrationNP1 = datamanager.get_field("Concentration", "NP1")
+            #     concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
+            #     concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
+            # end
             if "Damage" in solver_options["Models"]
                 damage = datamanager.get_damage("NP1")
             end
@@ -493,10 +487,10 @@ function run_solver(solver_options::Dict{Any,Any},
 
             compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
                                                                solver_options)
-            if "Degradation" in solver_options["Models"]
-                concentrationNP1[active_nodes] = concentrationN[active_nodes] +
-                                                 delta_concentration[active_nodes]
-            end
+            # if "Degradation" in solver_options["Models"]
+            #     concentrationNP1[active_nodes] = concentrationN[active_nodes] +
+            #                                      delta_concentration[active_nodes]
+            # end
             datamanager = apply_bc_dirichlet(["Displacements", "Temperature"],
                                              bcs,
                                              datamanager, time,
@@ -585,10 +579,10 @@ function run_solver(solver_options::Dict{Any,Any},
             compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,
                                                               solver_options, dt)
 
-            if "Degradation" in solver_options["Models"]
-                delta_concentration[active_nodes] = -concentration_fluxNP1[active_nodes] .*
-                                                    dt
-            end
+            # if "Degradation" in solver_options["Models"]
+            #     delta_concentration[active_nodes] = -concentration_fluxNP1[active_nodes] .*
+            #                                         dt
+            # end
             if "Damage" in solver_options["Models"] #TODO gather value
                 max_damage = maximum(damage[active_nodes])
                 if max_damage > max_cancel_damage
