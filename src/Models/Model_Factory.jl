@@ -149,6 +149,15 @@ function check_contact(datamanager::Module, params::Dict)
     end
     return datamanager
 end
+function check_contact(datamanager::Module, params::Dict, time::Float64, dt::Float64,
+                       to::TimerOutput)
+    if haskey(params, "Contact")
+        return Contact_Factory.compute_contact_model(datamanager, params["Contact"], time,
+                                                     dt, to)
+    end
+
+    return datamanager
+end
 
 """
     compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field, to::TimerOutput)
@@ -342,7 +351,7 @@ function compute_models(datamanager::Module,
                                                                                datamanager.get_properties(1,
                                                                                                           "FEM"))
     end
-
+    check_contact(datamanager, datamanager.get_contact_properties(), time, dt, to)
     #=
     Used for shape tensor or other fixed calculations, to avoid an update if its not needed.
     The damage update is done in the second loop.

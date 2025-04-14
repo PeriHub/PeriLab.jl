@@ -13,35 +13,34 @@ export compute_contact_pairs
 
 ## for one contact pair
 
-function init_contact_search(datamanager, contact_params, cm, surface_nodes)
+function init_contact_search(datamanager, contact_params, cm)
 
     # global list
     @info "Contact search: Create global position array"
+    # local search field ids
     all_positions = datamanager.get_all_positions()
-    block_ids = datamanager.get_all_blocks()
-
-    block_nodes = get_block_nodes(block_ids, length(block_ids))
-
     # find all outer surfaces.
-    free_surfaces = datamanager.get_contact_free_surfaces()
     master_id = contact_params["Master"]
     # Polyhedra for the master block; can be 2D or 3D
-    poly_master = compute_geometry(all_positions[block_nodes[master_id], :])
 
-    block_nodes[master_id], connection_master = compute_surface_nodes_and_connections(all_positions[block_nodes[master_id],
-                                                                                                    :],
-                                                                                      poly_master,
-                                                                                      free_surfaces[master_id])
+    surface_ids = datamanager.get_contact_block_ids(master_id)
+    free_surfaces = datamanager.get_free_contact_surfaces(master_id)
+    poly_master = compute_geometry(all_positions[surface_ids, :])
+    connection_master = compute_surface_nodes_and_connections(all_positions[surface_ids, :],
+                                                              poly_master,
+                                                              free_surfaces)
     slave_id = contact_params["Slave"]
-
+    surface_ids = datamanager.get_contact_block_ids(slave_id)
+    free_surfaces = datamanager.get_free_contact_surfaces(slave_id)
     # Polyhedra for the slave block; can be 2D or 3D
-    poly_slave = compute_geometry(all_positions[block_nodes[slave_id], :])
-    block_nodes[slave_id], connection_slave = compute_surface_nodes_and_connections(all_positions[block_nodes[slave_id],
-                                                                                                  :],
-                                                                                    poly_slave,
-                                                                                    free_surfaces[slave_id])
+    poly_slave = compute_geometry(all_positions[surface_ids, :])
+    connection_slave = compute_surface_nodes_and_connections(all_positions[surface_ids, :],
+                                                             poly_slave,
+                                                             free_surfaces)
     # global ids -> muss gefiltered werden hier -> global all nodesID -> local contact ID ableiten
     # ich brauche  -> reduced global all nodesID und local nodesID
+
+    # checken
     datamanager.set_free_surface_connections(Dict(master_id => connection_master))
     datamanager.set_free_surface_connections(Dict(slave_id => connection_slave))
     datamanager.set_free_surface_nodes(Dict(master_id => sort(collect(keys(connection_master)))))
@@ -50,20 +49,6 @@ function init_contact_search(datamanager, contact_params, cm, surface_nodes)
     # do something with block nodes
 
     return datamanager
-end
-
-function set_contact_points_surface_connectivity(datamanager::Module,
-                                                 block_id::Int64,
-                                                 block_nodes::Dict{Int64,Vector{Int64}},
-                                                 all_positions,
-                                                 connections,
-                                                 poly)
-    nlist = datamanager.get_nlist()
-    @views connections = filter_surface_connectivity(all_positions[block_nodes[block_id],
-                                                                   :],
-                                                     nlist, poly, connections)
-    datamanager.set_contact_connectivity(block_id, connectivity)
-    datamanager.set_contact_nodes(block_id, collect(keys(connections)))
 end
 
 """
@@ -109,59 +94,53 @@ function filter_all_positions(datamanager)
     master = data
 end
 
-function create_local_contact_nodes()
-    #specifies the ids at core from the global contact nodes
-    datamanager.get_local_nodes(global_nodes)
-    datamanager.set_local_contact_nodes("Master")
-
-    datamanager.set_local_contact_nodes("Slave")
-end
-
 function create_local_exchange_ids(filtered_all_positions)
     datamanager.get_local_nodes(filtered_all_positions)
 end
 
 function compute_contact_pairs(datamanager, contact_params)
-    #synch_all_positions(datamanager)
-    # Single core solution
-    deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
-
-    for iID in 1:datamanager.get_nnodes()
-        all_positions .= deformed_coor
-    end
-    datamanager.set_all_positions(all_positions)
+    all_positions = datamanager.get_all_positions()
     #-------------
 
-    master_nodes = datamanager.get_contact_nodes(contact_params["Master"])
-    slave_nodes = datamanager.get_contact_nodes(contact_params["Slave"])
     near_points = find_potential_contact_pairs(datamanager, contact_params)
-    connectivity = datamanager.get_contact_connectivity(contact_params["Slave"])
-    backend = CDDLib.Library()
-    points = Vector{Vector{Float64}}(eachrow(slave_nodes))
-    poly = polyhedron(vrep(points), backend)
-    normals = get_surface_normals(points)
-    for (master_node, slave_nodes) in pairs(near_points)
-        if !(master in poly)
-            continue
-        end
-        id = nearest_point_id(all_positions[master_node, :], all_positions[slave_nodes, :])
-        contact_dict[master_node] = id
-        contact_normal[master_node] = normals[connectivity[id]]
-        # shortest
-    end
+    println(near_points)
+    #connectivity = datamanager.get_contact_connectivity(contact_params["Slave"])
+    #backend = CDDLib.Library()
+    #points = Vector{Vector{Float64}}(eachrow(slave_nodes))
+    #poly = polyhedron(vrep(points), backend)
+    #normals = get_surface_normals(points)
+    #for (master_node, slave_nodes) in pairs(near_points)
+    #    if !(master in poly)
+    #        continue
+    #    end
+    #    id = nearest_point_id(all_positions[master_node, :], all_positions[slave_nodes, :])
+    #    contact_dict[master_node] = id
+    #    contact_normal[master_node] = normals[connectivity[id]]
+    #    # shortest
+    #end
     datamanager.set_contact_pairs_and_normals(contact_dict, contact_normal)    #connectivity -> glob to local
     # distance
 end
 
-function find_potential_contact_pairs(datamanager, contact_params)
-    # global IDs
-    all_positions = datamanager.get_all_positions()
-    # optimization of number of positions. Reduction to surface nodes.
+"""
+    find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
 
-    master_nodes = datamanager.get_contact_nodes(contact_params["Master"])
-    slave_nodes = datamanager.get_contact_nodes(contact_params["Slave"])
-    #global_master_nodes = datamanager.loc_to_glob(local_master_nodes)
-    # global_slave_nodes = datamanager.loc_to_glob(local_slave_nodes)
+Finds a list of potential master slave pairs which are next to each other. Only the free surface nodes of the contact blocks are tested. The process is done equally at each computational core.
+
+# Arguments
+- `datamanager::module`: datamanager.
+- `contact_params::Dict`: dictionary with contact relevant information.
+
+# Returns
+- pairs of potential contact partner.
+"""
+
+function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
+    all_positions = datamanager.get_all_positions()
+
+    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master"])
+    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave"])
+
     nmaster = length(master_nodes)
     near_points = fill(Vector{Int64}([]), length(search_radius))
 

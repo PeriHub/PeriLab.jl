@@ -8,7 +8,8 @@ using LinearAlgebra
 include("../../MPI_communication/MPI_communication.jl")
 using .MPI_communication: reduce_values, send_value
 include("Contact_search.jl")
-using .Contact_search: init_contact_search, compute_geometry, get_surface_information
+using .Contact_search: init_contact_search, compute_geometry, get_surface_information,
+                       compute_contact_pairs
 include("../../Support/Helpers.jl")
 using .Helpers: remove_ids, get_block_nodes
 include("../../Core/Module_inclusion/set_Modules.jl")
@@ -31,7 +32,7 @@ Initializes the contact model.
 """
 function init_contact_model(datamanager::Module, params)
     @info "Init Contact Model"
-    surface_nodes = Dict()
+    datamanager.set_contact_properties(params)
 
     check_valid_contact_model(params, datamanager.get_all_blocks())
     contact_blocks = get_all_contact_blocks(params)
@@ -40,13 +41,34 @@ function init_contact_model(datamanager::Module, params)
     global_contact_ids = identify_contact_block_surface_nodes(datamanager, contact_blocks)
     create_local_contact_id_mapping(datamanager, global_contact_ids)
     identify_outer_contact_surfaces(datamanager, contact_blocks)
+    block_list = datamanager.get_all_blocks()
 
+    mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
+    datamanager.set_contact_block_ids(mapping)
+
+    #mapping = contact_block_free_surface_ids(global_contact_ids, block_list, contact_blocks)
+    #datamanager.set_contact_block_free_surface_ids(mapping)
+    # reduce the block_list
+    datamanager.set_all_blocks(block_list[global_contact_ids])
     for (cm, contact_params) in pairs(params)
-        init_contact_search(datamanager, contact_params, cm, surface_nodes)
+        init_contact_search(datamanager, contact_params, cm)
     end
     create_contact_fields(datamanager)
     @info "Finish Init Contact Model"
     return datamanager
+end
+
+function contact_block_ids(global_ids, block_list, contact_blocks)
+    mapping = Dict{Int64,Vector{Int64}}()
+    for cb in contact_blocks
+        mapping[cb] = []
+    end
+    for (id, glob_id) in pairs(global_ids)
+        if block_list[glob_id] in contact_blocks
+            append!(mapping[block_list[glob_id]], id)
+        end
+    end
+    return mapping
 end
 
 function create_contact_fields(datamanager)
@@ -77,7 +99,6 @@ function create_local_contact_id_mapping(datamanager, global_contact_ids)
         end
         mapping[local_id[1]] = id
     end
-
     datamanager.set_local_contact_ids(mapping)
 end
 
@@ -88,37 +109,6 @@ function get_all_contact_blocks(params)
         append!(contact_blocks, contact_params["Slave"])
     end
     return sort(unique(contact_blocks))
-end
-
-function check_valid_contact_model(params, block_ids::Vector{Int64})
-    for contact_params in values(params)
-        if !haskey(contact_params, "Master")
-            @error "Contact model needs a ''Master''"
-            return false
-        end
-        if !haskey(contact_params, "Slave")
-            @error "Contact model needs a ''Slave''"
-            return false
-        end
-        if contact_params["Master"] == contact_params["Slave"]
-            @error "Contact master and slave are equal. Self contact is not implemented yet."
-            return false
-        end
-
-        if !(contact_params["Master"] in block_ids)
-            @error "Block defintion in master does not exist."
-            return false
-        end
-        if !(contact_params["Slave"] in block_ids)
-            @error "Block defintion in slave does not exist."
-            return false
-        end
-        if !haskey(contact_params, "Search Radius")
-            @error "Contact model needs a ''Search Radius''"
-            return false
-        end
-    end
-    return true
 end
 
 """
@@ -136,13 +126,19 @@ Compute the forces of the contact model.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
-                       model_param::Dict,
-                       block::Int64,
-                       time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+function compute_contact_model(datamanager::Module,
+                               model_param::Dict,
+                               time::Float64,
+                               dt::Float64,
+                               to::TimerOutput)
+    # computes and synchronizes the relevant positions
+    synchronize_contact_points(datamanager::Module)
+
+    for (cm, contact_params) in pairs(params)
+        compute_contact_pairs(datamanager, contact_params)
+    end
+
+    #compute_contact()
     return datamanager
 end
 
@@ -166,6 +162,7 @@ function identify_contact_block_surface_nodes(datamanager, contact_blocks)
     # create reduced list of data.
     datamanager.set_all_positions(points[global_ids, :])
     # global ids list is needed to know the local ids and to organize the exchange between cores.
+    # its the reduced list
     return unique(global_ids)
 end
 
@@ -222,7 +219,7 @@ function synchronize_contact_points(datamanager::Module)
     local_map = datamanager.get_local_contact_ids()
 
     for (local_id, exchange_id) in pairs(local_map)
-        all_positions[exchange_position, :] = deformed_coord[local_id, :]
+        all_positions[exchange_id, :] = deformed_coord[local_id, :]
     end
     if datamanager.get_max_rank() == 1
         return
@@ -258,4 +255,34 @@ function get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
     return ids, jds
 end
 
+function check_valid_contact_model(params, block_ids::Vector{Int64})
+    for contact_params in values(params)
+        if !haskey(contact_params, "Master")
+            @error "Contact model needs a ''Master''"
+            return false
+        end
+        if !haskey(contact_params, "Slave")
+            @error "Contact model needs a ''Slave''"
+            return false
+        end
+        if contact_params["Master"] == contact_params["Slave"]
+            @error "Contact master and slave are equal. Self contact is not implemented yet."
+            return false
+        end
+
+        if !(contact_params["Master"] in block_ids)
+            @error "Block defintion in master does not exist."
+            return false
+        end
+        if !(contact_params["Slave"] in block_ids)
+            @error "Block defintion in slave does not exist."
+            return false
+        end
+        if !haskey(contact_params, "Search Radius")
+            @error "Contact model needs a ''Search Radius''"
+            return false
+        end
+    end
+    return true
+end
 end
