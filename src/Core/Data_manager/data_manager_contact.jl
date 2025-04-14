@@ -47,7 +47,7 @@ function get_local_contact_ids()
     return data["Local Contact IDs"]
 end
 
-function get_free_surface_nodes()
+function get_free_contact_surfaces()
     return data["Free Surface Nodes"]
 end
 

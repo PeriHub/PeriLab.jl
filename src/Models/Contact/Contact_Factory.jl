@@ -188,12 +188,13 @@ function identify_outer_contact_surfaces(datamanager, contact_blocks)
             # Polyhedra for the slave block; can be 2D or 3D
             poly_slave = compute_geometry(all_positions[block_nodes[jID], :])
             normals_j, offsets_j = get_surface_information(poly_slave)
-            ids, jds = get_free_surfs(normals_i, offsets_i, normals_j, offsets_j)
+            # gives lists where all surfaces are included, which are equal
+            ids, jds = get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
             remove_ids(free_surfaces[iID], ids)
             remove_ids(free_surfaces[jID], jds)
         end
     end
-    # find the free surfaces of the contact blocks
+    # remove all blocks from the free surface list, which are not master or slave
     for block in keys(free_surfaces)
         if !(block in contact_blocks)
             delete!(free_surfaces, block)
@@ -242,7 +243,7 @@ function get_local_ids(datamanager::Module)
     end
     datamanager.set_contact_relevant_local_ids(local_map)
 end
-function get_free_surfs(normals_i, offsets_i, normals_j, offsets_j)
+function get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
     ids = Vector{Int64}([])
     jds = Vector{Int64}([])
     for iID in eachindex(offsets_i)
