@@ -126,15 +126,15 @@ Compute the forces of the contact model.
 - `datamanager::Data_manager`: Datamanager.
 """
 function compute_contact_model(datamanager::Module,
-                               model_param::Dict,
+                               contact_params::Dict,
                                time::Float64,
                                dt::Float64,
                                to::TimerOutput)
     # computes and synchronizes the relevant positions
     synchronize_contact_points(datamanager::Module)
 
-    for (cm, contact_params) in pairs(params)
-        compute_contact_pairs(datamanager, contact_params)
+    for (cm, block_contact_params) in pairs(contact_params)
+        compute_contact_pairs(datamanager, block_contact_params)
     end
 
     #compute_contact()

@@ -74,7 +74,9 @@ end
 function get_free_surface_connections()
     return data["Free Surface Nodes Connections"]
 end
-
+function get_free_surface_nodes(block::Int64)
+    return data["Free Surface Nodes"][block]
+end
 function get_contact_properties()
     return data["Contact Properties"]
 end
