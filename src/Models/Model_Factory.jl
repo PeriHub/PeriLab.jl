@@ -151,11 +151,10 @@ function check_contact(datamanager::Module, params::Dict)
 end
 function check_contact(datamanager::Module, params::Dict, time::Float64, dt::Float64,
                        to::TimerOutput)
-    if haskey(params, "Contact")
-        return Contact_Factory.compute_contact_model(datamanager, params["Contact"], time,
+    if length(params) != 0
+        return Contact_Factory.compute_contact_model(datamanager, params, time,
                                                      dt, to)
     end
-
     return datamanager
 end
 

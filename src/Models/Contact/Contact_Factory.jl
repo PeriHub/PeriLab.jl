@@ -91,7 +91,6 @@ end
 
 function create_local_contact_id_mapping(datamanager, global_contact_ids)
     mapping = Dict{Int64,Int64}()
-    println(global_contact_ids)
     for (id, pid) in enumerate(global_contact_ids)
         local_id = datamanager.get_local_nodes([pid])
         if local_id == []
