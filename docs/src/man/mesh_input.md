@@ -1,6 +1,6 @@
 # Mesh Input File Structure
 
-The mesh input file is a text file used to define the geometry of the simulation domain. The file has a header and subsequent lines representing individual nodes with their corresponding coordinates, block IDs, volumes, and optional user-defined values. Below is an example of the structure:
+The mesh input file is a text or exodus file used to define the geometry of the simulation domain. The file has a header and subsequent lines representing individual nodes with their corresponding coordinates, block IDs, volumes, and optional user-defined values. Below is an example of the structure:
 
 ## Header
 The header of the mesh input file specifies the format of the subsequent data columns. In this example, the header consists of the following columns:
