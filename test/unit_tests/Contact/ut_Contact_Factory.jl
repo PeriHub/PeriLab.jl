@@ -24,6 +24,10 @@ using .Contact_Factory: check_valid_contact_model
     @test !check_valid_contact_model(contact_params, block_id)
     block_id[2] = 2
     @test !check_valid_contact_model(contact_params, block_id)
+    contact_params = Dict("Master" => 1, "Slave" => 2, "Search Radius" => 0.0)
+    @test !check_valid_contact_model(contact_params, block_id)
+    contact_params = Dict("Master" => 1, "Slave" => 2, "Search Radius" => -20.0)
+    @test !check_valid_contact_model(contact_params, block_id)
 end
 
 @testset "ut_check_valid_contact_model" begin
