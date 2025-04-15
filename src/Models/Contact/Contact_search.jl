@@ -43,8 +43,8 @@ function init_contact_search(datamanager, contact_params, cm)
     # checken
     datamanager.set_free_surface_connections(Dict(master_id => connection_master))
     datamanager.set_free_surface_connections(Dict(slave_id => connection_slave))
-    datamanager.set_free_surface_nodes(Dict(master_id => sort(collect(keys(connection_master)))))
-    datamanager.set_free_surface_nodes(Dict(slave_id => sort(collect(keys(connection_slave)))))
+    datamanager.set_free_surface_nodes(master_id, sort(collect(keys(connection_master))))
+    datamanager.set_free_surface_nodes(slave_id, sort(collect(keys(connection_slave))))
 
     # do something with block nodes
 
@@ -101,8 +101,8 @@ end
 function compute_contact_pairs(datamanager, contact_params)
     all_positions = datamanager.get_all_positions()
     #-------------
-
     near_points = find_potential_contact_pairs(datamanager, contact_params)
+    create_potential_contact_dict(near_points, datamanager, contact_params)
     println(near_points)
     #connectivity = datamanager.get_contact_connectivity(contact_params["Slave"])
     #backend = CDDLib.Library()
@@ -118,8 +118,20 @@ function compute_contact_pairs(datamanager, contact_params)
     #    contact_normal[master_node] = normals[connectivity[id]]
     #    # shortest
     #end
-    datamanager.set_contact_pairs_and_normals(contact_dict, contact_normal)    #connectivity -> glob to local
+    #    datamanager.set_contact_pairs_and_normals(contact_dict, contact_normal)    #connectivity -> glob to local
     # distance
+end
+
+function create_potential_contact_dict(near_points, datamanager, contact_params)
+    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master"])
+    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave"])
+    contact_dict = Dict{Int64,Vector{Int64}}()
+    for (pID, neighbors) in enumerate(near_points)
+        if length(neighbors) > 0
+            contact_dict[master_nodes[pID]] = slave_nodes[neighbors]
+        end
+    end
+    return contact_dict
 end
 
 """
@@ -135,17 +147,17 @@ Finds a list of potential master slave pairs which are next to each other. Only 
 - pairs of potential contact partner.
 """
 
+## test schreiben
 function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
     all_positions = datamanager.get_all_positions()
-
+    dof = datamanager.get_dof()
     master_nodes = datamanager.get_free_surface_nodes(contact_params["Master"])
     slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave"])
 
     nmaster = length(master_nodes)
-    near_points = fill(Vector{Int64}([]), length(search_radius))
-
+    near_points = fill(Vector{Int64}([]), nmaster)
     return get_nearest_neighbors(1:nmaster,
-                                 dof::Int64,
+                                 dof,
                                  all_positions[master_nodes, :],
                                  all_positions[slave_nodes, :],
                                  contact_params["Search Radius"],

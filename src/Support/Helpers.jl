@@ -190,7 +190,7 @@ function get_nearest_neighbors(nodes,
                                dof::Int64,
                                system_coordinates,
                                neighbor_coordinates,
-                               radius::Union{Vector{Float64},Vector{Int64}},
+                               radius::Union{Int64,Float64,Vector{Float64},Vector{Int64}},
                                neighborList,
                                diffent_lists = false)
     nhs = GridNeighborhoodSearch{dof}(search_radius = maximum(radius),
@@ -203,7 +203,10 @@ function get_nearest_neighbors(nodes,
                          neighbor_coordinates',# Potential neighbor coordinates -> must be transpose for the datamanager definition
                          nhs,
                          iID,
-                         search_radius = radius[iID]) do i, j, _, L
+                         search_radius = radius isa AbstractVector ? radius[iID] : radius) do i,
+                                                                                              j,
+                                                                                              _,
+                                                                                              L
             if i != j || diffent_lists
                 push!(neighbors, j)
             end
