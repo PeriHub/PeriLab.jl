@@ -14,19 +14,23 @@ using .Contact_Factory: check_valid_contact_model
     test_data_manager.set_num_controller(4)
     block_id = test_data_manager.create_field("Block_Id", Int64, 1)
     block_id .= 1
-    contact_params = Dict()
+    contact_params = Dict("cm" => Dict())
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("Master" => 1)
+    contact_params = Dict("cm" => Dict("Master" => 1))
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("Master" => 1, "Slave" => 1)
+    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 1))
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("Master" => 1, "Slave" => 2)
+    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 2))
+    @test !check_valid_contact_model(contact_params, block_id)
+    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 2),
+                          "cm2" => Dict("Master" => 2, "Slave" => 1))
     @test !check_valid_contact_model(contact_params, block_id)
     block_id[2] = 2
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("Master" => 1, "Slave" => 2, "Search Radius" => 0.0)
+    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 2, "Search Radius" => 0.0))
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("Master" => 1, "Slave" => 2, "Search Radius" => -20.0)
+    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 2,
+                                       "Search Radius" => -20.0))
     @test !check_valid_contact_model(contact_params, block_id)
 end
 

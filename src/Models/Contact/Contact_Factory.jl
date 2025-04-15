@@ -6,7 +6,7 @@ module Contact_Factory
 using TimerOutputs
 using LinearAlgebra
 include("../../MPI_communication/MPI_communication.jl")
-using .MPI_communication: reduce_values, send_value
+using .MPI_communication: find_and_set_core_value_sum
 include("Contact_search.jl")
 using .Contact_search: init_contact_search, compute_geometry, get_surface_information,
                        compute_contact_pairs
@@ -224,8 +224,7 @@ function synchronize_contact_points(datamanager::Module)
         return
     end
     comm = datamanager.get_comm()
-    all_positions = reduce_values(comm, all_positions)
-    all_positions = send_value(comm, 0, all_positions)
+    find_and_set_core_value_sum(comm, all_positions)
 end
 
 function get_local_ids(datamanager::Module)
@@ -255,6 +254,9 @@ function get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
 end
 
 function check_valid_contact_model(params, block_ids::Vector{Int64})
+    # inverse master slave check
+    # tuple liste bauen und dann die neuen invers checken
+    check_dict = Dict{Int64,Int64}()
     for contact_params in values(params)
         if !haskey(contact_params, "Master")
             @error "Contact model needs a ''Master''"
@@ -277,8 +279,18 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
             @error "Block defintion in slave does not exist."
             return false
         end
+        check_dict[contact_params["Master"]] = contact_params["Slave"]
+        if haskey(check_dict, contact_params["Slave"]) &&
+           check_dict[contact_params["Slave"]] == contact_params["Master"]
+            @error "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
+            return false
+        end
         if !haskey(contact_params, "Search Radius")
-            @error "Contact model needs a ''Search Radius''"
+            @error "Contact model needs a ''Search Radius''."
+            return false
+        end
+        if contact_params["Search Radius"] <= 0
+            @error "''Search Radius'' must be greater than zero."
             return false
         end
     end
