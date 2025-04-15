@@ -190,7 +190,7 @@ function get_nearest_neighbors(nodes,
                                dof::Int64,
                                system_coordinates,
                                neighbor_coordinates,
-                               radius,
+                               radius::Union{Vector{Float64},Vector{Int64}},
                                neighborList,
                                diffent_lists = false)
     nhs = GridNeighborhoodSearch{dof}(search_radius = maximum(radius),
