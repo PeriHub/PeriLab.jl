@@ -438,7 +438,7 @@ Find and set core value sum
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
-function find_and_set_core_value_sum(comm::MPI.Comm, value::Union{Float64,Int64,Bool})
+function find_and_set_core_value_sum(comm::MPI.Comm, value::Any)
     return MPI.Allreduce(value, MPI.SUM, comm)
 end
 
@@ -473,21 +473,6 @@ Gather values
 """
 function gather_values(comm::MPI.Comm, value::Any)
     return MPI.gather(value, comm; root = 0)
-end
-
-"""
-    gather_values(comm::MPI.Comm, value::Any)
-
-reduces the value at root
-
-# Arguments
-- `comm::MPI.Comm`: The MPI communicator
-- `value::Any`: The value
-# Returns
-- `recv_msg::Any`: The received message
-"""
-function reduce_values(comm::MPI.Comm, value::Any)
-    return MPI.Reduce(value, MPI.SUM, 0, comm)
 end
 
 function barrier(comm)
