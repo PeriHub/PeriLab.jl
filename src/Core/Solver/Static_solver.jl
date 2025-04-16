@@ -87,7 +87,7 @@ function init_solver(solver_options::Dict{Any,Any},
     if fixed_dt == -1.0
         if haskey(params, "Number of Steps")
             nsteps = params["Number of Steps"]
-            dt = (final_time - initial_time) / (nsteps - 1)
+            dt = (final_time - initial_time) / nsteps
         else
             nsteps = Int64(1)
             dt = final_time - initial_time
@@ -97,7 +97,7 @@ function init_solver(solver_options::Dict{Any,Any},
             @warn "''Number of Steps'' and ''Fixed dt'' are defined. ''Fixed dt'' is used and ''Number of Steps'' from yaml is ignored."
         end
         nsteps = Int64(round((final_time - initial_time) / fixed_dt) + 1)
-        dt = (final_time - initial_time) / (nsteps - 1)
+        dt = (final_time - initial_time) / nsteps
     end
     comm = datamanager.get_comm()
 
