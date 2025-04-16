@@ -134,7 +134,13 @@ function compute_contact_model(datamanager::Module,
     synchronize_contact_points(datamanager::Module)
 
     for (cm, block_contact_params) in pairs(contact_params)
-        compute_contact_pairs(datamanager, block_contact_params)
+        datamanager.set_contact_dict(cm,
+                                     Dict("Pairs: Master-Slave" => Vector{Tuple{Int64,
+                                                                                Int64}}([]),
+                                          "Normals" => Vector{Array{Float64}}([]),
+                                          "Offsets" => Vector{Float64}([]),
+                                          "Distance" => Vector{Float64}([])))
+        compute_contact_pairs(datamanager, cm, block_contact_params)
     end
 
     #compute_contact()

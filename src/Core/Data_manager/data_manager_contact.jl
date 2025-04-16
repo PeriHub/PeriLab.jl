@@ -72,7 +72,7 @@ function get_local_contact_ids()
 end
 
 function get_free_surface_connections()
-    return data["Free Surface Nodes Connections"]
+    return data["Free Surface Connections"]
 end
 function get_free_surface_nodes(block::Int64)
     return data["Free Surface Nodes"][block]
@@ -116,14 +116,23 @@ function set_free_contact_surfaces(free_surfaces)
     data["Free Surfaces"] = free_surfaces
 end
 
-function set_free_surface_nodes(free_surface_nodes)
-    merge(data["Free Surface Nodes"], free_surface_nodes)
+function set_free_surface_nodes(block::Int64, free_surface_nodes::Vector{Int64})
+    data["Free Surface Nodes"][block] = free_surface_nodes
 end
 
 function set_free_surface_connections(free_surface_nodes_connections)
-    merge(data["Free Surface Nodes Connections"], free_surface_nodes_connections)
+    data["Free Surface Connections"] = merge(data["Free Surface Connections"],
+                                             free_surface_nodes_connections)
 end
 
 function set_contact_properties(params::Dict)
     data["Contact Properties"] = params
+end
+
+function get_contact_dict(id::String)
+    return data["Contact Dictionary"][id]
+end
+
+function set_contact_dict(id::String, params::Dict{String,Vector})
+    data["Contact Dictionary"][id] = params
 end

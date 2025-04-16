@@ -14,6 +14,7 @@ using StaticArrays
 using LoopVectorization
 using Unitful
 using CDDLib, Polyhedra
+
 global A2x2 = MMatrix{2,2}(zeros(Float64, 2, 2))
 global A3x3 = MMatrix{3,3}(zeros(Float64, 3, 3))
 global A6x6 = MMatrix{6,6}(zeros(Float64, 6, 6))
@@ -33,6 +34,7 @@ export interpolation
 export interpol_data
 export progress_bar
 export invert
+export compute_distance_to_surfaces
 export rotate
 export sub_in_place!
 export add_in_place!
@@ -112,6 +114,15 @@ function compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Mat
     return connections
 end
 
+function compute_distance_to_surfaces(point, normals, offsets,
+                                      connectivity)
+    distances = zeros(length(connectivity))
+    for (id, conn) in enumerate(connectivity)
+        distances[id] = dot(point * normals[conn]) - offsets[conn]
+    end
+    return distances
+end
+
 function get_surface_normals(poly)
     return MixedMatHRep(hrep(poly)).A
 end
@@ -142,7 +153,7 @@ function point_is_inside(point, poly)
 end
 
 function nearest_point_id(p, points)
-    return argmin(norm.(points .- Ref(p)))
+    return argmin(norm.(eachrow(points) .- Ref(p)))
 end
 
 """

@@ -151,12 +151,12 @@ function initialize_data()
     data["coupling_fe_nodes"] = []
     data["BC_free_dof"] = []
     data["Contact Nodes"] = Dict{Int64,Vector{Int64}}()
-    data["Contact Connectivity"] = Dict{Int64,Dict{Int64,Int64}}()
     data["All positions"] = []
     data["All Blocks"] = []
     data["Free Surfaces"] = Dict()
-    data["Free Surface Nodes Connections"] = Dict{Int64,Dict{Int64,Vector{Int64}}}()
-    data["Free Surface Nodes"] = Dict{Int64,Vector{Int64}}()
+    data["Free Surface Connections"] = Dict{Int64,Vector{Int64}}() # point ID -> surface IDs
+    data["Free Surface Nodes"] = Dict{Int64,Vector{Int64}}() # block ID -> surface point IDs
+    data["Contact Dictionary"] = Dict()
     data["Global Contact IDs"] = Vector{Int64}([])
     data["Local Contact IDs"] = Dict{Int64,Int64}()
     data["Contact Properties"] = Dict()
@@ -335,15 +335,6 @@ function get_comm()
     return data["commMPi"]
 end
 
-"""
-    get_comm()
-
-Get the list of the connection between the surface and the node.
-
-"""
-function get_contact_connectivity()
-    return data["Contact Connectivity"]
-end
 """
     get_contact_nodes()
 
@@ -1274,10 +1265,6 @@ Sets the critical values matrix globally.
 """
 function set_crit_values_matrix(crit_values::Array{Float64,3})
     data["crit_values_matrix"] = crit_values
-end
-
-function set_contact_connectivity(block_id::Int64, connectivity::Dict{Int64,Int64})
-    data["Contact Connectivity"][block_id] = connectivity
 end
 
 """
