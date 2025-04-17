@@ -67,15 +67,24 @@ function get_model_parameter(params::Dict,
     if haskey(params["Models"][model * "s"], id)
         file_keys = find_data_files(params["Models"][model * "s"][id])
         for file_key in file_keys
-            data, header = csv_reader_temporary(joinpath(directory,
-                                                         params["Models"][model * "s"][id][file_key]))
+            if file_key isa Array
+                data,
+                header = csv_reader_temporary(joinpath(directory,
+                                                       params["Models"][model * "s"][id][file_key[1]][file_key[2]]))
+                key_name = file_key[2]
+            else
+                data,
+                header = csv_reader_temporary(joinpath(directory,
+                                                       params["Models"][model * "s"][id][file_key]))
+                key_name = file_key
+            end
             for i in 2:size(data, 2)
-                if header[i] != replace(file_key, " " => "_")
+                if header[i] != replace(key_name, " " => "_")
                     continue
                 end
-                params["Models"][model * "s"][id][file_key] = Dict()
-                params["Models"][model * "s"][id][file_key]["Field"] = header[1]
-                params["Models"][model * "s"][id][file_key]["Data"] = interpolation(data[!,
+                params["Models"][model * "s"][id][key_name] = Dict()
+                params["Models"][model * "s"][id][key_name]["Field"] = header[1]
+                params["Models"][model * "s"][id][key_name]["Data"] = interpolation(data[!,
                                                                                          1],
                                                                                     data[!,
                                                                                          i])
@@ -107,6 +116,13 @@ end
 function find_data_files(params::Dict)
     file_keys = []
     for (key, value) in params
+        if value isa Dict
+            for (subkey, subvalue) in value
+                if typeof(subvalue) == String && endswith(subvalue, ".txt")
+                    push!(file_keys, [key, subkey])
+                end
+            end
+        end
         if typeof(value) == String && endswith(value, ".txt")
             push!(file_keys, key)
         end
