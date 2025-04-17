@@ -139,7 +139,7 @@ function compute_contact_model(datamanager::Module,
                                                                                 Int64}}([]),
                                           "Normals" => Vector{Array{Float64}}([]),
                                           "Offsets" => Vector{Float64}([]),
-                                          "Distance" => Vector{Float64}([])))
+                                          "Distances" => Vector{Float64}([])))
         compute_contact_pairs(datamanager, cm, block_contact_params)
     end
 

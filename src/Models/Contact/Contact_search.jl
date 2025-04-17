@@ -126,7 +126,7 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
         distances = compute_distance_to_surfaces(all_positions[master_node, :], normals,
                                                  offsets,
                                                  connectivity[id])
-
+        # TODO preallocation, e.g. max number of contact nodes -> size depended
         append!(contact_dict["Pairs: Master-Slave"], [(master_node, id)])
         append!(contact_dict["Normals"], [normals[connectivity[id], :]])
         append!(contact_dict["Distances"], [distances])

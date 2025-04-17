@@ -118,7 +118,7 @@ function compute_distance_to_surfaces(point, normals, offsets,
                                       connectivity)
     distances = zeros(length(connectivity))
     for (id, conn) in enumerate(connectivity)
-        distances[id] = dot(point * normals[conn]) - offsets[conn]
+        distances[id] = dot(point, normals[conn, :]) - offsets[conn]
     end
     return distances
 end
