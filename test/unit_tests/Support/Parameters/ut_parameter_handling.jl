@@ -571,7 +571,9 @@ params = Dict("Models" => Dict("Material Models" => Dict("A" => Dict("s" => 0,
                                                                      "A" => path *
                                                                             "test_data_file.txt",
                                                                      "B" => path *
-                                                                            "test_data_file.txt"),
+                                                                            "test_data_file.txt",
+                                                                     "C" => Dict("Sub" => path *
+                                                                                          "test_data_file.txt")),
                                                          "B" => Dict("sa" => [3.2, 2, 3],
                                                                      "d" => "true",
                                                                      "Young's_Modulus" => path *
@@ -582,8 +584,8 @@ params = Dict("Models" => Dict("Material Models" => Dict("A" => Dict("s" => 0,
                                "block_2" => Dict("Material Model" => "B")))
 
 @testset "ut_find_data_files" begin
-    @test sort(PeriLab.Solver_control.Parameter_Handling.find_data_files(params["Models"]["Material Models"]["A"])) ==
-          ["A", "B"]
+    @test PeriLab.Solver_control.Parameter_Handling.find_data_files(params["Models"]["Material Models"]["A"]) ==
+          ["B", "A", ["C", "Sub"]]
     @test PeriLab.Solver_control.Parameter_Handling.find_data_files(params["Models"]["Material Models"]["B"]) ==
           ["Young's_Modulus"]
     @test PeriLab.Solver_control.Parameter_Handling.find_data_files(params["Models"]["Damage Models"]["E"]) ==

@@ -162,8 +162,10 @@ function init_interface_crit_values(datamanager::Module,
         for block_jId in 1:max_block_id
             critical_value_name = "Interblock Critical Value $(block_iId)_$block_jId"
             if haskey(damage_parameter["Interblock Damage"], critical_value_name)
-                inter_critical_value[block_iId, block_jId,
-                                     block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+                if damage_parameter["Interblock Damage"][critical_value_name] isa Number
+                    inter_critical_value[block_iId, block_jId,
+                                         block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+                end
             end
         end
     end
