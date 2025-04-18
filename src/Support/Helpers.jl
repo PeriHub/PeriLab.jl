@@ -113,7 +113,7 @@ function compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Mat
     end
     return connections
 end
-
+# there might be more than one surface and the user has to deal with it
 function compute_distance_to_surfaces(point, normals, offsets,
                                       connectivity)
     distances = zeros(length(connectivity))

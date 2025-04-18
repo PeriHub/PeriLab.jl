@@ -10,6 +10,8 @@ using .MPI_communication: find_and_set_core_value_sum
 include("Contact_search.jl")
 using .Contact_search: init_contact_search, compute_geometry, get_surface_information,
                        compute_contact_pairs
+include("Penalty_model.jl")
+using .Penalty_model
 include("../../Support/Helpers.jl")
 using .Helpers: remove_ids, get_block_nodes
 include("../../Core/Module_inclusion/set_Modules.jl")
@@ -53,7 +55,6 @@ function init_contact_model(datamanager::Module, params)
     for (cm, contact_params) in pairs(params)
         init_contact_search(datamanager, contact_params, cm)
     end
-    create_contact_fields(datamanager)
     @info "Finish Init Contact Model"
     return datamanager
 end
@@ -69,14 +70,6 @@ function contact_block_ids(global_ids, block_list, contact_blocks)
         end
     end
     return mapping
-end
-
-function create_contact_fields(datamanager)
-    dof = datamanager.get_dof()
-    local_ids = datamanager.get_local_contact_ids()
-    npoints = max(length(local_ids), 1)
-    datamanager.create_constant_free_size_field("Contact Forces", Float64, (npoints, dof))
-    #datamanager.create_constant_free_size_field("Contact Pair", Int64, (npoints, dof))
 end
 
 function apply_contact_forces(datamanager)
@@ -140,10 +133,39 @@ function compute_contact_model(datamanager::Module,
                                           "Normals" => Vector{Array{Float64}}([]),
                                           "Distances" => Vector{Vector{Float64}}([])))
         compute_contact_pairs(datamanager, cm, block_contact_params)
+        Penalty_model.compute_contact_model(datamanager, cm, params,
+                                            compute_master_force_density,
+                                            compute_slave_force_density)
     end
 
     #compute_contact()
     return datamanager
+end
+
+function compute_master_force_density(datamanager, id, contact_force)
+    compute_force_density(datamanager, id, contact_force)
+end
+
+function compute_slave_force_density(datamanager, id, contact_force)
+    compute_force_density(datamanager, id, -contact_force)
+end
+
+function compute_slave_force_density(datamanager, id, contact_force, nlist)
+    mapping = datamanager.get_local_contact_ids()
+    if !(id in keys(mapping))
+        return
+    end
+    nlist = datamanager.get_nlist()
+    compute_force_density(datamanager, id, -contact_force)
+end
+
+function compute_force_density(datamanager, id, contact_force)
+    mapping = datamanager.get_local_contact_ids()
+    if !(id in keys(mapping))
+        return
+    end
+    force_densities = datamanager.get_field("Force Densities", "NP1")
+    force_densities[mapping[id], :] .+= contact_force
 end
 
 function identify_contact_block_surface_nodes(datamanager, contact_blocks)
