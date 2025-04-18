@@ -91,8 +91,8 @@ header: x y block_id volume
 PeriLab:
     Discretization:
         Node Sets:
-        Node Set 1: 1
-        Node Set 1: 5
+            Node Set 1: 1
+            Node Set 1: 5
         Type: "Text File"
         Input Mesh File: "mesh.txt"
     Models:
@@ -135,11 +135,11 @@ PeriLab:
             Maximum number of iterations: 100
     Outputs:
         Output1:
-        Output Filename: "truss"
-        Output File Type: Exodus
-        Number of Output Steps: 20
-        Output Variables:
-            Displacements: True
-            Number of Neighbors: True
-            Forces: True
+            Output Filename: "truss"
+            Output File Type: Exodus
+            Number of Output Steps: 20
+            Output Variables:
+                Displacements: True
+                Number of Neighbors: True
+                Forces: True
 ```
