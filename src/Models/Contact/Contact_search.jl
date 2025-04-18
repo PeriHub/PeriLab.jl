@@ -131,7 +131,6 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
         append!(contact_dict["Normals"], [normals[connectivity[id], :]])
         append!(contact_dict["Distances"], [distances])
     end
-    println(contact_dict)
     datamanager.set_contact_dict(cm, contact_dict)
 end
 

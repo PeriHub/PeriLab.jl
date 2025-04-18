@@ -138,8 +138,7 @@ function compute_contact_model(datamanager::Module,
                                      Dict("Pairs: Master-Slave" => Vector{Tuple{Int64,
                                                                                 Int64}}([]),
                                           "Normals" => Vector{Array{Float64}}([]),
-                                          "Offsets" => Vector{Float64}([]),
-                                          "Distances" => Vector{Float64}([])))
+                                          "Distances" => Vector{Vector{Float64}}([])))
         compute_contact_pairs(datamanager, cm, block_contact_params)
     end
 
