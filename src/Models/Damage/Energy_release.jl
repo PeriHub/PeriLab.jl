@@ -177,6 +177,8 @@ function compute_model(datamanager::Module,
                 critical_energy_value = interpol_data(dependent_field[iID],
                                                       damage_parameter["Critical Value"]["Data"],
                                                       warning_flag)
+            else
+                critical_energy_value = critical_energy
             end
 
             if aniso_damage
