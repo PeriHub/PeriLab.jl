@@ -12,61 +12,55 @@ K_{j1} &amp;  &amp; K_{jj} &amp;&amp;&amp;\\
 2 0 1 1
 3 0 1 1
 4 0 1 1</code></pre><h2 id="Yaml"><a class="docs-heading-anchor" href="#Yaml">Yaml</a><a id="Yaml-1"></a><a class="docs-heading-anchor-permalink" href="#Yaml" title="Permalink"></a></h2><pre><code class="language-yaml hljs">PeriLab:
-    Discretization:
-        Node Sets:
-            Node Set 1: 1
-            Node Set 1: 5
-        Type: &quot;Text File&quot;
-        Input Mesh File: &quot;mesh.txt&quot;
-    Models:
-        Material Models:
-            Test:
-                Material Model: &quot;Bond-based elastic&quot;
-                Symmetry: &quot;isotropic plane stress&quot;
-                Young&#39;s Modulus: 7000
-                Poisson&#39;s Ratio: 0.3
-    Blocks:
-        block_1:
-            Block ID: 1
-            Material Model: &quot;Test&quot;
-            Density: 20
-            Horizon: 2
-    Boundary Conditions:
-        BC_1:
-            Variable: &quot;Displacement&quot;
-            Node Set: &quot;Node Set 1&quot;
-            Coordinate: &quot;x&quot;
-            Value: &quot;100*t&quot;
-            Type: Dirichlet
-        BC_2:
-            Variable: &quot;Displacement&quot;
-            Coordinate: &quot;x&quot;
-            Node Set: &quot;Node Set 2&quot;
-            Value: &quot;0.1*t&quot;
-            Type: Dirichlet
-    Solver:
-        Material Models: True
-        Initial Time: 0.0
-        Final Time: 1.0
-        Number of Steps: 20
-        Static:
-            Show solver iteration: true
-            Residual tolerance: 1e-7
-            Solution tolerance: 1e-8
-            Residual scaling: 7000
-            m: 550
-            Maximum number of iterations: 100
-    Outputs:
-        Output1:
-            Output Filename: &quot;truss&quot;
-            Output File Type: Exodus
-            Number of Output Steps: 20
-            Output Variables:
-                Displacements: True
-                Number of Neighbors: True
-                Forces: True</code></pre><script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  Discretization:
+    Node Sets:
+      Node Set 1: 1
+      Node Set 2: 5
+    Type: &quot;Text File&quot;
+    Input Mesh File: &quot;truss.txt&quot;
+  Models:
+    Material Models:
+      Test:
+        Material Model: &quot;Bond-based Elastic&quot;
+        Symmetry: &quot;isotropic plane stress&quot;
+        Young&#39;s Modulus: 7000
+        Poisson&#39;s Ratio: 0.3
+  Blocks:
+    block_1:
+      Block ID: 1
+      Material Model: &quot;Test&quot;
+      Density: 20
+      Horizon: 2
+  Boundary Conditions:
+    BC_1:
+      Variable: &quot;Displacement&quot;
+      Node Set: &quot;Node Set 1&quot;
+      Coordinate: &quot;x&quot;
+      Value: &quot;100*t&quot;
+      Type: Dirichlet
+    BC_2:
+      Variable: &quot;Displacement&quot;
+      Coordinate: &quot;x&quot;
+      Node Set: &quot;Node Set 2&quot;
+      Value: &quot;0.1*t&quot;
+      Type: Dirichlet
+  Solver:
+    Material Models: True
+    Initial Time: 0.0
+    Final Time: 1.0
+    Verlet:
+      Safety Factor: 1.00
+  Outputs:
+    Output1:
+      Output Filename: &quot;truss&quot;
+      Output File Type: Exodus
+      Number of Output Steps: 20
+      Output Variables:
+        Displacements: True
+        Number of Neighbors: True
+        Forces: True</code></pre><script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 mermaid.initialize({
     startOnLoad: true,
     theme: "neutral"
 });
-</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../lecture/">« Non-local structural mechanics and peridynamics</a><a class="docs-footer-nextpage" href="../seminar_2/">Seminar 2 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.1 on <span class="colophon-date" title="Friday 18 April 2025 20:27">Friday 18 April 2025</span>. Using Julia version 1.10.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../lecture/">« Non-local structural mechanics and peridynamics</a><a class="docs-footer-nextpage" href="../seminar_2/">Seminar 2 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.1 on <span class="colophon-date" title="Tuesday 22 April 2025 07:42">Tuesday 22 April 2025</span>. Using Julia version 1.10.9.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
