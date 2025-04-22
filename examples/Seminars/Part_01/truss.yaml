@@ -20,27 +20,33 @@ PeriLab:
     block_1:
       Block ID: 1
       Material Model: "Test"
-      Density: 20
+      Density: 2e-9
       Horizon: 2
   Boundary Conditions:
     BC_1:
-      Variable: "Displacement"
+      Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
-      Value: "100*t"
+      Value: "0.01*t"
       Type: Dirichlet
     BC_2:
-      Variable: "Displacement"
+      Variable: "Displacements"
       Coordinate: "x"
       Node Set: "Node Set 2"
-      Value: "0.1*t"
+      Value: "0"
       Type: Dirichlet
   Solver:
     Material Models: True
     Initial Time: 0.0
-    Final Time: 1.0
-    Verlet:
-      Safety Factor: 1.00
+    Final Time: 1
+    Number of Steps: 20
+    Static:
+      Show solver iteration: true
+      Residual tolerance: 1e-8
+      Solution tolerance: 1e-8
+      Residual scaling: 700
+      m: 50
+      Maximum number of iterations: 100
   Outputs:
     Output1:
       Output Filename: "truss"

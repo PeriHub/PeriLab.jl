@@ -36,7 +36,7 @@ $\mathbf{F}_{internal}$ is the force density in $\left[\frac{N}{m^3}\right]$
 
 
 1D [MasoumiA2023](@cite) $\rightarrow$ $c = \frac{2E}{A\delta^2}$
-
+2D
 For FEM
 
 $$\mathbf{K}=\frac{EA}{L}\begin{bmatrix}1&-1\\-1&1\end{bmatrix}$$
@@ -72,10 +72,59 @@ $^{forces}K_{11}=-^{forces}K_{12}=-\frac{E}{L^2}AL=\frac{EA}{L}$
 
 $$\mathbf{K}=\frac{EA}{L}\begin{bmatrix}1&-1\\-1&1\end{bmatrix}$$
 
-
-
-
 ---
+
+
+## Analysis of matrix behavior
+```julia
+using LinearAlgebra
+E = 1
+V = 1
+L = 1
+np = 8
+nn = 2
+delta = 1
+omega=ones(np, np)
+##
+c=zeros(np)
+c .= 2*E/delta^2
+c[4]=1.5 .*c[4]
+K=zeros(np,np)
+for iID in 1:np
+  for jID in -nn:nn
+    if jID != 0 && iID + jID > 0 && iID + jID < np + 1
+      xi = L*abs(jID)
+      K[iID, iID + jID] -= 0.5 * c[iID] / xi * V * omega[iID, iID + jID]
+      K[iID, iID]      +=  0.5 *c[iID] / xi * V * omega[iID, iID + jID]
+    end
+  end
+end
+
+display(K)
+rank(K)
+eigvals(K)
+det(K)
+
+## Damage
+
+omega[1,2] = 0
+
+K=zeros(np,np)
+for iID in 1:np
+  for jID in -nn:nn
+    if jID != 0 && iID + jID > 0 && iID + jID < np + 1
+      xi = L*abs(jID)
+      K[iID, iID + jID] -= 0.5 * c[iID] / xi * V * omega[iID, iID + jID]
+      K[iID, iID]      +=  0.5 *c[iID] / xi * V * omega[iID, iID + jID]
+    end
+  end
+end
+
+display(K)
+
+```
+
+## Perilab
 ## Mesh
 ```plaintext
 header: x y block_id volume
@@ -106,7 +155,7 @@ PeriLab:
     block_1:
       Block ID: 1
       Material Model: "Test"
-      Density: 20
+      Density: 2e-9
       Horizon: 2
   Boundary Conditions:
     BC_1:
@@ -125,8 +174,14 @@ PeriLab:
     Material Models: True
     Initial Time: 0.0
     Final Time: 1.0
-    Verlet:
-      Safety Factor: 1.00
+    Number of Steps: 20
+    Static:
+      Show solver iteration: true
+      Residual tolerance: 1e-7
+      Solution tolerance: 1e-8
+      Residual scaling: 7000
+      m: 550
+      Maximum number of iterations: 100
   Outputs:
     Output1:
       Output Filename: "truss"
