@@ -47,16 +47,20 @@ function init_data(params::Dict,
         fem_active::Bool = false
         if rank == 1
             @timeit to "load_and_evaluate_mesh" distribution,
-            mesh,
-            ntype,
-            overlap_map,
-            nlist,
-            nlist_filtered_ids,
-            bond_norm,
-            dof,
-            nsets,
-            topology,
-            element_distribution=load_and_evaluate_mesh(params, path, size, to)
+                                                mesh,
+                                                ntype,
+                                                overlap_map,
+                                                nlist,
+                                                nlist_filtered_ids,
+                                                bond_norm,
+                                                dof,
+                                                nsets,
+                                                topology,
+                                                element_distribution=load_and_evaluate_mesh(params,
+                                                                                            path,
+                                                                                            size,
+                                                                                            to,
+                                                                                            datamanager.get_silent())
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -260,11 +264,9 @@ Changes entries in the overlap map from the global numbering to the local comput
 - `overlap_map::Dict{Int64, Dict{Int64, String}}`: returns overlap map with local nodes.
 """
 function local_nodes_from_dict(glob_to_loc::Dict{Int,Int}, global_nodes::Vector{Int64})
-    return Int64[
-                 glob_to_loc[global_node]
+    return Int64[glob_to_loc[global_node]
                  for
-                 global_node in global_nodes if haskey(glob_to_loc, global_node)
-                 ]
+                 global_node in global_nodes if haskey(glob_to_loc, global_node)]
 end
 
 """
@@ -416,11 +418,12 @@ function distribution_to_cores(comm::MPI.Comm,
                 datafield .= send_vector_from_root_to_core_i(comm, send_msg, datafield,
                                                              distribution)
             else
-                datafield[:, localDof] = send_vector_from_root_to_core_i(comm,
-                                                                         send_msg,
-                                                                         datafield[:,
-                                                                                   localDof],
-                                                                         distribution)
+                datafield[:,
+                          localDof] = send_vector_from_root_to_core_i(comm,
+                                                                      send_msg,
+                                                                      datafield[:,
+                                                                                localDof],
+                                                                      distribution)
             end
         end
     end
@@ -811,7 +814,8 @@ Load and evaluate the mesh data.
 function load_and_evaluate_mesh(params::Dict,
                                 path::String,
                                 ranksize::Int64,
-                                to::TimerOutput)
+                                to::TimerOutput,
+                                silent::Bool)
     filename = joinpath(path, Parameter_Handling.get_mesh_name(params))
     if params["Discretization"]["Type"] == "Abaqus"
         @timeit to "read_mesh" mesh, nsets=read_mesh(filename, params)
@@ -819,7 +823,7 @@ function load_and_evaluate_mesh(params::Dict,
         txt_file = replace(filename, ".gcode" => ".txt")
         @info txt_file
         if params["Discretization"]["Gcode"]["Overwrite Mesh"] || !isfile(txt_file)
-            mesh = get_gcode_mesh(filename, params)
+            mesh = get_gcode_mesh(filename, params, silent)
         else
             mesh = read_mesh(txt_file, params)
         end
@@ -851,26 +855,30 @@ function load_and_evaluate_mesh(params::Dict,
     dof::Int64 = set_dof(mesh)
     @timeit to "neighborhoodlist" nlist=create_neighborhoodlist(mesh, params, dof)
     @debug "Finished init Neighborhoodlist"
-    @timeit to "apply_bond_filters" nlist, nlist_filtered_ids, bond_norm=apply_bond_filters(nlist,
-                                                                                            mesh,
-                                                                                            params,
-                                                                                            dof)
+    @timeit to "apply_bond_filters" nlist, nlist_filtered_ids,
+                                    bond_norm=apply_bond_filters(nlist,
+                                                                 mesh,
+                                                                 params,
+                                                                 dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
-        nlist, topology = create_consistent_neighborhoodlist(external_topology,
-                                                             params["Discretization"]["Input External Topology"],
-                                                             nlist,
-                                                             dof)
+        nlist,
+        topology = create_consistent_neighborhoodlist(external_topology,
+                                                      params["Discretization"]["Input External Topology"],
+                                                      nlist,
+                                                      dof)
     end
     @debug "Start distribution"
     if haskey(params["Discretization"], "Distribution Type")
-        @timeit to "node_distribution" distribution, ptc, ntype=node_distribution(nlist,
-                                                                                  ranksize,
-                                                                                  params["Discretization"]["Distribution Type"])
+        @timeit to "node_distribution" distribution, ptc,
+                                       ntype=node_distribution(nlist,
+                                                               ranksize,
+                                                               params["Discretization"]["Distribution Type"])
     else
-        @timeit to "node_distribution" distribution, ptc, ntype=node_distribution(nlist,
-                                                                                  ranksize)
+        @timeit to "node_distribution" distribution, ptc,
+                                       ntype=node_distribution(nlist,
+                                                               ranksize)
     end
 
     el_distribution = nothing
@@ -1424,7 +1432,6 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     for i in (coord_max + step_x):step_x:(coord_max + step_x * number),
         j in row_min:step_y:(row_max + step_y),
         k in min_z:step_z:max_z
-
         if direction == "X"
             if dof == 2
                 push!(mesh, (x = i, y = j, volume = step_x * step_y, block_id = block_id))
@@ -1457,7 +1464,6 @@ function extrude_surface_mesh(mesh::DataFrame, params::Dict)
     for i in (coord_min - step_x):(-step_x):(coord_min - step_x * number),
         j in row_min:step_y:(row_max + step_y),
         k in min_z:step_z:max_z
-
         if direction == "X"
             if dof == 2
                 push!(mesh, (x = i, y = j, volume = step_x * step_y, block_id = block_id))

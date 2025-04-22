@@ -21,6 +21,8 @@ include("../Compute/compute_global_values.jl")
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_communication.jl")
 
+using .Helpers: progress_bar
+
 using .Parameter_Handling
 using OrderedCollections: OrderedDict
 export initialize_data
