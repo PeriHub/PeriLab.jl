@@ -74,7 +74,7 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
             @warn "Missing boundary condition type for $bc. Assuming Dirichlet."
         end
         for data_entry in datamanager.get_all_field_keys()
-            if bcs[bc]["Variable"] == data_entry * "NP1"
+            if bcs[bc]["Variable"] * "NP1" == data_entry
                 bcs[bc]["Time"] = "NP1"
                 valid = true
             elseif bcs[bc]["Variable"] == data_entry
