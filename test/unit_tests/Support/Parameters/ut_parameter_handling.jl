@@ -187,8 +187,8 @@ end
                                                                                  output_type)
     @test fieldnames == [
         ["Displacements", "NP1"],
-        ["External_Displacements", "constant"],
-        ["Forces", "constant"]
+        ["External_Displacements", "Constant"],
+        ["Forces", "Constant"]
     ]
 
     outputs = Dict("Displacements" => "true")
@@ -203,7 +203,7 @@ end
                                                                                  variables,
                                                                                  computes,
                                                                                  output_type)
-    @test fieldnames == [["External_Displacements", "constant"]]
+    @test fieldnames == [["External_Displacements", "Constant"]]
 
     outputs = Dict("External_Forces" => true)
     fieldnames = PeriLab.Solver_control.Parameter_Handling.get_output_fieldnames(outputs,
@@ -277,14 +277,14 @@ test_data_manager = PeriLab.Data_manager
                                                                     testfield_keys,
                                                                     vector)
 
-    @test ["A", "constant"] in outputs["Output1"]["fieldnames"]
+    @test ["A", "Constant"] in outputs["Output1"]["fieldnames"]
     @test (["B", "NP1"] in outputs["Output1"]["fieldnames"]) == false
-    @test ["C", "constant"] in outputs["Output1"]["fieldnames"]
-    @test ["A", "constant"] in outputs["Output2"]["fieldnames"]
+    @test ["C", "Constant"] in outputs["Output1"]["fieldnames"]
+    @test ["A", "Constant"] in outputs["Output2"]["fieldnames"]
     @test ["B", "NP1"] in outputs["Output2"]["fieldnames"]
-    @test (["D", "constant"] in outputs["Output2"]["fieldnames"]) == false
-    @test ["E", "constant"] in outputs["Output2"]["fieldnames"]
-    @test !(["M", "constant"] in outputs["Output2"]["fieldnames"])
+    @test (["D", "Constant"] in outputs["Output2"]["fieldnames"]) == false
+    @test ["E", "Constant"] in outputs["Output2"]["fieldnames"]
+    @test !(["M", "Constant"] in outputs["Output2"]["fieldnames"])
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [],
                                                       "Output File Type" => "CSV",
                                                       "Output Variables" => Dict("E" => true,
@@ -299,13 +299,13 @@ test_data_manager = PeriLab.Data_manager
     outputs = PeriLab.Solver_control.Parameter_Handling.get_outputs(params,
                                                                     testfield_keys,
                                                                     String["M"])
-    @test !(["A", "constant"] in outputs["Output1"]["fieldnames"])
+    @test !(["A", "Constant"] in outputs["Output1"]["fieldnames"])
     @test !(["B", "NP1"] in outputs["Output1"]["fieldnames"])
-    @test !(["C", "constant"] in outputs["Output1"]["fieldnames"])
+    @test !(["C", "Constant"] in outputs["Output1"]["fieldnames"])
     @test (["B", "NP1"] in outputs["Output2"]["fieldnames"])
-    @test !(["D", "constant"] in outputs["Output2"]["fieldnames"])
-    @test (["E", "constant"] in outputs["Output2"]["fieldnames"])
-    @test (["M", "constant"] in outputs["Output2"]["fieldnames"])
+    @test !(["D", "Constant"] in outputs["Output2"]["fieldnames"])
+    @test (["E", "Constant"] in outputs["Output2"]["fieldnames"])
+    @test (["M", "Constant"] in outputs["Output2"]["fieldnames"])
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [],
                                                       "Output File Type" => "CSV",
                                                       "Output Variables" => Dict("M" => true,
@@ -313,8 +313,8 @@ test_data_manager = PeriLab.Data_manager
     outputs = PeriLab.Solver_control.Parameter_Handling.get_outputs(params,
                                                                     testfield_keys,
                                                                     String["M"])
-    @test !(["A", "constant"] in outputs["Output1"]["fieldnames"])
-    @test ["M", "constant"] in outputs["Output1"]["fieldnames"]
+    @test !(["A", "Constant"] in outputs["Output1"]["fieldnames"])
+    @test ["M", "Constant"] in outputs["Output1"]["fieldnames"]
 
     params = Dict("Outputs" => Dict("Output1" => Dict("fieldnames" => [],
                                                       "Output Variables" => Dict())))

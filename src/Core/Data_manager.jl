@@ -741,8 +741,8 @@ Returns the field with the given name and time.
 # Returns
 - `field::Field`: The field with the given name and time.
 """
-function get_field(name::String, time::String = "constant")
-    if time == "constant"
+function get_field(name::String, time::String = "Constant")
+    if time == "Constant"
         return _get_field(name)
     elseif time == "N"
         try
@@ -779,7 +779,7 @@ Returns the field with the given name if it exists.
 # Returns
 - `field::Field`: The field with the given name and time.
 """
-function get_field_if_exists(name::String, time::String = "constant")
+function get_field_if_exists(name::String, time::String = "Constant")
     return has_key(name) ? get_field(name, time) : nothing
 end
 """
@@ -1694,7 +1694,7 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
                                                          "download_from_cores" => download_from_cores,
                                                          "dof" => dof,
-                                                         "time" => "constant")
+                                                         "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name, "NP1")
         if dof == 0
@@ -1730,7 +1730,7 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
                                                                       "download_from_cores" => download_from_cores,
                                                                       "dof" => dof,
-                                                                      "time" => "constant")
+                                                                      "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name, "NP1")
         if dof == 0

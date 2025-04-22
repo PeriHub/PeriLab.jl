@@ -226,7 +226,7 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             for key in keys(computes)
                 if fieldname[1] == key
                     fieldname[1] = computes[key]["Variable"]
-                    fieldname[2] = "constant"
+                    fieldname[2] = "Constant"
                     compute_name = string(key)
                     compute_params = computes[key]
                     global_var = true

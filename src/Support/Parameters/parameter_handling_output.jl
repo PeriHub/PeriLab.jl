@@ -175,13 +175,13 @@ function get_output_fieldnames(outputs::Dict,
         if outputs[output]
             if output_type == "CSV"
                 if output in computes
-                    push!(return_outputs, [output, "constant"])
+                    push!(return_outputs, [output, "Constant"])
                 else
                     @warn '"' * output * '"' * " is not defined as global variable"
                 end
             else
                 if output in variables || output in computes
-                    push!(return_outputs, [output, "constant"])
+                    push!(return_outputs, [output, "Constant"])
                 elseif output * "NP1" in variables
                     push!(return_outputs, [output, "NP1"])
                 else

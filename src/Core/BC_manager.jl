@@ -80,7 +80,7 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
                 valid = true
             elseif bcs[bc]["Variable"] == data_entry
                 bcs[bc]["Variable"] = data_entry
-                bcs[bc]["Time"] = "constant"
+                bcs[bc]["Time"] = "Constant"
                 valid = true
             end
             if valid
