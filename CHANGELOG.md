@@ -8,6 +8,27 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.7] - 2025-04-22
+
+### Added
+
+- Thermal decomposition model
+- Dependent values for inter block damage model
+- Block summary now also includs if a block is PD or FEM
+
+### Fixed
+
+- Block ID definition for MPI
+- Static solver for non-thermal analysis
+- BC check for missing variables
+- STATEV exodus export for UMAT and VUMAT
+
+### Changed
+
+- Renamed corrosion to degredation
+- Number of steps for static solver
+- Nodeset definition, now supports x, y and z
+
 ## [1.3.6] - 2025-04-01
 
 ### Added
