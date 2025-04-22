@@ -125,14 +125,8 @@ PeriLab:
     Material Models: True
     Initial Time: 0.0
     Final Time: 1.0
-    Number of Steps: 20
-    Static:
-      Show solver iteration: true
-      Residual tolerance: 1e-7
-      Solution tolerance: 1e-8
-      Residual scaling: 7000
-      m: 550
-      Maximum number of iterations: 100
+    Verlet:
+      Safety Factor: 1.00
   Outputs:
     Output1:
       Output Filename: "truss"
