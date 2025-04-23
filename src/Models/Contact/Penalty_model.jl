@@ -5,8 +5,8 @@
 module Penalty_model
 
 function init_contact_model(datamanager, params)
-    if !haskey(params, "Contact stiffness")
-        @warn "No ''Contact stiffness'' has been defined. It is set to 1e8."
+    if !haskey(params, "Contact Stiffness")
+        @warn "No ''Contact Stiffness'' has been defined. It is set to 1e8."
         params["Contact stiffness"] = 1e8
     end
 end
@@ -14,7 +14,7 @@ end
 function compute_contact_model(datamanager, cm, params, compute_master_force_density,
                                compute_slave_force_density)
     contact_dict = datamanager.get_contact_dict(cm)
-    stiffness = params["Contact stiffness"]
+    stiffness = params["Contact Stiffness"]
     nlist = datamanager.get_nlist()
     contact_pairs = contact_dict["Pairs: Master-Slave"]
 
