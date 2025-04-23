@@ -7,7 +7,7 @@ module Penalty_model
 function init_contact_model(datamanager, params)
     if !haskey(params, "Contact Stiffness")
         @warn "No ''Contact Stiffness'' has been defined. It is set to 1e8."
-        params["Contact stiffness"] = 1e8
+        params["Contact Stiffness"] = 1e8
     end
 end
 
