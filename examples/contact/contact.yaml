@@ -16,7 +16,7 @@ PeriLab:
         Bottom Unit Vector Y: 0.0
         Bottom Unit Vector Z: 0.0
         Lower Left Corner X: -2.0
-        Lower Left Corner Y: 1.025
+        Lower Left Corner Y: 0.01025
         Lower Left Corner Z: -0.001
         Normal X: 0.0
         Normal Y: 1.0
@@ -26,16 +26,16 @@ PeriLab:
   Models:
     Material Models:
       Mat_1:
-        Material Model: "PD Solid Elastic"
+        Material Model: "Bond-based Elastic"
         Symmetry: "isotropic plane stress"
-        Bulk Modulus: 2.5e+3
-        Shear Modulus: 1.15e3
+        Young's Modulus: 7e10
+        Poisson's Ratio: 0.33
   Contact:
     Contact_1:
       Master: 2
       Slave: 1
-      Search Radius: 1
-      Contact Stiffness: 1e8
+      Search Radius: 0.001
+      Contact Stiffness: 1e12
   Blocks:
     block_1:
       Block ID: 1
@@ -55,22 +55,23 @@ PeriLab:
       Value: "0"
       Type: Dirichlet
     BC_2:
-      Variable: "Displacements"
+      Variable: "Velocity"
       Node Set: "Node Set 2"
       Coordinate: "y"
-      Value: "-0.001*t"
-      Type: Dirichlet
+      Value: -50
+      Type: Initial
   Solver:
     Material Models: True
     Initial Time: 0.0
-    Final Time: 1.0e-5
+    Final Time: 5.0e-5
     Verlet:
       Safety Factor: 1.0
   Outputs:
     Output1:
-      Output Filename: "search"
+      Output Filename: "contact"
       Output Frequency: 1
       Output Variables:
         Displacements: True
         Number of Neighbors: True
         Forces: True
+        Velocity: True
