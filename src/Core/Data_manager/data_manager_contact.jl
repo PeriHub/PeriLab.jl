@@ -106,11 +106,11 @@ function set_contact_block_ids(mapping::Dict{Int64,Vector{Int64}})
 end
 
 function set_contact_relevant_global_ids(ids::Vector{Int64})
-    data["Global Contact IDs"] = ids
+    data["Global Contact IDs"] = append!(data["Global Contact IDs"], ids)
 end
 
 function set_local_contact_ids(ids::Dict{Int64,Int64})
-    data["Local Contact IDs"] = ids
+    data["Local Contact IDs"] = merge(data["Local Contact IDs"], ids)
 end
 function set_free_contact_surfaces(free_surfaces)
     data["Free Surfaces"] = free_surfaces

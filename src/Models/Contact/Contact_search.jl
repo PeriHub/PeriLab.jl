@@ -41,11 +41,7 @@ function init_contact_search(datamanager, contact_params, cm)
                                                                            :],
                                                              poly_slave,
                                                              free_surfaces)
-    # global ids -> muss gefiltered werden hier -> global all nodesID -> local contact ID ableiten
-    # ich brauche  -> reduced global all nodesID und local nodesID
-
-    # checken
-
+    # it is merged and therefore works here
     datamanager.set_free_surface_connections(connection_master)
     datamanager.set_free_surface_connections(connection_slave)
     datamanager.set_free_surface_nodes(master_id,

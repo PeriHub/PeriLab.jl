@@ -52,9 +52,16 @@ function init_contact_model(datamanager::Module, params)
     #datamanager.set_contact_block_free_surface_ids(mapping)
     # reduce the block_list
     datamanager.set_all_blocks(block_list[global_contact_ids])
+    shared_vol = datamanager.create_constant_free_size_field("Shared Volumes", Float64,
+                                                             (length(global_contact_ids),
+                                                              1))
+
+    synchronize_contact_points(datamanager, "Volume", "Constant", shared_vol)
     for (cm, contact_params) in pairs(params)
         init_contact_search(datamanager, contact_params, cm)
+        Penalty_model.init_contact_model(datamanager, contact_params)
     end
+
     @info "Finish Init Contact Model"
     return datamanager
 end
@@ -124,8 +131,8 @@ function compute_contact_model(datamanager::Module,
                                dt::Float64,
                                to::TimerOutput)
     # computes and synchronizes the relevant positions
-    synchronize_contact_points(datamanager::Module)
-
+    synchronize_contact_points(datamanager, "Deformed Coordinates", "NP1",
+                               datamanager.get_all_positions())
     for (cm, block_contact_params) in pairs(contact_params)
         datamanager.set_contact_dict(cm,
                                      Dict("Pairs: Master-Slave" => Vector{Tuple{Int64,
@@ -133,7 +140,7 @@ function compute_contact_model(datamanager::Module,
                                           "Normals" => Vector{Array{Float64}}([]),
                                           "Distances" => Vector{Vector{Float64}}([])))
         compute_contact_pairs(datamanager, cm, block_contact_params)
-        Penalty_model.compute_contact_model(datamanager, cm, params,
+        Penalty_model.compute_contact_model(datamanager, cm, block_contact_params,
                                             compute_master_force_density,
                                             compute_slave_force_density)
     end
@@ -142,30 +149,22 @@ function compute_contact_model(datamanager::Module,
     return datamanager
 end
 
-function compute_master_force_density(datamanager, id, contact_force)
-    compute_force_density(datamanager, id, contact_force)
+function compute_master_force_density(datamanager, id_m, id_s, contact_force)
+    compute_force_density(datamanager, id_m, id_s, contact_force)
 end
 
-function compute_slave_force_density(datamanager, id, contact_force)
-    compute_force_density(datamanager, id, -contact_force)
+function compute_slave_force_density(datamanager, id_s, id_m, contact_force)
+    compute_force_density(datamanager, id_s, id_m, -contact_force)
 end
 
-function compute_slave_force_density(datamanager, id, contact_force, nlist)
+function compute_force_density(datamanager, id_1, id_2, contact_force)
     mapping = datamanager.get_local_contact_ids()
-    if !(id in keys(mapping))
+    if !(id_1 in keys(mapping))
         return
     end
-    nlist = datamanager.get_nlist()
-    compute_force_density(datamanager, id, -contact_force)
-end
-
-function compute_force_density(datamanager, id, contact_force)
-    mapping = datamanager.get_local_contact_ids()
-    if !(id in keys(mapping))
-        return
-    end
+    shared_volume = datamanager.get_field("Shared Volumes")
     force_densities = datamanager.get_field("Force Densities", "NP1")
-    force_densities[mapping[id], :] .+= contact_force
+    force_densities[mapping[id_1], :] .+= contact_force .* shared_volume[id_2]
 end
 
 function identify_contact_block_surface_nodes(datamanager, contact_blocks)
@@ -228,30 +227,32 @@ function identify_outer_contact_surfaces(datamanager, contact_blocks)
 end
 
 """
-    synchronize_contact_points(datamanager::Module)
+    synchronize_contact_points(datamanager::Module, what::String, step::String,
+                                    synch_vector))
 
 Synchronises the deformation relevant for contact. These are the deformed coordinates of the surfaces of the contact blocks. The deformed surface vector is set to zero and than filled at each core from data from the deformed coordinate field. To bring it together the vector is summed at the root and send back to all cores.
 
 # Arguments
 - `datamanager::Modul`: datamanager
+tbd
 # Returns
 - nothing
 """
 
-function synchronize_contact_points(datamanager::Module)
-    all_positions = datamanager.get_all_positions()
-    all_positions .= 0
-    deformed_coord = datamanager.get_field("Deformed Coordinates", "NP1")
+function synchronize_contact_points(datamanager::Module, what::String, step::String,
+                                    synch_vector)
+    synch_vector .= 0
+    deformed_coord = datamanager.get_field(what, step)
     local_map = datamanager.get_local_contact_ids()
 
     for (local_id, exchange_id) in pairs(local_map)
-        all_positions[exchange_id, :] = deformed_coord[local_id, :]
+        synch_vector[exchange_id, :] = deformed_coord[local_id, :]
     end
     if datamanager.get_max_rank() == 1
         return
     end
     comm = datamanager.get_comm()
-    find_and_set_core_value_sum(comm, all_positions)
+    find_and_set_core_value_sum(comm, synch_vector)
 end
 
 function get_local_ids(datamanager::Module)
