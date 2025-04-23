@@ -42,16 +42,18 @@ function init_contact_model(datamanager::Module, params)
     # all following functions deal with the local contact position id.
     global_contact_ids = identify_contact_block_surface_nodes(datamanager, contact_blocks)
     create_local_contact_id_mapping(datamanager, global_contact_ids)
-    identify_outer_contact_surfaces(datamanager, contact_blocks)
     block_list = datamanager.get_all_blocks()
-
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
     datamanager.set_contact_block_ids(mapping)
+    identify_outer_contact_surfaces(datamanager, contact_blocks)
 
     #mapping = contact_block_free_surface_ids(global_contact_ids, block_list, contact_blocks)
     #datamanager.set_contact_block_free_surface_ids(mapping)
     # reduce the block_list
     datamanager.set_all_blocks(block_list[global_contact_ids])
+    points = datamanager.get_all_positions()
+    datamanager.set_all_positions(points[global_contact_ids, :])
+
     shared_vol = datamanager.create_constant_free_size_field("Shared Volumes", Float64,
                                                              (length(global_contact_ids),
                                                               1))
@@ -184,17 +186,15 @@ function identify_contact_block_surface_nodes(datamanager, contact_blocks)
             end
         end
     end
-    # create reduced list of data.
-    datamanager.set_all_positions(points[global_ids, :])
-    # global ids list is needed to know the local ids and to organize the exchange between cores.
-    # its the reduced list
     return unique(global_ids)
 end
 
 function identify_outer_contact_surfaces(datamanager, contact_blocks)
+    # all blocks, not only the contact blocks to find the free surfaces
     all_positions = datamanager.get_all_positions()
     block_ids = datamanager.get_all_blocks()
     block_nodes = get_block_nodes(block_ids, length(block_ids))
+
     free_surfaces = Dict{Int64,Vector{Int64}}()
     for iID in 1:maximum(keys(block_nodes))
         poly_i = compute_geometry(all_positions[block_nodes[iID], :])
