@@ -171,7 +171,7 @@ function get_all_elastic_moduli(datamanager::Module,
     if bond_based
         nu_fixed = datamanager.get_dof() == 2 ? 1 / 3 : 1 / 4
         if nu != 0.0 && nu != nu_fixed
-            @warn "Bond-based model only supports a fixed Poisson's ratio of " *
+            @warn "Chosen Bond-based model only supports a fixed Poisson's ratio of " *
                   string(nu_fixed)
         end
         nu = nu_fixed
