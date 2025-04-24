@@ -9,4 +9,23 @@ The advantage of this criterion is, that the implementation is rather simple. Al
 
 Some literature describes the possibility to compute the critical stretch based on the energy release rate.
 
+$$s_{crit} = \sqrt{\frac{G_{0C}}{[3G+(\frac{3}{4})^4(K-\frac{5G}{3})]\delta}}$$
+
 ## Critical energy
+
+The critical energy model introduced by [FosterJT2011](@cite) is valid for state-based peridynamic analysis.
+The bond energy is defined as:
+
+$$w_{bond} = \int_{\boldsymbol{\eta}_{final}} (\mathbf{\underline{T}}[x,t]\langle x'-x\rangle - \mathbf{\underline{T}}[x',t]\langle x-x'\rangle)d\boldsymbol{\eta}$$
+
+with the relative displacement vector as:
+
+$$\boldsymbol{\eta}=\mathbf{\underline{u}}[x',t]-\mathbf{\underline{u}}[x,t]$$
+
+If the bond energy is bigger than or equal to the critical energy value, then the bond is considered to be broken:
+
+$$w_{crit} \leq w_{bond}$$
+
+The critical bond energy can be defined as:
+
+$$w_{crit} = \frac{4G_{0C}}{\pi\delta^4}$$
