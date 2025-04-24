@@ -192,15 +192,4 @@ end
 function get_surface_normals(poly)
     return MixedMatHRep(hrep(poly)).A
 end
-
-function synch_all_positions(datamanager)
-    all_positions = datamanager.get_all_positions()
-    deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
-    mapping = datamanager.local_to_global_contact()
-    for iID in 1:datamanager.get_nnodes()
-        all_positions[mapping[iID], :] .= deformed_coor[iID, :]
-    end
-    datamanager.set_all_positions(all_positions)
-end
-
 end
