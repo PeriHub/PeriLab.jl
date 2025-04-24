@@ -65,6 +65,7 @@ PeriLab:
   Solver:
     Initial Time: 0.0
     Final Time: 5.0e-6
+    Fixed dt: 7e-7
     Number of Steps: 7
     Static:
       NLSolve: true

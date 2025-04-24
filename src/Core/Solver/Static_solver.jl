@@ -96,8 +96,8 @@ function init_solver(solver_options::Dict{Any,Any},
         if haskey(params, "Number of Steps")
             @warn "''Number of Steps'' and ''Fixed dt'' are defined. ''Fixed dt'' is used and ''Number of Steps'' from yaml is ignored."
         end
-        nsteps = Int64(round((final_time - initial_time) / fixed_dt) + 1)
-        dt = (final_time - initial_time) / nsteps
+        nsteps = Int64(round((final_time - initial_time) / fixed_dt))
+        dt = fixed_dt
     end
     comm = datamanager.get_comm()
 
@@ -254,17 +254,17 @@ function run_solver(solver_options::Dict{Any,Any},
                                          step_time + dt) #-> Dirichlet
 
         sol = nlsolve((residual,
-                      U) -> residual!(residual,
-                                      U,
-                                      datamanager,
-                                      bc_free_dof,
-                                      block_nodes,
-                                      dt,
-                                      time,
-                                      solver_options,
-                                      synchronise_field,
-                                      to,
-                                      scaling),
+                       U) -> residual!(residual,
+                                       U,
+                                       datamanager,
+                                       bc_free_dof,
+                                       block_nodes,
+                                       dt,
+                                       time,
+                                       solver_options,
+                                       synchronise_field,
+                                       to,
+                                       scaling),
                       start_u;
                       xtol = xtol,
                       ftol = ftol,
@@ -307,8 +307,8 @@ function run_solver(solver_options::Dict{Any,Any},
         force_densities = datamanager.get_field("Force Densities", "NP1")
 
         @views forces[active_nodes,
-        :] = force_densities[active_nodes, :] .*
-             volume[active_nodes]
+                      :] = force_densities[active_nodes, :] .*
+                           volume[active_nodes]
 
         @timeit to "write_results" result_files=write_results(result_files, time,
                                                               max_damage, outputs,
@@ -364,8 +364,8 @@ function residual!(residual,
     # bc_dof = setdiff(1:length(uNP1), bc_free_dof)
 
     @views deformed_coorNP1[active_nodes,
-    :] = coor[active_nodes, :] .+
-         uNP1[active_nodes, :]
+                            :] = coor[active_nodes, :] .+
+                                 uNP1[active_nodes, :]
 
     force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
     forces = datamanager.get_field("Forces", "NP1")
