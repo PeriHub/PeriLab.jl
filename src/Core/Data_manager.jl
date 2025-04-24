@@ -48,7 +48,6 @@ export get_rank
 export get_num_responder
 export get_max_rank
 export get_cancel
-export get_damage_models
 export get_output_frequency
 export get_rotation
 export get_element_rotation
@@ -68,7 +67,6 @@ export set_directory
 export set_inverse_nlist
 export set_fem
 export set_glob_to_loc
-export set_damage_models
 export set_model_module
 export set_num_controller
 export set_nset
@@ -147,8 +145,6 @@ function initialize_data()
     data["element_rotation"] = false
     data["active_models"] = OrderedDict{String,Module}()
     data["all_active_models"] = OrderedDict{String,Module}()
-    data["material_models"] = []
-    data["damage_models"] = []
     data["NP1_to_N"] = Dict{String,Vector{}}()
     data["coupling_fe_nodes"] = []
     data["BC_free_dof"] = []
@@ -1151,18 +1147,6 @@ function get_output_frequency()
 end
 
 """
-    get_damage_models()
-
-This function returns the `damage_models` variable.
-
-# Returns
-- `damage_models`::Any: The value of the `damage_models` variable.
-"""
-function get_damage_models()
-    return data["damage_models"]
-end
-
-"""
     loc_to_glob(range::UnitRange{Int64})
 
 Converts the local index to the global index.
@@ -1648,34 +1632,6 @@ Sets the output frequency globally.
 """
 function set_output_frequency(value)
     data["output_frequency"] = value
-end
-
-"""
-    set_damage_models(value)
-
-Sets the damage models globally.
-
-# Arguments
-- `value`: The value to set as the damage models.
-"""
-function set_damage_models(value)
-    if !(value in data["damage_models"])
-        push!(data["damage_models"], value)
-    end
-end
-
-"""
-    set_material_models(value)
-
-Sets the material models globally.
-
-# Arguments
-- `value`: The value to set as the material models.
-"""
-function set_material_models(value)
-    if !(value in data["material_models"])
-        push!(data["material_models"], value)
-    end
 end
 
 """
