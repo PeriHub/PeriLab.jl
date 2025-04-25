@@ -817,10 +817,6 @@ Get the damage
 - `damage::Field`: The damage field.
 """
 function get_damage(time::String)
-    if "Damage Anisotropic" in get_all_field_keys()
-        damage_aniso = get_field("Damage Anisotropic", time)
-        return damage_aniso
-    end
     damage = get_field("Damage", time)
     return damage
 end

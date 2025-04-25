@@ -175,6 +175,7 @@ MPI.Init()
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_Plastic.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_UMAT.jl")
+                    include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_VUMAT.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Bond_Associated_Correspondence.jl")
                 end
                 @testset "ut_ordinary" begin
@@ -191,6 +192,9 @@ MPI.Init()
         # @testset "test_reload" begin
         #     include("fullscale_tests/test_reload/test_reload.jl")
         # end
+        @testset "test_bond_based_elastic" begin
+            include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")
+        end
         @testset "test_surface_correction" begin
             include("fullscale_tests/test_Surface_correction/test_Surface_correction.jl")
         end
@@ -208,9 +212,6 @@ MPI.Init()
         end
         @testset "test_additive_simple" begin
             include("fullscale_tests/test_additive/test_additive.jl")
-        end
-        @testset "test_bond_based_elastic" begin
-            include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")
         end
         @testset "test_heat_transfer" begin
             include("fullscale_tests/test_heat_transfer/test_heat_transfer.jl")

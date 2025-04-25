@@ -492,21 +492,6 @@ function UMAT_interface(STRESS::Vector{Float64},
           KINC)
 end
 
-"""
-function set_subroutine_caller(sub_name::String)
-Converts each letter in the string `str` to its corresponding lowercase equivalent and transform it to the symbol needed for ccall function.
-
-# Arguments
-- `sub_name::String`: The string given by the input file;
-
-# Returns
-- `Symbol`: A symbol which is the UMAT subroutine name
-"""
-
-function set_subroutine_caller(sub_name::String)
-    return eval(Meta.parse(":" * (lowercase(sub_name)) * "_"))
-end
-
 function compute_stresses_ba(datamanager::Module,
                              nodes,
                              nlist,

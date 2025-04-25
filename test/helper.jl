@@ -14,9 +14,10 @@ export run_and_compare
 export run_mpi_test
 export push_test!
 
-function run_perilab(filename, cores, compare, folder_name = ""; reload = false)
+function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
+                     reload = false)
     if cores == 1
-        PeriLab.main(filename * ".yaml"; silent = true, reload = reload)
+        PeriLab.main(filename * ".yaml"; silent = silent, reload = reload)
     else
         fn = """using PeriLab; PeriLab.main(""" *
              '"' *
