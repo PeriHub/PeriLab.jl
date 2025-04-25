@@ -245,7 +245,6 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
     datamanager.set_model_module(model_param["Damage Model"], mod)
     datamanager = mod.init_model(datamanager, nodes, model_param, block)
     datamanager = mod.fields_for_local_synchronization(datamanager, "Damage Model")
-    datamanager.set_damage_models(model_param["Damage Model"])
     datamanager = Damage.init_interface_crit_values(datamanager, model_param, block)
     datamanager = Damage.init_aniso_crit_values(datamanager, model_param, block)
     return datamanager
