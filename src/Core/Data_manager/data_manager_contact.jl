@@ -8,6 +8,7 @@ export get_contact_overlap_map
 export get_contact_block_ids
 export get_contact_relevant_global_ids
 export get_local_contact_ids
+export get_exchange_id_to_local_id
 export get_free_surface_connections
 export get_free_surface_nodes
 export get_free_contact_surfaces
@@ -18,6 +19,7 @@ export set_all_positions
 export set_contact_overlap_map
 export set_contact_relevant_global_ids
 export set_local_contact_ids
+export set_exchange_id_to_local_id
 export set_free_surface_connections
 export set_free_surface_nodes
 export set_free_contact_surfaces
@@ -112,6 +114,15 @@ end
 function set_local_contact_ids(ids::Dict{Int64,Int64})
     data["Local Contact IDs"] = merge(data["Local Contact IDs"], ids)
 end
+
+function set_exchange_id_to_local_id(ids::Dict{Int64,Int64})
+    data["Exchange id to local id"] = ids
+end
+
+function get_exchange_id_to_local_id()
+    return data["Exchange id to local id"]
+end
+
 function set_free_contact_surfaces(free_surfaces)
     data["Free Surfaces"] = free_surfaces
 end
