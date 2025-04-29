@@ -41,10 +41,14 @@ function init_contact_model(datamanager::Module, params)
     # get all the contact block surface global ids and reduce the exchange positions to this points.
     # all following functions deal with the local contact position id.
     global_contact_ids = identify_contact_block_surface_nodes(datamanager, contact_blocks)
-    create_local_contact_id_mapping(datamanager, global_contact_ids)
+
     block_list = datamanager.get_all_blocks()
+
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
+    # hier ist der Fehler; welche nummer brauche ich die lokale Liste oder die globale?
+
     datamanager.set_contact_block_ids(mapping)
+
     identify_outer_contact_surfaces(datamanager, contact_blocks)
 
     #mapping = contact_block_free_surface_ids(global_contact_ids, block_list, contact_blocks)
@@ -52,13 +56,15 @@ function init_contact_model(datamanager::Module, params)
     # reduce the block_list
     datamanager.set_all_blocks(block_list[global_contact_ids])
     points = datamanager.get_all_positions()
+
     datamanager.set_all_positions(points[global_contact_ids, :])
 
     shared_vol = datamanager.create_constant_free_size_field("Shared Volumes", Float64,
                                                              (length(global_contact_ids),
                                                               1))
 
-    synchronize_contact_points(datamanager, "Volume", "Constant", shared_vol)
+    create_local_contact_id_mapping(datamanager, global_contact_ids)
+    shared_vol = synchronize_contact_points(datamanager, "Volume", "Constant", shared_vol)
     for (cm, contact_params) in pairs(params)
         init_contact_search(datamanager, contact_params, cm)
         Penalty_model.init_contact_model(datamanager, contact_params)
@@ -68,13 +74,37 @@ function init_contact_model(datamanager::Module, params)
     return datamanager
 end
 
-function contact_block_ids(global_ids, block_list, contact_blocks)
+function create_local_contact_id_mapping(datamanager, global_contact_ids)
+    mapping = Dict{Int64,Int64}()
+    inv_mapping = Dict{Int64,Int64}()
+    for (id, pid) in enumerate(global_contact_ids)
+        local_id = datamanager.get_local_nodes([pid])
+        if local_id == []
+            continue
+        end
+        mapping[local_id[1]] = id
+        inv_mapping[id] = local_id[1]
+    end
+    datamanager.set_local_contact_ids(mapping)
+    datamanager.set_exchange_id_to_local_id(inv_mapping)
+end
+
+function loc_to_contact_exchange_id(global_contact_ids::Vector{Int64})
+    mapping = Dict{Int64,Int64}()
+    for (id, num) in enumerate(global_contact_ids)
+        mapping[id] = num
+    end
+    return mapping
+end
+# give the ids for the contact blocks in the exchange vector
+function contact_block_ids(global_ids::Vector{Int64}, block_list, contact_blocks)
     mapping = Dict{Int64,Vector{Int64}}()
     for cb in contact_blocks
         mapping[cb] = []
     end
-    for (id, glob_id) in pairs(global_ids)
+    for (id, glob_id) in enumerate(global_ids)
         if block_list[glob_id] in contact_blocks
+            # append the block node to the block list
             append!(mapping[block_list[glob_id]], id)
         end
     end
@@ -89,18 +119,6 @@ function apply_contact_forces(datamanager)
         force[local_id, :] .+= contact_force[id, :]
     end
     contact_force .= 0.0
-end
-
-function create_local_contact_id_mapping(datamanager, global_contact_ids)
-    mapping = Dict{Int64,Int64}()
-    for (id, pid) in enumerate(global_contact_ids)
-        local_id = datamanager.get_local_nodes([pid])
-        if local_id == []
-            continue
-        end
-        mapping[local_id[1]] = id
-    end
-    datamanager.set_local_contact_ids(mapping)
 end
 
 function get_all_contact_blocks(params)
@@ -133,8 +151,11 @@ function compute_contact_model(datamanager::Module,
                                dt::Float64,
                                to::TimerOutput)
     # computes and synchronizes the relevant positions
-    synchronize_contact_points(datamanager, "Deformed Coordinates", "NP1",
-                               datamanager.get_all_positions())
+    all_positions = datamanager.get_all_positions()
+    all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates", "NP1",
+                                               all_positions)
+    datamanager.set_all_positions(all_positions)
+
     for (cm, block_contact_params) in pairs(contact_params)
         datamanager.set_contact_dict(cm,
                                      Dict("Pairs: Master-Slave" => Vector{Tuple{Int64,
@@ -160,17 +181,17 @@ function compute_slave_force_density(datamanager, id_s, id_m, contact_force)
 end
 
 function compute_force_density(datamanager, id_1, id_2, contact_force)
-    mapping = datamanager.get_local_contact_ids()
+    mapping = datamanager.get_exchange_id_to_local_id()
     if !(id_1 in keys(mapping))
         return
     end
     shared_volume = datamanager.get_field("Shared Volumes")
     force_densities = datamanager.get_field("Force Densities", "NP1")
-    force_densities[mapping[id_1], :] .+= contact_force .* shared_volume[id_2]
+    force_densities[mapping[id_1], :] .+= 0.5 .* contact_force ./ shared_volume[id_2]
 end
 
 function identify_contact_block_surface_nodes(datamanager, contact_blocks)
-    global_ids = []
+    global_ids = Vector{Int64}([])
     points = datamanager.get_all_positions()
     block_ids = datamanager.get_all_blocks()
     block_nodes = get_block_nodes(block_ids, length(block_ids))
@@ -178,6 +199,10 @@ function identify_contact_block_surface_nodes(datamanager, contact_blocks)
         poly = compute_geometry(points[block_nodes[block], :])
         normals, offsets = get_surface_information(poly)
         for pID in eachindex(points[:, 1])
+            if !(points[pID, :] in poly)
+                # can happen, e.g. points are on hplane surfraces but not connected to the block
+                continue
+            end
             for id in eachindex(offsets)
                 if isapprox(dot(normals[id, :], points[pID, :]) - offsets[id], 0;
                             atol = 1e-6)
@@ -241,18 +266,18 @@ tbd
 
 function synchronize_contact_points(datamanager::Module, what::String, step::String,
                                     synch_vector)
-    synch_vector .= 0
-    deformed_coord = datamanager.get_field(what, step)
+    sy = datamanager.get_field(what, step)
     local_map = datamanager.get_local_contact_ids()
 
     for (local_id, exchange_id) in pairs(local_map)
-        synch_vector[exchange_id, :] = deformed_coord[local_id, :]
+        synch_vector[exchange_id, :] .= sy[local_id, :]
     end
     if datamanager.get_max_rank() == 1
-        return
+        return synch_vector
     end
     comm = datamanager.get_comm()
     find_and_set_core_value_sum(comm, synch_vector)
+    return synch_vector
 end
 
 function get_local_ids(datamanager::Module)
