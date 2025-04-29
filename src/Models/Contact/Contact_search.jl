@@ -92,14 +92,6 @@ function filter_surface_connectivity(points::Union{Matrix{Float64},Matrix{Int64}
     return connections
 end
 
-function filter_all_positions(datamanager)
-    master = data
-end
-
-function create_local_exchange_ids(filtered_all_positions)
-    datamanager.get_local_nodes(filtered_all_positions)
-end
-
 function compute_contact_pairs(datamanager::Module, cm::String, contact_params::Dict)
     all_positions = datamanager.get_all_positions()
     #-------------
@@ -112,6 +104,8 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
     slave_block_nodes = datamanager.get_contact_block_ids(contact_params["Slave"])
     poly = polyhedron(vrep(all_positions[slave_block_nodes, :]), CDDLib.Library())
     normals, offsets = get_surface_information(poly)
+    println(normals)
+    @error ""
     for (master_node, near_ids) in pairs(potential_contact_dict)
         # if !(all_positions[master_node, :] in poly) # test if master point lies in slave block
         #     continue
@@ -131,8 +125,10 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
 end
 
 function create_potential_contact_dict(near_points, datamanager, contact_params)
+    # exchange vector ids
     master_nodes = datamanager.get_free_surface_nodes(contact_params["Master"])
     slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave"])
+
     contact_dict = Dict{Int64,Vector{Int64}}()
     for (pID, neighbors) in enumerate(near_points)
         if length(neighbors) > 0
@@ -152,13 +148,14 @@ Finds a list of potential master slave pairs which are next to each other. Only 
 - `contact_params::Dict`: dictionary with contact relevant information.
 
 # Returns
-- pairs of potential contact partner.
+- pairs of potential contact partner in exchange vector ids.
 """
 
-## test schreiben
+## TODO test
 function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
     all_positions = datamanager.get_all_positions()
     dof = datamanager.get_dof()
+    # ids are exchange vector ids (''all position'' ids)
     master_nodes = datamanager.get_free_surface_nodes(contact_params["Master"])
     slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave"])
 
@@ -172,18 +169,6 @@ function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
                                  near_points,
                                  true)
 end
-
-# convex_hull gibt mir die außenpunkte
-# lokale convex hulls bilden, um master slave abzufangen -> inside?
-# überlappung?
-# alternativ bondbased -> abstand der punkte die drinne liegen zu ihren Partnern;
-
-# für kleine Deformationen?
-#E₁ = Ellipsoid(zeros(2), [1 0; 0 2.])
-## den ganzen block als huelle?
-## dann testen
-## dann den nächsten Punkt finden; Radius ist horizont
-## dann funktion aus den ueberlappenden horizonten machen -> bool aus hull
 
 function get_surface_normals(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
     return MixedMatHRep(hrep(polyhedron(vrep(points), CDDLib.Library())))
