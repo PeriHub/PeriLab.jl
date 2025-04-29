@@ -132,7 +132,13 @@ function get_surface_offset(poly)
 end
 
 function get_surface_information(poly)
-    return get_surface_normals(poly), get_surface_offset(poly)
+    normals = get_surface_normals(poly)
+    b = get_surface_offset(poly)
+    for i in axes(normals, 1)
+        normals[i, :] ./= norm(normals[i, :])
+        b[i] /= norm(normals[i, :])
+    end
+    return normals, b
 end
 
 function check_neighbor_position(poly, points, nlist::Vector{Int64}, msg::Bool)
