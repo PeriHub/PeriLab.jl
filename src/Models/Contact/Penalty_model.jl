@@ -27,11 +27,13 @@ function compute_contact_model(datamanager, cm, params, compute_master_force_den
             compute_master_force_density(datamanager, master_id, slave_id,
                                          stiffness * distances[pair_id] .*
                                          normals[pair_id, :])
-            compute_slave_force_density(datamanager, master_id, slave_id,
+            compute_slave_force_density(datamanager, slave_id, master_id,
                                         stiffness * distances[pair_id] .*
                                         normals[pair_id, :])
+            println(normals[pair_id, :])
         end
     end
+
     #append!(contact_dict["Pairs: Master-Slave"], [(master_id, id)])
 end
 
