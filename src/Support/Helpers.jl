@@ -94,6 +94,7 @@ This function is used for contact search purposes. The free surface nodes are us
 - `connections`: Tthe connections to the free surfaces. There can be more surface points than connections.
 """
 function compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Matrix{Int64}},
+                                               surface_ids::Vector{Int64},
                                                poly, free_surfaces::Vector{Int64})
     normals, offset = get_surface_information(poly)
     connections = Dict{Int64,Vector{Int64}}()
@@ -101,12 +102,12 @@ function compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Mat
         for id in eachindex(offset)
             if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
                 if id in free_surfaces
-                    if !haskey(connections, pID)
+                    if !haskey(connections, surface_ids[pID])
                         connections[pID] = Vector{Int64}([id])
                         continue
                     end
                     # connections only to the free surfaces.
-                    append!(connections[pID], id)
+                    append!(connections[surface_ids[pID]], id)
                 end
             end
         end
@@ -134,9 +135,9 @@ end
 function get_surface_information(poly)
     normals = get_surface_normals(poly)
     b = get_surface_offset(poly)
-    for i in axes(normals, 1)
-        normals[i, :] ./= norm(normals[i, :])
+    for i in eachindex(b)
         b[i] /= norm(normals[i, :])
+        normals[i, :] ./= norm(normals[i, :])
     end
     return normals, b
 end
