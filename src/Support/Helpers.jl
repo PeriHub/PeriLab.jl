@@ -99,21 +99,21 @@ function compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Mat
     normals, offset = get_surface_information(poly)
     connections = Dict{Int64,Vector{Int64}}()
     for pID in eachindex(points[:, 1])
-        for id in eachindex(offset)
+        for id in free_surfaces
             if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
-                if id in free_surfaces
-                    if !haskey(connections, surface_ids[pID])
-                        connections[pID] = Vector{Int64}([id])
-                        continue
-                    end
-                    # connections only to the free surfaces.
-                    append!(connections[surface_ids[pID]], id)
+                if !haskey(connections, surface_ids[pID])
+                    connections[surface_ids[pID]] = Vector{Int64}([id])
+                    continue
                 end
+                # connections only to the free surfaces.
+                append!(connections[surface_ids[pID]], id)
             end
         end
     end
+
     return connections
 end
+
 # there might be more than one surface and the user has to deal with it
 function compute_distance_to_surfaces(point, normals, offsets,
                                       connectivity)
