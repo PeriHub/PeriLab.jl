@@ -3,7 +3,7 @@
 
 | Parameter | Unit | Description |
 |---|---|---|
-|Search Radius | $[m]$| Radius to get a list of potential contact pairs.|
+|Contact Radius | $[m]$| Radius to get a list of potential contact pairs.|
 |Master| $[-]$| Block ID of the master nodes. |
 |Slave | $[-]$| Block ID of the slave nodes.|
 **Initialization**
@@ -45,7 +45,7 @@ The mapping has to be done in both directions, because the contact forces have t
 **Computation**
 
 - Step 1-
-Perform a nearest neighbor search with a user defined search radius. The result is a list of potential contact pairs.
+Perform a nearest neighbor search with a user defined Contact Radius. The result is a list of potential contact pairs.
 - Step 2 -
 The surfaces and the polyeder is updated, due to deformation and the surface normals can be computed.
 - Step 3 -

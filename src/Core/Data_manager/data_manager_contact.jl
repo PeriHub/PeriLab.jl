@@ -9,7 +9,7 @@ export get_contact_block_ids
 export get_contact_relevant_global_ids
 export get_local_contact_ids
 export get_exchange_id_to_local_id
-export get_free_surface_connections
+
 export get_free_surface_nodes
 export get_free_contact_surfaces
 export get_contact_properties
@@ -20,7 +20,7 @@ export set_contact_overlap_map
 export set_contact_relevant_global_ids
 export set_local_contact_ids
 export set_exchange_id_to_local_id
-export set_free_surface_connections
+
 export set_free_surface_nodes
 export set_free_contact_surfaces
 export set_contact_properties
@@ -73,9 +73,6 @@ function get_local_contact_ids()
     return data["Local Contact IDs"]
 end
 
-function get_free_surface_connections()
-    return data["Free Surface Connections"]
-end
 function get_free_surface_nodes(block::Int64)
     return data["Free Surface Nodes"][block]
 end
@@ -131,11 +128,6 @@ function set_free_surface_nodes(block::Int64, free_surface_nodes::Vector{Int64})
     data["Free Surface Nodes"][block] = free_surface_nodes
 end
 
-function set_free_surface_connections(free_surface_nodes_connections)
-    data["Free Surface Connections"] = merge(data["Free Surface Connections"],
-                                             free_surface_nodes_connections)
-end
-
 function set_contact_properties(params::Dict)
     data["Contact Properties"] = params
 end
@@ -144,6 +136,6 @@ function get_contact_dict(id::String)
     return data["Contact Dictionary"][id]
 end
 
-function set_contact_dict(id::String, params::Dict{String,Vector})
+function set_contact_dict(id::String, params::Dict)
     data["Contact Dictionary"][id] = params
 end

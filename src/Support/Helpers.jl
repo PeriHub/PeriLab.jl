@@ -34,7 +34,7 @@ export interpolation
 export interpol_data
 export progress_bar
 export invert
-export compute_distance_to_surfaces
+export compute_distance_and_normals
 export rotate
 export sub_in_place!
 export add_in_place!
@@ -48,6 +48,11 @@ export mat_mul_transpose_mat!
 export get_ring
 export get_hexagon
 export nearest_point_id
+export get_shared_horizon
+function get_shared_horizon(datamanager, id)
+    horizon = datamanager.get_field("Shared Horizon")
+    return horizon[id]
+end
 
 """
      matrix_to_vector(mat::Union{Matrix{Float64},Matrix{Int64}})
@@ -93,35 +98,27 @@ This function is used for contact search purposes. The free surface nodes are us
 # Returns
 - `connections`: Tthe connections to the free surfaces. There can be more surface points than connections.
 """
-function compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Matrix{Int64}},
-                                               surface_ids::Vector{Int64},
-                                               poly, free_surfaces::Vector{Int64})
+function compute_free_surface_nodes(points::Union{Matrix{Float64},Matrix{Int64}},
+                                    surface_ids::Vector{Int64},
+                                    poly, free_surfaces::Vector{Int64})
     normals, offset = get_surface_information(poly)
-    connections = Dict{Int64,Vector{Int64}}()
+    free_nodes = Vector{Int64}([])
     for pID in eachindex(points[:, 1])
         for id in free_surfaces
             if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
-                if !haskey(connections, surface_ids[pID])
-                    connections[surface_ids[pID]] = Vector{Int64}([id])
-                    continue
-                end
                 # connections only to the free surfaces.
-                append!(connections[surface_ids[pID]], id)
+                append!(free_nodes, surface_ids[pID])
             end
         end
     end
-
-    return connections
+    # not possible; deformation leads to a switch in surface numbers
+    return sort(free_nodes)
 end
 
-# there might be more than one surface and the user has to deal with it
-function compute_distance_to_surfaces(point, normals, offsets,
-                                      connectivity)
-    distances = zeros(length(connectivity))
-    for (id, conn) in enumerate(connectivity)
-        distances[id] = dot(point, normals[conn, :]) - offsets[conn]
-    end
-    return distances
+# taken from peridigm
+function compute_distance_and_normals(p1, p2)
+    distance = norm(p2 - p1)
+    return distance, (p2 - p1) ./ distance
 end
 
 function get_surface_normals(poly)
@@ -300,7 +297,7 @@ end
                                       dof::Int64,
                                       fu)
 
-Computes the centroid and search radius for each element in a given mesh.
+Computes the centroid and Contact Radius for each element in a given mesh.
 
 # Arguments
 - `coor::Union{Matrix{Float64}, Matrix{Int64}}`:   A matrix of size `(N x dof)`, where each row represents the coordinates of a point in the space.

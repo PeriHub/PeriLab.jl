@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Penalty_model
-
+include("../../Support/Helpers.jl")
+import .Helpers: get_shared_horizon
 function init_contact_model(datamanager, params)
     if !haskey(params, "Contact Stiffness")
         @warn "No ''Contact Stiffness'' has been defined. It is set to 1e8."
@@ -14,27 +15,29 @@ end
 function compute_contact_model(datamanager, cm, params, compute_master_force_density,
                                compute_slave_force_density)
     contact_dict = datamanager.get_contact_dict(cm)
-    stiffness = params["Contact Stiffness"]
-    nlist = datamanager.get_nlist()
-    contact_pairs = contact_dict["Pairs: Master-Slave"]
+    contact_stiffness = params["Contact Stiffness"]
+    contact_radius = params["Contact Radius"]
 
-    for (contact_id, pair) in enumerate(contact_dict["Pairs: Master-Slave"])
-        master_id = pair[1]
-        distances = contact_dict["Distances"][contact_id]
-        normals = contact_dict["Normals"][contact_id]
+    # -> horizon = datamanager.get_field("Shared Horizon")
+    for (master_id, contact) in pairs(contact_dict)
+        for (id, slave_id) in enumerate(contact["Slaves"])
+            horizon = get_shared_horizon(datamanager, slave_id) # needed to get the correct contact horizon
+            # TODO symmetry needed
+            stiffness = 48.0 / 5.0 * contact_stiffness / (pi * horizon^3)
 
-        for (pair_id, slave_id) in enumerate(pair[2])
+            @views distance = contact["Distances"][id]
+            temp = (contact_radius - distance) / horizon
+
+            @views normal = contact["Normals"][id]
+
             compute_master_force_density(datamanager, master_id, slave_id,
-                                         stiffness * distances[pair_id] .*
-                                         normals[pair_id, :])
+                                         stiffness * temp .*
+                                         normal)
             compute_slave_force_density(datamanager, slave_id, master_id,
-                                        stiffness * distances[pair_id] .*
-                                        normals[pair_id, :])
-            println(normals[pair_id, :])
+                                        stiffness * temp .*
+                                        normal)
         end
     end
-
-    #append!(contact_dict["Pairs: Master-Slave"], [(master_id, id)])
 end
 
 end

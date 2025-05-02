@@ -34,7 +34,7 @@ PeriLab:
     Contact_1:
       Master: 2
       Slave: 1
-      Search Radius: 1
+      Contact Radius: 1
   Blocks:
     block_1:
       Block ID: 1

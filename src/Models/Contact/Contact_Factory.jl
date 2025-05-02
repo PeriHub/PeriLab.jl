@@ -41,18 +41,13 @@ function init_contact_model(datamanager::Module, params)
     # get all the contact block surface global ids and reduce the exchange positions to this points.
     # all following functions deal with the local contact position id.
     global_contact_ids = identify_contact_block_surface_nodes(datamanager, contact_blocks)
-
     block_list = datamanager.get_all_blocks()
-
+    # give every block there surface ids
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
-    # hier ist der Fehler; welche nummer brauche ich die lokale Liste oder die globale?
-
     datamanager.set_contact_block_ids(mapping)
+    # identify all surface which have no neighboring nodes
+    identify_free_contact_surfaces(datamanager, contact_blocks)
 
-    identify_outer_contact_surfaces(datamanager, contact_blocks)
-
-    #mapping = contact_block_free_surface_ids(global_contact_ids, block_list, contact_blocks)
-    #datamanager.set_contact_block_free_surface_ids(mapping)
     # reduce the block_list
     datamanager.set_all_blocks(block_list[global_contact_ids])
     points = datamanager.get_all_positions()
@@ -62,9 +57,14 @@ function init_contact_model(datamanager::Module, params)
     shared_vol = datamanager.create_constant_free_size_field("Shared Volumes", Float64,
                                                              (length(global_contact_ids),
                                                               1))
-
+    shared_horizon = datamanager.create_constant_free_size_field("Shared Horizon", Float64,
+                                                                 (length(global_contact_ids),
+                                                                  1))
     create_local_contact_id_mapping(datamanager, global_contact_ids)
+
     shared_vol = synchronize_contact_points(datamanager, "Volume", "Constant", shared_vol)
+    shared_horizon = synchronize_contact_points(datamanager, "Horizon", "Constant",
+                                                shared_horizon)
     for (cm, contact_params) in pairs(params)
         init_contact_search(datamanager, contact_params, cm)
         Penalty_model.init_contact_model(datamanager, contact_params)
@@ -111,23 +111,13 @@ function contact_block_ids(global_ids::Vector{Int64}, block_list, contact_blocks
     return mapping
 end
 
-function apply_contact_forces(datamanager)
-    contact_force = datamanager.get_field("Contact Forces")
-    force = datamanager.get_field("Force Densities", "NP1")
-    local_ids = datamanager.get_local_contact_ids()
-    for (id, local_id) in enumerate(values(local_ids))
-        force[local_id, :] .+= contact_force[id, :]
-    end
-    contact_force .= 0.0
-end
-
 function get_all_contact_blocks(params)
-    contact_blocks = []
+    contact_blocks = Vector{Int64}([])
     for contact_params in values(params)
         append!(contact_blocks, contact_params["Master"])
         append!(contact_blocks, contact_params["Slave"])
     end
-    return sort(unique(contact_blocks))
+    return Vector{Int64}(sort(unique(contact_blocks)))
 end
 
 """
@@ -157,11 +147,7 @@ function compute_contact_model(datamanager::Module,
     datamanager.set_all_positions(all_positions)
 
     for (cm, block_contact_params) in pairs(contact_params)
-        datamanager.set_contact_dict(cm,
-                                     Dict("Pairs: Master-Slave" => Vector{Tuple{Int64,
-                                                                                Int64}}([]),
-                                          "Normals" => Vector{Array{Float64}}([]),
-                                          "Distances" => Vector{Vector{Float64}}([])))
+        datamanager.set_contact_dict(cm, Dict())
         compute_contact_pairs(datamanager, cm, block_contact_params)
         Penalty_model.compute_contact_model(datamanager, cm, block_contact_params,
                                             compute_master_force_density,
@@ -173,28 +159,35 @@ function compute_contact_model(datamanager::Module,
 end
 
 function compute_master_force_density(datamanager, id_m, id_s, contact_force)
-    compute_force_density(datamanager, id_m, id_s, contact_force)
+    compute_force_density(datamanager, id_m, id_s, -contact_force)
 end
 
 function compute_slave_force_density(datamanager, id_s, id_m, contact_force)
-    compute_force_density(datamanager, id_s, id_m, -contact_force)
+    compute_force_density(datamanager, id_s, id_m, contact_force)
 end
 
 function compute_force_density(datamanager, id_1, id_2, contact_force)
     mapping = datamanager.get_exchange_id_to_local_id()
+
     if !(id_1 in keys(mapping))
         return
     end
     shared_volume = datamanager.get_field("Shared Volumes")
     force_densities = datamanager.get_field("Force Densities", "NP1")
-    force_densities[mapping[id_1], :] .+= 0.5 .* contact_force ./ shared_volume[id_2]
-end
 
+    force_densities[mapping[id_1], :] .+= 0.5 .* contact_force .* shared_volume[id_2]
+    #println(force_densities[mapping[id_1], :])
+end
+"""
+    identify_contact_block_surface_nodes(datamanager, contact_blocks)
+The ids of the surfaces is identified. This is needed to reduce the number of ids needed to create the polyhedra and to reduce the exchange vector.
+
+"""
 function identify_contact_block_surface_nodes(datamanager, contact_blocks)
     global_ids = Vector{Int64}([])
     points = datamanager.get_all_positions()
-    block_ids = datamanager.get_all_blocks()
-    block_nodes = get_block_nodes(block_ids, length(block_ids))
+    block_ids = datamanager.get_all_blocks() # all ids
+    block_nodes = get_block_nodes(block_ids, length(block_ids)) # all ids
     for block in contact_blocks
         poly = compute_geometry(points[block_nodes[block], :])
         normals, offsets = get_surface_information(poly)
@@ -205,28 +198,29 @@ function identify_contact_block_surface_nodes(datamanager, contact_blocks)
             end
             for id in eachindex(offsets)
                 if isapprox(dot(normals[id, :], points[pID, :]) - offsets[id], 0;
-                            atol = 1e-6)
+                            atol = 1e-6, rtol = 1e-5)
                     append!(global_ids, pID)
                 end
             end
         end
     end
-    return unique(global_ids)
+    return sort(unique(global_ids))
 end
 
-function identify_outer_contact_surfaces(datamanager, contact_blocks)
+function identify_free_contact_surfaces(datamanager::Module, contact_blocks::Vector{Int64})
     # all blocks, not only the contact blocks to find the free surfaces
     all_positions = datamanager.get_all_positions()
     block_ids = datamanager.get_all_blocks()
+    # I need all block nodes to check contact blocks with there neighbor non contact blocks
     block_nodes = get_block_nodes(block_ids, length(block_ids))
-
     free_surfaces = Dict{Int64,Vector{Int64}}()
+    # loop to init the surfaces of a block in correct order (1:nnumber)
     for iID in 1:maximum(keys(block_nodes))
         poly_i = compute_geometry(all_positions[block_nodes[iID], :])
         normals_i, offsets_i = get_surface_information(poly_i)
         free_surfaces[iID] = Vector{Int64}(collect(1:length(offsets_i)))
     end
-
+    # loop to remove the surfaces which are not free
     for iID in 1:(maximum(block_ids) - 1)
         # Polyhedra for the master block; can be 2D or 3D
         poly_master = compute_geometry(all_positions[block_nodes[iID], :])
@@ -291,12 +285,16 @@ function get_local_ids(datamanager::Module)
     end
     datamanager.set_contact_relevant_local_ids(local_map)
 end
+
+## TODO check if this method holds true for all surfaces, because some with same size in the same half plane might be identified as equal
 function get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
     ids = Vector{Int64}([])
     jds = Vector{Int64}([])
     for iID in eachindex(offsets_i)
         for jID in eachindex(offsets_j)
-            if offsets_i[iID] == offsets_j[jID] && normals_i[iID, :] == normals_j[jID, :]
+            if isapprox(offsets_i[iID], offsets_j[jID], atol = 1e-6, rtol = 1e-5) &&
+               isapprox(normals_i[iID, :], normals_j[jID, :];
+                        atol = 1e-6)
                 append!(ids, iID)
                 append!(jds, jID)
                 break # only one surface pair can exist
@@ -305,7 +303,6 @@ function get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
     end
     return ids, jds
 end
-
 function check_valid_contact_model(params, block_ids::Vector{Int64})
     # inverse master slave check
     # tuple liste bauen und dann die neuen invers checken
@@ -338,13 +335,16 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
             @error "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
             return false
         end
-        if !haskey(contact_params, "Search Radius")
-            @error "Contact model needs a ''Search Radius''."
+        if !haskey(contact_params, "Contact Radius")
+            @error "Contact model needs a ''Contact Radius''."
             return false
         end
-        if contact_params["Search Radius"] <= 0
-            @error "''Search Radius'' must be greater than zero."
+        if contact_params["Contact Radius"] <= 0
+            @error "''Contact Radius'' must be greater than zero."
             return false
+        end
+        if !haskey(contact_params, "Avg. Normals")
+            contact_params["Avg. Normals"] = false
         end
     end
     return true

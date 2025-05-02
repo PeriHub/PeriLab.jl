@@ -34,8 +34,8 @@ PeriLab:
     Contact_1:
       Master: 2
       Slave: 1
-      Search Radius: 0.001
-      Contact Stiffness: 1e12
+      Contact Radius: 0.005
+      Contact Stiffness: 1e10
   Blocks:
     block_1:
       Block ID: 1
@@ -58,14 +58,14 @@ PeriLab:
       Variable: "Velocity"
       Node Set: "Node Set 2"
       Coordinate: "y"
-      Value: -50
+      Value: -25
       Type: Initial
   Solver:
     Material Models: True
     Initial Time: 0.0
     Final Time: 5.0e-5
     Verlet:
-      Safety Factor: 1.0
+      Safety Factor: 0.8
   Outputs:
     Output1:
       Output Filename: "contact"
