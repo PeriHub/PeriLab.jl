@@ -15,7 +15,6 @@ export find_and_set_core_value_min
 export find_and_set_core_value_sum
 export find_and_set_core_value_avg
 export gather_values
-export reduce_values
 export barrier
 
 """
