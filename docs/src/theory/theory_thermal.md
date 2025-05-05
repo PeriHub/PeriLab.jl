@@ -3,14 +3,16 @@ The theory is taken from [WillbergC2024b](@cite)
 ## Thermo-mechanics
 To introduce a thermo-mechanical coupling the mechanical strains in \autoref{eq:GreenLagrangeStrains} have to be expanded with the thermal strains:
 
-$$\boldsymbol{\varepsilon}=\boldsymbol{\varepsilon}_{mechanical} + \boldsymbol{\varepsilon}_{thermal}.
+$$\boldsymbol{\varepsilon}=\boldsymbol{\varepsilon}_{mechanical} + \boldsymbol{\varepsilon}_{thermal}.$$
 
-$$
 The thermal strains are defined as
+
 $$
  \boldsymbol{\varepsilon}_{thermal} =- \boldsymbol{\alpha}\tau
 $$
+
 with $\tau$ as the temperature increment and $\boldsymbol{\alpha}$ as matrix of the coefficients of thermal expansion. Typically, this matrix is diagonal. The coupled stresses for linear elastic material utilizing [Hook's law](https://en.wikipedia.org/wiki/Hooke%27s_law) is given as
+
 $$
 \boldsymbol{\sigma}=\mathbf{C}\cdot\cdot\left(\boldsymbol{\varepsilon}_{mechanical} - \boldsymbol{\alpha}\tau \right)
 $$
@@ -61,6 +63,7 @@ $$
 ## Heat transfer to environment
 
 Following \cite{GuX2019c,OterkusS2014b} the heat volumetric density at the surface for a assigned heat flux normal to the surface $q_{bc}$ is:
+
 $$
 S_i = \frac{q_{bc}}{\Delta}
 $$
@@ -78,23 +81,30 @@ Therefore, the following criteria has to be fulfilled for 2D
 $$
 V_{2D}=2\pi\delta^2 h \geq \int_{\mathcal{H}}dV
 $$
+
 and 3D
+
 $$
 V_{3D}=\frac43\pi\delta^3 \geq \int_{\mathcal{H}}dV
 $$
 
 Each point which is next to the surface will have less volume represented be the discrete material points. Defining a limit value
+
 $$
 f_{limit} \leq V_{specific} =  \frac{\int_{\mathcal{H}}dV}{V_{2D\,or\,3D}}
 $$
+
 allows an easy identification of surface nodes $i$ during the printing process. Combining \autoref{eq:newTemp} and \autoref{eq:Heat_transfer_to_environment} allows the calculation of the change in temperature for these nodes $i$ as
+
 $$
 \tau_i^{t+dt} = dt\frac{\nabla\mathbf{q}_i + \frac{\kappa (\tau_i^{t}-\tau_{env})}{dx}}{(\rho C_v)_i} + \tau^{t}_i\,.
 $$
 
 ## Time step
 The minimum time step for the explicit time integration of the temperature field to obtain a stable solution is given by
+
 $$
     \Delta t < \text{min}\left(\frac{\left(\rho C_v\right)_i}{\sum_{j=1}^{N}\frac{\text{max}(\text{eig}(\boldsymbol{\lambda}))}{|\mathbf{\xi}_{ij}|}V_j}\right)
 $$
+
 with $N$ the number of neighbors of point $i$ [OterkusS2014](@cite).

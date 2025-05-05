@@ -159,13 +159,13 @@ PeriLab:
       Horizon: 2
   Boundary Conditions:
     BC_1:
-      Variable: "Displacement"
+      Variable: "Displacements"
       Node Set: "Node Set 1"
       Coordinate: "x"
       Value: "100*t"
       Type: Dirichlet
     BC_2:
-      Variable: "Displacement"
+      Variable: "Displacements"
       Coordinate: "x"
       Node Set: "Node Set 2"
       Value: "0.1*t"
