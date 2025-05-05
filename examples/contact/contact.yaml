@@ -32,8 +32,8 @@ PeriLab:
         Poisson's Ratio: 0.33
   Contact:
     Contact_1:
-      Master: 2
-      Slave: 1
+      Master Block ID: 2
+      Slave Block ID: 1
       Contact Radius: 0.005
       Contact Stiffness: 1e10
   Blocks:

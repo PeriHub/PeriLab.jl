@@ -114,8 +114,8 @@ end
 function get_all_contact_blocks(params)
     contact_blocks = Vector{Int64}([])
     for contact_params in values(params)
-        append!(contact_blocks, contact_params["Master"])
-        append!(contact_blocks, contact_params["Slave"])
+        append!(contact_blocks, contact_params["Master Block ID"])
+        append!(contact_blocks, contact_params["Slave Block ID"])
     end
     return Vector{Int64}(sort(unique(contact_blocks)))
 end
@@ -310,30 +310,30 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
     check_dict = Dict{Int64,Int64}()
 
     for contact_params in values(params)
-        if !haskey(contact_params, "Master")
+        if !haskey(contact_params, "Master Block ID")
             @error "Contact model needs a ''Master''"
             return false
         end
-        if !haskey(contact_params, "Slave")
+        if !haskey(contact_params, "Slave Block ID")
             @error "Contact model needs a ''Slave''"
             return false
         end
-        if contact_params["Master"] == contact_params["Slave"]
+        if contact_params["Master Block ID"] == contact_params["Slave Block ID"]
             @error "Contact master and slave are equal. Self contact is not implemented yet."
             return false
         end
 
-        if !(contact_params["Master"] in block_ids)
+        if !(contact_params["Master Block ID"] in block_ids)
             @error "Block defintion in master does not exist."
             return false
         end
-        if !(contact_params["Slave"] in block_ids)
+        if !(contact_params["Slave Block ID"] in block_ids)
             @error "Block defintion in slave does not exist."
             return false
         end
-        check_dict[contact_params["Master"]] = contact_params["Slave"]
-        if haskey(check_dict, contact_params["Slave"]) &&
-           check_dict[contact_params["Slave"]] == contact_params["Master"]
+        check_dict[contact_params["Master Block ID"]] = contact_params["Slave Block ID"]
+        if haskey(check_dict, contact_params["Slave Block ID"]) &&
+           check_dict[contact_params["Slave Block ID"]] == contact_params["Master Block ID"]
             @error "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
             return false
         end

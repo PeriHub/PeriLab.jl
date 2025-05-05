@@ -16,29 +16,30 @@ using .Contact_Factory: check_valid_contact_model, get_all_contact_blocks
     block_id .= 1
     contact_params = Dict("cm" => Dict())
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("cm" => Dict("Master" => 1))
+    contact_params = Dict("cm" => Dict("Master Block ID" => 1))
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 1))
+    contact_params = Dict("cm" => Dict("Master Block ID" => 1, "Slave Block ID" => 1))
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 2))
+    contact_params = Dict("cm" => Dict("Master Block ID" => 1, "Slave Block ID" => 2))
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 2),
-                          "cm2" => Dict("Master" => 2, "Slave" => 1))
+    contact_params = Dict("cm" => Dict("Master Block ID" => 1, "Slave Block ID" => 2),
+                          "cm2" => Dict("Master Block ID" => 2, "Slave Block ID" => 1))
     @test !check_valid_contact_model(contact_params, block_id)
     block_id[2] = 2
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 2, "Contact Radius" => 0.0))
+    contact_params = Dict("cm" => Dict("Master Block ID" => 1, "Slave Block ID" => 2,
+                                       "Contact Radius" => 0.0))
     @test !check_valid_contact_model(contact_params, block_id)
-    contact_params = Dict("cm" => Dict("Master" => 1, "Slave" => 2,
+    contact_params = Dict("cm" => Dict("Master Block ID" => 1, "Slave Block ID" => 2,
                                        "Contact Radius" => -20.0))
     @test !check_valid_contact_model(contact_params, block_id)
 end
 
 @testset "ut_get_all_contact_blocks" begin
-    params = Dict("a" => Dict("Master" => 1, "Slave" => 2),
-                  "ba" => Dict("Master" => 2, "Slave" => 1),
-                  "c" => Dict("Master" => 3, "Slave" => 5),
-                  "q" => Dict("Master" => 8, "Slave" => 5))
+    params = Dict("a" => Dict("Master Block ID" => 1, "Slave Block ID" => 2),
+                  "ba" => Dict("Master Block ID" => 2, "Slave Block ID" => 1),
+                  "c" => Dict("Master Block ID" => 3, "Slave Block ID" => 5),
+                  "q" => Dict("Master Block ID" => 8, "Slave Block ID" => 5))
     @test get_all_contact_blocks(params) == [1, 2, 3, 5, 8]
 end
 @testset "ut_get_double_surfs" begin

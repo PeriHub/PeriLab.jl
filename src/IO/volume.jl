@@ -45,6 +45,22 @@ function tetrahedron_volume(tet_vertices::Vector{Vector{Float64}})
 end
 
 """
+    tetrahedron_volume(tet_vertices)
+
+Calculate the volume of a tetrahedron.
+
+# Arguments
+- `tet_vertices`: The vertices of the tetrahedron.
+# Returns
+- `volume`: The volume of the tetrahedron.
+"""
+function tetrahedron_volume(tet_vertices::Matrix{Float64})
+    mat = hcat(tet_vertices', ones(4))  # Augmenting matrix with ones in the fourth column
+    volume = abs(det(mat) / 6)   # Using det function to calculate determinant
+    return volume
+end
+
+"""
 hex8_volume(hex_vertices)
 
 Calculate the volume of a hex.

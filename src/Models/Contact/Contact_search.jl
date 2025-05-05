@@ -22,12 +22,14 @@ function init_contact_search(datamanager, contact_params, cm)
     # local search field ids
     all_positions = datamanager.get_all_positions()
     # find all outer surfaces.
-    master_id = contact_params["Master"]
-    slave_id = contact_params["Slave"]
+    master_id = contact_params["Master Block ID"]
+    slave_id = contact_params["Slave Block ID"]
     # Polyhedra for the master block; can be 2D or 3D
     @info "Contact pair Master block $master_id - Slave block $slave_id"
-    set_surface_nodes_and_connections(datamanager, all_positions, contact_params["Slave"])
-    set_surface_nodes_and_connections(datamanager, all_positions, contact_params["Master"])
+    set_surface_nodes_and_connections(datamanager, all_positions,
+                                      contact_params["Slave Block ID"])
+    set_surface_nodes_and_connections(datamanager, all_positions,
+                                      contact_params["Master Block ID"])
 
     # do something with block nodes
 
@@ -98,7 +100,7 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
     contact_dict = datamanager.get_contact_dict(cm)
 
     # node ids to create the geometry for checking if master ids are inside
-    slave_block_nodes = datamanager.get_contact_block_ids(contact_params["Slave"])
+    slave_block_nodes = datamanager.get_contact_block_ids(contact_params["Slave Block ID"])
     poly = polyhedron(vrep(all_positions[slave_block_nodes, :]), CDDLib.Library())
 
     for (master_node, near_ids) in pairs(potential_contact_dict)
@@ -133,8 +135,8 @@ end
 function create_potential_contact_dict(near_points, datamanager, contact_params)
     # exchange vector ids of the free contact blocks
     # computed in function set_surface_nodes_and_connections
-    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master"])
-    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave"])
+    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master Block ID"])
+    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave Block ID"])
 
     contact_dict = Dict{Int64,Vector{Int64}}()
     for (pID, neighbors) in enumerate(near_points)
@@ -161,8 +163,8 @@ function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
     all_positions = datamanager.get_all_positions()
     dof = datamanager.get_dof()
     # ids are exchange vector ids (''all position'' ids)
-    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master"])
-    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave"])
+    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master Block ID"])
+    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave Block ID"])
 
     nmaster = length(master_nodes)
     near_points = fill(Vector{Int64}([]), nmaster)
