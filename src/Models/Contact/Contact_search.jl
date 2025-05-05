@@ -33,13 +33,13 @@ function init_contact_search(datamanager, contact_params, cm)
 
     return datamanager
 end
+
 """
     set_surface_nodes_and_connections(datamanager::Module, all_positions, id::Int64)
 
 Find the node ids of the free surfaces of the contact blocks and there connected surfaces. The node id is given in the exchange vector id.
 
 """
-
 function set_surface_nodes_and_connections(datamanager::Module, all_positions, id::Int64)
     surface_ids = datamanager.get_contact_block_ids(id) # all contact block nodes to create the geometry
     free_surfaces = datamanager.get_free_contact_surfaces(id)
@@ -57,12 +57,11 @@ end
 checks which surface has to be used by checking the number of nodes in the nearest point list. The highest number at one surface, defines the surface.
 
 """
-
 function which_surface()
 end
 
 """
-    function get_surface_connectivity(points::Union{Vector{Vector{Float64}}, Vector{Vector{Int64}}}, surface_nodes,  nlist, poly)
+    function filter_surface_connectivity(points::Union{Vector{Vector{Float64}}, Vector{Vector{Int64}}}, surface_nodes,  nlist, poly)
 
 Identifies the surfaces which are not connected with other surfaces. These nodes are used for the near neighbor search. It is checked if the neighbors are outside the block. This leads to the issue that at boundary edges points lying at the surface are not considered.
 
@@ -78,7 +77,6 @@ Identifies the surfaces which are not connected with other surfaces. These nodes
 # Returns
 - `connections::Dict{Int64,Vector{Int64}}`: connections of the surface node with outer surface
 """
-
 function filter_surface_connectivity(points::Union{Matrix{Float64},Matrix{Int64}}, nlist,
                                      connections, poly)
     msg = true
@@ -116,8 +114,9 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
         contact_dict[master_node] = Dict("Slaves" => [], "Normals" => [],
                                          "Distances" => [])
         for id in near_ids
-            distance, normal = compute_distance_and_normals(all_positions[master_node, :],
-                                                            all_positions[id, :])
+            distance,
+            normal = compute_distance_and_normals(all_positions[master_node, :],
+                                                  all_positions[id, :])
             # TODO preallocation, e.g. max number of contact nodes -> size depended
             if contact_params["Contact Radius"] < abs(distance)
                 continue
@@ -157,9 +156,7 @@ Finds a list of potential master slave pairs which are next to each other. Only 
 
 # Returns
 - pairs of potential contact partner in exchange vector ids.
-"""
-
-## TODO test
+"""## TODO test
 function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
     all_positions = datamanager.get_all_positions()
     dof = datamanager.get_dof()
