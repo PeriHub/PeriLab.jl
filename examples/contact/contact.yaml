@@ -24,10 +24,6 @@ PeriLab:
         Side Length: 2.0
         Type: Rectangular_Plane
   Models:
-    Damage Models:
-      Dam_1:
-        Damage Model: Critical Stretch
-        Critical Value: 0.001
     Material Models:
       Mat_1:
         Material Model: "Bond-based Elastic"
@@ -45,7 +41,6 @@ PeriLab:
       Block ID: 1
       Density: 2700
       Horizon: 0.00751
-      Damage Model: Dam_1
       Material Model: Mat_1
     block_2:
       Block ID: 2
@@ -65,24 +60,17 @@ PeriLab:
       Coordinate: "y"
       Value: -25
       Type: Initial
-    BC_3:
-      Variable: "Displacements"
-      Node Set: "Node Set 2"
-      Coordinate: "x"
-      Value: 0
-      Type: Dirichlet
   Solver:
     Material Models: True
     Initial Time: 0.0
-    Final Time: 5.0e-5
+    Final Time: 3.14521e-05
     Verlet:
-      Safety Factor: 0.8
+      Safety Factor: 0.9
   Outputs:
     Output1:
       Output Filename: "contact"
-      Output Frequency: 1
+      Output Frequency: 50
       Output Variables:
         Displacements: True
-        Number of Neighbors: True
         Forces: True
         Velocity: True

@@ -4,5 +4,5 @@
 
 folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
-    run_perilab("contact_search", 1, true, folder_name)
+    run_perilab("penalty_contact", 1, true, folder_name)
 end

@@ -5,10 +5,10 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 1: 1 2 3 4
-      Node Set 2: 5 6 7 8
+      Node Set 1: ns_1.txt
+      Node Set 2: ns_2.txt
     Type: "Text File"
-    Input Mesh File: "test_mesh.txt"
+    Input Mesh File: "mesh.txt"
     Bond Filters:
       bf_1:
         Bottom Length: 15.0
@@ -16,7 +16,7 @@ PeriLab:
         Bottom Unit Vector Y: 0.0
         Bottom Unit Vector Z: 0.0
         Lower Left Corner X: -2.0
-        Lower Left Corner Y: 1.55
+        Lower Left Corner Y: 0.01025
         Lower Left Corner Z: -0.001
         Normal X: 0.0
         Normal Y: 1.0
@@ -26,25 +26,26 @@ PeriLab:
   Models:
     Material Models:
       Mat_1:
-        Material Model: "PD Solid Elastic"
+        Material Model: "Bond-based Elastic"
         Symmetry: "isotropic plane stress"
-        Bulk Modulus: 2.5e+3
-        Shear Modulus: 1.15e3
+        Young's Modulus: 7e10
+        Poisson's Ratio: 0.33
   Contact:
     Contact_1:
       Master: 2
       Slave: 1
-      Contact Radius: 1
+      Contact Radius: 0.005
+      Contact Stiffness: 1e10
   Blocks:
     block_1:
       Block ID: 1
-      Density: 2.7e-9
-      Horizon: 4.1
+      Density: 2700
+      Horizon: 0.00751
       Material Model: Mat_1
     block_2:
       Block ID: 2
-      Density: 2.7e-9
-      Horizon: 4.1
+      Density: 2700
+      Horizon: 0.00751
       Material Model: Mat_1
   Boundary Conditions:
     BC_1:
@@ -54,22 +55,22 @@ PeriLab:
       Value: "0"
       Type: Dirichlet
     BC_2:
-      Variable: "Displacements"
+      Variable: "Velocity"
       Node Set: "Node Set 2"
       Coordinate: "y"
-      Value: "-0.001*t"
-      Type: Dirichlet
+      Value: -25
+      Type: Initial
   Solver:
     Material Models: True
     Initial Time: 0.0
-    Final Time: 1.0e-5
+    Final Time: 2.14521e-05
     Verlet:
-      Safety Factor: 1.0
+      Safety Factor: 0.9
   Outputs:
     Output1:
-      Output Filename: "search"
-      Output Frequency: 1
+      Output Filename: "contact"
+      Output Frequency: 50
       Output Variables:
         Displacements: True
-        Number of Neighbors: True
         Forces: True
+        Velocity: True

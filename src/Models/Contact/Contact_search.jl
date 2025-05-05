@@ -109,7 +109,8 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
                 continue
             end
         catch
-            println(poly)
+            # if poly is destroyed, due to damages
+            continue
         end
 
         contact_dict[master_node] = Dict("Slaves" => [], "Normals" => [],
