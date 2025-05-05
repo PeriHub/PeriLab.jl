@@ -6,7 +6,7 @@ include("../../../src/Models/Contact/Contact_search.jl")
 # include("../../../../src/Core/Data_manager.jl")
 using Test
 using .Contact_search: get_surface_normals, get_surface_connectivity, init_contact_search,
-                       find_potential_contact_pairs
+                       find_potential_contact_pairs, create_potential_contact_dict
 @testset "ut_get_surface_normals" begin
     points_2D = [
         [0.0, 0.0],    # Unten links
@@ -35,38 +35,6 @@ using .Contact_search: get_surface_normals, get_surface_connectivity, init_conta
            1.0 -0.0 -0.0]
 end
 
-@testset "ut_get_surface_normals" begin
-    points_2D = [
-        [0.0, 0.0],    # Unten links
-        [4, 0.0],      # Unten rechts
-        [1, 1],
-        [0.5, 0.0],    # Unten links
-        [4, 2],        # Oben rechts
-        [0.0, 2]       # Oben links
-    ]
-    test = get_surface_connectivity(points_2D)
-    @test haskey(test, 4)
-    @test test[4] == 1
-end
-
-@testset "ut_init_contact_exceptions" begin
-    test_data_manager = PeriLab.Data_manager
-    test_data_manager.initialize_data()
-    test_data_manager.set_dof(2)
-    test_data_manager.set_num_controller(4)
-    block_id = test_data_manager.create_field("Block_Id", Int64, 1)
-    block_id .= 1
-    contact_params = Dict()
-    @test isnothing(init_contact_search(datamanager, contact_params))
-    contact_params = Dict("Master" => 1)
-    @test isnothing(init_contact_search(datamanager, contact_params))
-    contact_params = Dict("Master" => 1, "Slave" => 1)
-    @test isnothing(init_contact_search(datamanager, contact_params))
-    contact_params = Dict("Master" => 1, "Slave" => 2)
-    @test isnothing(init_contact_search(datamanager, contact_params))
-    block_id[2] = 2
-    @test isnothing(init_contact_search(datamanager, contact_params))
-end
 @testset "ut_find_potential_contact_pairs and ut_create_potential_contact_dict" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()

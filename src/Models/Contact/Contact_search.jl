@@ -104,8 +104,12 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
     poly = polyhedron(vrep(all_positions[slave_block_nodes, :]), CDDLib.Library())
 
     for (master_node, near_ids) in pairs(potential_contact_dict)
-        if !(all_positions[master_node, :] in poly)
-            continue
+        try
+            if !(all_positions[master_node, :] in poly)
+                continue
+            end
+        catch
+            println(poly)
         end
 
         contact_dict[master_node] = Dict("Slaves" => [], "Normals" => [],
@@ -117,8 +121,9 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
             if contact_params["Contact Radius"] < abs(distance)
                 continue
             end
+
             append!(contact_dict[master_node]["Slaves"], id)
-            append!(contact_dict[master_node]["Normals"], normal)
+            append!(contact_dict[master_node]["Normals"], [normal])
             append!(contact_dict[master_node]["Distances"], distance)
         end
     end
@@ -173,7 +178,7 @@ function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
 end
 
 function get_surface_normals(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
-    return MixedMatHRep(hrep(polyhedron(vrep(points), CDDLib.Library())))
+    return MixedMatHRep(hrep(polyhedron(vrep(points), CDDLib.Library()))).A
 end
 
 function get_surface_normals(poly)

@@ -17,7 +17,7 @@ function compute_contact_model(datamanager, cm, params, compute_master_force_den
     contact_dict = datamanager.get_contact_dict(cm)
     contact_stiffness = params["Contact Stiffness"]
     contact_radius = params["Contact Radius"]
-
+    #datamanager.get_symmetry() # TODO store in materials the information
     # -> horizon = datamanager.get_field("Shared Horizon")
     for (master_id, contact) in pairs(contact_dict)
         for (id, slave_id) in enumerate(contact["Slaves"])
@@ -29,7 +29,6 @@ function compute_contact_model(datamanager, cm, params, compute_master_force_den
             temp = (contact_radius - distance) / horizon
 
             @views normal = contact["Normals"][id]
-
             compute_master_force_density(datamanager, master_id, slave_id,
                                          stiffness * temp .*
                                          normal)

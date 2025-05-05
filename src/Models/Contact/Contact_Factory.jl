@@ -159,11 +159,11 @@ function compute_contact_model(datamanager::Module,
 end
 
 function compute_master_force_density(datamanager, id_m, id_s, contact_force)
-    compute_force_density(datamanager, id_m, id_s, -contact_force)
+    compute_force_density(datamanager, id_m, id_s, contact_force)
 end
 
 function compute_slave_force_density(datamanager, id_s, id_m, contact_force)
-    compute_force_density(datamanager, id_s, id_m, contact_force)
+    compute_force_density(datamanager, id_s, id_m, -contact_force)
 end
 
 function compute_force_density(datamanager, id_1, id_2, contact_force)
@@ -307,7 +307,9 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
     # inverse master slave check
     # tuple liste bauen und dann die neuen invers checken
     check_dict = Dict{Int64,Int64}()
+
     for contact_params in values(params)
+        println(contact_params)
         if !haskey(contact_params, "Master")
             @error "Contact model needs a ''Master''"
             return false
