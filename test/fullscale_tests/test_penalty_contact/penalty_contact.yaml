@@ -68,7 +68,7 @@ PeriLab:
       Safety Factor: 0.9
   Outputs:
     Output1:
-      Output Filename: "contact"
+      Output Filename: "penalty_contact"
       Output Frequency: 50
       Output Variables:
         Displacements: True
