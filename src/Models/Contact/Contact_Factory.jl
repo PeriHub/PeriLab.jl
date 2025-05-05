@@ -262,7 +262,7 @@ function synchronize_contact_points(datamanager::Module, what::String, step::Str
                                     synch_vector)
     sy = datamanager.get_field(what, step)
     local_map = datamanager.get_local_contact_ids()
-
+    synch_vector .= 0
     for (local_id, exchange_id) in pairs(local_map)
         synch_vector[exchange_id, :] .= sy[local_id, :]
     end
@@ -271,6 +271,7 @@ function synchronize_contact_points(datamanager::Module, what::String, step::Str
     end
     comm = datamanager.get_comm()
     find_and_set_core_value_sum(comm, synch_vector)
+
     return synch_vector
 end
 
@@ -309,7 +310,6 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
     check_dict = Dict{Int64,Int64}()
 
     for contact_params in values(params)
-        println(contact_params)
         if !haskey(contact_params, "Master")
             @error "Contact model needs a ''Master''"
             return false

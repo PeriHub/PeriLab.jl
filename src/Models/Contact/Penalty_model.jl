@@ -18,7 +18,6 @@ function compute_contact_model(datamanager, cm, params, compute_master_force_den
     contact_stiffness = params["Contact Stiffness"]
     contact_radius = params["Contact Radius"]
     #datamanager.get_symmetry() # TODO store in materials the information
-    # -> horizon = datamanager.get_field("Shared Horizon")
     for (master_id, contact) in pairs(contact_dict)
         for (id, slave_id) in enumerate(contact["Slaves"])
             horizon = get_shared_horizon(datamanager, slave_id) # needed to get the correct contact horizon

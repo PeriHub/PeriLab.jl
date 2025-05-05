@@ -124,7 +124,9 @@ function init_data(params::Dict,
                                             bond_norm,
                                             dof)
         end
-        datamanager = contact_basis(datamanager, params, mesh)
+
+        datamanager = contact_basis(datamanager, params, mesh, comm, rank)
+
         datamanager = get_bond_geometry(datamanager) # gives the initial length and bond damage
         datamanager.set_fem(fem_active)
         if fem_active
@@ -173,19 +175,26 @@ function create_and_distribute_bond_norm(comm::MPI.Comm,
     copyto!.(bond_norm_field, bond_norm)
 end
 
-function contact_basis(datamanager::Module, params::Dict, mesh::DataFrame)
+function contact_basis(datamanager::Module, params::Dict, mesh::DataFrame, comm,
+                       rank::Int64)
     if !haskey(params, "Contact")
         return datamanager
     end
     ## All coordinates and block Ids are stored at all cores. Reason is, that you might need them for self contact, etc.
-    mesh_id = ["x", "y"]
-    if datamanager.get_dof() == 3
-        mesh_id = ["x", "y", "z"]
+    if rank == 1
+        mesh_id = ["x", "y"]
+        if datamanager.get_dof() == 3
+            mesh_id = ["x", "y", "z"]
+        end
+        points = Matrix{Float64}(mesh[:, mesh_id])
+        blocks = Vector{Int64}(mesh[:, "block_id"])
     end
-
-    points = Matrix(mesh[:,
-                         mesh_id])
-    blocks = Vector(mesh[:, "block_id"])
+    if rank > 1
+        blocks = nothing
+        points = nothing
+    end
+    points = send_value(comm, 0, points)
+    blocks = send_value(comm, 0, blocks)
     datamanager.set_all_positions(points)
     datamanager.set_all_blocks(blocks)
     return datamanager
