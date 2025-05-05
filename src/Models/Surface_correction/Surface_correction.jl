@@ -10,7 +10,9 @@ function compute_surface_correction(datamanager::Module,
                                     nodes,
                                     local_synch,
                                     synchronise_field)
-    params = datamanager.get_properties(1, "Surface Correction")
+    # get a random block, because surface correction is applied to all blocks
+    params = datamanager.get_properties(datamanager.get_block_id_list()[1],
+                                        "Surface Correction")
     if isnothing(params["Type"])
         return
     end

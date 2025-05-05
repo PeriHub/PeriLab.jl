@@ -1183,7 +1183,7 @@ function init_properties()
                                                               "Material Model" => Dict{String,
                                                                                        Any}())
     end
-    return collect(keys(data["properties"][1]))
+    return collect(keys(data["properties"][block_id_list[1]]))
 end
 
 """
