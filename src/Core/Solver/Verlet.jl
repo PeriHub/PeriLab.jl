@@ -23,6 +23,7 @@ using .Parameter_Handling:
                            get_max_damage
 
 include("../../MPI_communication/MPI_communication.jl")
+using .MPI_communication: find_and_set_core_value_min, find_and_set_core_value_max, barrier
 include("../BC_manager.jl")
 include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")
@@ -614,7 +615,8 @@ function run_solver(solver_options::Dict{Any,Any},
             if rank == 0 && !silent
                 set_postfix(iter, t = @sprintf("%.4e", time))
             end
-            MPI.Barrier(comm)
+
+            barrier(comm)
         end
     end
     return result_files

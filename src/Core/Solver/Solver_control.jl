@@ -16,12 +16,17 @@ using .Parameter_Handling:
                            get_angles,
                            get_block_names_and_ids,
                            get_solver_params
-using .Helpers: find_indices, fastdot, check_inf_or_nan
+using .Helpers: fastdot, check_inf_or_nan, get_block_nodes
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
 include("Static_solver.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
+using .MPI_communication: synch_responder_to_controller,
+                          synch_controller_to_responder,
+                          synch_controller_bonds_to_responder,
+                          synch_controller_bonds_to_responder_flattened
+
 include("../../FEM/FEM_Factory.jl")
 include("../Influence_function.jl")
 
@@ -143,25 +148,6 @@ function init(params::Dict,
 
     @debug "Finished Init Solver"
     return block_nodes, bcs, datamanager, solver_options
-end
-
-"""
-    get_block_nodes(block_ids, nnodes)
-
-Returns a dictionary mapping block IDs to collections of nodes.
-
-# Arguments
-- `block_ids::Vector{Int64}`: A vector of block IDs
-- `nnodes::Int64`: The number of nodes
-# Returns
-- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
-"""
-function get_block_nodes(block_ids, nnodes)
-    block_nodes = Dict{Int64,Vector{Int64}}()
-    for i in unique(block_ids[1:nnodes])
-        block_nodes[i] = find_indices(block_ids[1:nnodes], i)
-    end
-    return block_nodes
 end
 
 """

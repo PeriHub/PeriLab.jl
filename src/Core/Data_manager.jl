@@ -7,7 +7,7 @@ using MPI
 using DataStructures: OrderedDict
 include("../Support/Helpers.jl")
 using .Helpers: fill_in_place!
-
+include("./Data_manager/data_manager_contact.jl")
 export add_active_model
 export create_bond_field
 export create_constant_free_size_field
@@ -128,6 +128,7 @@ function initialize_data()
     data["model_modules"] = OrderedDict{String,Module}()
     data["nsets"] = Dict{String,Vector{Int64}}()
     data["overlap_map"] = Dict()
+    data["contact_overlap_map"] = Dict()
     data["pre_calculation_order"] = [
         "Deformed Bond Geometry",
         "Shape Tensor",
@@ -148,6 +149,18 @@ function initialize_data()
     data["NP1_to_N"] = Dict{String,Vector{}}()
     data["coupling_fe_nodes"] = []
     data["BC_free_dof"] = []
+    data["Contact Nodes"] = Dict{Int64,Vector{Int64}}()
+    data["All positions"] = []
+    data["All Blocks"] = []
+    data["Free Surfaces"] = Dict()
+    data["Free Surface Connections"] = Dict{Int64,Vector{Int64}}() # point ID -> surface IDs
+    data["Free Surface Nodes"] = Dict{Int64,Vector{Int64}}() # block ID -> surface point IDs
+    data["Contact Dictionary"] = Dict()
+    data["Global Contact IDs"] = Vector{Int64}([])
+    data["Local Contact IDs"] = Dict{Int64,Int64}()
+    data["Contact Properties"] = Dict()
+    data["Contact block IDs"] = Dict()
+    data["Exchange id to local id"] = Dict{Int64,Int64}()
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -321,6 +334,15 @@ Get the MPI communicator
 """
 function get_comm()
     return data["commMPi"]
+end
+
+"""
+    get_contact_nodes()
+
+Get list of surface nodes of a block.
+"""
+function get_contact_nodes()
+    return data["Contact Nodes"]
 end
 
 """
@@ -729,8 +751,8 @@ Returns the field with the given name and time.
 # Returns
 - `field::Field`: The field with the given name and time.
 """
-function get_field(name::String, time::String = "constant")
-    if time == "constant"
+function get_field(name::String, time::String = "Constant")
+    if time == "Constant"
         return _get_field(name)
     elseif time == "N"
         try
@@ -767,7 +789,7 @@ Returns the field with the given name if it exists.
 # Returns
 - `field::Field`: The field with the given name and time.
 """
-function get_field_if_exists(name::String, time::String = "constant")
+function get_field_if_exists(name::String, time::String = "Constant")
     return has_key(name) ? get_field(name, time) : nothing
 end
 """
@@ -861,7 +883,8 @@ get_local_nodes()  # returns local nodes or if they do not exist at the core an 
 function get_local_nodes(global_nodes)
     return [data["glob_to_loc"][global_node]
             for
-            global_node in global_nodes if global_node in keys(data["glob_to_loc"])]
+            global_node in global_nodes
+            if global_node in keys(data["glob_to_loc"])]
 end
 
 function get_model_module(entry::Union{String,SubString})
@@ -1148,14 +1171,14 @@ end
 Converts the local index to the global index.
 
 # Arguments
-- `range::UnitRange{Int64}`: The range of the local index.
+- `range::Union{UnitRange{Int64}, Vector{Int64}}`: The range of the local index.
 
 Example:
 ```julia
 loc_to_glob(1:10)  # converts the local index to the global index
 ```
 """
-function loc_to_glob(range::UnitRange{Int64})
+function loc_to_glob(range::Union{UnitRange{Int64},Vector{Int64}})
     return data["distribution"][range]
 end
 
@@ -1649,7 +1672,7 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
         data["fields_to_synch"][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
                                                          "download_from_cores" => download_from_cores,
                                                          "dof" => dof,
-                                                         "time" => "constant")
+                                                         "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name, "NP1")
         if dof == 0
@@ -1685,7 +1708,7 @@ function set_local_synch(model, name, download_from_cores, upload_to_cores, dof 
         data["local_fields_to_synch"][model][name] = Dict{String,Any}("upload_to_cores" => upload_to_cores,
                                                                       "download_from_cores" => download_from_cores,
                                                                       "dof" => dof,
-                                                                      "time" => "constant")
+                                                                      "time" => "Constant")
     elseif name * "NP1" in get_all_field_keys()
         field = get_field(name, "NP1")
         if dof == 0

@@ -21,3 +21,5 @@ LocalPreferences.toml
 .env
 scripts/Output
 scripts/3d_plate.jl
+.qodo
+test/tmp/test.jl

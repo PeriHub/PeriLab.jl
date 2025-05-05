@@ -13,23 +13,28 @@ using LinearAlgebra
 using StaticArrays
 using LoopVectorization
 using Unitful
+using CDDLib, Polyhedra
+
 global A2x2 = MMatrix{2,2}(zeros(Float64, 2, 2))
 global A3x3 = MMatrix{3,3}(zeros(Float64, 3, 3))
 global A6x6 = MMatrix{6,6}(zeros(Float64, 6, 6))
 
 export qdim
 export check_inf_or_nan
+export compute_geometry
 export find_active_nodes
 export get_active_update_nodes
 export find_indices
 export find_inverse_bond_id
 export find_files_with_ending
+export get_block_nodes
 export matrix_style
 export get_fourth_order
 export interpolation
 export interpol_data
 export progress_bar
 export invert
+export compute_distance_and_normals
 export rotate
 export sub_in_place!
 export add_in_place!
@@ -42,12 +47,165 @@ export get_mapping
 export mat_mul_transpose_mat!
 export get_ring
 export get_hexagon
+export nearest_point_id
+export get_shared_horizon
+function get_shared_horizon(datamanager, id)
+    horizon = datamanager.get_field("Shared Horizon")
+    return horizon[id]
+end
+
+"""
+     matrix_to_vector(mat::Union{Matrix{Float64},Matrix{Int64}})
+
+Transforming a matrix representation in a Vector{Vector} representation.
+
+# Arguments
+- `mat::Union{Matrix{Float64},Matrix{Int64}}`: Points which form the polyhedron.
+# Returns
+- ``: transformed data
+"""
+function matrix_to_vector(mat::Union{Matrix{Float64},Matrix{Int64}})
+    return [vec(mat[i, :]) for i in eachindex(axes(mat, 1))]
+end
+
+"""
+    compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
+
+Returns a polyhedron object in 2D or 3D. To do so the matrix form of storing the geometry is transfered in a Vector{Vector}. This form is than transformed in a V-representation of the Polyhedra.jl package.
+
+# Arguments
+- `points::Union{Matrix{Float64},Matrix{Int64}}`: Points which form the polyhedron.
+# Returns
+- ``: polyhedron
+"""
+
+function compute_geometry(points::Union{Matrix{Float64},Matrix{Int64}})
+    return polyhedron(vrep(matrix_to_vector(points)))
+end
+
+"""
+    compute_surface_nodes_and_connections(points::Union{Matrix{Float64},Matrix{Int64}},
+                                               poly, free_surfaces::Vector{Int64})
+
+Computes the points which are connected free surfaces (()).
+This function is used for contact search purposes. The free surface nodes are used to compute the nearest neighbors. The connections and underlying points are needed for the contact algorithm. They are a subset of the surface points to create the polyhedron and the only ones which can be in contact.
+
+# Arguments
+- `points::Union{Matrix{Float64},Matrix{Int64}}`: Points which form the polyhedron.
+- `poly`: Polyhedron object.
+- `free_surfaces::Vector{Int64}`: List of the free surfaces of the polyhedron.
+
+# Returns
+- `connections`: Tthe connections to the free surfaces. There can be more surface points than connections.
+"""
+function compute_free_surface_nodes(points::Union{Matrix{Float64},Matrix{Int64}},
+                                    surface_ids::Vector{Int64},
+                                    poly, free_surfaces::Vector{Int64})
+    normals, offset = get_surface_information(poly)
+    free_nodes = Vector{Int64}([])
+    for pID in eachindex(points[:, 1])
+        for id in free_surfaces
+            if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
+                # connections only to the free surfaces.
+                append!(free_nodes, surface_ids[pID])
+            end
+        end
+    end
+    # not possible; deformation leads to a switch in surface numbers
+    return sort(free_nodes)
+end
+
+# taken from peridigm
+function compute_distance_and_normals(p1, p2)
+    distance = norm(p2 - p1)
+    return distance, (p2 - p1) ./ distance
+end
+
+function get_surface_normals(poly)
+    return MixedMatHRep(hrep(poly)).A
+end
+
+function get_surface_offset(poly)
+    return MixedMatHRep(hrep(poly)).b
+end
+
+function get_surface_information(poly)
+    normals = get_surface_normals(poly)
+    b = get_surface_offset(poly)
+    for i in eachindex(b)
+        b[i] /= norm(normals[i, :])
+        normals[i, :] ./= norm(normals[i, :])
+    end
+    return normals, b
+end
+
+function check_neighbor_position(poly, points, nlist::Vector{Int64}, msg::Bool)
+    for nID in nlist
+        if !point_is_inside(points[nID, :], poly)
+            if msg
+                msg = false
+                @warn "Make sure that your contact block is large enough. If it is surrounded by non contact blocks some of the points near the edgdes are ignored."
+            end
+            return false
+        end
+    end
+    return true
+end
+
+function point_is_inside(point, poly)
+    return point in poly
+end
+
+function nearest_point_id(p, points)
+    return argmin(norm.(eachrow(points) .- Ref(p)))
+end
+
+"""
+    remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
+
+Remove multiple keys in a Vector from a Dict.
+
+# Arguments
+- `dict::Dict{Int64,Int64}`: Dictionary with ids
+- `numbers::Vector{Int64}`: Ids to remove
+# Returns
+updated dict
+"""
+
+function remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
+    for num in numbers
+        delete!(dict, num)
+    end
+end
+
+function remove_ids(vec::Vector{Int64}, numbers::Vector{Int64})
+    filter!(x -> !(x in numbers), vec)
+end
+
+"""
+    get_block_nodes(block_ids, nnodes)
+
+Returns a dictionary mapping block IDs to collections of nodes.
+
+# Arguments
+- `block_ids::Vector{Int64}`: A vector of block IDs
+- `nnodes::Int64`: The number of nodes
+# Returns
+- `block_nodes::Dict{Int64,Vector{Int64}}`: A dictionary mapping block IDs to collections of nodes
+"""
+function get_block_nodes(block_ids, nnodes)
+    block_nodes = Dict{Int64,Vector{Int64}}()
+    for i in unique(block_ids[1:nnodes])
+        block_nodes[i] = find_indices(block_ids[1:nnodes], i)
+    end
+    return block_nodes
+end
 
 function get_nearest_neighbors(nodes,
                                dof::Int64,
                                system_coordinates,
                                neighbor_coordinates,
-                               radius,
+                               radius::Union{Int64,Float64,Vector{Float64},Vector{Int64}},
                                neighborList,
                                diffent_lists = false)
     nhs = GridNeighborhoodSearch{dof}(search_radius = maximum(radius),
@@ -60,7 +218,10 @@ function get_nearest_neighbors(nodes,
                          neighbor_coordinates',# Potential neighbor coordinates -> must be transpose for the datamanager definition
                          nhs,
                          iID,
-                         search_radius = radius[iID]) do i, j, _, L
+                         search_radius = radius isa AbstractVector ? radius[iID] : radius) do i,
+                                                                                              j,
+                                                                                              _,
+                                                                                              L
             if i != j || diffent_lists
                 push!(neighbors, j)
             end
@@ -136,7 +297,7 @@ end
                                       dof::Int64,
                                       fu)
 
-Computes the centroid and search radius for each element in a given mesh.
+Computes the centroid and Contact Radius for each element in a given mesh.
 
 # Arguments
 - `coor::Union{Matrix{Float64}, Matrix{Int64}}`:   A matrix of size `(N x dof)`, where each row represents the coordinates of a point in the space.

@@ -82,7 +82,7 @@ function compute_model(datamanager::Module,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
-    @info "Please write a contact model name in thermal_name()."
+    @info "Please write a contact model name in contact_model_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(datamanager, nodes, contact_parameter, time, dt) function."
     @info "The datamanager and contact_parameter holds all you need to solve your problem on contact flow level."

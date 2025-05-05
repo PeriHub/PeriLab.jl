@@ -124,6 +124,14 @@ MPI.Init()
                     include("unit_tests/Models/Additive/ut_Additive_Factory.jl")
                 end
             end
+            @testset "Contact" begin
+                @testset "ut_Contact_Factory" begin
+                    include("unit_tests/Contact/ut_Contact_Factory.jl")
+                end
+                @testset "ut_Contact_search" begin
+                    include("unit_tests/Contact/ut_Contact_search.jl")
+                end
+            end
 
             @testset "Degradation" begin
                 @testset "ut_Degradation_Factory" begin
@@ -215,6 +223,9 @@ MPI.Init()
         end
         @testset "test_heat_transfer" begin
             include("fullscale_tests/test_heat_transfer/test_heat_transfer.jl")
+        end
+        @testset "test_penalty_contact" begin
+            include("fullscale_tests/test_penalty_contact/test_penalty_contact.jl")
         end
         @testset "test_BCs" begin
             include("fullscale_tests/test_BCs/test_BCs.jl")

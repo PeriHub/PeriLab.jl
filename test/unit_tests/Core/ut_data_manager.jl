@@ -124,7 +124,7 @@ testfield_keys = test_data_manager.get_all_field_keys()
     @test B[1] == test_data_manager.get_field("B", "N")
     @test B[2] == test_data_manager.get_field("B", "NP1")
     @test C == test_data_manager.get_field("C")
-    @test C == test_data_manager.get_field("C", "constant")
+    @test C == test_data_manager.get_field("C", "Constant")
     @test isnothing(test_data_manager.get_field("C", "N"))
     @test isnothing(test_data_manager.get_field("C", "non_existing"))
     @test "A" in testfield_keys

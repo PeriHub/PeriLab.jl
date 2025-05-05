@@ -1,8 +1,31 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
+module MPI_communication
 import MPI
+export send_single_value_from_vector
+export synch_responder_to_controller
+export synch_controller_to_responder
+export synch_controller_bonds_to_responder
+export split_vector
+export synch_controller_bonds_to_responder_flattened
+export send_vector_from_root_to_core_i
+export send_value
+export find_and_set_core_value_min
+export find_and_set_core_value_sum
+export find_and_set_core_value_avg
+export gather_values
+export barrier
+
+"""
+TODO
+Contact
+send all information to first core and synch to all otherwise
+optimization is possible by reducing it to slave and master. Therefore its only the surface.
+
+Master are known and their core. local to global is know and the sending can occur.
+
+"""
 
 """
     send_single_value_from_vector(comm::MPI.Comm, controller::Int64, values::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}, type::Type)
@@ -415,7 +438,7 @@ Find and set core value sum
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
-function find_and_set_core_value_sum(comm::MPI.Comm, value::Union{Float64,Int64,Bool})
+function find_and_set_core_value_sum(comm::MPI.Comm, value::Any)
     return MPI.Allreduce(value, MPI.SUM, comm)
 end
 
@@ -453,4 +476,10 @@ Gather values
 """
 function gather_values(comm::MPI.Comm, value::Any)
     return MPI.gather(value, comm; root = 0)
+end
+
+function barrier(comm)
+    MPI.Barrier(comm)
+end
+
 end

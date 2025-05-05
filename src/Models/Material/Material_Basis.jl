@@ -171,7 +171,7 @@ function get_all_elastic_moduli(datamanager::Module,
     if bond_based
         nu_fixed = datamanager.get_dof() == 2 ? 1 / 3 : 1 / 4
         if nu != 0.0 && nu != nu_fixed
-            @warn "Bond-based model only supports a fixed Poisson's ratio of " *
+            @warn "Chosen Bond-based model only supports a fixed Poisson's ratio of " *
                   string(nu_fixed)
         end
         nu = nu_fixed
@@ -467,15 +467,15 @@ function distribute_forces!(force_densities::Matrix{Float64},
             @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
                 force_densities[iID,
-                m] += bond_damage[iID][jID] *
-                      bond_force[iID][jID][m] *
-                      volume[nlist[iID][jID]] *
-                      bond_mod[jID][m]
+                                m] += bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[nlist[iID][jID]] *
+                                      bond_mod[jID][m]
                 force_densities[nlist[iID][jID],
-                m] -= bond_damage[iID][jID] *
-                      bond_force[iID][jID][m] *
-                      volume[iID] *
-                      bond_mod[jID][m]
+                                m] -= bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[iID] *
+                                      bond_mod[jID][m]
             end
         end
     end
@@ -507,12 +507,12 @@ function distribute_forces!(force_densities::Matrix{Float64},
             @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
                 force_densities[iID,
-                m] += bond_damage[iID][jID] *
-                      bond_force[iID][jID][m] *
-                      volume[nlist[iID][jID]]
+                                m] += bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[nlist[iID][jID]]
                 force_densities[nlist[iID][jID],
-                m] -= bond_damage[iID][jID] *
-                      bond_force[iID][jID][m] * volume[iID]
+                                m] -= bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] * volume[iID]
             end
         end
     end

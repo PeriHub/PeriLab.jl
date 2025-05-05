@@ -9,6 +9,22 @@ using StaticArrays
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
 
+function remove_ids(dict::Dict{Int64,Int64}, numbers::Vector{Int64})
+    for num in numbers
+        delete!(dict, num)
+    end
+end
+
+@testset "ut_remove_ids" begin
+    test_dict = Dict(1 => 1, 2 => 2, 3 => 4, 7 => 2)
+    PeriLab.Solver_control.Helpers.remove_ids(test_dict, Vector{Int64}([1, 7, 8]))
+    @test test_dict == Dict(2 => 2, 3 => 4)
+
+    test_vec = [1, 2, 3, 7]
+    PeriLab.Solver_control.Helpers.remove_ids(test_vec, Vector{Int64}([1, 7, 8]))
+    @test test_vec == [2, 3]
+end
+
 @testset "ut_sinv" begin
     @test PeriLab.Solver_control.Helpers.smat(zeros(2, 2)) == zeros(2, 2)
     @test PeriLab.Solver_control.Helpers.smat(zeros(3, 3)) == zeros(3, 3)
