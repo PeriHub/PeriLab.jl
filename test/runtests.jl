@@ -225,7 +225,7 @@ MPI.Init()
             include("fullscale_tests/test_heat_transfer/test_heat_transfer.jl")
         end
         @testset "test_penalty_contact" begin
-            include("fullscale_tests/test_penalty_contact/test_contact.jl")
+            include("fullscale_tests/test_penalty_contact/test_penalty_contact.jl")
         end
         @testset "test_BCs" begin
             include("fullscale_tests/test_BCs/test_BCs.jl")
