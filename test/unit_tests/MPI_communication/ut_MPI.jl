@@ -126,7 +126,8 @@ if ncores == 3
         block_Id = test_data_manager.get_field("Block_Id")
         block_Id .= 1
     end
-    test_data_manager.set_block_list(["block_1", "block_2"])
+    test_data_manager.set_block_name_list(["block_1", "block_2"])
+    test_data_manager.set_block_id_list([1, 2])
     test_data_manager.set_dof(dof)
     A = test_data_manager.create_constant_node_field("A", Float64, 1)
     B = test_data_manager.create_constant_node_field("B", Float64, 4)
@@ -366,8 +367,9 @@ if ncores == 3
     bf = test_data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
 
     bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1, 1)
-    dbN, dbNP1 = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof,
-                                                     1)
+    dbN,
+    dbNP1 = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof,
+                                                1)
     dbdN, dbdNP1 = test_data_manager.create_bond_field("Deformed Bond Length", Float64, 1)
     bg = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
     bd = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1, 1)

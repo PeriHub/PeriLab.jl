@@ -90,7 +90,7 @@ end
 
 @testset "ut_init_interface_crit_values" begin
     test_data_manager = PeriLab.Data_manager
-    test_data_manager.set_block_list(["2", "3", "1"])
+    test_data_manager.set_block_id_list([2, 3, 1])
     crit_values_matrix::Array{Float64,3} = fill(-1, (1, 1, 1))
     test_data_manager.set_crit_values_matrix(crit_values_matrix)
     damage_parameter = Dict("Critical Value" => 1.0,

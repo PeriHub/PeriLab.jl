@@ -61,7 +61,7 @@ global expected_structure = Dict("PeriLab" => [
                                                                                            String,
                                                                                            false
                                                                                        ],
-                                                                                       "Corrosion_template Model" => [
+                                                                                       "Degradation_template Model" => [
                                                                                            String,
                                                                                            false
                                                                                        ],
@@ -669,6 +669,47 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                      "State Factor ID" => [
                                                                                                          Int64,
                                                                                                          false
+                                                                                                     ],
+                                                                                                     "Accuracy Order" => [
+                                                                                                         Int64,
+                                                                                                         false
+                                                                                                     ],
+                                                                                                     "Flaw Function" => [
+                                                                                                         Dict{Any,
+                                                                                                              Any}("Active" => [
+                                                                                                                       Bool,
+                                                                                                                       true
+                                                                                                                   ],
+                                                                                                                   "Function" => [
+                                                                                                                       String,
+                                                                                                                       true
+                                                                                                                   ],
+                                                                                                                   "Flaw Size" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Flaw Magnitude" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Flaw Location X" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Flaw Location Y" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Flaw Location Z" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       false
+                                                                                                                   ]),
+                                                                                                         false
                                                                                                      ]),
                                                                                            true
                                                                                        ]),
@@ -700,12 +741,21 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                                Int64},
                                                                                                          false
                                                                                                      ],
+                                                                                                     "Allow Surface Change" => [
+                                                                                                         Bool,
+                                                                                                         false
+                                                                                                     ],
                                                                                                      "Thermal Conductivity" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},
                                                                                                          false
                                                                                                      ],
                                                                                                      "Thermal Expansion Coefficient" => [
+                                                                                                         Union{Float64,
+                                                                                                               Int64},
+                                                                                                         false
+                                                                                                     ],
+                                                                                                     "Reference Temperature" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},
                                                                                                          false
@@ -744,6 +794,22 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                          true
                                                                                                      ],
                                                                                                      "Print Temperature" => [
+                                                                                                         Union{Float64,
+                                                                                                               Int64},
+                                                                                                         false
+                                                                                                     ]),
+                                                                                           true
+                                                                                       ]),
+                                                                         false
+                                                                     ],
+                                                                     "Degradation Models" => [
+                                                                         Dict{Any,Any}("Any" => [
+                                                                                           Dict{Any,
+                                                                                                Any}("Degradation Model" => [
+                                                                                                         String,
+                                                                                                         true
+                                                                                                     ],
+                                                                                                     "Decomposition Temperature" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},
                                                                                                          false
@@ -815,7 +881,7 @@ global expected_structure = Dict("PeriLab" => [
                                                                          Bool,
                                                                          false
                                                                      ],
-                                                                     "Corrosion Models" => [
+                                                                     "Degradation Models" => [
                                                                          Bool,
                                                                          false
                                                                      ],
@@ -938,7 +1004,7 @@ global expected_structure = Dict("PeriLab" => [
                                                                                            Bool,
                                                                                            false
                                                                                        ],
-                                                                                       "Corrosion Models" => [
+                                                                                       "Degradation Models" => [
                                                                                            Bool,
                                                                                            false
                                                                                        ],
@@ -1094,11 +1160,12 @@ function validate_structure_recursive(expected::Dict,
             for (any_key, any_value) in actual
                 if isa(any_value, Dict) && isa(actual[any_key], Dict)
                     # Recursive call for nested dictionaries
-                    validate, checked_keys = validate_structure_recursive(expected[key][1],
-                                                                          actual[any_key],
-                                                                          validate,
-                                                                          checked_keys,
-                                                                          current_path)
+                    validate,
+                    checked_keys = validate_structure_recursive(expected[key][1],
+                                                                actual[any_key],
+                                                                validate,
+                                                                checked_keys,
+                                                                current_path)
                 end
                 push!(checked_keys, any_key)
             end
@@ -1119,11 +1186,12 @@ function validate_structure_recursive(expected::Dict,
             push!(checked_keys, key)
             if isa(value[1], Dict) && isa(actual[key], Dict)
                 # Recursive call for nested dictionaries
-                validate, checked_keys = validate_structure_recursive(value[1],
-                                                                      actual[key],
-                                                                      validate,
-                                                                      checked_keys,
-                                                                      current_path)
+                validate,
+                checked_keys = validate_structure_recursive(value[1],
+                                                            actual[key],
+                                                            validate,
+                                                            checked_keys,
+                                                            current_path)
             end
         else
             @error "Validation Error: Wrong type, expected - $(value[1]), got - $(typeof(actual[key])) in $current_path"
@@ -1174,8 +1242,9 @@ function validate_yaml(params::Dict)
         return nothing
     end
 
-    validate, checked_keys = validate_structure_recursive(expected_structure, params,
-                                                          validate, checked_keys)
+    validate,
+    checked_keys = validate_structure_recursive(expected_structure, params,
+                                                validate, checked_keys)
     #Check if all keys have been checked
     for key in all_keys
         if typeof(key) == Int64

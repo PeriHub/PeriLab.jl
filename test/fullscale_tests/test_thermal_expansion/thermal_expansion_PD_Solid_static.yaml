@@ -20,6 +20,7 @@ PeriLab:
       Thermal test:
         Thermal Model: "Thermal Expansion"
         Thermal Expansion Coefficient: 2.5e-2
+        Reference Temperature: 0.0
   Blocks:
     block_1:
       Block ID: 1

@@ -40,7 +40,6 @@ PeriLab:
       Temp:
         Thermal Model: "Thermal Flow"
         Type: "Bond based"
-        Thermal Expansion Coefficient: 0.22
         Thermal Conductivity: 2000.0
   Blocks:
     block_1:

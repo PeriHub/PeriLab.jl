@@ -423,10 +423,10 @@ end
                                    "Damage Models" => true,
                                    "Additive Models" => true,
                                    "Thermal Models" => true,
-                                   "Corrosion Models" => true))
+                                   "Degradation Models" => true))
     solver_options = PeriLab.Solver_control.Parameter_Handling.get_model_options(params["Solver"])
     @test solver_options ==
-          ["Additive", "Damage", "Pre_Calculation", "Thermal", "Corrosion", "Material"]
+          ["Additive", "Damage", "Pre_Calculation", "Thermal", "Degradation", "Material"]
     params = Dict("Solver" => Dict())
     solver_options = PeriLab.Solver_control.Parameter_Handling.get_model_options(params["Solver"])
     @test solver_options == ["Pre_Calculation", "Material"]
@@ -571,7 +571,9 @@ params = Dict("Models" => Dict("Material Models" => Dict("A" => Dict("s" => 0,
                                                                      "A" => path *
                                                                             "test_data_file.txt",
                                                                      "B" => path *
-                                                                            "test_data_file.txt"),
+                                                                            "test_data_file.txt",
+                                                                     "C" => Dict("Sub" => path *
+                                                                                          "test_data_file.txt")),
                                                          "B" => Dict("sa" => [3.2, 2, 3],
                                                                      "d" => "true",
                                                                      "Young's_Modulus" => path *
@@ -582,8 +584,8 @@ params = Dict("Models" => Dict("Material Models" => Dict("A" => Dict("s" => 0,
                                "block_2" => Dict("Material Model" => "B")))
 
 @testset "ut_find_data_files" begin
-    @test sort(PeriLab.Solver_control.Parameter_Handling.find_data_files(params["Models"]["Material Models"]["A"])) ==
-          ["A", "B"]
+    @test PeriLab.Solver_control.Parameter_Handling.find_data_files(params["Models"]["Material Models"]["A"]) ==
+          ["B", "A", ["C", "Sub"]]
     @test PeriLab.Solver_control.Parameter_Handling.find_data_files(params["Models"]["Material Models"]["B"]) ==
           ["Young's_Modulus"]
     @test PeriLab.Solver_control.Parameter_Handling.find_data_files(params["Models"]["Damage Models"]["E"]) ==
@@ -658,28 +660,31 @@ end
                                                                                           "Material Model" => "Test"))))
     validate = true
     checked_keys = []
-    validate, checked_keys = PeriLab.Solver_control.Parameter_Handling.validate_structure_recursive(expected_structure,
-                                                                                                    params,
-                                                                                                    validate,
-                                                                                                    checked_keys)
+    validate,
+    checked_keys = PeriLab.Solver_control.Parameter_Handling.validate_structure_recursive(expected_structure,
+                                                                                          params,
+                                                                                          validate,
+                                                                                          checked_keys)
     @test validate
     @test checked_keys == ["PeriLab", "Blocks", "Material Model", "Density", "Any"]
 
     params = Dict("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}("Any" => Dict{Any,
                                                                                      Any}("Density" => "Test",
                                                                                           "Material Model" => "Test"))))
-    validate, checked_keys = PeriLab.Solver_control.Parameter_Handling.validate_structure_recursive(expected_structure,
-                                                                                                    params,
-                                                                                                    validate,
-                                                                                                    checked_keys)
+    validate,
+    checked_keys = PeriLab.Solver_control.Parameter_Handling.validate_structure_recursive(expected_structure,
+                                                                                          params,
+                                                                                          validate,
+                                                                                          checked_keys)
     @test !validate
 
     params = Dict("PeriLab" => Dict{Any,Any}("Blocks" => Dict{Any,Any}("Any" => Dict{Any,
                                                                                      Any}("Material Model" => "Test"))))
-    validate, checked_keys = PeriLab.Solver_control.Parameter_Handling.validate_structure_recursive(expected_structure,
-                                                                                                    params,
-                                                                                                    validate,
-                                                                                                    checked_keys)
+    validate,
+    checked_keys = PeriLab.Solver_control.Parameter_Handling.validate_structure_recursive(expected_structure,
+                                                                                          params,
+                                                                                          validate,
+                                                                                          checked_keys)
     @test !validate
 end
 @testset "ut_node_sets" begin

@@ -30,13 +30,7 @@ function create_result_file(filename::Union{AbstractString,String},
                             num_elem_blks::Int64,
                             num_node_sets::Int64,
                             num_elements::Int64 = 0,
-                            topology::Union{Nothing,Matrix{Int64}} = nothing,
-                            init::Bool = true)
-    if !init
-        exo_db = ExodusDatabase(filename, "rw")
-        return Dict("filename" => filename, "file" => exo_db, "type" => "Exodus")
-    end
-
+                            topology::Union{Nothing,Matrix{Int64}} = nothing)
     if isfile(filename)
         rm(filename)
     end
@@ -143,7 +137,7 @@ function init_results_in_exodus(exo::ExodusDatabase,
                                 output::Dict{},
                                 coords::Union{Matrix{Int64},Matrix{Float64}},
                                 block_Id::Vector{Int64},
-                                block_list::Vector{String},
+                                all_block_name_list::Vector{String},
                                 nsets::Dict{String,Vector{Int64}},
                                 global_ids::Vector{Int64},
                                 PERILAB_VERSION::String,
@@ -183,7 +177,7 @@ function init_results_in_exodus(exo::ExodusDatabase,
 
     fem_active = !isnothing(topology)
 
-    for (block, block_name) in enumerate(block_list)
+    for (block, block_name) in enumerate(all_block_name_list)
         conn = get_block_nodes(block_Id, block)# virtual elements
         if fem_active
             if fem_block[conn[1]]

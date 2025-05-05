@@ -87,7 +87,7 @@ function init_solver(solver_options::Dict{Any,Any},
     if fixed_dt == -1.0
         if haskey(params, "Number of Steps")
             nsteps = params["Number of Steps"]
-            dt = (final_time - initial_time) / (nsteps - 1)
+            dt = (final_time - initial_time) / nsteps
         else
             nsteps = Int64(1)
             dt = final_time - initial_time
@@ -96,8 +96,8 @@ function init_solver(solver_options::Dict{Any,Any},
         if haskey(params, "Number of Steps")
             @warn "''Number of Steps'' and ''Fixed dt'' are defined. ''Fixed dt'' is used and ''Number of Steps'' from yaml is ignored."
         end
-        nsteps = Int64(round((final_time - initial_time) / fixed_dt) + 1)
-        dt = (final_time - initial_time) / (nsteps - 1)
+        nsteps = Int64(round((final_time - initial_time) / fixed_dt))
+        dt = fixed_dt
     end
     comm = datamanager.get_comm()
 
@@ -141,15 +141,20 @@ function init_solver(solver_options::Dict{Any,Any},
         start_u = datamanager.create_constant_node_field("Start_Values", Float64, dof)
         coor = datamanager.get_field("Coordinates")
         ls = solver_specifics["Linear Start Value"]
-
-        for idof in 1:dof
-            m = (ls[2 * idof] - ls[2 * idof - 1]) /
-                (maximum(coor[:, idof]) - minimum(coor[:, idof]))
-            n = ls[2 * idof] - m * maximum(coor[:, idof])
-            start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps .* final_time
-            n = ls[2 * idof] - m * maximum(coor[:, idof])
-            start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps
+        if ls[1] == ls[2]
+            start_u .= ls[1]
+        else
+            for idof in 1:dof
+                m = (ls[2 * idof] - ls[2 * idof - 1]) /
+                    (maximum(coor[:, idof]) - minimum(coor[:, idof]))
+                n = ls[2 * idof] - m * maximum(coor[:, idof])
+                start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps .* final_time
+                n = ls[2 * idof] - m * maximum(coor[:, idof])
+                start_u[:, idof] = (m .* coor[:, idof] .+ n) ./ nsteps
+            end
         end
+    else
+        start_u = datamanager.get_field("Start_Values")
     end
     check_inf_or_nan(start_u, "Start_Values")
     Boundary_conditions.find_bc_free_dof(datamanager, bcs)
@@ -247,19 +252,19 @@ function run_solver(solver_options::Dict{Any,Any},
         datamanager = apply_bc_dirichlet(["Displacements", "Temperature"], bcs, datamanager,
                                          time,
                                          step_time + dt) #-> Dirichlet
-        temperatureNP1 = datamanager.get_field("Temperature", "NP1")
 
-        sol = nlsolve((residual, U) -> residual!(residual,
-                                                 U,
-                                                 datamanager,
-                                                 bc_free_dof,
-                                                 block_nodes,
-                                                 dt,
-                                                 time,
-                                                 solver_options,
-                                                 synchronise_field,
-                                                 to,
-                                                 scaling),
+        sol = nlsolve((residual,
+                       U) -> residual!(residual,
+                                       U,
+                                       datamanager,
+                                       bc_free_dof,
+                                       block_nodes,
+                                       dt,
+                                       time,
+                                       solver_options,
+                                       synchronise_field,
+                                       to,
+                                       scaling),
                       start_u;
                       xtol = xtol,
                       ftol = ftol,
@@ -285,7 +290,6 @@ function run_solver(solver_options::Dict{Any,Any},
         if "Damage" in solver_options["Models"]
             damage = datamanager.get_damage("NP1")
             max_damage = maximum(damage[active_nodes])
-            @info max_damage
             if max_damage > max_cancel_damage
                 @info "Maximum damage reached at step $idt: $max_damage"
                 datamanager.set_cancel(true)
@@ -302,8 +306,9 @@ function run_solver(solver_options::Dict{Any,Any},
 
         force_densities = datamanager.get_field("Force Densities", "NP1")
 
-        @views forces[active_nodes, :] = force_densities[active_nodes, :] .*
-                                         volume[active_nodes]
+        @views forces[active_nodes,
+                      :] = force_densities[active_nodes, :] .*
+                           volume[active_nodes]
 
         @timeit to "write_results" result_files=write_results(result_files, time,
                                                               max_damage, outputs,
@@ -358,8 +363,9 @@ function residual!(residual,
 
     # bc_dof = setdiff(1:length(uNP1), bc_free_dof)
 
-    @views deformed_coorNP1[active_nodes, :] = coor[active_nodes, :] .+
-                                               uNP1[active_nodes, :]
+    @views deformed_coorNP1[active_nodes,
+                            :] = coor[active_nodes, :] .+
+                                 uNP1[active_nodes, :]
 
     force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
     forces = datamanager.get_field("Forces", "NP1")

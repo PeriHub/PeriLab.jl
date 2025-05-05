@@ -100,7 +100,7 @@ function compute_model(datamanager::Module,
     rotation::Bool = datamanager.get_element_rotation()
     rotation_tensor = nothing
     if rotation
-        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
+        rotation_tensor = datamanager.get_field("Rotation Tensor")
     end
     apply_print_bed = false
 

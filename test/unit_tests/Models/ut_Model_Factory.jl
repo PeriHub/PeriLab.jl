@@ -11,7 +11,9 @@ using Test
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     block_list = ["block_1", "block_2", "block_3"]
-    test_data_manager.set_block_list(block_list)
+    test_data_manager.set_block_name_list(block_list)
+    block_id_list = [1, 2, 3]
+    test_data_manager.set_block_id_list(block_id_list)
     prop_keys = test_data_manager.init_properties()
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
                                                      "Material Model" => "a"),
@@ -35,6 +37,7 @@ using Test
 
     Model_Factory.get_block_model_definition(params,
                                              block_list,
+                                             block_id_list,
                                              prop_keys,
                                              test_data_manager.set_properties)
 
@@ -61,7 +64,8 @@ end
 @testset "ut_read_properties" begin
     test_data_manager_read_properties = PeriLab.Data_manager
     block_list = ["block_1", "block_2", "block_3"]
-    test_data_manager_read_properties.set_block_list(block_list)
+    test_data_manager_read_properties.set_block_name_list(block_list)
+    test_data_manager_read_properties.set_block_id_list([1, 2, 3])
 
     params = Dict("Blocks" => Dict("block_1" => Dict("Block ID" => 1,
                                                      "Material Model" => "a"),

@@ -31,6 +31,7 @@ function init_element(datamanager::Module,
                       elements::Union{SubArray,Vector{Int64}},
                       element_params::Dict,
                       p::Vector{Int64})
+    return datamanager
 end
 """
   compute_element(datamanager, nodes, element_parameter, time, dt)
@@ -60,9 +61,6 @@ function compute_element(datamanager::Module,
     @info "The datamanager and element_parameter holds all you need to solve your problem on element level."
     @info "add own files and refer to them. If a module does not exist. Add it to the project or contact the developer."
     return datamanager
-end
-
-function shape_function()
 end
 
 end

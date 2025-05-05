@@ -25,7 +25,8 @@ export get_step
 export get_iteration
 export get_accuracy_order
 export get_aniso_crit_values
-export get_block_list
+export get_block_name_list
+export get_block_id_list
 export get_crit_values_matrix
 export get_comm
 export get_coupling_dict
@@ -47,7 +48,6 @@ export get_rank
 export get_num_responder
 export get_max_rank
 export get_cancel
-export get_damage_models
 export get_output_frequency
 export get_rotation
 export get_element_rotation
@@ -57,7 +57,8 @@ export set_step
 export set_iteration
 export set_accuracy_order
 export set_bc_free_dof
-export set_block_list
+export set_block_name_list
+export set_block_id_list
 export set_crit_values_matrix
 export set_coupling_dict
 export set_coupling_fe_nodes
@@ -66,7 +67,6 @@ export set_directory
 export set_inverse_nlist
 export set_fem
 export set_glob_to_loc
-export set_damage_models
 export set_model_module
 export set_num_controller
 export set_nset
@@ -105,7 +105,8 @@ function initialize_data()
     data["nnsets"] = 0
     data["dof"] = 2
     data["fem_option"] = false
-    data["block_list"] = Vector{String}()
+    data["block_name_list"] = Vector{String}()
+    data["block_id_list"] = Vector{Int64}()
     data["distribution"] = []
     data["crit_values_matrix"] = fill(-1, (1, 1, 1))
     data["aniso_crit_values"] = Dict()
@@ -119,7 +120,7 @@ function initialize_data()
                                          "Damage Model" => Dict(),
                                          "Thermal Model" => Dict(),
                                          "Pre Calculation Model" => Dict(),
-                                         "Corrosion Model" => Dict(),
+                                         "Degradation Model" => Dict(),
                                          "Additive Model" => Dict(),
                                          "Surface Correction" => Dict())
     data["filedirectory"] = ""
@@ -145,8 +146,6 @@ function initialize_data()
     data["element_rotation"] = false
     data["active_models"] = OrderedDict{String,Module}()
     data["all_active_models"] = OrderedDict{String,Module}()
-    data["material_models"] = []
-    data["damage_models"] = []
     data["NP1_to_N"] = Dict{String,Vector{}}()
     data["coupling_fe_nodes"] = []
     data["BC_free_dof"] = []
@@ -689,12 +688,21 @@ function has_key(field_name::String)
 end
 
 """
-    get_block_list()
+    get_block_name_list()
 
 Returns a list of all block IDs.
 """
-function get_block_list()
-    return data["block_list"]
+function get_block_name_list()
+    return data["block_name_list"]
+end
+
+"""
+    get_block_id_list()
+
+Returns a list of all block IDs.
+"""
+function get_block_id_list()
+    return data["block_id_list"]
 end
 
 """
@@ -831,10 +839,6 @@ Get the damage
 - `damage::Field`: The damage field.
 """
 function get_damage(time::String)
-    if "Damage Anisotropic" in get_all_field_keys()
-        damage_aniso = get_field("Damage Anisotropic", time)
-        return damage_aniso
-    end
     damage = get_field("Damage", time)
     return damage
 end
@@ -1162,19 +1166,7 @@ function get_output_frequency()
 end
 
 """
-    get_damage_models()
-
-This function returns the `damage_models` variable.
-
-# Returns
-- `damage_models`::Any: The value of the `damage_models` variable.
-"""
-function get_damage_models()
-    return data["damage_models"]
-end
-
-"""
-    loc_to_glob(range::Union{UnitRange{Int64}, Vector{Int64}})
+    loc_to_glob(range::UnitRange{Int64})
 
 Converts the local index to the global index.
 
@@ -1199,8 +1191,8 @@ This function initializes the properties dictionary. Order of dictionary defines
 - `keys(properties[1])`: The keys of the properties dictionary in defined order for the Model_Factory.jl.
 """
 function init_properties()
-    block_list = get_block_list()
-    for iblock in 1:length(block_list)
+    block_id_list = get_block_id_list()
+    for iblock in block_id_list
         data["properties"][iblock] = OrderedDict{String,Dict}("Additive Model" => Dict{String,
                                                                                        Any}(),
                                                               "Damage Model" => Dict{String,
@@ -1209,12 +1201,12 @@ function init_properties()
                                                                                               Any}(),
                                                               "Thermal Model" => Dict{String,
                                                                                       Any}(),
-                                                              "Corrosion Model" => Dict{String,
-                                                                                        Any}(),
+                                                              "Degradation Model" => Dict{String,
+                                                                                          Any}(),
                                                               "Material Model" => Dict{String,
                                                                                        Any}())
     end
-    return collect(keys(data["properties"][1]))
+    return collect(keys(data["properties"][block_id_list[1]]))
 end
 
 """
@@ -1246,15 +1238,27 @@ function set_accuracy_order(value::Int64)
 end
 
 """
-    set_block_list(blocks::Union{SubArray,Vector{Int64}})
+    set_block_name_list(blocks_name_list::Vector{String})
 
 Sets the block list globally.
 
 # Arguments
-- `blocks::Union{SubArray,Vector{Int64}}`: The block list.
+- `blocks_name_list::Vector{String}`: The block list.
 """
-function set_block_list(blocks::Vector{String})
-    data["block_list"] = blocks
+function set_block_name_list(blocks_name_list::Vector{String})
+    data["block_name_list"] = blocks_name_list
+end
+
+"""
+    set_block_id_list(blocks_id_list::Vector{Int64})
+
+Sets the block list globally.
+
+# Arguments
+- `blocks_id_list::Vector{Int64}`: The block list.
+"""
+function set_block_id_list(blocks_id_list::Vector{Int64})
+    data["block_id_list"] = blocks_id_list
 end
 
 """
@@ -1650,34 +1654,6 @@ function set_output_frequency(value)
 end
 
 """
-    set_damage_models(value)
-
-Sets the damage models globally.
-
-# Arguments
-- `value`: The value to set as the damage models.
-"""
-function set_damage_models(value)
-    if !(value in data["damage_models"])
-        push!(data["damage_models"], value)
-    end
-end
-
-"""
-    set_material_models(value)
-
-Sets the material models globally.
-
-# Arguments
-- `value`: The value to set as the material models.
-"""
-function set_material_models(value)
-    if !(value in data["material_models"])
-        push!(data["material_models"], value)
-    end
-end
-
-"""
     set_synch(name, download_from_cores, upload_to_cores)
 
 Sets the synchronization dictionary globally.
@@ -1782,8 +1758,9 @@ function switch_NP1_to_N()
             switch_bonds!(field_N, field_NP1)
             continue
         end
-        data["NP1_to_N"][key][1], data["NP1_to_N"][key][2] = data["NP1_to_N"][key][2],
-                                                             data["NP1_to_N"][key][1]
+        data["NP1_to_N"][key][1],
+        data["NP1_to_N"][key][2] = data["NP1_to_N"][key][2],
+                                   data["NP1_to_N"][key][1]
         field_NP1 = get_field(key, "NP1")
         if field_NP1[1] isa AbstractVector || field_NP1[1] isa AbstractArray
             fill_in_place!(field_NP1, data["NP1_to_N"][key][3], active)

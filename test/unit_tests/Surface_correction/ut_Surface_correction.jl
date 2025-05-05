@@ -10,7 +10,7 @@ using Test
 @testset "ut_init_surface_correction" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
-    test_data_manager.set_block_list(["1"])
+    test_data_manager.set_block_id_list([1])
     test_data_manager.init_properties()
     test_data_manager.set_dof(3)
     test_data_manager.set_num_controller(4)

@@ -14,7 +14,7 @@ using .Parameter_Handling:
                            get_fem_block,
                            get_calculation_options,
                            get_angles,
-                           get_block_names,
+                           get_block_names_and_ids,
                            get_solver_params
 using .Helpers: fastdot, check_inf_or_nan, get_block_nodes
 include("../../Models/Model_Factory.jl")
@@ -65,8 +65,11 @@ function init(params::Dict,
     block_ids = datamanager.get_field("Block_Id")
     block_nodes_with_neighbors = get_block_nodes(block_ids, nnodes + num_responder)
     block_nodes = get_block_nodes(block_ids, nnodes)
-    block_list = get_block_names(params, block_ids)
-    datamanager.set_block_list(block_list)
+    block_name_list,
+    block_id_list = get_block_names_and_ids(params, block_ids,
+                                            datamanager.get_max_rank() > 1)
+    datamanager.set_block_name_list(block_name_list)
+    datamanager.set_block_id_list(block_id_list)
     density = datamanager.create_constant_node_field("Density", Float64, 1)
     horizon = datamanager.create_constant_node_field("Horizon", Float64, 1)
     if datamanager.fem_active()

@@ -141,7 +141,7 @@ julia> MPI.install_mpiexecjl()
 
 Run PeriLab with two processors:
 ```sh
-$ mpiexecjl -n 2 julia --project=./ -e "using PeriLab; PeriLab.main()" examples/DCB/DCBmodel.yaml -v
+$ mpiexecjl -n 2 julia -e 'using PeriLab; PeriLab.main("examples/DCB/DCBmodel.yaml")'
 ```
 
 >Note: For HPC configurations please refer to [here](https://juliaparallel.org/MPI.jl/stable/configuration/#configure_jll_binarys).
@@ -186,7 +186,7 @@ Hit the __Start__ button and wait for the job to finish, the results will be ava
 
 Here are some exciting tasks on our roadmap:
 
-- 💧 **Corrosion**: The simulation of corrosive materials will be added to PeriLab
+- 💧 **Degradation**: The simulation of degrative materials will be added to PeriLab
 
 - 👊 **Contact**: An upcoming feature in PeriLab is enhancing contact modeling to support advanced features like friction, adhesion, and contact forces based on temperature or other variables.
 

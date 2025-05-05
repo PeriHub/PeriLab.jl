@@ -31,7 +31,7 @@ end
 """
     init_model(datamanager, nodes, parameter)
 
-Inits the bond-based corrosion model. This template has to be copied, the file renamed and edited by the user to create a new corrosion. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
+Inits the bond-based degradation model. This template has to be copied, the file renamed and edited by the user to create a new degradation. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.

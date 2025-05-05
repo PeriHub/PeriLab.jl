@@ -133,9 +133,9 @@ MPI.Init()
                 end
             end
 
-            @testset "Corrosion" begin
-                @testset "ut_Corrosion_Factory" begin
-                    include("unit_tests/Models/Corrosion/ut_Corrosion_Factory.jl")
+            @testset "Degradation" begin
+                @testset "ut_Degradation_Factory" begin
+                    include("unit_tests/Models/Degradation/ut_Degradation_Factory.jl")
                 end
             end
             @testset "Thermal" begin
@@ -183,6 +183,7 @@ MPI.Init()
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_Plastic.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_UMAT.jl")
+                    include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Correspondence_VUMAT.jl")
                     include("unit_tests/Models/Material/Material_Models/Correspondence/ut_Bond_Associated_Correspondence.jl")
                 end
                 @testset "ut_ordinary" begin
@@ -199,6 +200,9 @@ MPI.Init()
         # @testset "test_reload" begin
         #     include("fullscale_tests/test_reload/test_reload.jl")
         # end
+        @testset "test_bond_based_elastic" begin
+            include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")
+        end
         @testset "test_surface_correction" begin
             include("fullscale_tests/test_Surface_correction/test_Surface_correction.jl")
         end
@@ -217,14 +221,11 @@ MPI.Init()
         @testset "test_additive_simple" begin
             include("fullscale_tests/test_additive/test_additive.jl")
         end
-        @testset "test_bond_based_elastic" begin
-            include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")
-        end
         @testset "test_heat_transfer" begin
             include("fullscale_tests/test_heat_transfer/test_heat_transfer.jl")
         end
         @testset "test_penalty_contact" begin
-            include("fullscale_tests/test_pen.jl")
+            include("fullscale_tests/test_penalty_contact/test_contact.jl")
         end
         @testset "test_BCs" begin
             include("fullscale_tests/test_BCs/test_BCs.jl")
@@ -262,6 +263,9 @@ MPI.Init()
         @testset "test_hetval" begin
             include("fullscale_tests/test_hetval/test_hetval.jl")
         end
+        @testset "test_thermal_decomp" begin
+            include("fullscale_tests/test_thermal_decomp/test_thermal_decomp.jl")
+        end
         @testset "test_Correspondence_Elastic" begin
             include("fullscale_tests/test_correspondence_elastic/test_correspondence_elastic.jl")
         end
@@ -286,9 +290,9 @@ MPI.Init()
         @testset "test_point_wise_material" begin
             include("fullscale_tests/test_point_wise_material/test_point_wise_material.jl")
         end
-        # @testset "test_FEM_coupling" begin
-        #     include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
-        # end
+        @testset "test_FEM_coupling" begin
+            include("fullscale_tests/test_FEM_coupling/test_FEM_coupling.jl")
+        end
         @testset "test_FEM" begin
             include("fullscale_tests/test_FEM/test_FEM.jl")
         end

@@ -5,8 +5,8 @@
 PeriLab:
   Discretization:
     Node Sets:
-      Node Set 1: "mesh[!, \"x\"][i] < 30"
-      Node Set 2: "mesh[!, \"x\"][i] > 220"
+      Node Set 1: "x < 30"
+      Node Set 2: "x > 220"
     Type: "Gcode"
     Input Mesh File: Zugstab_small.gcode
     Gcode:

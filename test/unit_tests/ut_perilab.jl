@@ -4,9 +4,14 @@
 
 using Test
 #using PeriLab
+# using ArgParse
+
+# @testset "ut_parse_commandline" begin
+#     @test_throws ArgParseError PeriLab.parse_commandline()
+# end
 
 @testset "ut_print_banner" begin
-    PeriLab.print_banner()
+    PeriLab.print_banner(false)
 end
 
 @testset "ut_get_examples" begin

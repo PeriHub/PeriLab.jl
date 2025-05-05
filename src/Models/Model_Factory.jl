@@ -11,7 +11,7 @@ using .Helpers:
 include("./Surface_correction/Surface_correction.jl")
 include("./Contact/Contact_Factory.jl")
 include("./Additive/Additive_Factory.jl")
-include("./Corrosion/Corrosion_Factory.jl")
+include("./Degradation/Degradation_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
@@ -21,7 +21,7 @@ using .Parameter_Handling: get_model_parameter, get_heat_capacity
 # in future FEM will be outside of the Model_Factory
 include("../FEM/FEM_Factory.jl")
 using .Additive
-using .Corrosion
+using .Degradation
 using .Damage
 using .Material
 using .Pre_Calculation
@@ -58,8 +58,9 @@ function init_models(params::Dict,
     rotation = datamanager.get_rotation()
     #if rotation
 
-    rotN, rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix",
-                                                 datamanager.get_dof())
+    rotN,
+    rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix",
+                                           datamanager.get_dof())
     #    for iID in nodes
     #        rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
     #        rotNP1 = copy(rotN)
@@ -376,7 +377,7 @@ function get_update_nodes(active_list,
 end
 
 """
-    get_block_model_definition(params::Dict, block_id::Int64, prop_keys::Vector{String}, properties)
+    get_block_model_definition(params::Dict, block_id_list::Int64, prop_keys::Vector{String}, properties)
 
 Get block model definition.
 
@@ -384,14 +385,15 @@ Special case for pre calculation. It is set to all blocks, if no block definitio
 
 # Arguments
 - `params::Dict`: Parameters.
-- `blocks::Vector{Int64}`: List of block id's.
+- `block_id_list::Vector{Int64}`: List of block id's.
 - `prop_keys::Vector{String}`: Property keys.
 - `properties`: Properties function.
 # Returns
 - `properties`: Properties function.
 """
 function get_block_model_definition(params::Dict,
-                                    block_list::Vector{String},
+                                    block_name_list::Vector{String},
+                                    block_id_list::Vector{Int64},
                                     prop_keys::Vector{String},
                                     properties,
                                     directory::String = "",
@@ -399,14 +401,14 @@ function get_block_model_definition(params::Dict,
     # properties function from datamanager
 
     if haskey(params["Models"], "Pre Calculation Global")
-        for block_id in eachindex(block_list)
+        for block_id in block_id_list
             properties(block_id,
                        "Pre Calculation Model",
                        params["Models"]["Pre Calculation Global"])
         end
     end
 
-    for (block_id, block_name) in enumerate(block_list)
+    for (block_id, block_name) in zip(block_id_list, block_name_list)
         if !haskey(params["Blocks"], block_name)
             continue
         end
@@ -439,18 +441,20 @@ Read properties of material.
 """
 function read_properties(params::Dict, datamanager::Module, material_model::Bool)
     datamanager.init_properties()
-    blocks = datamanager.get_block_list()
+    block_name_list = datamanager.get_block_name_list()
+    block_id_list = datamanager.get_block_id_list()
     prop_keys = datamanager.init_properties()
     directory = datamanager.get_directory()
     get_block_model_definition(params,
-                               blocks,
+                               block_name_list,
+                               block_id_list,
                                prop_keys,
                                datamanager.set_properties,
                                directory,
                                material_model)
     if material_model
         dof = datamanager.get_dof()
-        for block in eachindex(blocks)
+        for block in block_id_list
             Material.check_material_symmetry(dof,
                                              datamanager.get_properties(block,
                                                                         "Material Model"))

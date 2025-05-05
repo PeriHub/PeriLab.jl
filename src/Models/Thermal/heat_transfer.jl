@@ -74,6 +74,8 @@ function compute_model(datamanager::Module,
     kappa = thermal_parameter["Heat Transfer Coefficient"]
     Tenv = thermal_parameter["Environmental Temperature"]
     req_specific_volume = get(thermal_parameter, "Required Specific Volume", 1.1)
+    allow_surface_change = get(thermal_parameter, "Allow Surface Change", true)
+    additive_enabled = haskey(datamanager.get_active_models(), "Additive Model")
     heat_flow = datamanager.get_field("Heat Flow", "NP1")
     temperature = datamanager.get_field("Temperature", "NP1")
     surface_nodes = datamanager.get_field("Surface_Nodes")
@@ -83,18 +85,25 @@ function compute_model(datamanager::Module,
     nlist = datamanager.get_nlist()
     dx = 1.0
 
-    specific_volume = calculate_specific_volume(nodes,
-                                                nlist,
-                                                volume,
-                                                active,
-                                                specific_volume,
-                                                dof,
-                                                horizon)
+    kappa = thermal_parameter["Heat Transfer Coefficient"]
+
+    if allow_surface_change
+        specific_volume = calculate_specific_volume(nodes,
+                                                    nlist,
+                                                    volume,
+                                                    active,
+                                                    specific_volume,
+                                                    dof,
+                                                    horizon)
+    end
     for iID in nodes
-        if !surface_nodes[iID]
+        if !surface_nodes[iID] && (additive_enabled || !allow_surface_change)
             continue
         end
-        if specific_volume[iID] > req_specific_volume
+        if specific_volume[iID] > req_specific_volume || !allow_surface_change
+            if !additive_enabled
+                surface_nodes[iID] = true
+            end
             if dof == 2
                 dx = sqrt(volume[iID])
             elseif dof == 3

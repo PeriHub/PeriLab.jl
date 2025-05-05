@@ -152,7 +152,7 @@ function init_interface_crit_values(datamanager::Module,
     if !haskey(damage_parameter, "Interblock Damage")
         return datamanager
     end
-    max_block_id = length(datamanager.get_block_list())
+    max_block_id = maximum(datamanager.get_block_id_list())
     inter_critical_value = datamanager.get_crit_values_matrix()
     if inter_critical_value == fill(-1, (1, 1, 1))
         inter_critical_value = fill(Float64(damage_parameter["Critical Value"]),
@@ -162,7 +162,10 @@ function init_interface_crit_values(datamanager::Module,
         for block_jId in 1:max_block_id
             critical_value_name = "Interblock Critical Value $(block_iId)_$block_jId"
             if haskey(damage_parameter["Interblock Damage"], critical_value_name)
-                inter_critical_value[block_iId, block_jId, block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+                if damage_parameter["Interblock Damage"][critical_value_name] isa Number
+                    inter_critical_value[block_iId, block_jId,
+                                         block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+                end
             end
         end
     end
@@ -213,12 +216,12 @@ end
 Initialize the damage models.
 
 # Arguments
-- `datamanager::Module`: The data manager module where the corrosion model will be initialized.
-- `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the corrosion model.
-- `block::Int64`: Block identifier for the corrosion model.
+- `datamanager::Module`: The data manager module where the degradation model will be initialized.
+- `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the degradation model.
+- `block::Int64`: Block identifier for the degradation model.
 
 # Returns
-- `datamanager`: The modified data manager module with the initialized corrosion model.
+- `datamanager`: The modified data manager module with the initialized degradation model.
 
 # Example
 ```julia
@@ -242,7 +245,6 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
     datamanager.set_model_module(model_param["Damage Model"], mod)
     datamanager = mod.init_model(datamanager, nodes, model_param, block)
     datamanager = mod.fields_for_local_synchronization(datamanager, "Damage Model")
-    datamanager.set_damage_models(model_param["Damage Model"])
     datamanager = Damage.init_interface_crit_values(datamanager, model_param, block)
     datamanager = Damage.init_aniso_crit_values(datamanager, model_param, block)
     return datamanager

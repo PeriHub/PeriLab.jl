@@ -202,8 +202,9 @@ function synch_controller_to_responder(comm::MPI.Comm, overlapnodes, vector, dof
                 vector[recv_index] = MPI.Recv!(vector[recv_index], comm; source = jcore - 1,
                                                tag = 0)
             else
-                vector[recv_index, :] = MPI.Recv!(vector[recv_index, :], comm;
-                                                  source = jcore - 1, tag = 0)
+                vector[recv_index,
+                       :] = MPI.Recv!(vector[recv_index, :], comm;
+                                      source = jcore - 1, tag = 0)
             end
             # @debug "Receiving $(jcore-1) -> $rank"
 
@@ -455,7 +456,10 @@ Find and set core value avg
 function find_and_set_core_value_avg(comm::MPI.Comm,
                                      value::Union{Float64,Int64},
                                      nnodes::Int64)
-    average = value / nnodes
+    average = 0.0
+    if nnodes != 0
+        average = value / nnodes
+    end
     return MPI.Allreduce(average, MPI.SUM, comm) / MPI.Comm_size(comm)
 end
 

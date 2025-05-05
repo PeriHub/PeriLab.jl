@@ -123,7 +123,8 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
             nset_nodes = Vector{Int64}(read_set(exo, NodeSet, id).nodes)
             if length(entry) == 0
                 nsets["Set-" * string(id)] = findall(row -> all(val -> any(val .==
-                                                                           nset_nodes), row),
+                                                                           nset_nodes),
+                                                                row),
                                                      conn)
             else
                 nsets[entry] = findall(row -> all(val -> any(val .== nset_nodes), row),
@@ -168,13 +169,15 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
         elseif occursin(":", nodesets[entry])
             nodes = eval(Meta.parse(nodesets[entry]))
             nsets[entry] = collect(nodes)
-        elseif occursin("mesh[!,", nodesets[entry])
+        elseif occursin("x", nodesets[entry]) || occursin("y", nodesets[entry]) ||
+               occursin("z", nodesets[entry])
             nodes = []
-            global mesh = mesh_df
-            for id in 1:size(mesh, 1)
-                global i = id
+            for id in 1:size(mesh_df, 1)
+                global x = mesh_df[!, "x"][id]
+                global y = mesh_df[!, "y"][id]
+                global z = mesh_df[!, "z"][id]
                 if eval(Meta.parse(nodesets[entry]))
-                    push!(nodes, i)
+                    push!(nodes, id)
                 end
             end
             nsets[entry] = nodes

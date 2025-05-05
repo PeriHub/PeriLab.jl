@@ -109,13 +109,13 @@ function parseLine(line::String,
     return matches
 end
 
-function parseFile(path::String, callbacks::Dict{String,Function}, dataObject)
+function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, silent)
     lines = readlines(path)
     # open(path) do f
     #     line = 1
     #     while !eof(f)
     #         x = readline(f);
-    iter = ProgressBar(eachindex(lines))
+    iter = progress_bar(0, length(lines)-1, silent)
     for i in iter
         x = lines[i]
         if occursin(";", x)
@@ -160,7 +160,8 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject)
     # end
 end
 
-function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict())
+function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict(),
+                    silent = false)
 
     # create any data object
     # it will be passed as a second parameter to your callbacks
@@ -204,7 +205,7 @@ function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict())
     callbacks["G91"] = (cmds, dataobject) -> dataobject["positioning"] = "relative"
 
     # parse g-code file and simulate print using our own callbacks and data object
-    parseFile(gcode_file, callbacks, myPrinter)
+    parseFile(gcode_file, callbacks, myPrinter, silent)
 
     if find_min_max
         @info "Minimum and maximum values:"
@@ -391,8 +392,9 @@ function write_pd_mesh(dataobject)
              -pd_mesh["discretization"][1] : pd_mesh["discretization"][1]
         dy = pd_mesh["start_point"][2] > pd_mesh["point"][2] ?
              -pd_mesh["discretization"][2] : pd_mesh["discretization"][2]
-        (xg, yg) = ndgrid(pd_mesh["start_point"][1]:dx:pd_mesh["point"][1],
-                          pd_mesh["start_point"][2]:dy:pd_mesh["point"][2])
+        (xg,
+         yg) = ndgrid(pd_mesh["start_point"][1]:dx:pd_mesh["point"][1],
+                      pd_mesh["start_point"][2]:dy:pd_mesh["point"][2])
         nnodes = length(xg)
         # @info nnodes
         grid = zeros(2, nnodes + 1)
@@ -427,11 +429,12 @@ function write_pd_mesh(dataobject)
         pd_mesh["point"][1] = pd_mesh["grid"][1, neighbors[i]]
         pd_mesh["point"][2] = pd_mesh["grid"][2, neighbors[i]]
         sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
-        distance_along_line, distance_to_closest_point = closest_point_to_vector(pd_mesh["start_point"],
-                                                                                 pd_mesh["dir"],
-                                                                                 pd_mesh["point"],
-                                                                                 pd_mesh["closest_point"],
-                                                                                 pd_mesh["point_diff"])
+        distance_along_line,
+        distance_to_closest_point = closest_point_to_vector(pd_mesh["start_point"],
+                                                            pd_mesh["dir"],
+                                                            pd_mesh["point"],
+                                                            pd_mesh["closest_point"],
+                                                            pd_mesh["point_diff"])
         if distance_to_closest_point <= pd_mesh["width"] / 2 &&
            distance_along_line <= distance &&
            distance_along_line >= -pd_mesh["width"] / 2
@@ -461,19 +464,20 @@ function write_pd_mesh(dataobject)
     end
 end
 
-function get_gcode_mesh(gcode_file::String, params::Dict)
+function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     dx = params["Discretization"]["Gcode"]["dx"]
     dy = params["Discretization"]["Gcode"]["dy"]
     scale = params["Discretization"]["Gcode"]["Scale"]
     width = params["Discretization"]["Gcode"]["Width"]
-    blocks = haskey(params, "Blocks") ? params["Discretization"]["Gcode"]["Blocks"] :
+    blocks = haskey(params["Discretization"]["Gcode"], "Blocks") ?
+             params["Discretization"]["Gcode"]["Blocks"] :
              nothing
 
     discretization = [dx * scale, dy * scale]
 
     @info "Read gcode file $gcode_file"
     @info "Params: dx $dx, dy $dy, width $width and scale $scale "
-    (grid_x, grid_y), height = write_mesh(gcode_file, true, discretization)
+    (grid_x, grid_y), height = write_mesh(gcode_file, true, discretization, silent)
 
     discretization = [dx * scale, dy * scale, (height / 2) * scale]
 

@@ -21,6 +21,7 @@ PeriLab:
         Bulk Modulus: 2.5e+3
         Shear Modulus: 1.15e3
         Yield Stress: 20
+        Symmetry: "isotropic plane strain"
     Damage Models:
       Damage:
         Critical Value: 0.01

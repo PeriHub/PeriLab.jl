@@ -356,7 +356,6 @@ function matrix_diff!(s3, nodes, s2, s1)
     @views for iID in nodes
         @inbounds @fastmath @views for m in axes(s1[iID, :, :], 1),
                                        n in axes(s1[iID, :, :], 2)
-
             s3[iID, m, n] = s2[iID, m, n] - s1[iID, m, n]
         end
     end
@@ -738,7 +737,7 @@ function get_dependent_value(datamanager::Module,
 end
 
 function is_dependent(field_name::String, damage_parameter::Dict, datamanager::Module)
-    if damage_parameter[field_name] isa Dict
+    if haskey(damage_parameter, field_name) && damage_parameter[field_name] isa Dict
         if !datamanager.has_key(damage_parameter[field_name]["Field"] * "NP1")
             @error "$(damage_parameter[field_name]["Field"]) does not exist for value interpolation."
             return nothing
@@ -868,8 +867,9 @@ function rotate(nodes::Union{SubArray,Vector{Int64}},
                 rot::Union{SubArray,Array{Float64,3}},
                 back::Bool)
     for iID in nodes
-        matrix[iID, :, :] = rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :],
-                                                       back)
+        matrix[iID, :,
+               :] = rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :],
+                                               back)
     end
     return matrix
 end

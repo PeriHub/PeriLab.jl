@@ -81,11 +81,13 @@ function compute_model(datamanager::Module,
     critical_field = datamanager.has_key("Critical_Value")
     critical_energy = critical_field ? datamanager.get_field("Critical_Value") :
                       damage_parameter["Critical Value"]
+    critical_energy_value = 0.0
     quad_horizons = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
 
-    dependend_value, dependent_field = is_dependent("Critical Value", damage_parameter,
-                                                    datamanager)
+    dependend_value,
+    dependent_field = is_dependent("Critical Value", damage_parameter,
+                                   datamanager)
 
     # for anisotropic damage models
     rotation::Bool = datamanager.get_rotation()
@@ -100,7 +102,7 @@ function compute_model(datamanager::Module,
         aniso_crit_values = datamanager.get_aniso_crit_values()
         # bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
         # bond_norm::Float64 = 0.0
-        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
+        rotation_tensor = datamanager.get_field("Rotation Tensor")
         rotation_temp::Matrix{Float64} = zeros(Float64, dof, dof)
         rotated_bond::Vector{Float64} = zeros(Float64, dof)
         bond_norm_all::Vector{Float64} = zeros(Float64, dof)
@@ -154,17 +156,30 @@ function compute_model(datamanager::Module,
             product = fastdot(projected_force, relative_displacement, true)
             bond_energy = 0.25 * product
 
-            if dependend_value
-                critical_energy = interpol_data(dependent_field[iID],
-                                                damage_parameter["Critical Value"]["Data"],
-                                                warning_flag)
-            end
+            if critical_field
+                critical_energy_value = critical_energy[iID]
+            elseif inter_block_damage
+                critical_energy_value = inter_critical_energy[block_ids[iID],
+                                                              block_ids[neighborID], block]
 
-            @views crit_energy = critical_field ? critical_energy[iID] :
-                                 inter_block_damage ?
-                                 inter_critical_energy[block_ids[iID],
-                                                       block_ids[neighborID], block] :
-                                 critical_energy
+                param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
+                             string(block_ids[neighborID])
+
+                dependend_value,
+                dependent_field = is_dependent(param_name, damage_parameter, datamanager)
+                if dependend_value
+                    critical_energy_value = interpol_data(dependent_field[iID],
+                                                          damage_parameter[param_name]["Data"],
+                                                          warning_flag)
+                    @info "Interblock Critical Value: " * string(critical_energy_value)
+                end
+            elseif dependend_value
+                critical_energy_value = interpol_data(dependent_field[iID],
+                                                      damage_parameter["Critical Value"]["Data"],
+                                                      warning_flag)
+            else
+                critical_energy_value = critical_energy
+            end
 
             if aniso_damage
                 rotation_temp = rotation_tensor[iID, :, :]
@@ -220,7 +235,7 @@ function compute_model(datamanager::Module,
                 # end
 
             else
-                product = crit_energy * quad_horizon
+                product = critical_energy_value * quad_horizon
                 if bond_energy > product
                     bond_damage[iID][jID] = 0.0
                     update_list[iID] = true

@@ -249,10 +249,10 @@ function compute_stresses(datamanager::Module,
     ntens = ndi + nshr
     not_supported_float::Float64 = 0.0
 
-    rot_N = datamanager.get_field_if_exists("Rotation Tensor", "N")
-    rot_NP1 = datamanager.get_field_if_exists("Rotation Tensor", "NP1")
+    rot = datamanager.get_field_if_exists("Rotation Tensor")
+    # rot_NP1 = datamanager.get_field_if_exists("Rotation Tensor", "NP1")
 
-    DROT = isnothing(rot_NP1) ? zeros(length(temp), ntens, ntens) : rot_NP1 - rot_N
+    DROT = isnothing(rot) ? zeros(length(temp), ntens, ntens) : rot #rot_NP1 - rot_N
 
     DFGRD0 = datamanager.get_field("DFGRD0")
     DFGRD1 = datamanager.get_field("Deformation Gradient")
@@ -490,21 +490,6 @@ function UMAT_interface(STRESS::Vector{Float64},
           KSPT,
           JSTEP,
           KINC)
-end
-
-"""
-function set_subroutine_caller(sub_name::String)
-Converts each letter in the string `str` to its corresponding lowercase equivalent and transform it to the symbol needed for ccall function.
-
-# Arguments
-- `sub_name::String`: The string given by the input file;
-
-# Returns
-- `Symbol`: A symbol which is the UMAT subroutine name
-"""
-
-function set_subroutine_caller(sub_name::String)
-    return eval(Meta.parse(":" * (lowercase(sub_name)) * "_"))
 end
 
 function compute_stresses_ba(datamanager::Module,

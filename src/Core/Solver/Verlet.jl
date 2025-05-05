@@ -428,12 +428,6 @@ function run_solver(solver_options::Dict{Any,Any},
         a = datamanager.get_field("Acceleration")
     end
 
-    if "Corrosion" in solver_options["Models"]
-        ## TODO field creation not in run
-        delta_concentration = datamanager.create_constant_node_field("Delta Concentration",
-                                                                     Float64, 1)
-    end
-
     fem_option = datamanager.fem_active()
     if fem_option
         lumped_mass = datamanager.get_field("Lumped Mass Matrix")
@@ -467,12 +461,12 @@ function run_solver(solver_options::Dict{Any,Any},
                 forces = datamanager.get_field("Forces", "NP1")
             end
 
-            if "Corrosion" in solver_options["Models"]
-                concentrationN = datamanager.get_field("Concentration", "N")
-                concentrationNP1 = datamanager.get_field("Concentration", "NP1")
-                concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
-                concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
-            end
+            # if "Degradation" in solver_options["Models"]
+            #     concentrationN = datamanager.get_field("Concentration", "N")
+            #     concentrationNP1 = datamanager.get_field("Concentration", "NP1")
+            #     concentration_fluxN = datamanager.get_field("Concentration Flux", "N")
+            #     concentration_fluxNP1 = datamanager.get_field("Concentration Flux", "NP1")
+            # end
             if "Damage" in solver_options["Models"]
                 damage = datamanager.get_damage("NP1")
             end
@@ -481,21 +475,23 @@ function run_solver(solver_options::Dict{Any,Any},
                                              1:datamanager.get_nnodes())
             # one step more, because of init step (time = 0)
             if "Material" in solver_options["Models"]
-                @views vNP1[active_nodes, :] = (1 - numerical_damping) .*
-                                               vN[active_nodes, :] .+
-                                               0.5 * dt .* a[active_nodes, :]
+                @views vNP1[active_nodes,
+                            :] = (1 - numerical_damping) .*
+                                 vN[active_nodes, :] .+
+                                 0.5 * dt .* a[active_nodes, :]
                 datamanager = apply_bc_dirichlet(["Velocity"], bcs, datamanager, time,
                                                  step_time)
-                @views uNP1[active_nodes, :] = uN[active_nodes, :] .+
-                                               dt .* vNP1[active_nodes, :]
+                @views uNP1[active_nodes,
+                            :] = uN[active_nodes, :] .+
+                                 dt .* vNP1[active_nodes, :]
             end
 
             compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
                                                                solver_options)
-            if "Corrosion" in solver_options["Models"]
-                concentrationNP1[active_nodes] = concentrationN[active_nodes] +
-                                                 delta_concentration[active_nodes]
-            end
+            # if "Degradation" in solver_options["Models"]
+            #     concentrationNP1[active_nodes] = concentrationN[active_nodes] +
+            #                                      delta_concentration[active_nodes]
+            # end
             datamanager = apply_bc_dirichlet(["Displacements", "Temperature"],
                                              bcs,
                                              datamanager, time,
@@ -503,8 +499,9 @@ function run_solver(solver_options::Dict{Any,Any},
             #needed because of optional deformation_gradient, Deformed bonds, etc.
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
             if "Material" in solver_options["Models"]
-                @views deformed_coorNP1[active_nodes, :] = coor[active_nodes, :] .+
-                                                           uNP1[active_nodes, :]
+                @views deformed_coorNP1[active_nodes,
+                                        :] = coor[active_nodes, :] .+
+                                             uNP1[active_nodes, :]
             end
             @timeit to "upload_to_cores" datamanager.synch_manager(synchronise_field,
                                                                    "upload_to_cores")
@@ -549,12 +546,14 @@ function run_solver(solver_options::Dict{Any,Any},
                                                      1:datamanager.get_nnodes())
 
                     forces[active_nodes, :] += external_forces[active_nodes, :]
-                    force_densities[active_nodes, :] += external_force_densities[active_nodes,
-                                                                                 :] .+
-                                                        external_forces[active_nodes, :] ./
-                                                        volume[active_nodes]
-                    a[active_nodes, :] = force_densities[active_nodes, :] ./
-                                         lumped_mass[active_nodes] # element wise
+                    force_densities[active_nodes,
+                                    :] += external_force_densities[active_nodes,
+                                                                   :] .+
+                                          external_forces[active_nodes, :] ./
+                                          volume[active_nodes]
+                    a[active_nodes,
+                      :] = force_densities[active_nodes, :] ./
+                           lumped_mass[active_nodes] # element wise
 
                     active_nodes = datamanager.get_field("Active Nodes")
                     active_nodes = find_active_nodes(fe_nodes,
@@ -564,24 +563,27 @@ function run_solver(solver_options::Dict{Any,Any},
                 end
 
                 forces[active_nodes, :] += external_forces[active_nodes, :]
-                @views force_densities[active_nodes, :] += external_force_densities[active_nodes,
-                                                                                    :] .+
-                                                           external_forces[active_nodes,
-                                                                           :] ./
-                                                           volume[active_nodes]
-                @views a[active_nodes, :] = force_densities[active_nodes, :] ./
-                                            density[active_nodes] # element wise
-                @views forces[active_nodes, :] = force_densities[active_nodes, :] .*
-                                                 volume[active_nodes]
+                @views force_densities[active_nodes,
+                                       :] += external_force_densities[active_nodes,
+                                                                      :] .+
+                                             external_forces[active_nodes,
+                                                             :] ./
+                                             volume[active_nodes]
+                @views a[active_nodes,
+                         :] = force_densities[active_nodes, :] ./
+                              density[active_nodes] # element wise
+                @views forces[active_nodes,
+                              :] = force_densities[active_nodes, :] .*
+                                   volume[active_nodes]
             end
 
             compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,
                                                               solver_options, dt)
 
-            if "Corrosion" in solver_options["Models"]
-                delta_concentration[active_nodes] = -concentration_fluxNP1[active_nodes] .*
-                                                    dt
-            end
+            # if "Degradation" in solver_options["Models"]
+            #     delta_concentration[active_nodes] = -concentration_fluxNP1[active_nodes] .*
+            #                                         dt
+            # end
             if "Damage" in solver_options["Models"] #TODO gather value
                 max_damage = maximum(damage[active_nodes])
                 if max_damage > max_cancel_damage

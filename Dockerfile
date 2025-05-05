@@ -12,13 +12,13 @@ COPY Project.toml ./Project.toml
 
 # Install build dependencies
 RUN apt-get update \
-    && apt-get install -yq build-essential\
+    && apt-get install -yq build-essential libxml2 \
     && julia --project=@. -e 'import Pkg; Pkg.add("PackageCompiler")'
 
 RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], force=true)'
 
 #TODO: use alpine
-FROM debian:bookworm-slim as main 
+FROM debian:bookworm-slim as main
 
 WORKDIR /app
 
@@ -35,7 +35,7 @@ RUN chmod +x /app/PeriLab/bin/PeriLab \
 ENV PATH="/app/PeriLab/bin:${PATH}"
 
 # Install SSH server and other dependencies
-RUN apt-get update && apt-get install -yq openssh-server
+RUN apt-get update && apt-get install -yq openssh-server libxml2
 
 # Configure SSH server
 RUN mkdir /var/run/sshd \
@@ -50,4 +50,3 @@ CMD ["/usr/sbin/sshd", "-D"]
 
 # Expose SSH port
 EXPOSE 22
-

@@ -1,6 +1,6 @@
 # Output
 
-## Output File Type 
+## Output File Type
 Currently `Exodus` and `CSV` are supported as output types.
 
 !!! warning "CSV File"
@@ -9,7 +9,7 @@ Currently `Exodus` and `CSV` are supported as output types.
 !!! tip "Flush File"
     By default the output files will be flushed after each write-step, meaning you can look at the results while the simulation is still running.
 
-## Output Frequency / Number of Output Steps 
+## Output Frequency / Number of Output Steps
 As the number of solver steps can be quite large and you don't want to buy new drives for every simulation we want to specify the number of output steps written.
 
 You can either specify the total number of output steps via `Number of Output Steps` or the frequency of output via `Output Frequency`.
@@ -20,7 +20,7 @@ You can either specify the total number of output steps via `Number of Output St
 !!! tip "Only damage"
     If you want to take a closer look at damage initiation and propagation and are worried about the result file size, you can write another output file with `Write After Damage` set to `true`.
 
-## Output Variables 
+## Output Variables
 Below you can find a list of all current Output Variables and the necessary Prerequisites.
 
 | Variable | Prerequisite |
@@ -53,9 +53,9 @@ Below you can find a list of all current Output Variables and the necessary Prer
 |Specific Heat Capacity|Thermal Models|
 |Specific Volume|Thermal Models|
 |Surface_Nodes|Thermal Models|
-|Concentration|Corrosion Models|
-|Delta Concentration|Corrosion Models|
-|Concentration Flux|Corrosion Models|
+|Concentration|Degradation Models|
+|Delta Concentration|Degradation Models|
+|Concentration Flux|Degradation Models|
 |Lumbed Mass Matrix|FEA|
 |FE Nodes|FEA|
 

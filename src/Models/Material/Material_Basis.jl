@@ -144,10 +144,10 @@ function get_all_elastic_moduli(datamanager::Module,
     poissons_field = datamanager.has_key("Poisson's_Ratio")
     shear_field = datamanager.has_key("Shear_Modulus")
 
-    state_factor = haskey(parameter, "State Factor ID")
+    state_factor_defined = haskey(parameter, "State Factor ID")
 
     any_field_allocated = bulk_field | youngs_field | poissons_field | shear_field |
-                          state_factor
+                          state_factor_defined
 
     bulk = haskey(parameter, "Bulk Modulus") | bulk_field
     youngs = haskey(parameter, "Young's Modulus") | youngs_field
@@ -242,6 +242,15 @@ function get_all_elastic_moduli(datamanager::Module,
         K = E ./ (3 .- 6 .* nu)
         G = E ./ (2 .+ 2 .* nu)
     end
+
+    if state_factor_defined
+        state_factor = datamanager.get_field("State Variables")[:,
+                                                                parameter["State Factor ID"]]
+        K .*= state_factor
+        E .*= state_factor
+        G .*= state_factor
+    end
+
     parameter["Bulk Modulus"] = K
     parameter["Young's Modulus"] = E
     parameter["Shear Modulus"] = G
@@ -437,7 +446,7 @@ function distribute_forces!(force_densities::Matrix{Float64},
                             nlist::Vector{Vector{Int64}},
                             nlist_filtered_ids::Vector{Vector{Int64}},
                             bond_force::Vector{Vector{Vector{Float64}}},
-                            volume::Vector{Float64},
+                            volume::Union{Vector{Float64},Vector{Int64}},
                             bond_damage::Vector{Vector{Float64}},
                             displacements::Matrix{Float64},
                             bond_norm::Vector{Vector{Vector{Float64}}})
@@ -457,14 +466,16 @@ function distribute_forces!(force_densities::Matrix{Float64},
         @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
             @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
-                force_densities[iID, m] += bond_damage[iID][jID] *
-                                           bond_force[iID][jID][m] *
-                                           volume[nlist[iID][jID]] *
-                                           bond_mod[jID][m]
-                force_densities[nlist[iID][jID], m] -= bond_damage[iID][jID] *
-                                                       bond_force[iID][jID][m] *
-                                                       volume[iID] *
-                                                       bond_mod[jID][m]
+                force_densities[iID,
+                                m] += bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[nlist[iID][jID]] *
+                                      bond_mod[jID][m]
+                force_densities[nlist[iID][jID],
+                                m] -= bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[iID] *
+                                      bond_mod[jID][m]
             end
         end
     end
@@ -489,17 +500,19 @@ function distribute_forces!(force_densities::Matrix{Float64},
                             nodes::Union{SubArray,Vector{Int64}},
                             nlist::Vector{Vector{Int64}},
                             bond_force::Vector{Vector{Vector{Float64}}},
-                            volume::Vector{Float64},
+                            volume::Union{Vector{Float64},Vector{Int64}},
                             bond_damage::Vector{Vector{Float64}})
     @inbounds @fastmath for iID in nodes
         @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
             @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
-                force_densities[iID, m] += bond_damage[iID][jID] *
-                                           bond_force[iID][jID][m] *
-                                           volume[nlist[iID][jID]]
-                force_densities[nlist[iID][jID], m] -= bond_damage[iID][jID] *
-                                                       bond_force[iID][jID][m] * volume[iID]
+                force_densities[iID,
+                                m] += bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[nlist[iID][jID]]
+                force_densities[nlist[iID][jID],
+                                m] -= bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] * volume[iID]
             end
         end
     end

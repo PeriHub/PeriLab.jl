@@ -211,7 +211,7 @@ Get the solver options
 """
 function get_model_options(params::Dict)
     additive::Bool = get(params, "Additive Models", false)
-    corrosion::Bool = get(params, "Corrosion Models", false)
+    degradation::Bool = get(params, "Degradation Models", false)
     damage::Bool = get(params, "Damage Models", false)
     material::Bool = get(params, "Material Models", true)
     thermal::Bool = get(params, "Thermal Models", false)
@@ -232,8 +232,8 @@ function get_model_options(params::Dict)
                                   if thermal
                                       "Thermal"
                                   end
-                                  if corrosion
-                                      "Corrosion"
+                                  if degradation
+                                      "Degradation"
                                   end
                                   if material
                                       "Material"

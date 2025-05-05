@@ -16,6 +16,7 @@ PeriLab:
         Heat Transfer Coefficient: 100
         Environmental Temperature: 0
         Thermal Conductivity: 1000
+        Allow Surface Change: False
   Blocks:
     block_1:
       Block ID: 1
