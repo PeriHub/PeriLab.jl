@@ -343,9 +343,6 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
             @error "''Contact Radius'' must be greater than zero."
             return false
         end
-        if !haskey(contact_params, "Avg. Normals")
-            contact_params["Avg. Normals"] = false
-        end
     end
     return true
 end
