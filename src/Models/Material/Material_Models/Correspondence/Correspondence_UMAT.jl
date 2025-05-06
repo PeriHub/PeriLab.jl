@@ -249,10 +249,10 @@ function compute_stresses(datamanager::Module,
     ntens = ndi + nshr
     not_supported_float::Float64 = 0.0
 
-    rot_N = datamanager.get_field_if_exists("Rotation Tensor", "N")
-    rot_NP1 = datamanager.get_field_if_exists("Rotation Tensor", "NP1")
+    rot = datamanager.get_field_if_exists("Rotation Tensor")
+    # rot_NP1 = datamanager.get_field_if_exists("Rotation Tensor", "NP1")
 
-    DROT = isnothing(rot_NP1) ? zeros(length(temp), ntens, ntens) : rot_NP1 - rot_N
+    DROT = isnothing(rot) ? zeros(length(temp), ntens, ntens) : rot #rot_NP1 - rot_N
 
     DFGRD0 = datamanager.get_field("DFGRD0")
     DFGRD1 = datamanager.get_field("Deformation Gradient")

@@ -865,6 +865,28 @@ global expected_structure = Dict("PeriLab" => [
                                                                          false
                                                                      ])
                                                    ],
+                                                   "Contact" => [
+                                                       Dict{Any,Any}("Any" => [
+                                                                         Dict{Any,Any}("Master Block ID" => [
+                                                                                           Int64,
+                                                                                           true
+                                                                                       ],
+                                                                                       "Slave Block ID" => [
+                                                                                           Int64,
+                                                                                           false
+                                                                                       ],
+                                                                                       "Contact Radius" => [
+                                                                                           Float64,
+                                                                                           true
+                                                                                       ],
+                                                                                       "Contact Stiffness" => [
+                                                                                           Float64,
+                                                                                           true
+                                                                                       ]),
+                                                                         true
+                                                                     ]),
+                                                       false
+                                                   ],
                                                    "Surface Correction" => [
                                                        Dict{Any,Any}("Type" => [
                                                                          String,

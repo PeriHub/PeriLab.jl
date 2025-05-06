@@ -102,7 +102,7 @@ function compute_model(datamanager::Module,
         aniso_crit_values = datamanager.get_aniso_crit_values()
         # bond_damage_aniso = datamanager.get_field("Bond Damage Anisotropic", "NP1")
         # bond_norm::Float64 = 0.0
-        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
+        rotation_tensor = datamanager.get_field("Rotation Tensor")
         rotation_temp::Matrix{Float64} = zeros(Float64, dof, dof)
         rotated_bond::Vector{Float64} = zeros(Float64, dof)
         bond_norm_all::Vector{Float64} = zeros(Float64, dof)

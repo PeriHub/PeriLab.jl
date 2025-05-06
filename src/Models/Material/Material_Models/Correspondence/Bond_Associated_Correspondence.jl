@@ -152,7 +152,7 @@ function compute_model(datamanager::Module,
     # TODO decomposition to get the rotation and large deformation in
     # TODO store not angles, but rotation matrices, because they are computed in decomposition
     if rotation
-        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
+        rotation_tensor = datamanager.get_field("Rotation Tensor")
         ba_rotation_tensor = compute_bond_level_rotation_tensor(nodes,
                                                                 nlist,
                                                                 ba_deformation_gradient,
@@ -176,16 +176,17 @@ function compute_model(datamanager::Module,
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
 
-        stress_NP1, datamanager = mod.compute_stresses_ba(datamanager,
-                                                          nodes,
-                                                          nlist,
-                                                          dof,
-                                                          material_parameter,
-                                                          time,
-                                                          dt,
-                                                          strain_increment,
-                                                          stress_N,
-                                                          stress_NP1)
+        stress_NP1,
+        datamanager = mod.compute_stresses_ba(datamanager,
+                                              nodes,
+                                              nlist,
+                                              dof,
+                                              material_parameter,
+                                              time,
+                                              dt,
+                                              strain_increment,
+                                              stress_N,
+                                              stress_NP1)
     end
     if rotation
         for iID in nodes
@@ -257,14 +258,15 @@ function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}},
                             bond_damage[iID][jID] *
                             (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
 
-            @views stress_integral[iID, :, :] += factor .*
-                                                 compute_Piola_Kirchhoff_stress(bond_stresses[iID][jID,
-                                                                                                   :,
-                                                                                                   :],
-                                                                                deformation_gradient[iID][jID,
-                                                                                                          :,
-                                                                                                          :]) *
-                                                 temp
+            @views stress_integral[iID, :,
+                                   :] += factor .*
+                                         compute_Piola_Kirchhoff_stress(bond_stresses[iID][jID,
+                                                                                           :,
+                                                                                           :],
+                                                                        deformation_gradient[iID][jID,
+                                                                                                  :,
+                                                                                                  :]) *
+                                         temp
         end
     end
     return stress_integral
@@ -294,16 +296,17 @@ function update_Green_Langrange_nodal_strain_increment(nodes::Union{SubArray,
                                                        deformation_gradient_dot::SubArray,
                                                        strain_increment::SubArray)
     for iID in nodes
-        @views strain_increment[iID, :, :] = update_Green_Langrange_strain(dt,
-                                                                           deformation_gradient[iID,
-                                                                                                :,
-                                                                                                :],
-                                                                           deformation_gradient_dot[iID,
-                                                                                                    :,
-                                                                                                    :],
-                                                                           strain_increment[iID,
+        @views strain_increment[iID, :,
+                                :] = update_Green_Langrange_strain(dt,
+                                                                   deformation_gradient[iID,
+                                                                                        :,
+                                                                                        :],
+                                                                   deformation_gradient_dot[iID,
                                                                                             :,
-                                                                                            :])
+                                                                                            :],
+                                                                   strain_increment[iID,
+                                                                                    :,
+                                                                                    :])
     end
 end
 
@@ -330,7 +333,6 @@ function update_Green_Langrange_strain(dt::Float64,
                                        strain::Matrix{Float64})
     @inbounds @fastmath for m in axes(deformation_gradient, 1),
                             n in axes(deformation_gradient_dot, 2)
-
         strain_mn = zero(Float64)
         for k in axes(deformation_gradient, 2)
             strain_mn += deformation_gradient[m, k] * deformation_gradient_dot[k, n]

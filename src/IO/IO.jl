@@ -20,6 +20,14 @@ include("csv_export.jl")
 include("../Compute/compute_global_values.jl")
 include("../Support/Parameters/parameter_handling.jl")
 include("../MPI_communication/MPI_communication.jl")
+using .MPI_communication: send_single_value_from_vector, synch_responder_to_controller,
+                          synch_controller_to_responder,
+                          synch_controller_bonds_to_responder,
+                          split_vector, synch_controller_bonds_to_responder_flattened,
+                          send_vector_from_root_to_core_i, send_value,
+                          find_and_set_core_value_min, find_and_set_core_value_sum,
+                          find_and_set_core_value_max,
+                          find_and_set_core_value_avg, gather_values, barrier
 
 using .Helpers: progress_bar
 
@@ -222,7 +230,7 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             for key in keys(computes)
                 if fieldname[1] == key
                     fieldname[1] = computes[key]["Variable"]
-                    fieldname[2] = "constant"
+                    fieldname[2] = "Constant"
                     compute_name = string(key)
                     compute_params = computes[key]
                     global_var = true
@@ -388,20 +396,18 @@ function init_orientations(datamanager::Module)
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     orientations = datamanager.create_constant_node_field("Orientations", Float64, 3)
-    rotation_tensor_N,
-    rotation_tensor_NP1 = datamanager.create_node_field("Rotation Tensor",
-                                                        Float64,
-                                                        "Matrix", dof)
+    rotation_tensor = datamanager.create_constant_node_field("Rotation Tensor",
+                                                             Float64,
+                                                             "Matrix", dof)
     angles = datamanager.get_field("Angles")
 
     for iID in 1:nnodes
-        rotation_tensor_N[iID, :, :] = Geometry.rotation_tensor(angles[iID, :], dof)
-        rotation_tensor_NP1[iID, :, :] = rotation_tensor_N[iID, :, :]
+        rotation_tensor[iID, :, :] = Geometry.rotation_tensor(angles[iID, :], dof)
 
         if dof == 2
-            orientations[iID, :] = vcat(rotation_tensor_N[iID, :, 1], 0)
+            orientations[iID, :] = vcat(rotation_tensor[iID, :, 1], 0)
         elseif dof == 3
-            orientations[iID, :] = rotation_tensor_N[iID, :, 1]
+            orientations[iID, :] = rotation_tensor[iID, :, 1]
         end
     end
     return datamanager

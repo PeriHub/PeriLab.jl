@@ -24,6 +24,7 @@ using .Parameter_Handling:
                            get_max_damage
 
 include("../../MPI_communication/MPI_communication.jl")
+using .MPI_communication: barrier
 include("../BC_manager.jl")
 include("../../Models/Model_Factory.jl")
 include("../../IO/logging.jl")
@@ -67,7 +68,6 @@ A tuple `(initial_time, dt, nsteps, numerical_damping)` where:
 This function may depend on the following functions:
 - `get_initial_time`, `get_final_time`, `get_safety_factor`, `get_fixed_dt`: Used to retrieve simulation parameters.
 - `get_integration_steps`: Used to determine the number of integration steps and adjust the time step.
-- `find_and_set_core_value_min` and `find_and_set_core_value_max`: Used to set core values in a distributed computing environment.
 """
 function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
@@ -325,7 +325,7 @@ function run_solver(solver_options::Dict{Any,Any},
         # if rank == 0 && !silent
         #     set_postfix(iter, t=@sprintf("%.4e", time))
         # end
-        MPI.Barrier(comm)
+        barrier(comm)
     end
     return result_files
 end

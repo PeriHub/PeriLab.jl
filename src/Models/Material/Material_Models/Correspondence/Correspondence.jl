@@ -168,7 +168,6 @@ function compute_model(datamanager::Module,
     deformation_gradient = datamanager.get_field("Deformation Gradient")
     bond_force = datamanager.get_field("Bond Forces")
     bond_damage = datamanager.get_bond_damage("NP1")
-    rotation_tensor = datamanager.get_field("Rotation", "NP1")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
 
@@ -181,7 +180,7 @@ function compute_model(datamanager::Module,
     matrix_diff!(strain_increment, nodes, strain_NP1, strain_N)
 
     if rotation
-        rotation_tensor = datamanager.get_field("Rotation Tensor", "NP1")
+        rotation_tensor = datamanager.get_field("Rotation Tensor")
         stress_N = rotate(nodes, stress_N, rotation_tensor, false)
         strain_increment = rotate(nodes, strain_increment, rotation_tensor, false)
     end
@@ -191,15 +190,16 @@ function compute_model(datamanager::Module,
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
 
-        stress_NP1, datamanager = mod.compute_stresses(datamanager,
-                                                       nodes,
-                                                       dof,
-                                                       material_parameter,
-                                                       time,
-                                                       dt,
-                                                       strain_increment,
-                                                       stress_N,
-                                                       stress_NP1)
+        stress_NP1,
+        datamanager = mod.compute_stresses(datamanager,
+                                           nodes,
+                                           dof,
+                                           material_parameter,
+                                           time,
+                                           dt,
+                                           strain_increment,
+                                           stress_N,
+                                           stress_NP1)
     end
 
     if rotation
