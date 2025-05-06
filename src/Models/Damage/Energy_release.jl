@@ -171,7 +171,6 @@ function compute_model(datamanager::Module,
                     critical_energy_value = interpol_data(dependent_field[iID],
                                                           damage_parameter[param_name]["Data"],
                                                           warning_flag)
-                    @info "Interblock Critical Value: " * string(critical_energy_value)
                 end
             elseif dependend_value
                 critical_energy_value = interpol_data(dependent_field[iID],
