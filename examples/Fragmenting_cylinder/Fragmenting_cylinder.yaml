@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Model inspired by the [peridigm](https://github.com/peridigm/peridigm) example.
+
+PeriLab:
+
+  Discretization:
+      Node Sets:
+        Node Set One: "fragmenting_cylinder_nodeset.txt"
+      Type: "Text File"
+      Input Mesh File: "fragmenting_cylinder.txt"
+
+  Models:
+    Material Models:
+      My Material:
+          Material Model: "PD Solid Elastic"
+          Bulk Modulus: 130.0e9
+          Shear Modulus: 78.0e9
+
+    Damage Models:
+        My Damage Model:
+            Damage Model: "Critical Stretch"
+            Critical Value: 0.02
+
+  Blocks:
+      My Block:
+          Block ID: 1
+          Material Model: "My Material"
+          Damage Model: "My Damage Model"
+          Horizon: 0.00417462
+          Density: 7800.0
+
+  Boundary Conditions:
+      Initial Velocity X:
+          Variable: "Velocity"
+          Type: "Initial"
+          Node Set: "Node Set One"
+          Coordinate: "x"
+          Value: "(200 - 50*((z/0.05)-1)^2)*cos(atan(y,x))"
+      Initial Velocity Y:
+          Variable: "Velocity"
+          Type: "Initial"
+          Node Set: "Node Set One"
+          Coordinate: "y"
+          Value: "(200 - 50*((z/0.05)-1)^2)*sin(atan(y,x))"
+      Initial Velocity Z:
+          Variable: "Velocity"
+          Type: "Initial"
+          Node Set: "Node Set One"
+          Coordinate: "z"
+          Value: "(100*((z/0.05)-1))"
+
+  Solver:
+      Material Models: True
+      Damage Models: True
+      Initial Time: 0.0
+      Final Time: 2.5e-4
+      Verlet:
+          Safety Factor: 0.7
+
+  Outputs:
+    Output_1:
+      Output Filename: "fragmenting_cylinder"
+      Number of Output Steps: 100
+      Output Variables:
+        Displacements: true
+        Velocity: true
+        Forces: true
+        Damage: true
+        Number of Neighbors: True
