@@ -103,6 +103,8 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
     slave_block_nodes = datamanager.get_contact_block_ids(contact_params["Slave Block ID"])
     poly = polyhedron(vrep(all_positions[slave_block_nodes, :]), CDDLib.Library())
 
+    contact_nodes = datamanager.get_field("Contact Nodes")
+
     for (master_node, near_ids) in pairs(potential_contact_dict)
         try
             if !(all_positions[master_node, :] in poly)
@@ -123,7 +125,8 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
             if contact_params["Contact Radius"] < abs(distance)
                 continue
             end
-
+            contact_nodes[master_node] = 2
+            contact_nodes[id] = 3
             append!(contact_dict[master_node]["Slaves"], id)
             append!(contact_dict[master_node]["Normals"], [normal])
             append!(contact_dict[master_node]["Distances"], distance)
