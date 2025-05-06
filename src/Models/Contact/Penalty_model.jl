@@ -3,8 +3,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Penalty_model
+
 include("../../Support/Helpers.jl")
 import .Helpers: get_shared_horizon
+
+export contact_model_name
+export init_contact_model
+export compute_contact_model
+
+function contact_model_name()
+    return "Penalty Contact"
+end
+
 function init_contact_model(datamanager, params)
     if !haskey(params, "Contact Stiffness")
         @warn "No ''Contact Stiffness'' has been defined. It is set to 1e8."
