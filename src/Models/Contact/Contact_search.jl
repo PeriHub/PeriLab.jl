@@ -26,10 +26,10 @@ function init_contact_search(datamanager, contact_params, cm)
     slave_id = contact_params["Slave Block ID"]
     # Polyhedra for the master block; can be 2D or 3D
     @info "Contact pair Master block $master_id - Slave block $slave_id"
-    set_surface_nodes_and_connections(datamanager, all_positions,
-                                      contact_params["Slave Block ID"])
-    set_surface_nodes_and_connections(datamanager, all_positions,
-                                      contact_params["Master Block ID"])
+    compute_and_set_free_surface_nodes(datamanager, all_positions,
+                                       contact_params["Slave Block ID"])
+    compute_and_set_free_surface_nodes(datamanager, all_positions,
+                                       contact_params["Master Block ID"])
 
     # do something with block nodes
 
@@ -37,12 +37,12 @@ function init_contact_search(datamanager, contact_params, cm)
 end
 
 """
-    set_surface_nodes_and_connections(datamanager::Module, all_positions, id::Int64)
+    compute_and_set_free_surface_nodes(datamanager::Module, all_positions, id::Int64)
 
 Find the node ids of the free surfaces of the contact blocks and there connected surfaces. The node id is given in the exchange vector id.
 
 """
-function set_surface_nodes_and_connections(datamanager::Module, all_positions, id::Int64)
+function compute_and_set_free_surface_nodes(datamanager::Module, all_positions, id::Int64)
     surface_ids = datamanager.get_contact_block_ids(id) # all contact block nodes to create the geometry
     free_surfaces = datamanager.get_free_contact_surfaces(id)
     poly = compute_geometry(all_positions[surface_ids, :])
@@ -134,7 +134,7 @@ end
 
 function create_potential_contact_dict(near_points, datamanager, contact_params)
     # exchange vector ids of the free contact blocks
-    # computed in function set_surface_nodes_and_connections
+    # computed in function compute_and_set_free_surface_nodes
     master_nodes = datamanager.get_free_surface_nodes(contact_params["Master Block ID"])
     slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave Block ID"])
 

@@ -215,30 +215,26 @@ function identify_free_contact_surfaces(datamanager::Module, contact_blocks::Vec
     block_nodes = get_block_nodes(block_ids, length(block_ids))
     free_surfaces = Dict{Int64,Vector{Int64}}()
     # loop to init the surfaces of a block in correct order (1:nnumber)
-    for iID in 1:maximum(keys(block_nodes))
+    for iID in contact_blocks
         poly_i = compute_geometry(all_positions[block_nodes[iID], :])
         normals_i, offsets_i = get_surface_information(poly_i)
         free_surfaces[iID] = Vector{Int64}(collect(1:length(offsets_i)))
     end
     # loop to remove the surfaces which are not free
-    for iID in 1:(maximum(block_ids) - 1)
+    for iID in contact_blocks
         # Polyhedra for the master block; can be 2D or 3D
         poly_master = compute_geometry(all_positions[block_nodes[iID], :])
         normals_i, offsets_i = get_surface_information(poly_master)
-        for jID in (iID + 1):maximum(block_ids)
+        for jID in datamanager.get_block_id_list()
+            if iID == jID
+                continue
+            end
             # Polyhedra for the slave block; can be 2D or 3D
             poly_slave = compute_geometry(all_positions[block_nodes[jID], :])
             normals_j, offsets_j = get_surface_information(poly_slave)
             # gives lists where all surfaces are included, which are equal
             ids, jds = get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
             remove_ids(free_surfaces[iID], ids)
-            remove_ids(free_surfaces[jID], jds)
-        end
-    end
-    # remove all blocks from the free surface list, which are not master or slave
-    for block in keys(free_surfaces)
-        if !(block in contact_blocks)
-            delete!(free_surfaces, block)
         end
     end
     # store these free surfaces
