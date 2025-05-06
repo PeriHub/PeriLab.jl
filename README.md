@@ -75,6 +75,8 @@ A few basic examples of `PeriLab` can be found in the [examples](https://github.
 
 - 🔨 **Damage models**: Damage models such as critical stretch or an energy based criterium are included to simulate different types of damage, such as crack propagation or delamination, in their peridynamic simulations.
 
+- 👊 **Contact**: Simulation of contact between objects is supported with a variety of contact conditions.
+
 - 👬 **FEM/PD coupling**: Coupling between Peridynamics and the Finite element method is supported.
 
 - 🔥 **Additive Manufacturing**: PeriLab supports additive manufacturing, allowing users to create custom additive models for their simulations.
@@ -187,8 +189,6 @@ Hit the __Start__ button and wait for the job to finish, the results will be ava
 Here are some exciting tasks on our roadmap:
 
 - 💧 **Degradation**: The simulation of degrative materials will be added to PeriLab
-
-- 👊 **Contact**: An upcoming feature in PeriLab is enhancing contact modeling to support advanced features like friction, adhesion, and contact forces based on temperature or other variables.
 
 - ➕ **More material and damage models**: PeriLab's future development plans include adding more sophisticated material models (e.g., viscoelastic-plastic) and damage models, expanding the software's applicability to a wider range of real-world phenomena.
 
