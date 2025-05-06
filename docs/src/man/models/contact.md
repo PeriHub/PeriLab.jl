@@ -58,5 +58,35 @@ All cores (except core 1) send it's displacement values to core 1. Core 1 sends 
 
 ----
 
-## Contact
-A bond-based contact formulation is computed. The stiffness is defined in YAML input file. The distance between master and slave surface is used. The resulting force is applied to the slave node and it's surface neighbors. The sum is equal to the force applied to the master node.
+## Contact Models
+
+| Contact Model           | Penalty Contact |
+|------------------------|:---------------:|
+| Contact Stiffness         | ✔️|
+
+## Penalty Contact
+
+A bond-based contact formulation is computed. The contact stiffness $ c_{contact}$ is defined in YAML input file. Based on that utilzing the horizon $\delta$ the penalty stiffness shown in the table is computed. These parameter are comparable to the [bond-based formulation](@ref "Bond-based Peridynamics").
+
+| Dimension | Penalty Stiffness |
+|---|---|
+|plane strain:| $c_{Penalty} = \frac{48 c_{contact}}{\pi 5 \delta_{slave}^3}$ |
+|plane stress:| $c_{Penalty} = \frac{9 c_{contact}}{\pi \delta_{slave}^3}$ |
+|3D:| $c_{Penalty} = \frac{12 c_{contact}}{\pi  \delta_{slave}^4}$ |
+
+The distance is currently computed as
+
+$$d = |\underline{\mathbf{Y}}_{master}-\underline{\mathbf{Y}}_{slave}|$$
+
+The normal is
+
+$$\mathbf{n} = \frac{\underline{\mathbf{Y}}_{master}-\underline{\mathbf{Y}}_{slave}}{d}$$
+
+Both can be adopted if needed. Utilizing the contact radius $r_{contact}$ the contact force densities are
+
+$$\mathbf{f}_{master} = c_{Penalty}\frac{(r_{contact}-d)}{\delta_{slave}}\mathbf{n}V_{slave}$$
+
+$$\mathbf{f}_{slave} = -c_{Penalty}\frac{(r_{contact}-d)}{\delta_{slave}}\mathbf{n}V_{master}$$
+
+
+Within PeriLab the functions compute_master_force_density and compute_slave_force_density are used to apply the force to the correct postions. This is needed, becaus if a parallel process is run, master and slave nodes not necessarily are on the same core.
