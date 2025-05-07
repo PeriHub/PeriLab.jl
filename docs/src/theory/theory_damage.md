@@ -22,10 +22,13 @@ with the relative displacement vector as:
 
 $$\boldsymbol{\eta}=\mathbf{\underline{u}}[x',t]-\mathbf{\underline{u}}[x,t]$$
 
-If the bond energy is bigger than or equal to the critical energy value, then the bond is considered to be broken:
+If the bond energy is greater than or equal to the critical energy value, then the bond is considered to be broken:
 
 $$w_{crit} \leq w_{bond}$$
 
-The critical bond energy can be defined as:
+Following [FosterJT2011](@cite) the critical bond energy can be defined as:
 
 $$w_{crit} = \frac{4G_{0C}}{\pi\delta^4}$$
+
+!!! info "Direction"
+    Because the bond energy potential can be different in $ij$ compared to $ji$, the stiffness matrix can become unsymmetric. This is a difference to the critical stretch model. However, the critical stretch varies this might occur as well.
