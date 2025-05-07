@@ -5,11 +5,11 @@ The correspondence formulation is a non-ordinary state-based formulation provide
 
 The non-local deformation gradient is defined as
 
-$$\underline{\mathbf{F}}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{Y}}\langle \boldsymbol{\xi}\rangle\\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\dV \cdot \underline{\mathbf{K}}^{-1}$$
+$$\underline{\mathbf{F}}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{Y}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV \cdot \underline{\mathbf{K}}^{-1}$$
 
 with the shape tensor as
 
-$$\underline{\mathbf{K}}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\dV$$
+$$\underline{\mathbf{K}}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV$$
 
 Based on this definition strain measures can be created to calculate the Cauchy stresses
 
