@@ -81,20 +81,22 @@ function init_model(datamanager::Module,
 
             if symmetry == "plane stress"
                 #constant[iID] = 9 / (pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-                constant[iID][jID][1], constant[iID][jID][2] = compute_constant_2D_pstress(iID,
-                                                                                           nu,
-                                                                                           horizon,
-                                                                                           beta,
-                                                                                           I1,
-                                                                                           I2)
+                constant[iID][jID][1],
+                constant[iID][jID][2] = compute_constant_2D_pstress(iID,
+                                                                    nu,
+                                                                    horizon,
+                                                                    beta,
+                                                                    I1,
+                                                                    I2)
             elseif symmetry == "plane strain"
                 #constant[iID] = 48 / (5 * pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
-                constant[iID][jID][1], constant[iID][jID][2] = compute_constant_2D_pstrain(iID,
-                                                                                           nu,
-                                                                                           horizon,
-                                                                                           beta,
-                                                                                           I1,
-                                                                                           I2)
+                constant[iID][jID][1],
+                constant[iID][jID][2] = compute_constant_2D_pstrain(iID,
+                                                                    nu,
+                                                                    horizon,
+                                                                    beta,
+                                                                    I1,
+                                                                    I2)
             else
                 constant[iID][jID][1] = compute_beta_3D_1(iID, nu) * 12 /
                                         (pi * horizon[iID]^4)
@@ -218,10 +220,11 @@ function compute_bond_based_strain(bb_strain,
                     continue
                 end
 
-                bb_strain[k, l] += bond_damage[j] *
-                                   (deformed_bond[j][k] - undeformed_bond[j][k]) *
-                                   volume[nlist[j]] /
-                                   (undeformed_bond[j][l] * reference_volume)
+                bb_strain[k,
+                          l] += bond_damage[j] *
+                                (deformed_bond[j][k] - undeformed_bond[j][k]) *
+                                volume[nlist[j]] /
+                                (undeformed_bond[j][l] * reference_volume)
             end
         end
     end
@@ -253,13 +256,13 @@ end
 
 function get_beta(beta::Vector{Float64}, nu::Vector{Float64})
     @inbounds @fastmath for i in axes(beta, 1)
-        beta[i] = 5 * (1 - 2 * nu[i]) / (5 * (1 + nu[i]))
+        beta[i] = 5 * (1 - 2 * nu[i]) / (2 * (1 + nu[i]))
     end
     return beta
 end
 
 function get_beta(beta::Float64, nu::Float64)
-    return 5 * (1 - 2 * nu[i]) / (5 * (1 + nu[i]))
+    return 5 * (1 - 2 * nu) / (2 * (1 + nu))
 end
 
 function compute_bb_force_2D!(bond_force,
