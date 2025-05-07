@@ -11,7 +11,7 @@ $\eta = u_j - u_i$
 
 __Bond force__
 
-$$f_{ij} = c\omega_{ij} s\frac{\xi+\eta}{||\xi + \eta||} = c\omega_{ij} s$$
+$$f_{ij} = c_i\omega_{ij} s\frac{\xi+\eta}{||\xi + \eta||} = c_i\omega_{ij} s$$
 $$s = \frac{||\xi + \eta|| - ||\xi||}{||\xi||} = \frac{\eta}{\xi}$$
 
 
