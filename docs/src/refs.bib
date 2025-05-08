@@ -9,7 +9,6 @@ number = {n/a},
 pages = {e202300033},
 doi = {10.1002/pamm.202300033},
 url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/pamm.202300033},
-eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/pamm.202300033},
 abstract = {Abstract This paper introduces a novel framework for analyzing additive manufacturing processes. By employing a peridynamic mesh-free implementation, it overcomes certain limitations encountered with finite element-based approaches in regard to defects and fractures. The framework includes the implementation of thermodynamical material behavior and a novel boundary detection algorithm, as the outer surface area will undergo changes during the manufacturing process. The proposed methods are thoroughly validated, and a comprehensive example is provided as a demonstration.}
 }
 
@@ -191,7 +190,7 @@ year   = {2024},
 number = {n/a},
 pages = {2400818},
 doi   = {10.1002/adts.202400818},
-eprint = {https://advanced.onlinelibrary.wiley.com/doi/10.1002/adts.202400818},
+url = {https://advanced.onlinelibrary.wiley.com/doi/10.1002/adts.202400818},
 }
 
 @article{FosterJT2011,
@@ -426,7 +425,6 @@ number = {2},
 pages = {e202400021},
 doi = {https://doi.org/10.1002/pamm.202400021},
 url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/pamm.202400021},
-eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/pamm.202400021},
 abstract = {Abstract The simulation of crack patterns, crack velocities, and dissipated energies is a challenging task. Peridynamics (PD) has been proven to be a powerful tool addressing all these problems, including crack propagation, crack branching, its velocity and delamination, and so forth. It is a nonlocal theory, where material points interact with other points (these interactions are called bonds) within a continuous neighborhood in a specific range, called horizon. Typically, for complex problems PD is solved numerically. Its implementations require a high spatial resolution for adequate representation of the damaged material behavior, which is related to the high computational costs. Additionally, because of the nonlocal nature of PD there are difficulties in applying the classical local initial and boundary conditions. This leads to the idea of coupling relatively expensive PD with a finite element method to reduce the computational efforts and also try to solve the boundary condition problem. If the whole domain can be divided into two subdomains, the area where the fracture is expected should be modeled with the PD and the rest with finite elements. The present work proposes a comparison of three coupling strategies in terms of damage-free dynamic problems with high-frequency excitement. Additionally the investigation of the influence of wave propagation on the fracture process, as well as on crack patterns is presented.},
 year = {2024}
 }
@@ -441,7 +439,6 @@ number = {1},
 pages = {e202200151},
 doi = {https://doi.org/10.1002/pamm.202200151},
 url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/pamm.202200151},
-eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/pamm.202200151},
 abstract = {Abstract A classical continuum mechanics model no longer fulfills its basic assumptions, when the deformations are not smooth or discontinuous. Peridynamics (PD) as an integral formulation could better overcome these issues. Therefore, it is better suited to solve fracture problems such as crack initiation, its growth and formation of crack patterns. In PD the magnitudes of internal forces at a material point depend on the collective interaction of all material points within a subdomain called horizon. To take advances from the formulation, typically it is implemented in a mesh-free form. In that case, it is easy to separate interactions between different material points. As consequence, a relatively high resolution is required to describe continuous deformation functions and, consequently computationally expensive. Therefore, the application of mesh-free PD in undamaged regions requires an unnecessary high effort for receiving sufficient accurate results. In contrast, the finite element method (FEM) as a classical continuum mechanics-based approach, is very efficient, if continuous stress distributions can be assumed. Consequently, a computational cost reduction can be achieved, if the PD is applied in the local damaged zone only and the remaining area is modeled and analyzed with the classical FEM. Realization of such an approach requires a sufficient accurate coupling of the PD and the FEM subdomains. A brief overview about different coupling approaches is given. Then the general approach of an Arlequin based method is presented. Here the coupling is achieved via an overlapping of PD and FEM areas. The coupling equations are developed and realized with help of the Penalty method. The Penalty method is considered as an alternative procedure to the Lagrange multiplier strategy without creating new unknowns, which essentially simplifies the coupled PD-FEM approach. The validity and limits of the proposed technique are demonstrated through analysis, where the choice of the Penalty number is discussed as well as artificial wave oscillations, caused by the coupling area.},
 year = {2023}
 }
