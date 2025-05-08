@@ -15,9 +15,14 @@ $$f_{ij} = c_i\omega_{ij} s\frac{\xi+\eta}{||\xi + \eta||} = c_i\omega_{ij} s$$
 $$s = \frac{||\xi + \eta|| - ||\xi||}{||\xi||} = \frac{\eta}{\xi}$$
 
 
-$$\rho u_i = \frac{1}{2}\sum_j (f_{ji}-f_{ij})V_j+b_i$$
+$$\rho \ddot{u}_i = \frac{1}{2}\sum_j (f_{ji}V_i-f_{ij}V_j)+b_i$$
 
 point based is solved like this
+
+!!! info "2D and 3D"
+    the bond force $f_{ij}$ becomes $\mathbf{f}_{ij}$ and is $\mathbf{f}_{ij}=c_i\omega_{ij} s\frac{\boldsymbol{\xi + \eta}}{||\boldsymbol{\xi + \eta}||}$
+
+
 
 __Matrix based__
 

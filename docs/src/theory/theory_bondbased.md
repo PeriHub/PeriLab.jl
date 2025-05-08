@@ -72,15 +72,15 @@ $$R_b=\left\{\begin{aligned} &2 (1 + \nu)  (1 - \beta) I_2 & & \text{plane strai
 \end{aligned}\right.$$
 
 with
-$$\beta = \frac{5(1-2\nu)}{2(1+\nu)},$$
-
-$$\begin{aligned}I_1 = n  \sqrt{1 - n^2}&&\text{and}&& I_2 = n  a  \sinh(\sqrt{1 / n^2 - 1})\end{aligned}$$
+$$\begin{aligned}\beta = \frac{5(1-2\nu)}{2(1+\nu)}, &I_1 = n  \sqrt{1 - n^2}&&\text{and}&& I_2 = n  a  \sinh(\sqrt{1 / n^2 - 1})\end{aligned}$$
 where $n$, $\xi_{ik}$
 and $s_{ij}$ are given as
-$$n = \frac{\xi}{\delta},$$
-$$\xi_{ik}=(x_{i,k},y_{i,k},z_{i,k}).$$
 
-$$s_{ij}=\varepsilon_x\frac{x_{ij}^2}{|\xi_{ik}|^2} + \varepsilon_z\frac{z_{ij}^2}{|\xi_{ik}|^2},$$
+$$n = \frac{\xi}{\delta},$$
+
+$$\xi_{ik}=(x_{i,k},y_{i,k},z_{i,k})\qquad \text{and}$$
+
+$$s_{ij}=\varepsilon_x\frac{x_{ij}^2}{|\xi_{ik}|^2} + \varepsilon_z\frac{z_{ij}^2}{|\xi_{ik}|^2}.$$
 
 
 The meaning of $a$ is not specified by Guan et al. [GuanJ2024](@cite) and set to one. As can be seen in the equations $E$ and $\nu$ can be specified independently.
