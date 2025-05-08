@@ -54,18 +54,6 @@ function init_models(params::Dict,
                      solver_options::Dict,
                      synchronise_field,
                      to::TimerOutput)
-    # TODO integrate this correctly
-    rotation = datamanager.get_rotation()
-    #if rotation
-
-    rotN,
-    rotNP1 = datamanager.create_node_field("Rotation", Float64, "Matrix",
-                                           datamanager.get_dof())
-    #    for iID in nodes
-    #        rotN[iID, :, :] = Geometry.rotation_tensor(angles[iID, :])
-    #        rotNP1 = copy(rotN)
-    #    end
-    #end
     if "Pre_Calculation" in solver_options["Models"]
         @info "Check pre calculation models are initialized for material models."
         datamanager = Pre_Calculation.check_dependencies(datamanager, block_nodes)
