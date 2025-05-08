@@ -43,7 +43,7 @@ function init_fields(datamanager::Module)
             bond_damageNP1[iID] .= 0
         end
     end
-    nlist = datamanager.get_field("Neighborhoodlist")
+    nlist = datamanager.get_nlist()
     inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
 
     return datamanager

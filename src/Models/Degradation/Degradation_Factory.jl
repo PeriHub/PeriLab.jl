@@ -27,7 +27,7 @@ Initialize  model fields
 """
 function init_fields(datamanager::Module)
     datamanager.create_node_field("Damage", Float64, 1)
-    nlist = datamanager.get_field("Neighborhoodlist")
+    nlist = datamanager.get_nlist()
     inverse_nlist = datamanager.set_inverse_nlist(find_inverse_bond_id(nlist))
     return datamanager
 end

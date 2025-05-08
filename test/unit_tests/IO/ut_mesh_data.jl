@@ -563,7 +563,7 @@ end
     coor[3, 2] = 1
     dof = test_data_manager.get_dof()
     nnodes = test_data_manager.get_nnodes()
-    nlist = test_data_manager.get_field("Neighborhoodlist")
+    nlist = test_data_manager.get_nlist()
     coor = test_data_manager.get_field("Coordinates")
     undeformed_bond = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
                                                                    dof)

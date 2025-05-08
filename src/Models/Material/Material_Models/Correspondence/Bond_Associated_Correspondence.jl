@@ -95,7 +95,7 @@ function compute_model(datamanager::Module,
     rotation::Bool = datamanager.get_rotation()
 
     dof = datamanager.get_dof()
-    nlist = datamanager.get_field("Neighborhoodlist")
+    nlist = datamanager.get_nlist()
 
     bond_damage = datamanager.get_bond_damage("NP1")
     horizon = datamanager.get_field("Horizon")
