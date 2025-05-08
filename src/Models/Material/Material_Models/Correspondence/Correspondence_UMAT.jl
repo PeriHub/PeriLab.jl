@@ -147,7 +147,6 @@ function init_model(datamanager::Module,
                                                length(field_names))
     end
 
-    rot_N, rot_NP1 = datamanager.create_node_field("Rotation", Float64, "Matrix", dof)
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness",
                                                     Float64,
                                                     "Matrix",

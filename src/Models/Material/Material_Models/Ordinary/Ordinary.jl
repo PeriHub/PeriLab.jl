@@ -159,7 +159,7 @@ function compute_dilatation(nodes::Union{SubArray,Vector{Int64}},
             continue
         end
         th = zero(eltype(theta))
-        @inbounds @fastmath for jID in eachindex(nlist[iID])
+        @inbounds @fastmath @simd for jID in eachindex(nlist[iID])
             th += omega[iID][jID] *
                   bond_damage[iID][jID] *
                   undeformed_bond_length[iID][jID] *

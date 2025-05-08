@@ -197,7 +197,7 @@ function compute_stresses_ba(datamanager::Module,
         @views reduced_yield_stress = yield_stress
         @views reduced_yield_stress = flaw_function(material_parameter, coordinates[iID, :],
                                                     yield_stress)
-        for jID in eachindex(nlist[iID])
+        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             stress_NP1[iID][jID, :, :],
             plastic_strain_NP1[iID][jID],
             von_Mises_stress_yield[iID][jID] = compute_plastic_model(stress_NP1[iID][jID, :,
