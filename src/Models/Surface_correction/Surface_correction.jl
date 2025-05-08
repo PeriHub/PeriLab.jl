@@ -30,7 +30,7 @@ function compute_surface_volume_correction(datamanager::Module, nodes)
     bond_force = datamanager.get_field("Bond Forces")
     volume_correction = datamanager.get_field("Volume Correction")
     for iID in nodes
-        for jID in eachindex(nlist[iID])
+        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             bond_force[iID][jID][:] .*= volume_correction[iID][jID]
         end
     end

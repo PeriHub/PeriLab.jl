@@ -127,11 +127,10 @@ function compute_model(datamanager::Module,
     warning_flag = true
 
     for iID in nodes
-        nlist_temp = nlist[iID]
         bond_displacement = bond_displacements[iID]
         bond_force_vec = bond_forces[iID]
         quad_horizon = quad_horizons[iID]
-        for jID in eachindex(nlist_temp)
+        @fastmath @inbounds for jID in eachindex(nlist[iID])
             relative_displacement = bond_displacement[jID]
             norm_displacement = fastdot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (tension &&
@@ -139,7 +138,7 @@ function compute_model(datamanager::Module,
                 continue
             end
 
-            @views neighborID = nlist_temp[jID]
+            @views neighborID = nlist[iID][jID]
 
             # check if the bond also exist at other node, due to different horizons
             try

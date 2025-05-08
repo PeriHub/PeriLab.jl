@@ -82,7 +82,7 @@ function compute_model(datamanager::Module,
         end
     end
     for iID in nodes
-        for jID in eachindex(nlist[iID])
+        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             # stretch = (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) /
             #           undeformed_bond_length[iID][jID]
 

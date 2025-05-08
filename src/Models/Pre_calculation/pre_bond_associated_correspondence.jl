@@ -149,7 +149,7 @@ function compute_weighted_volume!(weighted_volume::Vector{Float64},
                                   omega::Vector{Vector{Float64}})
     for iID in nodes
         weighted_volume[iID] = 0
-        for jID in eachindex(nlist[iID])
+        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             weighted_volume[iID] += bond_damage[iID][jID] * omega[iID][jID] *
                                     volume[nlist[iID][jID]]
         end
@@ -249,7 +249,7 @@ function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}
         @views Minv = invert(M,
                              "In compute_Lagrangian_gradient_weights the matrix M is singular and cannot be inverted. To many bond damages or a to small horizon might cause this.")
 
-        for jID in eachindex(nlist[iID])
+        @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             Q = calculate_Q(accuracy_order, dof, bond_geometry[iID][jID], horizon[iID], Q)
             # this comes from Eq(19) in 10.1007/s40571-019-00266-9
             # or example 1 in https://arxiv.org/pdf/2004.11477
