@@ -1,4 +1,5 @@
 ## Lecture 1: Bond based truss solution
+
 For a truss everything is a scalar. The norms are given for better illustration.
 
 $i$ - point
@@ -48,6 +49,8 @@ $$\mathbf{K}=\frac{EA}{L}\begin{bmatrix}1&-1\\-1&1\end{bmatrix}$$
 
 
 ---
+Test the local model case.
+![](../assets/theory_comp.png)
 
 **Assumptions**
 
