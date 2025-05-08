@@ -66,7 +66,7 @@ end
 
     testval = zeros(5, 3, 3)
     for iID in 1:5
-        for jID in eachindex(@view(nlist[iID]))
+        for jID in eachindex(nlist[iID])
             for i in 1:3
                 for j in 1:3
                     testval[iID, i,

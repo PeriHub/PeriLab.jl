@@ -75,12 +75,14 @@ function compute_model(datamanager::Module,
     sub_in_place!(temp, deformed_bond_length, undeformed_bond_length)
     div_in_place!(temp, temp, undeformed_bond_length)
 
-    if !any(any(x -> x > critical_stretch, tension ? vec : abs(vec)) for vec in temp)
-        # return if no stretch value is larger than critical_stretch
-        return datamanager
+    if !critical_field
+        if !any(any(x -> x > critical_stretch, tension ? vec : abs.(vec)) for vec in temp)
+            # return if no stretch value is larger than critical_stretch
+            return datamanager
+        end
     end
     for iID in nodes
-        for jID in eachindex(@view(nlist[iID]))
+        for jID in eachindex(nlist[iID])
             # stretch = (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) /
             #           undeformed_bond_length[iID][jID]
 

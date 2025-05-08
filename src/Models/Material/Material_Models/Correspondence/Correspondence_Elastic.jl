@@ -138,7 +138,7 @@ function compute_stresses_ba(datamanager::Module,
                                               material_parameter["Symmetry"],
                                               dof,
                                               iID)
-        for jID in eachindex(@view(nlist[iID]))
+        for jID in eachindex(nlist[iID])
             @views sNP1 = stress_NP1[iID][jID, :, :]
             @views sInc = strain_increment[iID][jID, :, :]
             @views sN = stress_N[iID][jID, :, :]

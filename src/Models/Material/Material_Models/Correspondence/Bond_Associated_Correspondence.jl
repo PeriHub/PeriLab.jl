@@ -281,10 +281,10 @@ function compute_bond_strain(nodes,
                              strain_N,
                              strain_increment)
     for iID in nodes
-        compute_strain(eachindex(@view(nlist[iID])), deformation_gradient[iID],
+        compute_strain(eachindex(nlist[iID]), deformation_gradient[iID],
                        strain_NP1[iID])
         matrix_diff!(strain_increment[iID],
-                     eachindex(@view(nlist[iID])),
+                     eachindex(nlist[iID]),
                      strain_NP1[iID],
                      strain_N[iID])
     end
