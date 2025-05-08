@@ -147,9 +147,9 @@ function compute_weighted_volume!(weighted_volume::Vector{Float64},
                                   volume::Vector{Float64},
                                   bond_damage::Vector{Vector{Float64}},
                                   omega::Vector{Vector{Float64}})
-    @views @inbounds @fastmath for iID in nodes
+    for iID in nodes
         weighted_volume[iID] = 0
-        @views @inbounds @fastmath for jID in eachindex(nlist[iID])
+        for jID in eachindex(nlist[iID])
             weighted_volume[iID] += bond_damage[iID][jID] * omega[iID][jID] *
                                     volume[nlist[iID][jID]]
         end

@@ -13,8 +13,9 @@ include("../../../src/Compute/compute_field_values.jl")
 
     test_data_manager.create_node_field("Forces", Float64, 3)
 
-    force_densityN, force_densityNP1 = test_data_manager.create_node_field("Force Densities",
-                                                                           Float64, 3)
+    force_densityN,
+    force_densityNP1 = test_data_manager.create_node_field("Force Densities",
+                                                           Float64, 3)
     volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
 
     volume[1:5] = 1:5
@@ -68,8 +69,9 @@ end
         for jID in eachindex(nlist[iID])
             for i in 1:3
                 for j in 1:3
-                    testval[iID, i, j] += bond_forces[iID][jID][i] *
-                                          bond_geometry[iID][jID][j] * volume[iID]
+                    testval[iID, i,
+                            j] += bond_forces[iID][jID][i] *
+                                  bond_geometry[iID][jID][j] * volume[iID]
                 end
             end
         end

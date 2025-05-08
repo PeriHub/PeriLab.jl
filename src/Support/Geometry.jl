@@ -139,8 +139,9 @@ function compute_shape_tensors!(shape_tensor,
         #    undeformed_bond[iID],
         #)
 
-        inverse_shape_tensor[iID, :, :] .= invert(shape_tensor[iID, :, :],
-                                                  "Shape Tensor is singular and cannot be inverted).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
+        inverse_shape_tensor[iID, :,
+                             :] .= invert(shape_tensor[iID, :, :],
+                                          "Shape Tensor is singular and cannot be inverted).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
     end
 end
 
@@ -253,7 +254,6 @@ function compute_deformation_gradient!(deformation_gradient,
                                        iID)
     @inbounds @fastmath for m in axes(deformation_gradient, 1),
                             n in axes(deformation_gradient, 2)
-
         Cmn = zero(eltype(deformation_gradient))
         @inbounds @fastmath for k in axes(undeformed_bond, 1)
             Cmn += deformed_bond[k][m] *
@@ -305,10 +305,11 @@ function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int6
             @inbounds @fastmath for n in axes(deformation_gradient, 3)
                 deformation_gradient[iID, n, m] = 0
                 @views @inbounds @fastmath for (jID, nID) in enumerate(nlist[iID])
-                    deformation_gradient[iID, n, m] += (displacement[nID, m] -
-                                                        displacement[iID, m]) *
-                                                       (gradient_weight[iID][jID][n] *
-                                                        volume[nID])
+                    deformation_gradient[iID, n,
+                                         m] += (displacement[nID, m] -
+                                                displacement[iID, m]) *
+                                               (gradient_weight[iID][jID][n] *
+                                                volume[nID])
                 end
             end
             deformation_gradient[iID, m, m] += 1
@@ -321,11 +322,12 @@ function deformation_gradient_decomposition(nodes::Union{Base.OneTo{Int64},Vecto
                                             rot_tensor)
     for iID in nodes
         # EQ (15) in https://doi.org/10.1016/j.ijsolstr.2008.10.029
-        rot_tensor[iID, :, :] = invert(compute_left_stretch_tensor(deformation_gradient[iID,
-                                                                                        :,
-                                                                                        :]),
-                                       "Inversion of left stretch tensor fails in function deformation_gradient_decomposition.") *
-                                deformation_gradient[iID, :, :]
+        rot_tensor[iID, :,
+                   :] = invert(compute_left_stretch_tensor(deformation_gradient[iID,
+                                                                                :,
+                                                                                :]),
+                               "Inversion of left stretch tensor fails in function deformation_gradient_decomposition.") *
+                        deformation_gradient[iID, :, :]
     end
     return rot_tensor
 end
@@ -394,13 +396,14 @@ function compute_bond_level_rotation_tensor(nodes,
                                             ba_rotation_tensor)
     # all deformation gradients, etc. are in NP1. The increment is calculated outside this routine.
     for iID in nodes
-        @views ba_rotation_tensor[iID][:, :, :] = deformation_gradient_decomposition(eachindex(nlist[iID]),
-                                                                                     ba_deformation_gradient[iID][:,
-                                                                                                                  :,
-                                                                                                                  :],
-                                                                                     ba_rotation_tensor[iID][:,
-                                                                                                             :,
-                                                                                                             :])
+        ba_rotation_tensor[iID][:, :,
+                                :] = deformation_gradient_decomposition(eachindex(nlist[iID]),
+                                                                        ba_deformation_gradient[iID][:,
+                                                                                                     :,
+                                                                                                     :],
+                                                                        ba_rotation_tensor[iID][:,
+                                                                                                :,
+                                                                                                :])
     end
     return ba_rotation_tensor
 end
@@ -419,13 +422,14 @@ function compute_bond_level_deformation_gradient(nodes,
             @views mean_deformation_gradient = 0.5 .* (deformation_gradient[iID, :, :] +
                                                 deformation_gradient[nID, :, :])
 
-            @views ba_deformation_gradient[iID][jID, :, :] = mean_deformation_gradient +
-                                                             (bond_deformation[iID][jID] .-
-                                                              mean_deformation_gradient *
-                                                              bond_geometry[iID][jID]) *
-                                                             bond_geometry[iID][jID]' /
-                                                             (bond_length[iID][jID] *
-                                                              bond_length[iID][jID])
+            @views ba_deformation_gradient[iID][jID, :,
+                                                :] = mean_deformation_gradient +
+                                                     (bond_deformation[iID][jID] .-
+                                                      mean_deformation_gradient *
+                                                      bond_geometry[iID][jID]) *
+                                                     bond_geometry[iID][jID]' /
+                                                     (bond_length[iID][jID] *
+                                                      bond_length[iID][jID])
 
             #@inbounds @fastmath for m ∈ axes(ba_deformation_gradient[iID], 2)
             #    @inbounds @fastmath for n ∈ axes(ba_deformation_gradient[iID], 3)

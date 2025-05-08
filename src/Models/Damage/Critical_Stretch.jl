@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_stretch
-
+include("../../Support/Helpers.jl")
+using .Helpers: sub_in_place!, div_in_place!
 export compute_model
 export damage_name
 export init_model
@@ -58,33 +59,46 @@ function compute_model(datamanager::Module,
     undeformed_bond_length = datamanager.get_field("Bond Length")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     block_ids = datamanager.get_field("Block_Id")
+    temp = datamanager.get_field("Temporary Bond Field")
     critical_field = datamanager.has_key("Critical_Value")
     if critical_field
-        cricital_stretch = datamanager.get_field("Critical_Value")
+        critical_stretch = datamanager.get_field("Critical_Value")
     else
-        cricital_stretch = damage_parameter["Critical Value"]
+        critical_stretch = damage_parameter["Critical Value"]
     end
     tension::Bool = get(damage_parameter, "Only Tension", true)
     inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
     if inter_block_damage
         inter_critical_stretch::Array{Float64,3} = datamanager.get_crit_values_matrix()
     end
+
+    sub_in_place!(temp, deformed_bond_length, undeformed_bond_length)
+    div_in_place!(temp, temp, undeformed_bond_length)
+
+    if !critical_field
+        if !any(any(x -> x > critical_stretch, tension ? vec : abs.(vec)) for vec in temp)
+            # return if no stretch value is larger than critical_stretch
+            return datamanager
+        end
+    end
     for iID in nodes
         for jID in eachindex(nlist[iID])
-            stretch = (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) /
-                      undeformed_bond_length[iID][jID]
+            # stretch = (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) /
+            #           undeformed_bond_length[iID][jID]
 
             if critical_field
-                crit_stretch = cricital_stretch[iID]
+                crit_stretch = critical_stretch[iID]
             else
                 crit_stretch = inter_block_damage ?
                                inter_critical_stretch[block_ids[iID],
                                                       block_ids[nlist[iID][jID]],
-                                                      block] : cricital_stretch
+                                                      block] : critical_stretch
             end
 
-            if !tension
-                stretch = abs(stretch)
+            if tension
+                @views stretch = temp[iID][jID]
+            else
+                @views stretch = abs(temp[iID][jID])
             end
             if stretch > crit_stretch
                 bond_damageNP1[iID][jID] = 0.0
