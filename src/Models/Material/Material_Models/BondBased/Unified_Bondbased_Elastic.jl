@@ -74,7 +74,7 @@ function init_model(datamanager::Module,
     a = 1
     for iID in nodes
         beta = compute_beta(iID, nu)
-        for jID in eachindex(nlist[iID])
+        for jID in eachindex(@view(nlist[iID]))
             n = bond_length[iID][jID] / horizon[iID]
             I1 = n * sqrt(1 - n * n)
             I2 = n * a * sinh(sqrt(1 / (n * n) - 1))
