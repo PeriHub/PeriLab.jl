@@ -20,7 +20,7 @@ $$\rho \ddot{u}_i = \frac{1}{2}\sum_j (f_{ji}V_i-f_{ij}V_j)+b_i$$
 point based is solved like this
 
 !!! info "2D and 3D"
-  $f_{ij}$ becomes $\mathbf{f}_{ij}$ and is $\mathbf{f}_{ij}=c_i\omega_{ij} s\frac{\boldsymbol{\xi + \eta}}{||\boldsymbol{\xi + \eta}||}$
+    the bond force $f_{ij}$ becomes $\mathbf{f}_{ij}$ and is $\mathbf{f}_{ij}=c_i\omega_{ij} s\frac{\boldsymbol{\xi + \eta}}{||\boldsymbol{\xi + \eta}||}$
 
 
 
