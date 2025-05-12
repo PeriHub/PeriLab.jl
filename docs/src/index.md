@@ -9,7 +9,7 @@ running with tabular data manipulation using the PeriLab.jl package.
 ## What is PeriLab.jl?
 
 
-PeriLab.jl provides a Peridynamics [BobaruF2016](@cite) simulation core.
+PeriLab.jl provides a Peridynamics [BobaruF2016](@cite) simulation core based on the material point method (MPM) [BeuthL2012](@cite).
 
 It's design and functionality are similar to those of Peridigm  [LittlewoodDJ2023](@cite) and several extenions [WillbergC2019](@cite), [WillbergC2023](@cite), [HesseJA2023](@cite).
 

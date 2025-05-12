@@ -1,4 +1,4 @@
-## Lecture 1: Bond based truss solution
+## Seminar 1: Trusses and structure of matrices
 
 For a truss everything is a scalar. The norms are given for better illustration.
 

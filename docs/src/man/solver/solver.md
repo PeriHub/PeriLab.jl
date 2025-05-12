@@ -36,7 +36,7 @@ $$\ddot{\mathbf{u}}_{i} = \frac{\mathbf{F}_i}{\rho}$$
 
 where $\rho$ is the mass density of the point and $\mathbf{F}_i=\mathbf{F}_{external}-\mathbf{F}_{internal}$ for the current time step.
 
-For parabolic hyperbolic time integration as in temperature models the following schema is used
+For parabolic time integration as in temperature models the following schema is used
 
 $$\boldsymbol{\tau}_{i+1} =  \boldsymbol{\tau}_i - \Delta t \frac{\mathbf{H}}{\rho C_v}$$
 
