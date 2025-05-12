@@ -118,7 +118,7 @@ For the time intergration a stable increment has to be determined.
 
 
 # Volume correction
-
+![](../assets/volume_correction.png)
 
 $$\lambda_{corr}=\frac{2V_0}{V(\mathbf{x})+V(\mathbf{x}')}$$
 
