@@ -31,12 +31,12 @@ Set the log file.
 function set_log_file(filename::String, debug::Bool, rank::Int64, size::Int64)
     if size > 1
         if debug
-            return split(filename, ".")[1] *
+            return split(filename, ".yaml")[1] *
                    "_" *
                    Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") *
                    "_$size.$rank.log"
         elseif rank == 0
-            return split(filename, ".")[1] *
+            return split(filename, ".yaml")[1] *
                    "_" *
                    Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") *
                    ".log"
@@ -44,7 +44,7 @@ function set_log_file(filename::String, debug::Bool, rank::Int64, size::Int64)
             return ""
         end
     end
-    return split(filename, ".")[1] *
+    return split(filename, ".yaml")[1] *
            "_" *
            Dates.format(Dates.now(), "yyyy_mm_dd_HH_MM_SS") *
            ".log"
