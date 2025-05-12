@@ -11,61 +11,44 @@
 - convergence is low
 - gradients purely described by points
 
-## Equations in the Quasi-Static Material Point Method Algorithm
+## Equations in the Quasi-Static Materiwal Point Method Algorithm
 
 #### **1. Mapping Material Point Quantities to Grid Nodes**
-
 - **Nodal Mass**
 
-$$
-M_{\text{node}} = \sum_{mp} m_{mp} \, N_{mp-nd}
-$$
+$$M_{\text{node}} = \sum_{mp} m_{mp} \, N_{mp-nd}$$
 
 - **Nodal Velocity**
 
-$$
-\mathbf{V}_{\text{node}} = \frac{1}{M_{\text{node}}} \sum_{mp} \mathbf{P}_{mp} \, N_{mp-nd}
-$$
+$$\mathbf{V}_{\text{node}} = \frac{1}{M_{\text{node}}} \sum_{mp} \mathbf{P}_{mp} \, N_{mp-nd}$$
 
 - **Internal Force Vector**
 
-$$
-\mathbf{F}_{\text{node}}^{\text{internal}} = \sum_{mp} \boldsymbol{\sigma}_{mp} \, \nabla N_{mp-nd}
-$$
+$$\mathbf{F}_{\text{node}}^{\text{internal}} = \sum_{mp} \boldsymbol{\sigma}_{mp} \, \nabla N_{mp-nd}$$
 
 - **External Force Vector**
 
-$$
-\mathbf{F}_{\text{node}}^{\text{external}} = \sum_{mp} \mathbf{b} \, N_{mp-nd}
-$$
+$$\mathbf{F}_{\text{node}}^{\text{external}} = \sum_{mp} \mathbf{b} \, N_{mp-nd}$$
 
 #### **2. Solving Equations of Motion on the Grid**
 
 - **Nodal Acceleration**
 
-$$
-\mathbf{A}_{\text{node}} = \frac{\mathbf{F}_{\text{node}}^{\text{external}} + \mathbf{F}_{\text{node}}^{\text{internal}}}{M_{\text{node}}}
-$$
+$$\mathbf{A}_{\text{node}} = \frac{\mathbf{F}_{\text{node}}^{\text{external}} + \mathbf{F}_{\text{node}}^{\text{internal}}}{M_{\text{node}}}$$
 
 - **Updated Nodal Velocity**
 
-$$
-\tilde{\mathbf{V}}_{\text{node}} = \mathbf{V}_{\text{node}} + \mathbf{A}_{\text{node}} \, \mathrm{d}t
-$$
+$$\tilde{\mathbf{V}}_{\text{node}} = \mathbf{V}_{\text{node}} + \mathbf{A}_{\text{node}} \, \mathrm{d}t$$
 
 #### **3. Mapping Back to Material Points**
 
 - **Material Point Acceleration**
 
-$$
-\mathbf{a}_{mp} = \sum_{nd} \mathbf{A}_{\text{node}} \, N_{nd-mp}
-$$
+$$\mathbf{a}_{mp} = \sum_{nd} \mathbf{A}_{\text{node}} \, N_{nd-mp}$$
 
 - **Strain Rate (Infinitesimal Strain Theory)**
 
-$$
-\dot{\boldsymbol{\varepsilon}}_{mp} = \sum_{nd} \frac{1}{2} \left[ \mathbf{V}_{\text{node}} \nabla N_{nd-mp} + (\mathbf{V}_{\text{node}} \nabla N_{nd-mp})^T \right]
-$$
+$$\dot{\boldsymbol{\varepsilon}}_{mp} = \sum_{nd} \frac{1}{2} \left[ \mathbf{V}_{\text{node}} \nabla N_{nd-mp} + (\mathbf{V}_{\text{node}} \nabla N_{nd-mp})^T \right]$$
 
 
 
