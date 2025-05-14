@@ -233,6 +233,7 @@ function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict())
     callbacks["TYPE:Custom"] = switch_off
     callbacks["TYPE:Skirt/Brim"] = switch_off
     callbacks["Movement Start"] = switch_off
+    callbacks["new_layer"] = new_layer
     callbacks["Bauteil fertig"] = finished
 
     # watch out for relative and absolute positioning
