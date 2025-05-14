@@ -319,7 +319,7 @@ function movement(cmds, dataobject)
     z = findfirst((x -> lowercase(x.first) == "z"), cmds)
     if z !== nothing
         val = parse(Float64, cmds[z].second)
-        if val > dataobject["z"]
+        if val > dataobject["z"] && x !== nothing
             new_layer(val, dataobject)
         end
 
