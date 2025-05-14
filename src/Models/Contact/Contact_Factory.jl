@@ -193,11 +193,7 @@ function identify_contact_block_surface_nodes(datamanager, contact_blocks)
     for block in contact_blocks
         poly = compute_geometry(points[block_nodes[block], :])
         normals, offsets = get_surface_information(poly)
-        for pID in eachindex(points[:, 1])
-            if !(points[pID, :] in poly)
-                # can happen, e.g. points are on hplane surfraces but not connected to the block
-                continue
-            end
+        for pID in block_nodes[block]
             for id in eachindex(offsets)
                 if isapprox(dot(normals[id, :], points[pID, :]) - offsets[id], 0;
                             atol = 1e-6, rtol = 1e-5)

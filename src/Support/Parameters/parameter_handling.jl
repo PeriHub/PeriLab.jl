@@ -377,11 +377,13 @@ global expected_structure = Dict("PeriLab" => [
                                                                                            false
                                                                                        ],
                                                                                        "Start Time" => [
-                                                                                           Float64,
+                                                                                           Union{Float64,
+                                                                                                 Int64},
                                                                                            false
                                                                                        ],
                                                                                        "End Time" => [
-                                                                                           Float64,
+                                                                                           Union{Float64,
+                                                                                                 Int64},
                                                                                            false
                                                                                        ],
                                                                                        "Output Variables" => [
@@ -876,11 +878,13 @@ global expected_structure = Dict("PeriLab" => [
                                                                                            false
                                                                                        ],
                                                                                        "Contact Radius" => [
-                                                                                           Float64,
+                                                                                           Union{Float64,
+                                                                                                 Int64},
                                                                                            true
                                                                                        ],
                                                                                        "Contact Stiffness" => [
-                                                                                           Float64,
+                                                                                           Union{Float64,
+                                                                                                 Int64},
                                                                                            true
                                                                                        ]),
                                                                          true
@@ -936,7 +940,8 @@ global expected_structure = Dict("PeriLab" => [
                                                                          false
                                                                      ],
                                                                      "Maximum Damage" => [
-                                                                         Float64,
+                                                                         Union{Float64,
+                                                                               Int64},
                                                                          false
                                                                      ],
                                                                      "Final Time" => [
@@ -1059,7 +1064,8 @@ global expected_structure = Dict("PeriLab" => [
                                                                                            false
                                                                                        ],
                                                                                        "Maximum Damage" => [
-                                                                                           Float64,
+                                                                                           Union{Float64,
+                                                                                                 Int64},
                                                                                            false
                                                                                        ],
                                                                                        "Final Time" => [

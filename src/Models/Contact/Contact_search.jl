@@ -94,7 +94,6 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
     all_positions = datamanager.get_all_positions()
     #-------------
     near_points = find_potential_contact_pairs(datamanager, contact_params)
-
     potential_contact_dict = create_potential_contact_dict(near_points, datamanager,
                                                            contact_params)
     contact_dict = datamanager.get_contact_dict(cm)
@@ -104,6 +103,7 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
     poly = polyhedron(vrep(all_positions[slave_block_nodes, :]), CDDLib.Library())
 
     contact_nodes = datamanager.get_field("Contact Nodes")
+    mapping = datamanager.get_exchange_id_to_local_id()
 
     for (master_node, near_ids) in pairs(potential_contact_dict)
         try
@@ -118,6 +118,8 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
         contact_dict[master_node] = Dict("Slaves" => [], "Normals" => [],
                                          "Distances" => [])
         for id in near_ids
+            contact_nodes[mapping[id]] = 2
+            contact_nodes[mapping[master_node]] = 3
             distance,
             normal = compute_distance_and_normals(all_positions[master_node, :],
                                                   all_positions[id, :])
@@ -125,8 +127,8 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
             if contact_params["Contact Radius"] < abs(distance)
                 continue
             end
-            contact_nodes[master_node] = 2
-            contact_nodes[id] = 3
+            contact_nodes[mapping[id]] = 4
+            contact_nodes[mapping[master_node]] = 5
             append!(contact_dict[master_node]["Slaves"], id)
             append!(contact_dict[master_node]["Normals"], [normal])
             append!(contact_dict[master_node]["Distances"], distance)

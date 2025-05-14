@@ -107,7 +107,7 @@ function compute_free_surface_nodes(points::Union{Matrix{Float64},Matrix{Int64}}
     for pID in eachindex(points[:, 1])
         for id in free_surfaces
             if length(offset) < id #TODO: check this condition
-                continue
+                @error "Surface ID $id is not defined"
             end
             if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
                 # connections only to the free surfaces.
