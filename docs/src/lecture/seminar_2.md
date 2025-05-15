@@ -51,6 +51,11 @@ $$\mathbf{a}_{mp} = \sum_{nd} \mathbf{A}_{\text{node}} \, N_{nd-mp}$$
 $$\dot{\boldsymbol{\varepsilon}}_{mp} = \sum_{nd} \frac{1}{2} \left[ \mathbf{V}_{\text{node}} \nabla N_{nd-mp} + (\mathbf{V}_{\text{node}} \nabla N_{nd-mp})^T \right]$$
 
 
+---
+
+![](../assets/collocation_points.png)
+
+----
 
 
 ![](../assets/increasing_stiff.png)
