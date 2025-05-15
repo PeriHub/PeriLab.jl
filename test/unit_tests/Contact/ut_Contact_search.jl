@@ -5,7 +5,7 @@
 include("../../../src/Models/Contact/Contact_search.jl")
 # include("../../../../src/Core/Data_manager.jl")
 using Test
-using .Contact_search: get_surface_normals, filter_surface_connectivity,
+using .Contact_search: get_surface_normals,
                        init_contact_search,
                        find_potential_contact_pairs, create_potential_contact_dict
 @testset "ut_get_surface_normals" begin
