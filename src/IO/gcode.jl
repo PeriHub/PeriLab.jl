@@ -119,9 +119,7 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, s
     for i in iter
         x = lines[i]
         if occursin(";", x)
-            if occursin(";TYPE:", x)
-                command = split(x, ":")[2]
-            elseif occursin(";Z:", x)
+            if occursin(";Z:", x)
                 command = "new_layer"
                 z = parse(Float64, split(x, ":")[2])
                 callbacks[command](z, dataObject)
@@ -187,18 +185,22 @@ function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict(),
     myPrinter["y_max"] = 0.0
     myPrinter["pd_mesh"] = pd_mesh
     myPrinter["layers"] = []
+    myPrinter["finsihed"] = false
 
     # Setup a dictionary of callbacks for specified commands
     callbacks = Dict{String,Function}()
     callbacks["G0"] = move # just move the printhead
     callbacks["G1"] = extrude  # move the printhead as well as extrude material
-    callbacks["Perimeter"] = switch_on
-    callbacks["Solid infill"] = switch_on
+    callbacks["TYPE:Perimeter"] = switch_on
+    callbacks["TYPE:Solid infill"] = switch_on
+    callbacks["Print Start"] = switch_on
     # callbacks["WIPE_START"] = switch_off
     # callbacks["WIPE_END"] = switch_on
-    callbacks["Custom"] = switch_off
-    callbacks["Skirt/Brim"] = switch_off
+    callbacks["TYPE:Custom"] = switch_off
+    callbacks["TYPE:Skirt/Brim"] = switch_off
+    callbacks["Movement Start"] = switch_off
     callbacks["new_layer"] = new_layer
+    callbacks["Bauteil fertig"] = finished
 
     # watch out for relative and absolute positioning
     callbacks["G90"] = (cmds, dataobject) -> dataobject["positioning"] = "absolute"
@@ -283,6 +285,9 @@ function movement(cmds, dataobject)
     z = findfirst((x -> lowercase(x.first) == "z"), cmds)
     if z !== nothing
         val = parse(Float64, cmds[z].second)
+        if val > dataobject["z"] && x !== nothing
+            new_layer(val, dataobject)
+        end
 
         if dataobject["positioning"] === "absolute"
             dz = val - dataobject["z"]
@@ -303,7 +308,9 @@ function movement(cmds, dataobject)
     distance = sqrt(dx * dx + dy * dy + dz * dz)
     dataobject["distanceMoved"] += distance
     dataobject["previous_time"] = dataobject["time"]
-    dataobject["time"] += distance / dataobject["f"] * 60
+    if dataobject["f"] > 0.0
+        dataobject["time"] += distance / dataobject["f"] * 60
+    end
 end
 
 """
@@ -356,7 +363,14 @@ end
 function switch_off(dataobject)
     dataobject["relevant_component"] = false
 end
+function finished(dataobject)
+    dataobject["relevant_component"] = false
+    dataobject["finsihed"] = true
+end
 function new_layer(z, dataobject)
+    if dataobject["finsihed"]
+        return
+    end
     if dataobject["find_min_max"]
         push!(dataobject["layers"], z)
         return
@@ -393,8 +407,8 @@ function write_pd_mesh(dataobject)
         dy = pd_mesh["start_point"][2] > pd_mesh["point"][2] ?
              -pd_mesh["discretization"][2] : pd_mesh["discretization"][2]
         (xg,
-         yg) = ndgrid(pd_mesh["start_point"][1]:dx:pd_mesh["point"][1],
-                      pd_mesh["start_point"][2]:dy:pd_mesh["point"][2])
+         yg) = ndgrid((pd_mesh["start_point"][1] - dx):dx:(pd_mesh["point"][1] + dx),
+                      (pd_mesh["start_point"][2] - dy):dy:(pd_mesh["point"][2] + dy))
         nnodes = length(xg)
         # @info nnodes
         grid = zeros(2, nnodes + 1)

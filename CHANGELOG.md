@@ -8,6 +8,23 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2025-05-14
+
+### Added
+
+- Multibody contact support #264
+- cos, sin, tan BC functions for vector operations
+
+### Fixed
+
+- Contact Surface Detection
+- Rotation tensor switch
+- Logging path for filenames with underscores in the name
+
+### Changed
+
+- Improved critical stretch performance
+
 ## [1.3.7] - 2025-04-22
 
 ### Added
