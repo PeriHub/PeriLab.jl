@@ -5,36 +5,8 @@
 include("../../../src/Models/Contact/Contact_search.jl")
 # include("../../../../src/Core/Data_manager.jl")
 using Test
-using .Contact_search: get_surface_normals,
-                       init_contact_search,
+using .Contact_search: init_contact_search,
                        find_potential_contact_pairs, create_potential_contact_dict
-@testset "ut_get_surface_normals" begin
-    points_2D = [
-        [0.0, 0.0],    # Unten links
-        [4, 0.0],      # Unten rechts
-        [1, 1],
-        [4, 2],        # Oben rechts
-        [0.0, 2]       # Oben links
-    ]
-
-    @test get_surface_normals(points_2D) == [-0.0 -1.0; -1.0 -0.0; -0.0 1.0; 1.0 -0.0]
-    points_3D = [
-        [0.0, 0.0, 0.0],
-        [2.0, 0.0, 0.0],
-        [2.0, 3.0, 0.0],
-        [0.0, 3.0, 0.0],
-        [0.0, 0.0, 0.5],
-        [2.0, 0.0, 0.5],
-        [2.0, 3.0, 0.5],
-        [0.0, 3.0, 0.5]
-    ]
-    @test get_surface_normals(points_3D) == [-0.0 -0.0 -1.0;
-           -1.0 -0.0 -0.0;
-           -0.0 -1.0 -0.0;
-           -0.0 -0.0 2.0;
-           -0.0 1.0 -0.0;
-           1.0 -0.0 -0.0]
-end
 
 @testset "ut_find_potential_contact_pairs and ut_create_potential_contact_dict" begin
     test_data_manager = PeriLab.Data_manager
