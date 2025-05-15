@@ -11,7 +11,6 @@ export get_local_contact_ids
 export get_exchange_id_to_local_id
 
 export get_free_surface_nodes
-export get_free_contact_surfaces
 export get_contact_properties
 export set_all_blocks
 export set_contact_block_ids
@@ -20,9 +19,7 @@ export set_contact_overlap_map
 export set_contact_relevant_global_ids
 export set_local_contact_ids
 export set_exchange_id_to_local_id
-
 export set_free_surface_nodes
-export set_free_contact_surfaces
 export set_contact_properties
 """
     get_all_blocks()
@@ -41,15 +38,6 @@ Gives back a global list of current positions, initially. Is reduced to the oute
 """
 function get_all_positions()
     return data["All positions"]
-end
-"""
-    get_free_contact_surfaces(block::Int64)
-
-Gives back a the free surfaces of a contact block.
-
-"""
-function get_free_contact_surfaces(block::Int64)
-    return data["Free Surfaces"][block]
 end
 
 """
@@ -118,10 +106,6 @@ end
 
 function get_exchange_id_to_local_id()
     return data["Exchange id to local id"]
-end
-
-function set_free_contact_surfaces(free_surfaces)
-    data["Free Surfaces"] = free_surfaces
 end
 
 function set_free_surface_nodes(block::Int64, free_surface_nodes::Vector{Int64})

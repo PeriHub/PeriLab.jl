@@ -5,10 +5,9 @@
 module Contact_search
 include("../../Support/Helpers.jl")
 using .Helpers: get_nearest_neighbors, nearest_point_id, get_block_nodes, compute_geometry,
-                point_is_inside, compute_free_surface_nodes,
+                point_is_inside,
                 get_surface_information, compute_distance_and_normals
 
-using CDDLib, Polyhedra
 export init_contact_search
 export compute_contact_pairs
 
@@ -17,77 +16,9 @@ export compute_contact_pairs
 function init_contact_search(datamanager, contact_params, cm)
 
     # global list
-    @info "Contact search: Create global position arrays"
-
-    # local search field ids
-    all_positions = datamanager.get_all_positions()
-    # find all outer surfaces.
-    master_id = contact_params["Master Block ID"]
-    slave_id = contact_params["Slave Block ID"]
-    # Polyhedra for the master block; can be 2D or 3D
-    @info "Contact pair Master block $master_id - Slave block $slave_id"
-    compute_and_set_free_surface_nodes(datamanager, all_positions,
-                                       contact_params["Slave Block ID"])
-    compute_and_set_free_surface_nodes(datamanager, all_positions,
-                                       contact_params["Master Block ID"])
-
     # do something with block nodes
 
     return datamanager
-end
-
-"""
-    compute_and_set_free_surface_nodes(datamanager::Module, all_positions, id::Int64)
-
-Find the node ids of the free surfaces of the contact blocks and there connected surfaces. The node id is given in the exchange vector id.
-
-"""
-function compute_and_set_free_surface_nodes(datamanager::Module, all_positions, id::Int64)
-    surface_ids = datamanager.get_contact_block_ids(id) # all contact block nodes to create the geometry
-    free_surfaces = datamanager.get_free_contact_surfaces(id)
-    poly = compute_geometry(all_positions[surface_ids, :])
-    free_nodes = compute_free_surface_nodes(all_positions[surface_ids, :],
-                                            surface_ids,
-                                            poly,
-                                            free_surfaces)
-    datamanager.set_free_surface_nodes(id, free_nodes)
-end
-
-"""
-    which_surface()
-
-checks which surface has to be used by checking the number of nodes in the nearest point list. The highest number at one surface, defines the surface.
-
-"""
-function which_surface()
-end
-
-"""
-    function filter_surface_connectivity(points::Union{Vector{Vector{Float64}}, Vector{Vector{Int64}}}, surface_nodes,  nlist, poly)
-
-Identifies the surfaces which are not connected with other surfaces. These nodes are used for the near neighbor search. It is checked if the neighbors are outside the block. This leads to the issue that at boundary edges points lying at the surface are not considered.
-
-!!! info "limitations"
-    This might have limitations if non plane surfaces are used.
-
-
-# Arguments
-- `points::Union{Vector{Vector{Float64}}, Vector{Vector{Int64}}}`: All point coordinates.
-- `surface_nodes::Dict{Int64, Int64}`: dictionary mapping contact block information to the surface nodes of that block.
-- `nlist::Vector{Vector{Int64}}`: Neighborhoodlist
-- `poly`: Polyhedra object 2D or 3D
-# Returns
-- `connections::Dict{Int64,Vector{Int64}}`: connections of the surface node with outer surface
-"""
-function filter_surface_connectivity(points::Union{Matrix{Float64},Matrix{Int64}}, nlist,
-                                     connections, poly)
-    msg = true
-    for iID in eachindex(points[:, 1])
-        if !check_neighbor_position(poly, points, nlist[iID], msg)
-            delete!(connections, iID)
-        end
-    end
-    return connections
 end
 
 function compute_contact_pairs(datamanager::Module, cm::String, contact_params::Dict)
@@ -100,8 +31,8 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
 
     # node ids to create the geometry for checking if master ids are inside
     slave_block_nodes = datamanager.get_contact_block_ids(contact_params["Slave Block ID"])
-    poly = polyhedron(vrep(all_positions[slave_block_nodes, :]), CDDLib.Library())
 
+    poly = compute_geometry(all_positions[slave_block_nodes, :])
     contact_nodes = datamanager.get_field("Contact Nodes")
     mapping = datamanager.get_exchange_id_to_local_id()
 
@@ -182,11 +113,4 @@ function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
                                  true)
 end
 
-function get_surface_normals(points::Union{Vector{Vector{Float64}},Vector{Vector{Int64}}})
-    return MixedMatHRep(hrep(polyhedron(vrep(points), CDDLib.Library()))).A
-end
-
-function get_surface_normals(poly)
-    return MixedMatHRep(hrep(poly)).A
-end
 end

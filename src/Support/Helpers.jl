@@ -100,18 +100,19 @@ This function is used for contact search purposes. The free surface nodes are us
 - `connections`: Tthe connections to the free surfaces. There can be more surface points than connections.
 """
 function compute_free_surface_nodes(points::Union{Matrix{Float64},Matrix{Int64}},
-                                    surface_ids::Vector{Int64},
-                                    poly, free_surfaces::Vector{Int64})
+                                    ids::Vector{Int64},
+                                    free_surfaces::Vector{Int64})
+    poly = compute_geometry(points[ids, :])
     normals, offset = get_surface_information(poly)
     free_nodes = Vector{Int64}([])
-    for pID in eachindex(points[:, 1])
+    for pID in ids
         for id in free_surfaces
             if length(offset) < id #TODO: check this condition
                 @error "Surface ID $id is not defined"
             end
             if isapprox(dot(normals[id, :], points[pID, :]) - offset[id], 0; atol = 1e-6)
                 # connections only to the free surfaces.
-                append!(free_nodes, surface_ids[pID])
+                append!(free_nodes, pID)
             end
         end
     end

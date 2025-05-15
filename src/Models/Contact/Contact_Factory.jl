@@ -13,7 +13,7 @@ using .Contact_search: init_contact_search, compute_geometry, get_surface_inform
 include("Penalty_model.jl")
 using .Penalty_model
 include("../../Support/Helpers.jl")
-using .Helpers: remove_ids, get_block_nodes
+using .Helpers: remove_ids, get_block_nodes, compute_free_surface_nodes, find_indices
 include("../../Core/Module_inclusion/set_Modules.jl")
 using .Set_modules: find_module_files, include_files
 global module_list = find_module_files(@__DIR__, "contact_model_name")
@@ -48,12 +48,26 @@ function init_contact_model(datamanager::Module, params)
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
     datamanager.set_contact_block_ids(mapping)
     # identify all surface which have no neighboring nodes
-    identify_free_contact_surfaces(datamanager, contact_blocks)
-
+    free_surfaces = identify_free_contact_surfaces(datamanager, contact_blocks)
+    points = datamanager.get_all_positions()
+    block_nodes = get_block_nodes(block_list, length(block_list)) # all ids
+    for (cm, contact_params) in pairs(params)
+        slave_id = contact_params["Slave Block ID"]
+        master_id = contact_params["Master Block ID"]
+        @info "Contact pair Master block $master_id - Slave block $slave_id"
+        compute_and_set_free_surface_nodes(datamanager, points,
+                                           block_nodes[slave_id],
+                                           free_surfaces[slave_id],
+                                           global_contact_ids,
+                                           slave_id)
+        compute_and_set_free_surface_nodes(datamanager, points,
+                                           block_nodes[master_id],
+                                           free_surfaces[master_id],
+                                           global_contact_ids,
+                                           master_id)
+    end
     # reduce the block_list
     datamanager.set_all_blocks(block_list[global_contact_ids])
-    points = datamanager.get_all_positions()
-
     datamanager.set_all_positions(points[global_contact_ids, :])
 
     shared_vol = datamanager.create_constant_free_size_field("Shared Volumes", Float64,
@@ -231,12 +245,30 @@ function identify_free_contact_surfaces(datamanager::Module, contact_blocks::Vec
             poly_slave = compute_geometry(all_positions[block_nodes[jID], :])
             normals_j, offsets_j = get_surface_information(poly_slave)
             # gives lists where all surfaces are included, which are equal
-            ids, jds = get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
+            ids = get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
             remove_ids(free_surfaces[iID], ids)
         end
     end
     # store these free surfaces
-    datamanager.set_free_contact_surfaces(free_surfaces)
+    return free_surfaces
+end
+"""
+    compute_and_set_free_surface_nodes(datamanager::Module, all_positions, id::Int64)
+
+Find the node ids of the free surfaces of the contact blocks and there connected surfaces. The node id is given in the exchange vector id.
+
+"""
+function compute_and_set_free_surface_nodes(datamanager::Module, all_positions, ids,
+                                            free_surfaces, global_ids::Vector{Int64},
+                                            block_id::Int64)
+    free_nodes = compute_free_surface_nodes(all_positions,
+                                            ids, free_surfaces)
+    # in this routine the complete not reduced exchange ids are used. Therefore, the reduced global_ids list must be used to give the free surface node list the correct ids.
+    sf = zeros(Int64, length(free_nodes))
+    for (id, fid) in enumerate(free_nodes)
+        sf[id] = find_indices(global_ids, fid)[1]
+    end
+    datamanager.set_free_surface_nodes(block_id, sf)
 end
 
 """
@@ -284,19 +316,17 @@ end
 ## TODO check if this method holds true for all surfaces, because some with same size in the same half plane might be identified as equal
 function get_double_surfs(normals_i, offsets_i, normals_j, offsets_j)
     ids = Vector{Int64}([])
-    jds = Vector{Int64}([])
     for iID in eachindex(offsets_i)
         for jID in eachindex(offsets_j)
             if isapprox(offsets_i[iID], offsets_j[jID], atol = 1e-6, rtol = 1e-5) &&
                isapprox(normals_i[iID, :], normals_j[jID, :];
                         atol = 1e-6)
                 append!(ids, iID)
-                append!(jds, jID)
                 break # only one surface pair can exist
             end
         end
     end
-    return ids, jds
+    return ids
 end
 function check_valid_contact_model(params, block_ids::Vector{Int64})
     # inverse master slave check
