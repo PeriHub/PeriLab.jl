@@ -161,16 +161,17 @@ function compute_contact_model(datamanager::Module,
     all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates", "NP1",
                                                all_positions)
     datamanager.set_all_positions(all_positions)
+    @timeit to "Contact search" begin
+        for (cm, block_contact_params) in pairs(contact_params)
+            datamanager.set_contact_dict(cm, Dict())
+            compute_contact_pairs(datamanager, cm, block_contact_params)
+            Penalty_model.compute_contact_model(datamanager, cm, block_contact_params,
+                                                compute_master_force_density,
+                                                compute_slave_force_density)
+        end
 
-    for (cm, block_contact_params) in pairs(contact_params)
-        datamanager.set_contact_dict(cm, Dict())
-        compute_contact_pairs(datamanager, cm, block_contact_params)
-        Penalty_model.compute_contact_model(datamanager, cm, block_contact_params,
-                                            compute_master_force_density,
-                                            compute_slave_force_density)
+        #compute_contact()
     end
-
-    #compute_contact()
     return datamanager
 end
 
