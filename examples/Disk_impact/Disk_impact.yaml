@@ -5,86 +5,88 @@
 # Model inspired by the [peridigm](https://github.com/peridigm/peridigm) example.
 
 PeriLab:
-
-#     Description
-#       Simulation of an elastic sphere impacting a brittle elastic disk.
-#       A critical stretch bond failure law is applied to the disk.
-#
-#     Units are SI
-#       mass          kg
-#       length        m
-#       time          s
-#       density       kg/m^3
-#       force         N
-#       pressure      Pa
-#       velocity      m/s
-#       acceleration  m/s^2
-#       energy        J
+  #     Description
+  #       Simulation of an elastic sphere impacting a brittle elastic disk.
+  #       A critical stretch bond failure law is applied to the disk.
+  #
+  #     Units are SI
+  #       mass          kg
+  #       length        m
+  #       time          s
+  #       density       kg/m^3
+  #       force         N
+  #       pressure      Pa
+  #       velocity      m/s
+  #       acceleration  m/s^2
+  #       energy        J
 
   Discretization:
-      Type: "Exodus"
-      Input Mesh File: "disk_impact.g"
+    Type: "Exodus"
+    Input Mesh File: "disk_impact.g"
 
   Models:
     Material Models:
       Disk Material:
-          Material Model: "PD Solid Elastic"
-          Bulk Modulus: 14.90e9
-          Shear Modulus: 8.94e9
+        Material Model: "PD Solid Elastic"
+        Bulk Modulus: 14.90e9
+        Shear Modulus: 8.94e9
       Ball Material:
-          Material Model: "PD Solid Elastic"
-          Bulk Modulus: 160.00e9
-          Shear Modulus: 78.30e9
+        Material Model: "PD Solid Elastic"
+        Bulk Modulus: 160.00e9
+        Shear Modulus: 78.30e9
 
     Damage Models:
-        Disk Damage Model:
-            Damage Model: "Critical Stretch"
-            Critical Value: 0.0005
+      Disk Damage Model:
+        Damage Model: "Critical Stretch"
+        Critical Value: 0.0005
 
   Blocks:
-      Disk Block:
-          Block ID: 1
-          Material Model: "Disk Material"
-          Damage Model: "Disk Damage Model"
-          Horizon: 0.0031
-          Density: 2200.0
-      Ball Block:
-          Block ID: 2
-          Material Model: "Ball Material"
-          Horizon: 0.0031
-          Density: 7700.0
+    Disk Block:
+      Block ID: 1
+      Material Model: "Disk Material"
+      Damage Model: "Disk Damage Model"
+      Horizon: 0.0031
+      Density: 2200.0
+    Ball Block:
+      Block ID: 2
+      Material Model: "Ball Material"
+      Horizon: 0.0031
+      Density: 7700.0
 
   Contact:
     Contact_1:
       Master Block ID: 1
       Slave Block ID: 2
-      Contact Radius: 0.01
+      Contact Model:
+        Type: "Penalty"
+        Contact Radius: 0.002 # local search
+      Contact Radius: 0.002 # global search
       Contact Stiffness: 1.0e12
 
   Boundary Conditions:
-      Sphere Initial Velocity:
-          Variable: "Velocity"
-          Type: "Initial"
-          Node Set: "Set-1"
-          Coordinate: "z"
-          Value: "-100.0"
+    Sphere Initial Velocity:
+      Variable: "Velocity"
+      Type: "Initial"
+      Node Set: "Set-1"
+      Coordinate: "z"
+      Value: "-100.0"
 
   Solver:
-      Material Models: True
-      Damage Models: True
-      Initial Time: 0.0
-      Final Time: 0.0008
-      Verlet:
-          Safety Factor: 0.7
+    Material Models: True
+    Damage Models: True
+    Initial Time: 0.0
+    Final Time: 0.0004
+    Verlet:
+      Safety Factor: 0.7
 
   Outputs:
     Output_1:
-        Output Filename: "disk_impact"
-        Number of Output Steps: 100
-        Output Variables:
-            Displacements: true
-            Velocity: true
-            Forces: true
-            Damage: true
-            Number of Neighbors: True
-            Contact Nodes: True
+      Output Filename: "disk_impact"
+      Number of Output Steps: 200
+      Output Variables:
+        Displacements: true
+        Velocity: true
+        Forces: true
+        Damage: true
+        Number of Neighbors: True
+        Contact Nodes: True
