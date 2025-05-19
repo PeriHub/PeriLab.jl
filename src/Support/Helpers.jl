@@ -216,6 +216,7 @@ function get_nearest_neighbors(nodes,
     nhs = GridNeighborhoodSearch{dof}(search_radius = maximum(radius),
                                       n_points = length(nodes))
     initialize_grid!(nhs, neighbor_coordinates')
+    list_empty = true
 
     for iID in nodes
         neighbors = []
@@ -229,11 +230,12 @@ function get_nearest_neighbors(nodes,
                                                                                               L
             if i != j || diffent_lists
                 push!(neighbors, j)
+                list_empty = false
             end
         end
         neighborList[iID] = neighbors
     end
-    return neighborList
+    return neighborList, list_empty
 end
 
 function find_point_in_polygon(point, coor, topo)

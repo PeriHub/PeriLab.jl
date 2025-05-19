@@ -174,12 +174,14 @@ function compute_contact_model(datamanager::Module,
     @timeit to "Contact search" begin
         for (cm, block_contact_params) in pairs(contact_params)
             datamanager.set_contact_dict(cm, Dict())
-            compute_contact_pairs(datamanager, cm, block_contact_params)
+            @timeit to "compute_contact_pairs" compute_contact_pairs(datamanager, cm,
+                                                                     block_contact_params)
             mod = datamanager.get_model_module(block_contact_params["Contact Model"]["Type"])
-            datamanager = mod.compute_contact_model(datamanager, cm,
-                                                    block_contact_params["Contact Model"],
-                                                    compute_master_force_density,
-                                                    compute_slave_force_density)
+            @timeit to "compute_contact_model" datamanager = mod.compute_contact_model(datamanager,
+                                                                                       cm,
+                                                                                       block_contact_params["Contact Model"],
+                                                                                       compute_master_force_density,
+                                                                                       compute_slave_force_density)
         end
 
         #compute_contact()

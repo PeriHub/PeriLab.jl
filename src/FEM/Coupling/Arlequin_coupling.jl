@@ -76,13 +76,14 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
     rho = datamanager.get_field("Density")
     @info "Create Coupling Matrix"
     for (coupling_node, coupling_element) in pairs(coupling_dict)
-        coupling_matrix[coupling_node, :, :] = compute_coupling_matrix(coordinates,
-                                                                       el_topology,
-                                                                       coupling_node,
-                                                                       coupling_element,
-                                                                       kappa,
-                                                                       p,
-                                                                       dof)
+        coupling_matrix[coupling_node, :,
+                        :] = compute_coupling_matrix(coordinates,
+                                                     el_topology,
+                                                     coupling_node,
+                                                     coupling_element,
+                                                     kappa,
+                                                     p,
+                                                     dof)
         rho[coupling_node] *= (1 - weight_coefficient)
     end
     datamanager.set_coupling_dict(coupling_dict)
@@ -144,8 +145,9 @@ function compute_coupling(datamanager::Module, fem_params::Dict)
         force_densities[coupling_node, :] .*= (1 - weight_coefficient)
         vol = vcat(volume[coupling_node], volume[el_topology[coupling_element, :]])
 
-        force_densities[topo, :] -= coupling_matrix[coupling_node, :, :] *
-                                    displacements[topo, :] ./ vol
+        force_densities[topo,
+                        :] -= coupling_matrix[coupling_node, :, :] *
+                              displacements[topo, :] ./ vol
 
         #force_densities[topo, :] +=
 
@@ -225,17 +227,19 @@ function find_point_in_elements(coordinates, el_topology, points_to_check, dof)
         fu = get_hexagon
         inside_check = find_point_in_hexagon
     end
-    el_centroid, search_radius = create_centroid_and_search_radius(coordinates, el_topology,
-                                                                   dof, fu)
+    el_centroid,
+    search_radius = create_centroid_and_search_radius(coordinates, el_topology,
+                                                      dof, fu)
     near_points = fill(Vector{Int64}([]), length(search_radius))
 
-    @views near_points = get_nearest_neighbors(1:length(search_radius),
-                                               dof,
-                                               el_centroid,
-                                               coordinates[points_to_check, :],
-                                               search_radius,
-                                               near_points,
-                                               true)
+    @views near_points,
+           _ = get_nearest_neighbors(1:length(search_radius),
+                                     dof,
+                                     el_centroid,
+                                     coordinates[points_to_check, :],
+                                     search_radius,
+                                     near_points,
+                                     true)
     # nearest neighbors -> centroid ID is equal to the element
 
     return find_point_in_element(el_topology,

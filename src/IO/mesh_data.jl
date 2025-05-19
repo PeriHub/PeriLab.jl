@@ -881,7 +881,7 @@ function load_and_evaluate_mesh(params::Dict,
         @info "External topology files was read."
     end
     dof::Int64 = set_dof(mesh)
-    @timeit to "neighborhoodlist" nlist=create_neighborhoodlist(mesh, params, dof)
+    @timeit to "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, params, dof)
     @debug "Finished init Neighborhoodlist"
     @timeit to "apply_bond_filters" nlist, nlist_filtered_ids,
                                     bond_norm=apply_bond_filters(nlist,

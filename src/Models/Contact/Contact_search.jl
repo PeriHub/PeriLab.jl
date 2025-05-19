@@ -24,7 +24,10 @@ end
 function compute_contact_pairs(datamanager::Module, cm::String, contact_params::Dict)
     all_positions = datamanager.get_all_positions()
     #-------------
-    near_points = find_potential_contact_pairs(datamanager, contact_params)
+    near_points, list_empty = find_potential_contact_pairs(datamanager, contact_params)
+    if list_empty
+        return
+    end
     potential_contact_dict = create_potential_contact_dict(near_points, datamanager,
                                                            contact_params)
     contact_dict = datamanager.get_contact_dict(cm)
