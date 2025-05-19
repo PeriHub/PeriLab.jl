@@ -11,7 +11,7 @@
 - convergence is low
 - gradients purely described by points
 
-## Equations in the Quasi-Static Materiwal Point Method Algorithm
+## Equations in the Quasi-Static Material Point Method Algorithm
 
 #### **1. Mapping Material Point Quantities to Grid Nodes**
 - **Nodal Mass**
