@@ -34,8 +34,11 @@ PeriLab:
     Contact_1:
       Master Block ID: 2
       Slave Block ID: 1
-      Contact Radius: 0.005
-      Contact Stiffness: 1e10
+      Search Radius: 0.005
+      Contact Model:
+        Type: "Penalty Contact"
+        Contact Radius: 0.005
+        Contact Stiffness: 1e10
   Blocks:
     block_1:
       Block ID: 1

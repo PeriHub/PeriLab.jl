@@ -21,27 +21,27 @@ using .Contact_search: init_contact_search,
     test_data_manager.set_free_surface_nodes(3, [2, 3])
     test_data_manager.set_all_positions(points)
     contact_params = Dict("Master Block ID" => 3, "Slave Block ID" => 1,
-                          "Contact Radius" => 0.01)
+                          "Search Radius" => 0.01)
     nearpoints = find_potential_contact_pairs(test_data_manager, contact_params)
     @test nearpoints == [[], []]
     @test create_potential_contact_dict(nearpoints, test_data_manager, contact_params) ==
           Dict{Int64,Vector{Int64}}()
 
     contact_params = Dict("Master Block ID" => 3, "Slave Block ID" => 1,
-                          "Contact Radius" => 2)
+                          "Search Radius" => 2)
     nearpoints = find_potential_contact_pairs(test_data_manager, contact_params)
     @test nearpoints == [[2], []]
     @test create_potential_contact_dict(nearpoints, test_data_manager, contact_params) ==
           Dict{Int64,Vector{Int64}}(2 => [4])
 
     contact_params = Dict("Master Block ID" => 3, "Slave Block ID" => 1,
-                          "Contact Radius" => 4)
+                          "Search Radius" => 4)
     nearpoints = find_potential_contact_pairs(test_data_manager, contact_params)
     @test nearpoints == [[1, 2], [2]]
     @test create_potential_contact_dict(nearpoints, test_data_manager, contact_params) ==
           Dict{Int64,Vector{Int64}}(2 => [1, 4], 3 => [4])
     contact_params = Dict("Master Block ID" => 3, "Slave Block ID" => 1,
-                          "Contact Radius" => 8)
+                          "Search Radius" => 8)
     nearpoints = find_potential_contact_pairs(test_data_manager, contact_params)
     @test nearpoints == [[1, 2, 3], [1, 2, 3]]
     @test create_potential_contact_dict(nearpoints, test_data_manager, contact_params) ==

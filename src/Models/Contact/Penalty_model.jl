@@ -20,6 +20,7 @@ function init_contact_model(datamanager, params)
         @warn "No ''Contact Stiffness'' has been defined. It is set to 1e8."
         params["Contact Stiffness"] = 1e8
     end
+    return datamanager
 end
 
 function compute_contact_model(datamanager, cm, params, compute_master_force_density,
@@ -46,6 +47,7 @@ function compute_contact_model(datamanager, cm, params, compute_master_force_den
                                         normal)
         end
     end
+    return datamanager
 end
 
 end

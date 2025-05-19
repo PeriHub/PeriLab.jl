@@ -55,7 +55,7 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
             normal = compute_distance_and_normals(all_positions[master_node, :],
                                                   all_positions[id, :])
             # TODO preallocation, e.g. max number of contact nodes -> size depended
-            if contact_params["Contact Radius"] < abs(distance)
+            if contact_params["Search Radius"] < abs(distance)
                 continue
             end
             contact_nodes[mapping[id]] = 4
@@ -108,7 +108,7 @@ function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
                                  dof,
                                  all_positions[master_nodes, :],
                                  all_positions[slave_nodes, :],
-                                 contact_params["Contact Radius"],
+                                 contact_params["Search Radius"],
                                  near_points,
                                  true)
 end
