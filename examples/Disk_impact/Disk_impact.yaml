@@ -57,11 +57,11 @@ PeriLab:
     Contact_1:
       Master Block ID: 1
       Slave Block ID: 2
+      Search Radius: 0.002 # global search
       Contact Model:
-        Type: "Penalty"
+        Type: "Penalty Contact"
         Contact Radius: 0.002 # local search
-      Contact Radius: 0.002 # global search
-      Contact Stiffness: 1.0e12
+        Contact Stiffness: 1.0e12
 
   Boundary Conditions:
     Sphere Initial Velocity:

@@ -875,16 +875,29 @@ global expected_structure = Dict("PeriLab" => [
                                                                                        ],
                                                                                        "Slave Block ID" => [
                                                                                            Int64,
-                                                                                           false
+                                                                                           true
                                                                                        ],
-                                                                                       "Contact Radius" => [
+                                                                                       "Search Radius" => [
                                                                                            Union{Float64,
                                                                                                  Int64},
                                                                                            true
                                                                                        ],
-                                                                                       "Contact Stiffness" => [
-                                                                                           Union{Float64,
-                                                                                                 Int64},
+                                                                                       "Contact Model" => [
+                                                                                           Dict{Any,
+                                                                                                Any}("Type" => [
+                                                                                                         String,
+                                                                                                         true
+                                                                                                     ],
+                                                                                                     "Contact Radius" => [
+                                                                                                         Union{Float64,
+                                                                                                               Int64},
+                                                                                                         true
+                                                                                                     ],
+                                                                                                     "Contact Stiffness" => [
+                                                                                                         Union{Float64,
+                                                                                                               Int64},
+                                                                                                         true
+                                                                                                     ]),
                                                                                            true
                                                                                        ]),
                                                                          true

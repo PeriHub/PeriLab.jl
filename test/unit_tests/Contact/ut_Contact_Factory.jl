@@ -28,10 +28,10 @@ using .Contact_Factory: check_valid_contact_model, get_all_contact_blocks
     block_id[2] = 2
     @test !check_valid_contact_model(contact_params, block_id)
     contact_params = Dict("cm" => Dict("Master Block ID" => 1, "Slave Block ID" => 2,
-                                       "Contact Radius" => 0.0))
+                                       "Search Radius" => 0.0))
     @test !check_valid_contact_model(contact_params, block_id)
     contact_params = Dict("cm" => Dict("Master Block ID" => 1, "Slave Block ID" => 2,
-                                       "Contact Radius" => -20.0))
+                                       "Search Radius" => -20.0))
     @test !check_valid_contact_model(contact_params, block_id)
 end
 

@@ -83,7 +83,17 @@ function init_contact_model(datamanager::Module, params)
                                                 shared_horizon)
     for (cm, contact_params) in pairs(params)
         init_contact_search(datamanager, contact_params, cm)
-        Penalty_model.init_contact_model(datamanager, contact_params)
+
+        mod = Set_modules.create_module_specifics(contact_params["Contact Model"]["Type"],
+                                                  module_list,
+                                                  "contact_model_name")
+        if isnothing(mod)
+            @error "No contact model of type " * contact_params["Contact Model"]["Type"] *
+                   " exists."
+            return nothing
+        end
+        datamanager.set_model_module(contact_params["Contact Model"]["Type"], mod)
+        datamanager = mod.init_contact_model(datamanager, contact_params["Contact Model"])
     end
 
     @info "Finish Init Contact Model"
@@ -165,9 +175,11 @@ function compute_contact_model(datamanager::Module,
         for (cm, block_contact_params) in pairs(contact_params)
             datamanager.set_contact_dict(cm, Dict())
             compute_contact_pairs(datamanager, cm, block_contact_params)
-            Penalty_model.compute_contact_model(datamanager, cm, block_contact_params,
-                                                compute_master_force_density,
-                                                compute_slave_force_density)
+            mod = datamanager.get_model_module(block_contact_params["Contact Model"]["Type"])
+            datamanager = mod.compute_contact_model(datamanager, cm,
+                                                    block_contact_params["Contact Model"],
+                                                    compute_master_force_density,
+                                                    compute_slave_force_density)
         end
 
         #compute_contact()
@@ -362,12 +374,12 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
             @error "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
             return false
         end
-        if !haskey(contact_params, "Contact Radius")
-            @error "Contact model needs a ''Contact Radius''."
+        if !haskey(contact_params, "Search Radius")
+            @error "Contact model needs a ''Search Radius''."
             return false
         end
-        if contact_params["Contact Radius"] <= 0
-            @error "''Contact Radius'' must be greater than zero."
+        if contact_params["Search Radius"] <= 0
+            @error "''Search Radius'' must be greater than zero."
             return false
         end
     end
