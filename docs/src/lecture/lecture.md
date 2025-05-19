@@ -13,8 +13,8 @@ In past decades non-local field theories were developed and utilized to capture 
 - [Lecture 1](https://cwillberg.github.io/Lectures/pd_01)
 - [Seminar 1: Trusses and structure of matrices](@ref "Seminar 1: Trusses and structure of matrices")
 - [Seminar 2: Material point method and solver](@ref "Seminar 2: Material point method and solver")
-- Seminar 3: Fracture and Convergence
-- Seminar 4: From bond-based to state-based I (Theory)
+- [Seminar 3: Convergence and fracture](@ref "Seminar 3: Convergence and fracture")
+- [Seminar 4: From bond-based to state-based I (Theory)](@ref "Seminar 4: From bond-based to state-based I (Theory)")
 - Seminar 5: From bond-based to state-based II (Application)
 - Seminar 6: Contact and parallization
 - Seminar 7: Multi-physics
