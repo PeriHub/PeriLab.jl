@@ -24,7 +24,7 @@ using .Contact_search: init_contact_search,
                           "Search Radius" => 0.01)
     nearpoints, list_empty = find_potential_contact_pairs(test_data_manager, contact_params)
     @test nearpoints == [[], []]
-    @test list_empty = true
+    @test list_empty == true
     @test create_potential_contact_dict(nearpoints, test_data_manager, contact_params) ==
           Dict{Int64,Vector{Int64}}()
 
@@ -32,7 +32,7 @@ using .Contact_search: init_contact_search,
                           "Search Radius" => 2)
     nearpoints, list_empty = find_potential_contact_pairs(test_data_manager, contact_params)
     @test nearpoints == [[2], []]
-    @test list_empty = false
+    @test list_empty == false
     @test create_potential_contact_dict(nearpoints, test_data_manager, contact_params) ==
           Dict{Int64,Vector{Int64}}(2 => [4])
 
@@ -40,14 +40,14 @@ using .Contact_search: init_contact_search,
                           "Search Radius" => 4)
     nearpoints, list_empty = find_potential_contact_pairs(test_data_manager, contact_params)
     @test nearpoints == [[1, 2], [2]]
-    @test list_empty = false
+    @test list_empty == false
     @test create_potential_contact_dict(nearpoints, test_data_manager, contact_params) ==
           Dict{Int64,Vector{Int64}}(2 => [1, 4], 3 => [4])
     contact_params = Dict("Master Block ID" => 3, "Slave Block ID" => 1,
                           "Search Radius" => 8)
     nearpoints, list_empty = find_potential_contact_pairs(test_data_manager, contact_params)
     @test nearpoints == [[1, 2, 3], [1, 2, 3]]
-    @test list_empty = false
+    @test list_empty == false
     @test create_potential_contact_dict(nearpoints, test_data_manager, contact_params) ==
           Dict{Int64,Vector{Int64}}(2 => [1, 4, 5], 3 => [1, 4, 5])
 end
