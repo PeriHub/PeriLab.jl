@@ -4,23 +4,26 @@
 For FEM an error estimation is given bei [Zienkiewicz2013](@cite)
 
 $$e=Ch^p$$
-- $e$ - error
-- $h$ - mesh size ($h<1$)
-- $C$ - constant
-- $p$ - polynomial order
+- $e$ error
+- $h$ mesh size ($h<1$)
+- $C$ constant
+- $p$ polynomial order
 
 
 $h\rightarrow 0$ leads to $e\rightarrow 0$; if analytical solutions exist
 
-!!! info "Limitions" If the fundamental assumptions of classical continuum mechanics are violated, e.g. second derivative of $u$ exists.
+!!! info "Limitions"
+    If the fundamental assumptions of classical continuum mechanics are violated, e.g. second derivative of $u$ exists.
 
 **Peridynamics**
 
 ![](../assets/bobaru2016_convergence.png)
+
 Figure taken from [BobaruF2016](@cite)
 
 
 ![](../assets/phase_velocity.png)
+
 Figure taken from [PernatiiA2024](@cite)
 
 
