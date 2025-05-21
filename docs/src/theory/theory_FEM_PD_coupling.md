@@ -45,3 +45,5 @@ $$\kappa\begin{bmatrix}
 \frac{\alpha}{V_{el}}\mathbf{F}_{FE}  \\
 (1-\alpha)\mathbf{b}_{PD}
 \end{bmatrix}$$
+
+The Integration is illustrated in [WillbergC2025](@cite).
