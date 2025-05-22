@@ -8,6 +8,17 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2025-05-21
+
+### Added
+
+- Contact search radius
+
+### Fixed
+
+- Logging for silent mode
+- Consisten Surface IDs #268
+
 ## [1.4.0] - 2025-05-14
 
 ### Added

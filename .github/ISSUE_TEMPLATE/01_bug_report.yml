@@ -16,7 +16,7 @@ body:
     attributes:
       label: PeriLab Version
       description: What version of PeriLab are you using?
-      placeholder: 1.1.4
+      placeholder: 1.4.2
     validations:
       required: true
   - type: input
@@ -24,7 +24,7 @@ body:
     attributes:
       label: Julia Version
       description: What version of Julia are you using?
-      placeholder: 1.10.2
+      placeholder: 1.11.5
     validations:
       required: true
   - type: input

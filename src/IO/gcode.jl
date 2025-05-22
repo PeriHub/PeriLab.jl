@@ -158,8 +158,8 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, s
     # end
 end
 
-function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict(),
-                    silent = false)
+function write_mesh(gcode_file, find_min_max, discretization,
+                    silent = false, pd_mesh = Dict())
 
     # create any data object
     # it will be passed as a second parameter to your callbacks
@@ -538,7 +538,7 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     pd_mesh["point_diff"] = zeros(2)
 
     @info "Writing mesh"
-    write_mesh(gcode_file, false, discretization, pd_mesh)
+    write_mesh(gcode_file, false, discretization, silent, pd_mesh)
 
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
     @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
