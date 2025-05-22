@@ -138,8 +138,8 @@ function K_stiff(np, c, omega, V)
             end
         end
     end
-    K[np, :] = 0
-    K[:, np] = 0
+    K[np, :] .= 0
+    K[:, np] .= 0
     K[np, np] = 1
     return K
 end
@@ -150,9 +150,10 @@ L = 1
 np = 8
 nn = 2
 delta = 1
+u = zeros(np)
 u[1]=0.125
 omega=ones(np, np)
-u = zeros(np)
+
 
 ##
 c=zeros(np)
@@ -165,6 +166,7 @@ K_d = K_stiff(np, c, omega, V)
 omega[2,1] = 0
 K_dsym = K_stiff(np, c, omega, V)
 omega[1,3] = 0
+omega[3,1] = 0
 K_full_dam = K_stiff(np, c, omega, V)
 
 ## Damage
