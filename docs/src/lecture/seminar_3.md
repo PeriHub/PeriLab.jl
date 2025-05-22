@@ -4,10 +4,12 @@
 For FEM an error estimation is given bei [Zienkiewicz2013](@cite)
 
 $$e=Ch^p$$
-- $e$ error
-- $h$ mesh size ($h<1$)
-- $C$ constant
-- $p$ polynomial order
+| Parameter | Defintion|
+|--|--|
+|$e$| error|
+|$h$| mesh size ($h<1$)|
+|$C$| constant|
+|$p$| polynomial order|
 
 
 $h\rightarrow 0$ leads to $e\rightarrow 0$; if analytical solutions exist
