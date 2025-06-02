@@ -5,23 +5,26 @@ The correspondence formulation is a non-ordinary state-based formulation provide
 
 The non-local deformation gradient is defined as
 
-$$\underline{\mathbf{F}}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{Y}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV \cdot \underline{\mathbf{K}}^{-1}$$
+$$\mathbf{F}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{Y}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV \cdot \mathbf{K}^{-1}$$
 
-with the shape tensor as
+with the positive definite shape tensor as
 
-$$\underline{\mathbf{K}}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV$$
+$$\mathbf{K}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV$$
+
+!!! info "Positive definiteness in numerics"
+    In numerical applications if bonds break the shape tensor is positive semi definite. $\det\mathbf{K}=0$ can occur and the inversion of the shape tensor won't work.
 
 Based on this definition strain measures can be created to calculate the Cauchy stresses
 
-$$\boldsymbol{\sigma} = f(\underline{\mathbf{F}}, t, T, ...)$$
+$$\boldsymbol{\sigma} = f(\mathbf{F}, t, T, ...)$$
 
 To get the force densities the First-Piola Kirchhoff stress tensor has to be calculated by
 
-$$\underline{\mathbf{P}} = \text{det}(\underline{\mathbf{F}})\boldsymbol{\sigma}\underline{\mathbf{F}}$$
+$$\mathbf{P} = \text{det}(\mathbf{F})\boldsymbol{\sigma}\mathbf{F}^{-T}$$
 
 and finaly the force density vector can be determined as
 
-$$\underline{\mathbf{T}} = \underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{P}}\underline{\mathbf{K}}^{-1}\mathbf{\xi}$$
+$$\underline{\mathbf{T}} = \underline{\omega}\langle \boldsymbol{\xi}\rangle\mathbf{P}\mathbf{K}^{-1}\mathbf{\xi}$$
 
 The 2D plane strain or plane stress models are represented in the Cauchy stresses by assuming that the strain in the third direction are zero or the stresses.
 
