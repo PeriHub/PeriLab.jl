@@ -3,10 +3,10 @@
     More details can be found here [WillbergC2019](@cite)
 
 For an isotropic Peridynamic solid and small deformations we can define $$\underline{x}=|\underline{\mathbf{X}}|$$ and  $$\underline{y}=|\underline{\mathbf{Y}}|$$
-and 
-$$\underline{e}=\underline{y}-\underline{x}=|\boldsymbol{\eta}|$$
+and
+$$\underline{e}=\underline{y}-\underline{x}$$
 
->$\underline{y}-\underline{x}\neq|\boldsymbol{\eta}|$ for the general case
+In general $|\underline{\mathbf{Y}}-\underline{\mathbf{X}}|\neq\underline{e}$.
 The force density scalar state can be defined as
 $$\underline{t}=|\underline{\mathbf{T}}|$$
 
@@ -22,16 +22,14 @@ $$\underline{t} = \frac{\omega\langle \boldsymbol{\xi}\rangle }{m_v}\left[3K \th
 
 with the decomposition in the devatoring and isotropic part of the strain
 
-$$\underline{e}^d\langle \boldsymbol{\xi}\rangle = \epsilon_{ij}^d\xi_i\frac{x_j}{|\boldsymbol{\xi}|}$$ 
+$$\underline{e}^d\langle \boldsymbol{\xi}\rangle = \epsilon_{ij}^d\xi_i\frac{x_j}{|\boldsymbol{\xi}|}$$
 
 and
 
-$$\underline{e}^i\langle \boldsymbol{\xi}\rangle = \epsilon_{ij}^i\xi_i\frac{x_j}{|\boldsymbol{\xi}|}$$ 
+$$\underline{e}^i\langle \boldsymbol{\xi}\rangle = \epsilon_{ij}^i\xi_i\frac{x_j}{|\boldsymbol{\xi}|}$$
 
 The force density can be determined as
 
 $$\underline{\mathbf{T}}=\underline{t}\frac{\underline{\mathbf{Y}}}{|\underline{\mathbf{Y}}|}$$
 
 For plane stress and plane strain the equations are taken form [BobaruF2016](@cite).
-
-TODO
