@@ -176,8 +176,12 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
                 global x = mesh_df[!, "x"][id]
                 global y = mesh_df[!, "y"][id]
                 global z = mesh_df[!, "z"][id]
-                if eval(Meta.parse(nodesets[entry]))
-                    push!(nodes, id)
+                try
+                    if eval(Meta.parse(nodesets[entry]))
+                        push!(nodes, id)
+                    end
+                catch UndefVarError
+                    @error "Failed to eval nodeset value: '$(nodesets[entry])', $UndefVarError"
                 end
             end
             nsets[entry] = nodes
