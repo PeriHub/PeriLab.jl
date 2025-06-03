@@ -23,9 +23,9 @@ function init_contact_model(datamanager, params)
     return datamanager
 end
 
-function compute_contact_model(datamanager, cm, params, compute_master_force_density,
+function compute_contact_model(datamanager, cg, params, compute_master_force_density,
                                compute_slave_force_density)
-    contact_dict = datamanager.get_contact_dict(cm)
+    contact_dict = datamanager.get_contact_dict(cg)
     contact_stiffness = params["Contact Stiffness"]
     contact_radius = params["Contact Radius"]
     #datamanager.get_symmetry() # TODO store in materials the information

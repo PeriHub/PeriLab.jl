@@ -32,13 +32,14 @@ PeriLab:
         Poisson's Ratio: 0.33
   Contact:
     Contact_1:
-      Master Block ID: 2
-      Slave Block ID: 1
-      Search Radius: 0.005
-      Contact Model:
-        Type: "Penalty Contact"
-        Contact Radius: 0.005
-        Contact Stiffness: 1e10
+      Type: "Penalty Contact"
+      Contact Radius: 0.005
+      Contact Stiffness: 1e10
+      Contact Groups:
+        Group 1:
+          Master Block ID: 2
+          Slave Block ID: 1
+          Search Radius: 0.005
   Blocks:
     block_1:
       Block ID: 1
