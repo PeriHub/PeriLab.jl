@@ -31,12 +31,54 @@ Figure taken from [SillingSA2007](@cite)
 
 ![](../assets/pd_states.png)
 
+$$\boldsymbol{\xi} = \mathbf{x}'-\mathbf{x}$$
+
 
 *Deformation vector state field*
 
-$$\boldsymbol{\xi} = \mathbf{x}'-\mathbf{x}$$
-
 $$\underline{\mathbf{Y}}[\mathbf{x},t]\langle \boldsymbol{\xi}\rangle=\mathbf{y}(\mathbf{x}+\boldsymbol{\xi},t)-\mathbf{y}(\mathbf{x},t)$$
+
+
+A material is *elastic* if there exists a differentiable scalar valued
+function $W(·) : \mathcal{V} \rightarrow \mathbb{R}$ such that
+
+$$\underline{\mathbf{T}}= \hat{\underline{\mathbf{T}}}(\underline{\mathbf{Y}})= \nabla W(\underline{\mathbf{Y}})$$
+
+$W$ is the strain energy density function.
+
+## Ordinary state-based
+
+Ordinary and elastic means
+- It is mobile
+- There exists a scalar-valued function $w$
+$$W(\underline{\mathbf{Y}})= w(\underline{y})\qquad\text{and}\qquad \underline{y}=|\underline{\mathbf{Y}}$$
+- For this $w$
+$$\underline{t}(\underline{y})= \nabla w(\underline{y})$$
+
+## PD solid elastic
+
+Concept uses *Lamé coefficients*
+$$\boldsymbol{\sigma} = 2G\boldsymbol{\varepsilon} + K \; \operatorname{tr}(\boldsymbol{\varepsilon}) I$$
+
+$$\underline{e}\langle\boldsymbol{\xi}\rangle=|\mathbf{F}\boldsymbol{\xi}| - |\boldsymbol{\xi}|=\varepsilon_{ij}\frac{\xi_i\xi_j}{|\boldsymbol{\xi}|}$$
+
+$$\varepsilon_{ij}=\frac12(u_{i,j}+u_{j,i})$$
+
+$$\underline{e}^d\langle\boldsymbol{\xi}\rangle=\varepsilon_{ij}^d\frac{\xi_i\xi_j}{|\boldsymbol{\xi}|}$$
+$$W=\frac{\alpha}{2}\int_{\mathcal{H}}\underline{\omega}\langle\boldsymbol{\xi}\rangle(\underline{e}^d\langle\boldsymbol{\xi}\rangle)^2dV_{\boldsymbol{\xi}}$$
+
+
+under assumption of a spherical non-local domain.
+
+$$W = \frac{\alpha m}{15}\varepsilon_{ij}^d\varepsilon_{ij}^d$$
+
+compared with the strain energy density of the classical model.
+
+$$\Omega=G\varepsilon_{ij}^d\varepsilon_{ij}^d$$
+
+$$\alpha=\frac{15G}{m}$$
+
+---
 
 $$\underline{x}=|\underline{\mathbf{X}}|=|\boldsymbol{\xi}|\quad\underline{y}=|\underline{\mathbf{Y}}|$$
 
@@ -53,7 +95,7 @@ $$m_V = \int_{\mathcal{H}} \underline{\omega}\langle \boldsymbol{\xi}\rangle \un
 
 $$\theta = \frac{3}{m_V} = \int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle \underline{x} \underline{e}\langle \boldsymbol{\xi}\rangle dV$$
 
-$$\underline{t} = \frac{\omega\langle \boldsymbol{\xi}\rangle }{m_v}\left[3K \theta \underline{x} + 15G \underline{e}^d  \right]$$
+$$\underline{t} = \frac{\omega\langle \boldsymbol{\xi}\rangle }{m_V}\left[3K \theta \underline{x} + 15G \underline{e}^d  \right]$$
 
 *Decomposition in the devatoring and isotropic part of the strain*
 
@@ -69,17 +111,17 @@ $$\underline{\mathbf{T}}=\underline{t}\frac{\underline{\mathbf{Y}}}{|\underline{
 
 
 ## Correspondence
-$$\underline{\mathbf{F}}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{Y}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV \cdot \underline{\mathbf{K}}^{-1}$$
+$$\mathbf{F}=\int_{\mathcal{H}}(\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{Y}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV )\cdot \mathbf{K}^{-1}$$
 
 
-$$\underline{\mathbf{K}}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV$$
+$$\mathbf{K}=\int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV$$
 
-$$\boldsymbol{\sigma} = f(\underline{\mathbf{F}}, t, T, ...)$$
+$$\boldsymbol{\sigma} = f(\mathbf{F}, t, T, ...)$$
 
-$$\underline{\mathbf{P}} = \text{det}(\underline{\mathbf{F}})\boldsymbol{\sigma}\underline{\mathbf{F}}$$
+$$\mathbf{P} = \text{det}(\mathbf{F})\boldsymbol{\sigma}\mathbf{F}^{-T}$$
 
 
-$$\underline{\mathbf{T}} = \underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{P}}\underline{\mathbf{K}}^{-1}\mathbf{\xi}$$
+$$\underline{\mathbf{T}} = \underline{\omega}\langle \boldsymbol{\xi}\rangle\mathbf{P}\mathbf{K}^{-1}\mathbf{\xi}$$
 
 
 ## Zero-energy modes

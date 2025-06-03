@@ -18,7 +18,7 @@ The dilatation is given as
 
 $$\theta = \frac{3}{m_V} = \int_{\mathcal{H}}\underline{\omega}\langle \boldsymbol{\xi}\rangle \underline{x} \underline{e}\langle \boldsymbol{\xi}\rangle dV$$
 
-$$\underline{t} = \frac{\omega\langle \boldsymbol{\xi}\rangle }{m_v}\left[3K \theta \underline{x} + 15G \underline{e}^d  \right]$$
+$$\underline{t} = \frac{\omega\langle \boldsymbol{\xi}\rangle }{m_V}\left[3K \theta \underline{x} + 15G \underline{e}^d  \right]$$
 
 with the decomposition in the devatoring and isotropic part of the strain
 
