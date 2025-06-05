@@ -5,4 +5,5 @@
 folder_name = basename(@__FILE__)[1:(end - 3)]
 cd("fullscale_tests/" * folder_name) do
     run_perilab("aniso_damage", 1, true, folder_name)
+    run_perilab("aniso_damage_mesh", 1, true, folder_name)
 end

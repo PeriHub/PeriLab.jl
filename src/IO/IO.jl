@@ -381,12 +381,6 @@ Initialize orientations.
 - `datamanager::Module`: The datamanager
 """
 function init_orientations(datamanager::Module)
-    if "Angles" in datamanager.get_all_field_keys()
-        datamanager.set_rotation(true)
-    end
-    if "Element Angles" in datamanager.get_all_field_keys()
-        datamanager.set_element_rotation(true)
-    end
     rotation::Bool = datamanager.get_rotation()
     element_rotation::Bool = datamanager.get_element_rotation()
 
