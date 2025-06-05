@@ -184,3 +184,26 @@ println("Non-Constant deformation gradient in non-local domain")
 def_grad(x,y)
 
 ```
+
+## Properties of $\mathbf{K}$ and $\mathbf{F}$
+
+```julia
+using LinearAlgebra
+x = [1 0;0 1;0 -1; -1 0; 1 1; -1 -1]
+K = x'*x
+
+display(K'-K)
+display(rank(K))
+
+y = [1.1 0;0 1.0;0 -1; -1 0; 1 1; -1 -1]
+
+F = y'*x / K
+
+display(F'-F)
+display(rank(F))
+
+strain = 0.5*(F'*F - I)
+display(strain'-strain)
+display(rank(strain))
+
+```
