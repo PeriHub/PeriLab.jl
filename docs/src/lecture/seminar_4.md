@@ -111,6 +111,14 @@ $$\underline{\mathbf{T}}=\underline{t}\frac{\underline{\mathbf{Y}}}{|\underline{
 
 
 ## Correspondence
+
+$$\underline{\mathbf{Y}}\langle \boldsymbol{\xi}\rangle=\mathbf{F}\boldsymbol{\xi}$$
+
+Then the peridynamic constitutive model corresponds to the classical constitutive
+model at $\mathbf{F}$ [SillingSA2007](@cite).
+
+
+
 $$\mathbf{F}=\int_{\mathcal{H}}(\underline{\omega}\langle \boldsymbol{\xi}\rangle\underline{\mathbf{Y}}\langle \boldsymbol{\xi}\rangle\otimes\underline{\mathbf{X}}\langle \boldsymbol{\xi}\rangle dV )\cdot \mathbf{K}^{-1}$$
 
 
