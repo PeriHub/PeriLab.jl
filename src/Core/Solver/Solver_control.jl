@@ -187,15 +187,27 @@ Sets the density of the nodes in the dictionary.
 - `block_nodes::Dict`: A dictionary mapping block IDs to collections of nodes
 """
 function set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
-    rotation = false
+    mesh_angles=false
+    if "Angles" in datamanager.get_all_field_keys()
+        datamanager.set_rotation(true)
+        mesh_angles=true
+    end
+    if "Element Angles" in datamanager.get_all_field_keys()
+        datamanager.set_element_rotation(true)
+    end
+
+    block_rotation = false
     dof = datamanager.get_dof()
     for block in eachindex(block_nodes)
         if get_angles(params, block, dof) !== nothing
-            rotation = true
+            block_rotation = true
             break
         end
     end
-    if rotation
+    if block_rotation
+        if mesh_angles
+            @warn "Angles defined in mesh will be overwritten by block angles"
+        end
         datamanager.set_rotation(true)
         angles = datamanager.create_constant_node_field("Angles", Float64, dof)
 

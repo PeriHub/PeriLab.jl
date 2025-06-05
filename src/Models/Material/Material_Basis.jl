@@ -129,7 +129,10 @@ Returns the elastic moduli of the material.
 """
 function get_all_elastic_moduli(datamanager::Module,
                                 parameter::Union{Dict{Any,Any},Dict{String,Any}})
-    if haskey(parameter, "Computed")
+    state_factor_defined = haskey(parameter, "State Factor ID")
+
+    if haskey(parameter, "Computed") &&
+       !(state_factor_defined && datamanager.has_key("State Variables"))
         if parameter["Computed"]
             return nothing
         end
@@ -143,8 +146,6 @@ function get_all_elastic_moduli(datamanager::Module,
     youngs_field = datamanager.has_key("Young's_Modulus")
     poissons_field = datamanager.has_key("Poisson's_Ratio")
     shear_field = datamanager.has_key("Shear_Modulus")
-
-    state_factor_defined = haskey(parameter, "State Factor ID")
 
     any_field_allocated = bulk_field | youngs_field | poissons_field | shear_field |
                           state_factor_defined
