@@ -89,14 +89,14 @@ using LinearAlgebra
 E = 1
 V = 1
 L = 1
-np = 8
-nn = 2
+np = 4
+nn = np-1
 delta = 1
 omega=ones(np, np)
 ##
 c=zeros(np)
 c .= 2*E/delta^2
-c[4]=1.5 .*c[4]
+#c[4]=1.5 .*c[4]
 K=zeros(np,np)
 for iID in 1:np
   for jID in -nn:nn
@@ -107,7 +107,7 @@ for iID in 1:np
     end
   end
 end
-
+eigvals(K)
 display(K)
 rank(K)
 eigvals(K)
