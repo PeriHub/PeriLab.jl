@@ -869,33 +869,37 @@ global expected_structure = Dict("PeriLab" => [
                                                    ],
                                                    "Contact" => [
                                                        Dict{Any,Any}("Any" => [
-                                                                         Dict{Any,Any}("Master Block ID" => [
-                                                                                           Int64,
+                                                                         Dict{Any,Any}("Type" => [
+                                                                                           String,
                                                                                            true
                                                                                        ],
-                                                                                       "Slave Block ID" => [
-                                                                                           Int64,
-                                                                                           true
-                                                                                       ],
-                                                                                       "Search Radius" => [
+                                                                                       "Contact Radius" => [
                                                                                            Union{Float64,
                                                                                                  Int64},
                                                                                            true
                                                                                        ],
-                                                                                       "Contact Model" => [
+                                                                                       "Contact Stiffness" => [
+                                                                                           Union{Float64,
+                                                                                                 Int64},
+                                                                                           true
+                                                                                       ],
+                                                                                       "Contact Groups" => [
                                                                                            Dict{Any,
-                                                                                                Any}("Type" => [
-                                                                                                         String,
-                                                                                                         true
-                                                                                                     ],
-                                                                                                     "Contact Radius" => [
-                                                                                                         Union{Float64,
-                                                                                                               Int64},
-                                                                                                         true
-                                                                                                     ],
-                                                                                                     "Contact Stiffness" => [
-                                                                                                         Union{Float64,
-                                                                                                               Int64},
+                                                                                                Any}("Any" => [
+                                                                                                         Dict{Any,
+                                                                                                              Any}("Master Block ID" => [
+                                                                                                                       Int64,
+                                                                                                                       true
+                                                                                                                   ],
+                                                                                                                   "Slave Block ID" => [
+                                                                                                                       Int64,
+                                                                                                                       true
+                                                                                                                   ],
+                                                                                                                   "Search Radius" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       true
+                                                                                                                   ]),
                                                                                                          true
                                                                                                      ]),
                                                                                            true

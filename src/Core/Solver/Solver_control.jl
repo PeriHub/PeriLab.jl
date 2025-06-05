@@ -86,14 +86,21 @@ function init(params::Dict,
                     get_solver_params(params, step_id)
     solver_options["Models"] = get_model_options(solver_params)
     solver_options["All Models"] = get_model_options(solver_params)
+    solver_options["Calculation"] = get_calculation_options(solver_params)
     if !isnothing(step_id)
         for step in 1:datamanager.get_max_step()
+            step_solver_params = get_solver_params(params, step)
             append!(solver_options["All Models"],
-                    get_model_options(get_solver_params(params, step)))
+                    get_model_options(step_solver_params))
+            calc_options = get_calculation_options(step_solver_params)
+            for key in keys(calc_options)
+                if calc_options[key]
+                    solver_options["Calculation"][key] = true
+                end
+            end
         end
         solver_options["All Models"] = unique(solver_options["All Models"])
     end
-    solver_options["Calculation"] = get_calculation_options(solver_params)
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     for iblock in eachindex(block_nodes)
         datamanager = Influence_function.init_influence_function(block_nodes[iblock],
@@ -102,7 +109,7 @@ function init(params::Dict,
     end
     datamanager.create_bond_field("Bond Damage", Float64, 1, 1)
     @debug "Read properties"
-    read_properties(params, datamanager, "Material" in solver_options["Models"])
+    read_properties(params, datamanager, "Material" in solver_options["All Models"])
     @debug "Init models"
     @timeit to "init_models" datamanager=Model_Factory.init_models(params,
                                                                    datamanager,

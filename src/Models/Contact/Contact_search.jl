@@ -21,7 +21,7 @@ function init_contact_search(datamanager, contact_params, cm)
     return datamanager
 end
 
-function compute_contact_pairs(datamanager::Module, cm::String, contact_params::Dict)
+function compute_contact_pairs(datamanager::Module, cg::String, contact_params::Dict)
     all_positions = datamanager.get_all_positions()
     #-------------
     near_points, list_empty = find_potential_contact_pairs(datamanager, contact_params)
@@ -30,7 +30,7 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
     end
     potential_contact_dict = create_potential_contact_dict(near_points, datamanager,
                                                            contact_params)
-    contact_dict = datamanager.get_contact_dict(cm)
+    contact_dict = datamanager.get_contact_dict(cg)
 
     # node ids to create the geometry for checking if master ids are inside
     slave_block_nodes = datamanager.get_contact_block_ids(contact_params["Slave Block ID"])
@@ -68,7 +68,7 @@ function compute_contact_pairs(datamanager::Module, cm::String, contact_params::
             append!(contact_dict[master_node]["Distances"], distance)
         end
     end
-    datamanager.set_contact_dict(cm, contact_dict)
+    datamanager.set_contact_dict(cg, contact_dict)
 end
 
 function create_potential_contact_dict(near_points, datamanager, contact_params)

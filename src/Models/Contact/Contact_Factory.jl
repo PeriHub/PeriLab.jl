@@ -51,20 +51,22 @@ function init_contact_model(datamanager::Module, params)
     free_surfaces = identify_free_contact_surfaces(datamanager, contact_blocks)
     points = datamanager.get_all_positions()
     block_nodes = get_block_nodes(block_list, length(block_list)) # all ids
-    for (cm, contact_params) in pairs(params)
-        slave_id = contact_params["Slave Block ID"]
-        master_id = contact_params["Master Block ID"]
-        @info "Contact pair Master block $master_id - Slave block $slave_id"
-        compute_and_set_free_surface_nodes(datamanager, points,
-                                           block_nodes[slave_id],
-                                           free_surfaces[slave_id],
-                                           global_contact_ids,
-                                           slave_id)
-        compute_and_set_free_surface_nodes(datamanager, points,
-                                           block_nodes[master_id],
-                                           free_surfaces[master_id],
-                                           global_contact_ids,
-                                           master_id)
+    for contact_model in keys(params)
+        for (cg, contact_params) in pairs(params[contact_model]["Contact Groups"])
+            slave_id = contact_params["Slave Block ID"]
+            master_id = contact_params["Master Block ID"]
+            @info "Contact pair Master block $master_id - Slave block $slave_id"
+            compute_and_set_free_surface_nodes(datamanager, points,
+                                               block_nodes[slave_id],
+                                               free_surfaces[slave_id],
+                                               global_contact_ids,
+                                               slave_id)
+            compute_and_set_free_surface_nodes(datamanager, points,
+                                               block_nodes[master_id],
+                                               free_surfaces[master_id],
+                                               global_contact_ids,
+                                               master_id)
+        end
     end
     # reduce the block_list
     datamanager.set_all_blocks(block_list[global_contact_ids])
@@ -84,16 +86,16 @@ function init_contact_model(datamanager::Module, params)
     for (cm, contact_params) in pairs(params)
         init_contact_search(datamanager, contact_params, cm)
 
-        mod = Set_modules.create_module_specifics(contact_params["Contact Model"]["Type"],
+        mod = Set_modules.create_module_specifics(contact_params["Type"],
                                                   module_list,
                                                   "contact_model_name")
         if isnothing(mod)
-            @error "No contact model of type " * contact_params["Contact Model"]["Type"] *
+            @error "No contact model of type " * contact_params["Type"] *
                    " exists."
             return nothing
         end
-        datamanager.set_model_module(contact_params["Contact Model"]["Type"], mod)
-        datamanager = mod.init_contact_model(datamanager, contact_params["Contact Model"])
+        datamanager.set_model_module(contact_params["Type"], mod)
+        datamanager = mod.init_contact_model(datamanager, contact_params)
     end
 
     @info "Finish Init Contact Model"
@@ -139,9 +141,11 @@ end
 
 function get_all_contact_blocks(params)
     contact_blocks = Vector{Int64}([])
-    for contact_params in values(params)
-        append!(contact_blocks, contact_params["Master Block ID"])
-        append!(contact_blocks, contact_params["Slave Block ID"])
+    for contact_model in keys(params)
+        for contact_groups in values(params[contact_model]["Contact Groups"])
+            append!(contact_blocks, contact_groups["Master Block ID"])
+            append!(contact_blocks, contact_groups["Slave Block ID"])
+        end
     end
     return Vector{Int64}(sort(unique(contact_blocks)))
 end
@@ -173,15 +177,17 @@ function compute_contact_model(datamanager::Module,
     datamanager.set_all_positions(all_positions)
     @timeit to "Contact search" begin
         for (cm, block_contact_params) in pairs(contact_params)
-            datamanager.set_contact_dict(cm, Dict())
-            @timeit to "compute_contact_pairs" compute_contact_pairs(datamanager, cm,
-                                                                     block_contact_params)
-            mod = datamanager.get_model_module(block_contact_params["Contact Model"]["Type"])
-            @timeit to "compute_contact_model" datamanager = mod.compute_contact_model(datamanager,
-                                                                                       cm,
-                                                                                       block_contact_params["Contact Model"],
-                                                                                       compute_master_force_density,
-                                                                                       compute_slave_force_density)
+            mod = datamanager.get_model_module(block_contact_params["Type"])
+            for (cg, block_contact_group) in pairs(block_contact_params["Contact Groups"])
+                datamanager.set_contact_dict(cg, Dict())
+                @timeit to "compute_contact_pairs" compute_contact_pairs(datamanager, cg,
+                                                                         block_contact_group)
+                @timeit to "compute_contact_model" datamanager = mod.compute_contact_model(datamanager,
+                                                                                           cg,
+                                                                                           block_contact_params,
+                                                                                           compute_master_force_density,
+                                                                                           compute_slave_force_density)
+            end
         end
 
         #compute_contact()
@@ -347,42 +353,44 @@ function check_valid_contact_model(params, block_ids::Vector{Int64})
     # inverse master slave check
     # tuple liste bauen und dann die neuen invers checken
     check_dict = Dict{Int64,Int64}()
+    for contact_model in keys(params)
+        for contact_groups in values(params[contact_model]["Contact Groups"])
+            if !haskey(contact_groups, "Master Block ID")
+                @error "Contact model needs a ''Master''"
+                return false
+            end
+            if !haskey(contact_groups, "Slave Block ID")
+                @error "Contact model needs a ''Slave''"
+                return false
+            end
+            if contact_groups["Master Block ID"] == contact_groups["Slave Block ID"]
+                @error "Contact master and slave are equal. Self contact is not implemented yet."
+                return false
+            end
 
-    for contact_params in values(params)
-        if !haskey(contact_params, "Master Block ID")
-            @error "Contact model needs a ''Master''"
-            return false
-        end
-        if !haskey(contact_params, "Slave Block ID")
-            @error "Contact model needs a ''Slave''"
-            return false
-        end
-        if contact_params["Master Block ID"] == contact_params["Slave Block ID"]
-            @error "Contact master and slave are equal. Self contact is not implemented yet."
-            return false
-        end
-
-        if !(contact_params["Master Block ID"] in block_ids)
-            @error "Block defintion in master does not exist."
-            return false
-        end
-        if !(contact_params["Slave Block ID"] in block_ids)
-            @error "Block defintion in slave does not exist."
-            return false
-        end
-        check_dict[contact_params["Master Block ID"]] = contact_params["Slave Block ID"]
-        if haskey(check_dict, contact_params["Slave Block ID"]) &&
-           check_dict[contact_params["Slave Block ID"]] == contact_params["Master Block ID"]
-            @error "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
-            return false
-        end
-        if !haskey(contact_params, "Search Radius")
-            @error "Contact model needs a ''Search Radius''."
-            return false
-        end
-        if contact_params["Search Radius"] <= 0
-            @error "''Search Radius'' must be greater than zero."
-            return false
+            if !(contact_groups["Master Block ID"] in block_ids)
+                @error "Block defintion in master does not exist."
+                return false
+            end
+            if !(contact_groups["Slave Block ID"] in block_ids)
+                @error "Block defintion in slave does not exist."
+                return false
+            end
+            check_dict[contact_groups["Master Block ID"]] = contact_groups["Slave Block ID"]
+            if haskey(check_dict, contact_groups["Slave Block ID"]) &&
+               check_dict[contact_groups["Slave Block ID"]] ==
+               contact_groups["Master Block ID"]
+                @error "Master and Slave should be defined in an inverse way, e.g. Master = 1, Slave = 2 in model 1 and Master = 2, Slave = 1 in model 2."
+                return false
+            end
+            if !haskey(contact_groups, "Search Radius")
+                @error "Contact model needs a ''Search Radius''."
+                return false
+            end
+            if contact_groups["Search Radius"] <= 0
+                @error "''Search Radius'' must be greater than zero."
+                return false
+            end
         end
     end
     return true

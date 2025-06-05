@@ -243,7 +243,7 @@ function get_all_elastic_moduli(datamanager::Module,
         G = E ./ (2 .+ 2 .* nu)
     end
 
-    if state_factor_defined
+    if state_factor_defined && datamanager.has_key("State Variables")
         state_factor = datamanager.get_field("State Variables")[:,
                                                                 parameter["State Factor ID"]]
         K .*= state_factor
