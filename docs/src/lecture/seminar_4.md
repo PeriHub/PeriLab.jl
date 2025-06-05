@@ -138,3 +138,41 @@ $$\underline{\mathbf{z}}\langle \boldsymbol{\xi}\rangle= \underline{\mathbf{Y}}\
 
 
 $$\mathbf{C}_1=\mathbf{C}\cdot\cdot\mathbf{K}^{-1}$$
+
+
+```julia
+
+x = [1,2,3,4,5]
+
+a = [1,2,3,4,5]
+
+integral_a = sum(a)
+
+b=[1,2,3.1,3.9,5]
+
+integral_b = sum(b)
+
+display(integral_a - integral_b)
+```
+
+```julia
+
+function def_grad(x,y)
+    K = sum(x)
+    F = sum(y)/K
+    display("F*x $(F.*x')")
+    display("z $(F.*x' - y)")
+end
+
+x = [1,2,3,4]
+y = [0.5 1. 1.5 2]
+
+println("Constant deformation gradient in non-local domain")
+def_grad(x,y)
+
+
+y = [0.5 0.9 1.6 2]
+println("Non-Constant deformation gradient in non-local domain")
+def_grad(x,y)
+
+```

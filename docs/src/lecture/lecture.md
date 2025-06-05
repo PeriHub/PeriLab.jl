@@ -15,7 +15,7 @@ In past decades non-local field theories were developed and utilized to capture 
 - [Seminar 2: Material point method and solver](@ref "Seminar 2: Material point method and solver")
 - [Seminar 3: Convergence and fracture](@ref "Seminar 3: Convergence and fracture")
 - [Seminar 4: From bond-based to state-based I (Theory)](@ref "Seminar 4: From bond-based to state-based I (Theory)")
-- Seminar 5: From bond-based to state-based II (Application)
+- [Seminar 5: From bond-based to state-based II (Application)](@ref "Seminar 5: From bond-based to state-based II (Application)")
 - Seminar 6: Contact and parallization
 - Seminar 7: Multi-physics
 - Seminar 8: Additive manufacturing
