@@ -102,12 +102,12 @@ Check if a bond intersects a rectangle plane.
 # Returns
 - `Bool`: True if the point is inside the rectangle, False otherwise.
 """
-function bond_intersect_rectangle_plane(x::Vector{Float64},
-                                        lower_left_corner::Vector{Float64},
-                                        bottom_unit_vector::Vector{Float64},
-                                        normal::Vector{Float64},
-                                        side_length::Float64,
-                                        bottom_length::Float64)
+function bond_intersect_rectangle_plane(x::Vector{Real},
+                                        lower_left_corner::Vector{Real},
+                                        bottom_unit_vector::Vector{Real},
+                                        normal::Vector{Real},
+                                        side_length::Real,
+                                        bottom_length::Real)
     dr::Vector{Float64} = x - lower_left_corner
     bb::Float64 = dot(dr, bottom_unit_vector)
     if 0.0 <= bb && bb / bottom_length <= 1.0
@@ -172,8 +172,9 @@ function apply_bond_filters(nlist::Vector{Vector{Int64}},
             if filter["Type"] == "Disk"
                 filter_flag, normal = disk_filter(nnodes, data, filter, nlist, dof)
             elseif filter["Type"] == "Rectangular_Plane"
-                filter_flag, normal = rectangular_plane_filter(nnodes, data, filter, nlist,
-                                                               dof)
+                filter_flag,
+                normal = rectangular_plane_filter(nnodes, data, filter, nlist,
+                                                  dof)
             end
             for iID in 1:nnodes
                 if contact_enabled && any(x -> x == false, filter_flag[iID])
@@ -286,10 +287,11 @@ function rectangular_plane_filter(nnodes::Int64,
     for iID in 1:nnodes
         filter_flag[iID] = fill(true, length(nlist[iID]))
         for (jID, neighborID) in enumerate(nlist[iID])
-            intersect_inf_plane, x = bond_intersect_infinite_plane(data[:, iID],
-                                                                   data[:, neighborID],
-                                                                   lower_left_corner,
-                                                                   normal)
+            intersect_inf_plane,
+            x = bond_intersect_infinite_plane(data[:, iID],
+                                              data[:, neighborID],
+                                              lower_left_corner,
+                                              normal)
             bond_intersect = false
             if intersect_inf_plane
                 bond_intersect = bond_intersect_rectangle_plane(x,
