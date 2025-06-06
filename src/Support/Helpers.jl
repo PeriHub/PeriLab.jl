@@ -453,6 +453,19 @@ function mul_in_place!(C::Vector{Vector{T}},
         end
     end
 end
+function mul_in_place!(D::Vector{Vector{T}},
+                       A::Vector{Vector{T}},
+                       B::Vector{Vector{T}},
+                       C::T = 1.0) where {T<:Number}
+    # Check if dimensions match
+    @assert length(D) == length(A) == length(B)
+
+    @inbounds for i in eachindex(A)
+        @inbounds for j in eachindex(A[i])
+            D[i][j] = A[i][j] * B[i][j] * C
+        end
+    end
+end
 function sub_in_place!(C::Vector{Vector{T}},
                        A::Vector{Vector{T}},
                        B::Vector{Vector{T}}) where {T<:Number}

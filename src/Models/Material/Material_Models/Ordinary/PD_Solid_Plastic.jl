@@ -9,7 +9,7 @@ include("../../Material_Basis.jl")
 using .Material_Basis: get_symmetry
 include("./Ordinary.jl")
 include("../../../../Support/Helpers.jl")
-using .Helpers: add_in_place!
+using .Helpers: add_in_place!, mul_in_place!, sub_in_place!
 using .Ordinary: calculate_symmetry_params, get_bond_forces
 
 export fe_support
@@ -162,15 +162,16 @@ function compute_model(datamanager::Module,
                                            kappa = Ordinary.calculate_symmetry_params(symmetry,
                                                                                       shear_modulus,
                                                                                       bulk_modulus)
-    @timeit to "compute_deviatoric_force_state_norm" td_norm = compute_deviatoric_force_state_norm(nodes,
-                                                                                                   nlist,
-                                                                                                   alpha,
-                                                                                                   bond_force_deviatoric_part,
-                                                                                                   bond_damage,
-                                                                                                   omega,
-                                                                                                   volume,
-                                                                                                   deviatoric_plastic_extension_state,
-                                                                                                   td_norm)
+    @timeit to "compute_deviatoric_force_state_norm" compute_deviatoric_force_state_norm!(td_norm,
+                                                                                          nodes,
+                                                                                          nlist,
+                                                                                          alpha,
+                                                                                          bond_force_deviatoric_part,
+                                                                                          bond_damage,
+                                                                                          omega,
+                                                                                          volume,
+                                                                                          deviatoric_plastic_extension_state,
+                                                                                          temp)
     lambdaNP1 = copy(lambdaN)
 
     @timeit to "plastic" bond_force_deviatoric_part,
@@ -219,46 +220,58 @@ Compute the norm of the deviatoric force state for each node.
 - `td_norm::Vector{Float64}`: Vector containing the norm of the deviatoric force state for each node.
 """
 
-function compute_deviatoric_force_state_norm(nodes::Union{SubArray,Vector{Int64}},
-                                             nlist::Vector{Vector{Int64}},
-                                             alpha::Float64,
-                                             bond_force_deviatoric::Vector{Vector{Float64}},
-                                             bond_damage::Vector{Vector{Float64}},
-                                             omega::Vector{Vector{Float64}},
-                                             volume::Vector{Float64},
-                                             deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                                             td_norm::Vector{Float64})
+function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
+                                              nodes::Union{SubArray,Vector{Int64}},
+                                              nlist::Vector{Vector{Int64}},
+                                              alpha::Float64,
+                                              bond_force_deviatoric::Vector{Vector{Float64}},
+                                              bond_damage::Vector{Vector{Float64}},
+                                              omega::Vector{Vector{Float64}},
+                                              volume::Vector{Float64},
+                                              deviatoric_plastic_extension_state::Vector{Vector{Float64}},
+                                              temp_field)
     # not optimal allocation of memory, but not check of indices is needed
-
+    # for iID in nodes
+    # td_trial = bond_force_deviatoric[iID] -
+    #            alpha .* bond_damage[iID] .* omega[iID] .*
+    #            deviatoric_plastic_extension_state[iID]
+    # td_norm[iID] = sqrt(sum(td_trial .* td_trial .* volume[nlist[iID]]))
+    # end
+    mul_in_place!(temp_field, bond_damage, omega, alpha)
+    mul_in_place!(temp_field, temp_field, deviatoric_plastic_extension_state)
+    sub_in_place!(temp_field, bond_force_deviatoric, temp_field)
+    mul_in_place!(temp_field, temp_field, temp_field)
     for iID in nodes
-        td_trial = bond_force_deviatoric[iID] -
-                   alpha .* bond_damage[iID] .* omega[iID] .*
-                   deviatoric_plastic_extension_state[iID]
-        td_norm[iID] = sqrt(sum(td_trial .* td_trial .* volume[nlist[iID]]))
+        @views td_norm[iID] = sqrt(sum(temp_field[iID] .* volume[nlist[iID]]))
     end
-
-    return td_norm
 end
 
-function compute_deviatoric_force_state_norm(nodes::Union{SubArray,Vector{Int64}},
-                                             nlist::Vector{Vector{Int64}},
-                                             alpha::Vector{Float64},
-                                             bond_force_deviatoric::Vector{Vector{Float64}},
-                                             bond_damage::Vector{Vector{Float64}},
-                                             omega::Vector{Vector{Float64}},
-                                             volume::Vector{Float64},
-                                             deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                                             td_norm::Vector{Float64})
+function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
+                                              nodes::Union{SubArray,Vector{Int64}},
+                                              nlist::Vector{Vector{Int64}},
+                                              alpha::Vector{Float64},
+                                              bond_force_deviatoric::Vector{Vector{Float64}},
+                                              bond_damage::Vector{Vector{Float64}},
+                                              omega::Vector{Vector{Float64}},
+                                              volume::Vector{Float64},
+                                              deviatoric_plastic_extension_state::Vector{Vector{Float64}},
+                                              temp_field)
     # not optimal allocation of memory, but not check of indices is needed
 
+    # for iID in nodes
+    #     td_trial = bond_force_deviatoric[iID] -
+    #                alpha[iID] .* bond_damage[iID] .* omega[iID] .*
+    #                deviatoric_plastic_extension_state[iID]
+    #     td_norm[iID] = sqrt(sum(td_trial .* td_trial .* volume[nlist[iID]]))
+    # end
+    mul_in_place!(temp_field, bond_damage, omega)
+    mul_in_place!(temp_field, temp_field, alpha)
+    mul_in_place!(temp_field, temp_field, deviatoric_plastic_extension_state)
+    sub_in_place!(temp_field, bond_force_deviatoric, temp_field)
+    mul_in_place!(temp_field, temp_field, temp_field)
     for iID in nodes
-        td_trial = bond_force_deviatoric[iID] -
-                   alpha[iID] .* bond_damage[iID] .* omega[iID] .*
-                   deviatoric_plastic_extension_state[iID]
-        td_norm[iID] = sqrt(sum(td_trial .* td_trial .* volume[nlist[iID]]))
+        @views td_norm[iID] = sqrt(sum(temp_field[iID] .* volume[nlist[iID]]))
     end
-
-    return td_norm
 end
 
 """
