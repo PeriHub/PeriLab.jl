@@ -102,10 +102,12 @@ Check if a bond intersects a rectangle plane.
 # Returns
 - `Bool`: True if the point is inside the rectangle, False otherwise.
 """
-function bond_intersect_rectangle_plane(x::Vector{Real},
-                                        lower_left_corner::Vector{Real},
-                                        bottom_unit_vector::Vector{Real},
-                                        normal::Vector{Real},
+function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
+                                        lower_left_corner::Union{Vector{Float64},
+                                                                 Vector{Int64}},
+                                        bottom_unit_vector::Union{Vector{Float64},
+                                                                  Vector{Int64}},
+                                        normal::Union{Vector{Float64},Vector{Int64}},
                                         side_length::Real,
                                         bottom_length::Real)
     dr::Vector{Float64} = x - lower_left_corner
