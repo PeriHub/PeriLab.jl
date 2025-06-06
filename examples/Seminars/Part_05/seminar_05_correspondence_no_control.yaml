@@ -1,0 +1,75 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: seminar_05_ns1.txt
+      Node Set 2: seminar_05_ns2.txt
+    Type: Text File
+    Input Mesh File: seminar_05.txt
+  Models:
+    Material Models:
+      Test:
+        Material Model: Correspondence Elastic
+        Symmetry: isotropic plane stress
+        #Zero Energy Control: Global
+        Young's Modulus: 70e10
+        Poisson's Ratio: 0.3
+    Damage Models:
+      Damage_1:
+        Damage Model: Critical Energy
+        Critical Value: 5
+  Blocks:
+    block_1:
+      Block ID: 1
+      Material Model: Test
+      Damage Model: Damage_1
+      Density: 2000
+      Horizon: 0.001
+  Boundary Conditions:
+    BC_1:
+      Variable: Displacements
+      Node Set: Node Set 1
+      Coordinate: x
+      Value: 0
+      Type: Dirichlet
+    BC_2:
+      Variable: Displacements
+      Node Set: Node Set 1
+      Coordinate: y
+      Value: 0
+      Type: Dirichlet
+    BC_3:
+      Variable: Displacements
+      Coordinate: x
+      Node Set: Node Set 2
+      Value: -0.01*t
+      Type: Dirichlet
+    BC_4:
+      Variable: Displacements
+      Node Set: Node Set 2
+      Coordinate: y
+      Value: 0
+      Type: Dirichlet
+  Solver:
+    Damage Models: true
+    Final Time: 0.000002
+    Initial Time: 0.0
+    Material Models: true
+    Verlet:
+      Safety Factor: 0.95
+      Numerical Damping: 5.0e-06
+  Outputs:
+    Output1:
+      Output Filename: seminar_05_Corr_no_control
+      Output File Type: Exodus
+      Number of Output Steps: 40
+      Output Variables:
+        Displacements: True
+        Number of Neighbors: True
+        Forces: True
+        Damage: True
+        Strain: True
+        Cauchy Stress: True

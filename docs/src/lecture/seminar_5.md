@@ -1,5 +1,13 @@
 ## Seminar 5: From bond-based to state-based II (Application)
 
+Convergence of the different methods
+
+
+![](../assets/ECCOMAS_convergence.png)
+
+
+Figure taken from [RaedelM2017](@cite)
+
 ```yaml
 PeriLab:
   Discretization:
