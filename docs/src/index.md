@@ -46,6 +46,7 @@ quadrantChart
     PeriLab: [0.75, 0.8]
     EMU: [0.95, 0.1]
     PeriPy: [0.2, 0.7]
+    Peridynamics.jl: [0.7, 0.6]
     PeriPyDIC: [0.2, 0.6]
     LAMMPS: [0.3, 0.3]
     PeriFlakes: [0.35, 0.4]

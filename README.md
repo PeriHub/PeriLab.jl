@@ -57,7 +57,8 @@ Welcome to `PeriLab`, a powerful software solution designed for tackling Peridyn
 
 ## Documentation
 
-Explore the comprehensive [documentation](https://perihub.github.io/PeriLab.jl/) for `PeriLab`.
+Explore the comprehensive [documentation](https://perihub.github.io/PeriLab.jl/) for `PeriLab` and
+the seminar information for the first german Peridynamics course [Lecture Non-local structural mechanics and peridynamics](https://perihub.github.io/PeriLab.jl/dev/lecture/lecture/).
 
 ## Examples
 
@@ -223,7 +224,7 @@ $ julia --project=. src/main.jl examples/DCB/DCBmodel.yaml
 ## Questions
 For any questions or inquiries about PeriLab.jl, feel free to reach out to the authors via email.
 
-## Authors and acknowledgment
+## Authors
 <p>
 
 <a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.org/assets/vectors/orcid.logo.icon.svg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Prof. Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
@@ -273,30 +274,5 @@ url={https://doi.org/10.1016/j.softx.2024.101700}
 
 
 
-
 ## Acknowledgments
-
-<p align="center" style="font-size:0;"><!--
-  <!--
-  DFG      --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/dfg.jpg" height="120">
-</p>
-
-This project has benefited from funding by the [Deutsche
-Forschungsgemeinschaft](https://www.dfg.de/) (DFG, German Research Foundation)
-through the following grant ''Gekoppelte Peridynamik-Finite-Elemente-Simulationen zur Schädigungsanalyse von Faserverbundstrukturen''. <br/><br/>Grant number: [WI 4835/5-1](https://gepris.dfg.de/gepris/projekt/456427423)
-<p align="center" style="font-size:0;"><!--
-  SACHSEN  --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/sachsen.jpg" height="120">
-</p>
-
-[M-ERA.NET](https://www.m-era.net/) funded project ''Exploring Multi-Method Analysis of composite structures and joints under consideration of uncertainties engineering and processing (EMMA)''
-
-This measure is co-financed with tax funds on the basis of the budget passed by the [Saxon state parlament](https://www.landtag.sachsen.de/de). <br/><br/>Grant number: [3028223](https://www.m-era.net/materipedia/2020/emma).
-
-<p align="center" style="font-size:0;"><!--
-  HyTank  --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/hytank.jpg" height="120"><!--
-  -->
-</p>
-
-[Federal Ministry for Economic Affairs and Climate Action](https://www.bmwk.de/Navigation/DE/Home/home.html) funded project
-''Virtuelle Kennwertermittlung, Schadensprädiktion und Simulationsmethoden für geklebte Fügestellen eines LH2-Tanks in Faserverbundbauweise für die kommerzielle Luftfahrt (HYTANK)''.<br/><br/>
-Grant number: 20W2214G.
+Funding and acknowledgment infos can be found under [acknowledgments](ACKNOWLEDGEMENTS.md)
