@@ -65,11 +65,11 @@ PeriLab:
         Forces: True
 ```
 
-![Ordinary](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/Ordinary.jl)
-![PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/PD_Solid_Elastic.jl)
+[Ordinary](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/Ordinary.jl)
+[PD Solid Elastic](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/PD_Solid_Elastic.jl)
 
 
-Difference to PD Solid.
+**Difference to PD Solid.**
 
 ```yaml
 PeriLab:
@@ -98,3 +98,14 @@ PeriLab:
         Forces: True
         Cauchy Stress: True
 ```
+
+
+[Models for the seminar](https://github.com/PeriHub/PeriLab.jl/tree/main/examples/Seminars/Part_05)
+
+## Create you own model
+
+- create a mesh (block.jl is an example)
+- specify node lists for boundary conditions
+- define your yaml file
+- run your model
+- analyse it in [Paraview](https://www.paraview.org/)

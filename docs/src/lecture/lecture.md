@@ -16,7 +16,7 @@ In past decades non-local field theories were developed and utilized to capture 
 - [Seminar 3: Convergence and fracture](@ref "Seminar 3: Convergence and fracture")
 - [Seminar 4: From bond-based to state-based I (Theory)](@ref "Seminar 4: From bond-based to state-based I (Theory)")
 - [Seminar 5: From bond-based to state-based II (Application)](@ref "Seminar 5: From bond-based to state-based II (Application)")
-- Seminar 6: Contact and parallization
-- Seminar 7: Multi-physics
-- Seminar 8: Additive manufacturing
-- Seminar 9: PeriLab - Create your own model
+- [Seminar 6: Contact and parallization](@ref "Seminar 6: Contact and parallization")
+- [Seminar 7: Multi-physics](@ref "Seminar 7: Multi-physics")
+- [Seminar 8: Additive manufacturing](@ref "Seminar 8: Additive manufacturing")
+- [Seminar 9: PeriLab - Implement your own model](@ref "Seminar 9: PeriLab - Implement your own model")
