@@ -5,7 +5,7 @@
 module Penalty_model
 
 include("../../Support/Helpers.jl")
-import .Helpers: get_shared_horizon, dot
+import .Helpers: get_shared_horizon, dot, norm
 
 export contact_model_name
 export init_contact_model
