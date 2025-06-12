@@ -14,14 +14,11 @@ export compute_contact_pairs
 ## for one contact pair
 
 function init_contact_search(datamanager, contact_params, cm)
-
-    # global list
-    # do something with block nodes
-
     return datamanager
 end
 
-function compute_contact_pairs(datamanager::Module, cg::String, contact_params::Dict)
+function compute_contact_pairs(datamanager::Module, cg::String, contact_params::Dict,
+                               max_cont::Int64)
     all_positions = datamanager.get_all_positions()
     #-------------
     near_points, list_empty = find_potential_contact_pairs(datamanager, contact_params)
@@ -48,9 +45,12 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
             # if poly is destroyed, due to damages
             continue
         end
-
-        contact_dict[master_node] = Dict("Slaves" => [], "Normals" => [],
-                                         "Distances" => [])
+        dof = datamanager.get_dof()
+        nslave::Int64 = 0
+        contact_dict[master_node] = Dict("Slaves" => zeros(Int64, max_cont),
+                                         "Normals" => zeros(Float64, max_cont, dof),
+                                         "Distances" => zeros(Float64, max_cont),
+                                         "nSlaves" => 0)
         for id in near_ids
             contact_nodes[mapping[id]] = 2
             contact_nodes[mapping[master_node]] = 3
@@ -58,14 +58,22 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
             normal = compute_distance_and_normals(all_positions[master_node, :],
                                                   all_positions[id, :])
             # TODO preallocation, e.g. max number of contact nodes -> size depended
-            if contact_params["Search Radius"] < abs(distance)
+            if contact_params["Contact Radius"] < abs(distance)
                 continue
             end
+            nslave += 1
+            if nslave > max_cont
+                @warn "Maximum number of potential contact pairs $max_cont is reached. The rest of the nearest neighbors are skipped."
+                break
+            end
+            # for debugging
             contact_nodes[mapping[id]] = 4
             contact_nodes[mapping[master_node]] = 5
-            append!(contact_dict[master_node]["Slaves"], id)
-            append!(contact_dict[master_node]["Normals"], [normal])
-            append!(contact_dict[master_node]["Distances"], distance)
+
+            contact_dict[master_node]["nSlaves"] = nslave
+            contact_dict[master_node]["Slaves"][nslave] = id
+            contact_dict[master_node]["Normals"][nslave, :] = normal
+            contact_dict[master_node]["Distances"][nslave] = distance
         end
     end
     datamanager.set_contact_dict(cg, contact_dict)

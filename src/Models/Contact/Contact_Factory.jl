@@ -51,8 +51,12 @@ function init_contact_model(datamanager::Module, params)
     free_surfaces = identify_free_contact_surfaces(datamanager, contact_blocks)
     points = datamanager.get_all_positions()
     block_nodes = get_block_nodes(block_list, length(block_list)) # all ids
+
     for contact_model in keys(params)
         for (cg, contact_params) in pairs(params[contact_model]["Contact Groups"])
+            if !haskey(contact_params, "Maximum Contact Pairs")
+                contact_params["Maximum Contact Pairs"] = 10
+            end
             slave_id = contact_params["Slave Block ID"]
             master_id = contact_params["Master Block ID"]
             @info "Contact pair Master block $master_id - Slave block $slave_id"
@@ -175,18 +179,23 @@ function compute_contact_model(datamanager::Module,
     all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates", "NP1",
                                                all_positions)
     datamanager.set_all_positions(all_positions)
+
     @timeit to "Contact search" begin
         for (cm, block_contact_params) in pairs(contact_params)
             mod = datamanager.get_model_module(block_contact_params["Type"])
             for (cg, block_contact_group) in pairs(block_contact_params["Contact Groups"])
+                # needed in search and in model evaluation
+                block_contact_group["Contact Radius"] = block_contact_params["Contact Radius"]
                 datamanager.set_contact_dict(cg, Dict())
-                @timeit to "compute_contact_pairs" compute_contact_pairs(datamanager, cg,
-                                                                         block_contact_group)
-                @timeit to "compute_contact_model" datamanager = mod.compute_contact_model(datamanager,
-                                                                                           cg,
-                                                                                           block_contact_params,
-                                                                                           compute_master_force_density,
-                                                                                           compute_slave_force_density)
+                @timeit to "compute_contact_pairs" compute_contact_pairs(datamanager,
+                                                                         cg,
+                                                                         block_contact_group,
+                                                                         block_contact_group["Maximum Contact Pairs"])
+                @timeit to "compute_contact_model" datamanager=mod.compute_contact_model(datamanager,
+                                                                                         cg,
+                                                                                         block_contact_params,
+                                                                                         compute_master_force_density,
+                                                                                         compute_slave_force_density)
             end
         end
 
