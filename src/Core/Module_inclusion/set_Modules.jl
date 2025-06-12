@@ -148,9 +148,9 @@ function create_module_specifics(name::Union{String,SubString},
                                  values::Tuple)
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * specifics["Name"] * "()"
-        if eval(Meta.parse(parse_statement)) == name
+        if Base.eval(@__MODULE__, Meta.parse(parse_statement)) == name
             parse_statement = m["Module Name"] * "." * specifics["Call Function"]
-            function_call = eval(Meta.parse(parse_statement))
+            function_call = Base.eval(@__MODULE__, Meta.parse(parse_statement))
             return function_call(values...)
         end
     end
@@ -166,9 +166,9 @@ function create_module_specifics(name::Union{String,SubString},
                                  specifics::Dict{String,String})
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * specifics["Name"] * "()"
-        if eval(Meta.parse(parse_statement)) == name
+        if Base.eval(@__MODULE__, Meta.parse(parse_statement)) == name
             parse_statement = m["Module Name"] * "." * specifics["Call Function"]
-            function_call = eval(Meta.parse(parse_statement))
+            function_call = Base.eval(@__MODULE__, Meta.parse(parse_statement))
             return function_call
         end
     end
@@ -181,9 +181,9 @@ function create_module_specifics(name::Union{String,SubString},
                                  get_model_name::String)
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * get_model_name * "()"
-        if eval(Meta.parse(parse_statement)) == name
+        if Base.eval(@__MODULE__, Meta.parse(parse_statement)) == name
             parse_statement = m["Module Name"]
-            module_call = eval(Meta.parse(parse_statement))
+            module_call = Base.eval(@__MODULE__, Meta.parse(parse_statement))
             return module_call
         end
     end
