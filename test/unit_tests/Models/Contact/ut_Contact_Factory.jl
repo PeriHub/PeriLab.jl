@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../src/Models/Contact/Contact_Factory.jl")
+include("../../../../src/Models/Contact/Contact_Factory.jl")
 # include("../../../../src/Core/Data_manager.jl")
 using Test
 using .Contact_Factory: check_valid_contact_model, get_all_contact_blocks
