@@ -126,10 +126,13 @@ MPI.Init()
             end
             @testset "Contact" begin
                 @testset "ut_Contact_Factory" begin
-                    include("unit_tests/Contact/ut_Contact_Factory.jl")
+                    include("unit_tests/Models/Contact/ut_Contact_Factory.jl")
                 end
                 @testset "ut_Contact_search" begin
-                    include("unit_tests/Contact/ut_Contact_search.jl")
+                    include("unit_tests/Models/Contact/ut_Contact_search.jl")
+                end
+                @testset "ut_Penalty_model" begin
+                    include("unit_tests/Models/Contact/ut_Penalty_model.jl")
                 end
             end
 
