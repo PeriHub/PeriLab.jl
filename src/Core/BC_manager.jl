@@ -332,28 +332,39 @@ function eval_bc!(field_values::Union{SubArray,Vector{Float64},Vector{Int64}},
     # reason for global
     # https://stackoverflow.com/questions/60105828/julia-local-variable-not-defined-in-expression-eval
     # the yaml input allows multiple types. But for further use this input has to be a string
-    bc = string(bc)
-    bc = clean_up(bc)
-    bc_value = Meta.parse(bc)
 
     if length(coordinates) == 0
         # @warn "Ignoring boundary condition $name.\n No nodes found, check Input Deck and or Node Sets."
         return
     end
 
-    global x = coordinates[:, 1]
-    global y = coordinates[:, 2]
-    global z = zeros(eltype(x), length(x))
-    global t = time
-    global st = step_time
-
+    bc = string(bc)
+    bc = clean_up(bc)
+    bc_value = Meta.parse(bc)
     if dof > 2
-        z = coordinates[:, 3]
+        func_args = [:x, :y, :z, :t, :st]
+        dynamic_func_expr = quote
+            ($(func_args...),) -> $bc_value
+        end
+        dynamic_bc_3D_func = Base.eval(@__MODULE__, dynamic_func_expr)
+
+        value = Base.invokelatest(dynamic_3D_bc_func,
+                                  (coordinates[:, 1], coordinates[:, 2], coordinates[:, 3],
+                                   time,
+                                   step_time)...)
+    else
+        func_args = [:x, :y, :t, :st]
+        dynamic_func_expr = quote
+            ($(func_args...),) -> $bc_value
+        end
+        dynamic_2D_bc_func = Base.eval(@__MODULE__, dynamic_func_expr)
+        value = Base.invokelatest(dynamic_2D_bc_func,
+                                  (coordinates[:, 1], coordinates[:, 2],
+                                   time,
+                                   step_time)...)
     end
 
-    value = eval(bc_value)
-
-    if isnothing(value) || (initial && t != 0.0)
+    if isnothing(value) || (initial && time != 0.0)
         return
     end
 
