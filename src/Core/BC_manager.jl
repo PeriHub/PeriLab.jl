@@ -340,7 +340,12 @@ function eval_bc!(field_values::Union{SubArray,Vector{Float64},Vector{Int64}},
 
     bc = string(bc)
     bc = clean_up(bc)
+    if dof < 2 && "z" in bc
+        @error "z is not valid in a 2D problem."
+        return nothing
+    end
     bc_value = Meta.parse(bc)
+
     if dof > 2
         func_args = [:x, :y, :z, :t, :st]
         dynamic_func_expr = quote
@@ -348,7 +353,7 @@ function eval_bc!(field_values::Union{SubArray,Vector{Float64},Vector{Int64}},
         end
         dynamic_bc_3D_func = Base.eval(@__MODULE__, dynamic_func_expr)
 
-        value = Base.invokelatest(dynamic_3D_bc_func,
+        value = Base.invokelatest(dynamic_bc_3D_func,
                                   (coordinates[:, 1], coordinates[:, 2], coordinates[:, 3],
                                    time,
                                    step_time)...)
