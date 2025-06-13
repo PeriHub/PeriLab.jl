@@ -52,17 +52,18 @@ PeriLab:
       Material Model: "Ball Material"
       Horizon: 0.0031
       Density: 7700.0
-
   Contact:
     Contact_1:
-      Master Block ID: 1
-      Slave Block ID: 2
-      Search Radius: 0.002 # global search
-      Contact Model:
-        Type: "Penalty Contact"
-        Contact Radius: 0.002 # local search
-        Contact Stiffness: 1.0e12
-
+      Type: "Penalty Contact"
+      Contact Radius: 0.000775
+      Contact Stiffness: 1e12
+      Contact Groups:
+        Group 1:
+          Maximum Contact Pairs: 50
+          Master Block ID: 1
+          Slave Block ID: 2
+          Search Radius: 0.01
+          Global Search Frequency: 100
   Boundary Conditions:
     Sphere Initial Velocity:
       Variable: "Velocity"
