@@ -42,7 +42,6 @@ function init_contact_model(datamanager::Module, params)
     # all following functions deal with the local contact position id.
     global_contact_ids = identify_contact_block_surface_nodes(datamanager, contact_blocks)
     contact_nodes = datamanager.create_constant_node_field("Contact Nodes", Int64, 1)
-    contact_nodes[global_contact_ids] .= 1
     block_list = datamanager.get_all_blocks()
     # give every block there surface ids
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
@@ -56,6 +55,9 @@ function init_contact_model(datamanager::Module, params)
         for (cg, contact_params) in pairs(params[contact_model]["Contact Groups"])
             if !haskey(contact_params, "Maximum Contact Pairs")
                 contact_params["Maximum Contact Pairs"] = 10
+            end
+            if !haskey(contact_params, "Global Search Frequency")
+                contact_params["Global Search Frequency"] = 1
             end
             slave_id = contact_params["Slave Block ID"]
             master_id = contact_params["Master Block ID"]
@@ -75,7 +77,7 @@ function init_contact_model(datamanager::Module, params)
     # reduce the block_list
     datamanager.set_all_blocks(block_list[global_contact_ids])
     datamanager.set_all_positions(points[global_contact_ids, :])
-
+    @debug points[global_contact_ids, :]
     shared_vol = datamanager.create_constant_free_size_field("Shared Volumes", Float64,
                                                              (length(global_contact_ids),
                                                               1))
@@ -187,6 +189,7 @@ function compute_contact_model(datamanager::Module,
                 # needed in search and in model evaluation
                 block_contact_group["Contact Radius"] = block_contact_params["Contact Radius"]
                 datamanager.set_contact_dict(cg, Dict())
+                #contact_params["Global Search Frequency"]
                 @timeit to "compute_contact_pairs" compute_contact_pairs(datamanager,
                                                                          cg,
                                                                          block_contact_group,
@@ -326,9 +329,7 @@ function synchronize_contact_points(datamanager::Module, what::String, step::Str
         return synch_vector
     end
     comm = datamanager.get_comm()
-    find_and_set_core_value_sum(comm, synch_vector)
-
-    return synch_vector
+    return find_and_set_core_value_sum(comm, synch_vector)
 end
 
 function get_local_ids(datamanager::Module)
