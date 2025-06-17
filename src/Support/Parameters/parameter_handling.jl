@@ -899,6 +899,14 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                                        Union{Float64,
                                                                                                                              Int64},
                                                                                                                        true
+                                                                                                                   ],
+                                                                                                                   "Global Search Frequency" => [
+                                                                                                                       Int64,
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Maximum Contact Pairs" => [
+                                                                                                                       Int64,
+                                                                                                                       false
                                                                                                                    ]),
                                                                                                          true
                                                                                                      ]),
