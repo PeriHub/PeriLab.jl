@@ -17,8 +17,8 @@ using .Contact_search: init_contact_search,
               0.17273 4.04840;
               2.74944 3.88023;
               6.44488 3.57078]
-    test_data_manager.set_free_surface_nodes(1, [1, 4, 5])
-    test_data_manager.set_free_surface_nodes(3, [2, 3])
+    test_data_manager.set_free_contact_nodes(1, [1, 4, 5])
+    test_data_manager.set_free_contact_nodes(3, [2, 3])
     test_data_manager.set_all_positions(points)
     contact_params = Dict("Master Block ID" => 3, "Slave Block ID" => 1,
                           "Search Radius" => 0.01)

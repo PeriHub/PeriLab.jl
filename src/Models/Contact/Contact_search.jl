@@ -91,9 +91,9 @@ end
 
 function create_potential_contact_dict(near_points, datamanager, contact_params)
     # exchange vector ids of the free contact blocks
-    # computed in function compute_and_set_free_surface_nodes
-    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master Block ID"])
-    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave Block ID"])
+    # computed in function compute_and_set_free_contact_nodes
+    master_nodes = datamanager.get_free_contact_nodes(contact_params["Master Block ID"])
+    slave_nodes = datamanager.get_free_contact_nodes(contact_params["Slave Block ID"])
 
     contact_dict = Dict{Int64,Vector{Int64}}()
     for (pID, neighbors) in enumerate(near_points)
@@ -120,8 +120,8 @@ function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
     all_positions = datamanager.get_all_positions()
     dof = datamanager.get_dof()
     # ids are exchange vector ids (''all position'' ids)
-    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master Block ID"])
-    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave Block ID"])
+    master_nodes = datamanager.get_free_contact_nodes(contact_params["Master Block ID"])
+    slave_nodes = datamanager.get_free_contact_nodes(contact_params["Slave Block ID"])
 
     nmaster = length(master_nodes)
     near_points = fill(Vector{Int64}([]), nmaster)

@@ -867,55 +867,62 @@ global expected_structure = Dict("PeriLab" => [
                                                                          false
                                                                      ])
                                                    ],
-                                                   "Contact" => [
-                                                       Dict{Any,Any}("Any" => [
-                                                                         Dict{Any,Any}("Type" => [
-                                                                                           String,
-                                                                                           true
-                                                                                       ],
-                                                                                       "Contact Radius" => [
-                                                                                           Union{Float64,
-                                                                                                 Int64},
-                                                                                           true
-                                                                                       ],
-                                                                                       "Contact Stiffness" => [
-                                                                                           Union{Float64,
-                                                                                                 Int64},
-                                                                                           true
-                                                                                       ],
-                                                                                       "Contact Groups" => [
-                                                                                           Dict{Any,
-                                                                                                Any}("Any" => [
-                                                                                                         Dict{Any,
-                                                                                                              Any}("Master Block ID" => [
-                                                                                                                       Int64,
-                                                                                                                       true
-                                                                                                                   ],
-                                                                                                                   "Slave Block ID" => [
-                                                                                                                       Int64,
-                                                                                                                       true
-                                                                                                                   ],
-                                                                                                                   "Search Radius" => [
-                                                                                                                       Union{Float64,
-                                                                                                                             Int64},
-                                                                                                                       true
-                                                                                                                   ],
-                                                                                                                   "Global Search Frequency" => [
-                                                                                                                       Int64,
-                                                                                                                       false
-                                                                                                                   ],
-                                                                                                                   "Maximum Contact Pairs" => [
-                                                                                                                       Int64,
-                                                                                                                       false
-                                                                                                                   ]),
-                                                                                                         true
-                                                                                                     ]),
-                                                                                           true
-                                                                                       ]),
-                                                                         true
-                                                                     ]),
-                                                       false
-                                                   ],
+                                                   # "Contact" => [
+                                                   #     Dict{Any,Any}("Globals" => [
+                                                   #                       Dict{Any,Any}("Only Surface Contact Nodes" => [
+                                                   #                                         Bool,
+                                                   #                                         false
+                                                   #                                     ]),
+                                                   #                       false
+                                                   #                   ],
+                                                   #                   "Any" => [
+                                                   #                       Dict{Any,Any}("Type" => [
+                                                   #                                         String,
+                                                   #                                         true
+                                                   #                                     ],
+                                                   #                                     "Contact Radius" => [
+                                                   #                                         Union{Float64,
+                                                   #                                               Int64},
+                                                   #                                         true
+                                                   #                                     ],
+                                                   #                                     "Contact Stiffness" => [
+                                                   #                                         Union{Float64,
+                                                   #                                               Int64},
+                                                   #                                         true
+                                                   #                                     ],
+                                                   #                                     "Contact Groups" => [
+                                                   #                                         Dict{Any,
+                                                   #                                              Any}("Any" => [
+                                                   #                                                       Dict{Any,
+                                                   #                                                            Any}("Master Block ID" => [
+                                                   #                                                                     Int64,
+                                                   #                                                                     true
+                                                   #                                                                 ],
+                                                   #                                                                 "Slave Block ID" => [
+                                                   #                                                                     Int64,
+                                                   #                                                                     true
+                                                   #                                                                 ],
+                                                   #                                                                 "Search Radius" => [
+                                                   #                                                                     Union{Float64,
+                                                   #                                                                           Int64},
+                                                   #                                                                     true
+                                                   #                                                                 ],
+                                                   #                                                                 "Global Search Frequency" => [
+                                                   #                                                                     Int64,
+                                                   #                                                                     false
+                                                   #                                                                 ],
+                                                   #                                                                 "Maximum Contact Pairs" => [
+                                                   #                                                                     Int64,
+                                                   #                                                                     false
+                                                   #                                                                 ]),
+                                                   #                                                       true
+                                                   #                                                   ]),
+                                                   #                                         true
+                                                   #                                     ]),
+                                                   #                       true
+                                                   #                   ]),
+                                                   #     false
+                                                   # ],
                                                    "Surface Correction" => [
                                                        Dict{Any,Any}("Type" => [
                                                                          String,
