@@ -52,12 +52,13 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
                                          "Distances" => zeros(Float64, max_cont),
                                          "nSlaves" => 0)
         for id in near_ids
-            contact_nodes[mapping[id]] = 2
-            contact_nodes[mapping[master_node]] = 3
+            #contact_nodes[mapping[id]] = 2
+            #contact_nodes[mapping[master_node]] = 3
             distance,
             normal = compute_distance_and_normals(all_positions[master_node, :],
                                                   all_positions[id, :])
             # TODO preallocation, e.g. max number of contact nodes -> size depended
+            # @info "$(contact_params["Contact Radius"]), $distance, $(all_positions[master_node, :]),  $(all_positions[id, :]))"
             if contact_params["Contact Radius"] < abs(distance)
                 continue
             end
@@ -67,8 +68,12 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
                 break
             end
             # for debugging
-            contact_nodes[mapping[id]] = 4
-            contact_nodes[mapping[master_node]] = 5
+            if id in keys(mapping)
+                contact_nodes[mapping[id]] = 4
+            end
+            if master_node in keys(mapping)
+                contact_nodes[mapping[master_node]] = 5
+            end
 
             contact_dict[master_node]["nSlaves"] = nslave
             contact_dict[master_node]["Slaves"][nslave] = id
