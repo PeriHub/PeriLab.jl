@@ -591,7 +591,9 @@ function run_solver(solver_options::Dict{Any,Any},
                 end
                 if !damage_init && max_damage > 0
                     damage_init = true
-                    set_multiline_postfix(iter, "Damage initated!")
+                    if rank == 0 && !silent
+                        set_multiline_postfix(iter, "Damage initated!")
+                    end
                 end
             end
             @timeit to "write_results" result_files=write_results(result_files, time,
