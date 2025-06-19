@@ -52,6 +52,12 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
                                          "Distances" => zeros(Float64, max_cont),
                                          "nSlaves" => 0)
         for id in near_ids
+            if contact_nodes[mapping[id]] == 1
+                contact_nodes[mapping[id]] = 2
+            end
+            if contact_nodes[mapping[master_node]] == 1
+                contact_nodes[mapping[master_node]] = 3
+            end
             distance,
             normal = compute_distance_and_normals(all_positions[master_node, :],
                                                   all_positions[id, :])
