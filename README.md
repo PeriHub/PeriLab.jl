@@ -56,25 +56,25 @@ Welcome to `PeriLab`, a powerful software solution designed for tackling Peridyn
 </p>
 
 ## Overview
-- [Features](@ref "Features ⭐")
-- [Documentation](@ref "Documenation")
-   - [Examples](@ref "Examples")
-- [Installation](@ref "Installation")
-   - [Getting Started with `PeriLab`](@ref "Getting Started with `PeriLab`")
-   - [Parallel Processing with PeriLab (MPI)](@ref "Parallel Processing with PeriLab (MPI)")
-   - [Installing with Docker](@ref "Installing with Docker 🐳")
-   - [Web Framework PeriHub](@ref "Web Framework PeriHub 🖥️")
-   - [PeriLab on PeriHub](@ref "PeriLab on PeriHub")
-- [What's Next](@ref "What's Next")
-- [Contributing](@ref "Contributing")
-   - [Development](@ref "Development")
-- [Questions](@ref "Questions")
-- [How to cite](@ref "How to cite")
-- [Acknowledgments](@ref "Acknowledgments")
-   - [Partners](@ref "Partners")
-   - [Authors](@ref "Authors")
-- [Project status](@ref "Project status")
-## Features ⭐
+- [Features](#features)
+- [Documentation](#documentation)
+   - [Examples](#examples)
+- [Installation](#installation)
+   - [Getting Started with `PeriLab`](#getting-started-with-perilab)
+   - [Parallel Processing with PeriLab (MPI)](#parallel-processing-with-perilab-mpi)
+   - [Installing with Docker](#installing-with-docker)
+   - [Web Framework PeriHub](#web-framework-perihub)
+   - [PeriLab on PeriHub](#perilab-on-perihub)
+- [What's Next](#whats-next)
+- [Contributing](#contributing)
+   - [Development](#development)
+- [Questions](#questions)
+- [How to cite](#how-to-cite)
+- [Acknowledgments](#acknowledgments)
+   - [Partners](#partners)
+   - [Authors](#authors)
+- [Project status](#project-status)
+## Features
 
 - 🚀 **Easy Installation**: PeriLab's straightforward installation process makes it accessible for researchers and engineers without extensive computational expertise.
 
@@ -120,7 +120,7 @@ Welcome to `PeriLab`, a powerful software solution designed for tackling Peridyn
 ## Documentation
 
 Explore the comprehensive [documentation](https://perihub.github.io/PeriLab.jl/) for `PeriLab` and
-the seminar information for the first german Peridynamics course [Lecture Non-local structural mechanics and peridynamics](https://perihub.github.io/PeriLab.jl/dev/lecture/lecture/).
+the seminar information for the first German Peridynamics course [Lecture Non-local structural mechanics and peridynamics](https://perihub.github.io/PeriLab.jl/dev/lecture/lecture/).
 
 ### Examples
 
@@ -170,7 +170,7 @@ $ mpiexecjl -n 2 julia -e 'using PeriLab; PeriLab.main("examples/DCB/DCBmodel.ya
 
 >Note: For HPC configurations please refer to [here](https://juliaparallel.org/MPI.jl/stable/configuration/#configure_jll_binarys).
 
-### Installing with Docker 🐳
+### Installing with Docker
 
  To install PeriLab using the official Perihub/Perilab Docker image, follow these steps:
 
@@ -192,7 +192,7 @@ $ mpiexecjl -n 2 julia -e 'using PeriLab; PeriLab.main("examples/DCB/DCBmodel.ya
 
 Now, you've successfully installed PeriLab using the official Perihub/Perilab Docker image. You can start running your own peridynamic simulations within the container.
 
-### Web Framework `PeriHub` 🖥️
+### Web Framework `PeriHub`
 
 PeriLab is also included as a ready to use application in the [PeriHub](https://github.com/PeriHub/PeriHub) web framework.
 
@@ -206,7 +206,7 @@ Hit the __Start__ button and wait for the job to finish, the results will be ava
 
 >Note: The free tier on `JuliaHub` offers 20 hours of computational time per month.
 
-## What's Next? 🚀
+## What's Next?
 
 Here are some exciting tasks on our roadmap:
 
@@ -245,7 +245,7 @@ $ julia --project=. src/main.jl examples/DCB/DCBmodel.yaml
 ```
 
 ## Questions
-For any questions or inquiries about PeriLab.jl, feel free to reach out to the authors via email.
+For any questions or inquiries about PeriLab.jl, feel free to reach out to the authors via E-mail or open a [discussion](https://github.com/PeriHub/PeriLab.jl/discussions).
 
 
 ## How to cite
