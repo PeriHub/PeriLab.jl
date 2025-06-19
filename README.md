@@ -55,16 +55,26 @@ Welcome to `PeriLab`, a powerful software solution designed for tackling Peridyn
   PeriLab_additive      --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/PeriLab_additive.gif" width="50%">
 </p>
 
-## Documentation
-
-Explore the comprehensive [documentation](https://perihub.github.io/PeriLab.jl/) for `PeriLab` and
-the seminar information for the first german Peridynamics course [Lecture Non-local structural mechanics and peridynamics](https://perihub.github.io/PeriLab.jl/dev/lecture/lecture/).
-
-## Examples
-
-A few basic examples of `PeriLab` can be found in the [examples](https://github.com/PeriHub/PeriLab.jl/tree/main/examples) directory, or if you want to have a look at results go to our growing [PeriLab-Results service](https://perilab-results.nimbus-extern.dlr.de).
-
-## Features ⭐
+## Overview
+- [Features](#features)
+- [Documentation](#documentation)
+   - [Examples](#examples)
+- [Installation](#installation)
+   - [Getting Started with `PeriLab`](#getting-started-with-perilab)
+   - [Parallel Processing with PeriLab (MPI)](#parallel-processing-with-perilab-mpi)
+   - [Installing with Docker](#installing-with-docker)
+   - [Web Framework PeriHub](#web-framework-perihub)
+   - [PeriLab on PeriHub](#perilab-on-perihub)
+- [What's Next](#whats-next)
+- [Contributing](#contributing)
+   - [Development](#development)
+- [Questions](#questions)
+- [How to cite](#how-to-cite)
+- [Acknowledgments](#acknowledgments)
+   - [Partners](#partners)
+   - [Authors](#authors)
+- [Project status](#project-status)
+## Features
 
 - 🚀 **Easy Installation**: PeriLab's straightforward installation process makes it accessible for researchers and engineers without extensive computational expertise.
 
@@ -106,6 +116,17 @@ A few basic examples of `PeriLab` can be found in the [examples](https://github.
 
 - 🧪 **Test Pipeline**: The PeriLab Source Code will be tested in a test pipeline to ensure its correctness and performance.
 
+
+## Documentation
+
+Explore the comprehensive [documentation](https://perihub.github.io/PeriLab.jl/) for `PeriLab` and
+the seminar information for the first German Peridynamics course [Lecture Non-local structural mechanics and peridynamics](https://perihub.github.io/PeriLab.jl/dev/lecture/lecture/).
+
+### Examples
+
+A few basic examples of `PeriLab` can be found in the [examples](https://github.com/PeriHub/PeriLab.jl/tree/main/examples) directory, or if you want to have a look at results go to our growing [PeriLab-Results service](https://perilab-results.nimbus-extern.dlr.de).
+
+
 ## Installation
 
 The `PeriLab`  package is available through the Julia package system and can be installed using the following commands:
@@ -119,7 +140,7 @@ Throughout the rest of this tutorial, we will assume that you have installed the
 PeriLab package and have already typed `using PeriLab` to bring all of the
 relevant variables into your current namespace.
 
-## Getting Started with `PeriLab`
+### Getting Started with `PeriLab`
 
 Jumpstart your exploration of the PeriLab simulation core with provided examples. Run the following commands in Julia:
 
@@ -131,7 +152,7 @@ PeriLab.main("examples/DCB/DCBmodel.yaml")
 ```
 >Note: More details about the main functionalities in the yaml input deck [here](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Support/Parameters/parameter_handling.jl).
 
-## Parallel Processing with `PeriLab` (MPI)
+### Parallel Processing with `PeriLab` (MPI)
 
 To handle large-scale problems efficiently, install [MPI](https://juliaparallel.org/MPI.jl/stable/usage/). Run PeriLab with two processors on a **Linux** system using the following commands:
 
@@ -149,7 +170,7 @@ $ mpiexecjl -n 2 julia -e 'using PeriLab; PeriLab.main("examples/DCB/DCBmodel.ya
 
 >Note: For HPC configurations please refer to [here](https://juliaparallel.org/MPI.jl/stable/configuration/#configure_jll_binarys).
 
-## Installing with Docker 🐳
+### Installing with Docker
 
  To install PeriLab using the official Perihub/Perilab Docker image, follow these steps:
 
@@ -171,11 +192,11 @@ $ mpiexecjl -n 2 julia -e 'using PeriLab; PeriLab.main("examples/DCB/DCBmodel.ya
 
 Now, you've successfully installed PeriLab using the official Perihub/Perilab Docker image. You can start running your own peridynamic simulations within the container.
 
-## Web Framework `PeriHub` 🖥️
+### Web Framework `PeriHub`
 
 PeriLab is also included as a ready to use application in the [PeriHub](https://github.com/PeriHub/PeriHub) web framework.
 
-## `PeriLab` on `JuliaHub`
+### `PeriLab` on `JuliaHub`
 
 Experience the convenience of using PeriLab as a ready-to-use application on JuliaHub. Simply create an [account](https://juliahub.com), navigate to the [applications page](https://juliahub.com/ui/Applications), and add the repository URL: https://github.com/PeriHub/PeriLab.jl.
 
@@ -185,7 +206,7 @@ Hit the __Start__ button and wait for the job to finish, the results will be ava
 
 >Note: The free tier on `JuliaHub` offers 20 hours of computational time per month.
 
-## What's Next? 🚀
+## What's Next?
 
 Here are some exciting tasks on our roadmap:
 
@@ -198,6 +219,8 @@ Here are some exciting tasks on our roadmap:
 - 🏎️ **Optimizations**: As part of its ongoing development, PeriLab will continue to focus on optimizing the simulation process by incorporating new techniques like parallel optimization algorithms for improved efficiency and reduced computational resources.
 
 Feel free to contribute and help us make PeriLab even better! 🙌
+
+Here are the planned [issues](https://github.com/PeriHub/PeriLab.jl/issues) and [milestones](https://github.com/PeriHub/PeriLab.jl/milestones).
 
 ## Contributing
 
@@ -222,23 +245,7 @@ $ julia --project=. src/main.jl examples/DCB/DCBmodel.yaml
 ```
 
 ## Questions
-For any questions or inquiries about PeriLab.jl, feel free to reach out to the authors via email.
-
-## Authors
-<p>
-
-<a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.org/assets/vectors/orcid.logo.icon.svg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Prof. Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
-
-</p>
-
-<p>
-
-<a href="https://orcid.org/0000-0002-3006-1520"><img src="https://orcid.org/assets/vectors/orcid.logo.icon.svg"  style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
-
-</p>
-
-## Project status
-`PeriLab` is currently in development.
+For any questions or inquiries about PeriLab.jl, feel free to reach out to the authors via E-mail or open a [discussion](https://github.com/PeriHub/PeriLab.jl/discussions).
 
 
 ## How to cite
@@ -260,7 +267,14 @@ url={https://doi.org/10.1016/j.softx.2024.101700}
 }
 ```
 
-## Partner
+
+
+
+
+## Acknowledgments
+Funding and acknowledgment infos can be found under [acknowledgments](ACKNOWLEDGEMENTS.md)
+
+### Partners
 
 
 | <img src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/dlr.jpg" height="200" title="German Aerospace Center"> |
@@ -272,7 +286,18 @@ url={https://doi.org/10.1016/j.softx.2024.101700}
 |[Otto von Guericke University Magdeburg](http://www.ovgu.de)|
 
 
+### Authors
+<p>
 
+<a href="https://orcid.org/0000-0003-2433-9183"><img src="https://orcid.org/assets/vectors/orcid.logo.icon.svg" style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> </a>[Prof. Dr.-Ing. Christian Willberg](mailto::christian.willberg@h2.de)
 
-## Acknowledgments
-Funding and acknowledgment infos can be found under [acknowledgments](ACKNOWLEDGEMENTS.md)
+</p>
+
+<p>
+
+<a href="https://orcid.org/0000-0002-3006-1520"><img src="https://orcid.org/assets/vectors/orcid.logo.icon.svg"  style="height:15px;width:auto;vertical-align: top;background-color:transparent;"> [M.Sc. Jan-Timo Hesse](mailto::jan-timo.hesse@dlr.de)
+
+</p>
+
+## Project status
+`PeriLab` is currently in development.

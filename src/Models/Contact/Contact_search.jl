@@ -54,15 +54,16 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
                                          "nSlaves" => 0)
         for id in near_ids
             if contact_nodes[mapping[id]] == 1
-                contact_nodes[mapping[id]] = 2
+                #contact_nodes[mapping[id]] = 2
             end
             if contact_nodes[mapping[master_node]] == 1
-                contact_nodes[mapping[master_node]] = 3
+                #contact_nodes[mapping[master_node]] = 3
             end
             distance,
             normal = compute_distance_and_normals(all_positions[master_node, :],
                                                   all_positions[id, :])
             # TODO preallocation, e.g. max number of contact nodes -> size depended
+            # @info "$(contact_params["Contact Radius"]), $distance, $(all_positions[master_node, :]),  $(all_positions[id, :]))"
             if contact_params["Contact Radius"] < abs(distance)
                 continue
             end
@@ -72,8 +73,12 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
                 break
             end
             # for debugging
-            contact_nodes[mapping[id]] = 4
-            contact_nodes[mapping[master_node]] = 5
+            if id in keys(mapping)
+                contact_nodes[mapping[id]] = 4
+            end
+            if master_node in keys(mapping)
+                contact_nodes[mapping[master_node]] = 5
+            end
 
             contact_dict[master_node]["nSlaves"] = nslave
             contact_dict[master_node]["Slaves"][nslave] = id
@@ -86,9 +91,9 @@ end
 
 function create_potential_contact_dict(near_points, datamanager, contact_params)
     # exchange vector ids of the free contact blocks
-    # computed in function compute_and_set_free_surface_nodes
-    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master Block ID"])
-    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave Block ID"])
+    # computed in function compute_and_set_free_contact_nodes
+    master_nodes = datamanager.get_free_contact_nodes(contact_params["Master Block ID"])
+    slave_nodes = datamanager.get_free_contact_nodes(contact_params["Slave Block ID"])
 
     contact_dict = Dict{Int64,Vector{Int64}}()
     for (pID, neighbors) in enumerate(near_points)
@@ -115,8 +120,8 @@ function find_potential_contact_pairs(datamanager::Module, contact_params::Dict)
     all_positions = datamanager.get_all_positions()
     dof = datamanager.get_dof()
     # ids are exchange vector ids (''all position'' ids)
-    master_nodes = datamanager.get_free_surface_nodes(contact_params["Master Block ID"])
-    slave_nodes = datamanager.get_free_surface_nodes(contact_params["Slave Block ID"])
+    master_nodes = datamanager.get_free_contact_nodes(contact_params["Master Block ID"])
+    slave_nodes = datamanager.get_free_contact_nodes(contact_params["Slave Block ID"])
 
     nmaster = length(master_nodes)
     near_points = fill(Vector{Int64}([]), nmaster)

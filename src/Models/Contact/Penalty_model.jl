@@ -62,7 +62,11 @@ function compute_contact_model(datamanager, cg, params, compute_master_force_den
     end
     return datamanager
 end
+"""
 
+code was taken from Peridigm
+
+"""
 function compute_friction(datamanager, id, slave_id, friction_coefficient, normal_force,
                           normal)
     dof = datamanager.get_dof()
