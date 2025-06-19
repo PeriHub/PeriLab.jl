@@ -43,12 +43,10 @@ function init_contact_model(datamanager::Module, params)
     if !haskey(params, "Globals")
         params["Globals"] = Dict()
     end
-    if !haskey(params["Globals"], "Only Surface Contact Nodes")
-        params["Globals"]["Only Surface Contact Nodes"] = true
-    end
+    only_surface = get(params["Globals"], "Only Surface Contact Nodes", true)
 
     global_contact_ids = identify_contact_block_nodes(datamanager, contact_blocks,
-                                                      params["Globals"]["Only Surface Contact Nodes"])
+                                                      only_surface)
     contact_nodes = datamanager.create_constant_node_field("Contact Nodes", Int64, 1)
     block_list = datamanager.get_all_blocks()
     # give every block there surface ids
@@ -70,7 +68,7 @@ function init_contact_model(datamanager::Module, params)
             slave_id = contact_params["Slave Block ID"]
             master_id = contact_params["Master Block ID"]
             @info "Contact pair Master block $master_id - Slave block $slave_id"
-            if !params["Globals"]["Only Surface Contact Nodes"]
+            if !only_surface
                 datamanager.set_free_contact_nodes(master_id, block_nodes[master_id])
                 datamanager.set_free_contact_nodes(slave_id, block_nodes[slave_id])
                 continue
@@ -229,11 +227,11 @@ function compute_contact_model(datamanager::Module,
 end
 
 function compute_master_force_density(datamanager, id_m, id_s, contact_force)
-    compute_force_density(datamanager, id_m, id_s, -contact_force)
+    compute_force_density(datamanager, id_m, id_s, contact_force)
 end
 
 function compute_slave_force_density(datamanager, id_s, id_m, contact_force)
-    compute_force_density(datamanager, id_s, id_m, contact_force)
+    compute_force_density(datamanager, id_s, id_m, -contact_force)
 end
 
 function compute_force_density(datamanager, id_1, id_2, contact_force)
