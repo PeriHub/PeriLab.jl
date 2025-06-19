@@ -35,7 +35,6 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
     poly = compute_geometry(all_positions[slave_block_nodes, :])
     contact_nodes = datamanager.get_field("Contact Nodes")
     mapping = datamanager.get_exchange_id_to_local_id()
-    contact_nodes .= 1
 
     for (master_node, near_ids) in pairs(potential_contact_dict)
         try
@@ -53,12 +52,6 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
                                          "Distances" => zeros(Float64, max_cont),
                                          "nSlaves" => 0)
         for id in near_ids
-            if contact_nodes[mapping[id]] == 1
-                #contact_nodes[mapping[id]] = 2
-            end
-            if contact_nodes[mapping[master_node]] == 1
-                #contact_nodes[mapping[master_node]] = 3
-            end
             distance,
             normal = compute_distance_and_normals(all_positions[master_node, :],
                                                   all_positions[id, :])
