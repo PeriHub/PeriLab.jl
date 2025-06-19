@@ -194,6 +194,8 @@ function write_mesh(gcode_file, find_min_max, discretization,
     callbacks["TYPE:Perimeter"] = switch_on
     callbacks["TYPE:Solid infill"] = switch_on
     callbacks["Print Start"] = switch_on
+    callbacks[" Start extrusion"] = switch_on
+    callbacks[" Stop extrusion"] = switch_off
     # callbacks["WIPE_START"] = switch_off
     # callbacks["WIPE_END"] = switch_on
     callbacks["TYPE:Custom"] = switch_off
