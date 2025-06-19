@@ -8,6 +8,27 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.2] - 2025-06-19
+
+### Added
+
+- Friction Coefficient for contact model #275
+- Damage initiation flag
+- Error Handling for eval of node sets
+- Contact groups for multiple use of the same contact model
+
+### Fixed
+
+- Mesh angle definition
+- MPI for conatct models
+
+### Changed
+
+- Contact search optimized
+- BC evaluation optimized with function call
+- Fields for all steps are initialized at first step
+- Optimized plastic material model
+
 ## [1.4.1] - 2025-05-21
 
 ### Added
