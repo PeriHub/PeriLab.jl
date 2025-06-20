@@ -28,9 +28,18 @@ function init_contact_model(datamanager, params)
             return nothing
         end
     end
+
+    if !haskey(params, "Symmetry")
+        params["Symmetry"] = "3D"
+    end
     return datamanager
 end
+"""
+    compute_contact_model(datamanager, cg, params, compute_master_force_density,
+                               compute_slave_force_density)
+    Computes a Penalty model taken from [Peridigm](https://github.com/peridigm/peridigm/blob/master/src/contact/Peridigm_ShortRangeForceContactModel.cpp)
 
+"""
 function compute_contact_model(datamanager, cg, params, compute_master_force_density,
                                compute_slave_force_density)
     contact_dict = datamanager.get_contact_dict(cg)
@@ -43,7 +52,13 @@ function compute_contact_model(datamanager, cg, params, compute_master_force_den
             slave_id = contact["Slaves"][id]
             horizon = get_shared_horizon(datamanager, slave_id) # needed to get the correct contact horizon
             # TODO symmetry needed
-            stiffness = 48.0 / 5.0 * contact_stiffness / (pi * horizon^3)
+            if params["Symmetry"] == "plane stress"
+                stiffness = 9 / (pi * horizon^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+            elseif params["Symmetry"] == "plane strain"
+                stiffness = 48 / (5 * pi * horizon^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+            else
+                stiffness = 12 / (pi * horizon^4)  # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+            end
 
             @views distance = contact["Distances"][id]
             @views normal = contact["Normals"][id, :]

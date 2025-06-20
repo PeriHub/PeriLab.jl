@@ -53,7 +53,9 @@ function init_contact_model(datamanager::Module, params)
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
     datamanager.set_contact_block_ids(mapping)
     # identify all surface which have no neighboring nodes
-    free_surfaces = identify_free_contact_surfaces(datamanager, contact_blocks)
+    if params["Globals"]["Only Surface Contact Nodes"]
+        free_surfaces = identify_free_contact_surfaces(datamanager, contact_blocks)
+    end
     points = datamanager.get_all_positions()
     block_nodes = get_block_nodes(block_list, length(block_list)) # all ids
 

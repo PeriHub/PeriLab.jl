@@ -35,7 +35,6 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
     poly = compute_geometry(all_positions[slave_block_nodes, :])
     contact_nodes = datamanager.get_field("Contact Nodes")
     mapping = datamanager.get_exchange_id_to_local_id()
-    contact_nodes .= 1
 
     for (master_node, near_ids) in pairs(potential_contact_dict)
         try
