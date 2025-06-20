@@ -546,6 +546,11 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
     @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
 
+    if size(pd_mesh["mesh_df"], 1) == 0
+        @error "No points found in the gcode file, maybe the gcode format is not supported?"
+        return nothing
+    end
+
     txt_file = replace(gcode_file, ".gcode" => ".txt")
     write(txt_file, "header: x y z block_id volume Activation_Time\n")
     CSV.write(txt_file, pd_mesh["mesh_df"]; delim = ' ', append = true)
