@@ -203,6 +203,7 @@ function write_mesh(gcode_file, find_min_max, discretization,
     callbacks["Movement Start"] = switch_off
     callbacks["new_layer"] = new_layer
     callbacks["Bauteil fertig"] = finished
+    callbacks[" === END OF PRINT ==="] = finished
 
     # watch out for relative and absolute positioning
     callbacks["G90"] = (cmds, dataobject) -> dataobject["positioning"] = "absolute"
@@ -346,7 +347,7 @@ function extrude(cmds, dataobject)
         # Used filament
         dataobject["filamentUsage"] += de
         # println(dataobject["filamentUsage"]);5
-        if dataobject["previous_extruding"] && dataobject["relevant_component"]
+        if dataobject["relevant_component"] # && dataobject["previous_extruding"]
             check_min_max(dataobject, "x")
             check_min_max(dataobject, "y")
             if !dataobject["find_min_max"]
