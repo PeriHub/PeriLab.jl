@@ -76,6 +76,22 @@ function set_all_positions(all_coordinate)
     data["All positions"] = all_coordinate
 end
 
+function set_search_step(cg, n)
+    data["Contact Search Step"][cg] = n
+end
+
+function get_search_step(cg)
+    return data["Contact Search Step"][cg]
+end
+
+function set_no_pairs_flag(cg, n::Bool)
+    data["Contact Search No Pairs"][cg] = n
+end
+
+function set_no_pairs_flag(cg)
+    return data["Contact Search No Pairs"][cg]
+end
+
 """
     set_contact_overlap_map(topo)
 

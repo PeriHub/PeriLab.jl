@@ -49,7 +49,7 @@ function init_contact_model(datamanager::Module, params)
                                                       only_surface)
     contact_nodes = datamanager.create_constant_node_field("Contact Nodes", Int64, 1)
     block_list = datamanager.get_all_blocks()
-    # give every block there surface ids
+
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
     datamanager.set_contact_block_ids(mapping)
     # identify all surface which have no neighboring nodes
@@ -148,7 +148,14 @@ function loc_to_contact_exchange_id(global_contact_ids::Vector{Int64})
     end
     return mapping
 end
-# give the ids for the contact blocks in the exchange vector
+
+"""
+    contact_block_ids(global_ids::Vector{Int64}, block_list, contact_blocks)
+
+Finds the ids which are in the specific contact related blocks.
+
+
+"""
 function contact_block_ids(global_ids::Vector{Int64}, block_list, contact_blocks)
     mapping = Dict{Int64,Vector{Int64}}()
     for cb in contact_blocks
@@ -199,14 +206,16 @@ function compute_contact_model(datamanager::Module,
     all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates", "NP1",
                                                all_positions)
     datamanager.set_all_positions(all_positions)
-
     @timeit to "Contact search" begin
         for (cm, block_contact_params) in pairs(contact_params)
             if cm == "Globals"
                 continue
             end
+
             mod = datamanager.get_model_module(block_contact_params["Type"])
             for (cg, block_contact_group) in pairs(block_contact_params["Contact Groups"])
+                n = datamanger.get_search_step(cg) + 1
+
                 # needed in search and in model evaluation
                 block_contact_group["Contact Radius"] = block_contact_params["Contact Radius"]
                 datamanager.set_contact_dict(cg, Dict())
@@ -220,9 +229,11 @@ function compute_contact_model(datamanager::Module,
                                                                                          block_contact_params,
                                                                                          compute_master_force_density,
                                                                                          compute_slave_force_density)
+                if n == block_contact_group["Search Frequency"]
+                    datamanger.set_search_step(cg, 0)
+                end
             end
         end
-
         #compute_contact()
     end
     return datamanager
@@ -259,22 +270,28 @@ function identify_contact_block_nodes(datamanager, contact_blocks, only_surface)
     block_ids = datamanager.get_all_blocks() # all ids
     block_nodes = get_block_nodes(block_ids, length(block_ids)) # all ids
     for block in contact_blocks
-        if !only_surface
+        if only_surface
+            append!(global_ids, get_surface_points(points, block_nodes[block]))
+        else
             append!(global_ids, block_nodes[block])
-            continue
-        end
-        poly = compute_geometry(points[block_nodes[block], :])
-        normals, offsets = get_surface_information(poly)
-        for pID in block_nodes[block]
-            for id in eachindex(offsets)
-                if isapprox(dot(normals[id, :], points[pID, :]) - offsets[id], 0;
-                            atol = 1e-6, rtol = 1e-5)
-                    append!(global_ids, pID)
-                end
-            end
         end
     end
     return sort(unique(global_ids))
+end
+
+function get_surface_points(points, block_nodes)
+    global_ids = Vector{Int64}([])
+    poly = compute_geometry(points[block_nodes, :])
+    normals, offsets = get_surface_information(poly)
+    for pID in block_nodes
+        for id in eachindex(offsets)
+            if isapprox(dot(normals[id, :], points[pID, :]) - offsets[id], 0;
+                        atol = 1e-6, rtol = 1e-5)
+                append!(global_ids, pID)
+            end
+        end
+    end
+    return global_ids
 end
 
 function identify_free_contact_surfaces(datamanager::Module, contact_blocks::Vector{Int64})
