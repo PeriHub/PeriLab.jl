@@ -55,6 +55,7 @@ PeriLab:
       Safety Factor: 1.0
   Outputs:
     Output1:
+      Output File Type: Exodus
       Output Filename: "test_unified_bond_based_elastic_3D"
       Output Frequency: 1
       Output Variables:

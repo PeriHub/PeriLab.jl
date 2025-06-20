@@ -82,6 +82,7 @@ PeriLab:
 
   Outputs:
     Output_1:
+      Output File Type: Exodus
       Output Filename: "disk_impact"
       Number of Output Steps: 200
       Output Variables:

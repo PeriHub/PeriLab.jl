@@ -72,6 +72,7 @@ PeriLab:
       Safety Factor: 0.9
   Outputs:
     Output1:
+      Output File Type: Exodus
       Output Filename: "Contact"
       Output Frequency: 50
       Output Variables:
