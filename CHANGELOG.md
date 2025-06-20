@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Fixed parameter handling of globals #276
 - Fixed a bug with the gcode import
 
 ## [1.4.2] - 2025-06-19
