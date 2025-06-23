@@ -83,12 +83,42 @@ end
 function get_search_step(cg)
     return data["Contact Search Step"][cg]
 end
+function add_synch_list(list)
+    mapping = get_local_contact_ids()
+    for iID in list
+        if !isnothing(get(mapping, iID, nothing))
+            data["Synchronization list"][iID] = mapping[iID]
+        end
+    end
+end
+function set_global_search_master_nodes(cg, global_master)
+    data["Global Master Search Nodes"][cg] = global_master
+end
+
+function get_global_search_master_nodes(cg)
+    return data["Global Master Search Nodes"][cg]
+end
+function set_global_search_slave_nodes(cg, global_slave)
+    data["Global Slave Search Nodes"][cg] = global_slave
+end
+
+function get_global_search_slave_nodes(cg)
+    return data["Global Slave Search Nodes"][cg]
+end
+
+function get_synch_list()
+    return unique(data["Synchronization list"])
+end
+
+function get_synch_update()
+    return 0 in values(data["Contact Search Step"])
+end
 
 function set_no_pairs_flag(cg, n::Bool)
     data["Contact Search No Pairs"][cg] = n
 end
 
-function set_no_pairs_flag(cg)
+function get_no_pairs_flag(cg)
     return data["Contact Search No Pairs"][cg]
 end
 
