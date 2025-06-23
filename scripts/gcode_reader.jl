@@ -35,6 +35,18 @@ function parse_commandline()
         help = "plot_enabled"
         arg_type = Bool
         default = true
+        "--start", "-a"
+        help = "start command"
+        arg_type = String
+        default = nothing
+        "--stop", "-o"
+        help = "stop command"
+        arg_type = String
+        default = nothing
+        "--end", "-e"
+        help = "end command"
+        arg_type = String
+        default = nothing
         "filename"
         help = "filename"
         required = true
@@ -192,7 +204,8 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject)
     # end
 end
 
-function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict())
+function write_mesh(gcode_file, find_min_max, discretization, commands_dict,
+                    pd_mesh = Dict())
 
     # create any data object
     # it will be passed as a second parameter to your callbacks
@@ -211,7 +224,7 @@ function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict())
     myPrinter["time"] = 0.0
     myPrinter["previous_time"] = 0.0
     myPrinter["previous_extruding"] = false
-    myPrinter["relevant_component"] = false
+    myPrinter["relevant_component"] = true
     myPrinter["find_min_max"] = find_min_max
     myPrinter["x_min"] = 1.e100
     myPrinter["x_max"] = 0.0
@@ -225,19 +238,22 @@ function write_mesh(gcode_file, find_min_max, discretization, pd_mesh = Dict())
     callbacks = Dict{String,Function}()
     callbacks["G0"] = move # just move the printhead
     callbacks["G1"] = extrude  # move the printhead as well as extrude material
-    callbacks["TYPE:Perimeter"] = switch_on
-    callbacks["TYPE:Solid infill"] = switch_on
-    callbacks["Print Start"] = switch_on
-    callbacks[" Start extrusion"] = switch_on
-    callbacks[" Stop extrusion"] = switch_off
-    # callbacks["WIPE_START"] = switch_off
-    # callbacks["WIPE_END"] = switch_on
-    callbacks["TYPE:Custom"] = switch_off
-    callbacks["TYPE:Skirt/Brim"] = switch_off
-    callbacks["Movement Start"] = switch_off
     callbacks["new_layer"] = new_layer
-    callbacks["Bauteil fertig"] = finished
-    callbacks[" === END OF PRINT ==="] = finished
+
+    if !isnothing(commands_dict["Start"])
+        for command in split(commands_dict["Start"], ",")
+            callbacks[command] = switch_on
+        end
+        myPrinter["relevant_component"] = false
+    end
+    if !isnothing(commands_dict["Stop"])
+        for command in split(commands_dict["Stop"], ",")
+            callbacks[command] = switch_off
+        end
+    end
+    if !isnothing(commands_dict["End"])
+        callbacks[commands_dict["End"]] = finished
+    end
 
     # watch out for relative and absolute positioning
     callbacks["G90"] = (cmds, dataobject) -> dataobject["positioning"] = "absolute"
@@ -536,12 +552,13 @@ function main(gcode_file::String,
               dy::Float64,
               scale::Float64,
               width::Float64,
-              plot_enabled::Bool)
+              plot_enabled::Bool,
+              commands_dict)
     discretization = [dx * scale, dy * scale]
 
     @info "Read gcode file $gcode_file"
     @info "Params: dx $dx, dy $dy, width $width and scale $scale "
-    (grid_x, grid_y), height = write_mesh(gcode_file, true, discretization)
+    (grid_x, grid_y), height = write_mesh(gcode_file, true, discretization, commands_dict)
 
     discretization = [dx * scale, dy * scale, (height / 2) * scale]
 
@@ -592,7 +609,7 @@ function main(gcode_file::String,
     pd_mesh["point_diff"] = zeros(2)
 
     @info "Writing mesh"
-    write_mesh(gcode_file, false, discretization, pd_mesh)
+    write_mesh(gcode_file, false, discretization, commands_dict, pd_mesh)
 
     txt_file = joinpath("Output", split(replace(gcode_file, ".gcode" => ".txt"), "/")[end])
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
@@ -604,9 +621,15 @@ function main(gcode_file::String,
 end
 
 parsed_args = parse_commandline()
+
+commands_dict = Dict{String,Any}()
+commands_dict["Start"] = parsed_args["start"]
+commands_dict["Stop"] = parsed_args["stop"]
+commands_dict["End"] = parsed_args["end"]
+
 main(parsed_args["filename"],
      parsed_args["dx"],
      parsed_args["dy"],
      parsed_args["scale"],
      parsed_args["width"],
-     parsed_args["plot_enabled"])
+     parsed_args["plot_enabled"], commands_dict)

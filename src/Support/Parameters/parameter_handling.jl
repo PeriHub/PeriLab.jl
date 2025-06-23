@@ -344,7 +344,19 @@ global expected_structure = Dict("PeriLab" => [
                                                                                        "Scale" => [
                                                                                            Union{Float64,
                                                                                                  Int64},
-                                                                                           true
+                                                                                           false
+                                                                                       ],
+                                                                                       "Start Command" => [
+                                                                                           String,
+                                                                                           false
+                                                                                       ],
+                                                                                       "Stop Command" => [
+                                                                                           String,
+                                                                                           false
+                                                                                       ],
+                                                                                       "End Command" => [
+                                                                                           String,
+                                                                                           false
                                                                                        ]),
                                                                          false
                                                                      ]),
