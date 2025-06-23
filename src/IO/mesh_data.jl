@@ -219,7 +219,7 @@ Get the local element topology
 function get_local_element_topology(datamanager::Module,
                                     topology::Vector{Vector{Int64}},
                                     distribution::Vector{Int64})
-    if length(topology[1]) == 0
+    if isempty(topology[1])
         return datamanager
     end
     master_len = length(topology[1][:])
