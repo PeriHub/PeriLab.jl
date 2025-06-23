@@ -78,13 +78,13 @@ function local_contact_search(datamanager, contact_params, master_nodes, slave_n
         return contact_dict
     end
     mapping = datamanager.get_exchange_id_to_local_id()
-
+    contact_nodes = datamanager.get_field("Contact Nodes")
     for (iID, neighbors) in enumerate(contact_points)
         if isempty(neighbors)
             continue
         end
         master_id = master_nodes[iID]
-        if isnothing(get(mapping, master_id, nothing))
+        if !isnothing(get(mapping, master_id, nothing))
             contact_nodes[mapping[master_id]] = 5
         end
         nslave::Int64 = length(neighbors)
@@ -98,7 +98,7 @@ function local_contact_search(datamanager, contact_params, master_nodes, slave_n
                                                   all_positions[slave_id, :])
 
             # for debugging
-            if isnothing(get(mapping, slave_id, nothing))
+            if !isnothing(get(mapping, slave_id, nothing))
                 contact_nodes[mapping[slave_id]] = 4
             end
 
