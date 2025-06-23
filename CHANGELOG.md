@@ -8,6 +8,12 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.4] - 2025-06-23
+
+### Added
+
+- Start, Stop and End command definiton for gcode input
+
 ## [1.4.3] - 2025-06-20
 
 ### Fixed
