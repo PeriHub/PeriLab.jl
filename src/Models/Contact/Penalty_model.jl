@@ -93,7 +93,7 @@ function compute_friction(datamanager, id, slave_id, friction_coefficient, norma
 
     mapping = datamanager.get_exchange_id_to_local_id()
 
-    if !(id in keys(mapping)) || !(slave_id in keys(mapping))
+    if get(mapping, id, false) || get(mapping, slave_id, false)
         return
     end
 
@@ -108,7 +108,7 @@ function compute_friction(datamanager, id, slave_id, friction_coefficient, norma
     @views current_dot_normal = dot(velocity[mapping[id], :], normal)
     @views current_dot_neighbor = dot(velocity[mapping[slave_id], :], normal)
     @views velo_id = velocity[mapping[id], :] .- current_dot_normal .* normal
-    @views velo_slave_id = velocity[mapping[slave_id], :] .- current_dot_normal .* normal
+    @views velo_slave_id = velocity[mapping[slave_id], :] .- current_dot_neighbor .* normal
     @views vel_cm = 0.5 .* (velo_slave_id + velo_id)
     @views velo_id .-= vel_cm
     @views velo_slave_id .-= vel_cm
