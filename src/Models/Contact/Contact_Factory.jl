@@ -144,19 +144,13 @@ function create_local_contact_id_mapping(datamanager, global_contact_ids)
         if isempty(local_id)
             continue
         end
+        # local id -> exchange id
         mapping[local_id[1]] = id
+        # exchange id -> local id
         inv_mapping[id] = local_id[1]
     end
     datamanager.set_local_contact_ids(mapping)
     datamanager.set_exchange_id_to_local_id(inv_mapping)
-end
-
-function loc_to_contact_exchange_id(global_contact_ids::Vector{Int64})
-    mapping = Dict{Int64,Int64}()
-    for (id, num) in enumerate(global_contact_ids)
-        mapping[id] = num
-    end
-    return mapping
 end
 
 """
