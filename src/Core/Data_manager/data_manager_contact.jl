@@ -87,7 +87,7 @@ function add_synch_list(list)
     mapping = get_local_contact_ids()
     for iID in list
         if !isnothing(get(mapping, iID, nothing))
-            data["Synchronization list"][iID] = mapping[iID]
+            data["Synchronization List"][mapping[iID]] = iID
         end
     end
 end
@@ -107,7 +107,7 @@ function get_global_search_slave_nodes(cg)
 end
 
 function get_synch_list()
-    return unique(data["Synchronization list"])
+    return unique(data["Synchronization List"])
 end
 
 function get_synch_update()
