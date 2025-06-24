@@ -42,6 +42,12 @@ function init_contact_model(datamanager::Module, params)
     # all following functions deal with the local contact position id.
     if !haskey(params, "Globals")
         params["Globals"] = Dict()
+        if isnothing(get(params["Globals"], "Only Surface Contact Nodes", nothing))
+            params["Globals"]["Global Search Frequency"] = 1
+        elseif params["Globals"]["Global Search Frequency"] < 1
+            @warn "Globals Search Frequency must be greater than zero and set to 1."
+            params["Globals"]["Global Search Frequency"] = 1
+        end
     end
     only_surface = get(params["Globals"], "Only Surface Contact Nodes", true)
 
@@ -51,6 +57,7 @@ function init_contact_model(datamanager::Module, params)
     block_list = datamanager.get_all_blocks()
 
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
+
     datamanager.set_contact_block_ids(mapping)
     # identify all surface which have no neighboring nodes
     if only_surface
@@ -65,7 +72,7 @@ function init_contact_model(datamanager::Module, params)
                 contact_params["Maximum Contact Pairs"] = 10
             end
             if !haskey(contact_params, "Global Search Frequency")
-                contact_params["Global Search Frequency"] = 1
+                contact_params["Global Search Frequency"] = params["Globals"]["Global Search Frequency"]
             end
             datamanager.set_search_step(cg, 0)
             slave_id = contact_params["Slave Block ID"]
@@ -134,7 +141,7 @@ function create_local_contact_id_mapping(datamanager, global_contact_ids)
     inv_mapping = Dict{Int64,Int64}()
     for (id, pid) in enumerate(global_contact_ids)
         local_id = datamanager.get_local_nodes([pid])
-        if local_id == []
+        if isempty(local_id)
             continue
         end
         mapping[local_id[1]] = id
@@ -206,19 +213,17 @@ function compute_contact_model(datamanager::Module,
                                to::TimerOutput)
     # computes and synchronizes the relevant positions
     all_positions = datamanager.get_all_positions()
-    if datamanager.get_synch_update()
+    if datamanager.global_synchronization()
         all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates",
                                                    "NP1",
                                                    all_positions,
                                                    datamanager.get_local_contact_ids())
     else
-        if datamanager.get_synch_update()
-            update_list = datamanager.get_synch_list()
-
-            all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates",
-                                                       "NP1",
-                                                       all_positions, update_list)
-        end
+        # local synchronization occurs if Global Search Frequency > 1
+        update_list = datamanager.synchronization_list()
+        all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates",
+                                                   "NP1",
+                                                   all_positions, update_list)
         datamanager.set_all_positions(all_positions)
     end
     datamanager.set_all_positions(all_positions)

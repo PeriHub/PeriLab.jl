@@ -83,7 +83,7 @@ end
 function get_search_step(cg)
     return data["Contact Search Step"][cg]
 end
-function add_synch_list(list)
+function add_synchronization_list(list)
     mapping = get_local_contact_ids()
     for iID in list
         if !isnothing(get(mapping, iID, nothing))
@@ -106,11 +106,11 @@ function get_global_search_slave_nodes(cg)
     return data["Global Slave Search Nodes"][cg]
 end
 
-function get_synch_list()
-    return unique(data["Synchronization List"])
+function get_synchronization_list()
+    return data["Synchronization List"]
 end
 
-function get_synch_update()
+function global_synchronization()
     return 0 in values(data["Contact Search Step"])
 end
 

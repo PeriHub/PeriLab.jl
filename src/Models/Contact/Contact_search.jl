@@ -36,23 +36,30 @@ function global_contact_search(datamanager, contact_params)
     end
     global_master,
     global_slave = filter_global_contact_nodes(near_points, master_nodes, slave_nodes)
+    contact_nodes = datamanager.get_field("Contact Nodes")
+
     return no_pairs, global_master, global_slave
 end
 
 function compute_contact_pairs(datamanager::Module, cg::String, contact_params::Dict,
                                max_cont::Int64)
     if datamanager.get_search_step(cg) == 0
+        datamanager.set_global_search_master_nodes(cg, Vector{Int64}([]))
+        datamanager.set_global_search_slave_nodes(cg, Vector{Int64}([]))
         no_pairs, global_master,
         global_slave = global_contact_search(datamanager,
                                              contact_params)
+
         datamanager.set_global_search_master_nodes(cg, global_master)
         datamanager.set_global_search_slave_nodes(cg, global_slave)
         datamanager.set_no_pairs_flag(cg, no_pairs)
         if no_pairs # must be stored
             return
         end
-        datamanager.add_synch_list(append!(global_master, global_master))
+
         local_contact_search(datamanager, contact_params, global_master, global_slave)
+        datamanager.add_synchronization_list(global_master)
+        datamanager.add_synchronization_list(global_slave)
     end
     if datamanager.get_no_pairs_flag(cg) # must be stored
         return
@@ -99,13 +106,14 @@ function local_contact_search(datamanager, contact_params, master_nodes, slave_n
 
             # for debugging
             if !isnothing(get(mapping, slave_id, nothing))
-                contact_nodes[mapping[slave_id]] = 4
+                contact_nodes[slave_id] = 4
             end
 
             contact_dict[master_id]["nSlaves"] = nslave
             contact_dict[master_id]["Slaves"][jID] = slave_id
             contact_dict[master_id]["Normals"][jID, :] = normal
-            contact_dict[master_id]["Distances"][jID] = distance
+            contact_dict[master_id]["Distances"][jID] = distance == 0 ? distance + eps() :
+                                                        distance
         end
     end
 
@@ -140,8 +148,10 @@ end
 """
 filter_global_contact_nodes(near_points, master_nodes, slave_nodes)
 
- Clear the near_points from the empty lists.
+ Clear the near_points from the empty lists and store the unique ids from the master and slave node lists.
+ These nodes are used for the local search algorithm, because these are the ones in the search radius.
 
+ return unique(contact_global_masters), unique(contact_global_slaves)
 """
 function filter_global_contact_nodes(near_points, master_nodes, slave_nodes)
     contact_global_masters = []
@@ -153,7 +163,7 @@ function filter_global_contact_nodes(near_points, master_nodes, slave_nodes)
             append!(contact_global_slaves, slave_nodes[neighbors])
         end
     end
-    return unique(contact_global_masters), unique(contact_global_slaves)
+    return sort(unique(contact_global_masters)), sort(unique(contact_global_slaves))
 end
 
 end
