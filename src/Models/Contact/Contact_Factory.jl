@@ -68,9 +68,6 @@ function init_contact_model(datamanager::Module, params)
 
     for contact_model in filter(k -> k != "Globals", keys(params))
         for (cg, contact_params) in pairs(params[contact_model]["Contact Groups"])
-            if !haskey(contact_params, "Maximum Contact Pairs")
-                contact_params["Maximum Contact Pairs"] = 10
-            end
             if !haskey(contact_params, "Global Search Frequency")
                 contact_params["Global Search Frequency"] = params["Globals"]["Global Search Frequency"]
             end
@@ -99,7 +96,7 @@ function init_contact_model(datamanager::Module, params)
     # reduce the block_list
     datamanager.set_all_blocks(block_list[global_contact_ids])
     datamanager.set_all_positions(points[global_contact_ids, :])
-    @debug points[global_contact_ids, :]
+
     shared_vol = datamanager.create_constant_free_size_field("Shared Volumes", Float64,
                                                              (length(global_contact_ids),
                                                               1))
@@ -237,8 +234,7 @@ function compute_contact_model(datamanager::Module,
 
                 @timeit to "compute_contact_pairs" compute_contact_pairs(datamanager,
                                                                          cg,
-                                                                         block_contact_group,
-                                                                         block_contact_group["Maximum Contact Pairs"])
+                                                                         block_contact_group)
                 @timeit to "compute_contact_model" datamanager=mod.compute_contact_model(datamanager,
                                                                                          cg,
                                                                                          block_contact_params,
