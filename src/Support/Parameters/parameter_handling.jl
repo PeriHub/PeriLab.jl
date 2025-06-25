@@ -911,10 +911,7 @@ global expected_structure = Dict("PeriLab" => [
                                                    #                                                                     Int64,
                                                    #                                                                     false
                                                    #                                                                 ],
-                                                   #                                                                 "Maximum Contact Pairs" => [
-                                                   #                                                                     Int64,
-                                                   #                                                                     false
-                                                   #                                                                 ]),
+                                                   #
                                                    #                                                       true
                                                    #                                                   ]),
                                                    #                                         true
