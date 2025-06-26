@@ -5,8 +5,7 @@
 module Contact_search
 include("../../Support/Helpers.jl")
 using .Helpers: get_nearest_neighbors, nearest_point_id, get_block_nodes, compute_geometry,
-                point_is_inside,
-                get_surface_information, compute_distance_and_normals
+                point_is_inside, get_surface_information, compute_distance_and_normals
 
 export init_contact_search
 export compute_contact_pairs
@@ -34,15 +33,14 @@ function global_contact_search(datamanager, contact_params)
     if no_pairs
         return no_pairs, nothing, nothing
     end
+
     global_master,
     global_slave = filter_global_contact_nodes(near_points, master_nodes, slave_nodes)
-    contact_nodes = datamanager.get_field("Contact Nodes")
 
     return no_pairs, global_master, global_slave
 end
 
-function compute_contact_pairs(datamanager::Module, cg::String, contact_params::Dict,
-                               max_cont::Int64)
+function compute_contact_pairs(datamanager::Module, cg::String, contact_params::Dict)
     if datamanager.get_search_step(cg) == 0
         datamanager.set_global_search_master_nodes(cg, Vector{Int64}([]))
         datamanager.set_global_search_slave_nodes(cg, Vector{Int64}([]))
@@ -53,17 +51,16 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
         datamanager.set_global_search_master_nodes(cg, global_master)
         datamanager.set_global_search_slave_nodes(cg, global_slave)
         datamanager.set_no_pairs_flag(cg, no_pairs)
-        if no_pairs # must be stored
-            return
-        end
 
-        local_contact_search(datamanager, contact_params, global_master, global_slave)
         datamanager.add_synchronization_list(global_master)
         datamanager.add_synchronization_list(global_slave)
     end
     if datamanager.get_no_pairs_flag(cg) # must be stored
         return
     end
+    contact_nodes = datamanager.get_field("Contact Nodes")
+    mapping = datamanager.get_exchange_id_to_local_id()
+
     contact_dict = local_contact_search(datamanager, contact_params,
                                         datamanager.get_global_search_master_nodes(cg),
                                         datamanager.get_global_search_slave_nodes(cg))
@@ -84,6 +81,7 @@ function local_contact_search(datamanager, contact_params, master_nodes, slave_n
     if no_pairs
         return contact_dict
     end
+
     mapping = datamanager.get_exchange_id_to_local_id()
     contact_nodes = datamanager.get_field("Contact Nodes")
     for (iID, neighbors) in enumerate(contact_points)
@@ -106,7 +104,7 @@ function local_contact_search(datamanager, contact_params, master_nodes, slave_n
 
             # for debugging
             if !isnothing(get(mapping, slave_id, nothing))
-                contact_nodes[slave_id] = 4
+                contact_nodes[mapping[slave_id]] = 4
             end
 
             contact_dict[master_id]["nSlaves"] = nslave
@@ -154,16 +152,16 @@ filter_global_contact_nodes(near_points, master_nodes, slave_nodes)
  return unique(contact_global_masters), unique(contact_global_slaves)
 """
 function filter_global_contact_nodes(near_points, master_nodes, slave_nodes)
-    contact_global_masters = []
-    contact_global_slaves = []
+    contact_global_masters = Int64[]
+    contact_global_slaves = Int64[]
 
     for (pID, neighbors) in enumerate(near_points)
-        if length(neighbors) > 0
-            append!(contact_global_masters, master_nodes[pID])
+        if !isempty(neighbors)
+            push!(contact_global_masters, master_nodes[pID])
             append!(contact_global_slaves, slave_nodes[neighbors])
         end
     end
-    return sort(unique(contact_global_masters)), sort(unique(contact_global_slaves))
+    return contact_global_masters, sort(unique(contact_global_slaves))
 end
 
 end

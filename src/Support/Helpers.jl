@@ -215,6 +215,7 @@ function get_nearest_neighbors(nodes,
                                diffent_lists = false)
     nhs = GridNeighborhoodSearch{dof}(search_radius = maximum(radius),
                                       n_points = length(nodes))
+    initialize_grid!(nhs, system_coordinates')
     initialize_grid!(nhs, neighbor_coordinates')
     list_empty = true
 

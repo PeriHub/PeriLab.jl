@@ -93,7 +93,7 @@ function compute_friction(datamanager, id, slave_id, friction_coefficient, norma
 
     mapping = datamanager.get_exchange_id_to_local_id()
 
-    if get(mapping, id, false) || get(mapping, slave_id, false)
+    if isnothing(get(mapping, id, nothing)) || isnothing(get(mapping, slave_id, nothing))
         return
     end
 

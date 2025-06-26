@@ -64,6 +64,7 @@ function init_contact_model(datamanager::Module, params)
         free_surfaces = identify_free_contact_surfaces(datamanager, contact_blocks)
     end
     points = datamanager.get_all_positions()
+
     block_nodes = get_block_nodes(block_list, length(block_list)) # all ids
 
     for contact_model in filter(k -> k != "Globals", keys(params))
@@ -136,9 +137,10 @@ end
 function create_local_contact_id_mapping(datamanager, global_contact_ids)
     mapping = Dict{Int64,Int64}()
     inv_mapping = Dict{Int64,Int64}()
+    nnodes = datamanager.get_nnodes() # all controler nodes, because only they are allowed to communicate with the exchange_id
     for (id, pid) in enumerate(global_contact_ids)
         local_id = datamanager.get_local_nodes([pid])
-        if isempty(local_id)
+        if isempty(local_id) || local_id[1] > nnodes
             continue
         end
         # local id -> exchange id
@@ -215,7 +217,6 @@ function compute_contact_model(datamanager::Module,
         all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates",
                                                    "NP1",
                                                    all_positions, update_list)
-        datamanager.set_all_positions(all_positions)
     end
     datamanager.set_all_positions(all_positions)
     @timeit to "Contact search" begin
@@ -382,19 +383,8 @@ function synchronize_contact_points(datamanager::Module, what::String, step::Str
         return synch_vector
     end
     comm = datamanager.get_comm()
-    return find_and_set_core_value_sum(comm, synch_vector)
-end
 
-function get_local_ids(datamanager::Module)
-    local_map = Dict{Int64,Int64}()
-    global_nodes = datamanager.get_contact_relevant_global_ids()
-    for (id, global_node) in enumerate(global_nodes)
-        local_node = datamanager.get_local_nodes([global_node])
-        if !(local_node == [])
-            local_map[local_node[1]] = id
-        end
-    end
-    datamanager.set_contact_relevant_local_ids(local_map)
+    return find_and_set_core_value_sum(comm, synch_vector)
 end
 
 ## TODO check if this method holds true for all surfaces, because some with same size in the same half plane might be identified as equal
