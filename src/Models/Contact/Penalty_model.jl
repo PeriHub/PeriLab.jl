@@ -20,6 +20,7 @@ function init_contact_model(datamanager, params)
         @warn "No ''Contact Stiffness'' has been defined. It is set to 1e8."
         params["Contact Stiffness"] = 1e8
     end
+    @info "Contact Stiffness $(params["Contact Stiffness"])"
     if !haskey(params, "Friction Coefficient")
         params["Friction Coefficient"] = 0
     else
@@ -63,7 +64,7 @@ function compute_contact_model(datamanager, cg, params, compute_master_force_den
             @views distance = contact["Distances"][id]
             @views normal = contact["Normals"][id, :]
             temp = (contact_radius - distance) / horizon
-            normal_force = stiffness * temp .* normal
+            normal_force = contact_stiffness * stiffness * temp .* normal
             friction_id,
             friction_slave_id = compute_friction(datamanager, id, slave_id,
                                                  params["Friction Coefficient"],
