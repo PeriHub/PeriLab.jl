@@ -126,7 +126,7 @@ $$\Delta t < \text{min}\left(\frac{\left(\rho C_v\right)_i}{\sum_{j=1}^{N}\frac{
 
 
 ## Alternative diffusion based models
-$$ A \frac{p^{t+dt}-p^{t}}{dt}=\nabla\mathbf{e} + S_i$$
+$$A \frac{p^{t+dt}-p^{t}}{dt}=\nabla\mathbf{e} + S_i$$
 |Parameter|Description|
 |:---|:---|
 |A|is a model factor|

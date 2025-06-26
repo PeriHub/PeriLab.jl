@@ -55,9 +55,14 @@ The quasi code is given here
 
 ```julia
 # synchronize all contact nodes
-synch
-
-
+if search_frequency
+    global_synch
+    global_search
+else
+    local_synch
+end
+local_search
+compute force
 ```
 
 **Synchronization**
