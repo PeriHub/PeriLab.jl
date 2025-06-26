@@ -235,7 +235,7 @@ function compute_stresses(datamanager::Module,
         DPRED = zeros(size(temp))
     end
 
-    # only 80 charakters are supported
+    # only 80 characters are supported
     CMNAME::Cstring = malloc_cstring(material_parameter["UMAT Material Name"])
     coords = datamanager.get_field("Coordinates")
     zStiff = datamanager.get_field("Zero Energy Stiffness")
