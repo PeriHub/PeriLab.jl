@@ -57,6 +57,7 @@ PeriLab:
   Outputs:
     Output1:
       Output Filename: "test_point_wise_material_correspondence"
+      Output File Type: Exodus
       Output Frequency: 1
       Output Variables:
         Displacements: True

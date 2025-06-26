@@ -158,7 +158,7 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, s
     # end
 end
 
-function write_mesh(gcode_file, find_min_max, discretization,
+function write_mesh(gcode_file, find_min_max, discretization, commands_dict,
                     silent = false, pd_mesh = Dict())
 
     # create any data object
@@ -177,7 +177,7 @@ function write_mesh(gcode_file, find_min_max, discretization,
     myPrinter["time"] = 0.0
     myPrinter["previous_time"] = 0.0
     myPrinter["previous_extruding"] = false
-    myPrinter["relevant_component"] = false
+    myPrinter["relevant_component"] = true
     myPrinter["find_min_max"] = find_min_max
     myPrinter["x_min"] = 1.e100
     myPrinter["x_max"] = 0.0
@@ -191,18 +191,22 @@ function write_mesh(gcode_file, find_min_max, discretization,
     callbacks = Dict{String,Function}()
     callbacks["G0"] = move # just move the printhead
     callbacks["G1"] = extrude  # move the printhead as well as extrude material
-    callbacks["TYPE:Perimeter"] = switch_on
-    callbacks["TYPE:Solid infill"] = switch_on
-    callbacks["Print Start"] = switch_on
-    callbacks[" Start extrusion"] = switch_on
-    callbacks[" Stop extrusion"] = switch_off
-    # callbacks["WIPE_START"] = switch_off
-    # callbacks["WIPE_END"] = switch_on
-    callbacks["TYPE:Custom"] = switch_off
-    callbacks["TYPE:Skirt/Brim"] = switch_off
-    callbacks["Movement Start"] = switch_off
     callbacks["new_layer"] = new_layer
-    callbacks["Bauteil fertig"] = finished
+
+    if !isnothing(commands_dict["Start"])
+        for command in split(commands_dict["Start"], ",")
+            callbacks[command] = switch_on
+        end
+        myPrinter["relevant_component"] = false
+    end
+    if !isnothing(commands_dict["Stop"])
+        for command in split(commands_dict["Stop"], ",")
+            callbacks[command] = switch_off
+        end
+    end
+    if !isnothing(commands_dict["End"])
+        callbacks[commands_dict["End"]] = finished
+    end
 
     # watch out for relative and absolute positioning
     callbacks["G90"] = (cmds, dataobject) -> dataobject["positioning"] = "absolute"
@@ -346,7 +350,7 @@ function extrude(cmds, dataobject)
         # Used filament
         dataobject["filamentUsage"] += de
         # println(dataobject["filamentUsage"]);5
-        if dataobject["previous_extruding"] && dataobject["relevant_component"]
+        if dataobject["relevant_component"] # && dataobject["previous_extruding"]
             check_min_max(dataobject, "x")
             check_min_max(dataobject, "y")
             if !dataobject["find_min_max"]
@@ -483,17 +487,33 @@ end
 function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     dx = params["Discretization"]["Gcode"]["dx"]
     dy = params["Discretization"]["Gcode"]["dy"]
-    scale = params["Discretization"]["Gcode"]["Scale"]
+    scale = get(params["Discretization"]["Gcode"], "Scale", 1)
     width = params["Discretization"]["Gcode"]["Width"]
-    blocks = haskey(params["Discretization"]["Gcode"], "Blocks") ?
-             params["Discretization"]["Gcode"]["Blocks"] :
-             nothing
+    blocks = get(params["Discretization"]["Gcode"], "Blocks", nothing)
+
+    commands_dict = Dict{String,Any}()
+    commands_dict["Start"] = get(params["Discretization"]["Gcode"], "Start Command",
+                                 nothing)
+    commands_dict["Stop"] = get(params["Discretization"]["Gcode"], "Stop Command", nothing)
+    commands_dict["End"] = get(params["Discretization"]["Gcode"], "End Command", nothing)
+
+    if !isnothing(commands_dict["Start"])
+        if isnothing(commands_dict["Stop"])
+            @error "Start command is set but no stop command"
+        end
+    end
+    if !isnothing(commands_dict["Stop"])
+        if isnothing(commands_dict["Start"])
+            @error "Stop command is set but no start command"
+        end
+    end
 
     discretization = [dx * scale, dy * scale]
 
     @info "Read gcode file $gcode_file"
     @info "Params: dx $dx, dy $dy, width $width and scale $scale "
-    (grid_x, grid_y), height = write_mesh(gcode_file, true, discretization, silent)
+    (grid_x, grid_y),
+    height = write_mesh(gcode_file, true, discretization, commands_dict, silent)
 
     discretization = [dx * scale, dy * scale, (height / 2) * scale]
 
@@ -540,8 +560,12 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     pd_mesh["point_diff"] = zeros(2)
 
     @info "Writing mesh"
-    write_mesh(gcode_file, false, discretization, silent, pd_mesh)
+    write_mesh(gcode_file, false, discretization, commands_dict, silent, pd_mesh)
 
+    if size(pd_mesh["mesh_df"], 1) == 0
+        @error "No points found in the gcode file, maybe the gcode format is not supported?"
+        return nothing
+    end
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
     @info "Printing time: $(maximum(pd_mesh["mesh_df"].Activation_Time)) seconds"
 

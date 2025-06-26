@@ -53,6 +53,7 @@ PeriLab:
       Safety Factor: 1.0
   Outputs:
     Output1:
+      Output File Type: Exodus
       Output Filename: "correspondence_strain_pstress_zc_yy"
       Output Frequency: 1
       Output Variables:

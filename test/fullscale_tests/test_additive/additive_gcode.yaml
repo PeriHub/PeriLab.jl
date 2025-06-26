@@ -15,6 +15,8 @@ PeriLab:
       dy: 1.0
       Width: 0.4
       Scale: 1.0
+      Start Command: "TYPE:Solid infill,TYPE:Perimeter"
+      Stop Command: "TYPE:Custom,TYPE:Skirt/Brim"
       Blocks:
         2: "x < 75"
         3: "x > 175"

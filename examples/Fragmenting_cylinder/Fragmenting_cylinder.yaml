@@ -62,6 +62,7 @@ PeriLab:
 
   Outputs:
     Output_1:
+      Output File Type: Exodus
       Output Filename: "fragmenting_cylinder"
       Number of Output Steps: 100
       Output Variables:
