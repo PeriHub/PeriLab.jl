@@ -34,3 +34,6 @@ Run PeriLab with one processors:
 ```sh
 julia -e 'using PeriLab; PeriLab.main("examples/DCB/DCBmodel.yaml")'
 ```
+
+## Multi-core search strategy
+In Seminar
