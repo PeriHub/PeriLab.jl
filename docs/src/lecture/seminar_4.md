@@ -51,7 +51,7 @@ $W$ is the strain energy density function.
 Ordinary and elastic means
 - It is mobile
 - There exists a scalar-valued function $w$
-$$W(\underline{\mathbf{Y}})= w(\underline{y})\qquad\text{and}\qquad \underline{y}=|\underline{\mathbf{Y}}$$
+$$W(\underline{\mathbf{Y}})= w(\underline{y})\qquad\text{and}\qquad \underline{y}=|\underline{\mathbf{Y}}|$$
 - For this $w$
 $$\underline{t}(\underline{y})= \nabla w(\underline{y})$$
 
