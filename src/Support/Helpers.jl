@@ -123,6 +123,8 @@ end
 # taken from peridigm
 function compute_distance_and_normals(p1, p2)
     distance = norm(p2 - p1)
+    distance == 0 ? distance + eps() :
+    distance
     return distance, (p2 - p1) ./ distance
 end
 
