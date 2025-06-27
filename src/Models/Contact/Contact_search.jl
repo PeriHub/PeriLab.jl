@@ -58,7 +58,6 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
     if datamanager.get_no_pairs_flag(cg) # must be stored
         return
     end
-    mapping = datamanager.get_exchange_id_to_local_id()
 
     contact_dict = local_contact_search(datamanager, contact_params,
                                         datamanager.get_global_search_master_nodes(cg),
