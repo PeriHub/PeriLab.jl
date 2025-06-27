@@ -592,7 +592,8 @@ function run_solver(solver_options::Dict{Any,Any},
                 if !damage_init && max_damage > 0
                     damage_init = true
                     if rank == 0 && !silent
-                        set_multiline_postfix(iter, "Damage initated!")
+                        set_multiline_postfix(iter,
+                                              "Damage initated in step $idt [$time s]!")
                     end
                 end
             end

@@ -53,6 +53,8 @@ PeriLab:
       Horizon: 0.0031
       Density: 7700.0
   Contact:
+    Globals:
+      Only Surface Contact Nodes: false
     Contact_1:
       Type: "Penalty Contact"
       Contact Radius: 0.000775
