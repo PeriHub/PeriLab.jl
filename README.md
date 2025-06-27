@@ -48,7 +48,7 @@ SPDX-License-Identifier: BSD-3-Clause
 | **Deployment** | **License** | **Socials** |
 | [![][release-img]][release-url]  [![][docker-img]][docker-url] | [![][license-img]][license-url] [![][doi-img]][doi-url] | [![][youtube-img]][youtube-url] |
 
-Welcome to `PeriLab`, a powerful software solution designed for tackling Peridynamic problems.
+Welcome to `PeriLab`, a comprehensive platform for working with peridynamics, designed to support researchers and practitioners at all levels of expertise.
 
 <p align="center" style="font-size:0;"><!--
   PeriLab_crack      --><img align="middle" src="https://raw.githubusercontent.com/PeriHub/PeriLab.jl/main/assets/PeriLab_crack.gif" width="50%"><!--
