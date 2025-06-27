@@ -344,7 +344,19 @@ global expected_structure = Dict("PeriLab" => [
                                                                                        "Scale" => [
                                                                                            Union{Float64,
                                                                                                  Int64},
-                                                                                           true
+                                                                                           false
+                                                                                       ],
+                                                                                       "Start Command" => [
+                                                                                           String,
+                                                                                           false
+                                                                                       ],
+                                                                                       "Stop Command" => [
+                                                                                           String,
+                                                                                           false
+                                                                                       ],
+                                                                                       "End Command" => [
+                                                                                           String,
+                                                                                           false
                                                                                        ]),
                                                                          false
                                                                      ]),
@@ -867,59 +879,55 @@ global expected_structure = Dict("PeriLab" => [
                                                                          false
                                                                      ])
                                                    ],
-                                                   # "Contact" => [
-                                                   #     Dict{Any,Any}("Globals" => [
-                                                   #                       Dict{Any,Any}("Only Surface Contact Nodes" => [
-                                                   #                                         Bool,
-                                                   #                                         false
-                                                   #                                     ]),
-                                                   #                       false
-                                                   #                   ],
-                                                   #                   "Any" => [
-                                                   #                       Dict{Any,Any}("Type" => [
-                                                   #                                         String,
-                                                   #                                         true
-                                                   #                                     ],
-                                                   #                                     "Contact Radius" => [
-                                                   #                                         Union{Float64,
-                                                   #                                               Int64},
-                                                   #                                         true
-                                                   #                                     ],
-                                                   #                                     "Contact Stiffness" => [
-                                                   #                                         Union{Float64,
-                                                   #                                               Int64},
-                                                   #                                         true
-                                                   #                                     ],
-                                                   #                                     "Contact Groups" => [
-                                                   #                                         Dict{Any,
-                                                   #                                              Any}("Any" => [
-                                                   #                                                       Dict{Any,
-                                                   #                                                            Any}("Master Block ID" => [
-                                                   #                                                                     Int64,
-                                                   #                                                                     true
-                                                   #                                                                 ],
-                                                   #                                                                 "Slave Block ID" => [
-                                                   #                                                                     Int64,
-                                                   #                                                                     true
-                                                   #                                                                 ],
-                                                   #                                                                 "Search Radius" => [
-                                                   #                                                                     Union{Float64,
-                                                   #                                                                           Int64},
-                                                   #                                                                     true
-                                                   #                                                                 ],
-                                                   #                                                                 "Global Search Frequency" => [
-                                                   #                                                                     Int64,
-                                                   #                                                                     false
-                                                   #                                                                 ],
-                                                   #
-                                                   #                                                       true
-                                                   #                                                   ]),
-                                                   #                                         true
-                                                   #                                     ]),
-                                                   #                       true
-                                                   #                   ]),
-                                                   #     false
-                                                   # ],
+                                                   "Contact" => [
+                                                       Dict{Any,Any}("Any" => [
+                                                                         Dict{Any,Any}("Type" => [
+                                                                                           String,
+                                                                                           true
+                                                                                       ],
+                                                                                       "Contact Radius" => [
+                                                                                           Union{Float64,
+                                                                                                 Int64},
+                                                                                           true
+                                                                                       ],
+                                                                                       "Contact Stiffness" => [
+                                                                                           Union{Float64,
+                                                                                                 Int64},
+                                                                                           true
+                                                                                       ],
+                                                                                       "Contact Groups" => [
+                                                                                           Dict{Any,
+                                                                                                Any}("Any" => [
+                                                                                                         Dict{Any,
+                                                                                                              Any}("Master Block ID" => [
+                                                                                                                       Int64,
+                                                                                                                       true
+                                                                                                                   ],
+                                                                                                                   "Slave Block ID" => [
+                                                                                                                       Int64,
+                                                                                                                       true
+                                                                                                                   ],
+                                                                                                                   "Search Radius" => [
+                                                                                                                       Union{Float64,
+                                                                                                                             Int64},
+                                                                                                                       true
+                                                                                                                   ],
+                                                                                                                   "Global Search Frequency" => [
+                                                                                                                       Int64,
+                                                                                                                       false
+                                                                                                                   ],
+                                                                                                                   "Maximum Contact Pairs" => [
+                                                                                                                       Int64,
+                                                                                                                       false
+                                                                                                                   ]),
+                                                                                                         true
+                                                                                                     ]),
+                                                                                           true
+                                                                                       ]),
+                                                                         true
+                                                                     ]),
+                                                       false
+                                                   ],
                                                    "Surface Correction" => [
                                                        Dict{Any,Any}("Type" => [
                                                                          String,
@@ -1215,6 +1223,13 @@ function validate_structure_recursive(expected::Dict,
                 continue
             end
             for (any_key, any_value) in actual
+                if any_key == "Globals" #Globals will be ignored as they can exist on any level
+                    push!(checked_keys, any_key)
+                    for (global_key, _) in actual["Globals"]
+                        push!(checked_keys, global_key)
+                    end
+                    continue
+                end
                 if isa(any_value, Dict) && isa(actual[any_key], Dict)
                     # Recursive call for nested dictionaries
                     validate,

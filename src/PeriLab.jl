@@ -57,7 +57,7 @@ import .Logging_module
 import .IO
 import .Solver_control
 
-PERILAB_VERSION = "1.4.3"
+PERILAB_VERSION = "1.4.5"
 
 export main
 
@@ -290,6 +290,7 @@ function main(filename::String;
                 @info "PeriLab started in the reload mode"
             end
             Data_manager.set_silent(silent)
+            Data_manager.set_verbose(verbose)
             @timeit to "IO.initialize_data" datamanager,
                                             params=IO.initialize_data(filename,
                                                                       filedirectory,

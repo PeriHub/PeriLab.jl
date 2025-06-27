@@ -76,6 +76,7 @@ PeriLab:
   Outputs:
     Output1:
       Output Filename: "penalty_contact"
+      Output File Type: Exodus
       Output Frequency: 1
       Output Variables:
         Displacements: True

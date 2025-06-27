@@ -29,6 +29,8 @@ $$\rho C_v \frac{\tau^{t+dt}-\tau^{t}}{dt}=\nabla\mathbf{q} + S_i$$
 
 $$\tau^{t+dt} = dt\frac{\nabla\mathbf{q} + S_i}{\rho C_v} + \tau^{t}$$
 
+![](../assets/heat_flow.png)
+
 ## Heat transfer to environment
 
 $$S_i = \frac{q_{bc}}{\Delta}$$
@@ -46,6 +48,10 @@ $$V_{3D}=\frac43\pi\delta^3 \geq \int_{\mathcal{H}}dV$$
 $$f_{limit} \leq V_{specific} =  \frac{\int_{\mathcal{H}}dV}{V_{2D\,or\,3D}}$$
 
 $$\tau_i^{t+dt} = dt\frac{\nabla\mathbf{q}_i + \frac{\kappa (\tau_i^{t}-\tau_{env})}{dx}}{(\rho C_v)_i} + \tau^{t}_i\,.$$
+
+![](../assets/cooling.png)
+![](../assets/temperature_distribution_cooling.png)
+
 
 
 ```julia
@@ -120,13 +126,14 @@ gif(anim, "heat_conduction.gif", fps=10)
 
 ```
 
+
 ## Time step
 $$\Delta t < \text{min}\left(\frac{\left(\rho C_v\right)_i}{\sum_{j=1}^{N}\frac{\text{max}(\text{eig}(\boldsymbol{\lambda}))}{|\mathbf{\xi}_{ij}|}V_j}\right)$$
 [OterkusS2014](@cite)
 
 
 ## Alternative diffusion based models
-$$A \frac{p^{t+dt}-p^{t}}{dt}=\nabla\mathbf{e} + S_i$$
+$$ A \frac{p^{t+dt}-p^{t}}{dt}=\nabla\mathbf{e} + S_i$$
 |Parameter|Description|
 |:---|:---|
 |A|is a model factor|

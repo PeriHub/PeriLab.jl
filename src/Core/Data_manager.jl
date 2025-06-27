@@ -142,6 +142,7 @@ function initialize_data()
     data["cancel"] = false
     data["max_rank"] = 0
     data["silent"] = false
+    data["verbose"] = false
     data["rotation"] = false
     data["element_rotation"] = false
     data["active_models"] = OrderedDict{String,Module}()
@@ -1126,6 +1127,18 @@ function get_silent()
 end
 
 """
+    get_verbose()
+
+This function returns the `verbose` flag.
+
+# Returns
+- `verbose`::Bool: The value of the `verbose` variable.
+"""
+function get_verbose()
+    return data["verbose"]
+end
+
+"""
     get_rotation()
 
 This function returns the `rotation` flag.
@@ -1602,7 +1615,7 @@ function set_cancel(value::Bool)
 end
 
 """
-    set_silent(value::Int64)
+    set_silent(value::Bool)
 
 Sets the silent flag.
 
@@ -1611,6 +1624,18 @@ Sets the silent flag.
 """
 function set_silent(value::Bool)
     data["silent"] = value
+end
+
+"""
+    set_verbose(value::Bool)
+
+Sets the verbose flag.
+
+# Arguments
+- `value::Bool`: The verbose flag.
+"""
+function set_verbose(value::Bool)
+    data["verbose"] = value
 end
 
 """

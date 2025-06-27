@@ -52,6 +52,7 @@ PeriLab:
   Outputs:
     Output1:
       Output Filename: "strain_xy"
+      Output File Type: Exodus
       Output Frequency: 1
       Output Variables:
         Displacements: True
