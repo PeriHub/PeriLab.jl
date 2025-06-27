@@ -140,7 +140,8 @@ end
 function create_local_contact_id_mapping(datamanager, global_contact_ids)
     mapping = Dict{Int64,Int64}()
     inv_mapping = Dict{Int64,Int64}()
-    nnodes = datamanager.get_nnodes() # all controler nodes, because only they are allowed to communicate with the exchange_id
+    # all controler nodes, because only they are allowed to communicate with the exchange_id
+    nnodes = datamanager.get_nnodes()
     for (id, pid) in enumerate(global_contact_ids)
         local_id = datamanager.get_local_nodes([pid])
         if isempty(local_id) || local_id[1] > nnodes
@@ -211,14 +212,16 @@ function compute_contact_model(datamanager::Module,
     all_positions = datamanager.get_all_positions()
     if datamanager.global_synchronization()
         datamanager.clear_synchronization_list()
-        all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates",
+        all_positions = synchronize_contact_points(datamanager,
+                                                   "Deformed Coordinates",
                                                    "NP1",
                                                    all_positions,
                                                    datamanager.get_local_contact_ids())
     else
         # local synchronization occurs if Global Search Frequency > 1
         update_list = datamanager.synchronization_list()
-        all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates",
+        all_positions = synchronize_contact_points(datamanager,
+                                                   "Deformed Coordinates",
                                                    "NP1",
                                                    all_positions, update_list)
     end
