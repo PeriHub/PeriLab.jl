@@ -74,7 +74,7 @@ PeriLab:
   Solver:
     Material Models: True
     Initial Time: 0.0
-    Final Time: 4.14521e-05
+    Final Time: 2.14521e-07
     Verlet:
       Safety Factor: 0.9
   Outputs:

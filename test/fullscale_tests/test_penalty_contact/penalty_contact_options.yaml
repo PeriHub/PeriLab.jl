@@ -37,7 +37,7 @@ PeriLab:
     Contact_1:
       Type: "Penalty Contact"
       Contact Radius: 0.005
-      Contact Stiffness: 1e10
+      Contact Stiffness: 1e8
       Contact Groups:
         Group 1:
           Master Block ID: 2
@@ -70,7 +70,7 @@ PeriLab:
   Solver:
     Material Models: True
     Initial Time: 0.0
-    Final Time: 2.14521e-05
+    Final Time: 2.14521e-07
     Verlet:
       Safety Factor: 0.9
   Outputs:
