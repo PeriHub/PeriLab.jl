@@ -20,6 +20,7 @@ function init_contact_model(datamanager, params)
         @warn "No ''Contact Stiffness'' has been defined. It is set to 1e8."
         params["Contact Stiffness"] = 1e8
     end
+    @info "Contact Stiffness $(params["Contact Stiffness"])"
     if !haskey(params, "Friction Coefficient")
         params["Friction Coefficient"] = 0
     else
@@ -63,7 +64,7 @@ function compute_contact_model(datamanager, cg, params, compute_master_force_den
             @views distance = contact["Distances"][id]
             @views normal = contact["Normals"][id, :]
             temp = (contact_radius - distance) / horizon
-            normal_force = stiffness * temp .* normal
+            normal_force = contact_stiffness * stiffness * temp .* normal
             friction_id,
             friction_slave_id = compute_friction(datamanager, id, slave_id,
                                                  params["Friction Coefficient"],
@@ -93,8 +94,8 @@ function compute_friction(datamanager, id, slave_id, friction_coefficient, norma
 
     mapping = datamanager.get_exchange_id_to_local_id()
 
-    if !(id in keys(mapping)) || !(slave_id in keys(mapping))
-        return
+    if isnothing(get(mapping, id, nothing)) || isnothing(get(mapping, slave_id, nothing))
+        return friction_id, friction_slave_id
     end
 
     velocity = datamanager.get_field("Velocity", "NP1")
@@ -108,7 +109,7 @@ function compute_friction(datamanager, id, slave_id, friction_coefficient, norma
     @views current_dot_normal = dot(velocity[mapping[id], :], normal)
     @views current_dot_neighbor = dot(velocity[mapping[slave_id], :], normal)
     @views velo_id = velocity[mapping[id], :] .- current_dot_normal .* normal
-    @views velo_slave_id = velocity[mapping[slave_id], :] .- current_dot_normal .* normal
+    @views velo_slave_id = velocity[mapping[slave_id], :] .- current_dot_neighbor .* normal
     @views vel_cm = 0.5 .* (velo_slave_id + velo_id)
     @views velo_id .-= vel_cm
     @views velo_slave_id .-= vel_cm

@@ -243,7 +243,7 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
 
             datafield = datamanager.get_field(fieldname[1], fieldname[2])
             sizedatafield = size(datafield)
-            if length(sizedatafield) == 0
+            if isempty(sizedatafield)
                 @error "No field " * fieldname * " exists."
                 return nothing
             end
