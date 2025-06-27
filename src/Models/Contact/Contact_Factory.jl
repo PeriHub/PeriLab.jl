@@ -106,11 +106,14 @@ function init_contact_model(datamanager::Module, params)
                                                                   1))
     create_local_contact_id_mapping(datamanager, global_contact_ids)
 
-    shared_vol = synchronize_contact_points(datamanager, "Volume", "Constant", shared_vol,
-                                            datamanager.get_local_contact_ids())
-    shared_horizon = synchronize_contact_points(datamanager, "Horizon", "Constant",
-                                                shared_horizon,
-                                                datamanager.get_local_contact_ids())
+    shared_vol[:] = synchronize_contact_points(datamanager, "Volume", "Constant",
+                                               shared_vol,
+                                               datamanager.get_local_contact_ids())
+
+    shared_horizon[:] = synchronize_contact_points(datamanager, "Horizon", "Constant",
+                                                   shared_horizon,
+                                                   datamanager.get_local_contact_ids())
+
     @info "Set contact models"
     for (cm, contact_params) in pairs(params)
         if cm == "Globals"
@@ -207,6 +210,7 @@ function compute_contact_model(datamanager::Module,
     # computes and synchronizes the relevant positions
     all_positions = datamanager.get_all_positions()
     if datamanager.global_synchronization()
+        datamanager.clear_synchronization_list()
         all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates",
                                                    "NP1",
                                                    all_positions,

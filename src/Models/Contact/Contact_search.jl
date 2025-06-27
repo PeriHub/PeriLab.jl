@@ -31,7 +31,7 @@ function global_contact_search(datamanager, contact_params)
                                             all_positions[slave_nodes, :],
                                             contact_params["Search Radius"])
     if no_pairs
-        return no_pairs, nothing, nothing
+        return no_pairs, Int64[], Int64[]
     end
 
     global_master,
@@ -58,7 +58,6 @@ function compute_contact_pairs(datamanager::Module, cg::String, contact_params::
     if datamanager.get_no_pairs_flag(cg) # must be stored
         return
     end
-    contact_nodes = datamanager.get_field("Contact Nodes")
     mapping = datamanager.get_exchange_id_to_local_id()
 
     contact_dict = local_contact_search(datamanager, contact_params,
@@ -93,6 +92,7 @@ function local_contact_search(datamanager, contact_params, master_nodes, slave_n
             contact_nodes[mapping[master_id]] = 5
         end
         nslave::Int64 = length(neighbors)
+
         contact_dict[master_id] = Dict{String,Any}("nSlaves" => nslave,
                                                    "Slaves" => zeros(Int64, nslave),
                                                    "Normals" => zeros(Float64, nslave, dof),
@@ -104,14 +104,12 @@ function local_contact_search(datamanager, contact_params, master_nodes, slave_n
 
             # for debugging
             if !isnothing(get(mapping, slave_id, nothing))
-                contact_nodes[mapping[slave_id]] = 4
+                contact_nodes[mapping[slave_id]] = 8
             end
-
             contact_dict[master_id]["nSlaves"] = nslave
             contact_dict[master_id]["Slaves"][jID] = slave_id
             contact_dict[master_id]["Normals"][jID, :] = normal
-            contact_dict[master_id]["Distances"][jID] = distance == 0 ? distance + eps() :
-                                                        distance
+            contact_dict[master_id]["Distances"][jID] = distance
         end
     end
 

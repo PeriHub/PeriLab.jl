@@ -83,7 +83,12 @@ end
 function get_search_step(cg)
     return data["Contact Search Step"][cg]
 end
-function add_synchronization_list(list)
+
+function clear_synchronization_list()
+    data["Synchronization List"] = Dict{Int64,Int64}()
+end
+
+function add_synchronization_list(list::Vector{Int64})
     mapping = get_local_contact_ids()
     for iID in list
         if !isnothing(get(mapping, iID, nothing))
