@@ -42,6 +42,12 @@ function init_contact_model(datamanager::Module, params)
     # all following functions deal with the local contact position id.
     if !haskey(params, "Globals")
         params["Globals"] = Dict()
+        if isnothing(get(params["Globals"], "Only Surface Contact Nodes", nothing))
+            params["Globals"]["Global Search Frequency"] = 1
+        elseif params["Globals"]["Global Search Frequency"] < 1
+            @warn "Globals Search Frequency must be greater than zero and set to 1."
+            params["Globals"]["Global Search Frequency"] = 1
+        end
     end
     only_surface = get(params["Globals"], "Only Surface Contact Nodes", true)
 
@@ -49,24 +55,24 @@ function init_contact_model(datamanager::Module, params)
                                                       only_surface)
     contact_nodes = datamanager.create_constant_node_field("Contact Nodes", Int64, 1)
     block_list = datamanager.get_all_blocks()
-    # give every block there surface ids
+
     mapping = contact_block_ids(global_contact_ids, block_list, contact_blocks)
+
     datamanager.set_contact_block_ids(mapping)
     # identify all surface which have no neighboring nodes
     if only_surface
         free_surfaces = identify_free_contact_surfaces(datamanager, contact_blocks)
     end
     points = datamanager.get_all_positions()
+
     block_nodes = get_block_nodes(block_list, length(block_list)) # all ids
 
     for contact_model in filter(k -> k != "Globals", keys(params))
         for (cg, contact_params) in pairs(params[contact_model]["Contact Groups"])
-            if !haskey(contact_params, "Maximum Contact Pairs")
-                contact_params["Maximum Contact Pairs"] = 10
-            end
             if !haskey(contact_params, "Global Search Frequency")
-                contact_params["Global Search Frequency"] = 1
+                contact_params["Global Search Frequency"] = params["Globals"]["Global Search Frequency"]
             end
+            datamanager.set_search_step(cg, 0)
             slave_id = contact_params["Slave Block ID"]
             master_id = contact_params["Master Block ID"]
             @info "Contact pair Master block $master_id - Slave block $slave_id"
@@ -91,7 +97,7 @@ function init_contact_model(datamanager::Module, params)
     # reduce the block_list
     datamanager.set_all_blocks(block_list[global_contact_ids])
     datamanager.set_all_positions(points[global_contact_ids, :])
-    @debug points[global_contact_ids, :]
+
     shared_vol = datamanager.create_constant_free_size_field("Shared Volumes", Float64,
                                                              (length(global_contact_ids),
                                                               1))
@@ -100,9 +106,14 @@ function init_contact_model(datamanager::Module, params)
                                                                   1))
     create_local_contact_id_mapping(datamanager, global_contact_ids)
 
-    shared_vol = synchronize_contact_points(datamanager, "Volume", "Constant", shared_vol)
-    shared_horizon = synchronize_contact_points(datamanager, "Horizon", "Constant",
-                                                shared_horizon)
+    shared_vol[:] = synchronize_contact_points(datamanager, "Volume", "Constant",
+                                               shared_vol,
+                                               datamanager.get_local_contact_ids())
+
+    shared_horizon[:] = synchronize_contact_points(datamanager, "Horizon", "Constant",
+                                                   shared_horizon,
+                                                   datamanager.get_local_contact_ids())
+
     @info "Set contact models"
     for (cm, contact_params) in pairs(params)
         if cm == "Globals"
@@ -129,26 +140,29 @@ end
 function create_local_contact_id_mapping(datamanager, global_contact_ids)
     mapping = Dict{Int64,Int64}()
     inv_mapping = Dict{Int64,Int64}()
+    # all controler nodes, because only they are allowed to communicate with the exchange_id
+    nnodes = datamanager.get_nnodes()
     for (id, pid) in enumerate(global_contact_ids)
         local_id = datamanager.get_local_nodes([pid])
-        if local_id == []
+        if isempty(local_id) || local_id[1] > nnodes
             continue
         end
+        # local id -> exchange id
         mapping[local_id[1]] = id
+        # exchange id -> local id
         inv_mapping[id] = local_id[1]
     end
     datamanager.set_local_contact_ids(mapping)
     datamanager.set_exchange_id_to_local_id(inv_mapping)
 end
 
-function loc_to_contact_exchange_id(global_contact_ids::Vector{Int64})
-    mapping = Dict{Int64,Int64}()
-    for (id, num) in enumerate(global_contact_ids)
-        mapping[id] = num
-    end
-    return mapping
-end
-# give the ids for the contact blocks in the exchange vector
+"""
+    contact_block_ids(global_ids::Vector{Int64}, block_list, contact_blocks)
+
+Finds the ids which are in the specific contact related blocks.
+
+
+"""
 function contact_block_ids(global_ids::Vector{Int64}, block_list, contact_blocks)
     mapping = Dict{Int64,Vector{Int64}}()
     for cb in contact_blocks
@@ -196,33 +210,49 @@ function compute_contact_model(datamanager::Module,
                                to::TimerOutput)
     # computes and synchronizes the relevant positions
     all_positions = datamanager.get_all_positions()
-    all_positions = synchronize_contact_points(datamanager, "Deformed Coordinates", "NP1",
-                                               all_positions)
+    if datamanager.global_synchronization()
+        datamanager.clear_synchronization_list()
+        all_positions = synchronize_contact_points(datamanager,
+                                                   "Deformed Coordinates",
+                                                   "NP1",
+                                                   all_positions,
+                                                   datamanager.get_local_contact_ids())
+    else
+        # local synchronization occurs if Global Search Frequency > 1
+        update_list = datamanager.synchronization_list()
+        all_positions = synchronize_contact_points(datamanager,
+                                                   "Deformed Coordinates",
+                                                   "NP1",
+                                                   all_positions, update_list)
+    end
     datamanager.set_all_positions(all_positions)
-
     @timeit to "Contact search" begin
         for (cm, block_contact_params) in pairs(contact_params)
             if cm == "Globals"
                 continue
             end
+
             mod = datamanager.get_model_module(block_contact_params["Type"])
             for (cg, block_contact_group) in pairs(block_contact_params["Contact Groups"])
+                n = datamanager.get_search_step(cg) + 1
+
                 # needed in search and in model evaluation
                 block_contact_group["Contact Radius"] = block_contact_params["Contact Radius"]
                 datamanager.set_contact_dict(cg, Dict())
-                #contact_params["Global Search Frequency"]
+
                 @timeit to "compute_contact_pairs" compute_contact_pairs(datamanager,
                                                                          cg,
-                                                                         block_contact_group,
-                                                                         block_contact_group["Maximum Contact Pairs"])
+                                                                         block_contact_group)
                 @timeit to "compute_contact_model" datamanager=mod.compute_contact_model(datamanager,
                                                                                          cg,
                                                                                          block_contact_params,
                                                                                          compute_master_force_density,
                                                                                          compute_slave_force_density)
+                if n == block_contact_group["Global Search Frequency"]
+                    datamanager.set_search_step(cg, 0)
+                end
             end
         end
-
         #compute_contact()
     end
     return datamanager
@@ -239,7 +269,7 @@ end
 function compute_force_density(datamanager, id_1, id_2, contact_force)
     mapping = datamanager.get_exchange_id_to_local_id()
 
-    if !(id_1 in keys(mapping))
+    if isnothing(get(mapping, id_1, nothing))
         return
     end
     shared_volume = datamanager.get_field("Shared Volumes")
@@ -259,22 +289,28 @@ function identify_contact_block_nodes(datamanager, contact_blocks, only_surface)
     block_ids = datamanager.get_all_blocks() # all ids
     block_nodes = get_block_nodes(block_ids, length(block_ids)) # all ids
     for block in contact_blocks
-        if !only_surface
+        if only_surface
+            append!(global_ids, get_surface_points(points, block_nodes[block]))
+        else
             append!(global_ids, block_nodes[block])
-            continue
-        end
-        poly = compute_geometry(points[block_nodes[block], :])
-        normals, offsets = get_surface_information(poly)
-        for pID in block_nodes[block]
-            for id in eachindex(offsets)
-                if isapprox(dot(normals[id, :], points[pID, :]) - offsets[id], 0;
-                            atol = 1e-6, rtol = 1e-5)
-                    append!(global_ids, pID)
-                end
-            end
         end
     end
     return sort(unique(global_ids))
+end
+
+function get_surface_points(points, block_nodes)
+    global_ids = Vector{Int64}([])
+    poly = compute_geometry(points[block_nodes, :])
+    normals, offsets = get_surface_information(poly)
+    for pID in block_nodes
+        for id in eachindex(offsets)
+            if isapprox(dot(normals[id, :], points[pID, :]) - offsets[id], 0;
+                        atol = 1e-6, rtol = 1e-5)
+                append!(global_ids, pID)
+            end
+        end
+    end
+    return global_ids
 end
 
 function identify_free_contact_surfaces(datamanager::Module, contact_blocks::Vector{Int64})
@@ -343,9 +379,9 @@ tbd
 """
 
 function synchronize_contact_points(datamanager::Module, what::String, step::String,
-                                    synch_vector)
+                                    synch_vector, local_map)
     sy = datamanager.get_field(what, step)
-    local_map = datamanager.get_local_contact_ids()
+
     synch_vector .= 0
     for (local_id, exchange_id) in pairs(local_map)
         synch_vector[exchange_id, :] .= sy[local_id, :]
@@ -354,19 +390,8 @@ function synchronize_contact_points(datamanager::Module, what::String, step::Str
         return synch_vector
     end
     comm = datamanager.get_comm()
-    return find_and_set_core_value_sum(comm, synch_vector)
-end
 
-function get_local_ids(datamanager::Module)
-    local_map = Dict{Int64,Int64}()
-    global_nodes = datamanager.get_contact_relevant_global_ids()
-    for (id, global_node) in enumerate(global_nodes)
-        local_node = datamanager.get_local_nodes([global_node])
-        if !(local_node == [])
-            local_map[local_node[1]] = id
-        end
-    end
-    datamanager.set_contact_relevant_local_ids(local_map)
+    return find_and_set_core_value_sum(comm, synch_vector)
 end
 
 ## TODO check if this method holds true for all surfaces, because some with same size in the same half plane might be identified as equal

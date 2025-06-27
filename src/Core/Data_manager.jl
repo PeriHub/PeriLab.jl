@@ -162,6 +162,11 @@ function initialize_data()
     data["Contact Properties"] = Dict()
     data["Contact block IDs"] = Dict()
     data["Exchange id to local id"] = Dict{Int64,Int64}()
+    data["Contact Search Step"] = Dict{Any,Int64}()
+    data["Contact Search No Pairs"] = Dict{Any,Bool}()
+    data["Synchronization List"] = Dict{Int64,Int64}()
+    data["Global Master Search Nodes"] = Dict()
+    data["Global Slave Search Nodes"] = Dict()
     fields[Int64] = Dict()
     fields[Float64] = Dict()
     fields[Bool] = Dict()
@@ -335,15 +340,6 @@ Get the MPI communicator
 """
 function get_comm()
     return data["commMPi"]
-end
-
-"""
-    get_contact_nodes()
-
-Get list of surface nodes of a block.
-"""
-function get_contact_nodes()
-    return data["Contact Nodes"]
 end
 
 """
