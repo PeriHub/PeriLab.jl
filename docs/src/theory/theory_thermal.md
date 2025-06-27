@@ -1,7 +1,7 @@
 # Thermal models
 The theory is taken from [WillbergC2024b](@cite)
 ## Thermo-mechanics
-To introduce a thermo-mechanical coupling the mechanical strains in \autoref{eq:GreenLagrangeStrains} have to be expanded with the thermal strains:
+To introduce a thermo-mechanical coupling the mechanical strains in have to be expanded with the thermal strains:
 
 $$\boldsymbol{\varepsilon}=\boldsymbol{\varepsilon}_{mechanical} + \boldsymbol{\varepsilon}_{thermal}.$$
 The thermal strains are defined as
@@ -57,7 +57,7 @@ $$V_{3D}=\frac43\pi\delta^3 \geq \int_{\mathcal{H}}dV$$
 
 Each point which is next to the surface will have less volume represented be the discrete material points. Defining a limit value
 $$f_{limit} \leq V_{specific} =  \frac{\int_{\mathcal{H}}dV}{V_{2D\,or\,3D}}$$
-allows an easy identification of surface nodes $i$ during the printing process. Combining \autoref{eq:newTemp} and \autoref{eq:Heat_transfer_to_environment} allows the calculation of the change in temperature for these nodes $i$ as
+allows an easy identification of surface nodes $i$ during the printing process. Combining the heat flow and the convection model allows the computation of the change in temperature for these nodes $i$ as
 $$\tau_i^{t+dt} = dt\frac{\nabla\mathbf{q}_i + \frac{\kappa (\tau_i^{t}-\tau_{env})}{dx}}{(\rho C_v)_i} + \tau^{t}_i\,.$$
 
 ## Time step

@@ -43,7 +43,7 @@ function main(file, nodesets, blocks = [])
         close(node_set_file)
     end
 
-    if length(blocks) > 0
+    if !isempty(blocks) > 0
         for id in 1:size(mesh, 1)
             global i = id
             for block_id in eachindex(blocks)
