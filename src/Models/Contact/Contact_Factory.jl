@@ -259,11 +259,11 @@ function compute_contact_model(datamanager::Module,
 end
 
 function compute_master_force_density(datamanager, id_m, id_s, contact_force)
-    compute_force_density(datamanager, id_m, id_s, contact_force)
+    compute_force_density(datamanager, id_m, id_s, -contact_force)
 end
 
 function compute_slave_force_density(datamanager, id_s, id_m, contact_force)
-    compute_force_density(datamanager, id_s, id_m, -contact_force)
+    compute_force_density(datamanager, id_s, id_m, contact_force)
 end
 
 function compute_force_density(datamanager, id_1, id_2, contact_force)
@@ -275,7 +275,7 @@ function compute_force_density(datamanager, id_1, id_2, contact_force)
     shared_volume = datamanager.get_field("Shared Volumes")
     force_densities = datamanager.get_field("Force Densities", "NP1")
 
-    force_densities[mapping[id_1], :] .+= 0.5 .* contact_force .* shared_volume[id_2]
+    force_densities[mapping[id_1], :] .+= contact_force .* shared_volume[id_2]
     #println(force_densities[mapping[id_1], :])
 end
 """

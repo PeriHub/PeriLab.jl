@@ -54,17 +54,18 @@ function compute_contact_model(datamanager, cg, params, compute_master_force_den
             horizon = get_shared_horizon(datamanager, slave_id) # needed to get the correct contact horizon
             # TODO symmetry needed
             if params["Symmetry"] == "plane stress"
-                stiffness = 9 / (pi * horizon^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+                stiffness = 9 / (pi * horizon^4) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             elseif params["Symmetry"] == "plane strain"
-                stiffness = 48 / (5 * pi * horizon^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+                stiffness = 48 / (5 * pi * horizon^4) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             else
-                stiffness = 12 / (pi * horizon^4)  # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
+                stiffness = 9 / (pi * horizon^5)  # -> from Peridigm
+                #stiffness = 12 / (pi * horizon^4)  # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
             end
 
             @views distance = contact["Distances"][id]
             @views normal = contact["Normals"][id, :]
-            temp = (contact_radius - distance) / horizon
-            normal_force = contact_stiffness * stiffness * temp .* normal
+            temp = contact_stiffness * stiffness * (contact_radius - distance)
+            normal_force = temp .* normal
             friction_id,
             friction_slave_id = compute_friction(datamanager, id, slave_id,
                                                  params["Friction Coefficient"],
