@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file.
 
 - Only surface nodes options for contact
 - Contact search frequency #279
-- Docu for search strategy #282
+- Documentation for search strategy #282
 
 ### Fixed
 
