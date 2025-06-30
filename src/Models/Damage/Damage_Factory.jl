@@ -62,13 +62,16 @@ function compute_model(datamanager::Module,
                        dt::Float64,
                        to::TimerOutput)
     mod = datamanager.get_model_module(model_param["Damage Model"])
-    datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt)
+
+    @timeit to "run model" datamanager=mod.compute_model(datamanager, nodes, model_param,
+                                                         block, time, dt)
 
     if isnothing(datamanager.get_filtered_nlist())
-        return damage_index(datamanager, nodes)
+        @timeit to "compute index" return damage_index(datamanager, nodes)
     end
 
-    return damage_index(datamanager, nodes, datamanager.get_filtered_nlist())
+    @timeit to "compute index" return damage_index(datamanager, nodes,
+                                                   datamanager.get_filtered_nlist())
 end
 
 """
@@ -120,15 +123,30 @@ function damage_index(datamanager::Module, nodes::AbstractVector{Int64})
     return datamanager
 end
 
-function compute_index(damage, nodes, volume, nlist, bond_damage)
+function compute_index(damage::AbstractVector{Float64},
+                       nodes::AbstractVector{Int64},
+                       volume::AbstractVector{Float64},
+                       nlist::Vector{Vector{Int64}},
+                       bond_damage::Vector{Vector{Float64}})
     @inbounds @fastmath for iID in nodes
-        undamaged_volume = zero(Float64)
-        totalDamage = zero(Float64)
-        @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
-            @views undamaged_volume += volume[nlist[iID][jID]]
-            @views totalDamage += (1 - bond_damage[iID][jID]) * volume[nlist[iID][jID]]
+        undamaged_volume = 0.0  # More explicit than zero(Float64)
+        totalDamage = 0.0
+
+        # Cache the vectors to help type inference
+        neighbors = nlist[iID]
+        bonds = bond_damage[iID]
+
+        @inbounds @fastmath for j in eachindex(neighbors)
+            jID = neighbors[j]
+            vol_j = volume[jID]
+            undamaged_volume += vol_j
+            totalDamage += (1.0 - bonds[j]) * vol_j
         end
-        if damage[iID] < totalDamage / undamaged_volume
+
+        # More explicit type handling
+        current_damage = damage[iID]
+        threshold = current_damage * undamaged_volume
+        if threshold < totalDamage
             damage[iID] = totalDamage / undamaged_volume
         end
     end
