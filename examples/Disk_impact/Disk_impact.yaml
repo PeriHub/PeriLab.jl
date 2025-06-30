@@ -58,13 +58,13 @@ PeriLab:
     Contact_1:
       Type: "Penalty Contact"
       Contact Radius: 0.000775
-      Contact Stiffness: 1e12
+      Contact Stiffness: 1e11
+      Only Surface Contact Nodes: false
       Contact Groups:
         Group 1:
-          Maximum Contact Pairs: 50
           Master Block ID: 1
           Slave Block ID: 2
-          Search Radius: 0.01
+          Search Radius: 0.005
           Global Search Frequency: 100
   Boundary Conditions:
     Sphere Initial Velocity:
