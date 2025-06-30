@@ -18,9 +18,13 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Contact search algorithm #281
 - Contact penalty model
 - Contact for MPI #280
+- Type stability
+
+### Changed
+
+- Contact search algorithm #281
 
 ## [1.4.4] - 2025-06-23
 
