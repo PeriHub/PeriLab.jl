@@ -35,7 +35,7 @@ Calculates the damage criterion of each bond. This template has to be copied, th
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `block::Int64`: Block number
 - `time::Float64`: The current time.
@@ -47,7 +47,7 @@ Example:
 ```
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        damage_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -78,13 +78,13 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
     return datamanager
 end
 """
-    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, damage_parameter::Dict, block::Int64)
+    init_model(datamanager::Module, nodes::AbstractVector{Int64}, damage_parameter::Dict, block::Int64)
 
 Inits the damage model. Should be used to init damage specific fields, etc.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `block::Int64`: Block number
 - `damage_parameter::Dict`: Damage parameter.
 - `block::Float64`: The current block.
@@ -95,7 +95,7 @@ Example:
 ```
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     damage_parameter::Dict,
                     block::Int64)
     return datamanager

@@ -30,8 +30,9 @@ Initializes the fields.
 """
 function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
-    deformed_coorN, deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates",
-                                                                     Float64, dof)
+    deformed_coorN,
+    deformed_coorNP1 = datamanager.create_node_field("Deformed Coordinates",
+                                                     Float64, dof)
     deformed_coorN = copy(datamanager.get_field("Coordinates"))
     deformed_coorNP1 = copy(datamanager.get_field("Coordinates"))
     datamanager.create_bond_field("Deformed Bond Geometry", Float64, dof)
@@ -47,18 +48,18 @@ Initializes the model.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
     dof = datamanager.get_dof()
     ## das muss hier rein. Das ist keine Komfortfunktion, sondern setzt Abhängigkeiten
 
     for (active_model_name, active_model) in pairs(datamanager.get_properties(block,
-                                                                              "Pre Calculation Model"))
+                                         "Pre Calculation Model"))
         if active_model
             mod = Set_modules.create_module_specifics(active_model_name,
                                                       module_list,
@@ -79,13 +80,13 @@ function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
 Computes the pre calculation models
 
 # Arguments
 - `datamanager::Module`: The datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `nodes::AbstractVector{Int64}`: The nodes
 - `model_param::Dict`: The model parameters
 - `block::Int64`: The block
 - `time::Float64`: The current time
@@ -94,7 +95,7 @@ Computes the pre calculation models
 - `datamanager::Module`: The datamanager
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        model_param::Union{Dict,OrderedDict},
                        block::Int64,
                        time::Float64,
@@ -177,7 +178,7 @@ function check_dependencies(datamanager::Module, block_nodes::Dict{Int64,Vector{
         end
         # Check dependencies inside the pre calculation
         for (active_model_name, active_model) in pairs(datamanager.get_properties(block_id,
-                                                                                  "Pre Calculation Model"))
+                                             "Pre Calculation Model"))
             if !active_model
                 continue
             end

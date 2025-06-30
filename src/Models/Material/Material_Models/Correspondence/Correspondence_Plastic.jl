@@ -33,20 +33,20 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
-  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     if !haskey(material_parameter, "Shear Modulus")
         @error "Shear Modulus must be defined to be able to run this plastic material"
@@ -89,7 +89,7 @@ function correspondence_name()
 end
 
 """
-    compute_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
+    compute_stresses(datamanager::Module, nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 

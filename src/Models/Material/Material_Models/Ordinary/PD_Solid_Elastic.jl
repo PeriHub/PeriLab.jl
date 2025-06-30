@@ -11,7 +11,7 @@ using .Helpers: add_in_place!
 using TimerOutputs
 using StaticArrays
 using .Ordinary:
-                 compute_weighted_volume, compute_dilatation, calculate_symmetry_params,
+                 compute_weighted_volume!, compute_dilatation!, calculate_symmetry_params,
                  get_bond_forces
 export fe_support
 export init_model
@@ -40,20 +40,20 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
-  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     datamanager.create_constant_node_field("Weighted Volume", Float64, 1)
     datamanager.create_constant_node_field("Dilatation", Float64, 1)
@@ -92,13 +92,13 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
 
 Computes the forces.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nodes::AbstractVector{Int64}`: The nodes.
 - `material_parameter::Dict`: The material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -106,7 +106,7 @@ Computes the forces.
 - `datamanager::Data_manager`: Datamanager.
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -119,7 +119,6 @@ function compute_model(datamanager::Module,
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
 
-    nneighbors = datamanager.get_field("Number of Neighbors")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     bond_damage = datamanager.get_bond_damage("NP1")
@@ -136,35 +135,32 @@ function compute_model(datamanager::Module,
 
     # optimizing, because if no damage it has not to be updated
     # TBD update_list should be used here as in shape_tensor.jl
-    @timeit to "Weighted Volume" compute_weighted_volume(weighted_volume,
-                                                         nodes,
-                                                         nlist,
-                                                         undeformed_bond_length,
-                                                         bond_damage,
-                                                         omega,
-                                                         volume)
-    @timeit to "Dilatation" compute_dilatation(nodes,
-                                               nneighbors,
-                                               nlist,
-                                               undeformed_bond_length,
-                                               deformed_bond_length,
-                                               bond_damage,
-                                               volume,
-                                               weighted_volume,
-                                               omega,
-                                               theta)
-    @timeit to "elastic" bond_force_deviatoric_part,
-                         bond_force_isotropic_part=elastic(nodes,
-                                                           dof,
-                                                           undeformed_bond_length,
-                                                           deformed_bond_length,
-                                                           bond_damage,
-                                                           theta,
-                                                           weighted_volume,
-                                                           omega,
-                                                           material_parameter,
-                                                           bond_force_deviatoric_part,
-                                                           bond_force_isotropic_part)
+    @timeit to "Weighted Volume" compute_weighted_volume!(weighted_volume,
+                                                          nodes,
+                                                          nlist,
+                                                          undeformed_bond_length,
+                                                          bond_damage,
+                                                          omega,
+                                                          volume)
+    @timeit to "Dilatation" compute_dilatation!(nodes,
+                                                nlist,
+                                                undeformed_bond_length,
+                                                deformed_bond_length,
+                                                bond_damage,
+                                                volume,
+                                                weighted_volume,
+                                                omega,
+                                                theta)
+    @timeit to "elastic" elastic!(nodes,
+                                  undeformed_bond_length,
+                                  deformed_bond_length,
+                                  bond_damage,
+                                  theta,
+                                  weighted_volume,
+                                  omega,
+                                  material_parameter,
+                                  bond_force_deviatoric_part,
+                                  bond_force_isotropic_part)
     add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
     @timeit to "get_bond_forces" bond_force=get_bond_forces(nodes, temp, deformed_bond,
                                                             deformed_bond_length,
@@ -196,17 +192,16 @@ for 3D, plane stress and plane strain it is refered to [BobaruF2016](@cite) page
 # Returns
 - bond_force: dictionary of calculated bond forces for each node
 """
-function elastic(nodes::Union{SubArray,Vector{Int64}},
-                 dof::Int64,
-                 undeformed_bond_length::Vector{Vector{Float64}},
-                 deformed_bond_length::Vector{Vector{Float64}},
-                 bond_damage::Vector{Vector{Float64}},
-                 theta::Vector{Float64},
-                 weighted_volume::Vector{Float64},
-                 omega::Vector{Vector{Float64}},
-                 material::Dict,
-                 bond_force_deviatoric_part::Vector{Vector{Float64}},
-                 bond_force_isotropic_part::Vector{Vector{Float64}})
+function elastic!(nodes::AbstractVector{Int64},
+                  undeformed_bond_length::Vector{Vector{Float64}},
+                  deformed_bond_length::Vector{Vector{Float64}},
+                  bond_damage::Vector{Vector{Float64}},
+                  theta::Vector{Float64},
+                  weighted_volume::Vector{Float64},
+                  omega::Vector{Vector{Float64}},
+                  material::Dict,
+                  bond_force_deviatoric_part::Vector{Vector{Float64}},
+                  bond_force_isotropic_part::Vector{Vector{Float64}})
     shear_modulus = material["Shear Modulus"]
     bulk_modulus = material["Bulk Modulus"]
 
@@ -219,6 +214,7 @@ function elastic(nodes::Union{SubArray,Vector{Int64}},
         kappa = Ordinary.calculate_symmetry_params(symmetry, shear_modulus,
                                                    bulk_modulus)
     end
+
     for iID in nodes
         # Calculate alpha and beta
         if weighted_volume[iID] == 0
@@ -230,18 +226,24 @@ function elastic(nodes::Union{SubArray,Vector{Int64}},
                                                        shear_modulus[iID],
                                                        bulk_modulus[iID])
         end
-        #TODO: deviatoric_deformation needs allocationg, add temp field
-        deviatoric_deformation = deformed_bond_length[iID] .- undeformed_bond_length[iID] .-
-                                 (gamma * theta[iID] / 3) .* undeformed_bond_length[iID]
-        bond_force_deviatoric_part[iID] .= bond_damage[iID] .* omega[iID] .* alpha .*
-                                           deviatoric_deformation ./
-                                           weighted_volume[iID]
-        bond_force_isotropic_part[iID] .= bond_damage[iID] .* omega[iID] .* kappa .*
-                                          theta[iID] .*
-                                          undeformed_bond_length[iID] ./
-                                          weighted_volume[iID]
+
+        deviatoric_deformation::Float64 = 0.0
+        @inbounds @simd for jID in eachindex(deformed_bond_length[iID])
+            deviatoric_deformation = deformed_bond_length[iID][jID] -
+                                     undeformed_bond_length[iID][jID] -
+                                     (gamma * theta[iID] / 3) *
+                                     undeformed_bond_length[iID][jID]
+            bond_force_deviatoric_part[iID][jID] = bond_damage[iID][jID] * omega[iID][jID] *
+                                                   alpha *
+                                                   deviatoric_deformation /
+                                                   weighted_volume[iID]
+            bond_force_isotropic_part[iID][jID] = bond_damage[iID][jID] * omega[iID][jID] *
+                                                  kappa *
+                                                  theta[iID] *
+                                                  undeformed_bond_length[iID][jID] /
+                                                  weighted_volume[iID]
+        end
     end
-    return bond_force_deviatoric_part, bond_force_isotropic_part
 end
 
 end

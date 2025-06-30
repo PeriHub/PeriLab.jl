@@ -41,20 +41,20 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
-  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
@@ -119,13 +119,13 @@ function material_name()
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -133,7 +133,7 @@ Calculate the elastic bond force for each node.
 - `datamanager::Data_manager`: Datamanager.
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,

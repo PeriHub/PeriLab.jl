@@ -32,7 +32,7 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
 - `block::Int64`: The current block.
 # Returns
@@ -40,7 +40,7 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     thermal_parameter::Dict)
     dof = datamanager.get_dof()
     if !haskey(thermal_parameter, "Type") || (thermal_parameter["Type"] != "Bond based" &&
@@ -70,7 +70,7 @@ Calculates the thermal behavior of the material. This template has to be copied,
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `thermal_parameter::Dict(String, Any)`: Dictionary with flow parameter.
 - `block::Int64`: Current block
 - `time::Float64`: The current time.
@@ -82,7 +82,7 @@ Example:
 ```
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        thermal_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -171,7 +171,7 @@ end
 [BrighentiR2021](@cite)
 is a prototype with some errors
 """
-function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int64}},
+function compute_heat_flow_state_correspondence(nodes::AbstractVector{Int64},
                                                 dof::Int64,
                                                 nlist::Vector{Vector{Int64}},
                                                 lambda::Union{Matrix{Float64},MMatrix},
@@ -209,14 +209,14 @@ function compute_heat_flow_state_correspondence(nodes::Union{SubArray,Vector{Int
 end
 
 """
-    compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, nlist::Vector{Vector{Int64},
+    compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64}, dof::Int64, nlist::Vector{Vector{Int64},
       lambda::Union{Float64, Int64}, bond_damage::Vector{Vector{Float64}}, undeformed_bond::Vector{Matrix{Float64}}, horizon::Vector{Float64},
       temperature::Vector{Float64}, heat_flow::Vector{Float64})
 
 Calculate Heat Flow based on a bond-based model for thermal analysis.
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: An array of node indices for which Heat Flow should be computed.
+- `nodes::AbstractVector{Int64}`: An array of node indices for which Heat Flow should be computed.
 - `dof::Int64`: The degree of freedom, either 2 or 3, indicating whether the analysis is 2D or 3D.
 - `nlist::Vector{Vector{Int64}`: A Vector representing the neighbor list for each node.
 - `lambda::Union{Float64, Int64}`: The thermal conductivity.
@@ -237,7 +237,7 @@ Calculate Heat Flow based on a bond-based model for thermal analysis.
 This function calculates the Heat Flow between neighboring nodes based on a bond-based model for thermal analysis [OterkusS2014b](@cite). It considers various parameters, including thermal conductivity, damage state of bonds, geometry of bonds, horizons, temperature, and volume. The calculated bond Heat Flow values are stored in the `heat_flow` array.
 
 """
-function compute_heat_flow_state_bond_based(nodes::Union{SubArray,Vector{Int64}},
+function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
                                             dof::Int64,
                                             nlist::Vector{Vector{Int64}},
                                             lambda::Union{Float64,Int64},

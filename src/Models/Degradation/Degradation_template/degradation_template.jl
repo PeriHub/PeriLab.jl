@@ -34,7 +34,7 @@ Calculates the degradation model. This template has to be copied, the file renam
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -45,7 +45,7 @@ Example:
   ```
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        degradation_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -65,7 +65,7 @@ Inits the degradation model. This template has to be copied, the file renamed an
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `degradation parameter::Dict(String, Any)`: Dictionary with degradation parameter.
 - `block::Int64`: The current block.
 # Returns
@@ -73,7 +73,7 @@ Inits the degradation model. This template has to be copied, the file renamed an
 
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     degradation_parameter::Dict,
                     block::Int64)
     @info "Please write a degradation name in degradation_name()."

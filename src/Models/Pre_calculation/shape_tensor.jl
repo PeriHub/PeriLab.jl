@@ -40,14 +40,14 @@ Inits the shape tensor calculation.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
     dof = datamanager.get_dof()
@@ -57,18 +57,18 @@ function init_model(datamanager::Module,
 end
 
 """
-    compute(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+    compute(datamanager::Module, nodes::AbstractVector{Int64})
 
 Compute the shape tensor.
 
 # Arguments
 - `datamanager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 # Returns
 - `datamanager`: Datamanager.
 """
 function compute(datamanager::Module,
-                 nodes::Union{SubArray,Vector{Int64}},
+                 nodes::AbstractVector{Int64},
                  parameter::Union{Dict,OrderedDict},
                  block::Int64)
     nlist = datamanager.get_nlist()

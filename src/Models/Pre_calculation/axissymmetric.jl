@@ -35,7 +35,7 @@ Inits the bond-based degradation model. This template has to be copied, the file
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
 - `block::Int64`: The current block.
 # Returns
@@ -43,7 +43,7 @@ Inits the bond-based degradation model. This template has to be copied, the file
 
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
     return datamanager
@@ -56,7 +56,7 @@ This template has to be copied, the file renamed and edited by the user to creat
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `Pre_calculation_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -67,7 +67,7 @@ Example:
   ```
 """
 function compute(datamanager::Module,
-                 nodes::Union{SubArray,Vector{Int64}},
+                 nodes::AbstractVector{Int64},
                  parameter::Union{Dict,OrderedDict},
                  block::Int64)
     @info "Please write a possible precalculation routines in pre_calculation_name()."
@@ -79,7 +79,7 @@ function compute(datamanager::Module,
 end
 
 function init(datamanager::Module,
-              nodes::Union{SubArray,Vector{Int64}},
+              nodes::AbstractVector{Int64},
               Pre_calculation_parameter::Dict)
     symmetry_axis = datamanager.get_symmetry_axis()
     volume = datamanager.get_field("Volume")

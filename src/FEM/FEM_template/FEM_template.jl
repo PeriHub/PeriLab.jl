@@ -28,7 +28,7 @@ function element_name()
 end
 
 function init_element(datamanager::Module,
-                      elements::Union{SubArray,Vector{Int64}},
+                      elements::AbstractVector{Int64},
                       element_params::Dict,
                       p::Vector{Int64})
     return datamanager
@@ -40,7 +40,7 @@ Calculates element model of the material. This template has to be copied, the fi
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `element parameter::Dict(String, Any)`: Dictionary with element parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -51,7 +51,7 @@ Example:
   ```
 """
 function compute_element(datamanager::Module,
-                         nodes::Union{SubArray,Vector{Int64}},
+                         nodes::AbstractVector{Int64},
                          element_parameter::Dict,
                          time::Float64,
                          dt::Float64)

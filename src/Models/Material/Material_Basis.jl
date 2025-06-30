@@ -425,12 +425,12 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix, symmetry::String, dof::Int64
 end
 
 """
-    distribute_forces!(nodes::Union{SubArray,Vector{Int64}}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
+    distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nodes::AbstractVector{Int64}`: The nodes.
 - `nlist::Vector{Vector{Int64}}`: The neighbor list.
 - `nlist_filtered_ids::Vector{Vector{Int64}},`:  The filtered neighbor list.
 - `bond_force::Vector{Matrix{Float64}}`: The bond forces.
@@ -443,7 +443,7 @@ Distribute the forces on the nodes
 - `force_densities::Matrix{Float64}`: The force densities.
 """
 function distribute_forces!(force_densities::Matrix{Float64},
-                            nodes::Union{SubArray,Vector{Int64}},
+                            nodes::AbstractVector{Int64},
                             nlist::Vector{Vector{Int64}},
                             nlist_filtered_ids::Vector{Vector{Int64}},
                             bond_force::Vector{Vector{Vector{Float64}}},
@@ -483,12 +483,12 @@ function distribute_forces!(force_densities::Matrix{Float64},
 end
 
 """
-    distribute_forces!(nodes::Union{SubArray,Vector{Int64}}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
+    distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nodes::AbstractVector{Int64}`: The nodes.
 - `nlist::Vector{Vector{Int64}}`: The neighbor list.
 - `bond_force::Vector{Matrix{Float64}}`: The bond forces.
 - `volume::Vector{Float64}`: The volumes.
@@ -498,7 +498,7 @@ Distribute the forces on the nodes
 - `force_densities::Matrix{Float64}`: The force densities.
 """
 function distribute_forces!(force_densities::Matrix{Float64},
-                            nodes::Union{SubArray,Vector{Int64}},
+                            nodes::AbstractVector{Int64},
                             nlist::Vector{Vector{Int64}},
                             bond_force::Vector{Vector{Vector{Float64}}},
                             volume::Union{Vector{Float64},Vector{Int64}},

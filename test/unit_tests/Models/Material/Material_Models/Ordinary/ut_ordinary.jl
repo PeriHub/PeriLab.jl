@@ -5,7 +5,7 @@
 include("../../../../../../src/Models/Material/Material_Models/Ordinary/Ordinary.jl")
 using Test
 using .Ordinary
-@testset "compute_weighted_volume" begin
+@testset "compute_weighted_volume!" begin
     weighted_volume = zeros(9)
     weightedTest = zeros(9)
     # from Peridigm
@@ -82,13 +82,13 @@ using .Ordinary
                      0.8615883,
                      0.8615883]
     vec = Vector{Int64}(1:nnodes)
-    Ordinary.compute_weighted_volume(weighted_volume,
-                                     vec,
-                                     nlist,
-                                     undeformed_bond_length,
-                                     bond_damage,
-                                     omega,
-                                     volume)
+    Ordinary.compute_weighted_volume!(weighted_volume,
+                                      vec,
+                                      nlist,
+                                      undeformed_bond_length,
+                                      bond_damage,
+                                      omega,
+                                      volume)
 
     for iID in 1:nnodes
         @test weighted_volume[iID] / weightedTest[iID] - 1 < 1e-6
@@ -117,32 +117,30 @@ omega = [ones(Float64, 2), ones(Float64, 2)]
 nlist = [Vector{Int64}(undef, 1), Vector{Int64}(undef, 1)]
 nlist[1][1] = 2
 nlist[2][1] = 2
-@testset "compute_dilatation" begin
+@testset "compute_dilatation!" begin
     vec = Vector{Int64}(1:nnodes)
     theta = zeros(Float64, 2)
-    Ordinary.compute_dilatation(vec,
-                                nneighbors,
-                                nlist,
-                                undeformed_bond_length,
-                                deformed_bond_length,
-                                bond_damage,
-                                volume,
-                                weighted_volume,
-                                omega,
-                                theta)
+    Ordinary.compute_dilatation!(vec,
+                                 nlist,
+                                 undeformed_bond_length,
+                                 deformed_bond_length,
+                                 bond_damage,
+                                 volume,
+                                 weighted_volume,
+                                 omega,
+                                 theta)
     @test theta[1] == 3.0
     @test theta[2] == 3.0
     weighted_volume[1] = 0
-    Ordinary.compute_dilatation(vec,
-                                nneighbors,
-                                nlist,
-                                undeformed_bond_length,
-                                deformed_bond_length,
-                                bond_damage,
-                                volume,
-                                weighted_volume,
-                                omega,
-                                theta)
+    Ordinary.compute_dilatation!(vec,
+                                 nlist,
+                                 undeformed_bond_length,
+                                 deformed_bond_length,
+                                 bond_damage,
+                                 volume,
+                                 weighted_volume,
+                                 omega,
+                                 theta)
     @test theta[1] == 0.0
     @test theta[2] == 3.0
 end

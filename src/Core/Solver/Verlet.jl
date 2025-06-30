@@ -36,7 +36,7 @@ export init_solver
 export run_solver
 
 """
-    compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, lambda::Float64, Cv::Float64)
+    compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, datamanager::Module, lambda::Float64, Cv::Float64)
 
 Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
 
@@ -59,7 +59,7 @@ This function depends on the following data fields from the `datamanager` module
 - `get_field("Volume")`: Returns the volume field.
 - `get_field("Number of Neighbors")`: Returns the number of neighbors field.
 """
-function compute_thermodynamic_critical_time_step(nodes::Union{SubArray,Vector{Int64}},
+function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
                                                   datamanager::Module,
                                                   lambda::Union{Float64,Int64})
     critical_time_step::Float64 = 1.0e50
@@ -96,7 +96,7 @@ function get_cs_denominator(volume::Union{SubArray,Vector{Float64},Vector{Int64}
 end
 
 """
-    compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}}, datamanager::Module, bulk_modulus::Float64)
+    compute_mechanical_critical_time_step(nodes::AbstractVector{Int64}, datamanager::Module, bulk_modulus::Float64)
 
 Calculate the critical time step for a mechanical simulation using a bond-based approximation [LittlewoodDJ2013](@cite).
 
@@ -118,7 +118,7 @@ This function depends on the following data fields from the `datamanager` module
 - `get_field("Volume")`: Returns the volume field.
 - `get_field("Horizon")`: Returns the horizon field.
 """
-function compute_mechanical_critical_time_step(nodes::Union{SubArray,Vector{Int64}},
+function compute_mechanical_critical_time_step(nodes::AbstractVector{Int64},
                                                datamanager::Module,
                                                bulk_modulus::Union{Float64,Int64,SubArray,
                                                                    Vector{Float64}})

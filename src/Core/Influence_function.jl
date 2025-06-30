@@ -4,7 +4,7 @@
 
 module Influence_function
 
-function init_influence_function(nodes::Union{SubArray,Vector{Int64}},
+function init_influence_function(nodes::AbstractVector{Int64},
                                  datamanager::Module,
                                  params::Dict)
     if !haskey(params, "Influence Function")

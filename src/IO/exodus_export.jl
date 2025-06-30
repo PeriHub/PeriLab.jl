@@ -102,17 +102,17 @@ function get_paraview_coordinates(dof::Int64, refDof::Int64)
 end
 
 """
-    get_block_nodes(block_Id::Union{SubArray,Vector{Int64}}, block::Int64)
+    get_block_nodes(block_Id::AbstractVector{Int64}, block::Int64)
 
 Returns the nodes of a block
 
 # Arguments
-- `block_Id::Union{SubArray,Vector{Int64}}`: The block Id
+- `block_Id::AbstractVector{Int64}`: The block Id
 - `block::Int64`: The block
 # Returns
 - `nodes::Vector{Int64}`: The nodes of the block
 """
-function get_block_nodes(block_Id::Union{SubArray,Vector{Int64}}, block::Int64)
+function get_block_nodes(block_Id::AbstractVector{Int64}, block::Int64)
     conn = findall(x -> x == block, block_Id)
     return reshape(conn, 1, length(conn))
 end

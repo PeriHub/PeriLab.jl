@@ -24,7 +24,7 @@ export init_model
 export compute_model
 
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     if !haskey(material_parameter, "Symmetry")
         @error "Symmetry for correspondence material is missing; options are 'isotropic plane strain', 'isotropic plane stress', 'anisotropic plane stress', 'anisotropic plane stress','isotropic' and 'anisotropic'. For 3D the plane stress or plane strain option is ignored."
@@ -86,7 +86,7 @@ end
 """
 
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -225,7 +225,7 @@ function compute_model(datamanager::Module,
     return datamanager
 end
 
-function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}},
+function compute_stress_integral(nodes::AbstractVector{Int64},
                                  dof::Int64,
                                  nlist::Union{Vector{Vector{Int64}},SubArray},
                                  omega::Vector{Vector{Float64}},
@@ -272,7 +272,7 @@ function compute_stress_integral(nodes::Union{SubArray,Vector{Int64}},
     return stress_integral
 end
 
-#function compute_bond_strain(nodes::Union{SubArray,Vector{Int64}}, nlist::Union{Vector{Vector{Int64}},SubArray}, deformation_gradient::SubArray, strain::SubArray)
+#function compute_bond_strain(nodes::AbstractVector{Int64}, nlist::Union{Vector{Vector{Int64}},SubArray}, deformation_gradient::SubArray, strain::SubArray)
 #
 function compute_bond_strain(nodes,
                              nlist,
@@ -311,7 +311,7 @@ function update_Green_Langrange_nodal_strain_increment(nodes::Union{SubArray,
     end
 end
 
-function update_Green_Langrange_bond_strain_increment(nodes::Union{SubArray,Vector{Int64}},
+function update_Green_Langrange_bond_strain_increment(nodes::AbstractVector{Int64},
                                                       nlist::Union{Vector{Vector{Int64}},
                                                                    SubArray},
                                                       dt::Float64,
@@ -343,7 +343,7 @@ function update_Green_Langrange_strain(dt::Float64,
     end
 end
 
-function compute_bond_forces(nodes::Union{SubArray,Vector{Int64}},
+function compute_bond_forces(nodes::AbstractVector{Int64},
                              nlist::Union{Vector{Vector{Int64}},SubArray},
                              bond_geometry,
                              bond_length,

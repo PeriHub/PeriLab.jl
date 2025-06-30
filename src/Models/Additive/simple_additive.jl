@@ -30,7 +30,7 @@ end
 """
     compute_model(
     datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
+    nodes::AbstractVector{Int64},
     additive_parameter::Dict,
     block::Int64,
     time::Float64,
@@ -41,7 +41,7 @@ Calculates the force densities of the additive. This template has to be copied, 
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `additive parameter::Dict(String, Any)`: Dictionary with additive parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -52,7 +52,7 @@ Example:
 ```
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        additive_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -100,7 +100,7 @@ Inits the simple additive model.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `additive parameter::Dict(String, Any)`: Dictionary with additive parameter.
 - `block::Int64`: The current block.
 # Returns
@@ -108,7 +108,7 @@ Inits the simple additive model.
 
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     additive_parameter::Dict,
                     block::Int64)
     add_flux = datamanager.create_constant_node_field("Additive Heat Flux", Float64, 1)

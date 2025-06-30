@@ -33,13 +33,13 @@ function init_fields(datamanager::Module)
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
 Computes the degradation models
 
 # Arguments
 - `datamanager::Module`: The datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `nodes::AbstractVector{Int64}`: The nodes
 - `model_param::Dict`: The model parameters
 - `block::Int64`: The block
 - `time::Float64`: The current time
@@ -48,7 +48,7 @@ Computes the degradation models
 - `datamanager::Module`: The datamanager
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        model_param::Dict,
                        block::Int64,
                        time::Float64,
@@ -59,13 +59,13 @@ function compute_model(datamanager::Module,
 end
 
 """
-    init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, block::Int64)
+    init_model(datamanager::Module, nodes::AbstractVector{Int64}, block::Int64)
 
 Initialize a degradation models.
 
 # Arguments
 - `datamanager::Module`: The data manager module where the degradation model will be initialized.
-- `nodes::Union{SubArray,Vector{Int64}}`: Nodes for the degradation model.
+- `nodes::AbstractVector{Int64}`: Nodes for the degradation model.
 - `block::Int64`: Block identifier for the degradation model.
 
 # Returns
@@ -76,7 +76,7 @@ Initialize a degradation models.
 datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
     model_param = datamanager.get_properties(block, "Degradation Model")
     mod = Set_modules.create_module_specifics(model_param["Degradation Model"],

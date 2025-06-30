@@ -48,7 +48,7 @@ Calculates the elastic energy of each bond and compares it to a critical one. If
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `block::Int64`: Block number.
 - `time::Float64`: The current time.
@@ -60,7 +60,7 @@ Example:
 ```
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        damage_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -281,7 +281,7 @@ function get_quad_horizon(horizon::Float64, dof::Int64, thickness::Float64)
 end
 
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     damage_parameter::Dict,
                     block::Int64)
     dof = datamanager.get_dof()

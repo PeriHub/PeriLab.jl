@@ -35,20 +35,20 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
-  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     constant = datamanager.create_constant_node_field("Bond Based Constant", Float64, 1)
     horizon = datamanager.get_field("Horizon")
@@ -67,13 +67,13 @@ function material_name()
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -81,7 +81,7 @@ Calculate the elastic bond force for each node.
 - `datamanager::Data_manager`: Datamanager.
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -97,8 +97,9 @@ function compute_model(datamanager::Module,
 
     E = material_parameter["Young's Modulus"]
 
-    dependend_value, dependent_field = is_dependent("Young's Modulus", material_parameter,
-                                                    datamanager)
+    dependend_value,
+    dependent_field = is_dependent("Young's Modulus", material_parameter,
+                                   datamanager)
 
     for iID in nodes
         if any(deformed_bond_length[iID] .== 0)
@@ -137,11 +138,12 @@ function compute_bb_force!(bond_force,
                            deformed_bond)
     @inbounds @fastmath for i in axes(bond_force, 1)
         @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i, j] = (constant *
-                                bond_damage[i] *
-                                (deformed_bond_length[i] - undeformed_bond_length[i]) /
-                                undeformed_bond_length[i]) * deformed_bond[i, j] /
-                               deformed_bond_length[i]
+            bond_force[i,
+                       j] = (constant *
+                             bond_damage[i] *
+                             (deformed_bond_length[i] - undeformed_bond_length[i]) /
+                             undeformed_bond_length[i]) * deformed_bond[i, j] /
+                            deformed_bond_length[i]
         end
     end
 end

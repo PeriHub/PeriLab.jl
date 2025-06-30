@@ -77,7 +77,7 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
           [0, 0, 1]
 end
 
-@testset "ut_compute_weighted_volume" begin
+@testset "ut_compute_weighted_volume!" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(4)
