@@ -70,14 +70,16 @@ function init_FEM(complete_params::Dict, datamanager::Module)
                                                             prod(p .+ 1) * dof,
                                                             3 * dof - 3))
 
-    strainN, strainNP1 = datamanager.create_free_size_field("Element Strain",
-                                                            Float64,
-                                                            (nelements, prod(num_int),
-                                                             3 * dof - 3))
-    stressN, stressNP1 = datamanager.create_free_size_field("Element Stress",
-                                                            Float64,
-                                                            (nelements, prod(num_int),
-                                                             3 * dof - 3))
+    strainN,
+    strainNP1 = datamanager.create_free_size_field("Element Strain",
+                                                   Float64,
+                                                   (nelements, prod(num_int),
+                                                    3 * dof - 3))
+    stressN,
+    stressNP1 = datamanager.create_free_size_field("Element Stress",
+                                                   Float64,
+                                                   (nelements, prod(num_int),
+                                                    3 * dof - 3))
     strain_increment = datamanager.create_constant_free_size_field("Element Strain Increment",
                                                                    Float64,
                                                                    (nelements,
@@ -87,11 +89,12 @@ function init_FEM(complete_params::Dict, datamanager::Module)
     specifics = Dict{String,String}("Call Function" => "create_element_matrices",
                                     "Name" => "element_name")
     # B_elem only temporary
-    N[:], B_elem = create_element_matrices(dof,
-                                           p,
-                                           Set_modules.create_module_specifics(params["Element Type"],
-                                                                               module_list,
-                                                                               specifics))
+    N[:],
+    B_elem = create_element_matrices(dof,
+                                     p,
+                                     Set_modules.create_module_specifics(params["Element Type"],
+                                                                         module_list,
+                                                                         specifics))
     if isnothing(N) || isnothing(B_matrix)
         return nothing
     end
@@ -116,13 +119,14 @@ function init_FEM(complete_params::Dict, datamanager::Module)
                                                                        Float64,
                                                                        (nelements,
                                                                         prod(num_int)))
-    jacobian, determinant_jacobian = get_Jacobian(elements,
-                                                  dof,
-                                                  topology,
-                                                  coordinates,
-                                                  B_elem,
-                                                  jacobian,
-                                                  determinant_jacobian)
+    jacobian,
+    determinant_jacobian = get_Jacobian(elements,
+                                        dof,
+                                        topology,
+                                        coordinates,
+                                        B_elem,
+                                        jacobian,
+                                        determinant_jacobian)
 
     lumped_mass = datamanager.create_constant_node_field("Lumped Mass Matrix", Float64, 1)
     rho = datamanager.get_field("Density")
@@ -159,7 +163,7 @@ function valid_models(params::Dict)
 end
 
 function eval_FEM(datamanager::Module,
-                  elements::Union{SubArray,Vector{Int64}},
+                  elements::AbstractVector{Int64},
                   params::Dict,
                   time::Float64,
                   dt::Float64)

@@ -43,14 +43,14 @@ Inits the bond deformation gradient calculation.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
     dof = datamanager.get_dof()
@@ -92,7 +92,7 @@ Compute the bond deformation gradient.
 """
 
 function compute(datamanager::Module,
-                 nodes::Union{SubArray,Vector{Int64}},
+                 nodes::AbstractVector{Int64},
                  parameter::Union{Dict,OrderedDict},
                  block::Int64)
     dof = datamanager.get_dof()
@@ -142,7 +142,7 @@ function compute(datamanager::Module,
 end
 
 function compute_weighted_volume!(weighted_volume::Vector{Float64},
-                                  nodes::Union{SubArray,Vector{Int64}},
+                                  nodes::AbstractVector{Int64},
                                   nlist::Union{Vector{Vector{Int64}},SubArray},
                                   volume::Vector{Float64},
                                   bond_damage::Vector{Vector{Float64}},
@@ -223,7 +223,7 @@ function prod_Q(bond_geometry, horizon, p, Q)
     return Q
 end
 
-function compute_Lagrangian_gradient_weights(nodes::Union{SubArray,Vector{Int64}},
+function compute_Lagrangian_gradient_weights(nodes::AbstractVector{Int64},
                                              dof::Int64,
                                              accuracy_order::Int64,
                                              volume::Union{SubArray,Vector{Float64}},

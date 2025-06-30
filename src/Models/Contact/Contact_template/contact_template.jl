@@ -30,7 +30,7 @@ end
 """
    init_contact_model(
     datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
+    nodes::AbstractVector{Int64},
     contact_parameter::Dict,
     block::Int64,
 
@@ -38,7 +38,7 @@ Inits the contact model. This template has to be copied, the file renamed and ed
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `contact_parameter::Dict(String, Any)`: Dictionary with contact parameter.
 - `block::Int64`: The current block.
 # Returns
@@ -46,7 +46,7 @@ Inits the contact model. This template has to be copied, the file renamed and ed
 
 """
 function init_contact_model(datamanager::Module,
-                            nodes::Union{SubArray,Vector{Int64}},
+                            nodes::AbstractVector{Int64},
                             contact_parameter::Dict,
                             block::Int64)
     return datamanager
@@ -55,7 +55,7 @@ end
 """
     compute_model(
     datamanager::Module,
-    nodes::Union{SubArray,Vector{Int64}},
+    nodes::AbstractVector{Int64},
     contact_parameter::Dict,
     block::Int64,
     time::Float64,
@@ -66,7 +66,7 @@ Calculates the contact behavior of the material. This template has to be copied,
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -77,7 +77,7 @@ Example:
 ```
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        contact_parameter::Dict,
                        block::Int64,
                        time::Float64,

@@ -883,19 +883,19 @@ function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
 end
 
 """
-    rotate(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
+    rotate(nodes::AbstractVector{Int64}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
 
 Rotates the matrix.
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `matrix::Union{SubArray,Array{Float64,3}}`: Matrix.
 - `rot::SubArray`: Rotation tensor.
 - `back::Bool`: Back.
 # Returns
 - `matrix::SubArray`: Matrix.
 """
-function rotate(nodes::Union{SubArray,Vector{Int64}},
+function rotate(nodes::AbstractVector{Int64},
                 matrix::Union{SubArray,Array{Float64,3}},
                 rot::Union{SubArray,Array{Float64,3}},
                 back::Bool)

@@ -30,20 +30,20 @@ export compute_model
 export init_model
 export fields_for_local_synchronization
 """
-  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
-  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     # global dof
     # global rotation
@@ -147,7 +147,7 @@ Example:
 ```
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -220,13 +220,13 @@ function compute_model(datamanager::Module,
 end
 
 """
-    zero_energy_mode_compensation(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    zero_energy_mode_compensation(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -234,7 +234,7 @@ Global - J. Wan et al., "Improved method for zero-energy mode suppression in per
 - `datamanager::Data_manager`: Datamanager.
 """
 function zero_energy_mode_compensation(datamanager::Module,
-                                       nodes::Union{SubArray,Vector{Int64}},
+                                       nodes::AbstractVector{Int64},
                                        material_parameter::Dict,
                                        time::Float64,
                                        dt::Float64)
@@ -256,12 +256,12 @@ function zero_energy_mode_compensation(datamanager::Module,
 end
 
 """
-    calculate_bond_force(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::Array{Float64, 3}, undeformed_bond::Vector{Matrix{Float64}}, bond_damage::Vector{Vector{Float64}}, inverse_shape_tensor::Array{Float64, 3}, stress_NP1::Array{Float64, 3}, bond_force::Vector{Matrix{Float64}})
+    calculate_bond_force(nodes::AbstractVector{Int64}, deformation_gradient::Array{Float64, 3}, undeformed_bond::Vector{Matrix{Float64}}, bond_damage::Vector{Vector{Float64}}, inverse_shape_tensor::Array{Float64, 3}, stress_NP1::Array{Float64, 3}, bond_force::Vector{Matrix{Float64}})
 
 Calculate bond forces for specified nodes based on deformation gradients.
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `deformation_gradient::SubArray`: Deformation gradient.
 - `undeformed_bond::Vector{Vector{Vector{Float64}}}`: Undeformed bond geometry.
 - `bond_damage::Vector{Vector{Float64}}`: Bond damage.
@@ -271,7 +271,7 @@ Calculate bond forces for specified nodes based on deformation gradients.
 # Returns
 - `bond_force::Vector{Vector{Vector{Float64}}}`: Bond force.
 """
-function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}},
+function calculate_bond_force(nodes::AbstractVector{Int64},
                               dof::Int64,
                               deformation_gradient::Array{Float64,3},
                               undeformed_bond::Vector{Vector{Vector{Float64}}},
@@ -300,7 +300,7 @@ function calculate_bond_force(nodes::Union{SubArray,Vector{Int64}},
 end
 
 function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
-                                  nodes::Union{SubArray,Vector{Int64}},
+                                  nodes::AbstractVector{Int64},
                                   deformation_gradient::Array{Float64,3},
                                   undeformed_bond::Vector{Vector{Vector{Float64}}},
                                   bond_damage::Vector{Vector{Float64}},
@@ -329,7 +329,7 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
 end
 
 function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
-                                  nodes::Union{SubArray,Vector{Int64}},
+                                  nodes::AbstractVector{Int64},
                                   deformation_gradient::Array{Float64,3},
                                   undeformed_bond::Vector{Vector{Vector{Float64}}},
                                   bond_damage::Vector{Vector{Float64}},

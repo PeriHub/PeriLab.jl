@@ -38,7 +38,7 @@ Computes the partial stresses.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function get_partial_stresses(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+function get_partial_stresses(datamanager::Module, nodes::AbstractVector{Int64})
     bond_forces = datamanager.get_field("Bond Forces")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     volume = datamanager.get_field("Volume")
@@ -52,18 +52,18 @@ function get_partial_stresses(datamanager::Module, nodes::Union{SubArray,Vector{
 end
 
 """
-    calculate_von_mises_stress(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+    calculate_von_mises_stress(datamanager::Module, nodes::AbstractVector{Int64})
 
 Calculate the von Mises stress.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nodes::AbstractVector{Int64}`: The nodes.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
 function calculate_von_mises_stress(datamanager::Module,
-                                    nodes::Union{SubArray,Vector{Int64}})
+                                    nodes::AbstractVector{Int64})
     dof = datamanager.get_dof()
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     von_Mises_stress = datamanager.get_field("von Mises Stress", "NP1")
@@ -92,19 +92,19 @@ function von_Mises(von_Mises_stress, stress, dof)
 end
 
 """
-    calculate_strain(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, hooke_matrix::Matrix{Float64})
+    calculate_strain(datamanager::Module, nodes::AbstractVector{Int64}, hooke_matrix::Matrix{Float64})
 
 Calculate the von Mises stress.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nodes::AbstractVector{Int64}`: The nodes.
 - `hooke_matrix::Matrix{Float64}`: The hooke matrix.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
 function calculate_strain(datamanager::Module,
-                          nodes::Union{SubArray,Vector{Int64}},
+                          nodes::AbstractVector{Int64},
                           hooke_matrix::Union{Matrix{Float64},MMatrix,SMatrix})
     stress_NP1 = datamanager.get_field("Cauchy Stress", "NP1")
     strain = datamanager.get_field("Strain", "NP1")

@@ -373,7 +373,7 @@ Gets the bond geometry
 function get_bond_geometry(datamanager::Module)
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
-    nlist = datamanager.get_field("Neighborhoodlist")
+    nlist = datamanager.get_nlist()
     coor = datamanager.get_field("Coordinates")
     undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof)
     undeformed_bond_length = datamanager.create_constant_bond_field("Bond Length", Float64,

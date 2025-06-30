@@ -36,13 +36,13 @@ function init_fields(datamanager::Module)
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
 Computes the thermal models
 
 # Arguments
 - `datamanager::Module`: The datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `nodes::AbstractVector{Int64}`: The nodes
 - `model_param::Dict`: The model parameters
 - `block::Int64`: The block
 - `time::Float64`: The current time
@@ -51,7 +51,7 @@ Computes the thermal models
 - `datamanager::Module`: The datamanager
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        model_param::Dict,
                        block::Int64,
                        time::Float64,
@@ -74,12 +74,12 @@ Initializes the thermal model.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
     model_param = datamanager.get_properties(block, "Thermal Model")
     thermal_models = split(model_param["Thermal Model"], "+")

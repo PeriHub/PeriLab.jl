@@ -86,12 +86,12 @@ Initializes the material model.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}},
+function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
     model_param = datamanager.get_properties(block, "Material Model")
     if !haskey(model_param, "Material Model")
@@ -164,13 +164,13 @@ function fields_for_local_synchronization(datamanager, model, block)
 end
 
 """
-    compute_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
 Computes the material models
 
 # Arguments
 - `datamanager::Module`: The datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `nodes::AbstractVector{Int64}`: The nodes
 - `model_param::Dict`: The model parameters
 - `block::Int64`: The block
 - `time::Float64`: The current time
@@ -179,7 +179,7 @@ Computes the material models
 - `datamanager::Module`: The datamanager
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        model_param::Dict,
                        block::Int64,
                        time::Float64,
@@ -233,18 +233,18 @@ function check_material_symmetry(dof::Int64, prop::Dict)
 end
 
 """
-    distribute_force_densities(datamanager::Module, nodes::Union{SubArray,Vector{Int64}})
+    distribute_force_densities(datamanager::Module, nodes::AbstractVector{Int64})
 
 Distribute the force densities.
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes.
+- `nodes::AbstractVector{Int64}`: The nodes.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function distribute_force_densities(datamanager::Module,
-                                    nodes::Union{SubArray,Vector{Int64}})
+function distribute_force_densities(datamanager::T,
+                                    nodes::AbstractVector{Int64}) where {T}
     nlist = datamanager.get_nlist()
     nlist_filtered_ids = datamanager.get_filtered_nlist()
     bond_force = datamanager.get_field("Bond Forces")

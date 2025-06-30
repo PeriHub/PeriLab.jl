@@ -33,7 +33,7 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `thermal parameter::Dict(String, Any)`: Dictionary with thermal parameter.
 - `block::Int64`: The current block.
 # Returns
@@ -41,7 +41,7 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     thermal_parameter::Dict)
     return datamanager
 end
@@ -53,7 +53,7 @@ Calculates the heat transfer to the environment. [BrighentiR2021](@cite)
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -64,7 +64,7 @@ Example:
 ```
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        thermal_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -134,7 +134,7 @@ Calculates the specific volume.
 # Returns
 - `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function calculate_specific_volume(nodes::Union{SubArray,Vector{Int64}},
+function calculate_specific_volume(nodes::AbstractVector{Int64},
                                    nlist::Union{SubArray,Vector{Vector{Int64}}},
                                    volume::Vector{Float64},
                                    active::Vector{Bool},

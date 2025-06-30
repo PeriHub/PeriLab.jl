@@ -26,13 +26,13 @@ function control_name()
 end
 
 """
-    compute_control(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict, time::Float64, dt::Float64)
+    compute_control(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Computes the zero energy control
 
 # Arguments
 - `datamanager::Module`: The datamanager
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `nodes::AbstractVector{Int64}`: The nodes
 - `material_parameter::Dict`: The material parameter
 - `time::Float64`: The current time
 - `dt::Float64`: The current time step
@@ -40,7 +40,7 @@ Computes the zero energy control
 - `datamanager::Module`: The datamanager
 """
 function compute_control(datamanager::Module,
-                         nodes::Union{SubArray,Vector{Int64}},
+                         nodes::AbstractVector{Int64},
                          material_parameter::Dict,
                          time::Float64,
                          dt::Float64)
@@ -89,12 +89,12 @@ function compute_control(datamanager::Module,
 end
 
 """
-    get_zero_energy_mode_force(nodes::Union{SubArray,Vector{Int64}}, zStiff::SubArray, deformation_gradient::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_force::SubArray)
+    get_zero_energy_mode_force(nodes::AbstractVector{Int64}, zStiff::SubArray, deformation_gradient::SubArray, undeformed_bond::SubArray, deformed_bond::SubArray, bond_force::SubArray)
 
 Computes the zero energy mode force
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `nodes::AbstractVector{Int64}`: The nodes
 - `zStiff::SubArray`: The zero energy stiffness
 - `deformation_gradient::SubArray`: The deformation gradient
 - `undeformed_bond::SubArray`: The bond geometry
@@ -103,7 +103,7 @@ Computes the zero energy mode force
 # Returns
 - `bond_force::SubArray`: The bond force
 """
-function get_zero_energy_mode_force_2d!(nodes::Union{SubArray,Vector{Int64}},
+function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
                                         zStiff,
                                         deformation_gradient,
                                         undeformed_bond,
@@ -131,7 +131,7 @@ function get_zero_energy_mode_force_2d!(nodes::Union{SubArray,Vector{Int64}},
         end
     end
 end
-function get_zero_energy_mode_force_3d!(nodes::Union{SubArray,Vector{Int64}},
+function get_zero_energy_mode_force_3d!(nodes::AbstractVector{Int64},
                                         zStiff,
                                         deformation_gradient,
                                         undeformed_bond,
@@ -161,12 +161,12 @@ function get_zero_energy_mode_force_3d!(nodes::Union{SubArray,Vector{Int64}},
 end
 
 """
-    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Vector{Float64}, Kinv::Array{Float64, 3}, zStiff::Array{Float64, 3}, rotation::Bool)
+    create_zero_energy_mode_stiffness(nodes::AbstractVector{Int64}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Vector{Float64}, Kinv::Array{Float64, 3}, zStiff::Array{Float64, 3}, rotation::Bool)
 
 Creates the zero energy mode stiffness
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `nodes::AbstractVector{Int64}`: The nodes
 - `dof::Int64`: The degree of freedom
 - `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
 - `angles::Vector{Float64}`: The angles
@@ -176,7 +176,7 @@ Creates the zero energy mode stiffness
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
-function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}},
+function create_zero_energy_mode_stiffness(nodes::AbstractVector{Int64},
                                            dof::Int64,
                                            CVoigt::Union{MMatrix,Matrix{Float64}},
                                            angles::Union{Matrix{Float64},Vector{Float64},
@@ -191,12 +191,12 @@ function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}},
 end
 
 """
-    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt, Kinv, zStiff)
+    create_zero_energy_mode_stiffness(nodes::AbstractVector{Int64}, dof::Int64, CVoigt, Kinv, zStiff)
 
 Creates the zero energy mode stiffness
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `nodes::AbstractVector{Int64}`: The nodes
 - `dof::Int64`: The degree of freedom
 - `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
 - `Kinv::Array{Float64, 3}`: The inverse shape tensor
@@ -204,7 +204,7 @@ Creates the zero energy mode stiffness
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
-function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}},
+function create_zero_energy_mode_stiffness(nodes::AbstractVector{Int64},
                                            dof::Int64,
                                            CVoigt::Union{MMatrix,Matrix{Float64}},
                                            Kinv::Array{Float64,3},
@@ -245,12 +245,12 @@ function global_zero_energy_mode_stiffness(ID::Int64,
 end
 
 """
-    create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Matrix{Float64}, Kinv::Array{Float64, 3}, zStiff::Array{Float64, 3})
+    create_zero_energy_mode_stiffness(nodes::AbstractVector{Int64}, dof::Int64, CVoigt::Union{MMatrix,Matrix{Float64}}, angles::Matrix{Float64}, Kinv::Array{Float64, 3}, zStiff::Array{Float64, 3})
 
 Creates the zero energy mode stiffness
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: The nodes
+- `nodes::AbstractVector{Int64}`: The nodes
 - `dof::Int64`: The degree of freedom
 - `CVoigt::Union{MMatrix, Matrix{Float64}}`: The Voigt matrix
 - `angles::Matrix{Float64}`: The angles
@@ -259,7 +259,7 @@ Creates the zero energy mode stiffness
 # Returns
 - `zStiff::SubArray`: The zero energy stiffness
 """
-function create_zero_energy_mode_stiffness(nodes::Union{SubArray,Vector{Int64}},
+function create_zero_energy_mode_stiffness(nodes::AbstractVector{Int64},
                                            dof::Int64,
                                            CVoigt::Union{MMatrix,Matrix{Float64}},
                                            angles::Union{Matrix{Float64},Vector{Float64}},

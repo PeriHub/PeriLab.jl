@@ -16,7 +16,7 @@ export compute_deformation_gradients!
 """
      bond_geometry(undeformed_bond::Vector{Vector{Vector{Float64}}},
     undeformed_bond_length::Vector{Vector{Float64}},
-    nodes::Union{SubArray,Vector{Int64}},
+    nodes::AbstractVector{Int64},
     nlist::Vector{Vector{Int64}},
     coor::Union{SubArray,Matrix{Float64},Matrix{Int64}},
 
@@ -25,7 +25,7 @@ Calculate bond geometries between nodes based on their coordinates.
 # Arguments
  - `undeformed_bond`: A preallocated array or data structure to store bond geometries.
  - `undeformed_bond_length`: A preallocated array or data structure to store bond distances.
- - `nodes::Union{SubArray,Vector{Int64}}`: A vector of integers representing node IDs.
+ - `nodes::AbstractVector{Int64}`: A vector of integers representing node IDs.
  - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
  - `coor`: A matrix representing the coordinates of each node.
 
@@ -51,7 +51,7 @@ Calculate bond geometries between nodes based on their coordinates.
 
 function bond_geometry!(undeformed_bond::Vector{Vector{Vector{Float64}}},
                         undeformed_bond_length::Vector{Vector{Float64}},
-                        nodes::Union{SubArray,Vector{Int64}},
+                        nodes::AbstractVector{Int64},
                         nlist::Vector{Vector{Int64}},
                         coor::Union{SubArray,Matrix{Float64},Matrix{Int64}})
     for iID in nodes
@@ -63,18 +63,16 @@ function bond_geometry!(undeformed_bond::Vector{Vector{Vector{Float64}}},
     end
 end
 
-function calculate_bond_length!(bond_vectors,
-                                bond_norm,
-                                iID::Int64,
-                                coor::Union{SubArray,Matrix{Float64},Matrix{Int64}},
-                                nlist::Vector{Int64})
-    @inbounds @fastmath @views for m in axes(nlist, 1), cmn in zero(eltype(coor))
-        @inbounds @fastmath @views for n in axes(coor, 2)
+@inline function calculate_bond_length!(bond_vectors::Vector{Vector{T}},
+                                        bond_norm::Vector{T},
+                                        iID::Int64,
+                                        coor::Matrix{T},
+                                        nlist::Vector{Int64}) where {T<:AbstractFloat}
+    @inbounds @fastmath for m in axes(nlist, 1)
+        cmn = zero(T)
+        @inbounds @fastmath for n in axes(coor, 2)
             bond_vectors[m][n] = coor[nlist[m], n] - coor[iID, n]
             cmn += bond_vectors[m][n] * bond_vectors[m][n]
-        end
-        if cmn == 0
-            @error "Identical point coordinates with no distance"
         end
         bond_norm[m] = sqrt(cmn)
     end
@@ -118,7 +116,7 @@ inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 """
 function compute_shape_tensors!(shape_tensor,
                                 inverse_shape_tensor,
-                                nodes::Union{SubArray,Vector{Int64}},
+                                nodes::AbstractVector{Int64},
                                 nlist,
                                 volume,
                                 omega,
@@ -212,7 +210,7 @@ deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 
 """
 function compute_deformation_gradients!(deformation_gradient::Array{Float64,3},
-                                        nodes::Union{SubArray,Vector{Int64}},
+                                        nodes::AbstractVector{Int64},
                                         dof::Int64,
                                         nlist::Vector{Vector{Int64}},
                                         volume::Vector{Float64},
@@ -268,12 +266,12 @@ function compute_deformation_gradient!(deformation_gradient,
 end
 
 """
-compute_left_stretch_tensor(nodes::Union{SubArray,Vector{Int64}}, deformation_gradient::Union{SubArray,Array{Float64}}, left_stretch_tensor::Union{SubArray,Array{Float64}})
+compute_left_stretch_tensor(nodes::AbstractVector{Int64}, deformation_gradient::Union{SubArray,Array{Float64}}, left_stretch_tensor::Union{SubArray,Array{Float64}})
 
 Calculate bond geometries between nodes based on their coordinates.
 
 # Arguments
- - `nodes::Union{SubArray,Vector{Int64}}`: A vector of integers representing node IDs.
+ - `nodes::AbstractVector{Int64}`: A vector of integers representing node IDs.
  - `deformation_gradient::Union{SubArray,Array{Float64}}`: Deformation gradient.
  - `left_stretch_tensor::Union{SubArray,Array{Float64}}`: Left stretch tensor.
 
@@ -294,7 +292,7 @@ function compute_left_stretch_tensor(deformation_gradient::Matrix{Float64})
     return sqrt(deformation_gradient * deformation_gradient')
 end
 
-function compute_weighted_deformation_gradient(nodes::Union{SubArray,Vector{Int64}},
+function compute_weighted_deformation_gradient(nodes::AbstractVector{Int64},
                                                nlist,
                                                volume,
                                                gradient_weight,

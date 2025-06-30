@@ -38,20 +38,20 @@ function fe_support()
 end
 
 """
-  init_model(datamanager::Module, nodes::Union{SubArray,Vector{Int64}}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
 
 Initializes the material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
-  - `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+  - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
 function init_model(datamanager::Module,
-                    nodes::Union{SubArray,Vector{Int64}},
+                    nodes::AbstractVector{Int64},
                     material_parameter::Dict)
     horizon = datamanager.get_field("Horizon")
 
@@ -122,7 +122,7 @@ Calculates the force densities of the material. This template has to be copied, 
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray,Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -133,7 +133,7 @@ Example:
 ```
 """
 function compute_model(datamanager::Module,
-                       nodes::Union{SubArray,Vector{Int64}},
+                       nodes::AbstractVector{Int64},
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
@@ -159,9 +159,9 @@ function compute_model(datamanager::Module,
     lambdaNP1 = datamanager.get_field("Lambda Plastic", "NP1")
 
     @timeit to "calculate_symmetry_params" alpha, gamma,
-                                           kappa = Ordinary.calculate_symmetry_params(symmetry,
-                                                                                      shear_modulus,
-                                                                                      bulk_modulus)
+                                           kappa=Ordinary.calculate_symmetry_params(symmetry,
+                                                                                    shear_modulus,
+                                                                                    bulk_modulus)
     @timeit to "compute_deviatoric_force_state_norm" compute_deviatoric_force_state_norm!(td_norm,
                                                                                           nodes,
                                                                                           nlist,
@@ -175,27 +175,27 @@ function compute_model(datamanager::Module,
     lambdaNP1 = copy(lambdaN)
 
     @timeit to "plastic" bond_force_deviatoric_part,
-                         deviatoric_plastic_extension_state = plastic(nodes,
-                                                                      td_norm,
-                                                                      yield_value,
-                                                                      lambdaNP1,
-                                                                      alpha,
-                                                                      omega,
-                                                                      bond_damage,
-                                                                      deviatoric_plastic_extension_state,
-                                                                      bond_force_deviatoric_part)
+                         deviatoric_plastic_extension_state=plastic(nodes,
+                                                                    td_norm,
+                                                                    yield_value,
+                                                                    lambdaNP1,
+                                                                    alpha,
+                                                                    omega,
+                                                                    bond_damage,
+                                                                    deviatoric_plastic_extension_state,
+                                                                    bond_force_deviatoric_part)
     add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
-    @timeit to "get_bond_forces" bond_force = get_bond_forces(nodes,
-                                                              temp,
-                                                              deformed_bond,
-                                                              deformed_bond_length,
-                                                              bond_force,
-                                                              temp)
+    @timeit to "get_bond_forces" bond_force=get_bond_forces(nodes,
+                                                            temp,
+                                                            deformed_bond,
+                                                            deformed_bond_length,
+                                                            bond_force,
+                                                            temp)
     return datamanager
 end
 
 """
-    compute_deviatoric_force_state_norm(nodes::Union{SubArray,Vector{Int64}},
+    compute_deviatoric_force_state_norm(nodes::AbstractVector{Int64},
                                         nlist::SubArray,
                                         alpha::Float64,
                                         bond_force_deviatoric::SubArray,
@@ -207,7 +207,7 @@ end
 Compute the norm of the deviatoric force state for each node.
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: Vector of node indices or a subarray representing the indices of the nodes.
+- `nodes::AbstractVector{Int64}`: Vector of node indices or a subarray representing the indices of the nodes.
 - `nlist::SubArray`: Subarray representing the neighbor list for each node.
 - `alpha::Float64`: Alpha parameter.
 - `bond_force_deviatoric::SubArray`: Subarray representing the deviatoric bond forces.
@@ -221,7 +221,7 @@ Compute the norm of the deviatoric force state for each node.
 """
 
 function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
-                                              nodes::Union{SubArray,Vector{Int64}},
+                                              nodes::AbstractVector{Int64},
                                               nlist::Vector{Vector{Int64}},
                                               alpha::Float64,
                                               bond_force_deviatoric::Vector{Vector{Float64}},
@@ -229,7 +229,7 @@ function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
                                               omega::Vector{Vector{Float64}},
                                               volume::Vector{Float64},
                                               deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                                              temp_field)
+                                              temp_field::Vector{Vector{Float64}})
     # not optimal allocation of memory, but not check of indices is needed
     # for iID in nodes
     # td_trial = bond_force_deviatoric[iID] -
@@ -247,7 +247,7 @@ function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
 end
 
 function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
-                                              nodes::Union{SubArray,Vector{Int64}},
+                                              nodes::AbstractVector{Int64},
                                               nlist::Vector{Vector{Int64}},
                                               alpha::Vector{Float64},
                                               bond_force_deviatoric::Vector{Vector{Float64}},
@@ -255,7 +255,7 @@ function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
                                               omega::Vector{Vector{Float64}},
                                               volume::Vector{Float64},
                                               deviatoric_plastic_extension_state::Vector{Vector{Float64}},
-                                              temp_field)
+                                              temp_field::Vector{Vector{Float64}})
     # not optimal allocation of memory, but not check of indices is needed
 
     # for iID in nodes
@@ -275,7 +275,7 @@ function compute_deviatoric_force_state_norm!(td_norm::Vector{Float64},
 end
 
 """
-    plastic(nodes::Union{SubArray,Vector{Int64}},
+    plastic(nodes::AbstractVector{Int64},
             td_norm::Vector{Float64},
             yield_value::Vector{Float64},
             lambdaNP1::Vector{Float64},
@@ -288,7 +288,7 @@ end
 Update the plastic state based on the deviatoric force norm.
 
 # Arguments
-- `nodes::Union{SubArray,Vector{Int64}}`: Vector of node indices or a subarray representing the indices of the nodes.
+- `nodes::AbstractVector{Int64}`: Vector of node indices or a subarray representing the indices of the nodes.
 - `td_norm::Vector{Float64}`: Vector containing the norm of the deviatoric force state for each node.
 - `yield_value::Vector{Float64}`: Vector containing the yield values for each node.
 - `lambdaNP1::Vector{Float64}`: Vector containing the plastic multipliers for each node.
@@ -303,7 +303,7 @@ Update the plastic state based on the deviatoric force norm.
 - `deviatoric_plastic_extension_state::SubArray`: Updated deviatoric plastic extension state.
 """
 
-function plastic(nodes::Union{SubArray,Vector{Int64}},
+function plastic(nodes::AbstractVector{Int64},
                  td_norm::Vector{Float64},
                  yield_value::Vector{Float64},
                  lambdaNP1::Union{SubArray,Vector{Float64}},
@@ -327,7 +327,7 @@ function plastic(nodes::Union{SubArray,Vector{Int64}},
     end
     return bond_force_deviatoric, deviatoric_plastic_extension_state
 end
-function plastic(nodes::Union{SubArray,Vector{Int64}},
+function plastic(nodes::AbstractVector{Int64},
                  td_norm::Vector{Float64},
                  yield_value::Vector{Float64},
                  lambdaNP1::Union{SubArray,Vector{Float64}},
