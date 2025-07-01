@@ -884,7 +884,7 @@ function get_local_nodes(global_nodes)
             if global_node in keys(data["glob_to_loc"])]
 end
 
-function get_model_module(entry::Union{String,SubString})
+function get_model_module(entry::AbstractString)
     return data["model_modules"][entry]
 end
 
@@ -1586,7 +1586,7 @@ function set_rank(value::Int64)
     data["rank"] = value
 end
 
-function set_model_module(entry::Union{String,SubString}, mod::Module)
+function set_model_module(entry::AbstractString, mod::Module)
     data["model_modules"][entry] = mod
 end
 

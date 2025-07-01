@@ -362,8 +362,10 @@ function get_mapping(dof::Int64)
     end
 end
 
-function matrix_diff!(s3, nodes, s2, s1)
-    @views for iID in nodes
+function matrix_diff!(s3::AbstractArray{Float64,3}, nodes::AbstractArray{Int64},
+                      s2::AbstractArray{Float64,3},
+                      s1::AbstractArray{Float64,3})
+    @views @inbounds for iID in nodes
         @inbounds @fastmath @views for m in axes(s1[iID, :, :], 1),
                                        n in axes(s1[iID, :, :], 2)
             s3[iID, m, n] = s2[iID, m, n] - s1[iID, m, n]
@@ -371,36 +373,51 @@ function matrix_diff!(s3, nodes, s2, s1)
     end
 end
 
-function fast_mul!(stress_NP1, C, strain_increment, stress_N, mapping)
-    @inbounds @fastmath for m in axes(C, 1)
-        sNP1 = stress_N[mapping[m]...]
-        for k in axes(C, 2)
-            sNP1 += C[m, k] * strain_increment[mapping[k]...]
+function fast_mul!(stress_NP1::AbstractMatrix{Float64},
+                   C::AbstractArray{Float64},
+                   strain_increment::AbstractMatrix{Float64},
+                   stress_N::AbstractMatrix{Float64},
+                   mapping::NTuple{N,Tuple{Int,Int}}) where {N}
+    @inbounds @fastmath for m in 1:N
+        i, j = mapping[m]
+        sNP1 = stress_N[i, j]
+
+        for k in 1:N
+            ki, kj = mapping[k]
+            sNP1 += C[m, k] * strain_increment[ki, kj]
         end
-        stress_NP1[mapping[m]...] = sNP1
-        stress_NP1[reverse(mapping[m])...] = sNP1
+
+        stress_NP1[i, j] = sNP1
+        # Only set symmetric component if i != j
+        if i != j
+            stress_NP1[j, i] = sNP1
+        end
     end
+
+    return stress_NP1
 end
 
-function mat_mul!(C, A, B)
+function mat_mul!(C::AbstractMatrix{T}, A::AbstractMatrix{T},
+                  B::AbstractMatrix{T}) where {T<:Float64}
     @inbounds @fastmath for m in axes(A, 1), n in axes(B, 2)
-        Cmn = zero(eltype(C))
+        Cmn = zero(T)
         for k in axes(A, 2)
             Cmn += A[m, k] * B[k, n]
         end
         C[m, n] = Cmn
     end
 end
-function mat_mul_transpose_mat!(C, A, B)
+function mat_mul_transpose_mat!(C::AbstractMatrix{T}, A::AbstractMatrix{T},
+                                B::AbstractMatrix{T}) where {T<:Float64}
     @inbounds @fastmath for m in axes(A, 1), n in axes(B, 2)
-        Cmn = zero(eltype(C))
+        Cmn = zero(T)
         @inbounds @fastmath for k in axes(A, 2)
             Cmn += A[k, m] * B[k, n]
         end
         C[m, n] = 0.5 * Cmn
     end
 end
-function add_in_place!(C,
+function add_in_place!(C::AbstractMatrix{T},
                        A::Vector{Vector{T}},
                        B::Vector{Vector{T}},
                        factor = 1) where {T<:Number}
@@ -727,8 +744,8 @@ CVoigt = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 dof = 3
 result = get_fourth_order(CVoigt, dof)
 """
-function get_fourth_order(CVoigt, dof::Int64)
-    return fromvoigt(SymmetricTensor{4,dof}, CVoigt)
+function get_fourth_order(CVoigt::AbstractMatrix{Float64}, ::Val{DOF}) where {DOF}
+    return fromvoigt(SymmetricTensor{4,DOF}, CVoigt)
 end
 
 """
@@ -817,28 +834,31 @@ Invert a n x n matrix. Throws an error if A is singular.
 # Returns
 - inverted matrix or nothing if not inverable.
 """
-function invert(A::Union{Matrix{Float64},Matrix{Int64},SubArray{Float64},SubArray{Int64},
-                         MMatrix},
+function invert(A::AbstractMatrix{Float64},
                 error_message::String = "Matrix is singular")
     try
         return inv(smat(A))
-    catch
+    catch e
         @error error_message
-        return nothing
     end
 end
 
-function determinant(A)
+function determinant(A::AbstractMatrix{Float64})
     return det(smat(A))
 end
 
-function smat(A)
-    if length(A) == 4
-        return SMatrix{2,2}(A)
-    elseif length(A) == 9
-        return SMatrix{3,3}(A)
+function smat(A::AbstractMatrix{Float64})
+    size_A = size(A)
+
+    if size_A == (2, 2)
+        return SMatrix{2,2,Float64}(A)
+    elseif size_A == (3, 3)
+        return SMatrix{3,3,Float64}(A)
+    else
+        # Fallback for other sizes, returning a copy to ensure immutability
+        # or you can throw an error if unsupported sizes are not allowed
+        return SMatrix{size_A[1],size_A[2],Float64}(A)
     end
-    return A
 end
 
 function find_local_neighbors(nID::Int64,

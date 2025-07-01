@@ -13,7 +13,7 @@ using .Global_zero_energy_control: compute_control
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 include("../../Material_Basis.jl")
-using .Material_Basis: compute_Piola_Kirchhoff_stress
+using .Material_Basis: compute_Piola_Kirchhoff_stress!
 include("../../../../Support/Helpers.jl")
 using .Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
 include("../../../../Support/Geometry.jl")
@@ -187,35 +187,36 @@ function compute_model(datamanager::Module,
 
     material_models = split(material_parameter["Material Model"], "+")
     material_models = map(r -> strip(r), material_models)
-    for material_model in material_models
-        mod = datamanager.get_model_module(material_model)
+    @timeit to "Calculated material" begin
+        for material_model in material_models
+            mod = datamanager.get_model_module(material_model)
 
-        stress_NP1,
-        datamanager = mod.compute_stresses(datamanager,
-                                           nodes,
-                                           dof,
-                                           material_parameter,
-                                           time,
-                                           dt,
-                                           strain_increment,
-                                           stress_N,
-                                           stress_NP1)
+            mod.compute_stresses(datamanager,
+                                 nodes,
+                                 dof,
+                                 material_parameter,
+                                 time,
+                                 dt,
+                                 strain_increment,
+                                 stress_N,
+                                 stress_NP1)
+        end
     end
-
     if rotation
         stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
     end
-    bond_force = calculate_bond_force(nodes,
-                                      dof,
-                                      deformation_gradient,
-                                      undeformed_bond,
-                                      bond_damage,
-                                      inverse_shape_tensor,
-                                      stress_NP1,
-                                      bond_force)
+    @timeit to "Calculated bond force" bond_force=calculate_bond_force(nodes,
+                                                                       dof,
+                                                                       deformation_gradient,
+                                                                       undeformed_bond,
+                                                                       bond_damage,
+                                                                       inverse_shape_tensor,
+                                                                       stress_NP1,
+                                                                       bond_force)
     # TODO general interface, because it might be a flexbile Set_modules interface in future
-    datamanager = zero_energy_mode_compensation(datamanager, nodes, material_parameter,
-                                                time, dt)
+    @timeit to "zero energy" datamanager=zero_energy_mode_compensation(datamanager, nodes,
+                                                                       material_parameter,
+                                                                       time, dt)
     return datamanager
 end
 
@@ -306,16 +307,17 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
                                   bond_damage::Vector{Vector{Float64}},
                                   inverse_shape_tensor::Array{Float64,3},
                                   stress_NP1::Array{Float64,3})
+    pk_stress = MMatrix{2,2}(zeros(2, 2))
     @inbounds @fastmath for iID in nodes
-        pk_stress = SMatrix{2,2}(compute_Piola_Kirchhoff_stress(stress_NP1[iID, :, :],
-                                                                deformation_gradient[iID,
-                                                                                     :, :]))
-        temp = MMatrix{2,2}(zeros(2, 2))
+        compute_Piola_Kirchhoff_stress!(stress_NP1[iID, :, :],
+                                        deformation_gradient[iID, :, :], pk_stress)
+        temp = MMatrix{2,2}(zeros(Float64, 2, 2))
 
-        mat_mul!(temp, pk_stress, @view inverse_shape_tensor[iID, :, :])
+        mat_mul!(temp, pk_stress, SMatrix{2,2}(@views inverse_shape_tensor[iID, :, :]))
+
         @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)
             @inbounds @fastmath for idof in 1:2
-                b_fi = zero(eltype(temp))
+                b_fi = 0.0
                 @inbounds @fastmath for jdof in 1:2
                     b_fi += temp[idof, jdof] *
                             bond_damage[iID][jID] *
@@ -335,16 +337,17 @@ function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
                                   bond_damage::Vector{Vector{Float64}},
                                   inverse_shape_tensor::Array{Float64,3},
                                   stress_NP1::Array{Float64,3})
+    pk_stress = MMatrix{3,3}(zeros(3, 3))
     @inbounds @fastmath for iID in nodes
-        pk_stress = SMatrix{3,3}(compute_Piola_Kirchhoff_stress(stress_NP1[iID, :, :],
-                                                                deformation_gradient[iID,
-                                                                                     :, :]))
-        temp = MMatrix{3,3}(zeros(3, 3))
+        SMatrix{3,3}(compute_Piola_Kirchhoff_stress!(stress_NP1[iID, :, :],
+                                                     deformation_gradient[iID, :, :],
+                                                     pk_stress))
+        temp = MMatrix{3,3}(zeros(Float64, 3, 3))
 
-        mat_mul!(temp, pk_stress, @view inverse_shape_tensor[iID, :, :])
+        mat_mul!(temp, pk_stress, SMatrix{3,3}(inverse_shape_tensor[iID, :, :]))
         @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)
             @inbounds @fastmath for idof in 1:3
-                b_fi = zero(eltype(temp))
+                b_fi = 0.0
                 @inbounds @fastmath for jdof in 1:3
                     @views b_fi += temp[idof, jdof] *
                                    bond_damage[iID][jID] *

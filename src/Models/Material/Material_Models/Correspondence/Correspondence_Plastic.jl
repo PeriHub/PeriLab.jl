@@ -164,8 +164,6 @@ function compute_stresses(datamanager::Module,
                                                             temp_B,
                                                             sqrt23)
     end
-
-    return stress_NP1, datamanager
 end
 
 function compute_stresses_ba(datamanager::Module,
@@ -222,7 +220,6 @@ function compute_stresses_ba(datamanager::Module,
                                                                      sqrt23)
         end
     end
-    return stress_NP1, datamanager
 end
 
 function compute_plastic_model(stress_NP1,

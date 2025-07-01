@@ -9,7 +9,7 @@ using TimerOutputs
 include("../../../../Support/Helpers.jl")
 include("../../../../Support/Geometry.jl")
 include("../../Material_Basis.jl")
-using .Material_Basis: compute_Piola_Kirchhoff_stress
+using .Material_Basis: compute_Piola_Kirchhoff_stress!
 using .Helpers:
                 find_local_neighbors, invert, rotate, fastdot, determinant, smat,
                 matrix_diff!
@@ -176,17 +176,16 @@ function compute_model(datamanager::Module,
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
 
-        stress_NP1,
-        datamanager = mod.compute_stresses_ba(datamanager,
-                                              nodes,
-                                              nlist,
-                                              dof,
-                                              material_parameter,
-                                              time,
-                                              dt,
-                                              strain_increment,
-                                              stress_N,
-                                              stress_NP1)
+        mod.compute_stresses_ba(datamanager,
+                                nodes,
+                                nlist,
+                                dof,
+                                material_parameter,
+                                time,
+                                dt,
+                                strain_increment,
+                                stress_N,
+                                stress_NP1)
     end
     if rotation
         for iID in nodes
@@ -239,8 +238,10 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                                  stress_integral::Array{Float64,3})
     if dof == 2
         temp = @MMatrix zeros(2, 2)
+        pk_stress = @MMatrix zeros(2, 2)
     else
         temp = @MMatrix zeros(3, 3)
+        pk_stress = @MMatrix zeros(3, 3)
     end
     one = @views I(dof)
     factor::Float64 = 0
@@ -257,16 +258,14 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                             omega[iID][jID] *
                             bond_damage[iID][jID] *
                             (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
-
+            @views compute_Piola_Kirchhoff_stress!(bond_stresses[iID][jID,
+                                                                      :,
+                                                                      :],
+                                                   deformation_gradient[iID][jID,
+                                                                             :,
+                                                                             :], pk_stress)
             @views stress_integral[iID, :,
-                                   :] += factor .*
-                                         compute_Piola_Kirchhoff_stress(bond_stresses[iID][jID,
-                                                                                           :,
-                                                                                           :],
-                                                                        deformation_gradient[iID][jID,
-                                                                                                  :,
-                                                                                                  :]) *
-                                         temp
+                                   :] += factor .* pk_stress * temp
         end
     end
     return stress_integral

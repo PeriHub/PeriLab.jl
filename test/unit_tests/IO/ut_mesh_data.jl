@@ -374,7 +374,7 @@ end
     @test mesh_info_dict["Block_Id"]["Mesh ID"] == ["block_id"]
     @test mesh_info_dict["Block_Id"]["Type"] == Int64
     @test mesh_info_dict["Volume"]["Mesh ID"] == ["volume"]
-    @test mesh_info_dict["Volume"]["Type"] == Int64
+    @test mesh_info_dict["Volume"]["Type"] == Float64
     @test mesh_info_dict["active"]["Mesh ID"] == ["active"]
     @test mesh_info_dict["active"]["Type"] == Bool
     data = Dict("x" => [1, 1, 3],
@@ -389,7 +389,7 @@ end
     df = DataFrame(data)
     mesh_info_dict = PeriLab.IO.check_mesh_elements(df, 3)
     @test mesh_info_dict["Coordinates"]["Mesh ID"] == ["x", "y", "z"]
-    @test mesh_info_dict["Coordinates"]["Type"] == Int64
+    @test mesh_info_dict["Coordinates"]["Type"] == Float64
     @test mesh_info_dict["Block_Id"]["Mesh ID"] == ["block_id"]
     @test mesh_info_dict["Block_Id"]["Type"] == Int64
     @test mesh_info_dict["Volume"]["Mesh ID"] == ["volume"]

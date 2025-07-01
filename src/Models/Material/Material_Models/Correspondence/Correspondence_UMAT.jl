@@ -325,7 +325,6 @@ function compute_stresses(datamanager::Module,
 
         DFGRD0 = DFGRD1
     end
-    return stress_NP1, datamanager
 end
 
 """

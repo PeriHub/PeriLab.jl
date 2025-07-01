@@ -20,11 +20,11 @@ end
 
 @testset "ut_get_cs_denominator" begin
     volume = Float64[1, 2, 3]
-    undeformed_bond = [1, 2, 3]
+    undeformed_bond = [1.0, 2, 3]
     @test PeriLab.Solver_control.Verlet.get_cs_denominator(volume, undeformed_bond) == 3
-    undeformed_bond = [2, 4, 6]
+    undeformed_bond = [2.0, 4, 6]
     @test PeriLab.Solver_control.Verlet.get_cs_denominator(volume, undeformed_bond) == 1.5
-    undeformed_bond = [1, 0.5, 2]
+    undeformed_bond = [1.0, 0.5, 2]
     @test PeriLab.Solver_control.Verlet.get_cs_denominator(volume, undeformed_bond) == 6.5
 end
 

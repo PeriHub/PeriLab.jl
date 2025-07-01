@@ -255,7 +255,6 @@ function compute_stresses(datamanager::Module,
         stress_NP1[iID, :, :] = voigt_to_matrix(stressNew[iID, :])
     end
     defGradOld = defGradNew
-    return stress_NP1, datamanager
 end
 
 """

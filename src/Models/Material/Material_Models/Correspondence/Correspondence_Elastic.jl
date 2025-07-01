@@ -100,25 +100,23 @@ function compute_stresses(datamanager::Module,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::Union{SubArray,Array{Float64,3},
-                                                  Vector{Float64}},
-                          stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
-                          stress_NP1::Union{SubArray,Array{Float64,3},Vector{Float64}})
-
-    #@views mapping = get_mapping(dof)
+                          strain_increment::AbstractArray{Float64},
+                          stress_N::AbstractArray{Float64},
+                          stress_NP1::AbstractArray{Float64})
+    mapping = get_mapping(dof)
+    symmetry = get(material_parameter, "Symmetry", "default")::String
     for iID in nodes
-        @views hookeMatrix = get_Hooke_matrix(datamanager,
-                                              material_parameter,
-                                              material_parameter["Symmetry"],
-                                              dof,
-                                              iID)
+        hookeMatrix::Matrix{Float64} = get_Hooke_matrix(datamanager,
+                                                        material_parameter,
+                                                        symmetry,
+                                                        dof,
+                                                        iID)
         @views fast_mul!(stress_NP1[iID, :, :],
                          hookeMatrix,
                          strain_increment[iID, :, :],
                          stress_N[iID, :, :],
-                         get_mapping(dof))
+                         mapping)
     end
-    return stress_NP1, datamanager
 end
 
 function compute_stresses_ba(datamanager::Module,
@@ -145,7 +143,6 @@ function compute_stresses_ba(datamanager::Module,
             fast_mul!(sNP1, hookeMatrix, sInc, sN, mapping)
         end
     end
-    return stress_NP1, datamanager
 end
 
 """

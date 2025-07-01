@@ -226,7 +226,7 @@ end
 function compute_Lagrangian_gradient_weights(nodes::AbstractVector{Int64},
                                              dof::Int64,
                                              accuracy_order::Int64,
-                                             volume::Union{SubArray,Vector{Float64}},
+                                             volume::AbstractVector{Float64},
                                              nlist::Union{Vector{Vector{Int64}},SubArray},
                                              horizon::Union{SubArray,Vector{Float64}},
                                              bond_damage::Union{SubArray,

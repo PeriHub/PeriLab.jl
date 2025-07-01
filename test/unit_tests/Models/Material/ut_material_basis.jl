@@ -16,7 +16,7 @@ using .Material_Basis:
                        get_symmetry,
                        get_von_mises_yield_stress,
                        get_strain,
-                       compute_Piola_Kirchhoff_stress,
+                       compute_Piola_Kirchhoff_stress!,
                        apply_pointwise_E,
                        init_local_damping_due_to_damage
 ## include("../../../../src/PeriLab.jl")
@@ -29,11 +29,11 @@ using .Material_Basis:
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn .= 2
     @test isnothing(init_local_damping_due_to_damage(test_data_manager,
-                                                     [1:2],
+                                                     collect(1:2),
                                                      Dict(),
                                                      Dict("Local Damping" => Dict())))
     @test isnothing(init_local_damping_due_to_damage(test_data_manager,
-                                                     [1:2],
+                                                     collect(1:2),
                                                      Dict(),
                                                      Dict("Local Damping" => Dict("Representative Young's modulus" => 0))))
 end
@@ -78,15 +78,17 @@ end
 
     expected_force_densities = copy(force_densities)
     for iID in nodes
-        expected_force_densities[iID, :] .+= transpose(sum(bond_damage[iID] .*
-                                                           mapreduce(permutedims, vcat,
-                                                                     bond_force[iID]) .*
-                                                           volume[nlist[iID]],
-                                                           dims = 1))
-        expected_force_densities[nlist[iID], :] .-= bond_damage[iID] .*
-                                                    mapreduce(permutedims, vcat,
-                                                              bond_force[iID]) .*
-                                                    volume[iID]
+        expected_force_densities[iID,
+                                 :] .+= transpose(sum(bond_damage[iID] .*
+                                                      mapreduce(permutedims, vcat,
+                                                                bond_force[iID]) .*
+                                                      volume[nlist[iID]],
+                                                      dims = 1))
+        expected_force_densities[nlist[iID],
+                                 :] .-= bond_damage[iID] .*
+                                        mapreduce(permutedims, vcat,
+                                                  bond_force[iID]) .*
+                                        volume[iID]
     end
 
     distribute_forces!(force_densities, nodes, nlist, bond_force, volume, bond_damage)
@@ -462,7 +464,8 @@ end
     stress = [1.0 0.0; 0.0 1.0]
     deformation_gradient = [2.0 0.0; 0.0 2.0]
     expected_result = [2.0 0.0; 0.0 2.0]
-    result = compute_Piola_Kirchhoff_stress(stress, deformation_gradient)
+    result = zeros(2, 2)
+    compute_Piola_Kirchhoff_stress!(stress, deformation_gradient, result)
     @test isapprox(result, expected_result)
 end
 

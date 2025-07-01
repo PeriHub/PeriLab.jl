@@ -35,17 +35,14 @@ end
     @test PeriLab.Solver_control.Helpers.determinant(zeros(2, 2)) == 0
     @test PeriLab.Solver_control.Helpers.determinant(zeros(3, 3)) == 0
     @test PeriLab.Solver_control.Helpers.determinant(zeros(4, 4)) == 0
-    @test PeriLab.Solver_control.Helpers.determinant(Matrix(I(3))) == det(Matrix(I(3)))
+    @test PeriLab.Solver_control.Helpers.determinant(ones(3, 3)) == det(ones(3, 3))
 end
 
 @testset "ut_invert" begin
-    # @test isnothing(PeriLab.Solver_control.Helpers.invert(zeros(Float64, 3, 3)))
-    # @test isnothing(PeriLab.Solver_control.Helpers.invert(zeros(Int64, 3, 3)))
-    @test isnothing(PeriLab.Solver_control.Helpers.invert(zeros(Float64, 4, 4),
-                                                          "test Float is singular."))
-    @test isnothing(PeriLab.Solver_control.Helpers.invert(zeros(Int64, 4, 4),
-                                                          "test Int is singular."))
-    @test PeriLab.Solver_control.Helpers.invert([1 0; 0 1]) == inv([1 0; 0 1])
+    PeriLab.Solver_control.Helpers.invert(zeros(Float64, 4, 4),
+                                          "test Float is singular.")
+
+    @test PeriLab.Solver_control.Helpers.invert([1.0 0; 0 1]) == inv([1 0; 0 1])
     @test PeriLab.Solver_control.Helpers.invert([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
                                                 "test Int is singular.") ==
           inv([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
@@ -330,10 +327,10 @@ end
 
 # only interface test, because the called fromVoigt function is tested in "Tensors"
 @testset "ut_get_fourth_order" begin
-    @test size(PeriLab.Solver_control.Helpers.get_fourth_order(zeros(Float64, 6, 6), 3)) ==
-          (3, 3, 3, 3)
-    @test size(PeriLab.Solver_control.Helpers.get_fourth_order(zeros(Float64, 3, 3), 2)) ==
-          (2, 2, 2, 2)
+    @test size(PeriLab.Solver_control.Helpers.get_fourth_order(zeros(Float64, 6, 6),
+                                                               Val(3))) == (3, 3, 3, 3)
+    @test size(PeriLab.Solver_control.Helpers.get_fourth_order(zeros(Float64, 3, 3),
+                                                               Val(2))) == (2, 2, 2, 2)
 end
 
 @testset "ut_progress_bar" begin

@@ -80,18 +80,18 @@ function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
 end
 
 """
-    get_cs_denominator(volume::Union{SubArray,Vector{Float64},Vector{Int64}}, undeformed_bond::Union{SubArray,Vector{Float64},Vector{Int64}})
+    get_cs_denominator(volume::AbstractVector{Float64}, undeformed_bond::AbstractVector{Float64})
 
 Calculate the denominator for the critical time step calculation.
 
 # Arguments
-- `volume::Union{SubArray,Vector{Float64},Vector{Int64}}`: The volume field.
+- `volume::AbstractVector{Float64}`: The volume field.
 - `undeformed_bond::Union{SubArray,Vector{Float64},Vector{Int64}}`: The undeformed bond field.
 # Returns
 - `Float64`: The denominator for the critical time step calculation.
 """
-function get_cs_denominator(volume::Union{SubArray,Vector{Float64},Vector{Int64}},
-                            undeformed_bond::Union{SubArray,Vector{Float64},Vector{Int64}})
+function get_cs_denominator(volume::AbstractVector{Float64},
+                            undeformed_bond::AbstractVector{Float64})::Float64
     return sum(volume ./ undeformed_bond)
 end
 

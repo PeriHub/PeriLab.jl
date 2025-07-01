@@ -7,7 +7,8 @@ using LinearAlgebra
 using LoopVectorization
 using StaticArrays
 include("../../Support/Helpers.jl")
-using .Helpers: get_MMatrix, determinant, invert, smat, interpol_data, get_dependent_value
+using .Helpers: get_MMatrix, determinant, invert, smat, interpol_data, get_dependent_value,
+                mat_mul!
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
@@ -23,12 +24,13 @@ export get_symmetry
 export get_von_mises_yield_stress
 export compute_deviatoric_and_spherical_stresses
 export get_strain
-export compute_Piola_Kirchhoff_stress
+export compute_Piola_Kirchhoff_stress!
 export apply_pointwise_E
 export compute_bond_based_constants
 export init_local_damping_due_to_damage
 export local_damping_due_to_damage
-function local_damping_due_to_damage(datamanager::Module, nodes, params, dt)
+function local_damping_due_to_damage(datamanager::Module, nodes::AbstractVector{Int64},
+                                     params, dt)
     damage = datamanager.get_field("Damage", "NP1")
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
@@ -63,7 +65,7 @@ function local_damping_due_to_damage(datamanager::Module, nodes, params, dt)
 end
 
 function init_local_damping_due_to_damage(datamanager::Module,
-                                          nodes,
+                                          nodes::AbstractVector{Int64},
                                           material_parameter,
                                           damage_parameter)
     if !haskey(damage_parameter["Local Damping"], "Representative Young's modulus")
@@ -81,7 +83,8 @@ function init_local_damping_due_to_damage(datamanager::Module,
     compute_bond_based_constants(nodes, symmetry, constant, horizon)
 end
 
-function compute_bond_based_constants(nodes, symmetry, constant, horizon)
+function compute_bond_based_constants(nodes::AbstractVector{Int64}, symmetry, constant,
+                                      horizon)
     for iID in nodes
         if symmetry == "plane stress"
             constant[iID] = 9 / (pi * horizon[iID]^3) # https://doi.org/10.1016/j.apm.2024.01.015 under EQ (9)
@@ -400,7 +403,8 @@ function get_Hooke_matrix(datamanager::Module,
     end
 end
 
-function get_2D_Hooke_matrix(aniso_matrix::MMatrix, symmetry::String, dof::Int64)
+function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
+                             dof::Int64) where {T}
     if dof == 3
         return aniso_matrix
     elseif occursin("plane strain", symmetry)
@@ -447,7 +451,7 @@ function distribute_forces!(force_densities::Matrix{Float64},
                             nlist::Vector{Vector{Int64}},
                             nlist_filtered_ids::Vector{Vector{Int64}},
                             bond_force::Vector{Vector{Vector{Float64}}},
-                            volume::Union{Vector{Float64},Vector{Int64}},
+                            volume::Vector{Float64},
                             bond_damage::Vector{Vector{Float64}},
                             displacements::Matrix{Float64},
                             bond_norm::Vector{Vector{Vector{Float64}}})
@@ -501,7 +505,7 @@ function distribute_forces!(force_densities::Matrix{Float64},
                             nodes::AbstractVector{Int64},
                             nlist::Vector{Vector{Int64}},
                             bond_force::Vector{Vector{Vector{Float64}}},
-                            volume::Union{Vector{Float64},Vector{Int64}},
+                            volume::Vector{Float64},
                             bond_damage::Vector{Vector{Float64}})
     @inbounds @fastmath for iID in nodes
         @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
@@ -791,15 +795,22 @@ function get_strain(stress_NP1::Matrix{Float64},
     return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
 end
 
-function compute_Piola_Kirchhoff_stress(stress::Union{Matrix{Float64},SubArray{Float64}},
-                                        deformation_gradient::Union{Matrix{Float64},
-                                                                    SubArray{Float64}})
+function compute_Piola_Kirchhoff_stress!(stress::AbstractMatrix{Float64},
+                                         deformation_gradient::AbstractMatrix{Float64},
+                                         pk_stress::AbstractMatrix{Float64})
     #50% less memory
-    return determinant(deformation_gradient) .* smat(stress) * invert(deformation_gradient,
-                  "Deformation gradient is singular and cannot be inverted.")
+
+    mat_mul!(pk_stress,
+             smat(stress),
+             invert(deformation_gradient,
+                    "Deformation gradient is singular and cannot be inverted."))
+    pk_stress .*= determinant(deformation_gradient)
+    #return determinant(deformation_gradient) .* smat(stress) * invert(deformation_gradient,
+    #              "Deformation gradient is singular and cannot be inverted.")
 end
 
-function apply_pointwise_E(nodes, E::Union{Int64,Float64}, bond_force)
+function apply_pointwise_E(nodes::AbstractVector{Int64}, E::Union{Int64,Float64},
+                           bond_force)
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for j in axes(bond_force, 2)
             bond_force[i, j] *= E
@@ -807,7 +818,7 @@ function apply_pointwise_E(nodes, E::Union{Int64,Float64}, bond_force)
     end
 end
 
-function apply_pointwise_E(nodes,
+function apply_pointwise_E(nodes::AbstractVector{Int64},
                            E::Union{SubArray,Vector{Float64},Vector{Int64}},
                            bond_force)
     @inbounds @fastmath for i in nodes
@@ -817,7 +828,7 @@ function apply_pointwise_E(nodes,
     end
 end
 
-function apply_pointwise_E(nodes, bond_force, dependent_field)
+function apply_pointwise_E(nodes::AbstractVector{Int64}, bond_force, dependent_field)
     warning_flag = true
     @inbounds @fastmath for i in nodes
         E_int = interpol_data(dependent_field[i],

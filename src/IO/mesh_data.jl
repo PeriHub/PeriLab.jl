@@ -523,6 +523,8 @@ function check_mesh_elements(mesh::DataFrame, dof::Int64)
 
         if mesh[1, mesh_id[1]] isa Bool
             vartype = Bool
+        elseif name in ["Coordinates", "Volume"]
+            vartype = Float64
         else
             vartype = typeof(sum(sum(mesh[:, mid]) for mid in mesh_id))
         end

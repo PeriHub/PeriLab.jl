@@ -246,7 +246,7 @@ function compute_deformation_gradient!(deformation_gradient,
                                        bond_damage,
                                        deformed_bond,
                                        undeformed_bond,
-                                       volume::Union{Vector{Int64},Vector{Float64}},
+                                       volume::Vector{Float64},
                                        omega,
                                        nlist,
                                        iID)
