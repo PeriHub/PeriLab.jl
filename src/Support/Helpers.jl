@@ -621,7 +621,7 @@ Returns the indices of `vector` that are equal to `what`.
 # Returns
 - `indices::Vector`: The indices of `vector` that are equal to `what`.
 """
-function find_indices(vector, what)
+function find_indices(vector::Vector{T}, what::T) where {T<:Number}
     return findall(item -> item == what, vector)
 end
 
@@ -691,7 +691,7 @@ Checks if the sum of the array is finite. If not, an error is raised.
 # Returns
 - `Bool`: `true` if the sum of the array is finite, `false` otherwise.
 """
-function check_inf_or_nan(array, msg)
+function check_inf_or_nan(array::AbstractArray{T}, msg::String) where {T}
     if isnan(sum(array))
         @error "Field ''$msg'' has NaN elements."
         return true
@@ -713,7 +713,7 @@ Include a scalar or an array and reshape it to style needed for LinearAlgebra pa
 # Returns
 - `Array`: The reshaped array
 """
-function matrix_style(A)
+function matrix_style(A::AbstractVector{T}) where {T}
     if length(size(A)) == 0
         A = [A]
     end
