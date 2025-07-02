@@ -53,9 +53,10 @@ function init_model(datamanager::Module,
         return nothing
     end
     dof = datamanager.get_dof()
-    datamanager.create_node_field("Strain", Float64, "Matrix", dof)
-    datamanager.create_constant_node_field("Strain Increment", Float64, "Matrix", dof)
-    datamanager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
+    datamanager.create_node_field("Strain", Float64, dof, VectorOrMatrix = "Matrix")
+    datamanager.create_constant_node_field("Strain Increment", Float64, dof,
+                                           VectorOrMatrix = "Matrix")
+    datamanager.create_node_field("Cauchy Stress", Float64, dof, VectorOrMatrix = "Matrix")
     datamanager.create_node_field("von Mises Stress", Float64, 1)
     rotation::Bool = datamanager.get_rotation()
     material_models = split(material_parameter["Material Model"], "+")

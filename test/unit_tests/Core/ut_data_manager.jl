@@ -262,9 +262,11 @@ end
                                                              Float64,
                                                              (2, 3, 3, 4))
     @test size(test) == (2, 3, 3, 4)
-    test = test_data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
+    test = test_data_manager.create_constant_node_field("Test_size_3", Float64, 3,
+                                                        VectorOrMatrix = "Matrix")
     @test size(test) == (5, 3, 3)
-    test = test_data_manager.create_constant_node_field("Test_size_3", Float64, "Matrix", 3)
+    test = test_data_manager.create_constant_node_field("Test_size_3", Float64, 3,
+                                                        VectorOrMatrix = "Matrix")
     @test size(test) == (5, 3, 3)
     test,
     test2 = test_data_manager.create_free_size_field("Test_size_4", Float64,
@@ -273,7 +275,9 @@ end
     @test size(test2) == (3, 3, 1, 3)
     @test "Test_size_4N" in test_data_manager.get_all_field_keys()
     @test "Test_size_4NP1" in test_data_manager.get_all_field_keys()
-    test, test2 = test_data_manager.create_node_field("Test_size_4", Float64, "Matrix", 3)
+    test,
+    test2 = test_data_manager.create_node_field("Test_size_4", Float64, 3,
+                                                VectorOrMatrix = "Matrix")
     @test size(test) == (3, 3, 1, 3)
     @test size(test2) == (3, 3, 1, 3)
     test = test_data_manager.create_constant_free_size_field("Int8Matrix", Int64, (50, 3))
@@ -322,22 +326,28 @@ end
 
 @testset "Matrix" begin
     #Arrays
-    test = test_data_manager.create_constant_node_field("test9", Float64, "Matrix", 2)
+    test = test_data_manager.create_constant_node_field("test9", Float64, 2,
+                                                        VectorOrMatrix = "Matrix")
     test[1, 1, 1] = 1.2
     test[1, 2, 1] = -1.2
     test[1, 1, 2] = 1.4
     test[1, 2, 2] = 1.2
     @test test == test_data_manager.get_field("test9")
-    test = test_data_manager.create_constant_bond_field("test10", Float64, "Matrix", 3)
+    test = test_data_manager.create_constant_bond_field("test10", Float64, 3,
+                                                        VectorOrMatrix = "Matrix")
     test[1][1, 1, 1] = 1.2
     test[2][1, 2, 1] = -1.2
     test[2][1, 1, 3] = 1.4
     test[2][1, 2, 2] = 1.2
     @test test == test_data_manager.get_field("test10")
-    test1, test2 = test_data_manager.create_bond_field("test11", Float64, "Matrix", 6)
+    test1,
+    test2 = test_data_manager.create_bond_field("test11", Float64, 6,
+                                                VectorOrMatrix = "Matrix")
     @test test1 == test_data_manager.get_field("test11", "N")
     @test test2 == test_data_manager.get_field("test11", "NP1")
-    test1, test2 = test_data_manager.create_node_field("test12", Float64, "Matrix", 3)
+    test1,
+    test2 = test_data_manager.create_node_field("test12", Float64, 3,
+                                                VectorOrMatrix = "Matrix")
     @test test1 == test_data_manager.get_field("test12", "N")
     @test test2 == test_data_manager.get_field("test12", "NP1")
 end
@@ -362,8 +372,12 @@ end
 bdn, bdnp1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1, 1)
 test_data_manager.create_constant_node_field("Active", Bool, 1, true)
 @testset "switch_NP1_to_N" begin
-    bmatrixN, bmatrixNP1 = test_data_manager.create_bond_field("Bmat", Float64, "Matrix", 2)
-    nmatrixN, nmatrixNP1 = test_data_manager.create_node_field("Nmat", Float64, "Matrix", 2)
+    bmatrixN,
+    bmatrixNP1 = test_data_manager.create_bond_field("Bmat", Float64, 2,
+                                                     VectorOrMatrix = "Matrix")
+    nmatrixN,
+    nmatrixNP1 = test_data_manager.create_node_field("Nmat", Float64, 2,
+                                                     VectorOrMatrix = "Matrix")
     DN = test_data_manager.get_field("D", "N")
     DNP1 = test_data_manager.get_field("D", "NP1")
 
@@ -602,17 +616,22 @@ end
     alloc += @allocated test_data_manager.create_constant_free_size_field("M",
                                                                           Float64,
                                                                           (2, 3, 3, 4))
-    alloc += @allocated test_data_manager.create_constant_node_field("N", Float64, "Matrix",
-                                                                     3)
-    alloc += @allocated test_data_manager.create_constant_node_field("O", Float64, "Matrix",
-                                                                     3)
+    alloc += @allocated test_data_manager.create_constant_node_field("N", Float64,
+                                                                     3,
+                                                                     VectorOrMatrix = "Matrix")
+    alloc += @allocated test_data_manager.create_constant_node_field("O", Float64,
+                                                                     3,
+                                                                     VectorOrMatrix = "Matrix")
     alloc += @allocated test_data_manager.create_free_size_field("P", Float64, (3, 3, 1, 3))
-    alloc += @allocated test_data_manager.create_node_field("Q", Float64, "Matrix", 3)
+    alloc += @allocated test_data_manager.create_node_field("Q", Float64, 3,
+                                                            VectorOrMatrix = "Matrix")
     alloc += @allocated test_data_manager.create_constant_free_size_field("R", Int64,
                                                                           (50, 3))
-    alloc += @allocated test_data_manager.create_constant_bond_field("S", Float64, "Matrix",
-                                                                     3)
-    alloc += @allocated test_data_manager.create_bond_field("T", Float64, "Matrix", 3)
+    alloc += @allocated test_data_manager.create_constant_bond_field("S", Float64,
+                                                                     3,
+                                                                     VectorOrMatrix = "Matrix")
+    alloc += @allocated test_data_manager.create_bond_field("T", Float64, 3,
+                                                            VectorOrMatrix = "Matrix")
 
     @test alloc < 10947441 # 1.3684 MB
 

@@ -24,13 +24,14 @@ using Test
 
     deformation_gradient = test_data_manager.create_constant_bond_field("Deformation Gradient",
                                                                         Float64,
-                                                                        "Matrix",
-                                                                        2)
-    strain, strainN = test_data_manager.create_bond_field("Strain", Float64, "Matrix", 2)
+                                                                        2,
+                                                                        VectorOrMatrix = "Matrix")
+    strain,
+    strainN = test_data_manager.create_bond_field("Strain", Float64, 2,
+                                                  VectorOrMatrix = "Matrix")
     strain_inc = test_data_manager.create_constant_bond_field("Strain Increment",
-                                                              Float64,
-                                                              "Matrix",
-                                                              2)
+                                                              Float64, 2,
+                                                              VectorOrMatrix = "Matrix")
     deformation_gradient[1][1, :, :] = [1 0; 0 1]
     deformation_gradient[2][1, :, :] = [0 1; 0 1]
 
@@ -143,23 +144,21 @@ end
     bond_length = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1, 1)
 
     deformation_gradient = test_data_manager.create_constant_bond_field("Bond Deformation Gradient",
-                                                                        Float64,
-                                                                        "Matrix",
-                                                                        dof)
+                                                                        Float64, dof,
+                                                                        VectorOrMatrix = "Matrix")
     deformation_gradient[1][1, :, :] = [1 0; 0 1]
     deformation_gradient[2][1, :, :] = [1 0; 0 1]
 
     bond_stresses = test_data_manager.create_constant_bond_field("Bond Cauchy Stress",
                                                                  Float64,
-                                                                 "Matrix",
-                                                                 dof)
+                                                                 dof,
+                                                                 VectorOrMatrix = "Matrix")
     bond_stresses[1][1, :, :] = [1.0 0.0; 0.0 1.0]
     bond_stresses[2][1, :, :] = [1.0 0.0; 0.0 1.0]
 
     stress_integral = test_data_manager.create_constant_node_field("Stress Integral",
-                                                                   Float64,
-                                                                   "Matrix",
-                                                                   dof)
+                                                                   Float64, dof,
+                                                                   VectorOrMatrix = "Matrix")
 
     stress_integral = Bond_Associated_Correspondence.compute_stress_integral(nodes,
                                                                              dof,

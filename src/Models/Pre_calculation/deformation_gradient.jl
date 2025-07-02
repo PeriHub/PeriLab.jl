@@ -48,7 +48,8 @@ function init_model(datamanager::Module,
                     parameter::Union{Dict,OrderedDict},
                     block::Int64)
     dof = datamanager.get_dof()
-    datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+    datamanager.create_constant_node_field("Deformation Gradient", Float64, dof,
+                                           VectorOrMatrix = "Matrix")
     return datamanager
 end
 

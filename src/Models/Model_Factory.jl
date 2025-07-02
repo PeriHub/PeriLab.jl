@@ -121,7 +121,8 @@ function init_models(params::Dict,
                                       datamanager.get_dof())
     end
     if solver_options["Calculation"]["Calculate Strain"]
-        datamanager.create_node_field("Strain", Float64, "Matrix", datamanager.get_dof())
+        datamanager.create_node_field("Strain", Float64, datamanager.get_dof(),
+                                      VectorOrMatrix = "Matrix")
     end
     if solver_options["Calculation"]["Calculate von Mises stress"]
         datamanager.create_node_field("von Mises Stress", Float64, 1)

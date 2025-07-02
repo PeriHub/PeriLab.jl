@@ -52,8 +52,8 @@ function compute_control(datamanager::Module,
     Kinv = datamanager.get_field("Inverse Shape Tensor")
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness",
                                                     Float64,
-                                                    "Matrix",
-                                                    dof)
+                                                    dof,
+                                                    VectorOrMatrix = "Matrix")
     rotation::Bool = datamanager.get_rotation()
     angles = datamanager.get_field_if_exists("Angles")
     symmetry = material_parameter["Symmetry"]

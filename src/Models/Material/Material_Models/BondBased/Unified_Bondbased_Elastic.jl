@@ -61,7 +61,7 @@ function init_model(datamanager::Module,
     constant = datamanager.create_constant_bond_field("Unified Bond Based Constant",
                                                       Float64, 2)
     bb_strain = datamanager.create_constant_node_field("Bond Based Strain", Float64,
-                                                       "Matrix", dof)
+                                                       dof, VectorOrMatrix = "Matrix")
 
     bond_length = datamanager.get_field("Bond Length")
     horizon = datamanager.get_field("Horizon")

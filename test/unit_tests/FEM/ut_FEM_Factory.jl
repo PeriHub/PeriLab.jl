@@ -129,7 +129,8 @@ end
     test_data_manager.set_dof(dof)
     test_data_manager.set_num_elements(2)
     test_data_manager.set_num_controller(6)
-    test_data_manager.create_node_field("Cauchy Stress", Float64, "Matrix", dof)
+    test_data_manager.create_node_field("Cauchy Stress", Float64, dof,
+                                        VectorOrMatrix = "Matrix")
     test_data_manager.create_node_field("Force Densities", Float64, dof)
     test_data_manager.create_node_field("Displacements", Float64, dof)
     test_data_manager.create_node_field("Forces", Float64, dof)

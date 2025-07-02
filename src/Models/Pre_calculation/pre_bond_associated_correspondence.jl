@@ -58,7 +58,8 @@ function init_model(datamanager::Module,
                                            Float64,
                                            "Matrix",
                                            dof)
-    datamanager.create_constant_node_field("Deformation Gradient", Float64, "Matrix", dof)
+    datamanager.create_constant_node_field("Deformation Gradient", Float64, dof,
+                                           VectorOrMatrix = "Matrix")
     datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
     datamanager.create_constant_node_field("Weighted Deformation Gradient",
                                            Float64,

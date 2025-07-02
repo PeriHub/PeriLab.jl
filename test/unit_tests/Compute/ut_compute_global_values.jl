@@ -58,7 +58,8 @@ include("../../../src/Compute/compute_global_values.jl")
     @test calculate_nodelist(test_data_manager, "Disp", 1, "Maximum", empty_nodes) ==
           (-Inf, 0)
 
-    matrix = test_data_manager.create_constant_node_field("Matrix", Float64, "Matrix", 3)
+    matrix = test_data_manager.create_constant_node_field("Matrix", Float64, 3,
+                                                          VectorOrMatrix = "Matrix")
     matrix[:, 1, 2] .= 4
     nodes = Vector{Int64}(1:2)
     @test calculate_nodelist(test_data_manager, "Matrix", [1, 2], "Sum", nodes) == (8, 2)

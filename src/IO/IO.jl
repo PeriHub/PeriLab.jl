@@ -392,7 +392,7 @@ function init_orientations(datamanager::Module)
     orientations = datamanager.create_constant_node_field("Orientations", Float64, 3)
     rotation_tensor = datamanager.create_constant_node_field("Rotation Tensor",
                                                              Float64,
-                                                             "Matrix", dof)
+                                                             dof, VectorOrMatrix = "Matrix")
     angles = datamanager.get_field("Angles")
 
     for iID in 1:nnodes

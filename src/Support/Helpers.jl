@@ -420,7 +420,7 @@ end
 function add_in_place!(C::AbstractMatrix{T},
                        A::Vector{Vector{T}},
                        B::Vector{Vector{T}},
-                       factor = 1) where {T<:Number}
+                       factor = 1) where {T<:Union{Int64,Float64,Bool}}
     m = length(A)
     n = length(A[1])
 
@@ -453,7 +453,8 @@ function get_MMatrix(len::Int64)
         return nothing
     end
 end
-function mul_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{Bool}) where {T<:Number}
+function mul_in_place!(C::Vector{T}, A::Vector{T},
+                       B::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
@@ -463,7 +464,7 @@ function mul_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{Bool}) where {T<:Nu
 end
 function mul_in_place!(C::Vector{Vector{T}},
                        A::Vector{Vector{T}},
-                       B::Vector{T}) where {T<:Number}
+                       B::Vector{T}) where {T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
@@ -476,7 +477,7 @@ end
 function mul_in_place!(D::Vector{Vector{T}},
                        A::Vector{Vector{T}},
                        B::Vector{Vector{T}},
-                       C::T = 1.0) where {T<:Number}
+                       C::T = 1.0) where {T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(D) == length(A) == length(B)
 
@@ -488,7 +489,7 @@ function mul_in_place!(D::Vector{Vector{T}},
 end
 function sub_in_place!(C::Vector{Vector{T}},
                        A::Vector{Vector{T}},
-                       B::Vector{Vector{T}}) where {T<:Number}
+                       B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
@@ -498,7 +499,7 @@ function sub_in_place!(C::Vector{Vector{T}},
 end
 function sub_in_place!(C::Vector{Vector{Vector{T}}},
                        A::Vector{Vector{Vector{T}}},
-                       B::Vector{Vector{Vector{T}}}) where {T<:Number}
+                       B::Vector{Vector{Vector{T}}}) where {T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
@@ -510,7 +511,7 @@ function sub_in_place!(C::Vector{Vector{Vector{T}}},
 end
 function add_in_place!(C::Vector{Vector{T}},
                        A::Vector{Vector{T}},
-                       B::Vector{Vector{T}}) where {T<:Number}
+                       B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
@@ -519,7 +520,7 @@ function add_in_place!(C::Vector{Vector{T}},
     end
 end
 function div_in_place!(C::Vector{T}, A::Vector{T}, B::T,
-                       absolute = false) where {T<:Number}
+                       absolute = false) where {T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A)
 
@@ -533,7 +534,7 @@ function div_in_place!(C::Vector{T}, A::Vector{T}, B::T,
 end
 function div_in_place!(C::Vector{Vector{T}},
                        A::Vector{Vector{T}},
-                       B::Vector{Vector{T}}) where {T<:Number}
+                       B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
@@ -553,9 +554,9 @@ function fastdot(a::AbstractArray, b::AbstractArray, absolute = false)
     end
     c
 end
-function fill_in_place!(A::Union{Vector{Vector{T}},Vector{Array{T,3}}},
+function fill_in_place!(A::Vector{Vector{T}},
                         value::T,
-                        active::Vector{Bool}) where {T<:Number}
+                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
     @inbounds for i in eachindex(A)
         if active[i]
             A[i] .= value
@@ -564,7 +565,7 @@ function fill_in_place!(A::Union{Vector{Vector{T}},Vector{Array{T,3}}},
 end
 function fill_in_place!(A::Vector{Vector{Vector{T}}},
                         value::T,
-                        active::Vector{Bool}) where {T<:Number}
+                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
     @inbounds for i in eachindex(A)
         if active[i]
             @inbounds for j in eachindex(A[i])
@@ -621,7 +622,7 @@ Returns the indices of `vector` that are equal to `what`.
 # Returns
 - `indices::Vector`: The indices of `vector` that are equal to `what`.
 """
-function find_indices(vector::Vector{T}, what::T) where {T<:Number}
+function find_indices(vector::Vector{T}, what::T) where {T<:Union{Int64,Float64,Bool}}
     return findall(item -> item == what, vector)
 end
 

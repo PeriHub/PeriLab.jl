@@ -124,7 +124,8 @@ function init_model(datamanager::Module,
     DRPLDT = datamanager.create_constant_node_field("Variation of RPL with respect to the temperature",
                                                     Float64,
                                                     1)
-    DFGRD0 = datamanager.create_constant_node_field("DFGRD0", Float64, "Matrix", dof)
+    DFGRD0 = datamanager.create_constant_node_field("DFGRD0", Float64, dof,
+                                                    VectorOrMatrix = "Matrix")
     # is already initialized if thermal problems are adressed
     datamanager.create_node_field("Temperature", Float64, 1)
     deltaT = datamanager.create_constant_node_field("Delta Temperature", Float64, 1)

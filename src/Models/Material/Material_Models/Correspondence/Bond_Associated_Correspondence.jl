@@ -35,12 +35,16 @@ function init_model(datamanager::Module,
     end
 
     dof = datamanager.get_dof()
-    datamanager.create_bond_field("Bond Strain", Float64, "Matrix", dof)
-    datamanager.create_bond_field("Bond Cauchy Stress", Float64, "Matrix", dof)
-    datamanager.create_constant_bond_field("Bond Strain Increment", Float64, "Matrix", dof)
-    datamanager.create_constant_node_field("Integral Nodal Stress", Float64, "Matrix", dof)
+    datamanager.create_bond_field("Bond Strain", Float64, dof, VectorOrMatrix = "Matrix")
+    datamanager.create_bond_field("Bond Cauchy Stress", Float64, dof,
+                                  VectorOrMatrix = "Matrix")
+    datamanager.create_constant_bond_field("Bond Strain Increment", Float64, dof,
+                                           VectorOrMatrix = "Matrix")
+    datamanager.create_constant_node_field("Integral Nodal Stress", Float64, dof,
+                                           VectorOrMatrix = "Matrix")
 
-    datamanager.create_bond_field("Bond Rotation Tensor", Float64, "Matrix", dof)
+    datamanager.create_bond_field("Bond Rotation Tensor", Float64, dof,
+                                  VectorOrMatrix = "Matrix")
 
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
