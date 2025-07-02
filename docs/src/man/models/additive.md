@@ -20,5 +20,4 @@ For this simple printing process a printing temperature is added utilized the he
 Within this process the $t_{activate}$ can be user defined. However, to reproduce real processes an interface with the G-code is needed. This interface provides the information when the tool arrives at a specific point and defines the activation time as shown in the figure (taken from [WillbergC2024b](@cite)).
 
 
-
-![Virtual printing process](https://onlinelibrary.wiley.com/cms/asset/b5c3f70e-2585-4b01-854b-88febf14741e/adts202400818-fig-0009-m.jpg)
+![Virtual printing process](../../assets/gcode_concept.png)
