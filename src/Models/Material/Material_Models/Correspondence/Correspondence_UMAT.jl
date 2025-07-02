@@ -150,8 +150,7 @@ function init_model(datamanager::Module,
 
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness",
                                                     Float64,
-                                                    "Matrix",
-                                                    dof)
+                                                    dof, VectorOrMatrix = "Matrix")
 
     return datamanager
 end

@@ -11,16 +11,14 @@ include("./Data_manager/data_manager_contact.jl")
 include("./Data_manager/data_manager_FEM.jl")
 include("./Data_manager/data_manager_fields.jl")
 include("./Data_manager/data_manager_solving_process.jl")
+include("./Data_manager/data_manager_status_vars.jl")
 include("./Data_manager/data_manager_utilities.jl")
 export add_active_model
-
 export fem_active
 export initialize_data
 export get_active_models
 export get_all_field_keys
 export get_bc_free_dof
-export get_step
-export get_iteration
 export get_accuracy_order
 export get_aniso_crit_values
 export get_block_name_list
@@ -51,8 +49,6 @@ export get_rotation
 export get_element_rotation
 export init_properties
 export remove_active_model
-export set_step
-export set_iteration
 export set_accuracy_order
 export set_bc_free_dof
 export set_block_name_list
@@ -78,8 +74,7 @@ export set_cancel
 export set_output_frequency
 export set_rotation
 export set_element_rotation
-export switch_NP1_to_N
-export synch_manager
+
 ##########################
 # Variables
 ##########################
@@ -170,133 +165,6 @@ function initialize_data()
     fields[Bool] = Dict()
 end
 ###################################
-
-"""
-    set_current_time(time::Float64)
-
-Set the current time of the simulation.
-
-# Arguments
-- `time::Float64`: The current time of the simulation.
-"""
-function set_current_time(time::Union{Float64,Nothing})
-    data["current_time"] = time
-end
-
-"""
-    get_current_time()
-
-Get the current time of the simulation.
-
-# Returns
-- `Float64`: The current time of the simulation.
-"""
-function get_current_time()
-    return data["current_time"]
-end
-
-"""
-    set_step(step::Int64)
-
-Set the step of the simulation.
-
-# Arguments
-- `step::Int64`: The step of the simulation.
-
-"""
-function set_step(step::Union{Int64,Nothing})
-    data["step"] = step
-end
-
-"""
-    get_step()
-
-Get the step of the simulation.
-
-# Returns
-- `Int64`: The step of the simulation.
-
-"""
-function get_step()
-    return data["step"]
-end
-
-"""
-    set_max_step(max_step::Int64)
-
-Set the max_step of the simulation.
-
-# Arguments
-- `max_step::Int64`: The max_step of the simulation.
-
-"""
-function set_max_step(max_step::Union{Int64,Nothing})
-    data["max_step"] = max_step
-end
-"""
-    get_bc_free_dof()
-
-Get all dof without displacment boundary conditions.
-
-# Returns
-- `Vector{Tuple{Int64, Int64}}`: The point and dof without boundary condition.
-
-"""
-function get_bc_free_dof()
-    return data["BC_free_dof"]
-end
-
-"""
-    set_bc_free_dof(values::Vector{Tuple{Int64, Int64}})
-
-Set all dof without displacment boundary conditions.
-
-# Returns
--
-
-"""
-function set_bc_free_dof(values::Vector{Int64})
-    data["BC_free_dof"] = values
-end
-
-"""
-    get_max_step()
-
-Get the max_step of the simulation.
-
-# Returns
-- `Int64`: The max_step of the simulation.
-
-"""
-function get_max_step()
-    return data["max_step"]
-end
-
-"""
-    set_iteration(iteration::Int64)
-
-Set the iteration of the simulation.
-
-# Arguments
-- `iteration::Int64`: The iteration of the simulation.
-
-"""
-function set_iteration(iteration::Int64)
-    data["iteration"] = iteration
-end
-
-"""
-    get_step()
-
-Get the iteration of the simulation.
-
-# Returns
-- `Int64`: The iteration of the simulation.
-
-"""
-function get_iteration()
-    return data["iteration"]
-end
 
 """
     add_active_model(key::String, module_name::Module)
@@ -409,15 +277,6 @@ function get_active_models(all::Bool = false)
 end
 
 """
-    get_all_field_keys()
-
-Returns a list of all field keys.
-"""
-function get_all_field_keys()::Vector{String}
-    return data["field_names"]
-end
-
-"""
     get_block_name_list()
 
 Returns a list of all block IDs.
@@ -451,96 +310,6 @@ Retrieves the critical values matrix.
 """
 function get_aniso_crit_values()
     return data["aniso_crit_values"]
-end
-
-"""
-    get_dof()
-
-Retrieves the degree of freedom (dof) value.
-
-# Returns
-- `dof` (integer): The current degree of freedom value.
-
-Example:
-```julia
-get_dof()  # returns the current degree of freedom
-```
-"""
-function get_dof()
-    return data["dof"]
-end
-
-"""
-    get_field(name::String, time::String)
-
-Returns the field with the given name and time.
-
-# Arguments
-- `name::String`: The name of the field.
-- `time::String`: The time of the field.
-# Returns
-- `field::Field`: The field with the given name and time.
-"""
-function get_field(name::String, time::String = "Constant")
-    if time == "Constant"
-        return _get_field(name)
-    elseif time == "N"
-        try
-            return _get_field(data["NP1_to_N"][name][1])
-        catch
-            @error "Field ''" *
-                   name *
-                   "'' does not exist. Check if it is initialized as constant."
-            return nothing
-        end
-    elseif time == "NP1"
-        try
-            return _get_field(data["NP1_to_N"][name][2])
-        catch
-            @error "Field ''" *
-                   name *
-                   "'' does not exist. Check if it is initialized as constant."
-            return nothing
-        end
-    else
-        @error "Time $time is not supported. Use 'constant', 'N', or 'NP1'"
-        return nothing
-    end
-end
-
-"""
-    get_field_if_exists(name::String, time::String)
-
-Returns the field with the given name if it exists.
-
-# Arguments
-- `name::String`: The name of the field.
-- `time::String`: The time of the field.
-# Returns
-- `field::Field`: The field with the given name and time.
-"""
-function get_field_if_exists(name::String, time::String = "Constant")
-    return has_key(name) ? get_field(name, time) : nothing
-end
-"""
-    _get_field(name::String)
-
-Returns the field with the given name.
-
-# Arguments
-- `name::String`: The name of the field.
-# Returns
-- `field::Field`: The field with the given name.
-"""
-function _get_field(name::String)
-    try
-        return data["field_array_type"][name]["get_function"]()
-    catch
-        @error "Field ''" *
-               name *
-               "'' does not exist. Check if it is initialized as non-constant."
-        return nothing
-    end
 end
 
 """
@@ -1062,43 +831,6 @@ Sets the distribution globally.
 """
 function set_distribution(values::Vector{Int64})
     data["distribution"] = values
-end
-
-"""
-    set_dof(n::Int64)
-
-Sets the degree of freedom (dof) value globally.
-
-# Arguments
-- `n::Int64`: The value to set as the degree of freedom.
-
-Example:
-```julia
-set_dof(3)  # sets the degree of freedom to 3
-```
-"""
-function set_dof(n::Int64)
-    data["dof"] = n
-end
-
-"""
-    set_fem(value::Bool)
-
-Activates and deactivates the FEM option in PeriLab
-
-# Arguments
-- `value::Bool`: The value to set FEM active (true) or not (false).
-
-Example:
-```julia
-set_fem(true)  # sets the fem_option to true
-```
-"""
-function set_fem(value::Bool)
-    if value
-        @info "FEM is enabled"
-    end
-    data["fem_option"] = value
 end
 
 """

@@ -6,7 +6,8 @@ export synch_manager
 export switch_NP1_to_N
 export set_NP1_to_N
 
-function switch_bonds!(field_N, field_NP1)
+function switch_bonds!(field_N::Vector{Vector{T}},
+                       field_NP1::Vector{Vector{T}}) where {T<:Union{Int64,Float64}}
     for fieldID in eachindex(field_NP1)
         copyto!(field_N[fieldID], field_NP1[fieldID])
     end

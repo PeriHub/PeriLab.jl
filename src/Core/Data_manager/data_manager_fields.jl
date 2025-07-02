@@ -1,13 +1,95 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-
+export get_all_field_keys
 export create_bond_field
 export create_constant_free_size_field
 export create_constant_bond_field
 export create_constant_node_field
 export create_constant_element_field
 export create_node_field
+
+"""
+    get_field(name::String, time::String)
+
+Returns the field with the given name and time.
+
+# Arguments
+- `name::String`: The name of the field.
+- `time::String`: The time of the field.
+# Returns
+- `field::Field`: The field with the given name and time.
+"""
+function get_field(name::String, time::String = "Constant")
+    if time == "Constant"
+        return _get_field(name)
+    elseif time == "N"
+        try
+            return _get_field(data["NP1_to_N"][name][1])
+        catch
+            @error "Field ''" *
+                   name *
+                   "'' does not exist. Check if it is initialized as constant."
+            return nothing
+        end
+    elseif time == "NP1"
+        try
+            return _get_field(data["NP1_to_N"][name][2])
+        catch
+            @error "Field ''" *
+                   name *
+                   "'' does not exist. Check if it is initialized as constant."
+            return nothing
+        end
+    else
+        @error "Time $time is not supported. Use 'constant', 'N', or 'NP1'"
+        return nothing
+    end
+end
+
+"""
+    get_field_if_exists(name::String, time::String)
+
+Returns the field with the given name if it exists.
+
+# Arguments
+- `name::String`: The name of the field.
+- `time::String`: The time of the field.
+# Returns
+- `field::Field`: The field with the given name and time.
+"""
+function get_field_if_exists(name::String, time::String = "Constant")
+    return has_key(name) ? get_field(name, time) : nothing
+end
+"""
+    _get_field(name::String)
+
+Returns the field with the given name.
+
+# Arguments
+- `name::String`: The name of the field.
+# Returns
+- `field::Field`: The field with the given name.
+"""
+function _get_field(name::String)
+    try
+        return data["field_array_type"][name]["get_function"]()
+    catch
+        @error "Field ''" *
+               name *
+               "'' does not exist. Check if it is initialized as non-constant."
+        return nothing
+    end
+end
+
+"""
+    get_all_field_keys()
+
+Returns a list of all field keys.
+"""
+function get_all_field_keys()::Vector{String}
+    return data["field_names"]
+end
 
 """
     create_bond_field(name::String, vartype::Type, dof::Int64)

@@ -563,9 +563,30 @@ function fill_in_place!(A::Vector{Vector{T}},
         end
     end
 end
+
+function fill_in_place!(A::Vector{Array{T,N}},
+                        value::T,
+                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool},N}
+    @inbounds for i in eachindex(A)
+        if active[i]
+            A[i] .= value
+        end
+    end
+end
 function fill_in_place!(A::Vector{Vector{Vector{T}}},
                         value::T,
                         active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
+    @inbounds for i in eachindex(A)
+        if active[i]
+            @inbounds for j in eachindex(A[i])
+                A[i][j] .= value
+            end
+        end
+    end
+end
+function fill_in_place!(A::Vector{Vector{Array{T,N}}},
+                        value::T,
+                        active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool},N}
     @inbounds for i in eachindex(A)
         if active[i]
             @inbounds for j in eachindex(A[i])
@@ -692,7 +713,8 @@ Checks if the sum of the array is finite. If not, an error is raised.
 # Returns
 - `Bool`: `true` if the sum of the array is finite, `false` otherwise.
 """
-function check_inf_or_nan(array::AbstractArray{T}, msg::String) where {T}
+function check_inf_or_nan(array::AbstractArray{T},
+                          msg::String) where {T<:Union{Int64,Float64}}
     if isnan(sum(array))
         @error "Field ''$msg'' has NaN elements."
         return true
@@ -703,7 +725,18 @@ function check_inf_or_nan(array::AbstractArray{T}, msg::String) where {T}
     end
     return false
 end
-
+function check_inf_or_nan(array::T,
+                          msg::String) where {T<:Union{Int64,Float64}}
+    if isnan(sum(array))
+        @error "Field ''$msg'' has NaN elements."
+        return true
+    end
+    if !isfinite(sum(array))
+        @error "Field ''$msg'' is infinite."
+        return true
+    end
+    return false
+end
 """
     matrix_style(A)
 
@@ -714,12 +747,13 @@ Include a scalar or an array and reshape it to style needed for LinearAlgebra pa
 # Returns
 - `Array`: The reshaped array
 """
-function matrix_style(A::AbstractVector{T}) where {T}
-    if length(size(A)) == 0
-        A = [A]
-    end
+function matrix_style(A::AbstractVector{T})::Matrix{T} where {T<:Union{Int64,Float64}}
     dim = size(A)[1]
     return reshape(A, dim, dim)
+end
+
+function matrix_style(A::T)::Matrix{T} where {T<:Union{Int64,Float64}}
+    return reshape([A], 1, 1)
 end
 
 """

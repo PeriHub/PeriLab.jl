@@ -54,7 +54,8 @@ end
                                                                  3, 1)
     bond_length = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1,
                                                                sqrt(3))
-    test_data_manager.create_node_field("Cauchy Stress", Float64, "Matrix", 3)
+    test_data_manager.create_node_field("Cauchy Stress", Float64, 3,
+                                        VectorOrMatrix = "Matrix")
     volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
 
     volume[1:5] = 1:5

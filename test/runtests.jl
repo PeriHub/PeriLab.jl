@@ -65,7 +65,7 @@ MPI.Init()
             end
         end
         @testset "Core" begin
-            @testset "ut_Surface_correction" begin
+            @testset "ut_data_manager" begin
                 include("unit_tests/Core/ut_data_manager.jl")
             end
             @testset "ut_influence_function" begin
