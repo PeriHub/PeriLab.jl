@@ -1,6 +1,6 @@
 ## Seminar 9: PeriLab - Implement your own model
 
-[Plain Model](../../../examples/Seminars/Part_09/seminar.jl)
+[Plain Model](https://github.com/PeriHub/PeriLab.jl/tree/main/examples/Seminars/Part_09)
 
 ### Steps
 1. choose your model category
