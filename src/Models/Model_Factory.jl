@@ -116,9 +116,8 @@ function init_models(params::Dict,
     if solver_options["Calculation"]["Calculate Cauchy"] |
        solver_options["Calculation"]["Calculate von Mises stress"]
         datamanager.create_node_field("Cauchy Stress",
-                                      Float64,
-                                      "Matrix",
-                                      datamanager.get_dof())
+                                      Float64, datamanager.get_dof(),
+                                      VectorOrMatrix = "Matrix")
     end
     if solver_options["Calculation"]["Calculate Strain"]
         datamanager.create_node_field("Strain", Float64, datamanager.get_dof(),

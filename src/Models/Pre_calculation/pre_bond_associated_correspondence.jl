@@ -55,16 +55,14 @@ function init_model(datamanager::Module,
                     block::Int64)
     dof = datamanager.get_dof()
     datamanager.create_constant_bond_field("Bond Associated Deformation Gradient",
-                                           Float64,
-                                           "Matrix",
-                                           dof)
+                                           Float64, dof,
+                                           VectorOrMatrix = "Matrix")
     datamanager.create_constant_node_field("Deformation Gradient", Float64, dof,
                                            VectorOrMatrix = "Matrix")
     datamanager.create_constant_bond_field("Lagrangian Gradient Weights", Float64, dof)
     datamanager.create_constant_node_field("Weighted Deformation Gradient",
-                                           Float64,
-                                           "Matrix",
-                                           dof)
+                                           Float64, dof,
+                                           VectorOrMatrix = "Matrix")
 
     #https://arxiv.org/pdf/2004.11477
     # maybe as static array

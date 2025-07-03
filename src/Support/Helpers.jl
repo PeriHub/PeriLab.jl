@@ -747,7 +747,7 @@ Include a scalar or an array and reshape it to style needed for LinearAlgebra pa
 # Returns
 - `Array`: The reshaped array
 """
-function matrix_style(A::AbstractVector{T})::Matrix{T} where {T<:Union{Int64,Float64}}
+function matrix_style(A::AbstractMatrix{T})::Matrix{T} where {T<:Union{Int64,Float64}}
     dim = size(A)[1]
     return reshape(A, dim, dim)
 end

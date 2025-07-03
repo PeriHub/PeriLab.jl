@@ -53,9 +53,8 @@ function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
 
     # TODO memory efficiency; create a mapping field and allocate only the memory of length coupling nodes
     coupling_matrix = datamanager.create_constant_node_field("Coupling Matrix",
-                                                             Float64,
-                                                             "Matrix",
-                                                             (prod(p .+ 1) + 1))
+                                                             Float64, (prod(p .+ 1) + 1),
+                                                             VectorOrMatrix = "Matrix")
 
     if any(x -> x > 1, p)
         @error "Coupling is supported only for linear elements yet."
