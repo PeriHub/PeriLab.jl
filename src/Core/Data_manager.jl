@@ -10,6 +10,7 @@ using .Helpers: fill_in_place!
 include("./Data_manager/data_manager_contact.jl")
 include("./Data_manager/data_manager_FEM.jl")
 include("./Data_manager/data_manager_fields.jl")
+include("./Data_manager/data_manager_MPI.jl")
 include("./Data_manager/data_manager_solving_process.jl")
 include("./Data_manager/data_manager_status_vars.jl")
 include("./Data_manager/data_manager_utilities.jl")
@@ -59,8 +60,6 @@ export set_coupling_fe_nodes
 export set_aniso_crit_values
 export set_directory
 export set_inverse_nlist
-export set_fem
-export set_glob_to_loc
 export set_model_module
 export set_num_controller
 export set_nset
@@ -326,20 +325,6 @@ function get_bond_damage(time::String)
     # bond_damage_aniso = get_field("Bond Damage Anisotropic", time, false)
     # return isnothing(bond_damage_aniso) ? bond_damage : bond_damage_aniso
     return bond_damage
-end
-
-"""
-    get_damage(time::String)
-Get the damage
-
-# Arguments
-- `time::String`: The time of the field.
-# Returns
-- `damage::Field`: The damage field.
-"""
-function get_damage(time::String)
-    damage = get_field("Damage", time)
-    return damage
 end
 
 """
@@ -822,35 +807,6 @@ function set_directory(directory::String)
 end
 
 """
-    set_distribution(values::Vector{Int64})
-
-Sets the distribution globally.
-
-# Arguments
-- `values::Vector{Int64}`: The distribution.
-"""
-function set_distribution(values::Vector{Int64})
-    data["distribution"] = values
-end
-
-"""
-    set_glob_to_loc(dict)
-
-Sets the global-to-local mapping dict globally.
-
-# Arguments
-- `dict` (array): The dict representing the global-to-local mapping.
-
-Example:
-```julia
-set_glob_to_loc([1, 3, 5])  # sets the global-to-local mapping dict
-```
-"""
-function set_glob_to_loc(dict::Dict)
-    data["glob_to_loc"] = dict
-end
-
-"""
     set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
 
 Sets the inverse nlist globally.
@@ -860,40 +816,6 @@ Sets the inverse nlist globally.
 """
 function set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
     data["inverse_nlist"] = inv_nlist
-end
-
-"""
-    set_nnodes()
-
-Sets the number all nodes of one core globally.
-
-# Arguments
-
-Example:
-```
-"""
-function set_nnodes()
-    data["num_controller"]
-    data["num_responder"]
-    data["nnodes"] = data["num_controller"] + data["num_responder"]
-end
-
-"""
-    set_num_controller(n::Int64)
-
-Sets the number of controller nodes globally. For one core the number of nodes is equal to the number of controller nodes.
-
-# Arguments
-- `n::Int64`: The value to set as the number of nodes.
-
-Example:
-```julia
-set_num_controller(10)  # sets the number of nodes to 10
-```
-"""
-function set_num_controller(n::Int64)
-    data["num_controller"] = n
-    set_nnodes()
 end
 
 """

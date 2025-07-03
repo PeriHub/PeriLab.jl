@@ -2,10 +2,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-export synch_manager
 export switch_NP1_to_N
 export set_NP1_to_N
-
+export switch_bonds!
 function switch_bonds!(field_N::Vector{Vector{T}},
                        field_NP1::Vector{Vector{T}}) where {T<:Union{Int64,Float64}}
     for fieldID in eachindex(field_NP1)
@@ -61,26 +60,4 @@ end
 function fill_field!(field_NP1::AbstractArray{T},
                      active::Vector{Bool}, key::String) where {T<:Union{Int64,Float64,Bool}}
     fill!(field_NP1, data["NP1_to_N"][key][3])
-end
-
-"""
-    synch_manager(synchronise_field, direction::String)
-
-Synchronises the fields.
-
-# Arguments
-- `synchronise_field`: The function to synchronise the field.
-- `direction::String`: The direction of the synchronisation.
-"""
-function synch_manager(synchronise_field, direction::String)
-    synch_fields = get_synch_fields()
-    # @debug synch_fields
-    for synch_field in keys(synch_fields)
-        synchronise_field(get_comm(),
-                          synch_fields,
-                          get_overlap_map(),
-                          get_field,
-                          synch_field,
-                          direction)
-    end
 end
