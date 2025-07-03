@@ -287,7 +287,7 @@ end
     @test length(size(A)) == 0
     Atest = PeriLab.Solver_control.Helpers.matrix_style(A)
     @test sum(size(Atest)) == 2
-    A = [1]
+    A = [1;;]
     @test length(size(A)) == 1
     @test sum(size(A)) == 1
     Atest = PeriLab.Solver_control.Helpers.matrix_style(A)
