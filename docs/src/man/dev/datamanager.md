@@ -79,8 +79,8 @@ datamanager.create_node_field(Fieldname::String, Type_of_variable::Type, Degree_
 ## Create free size fields
 Free size fields can be constant or non-constant. The size is defined by the user and must be a tuple. The field dimension is chosen by the user.
 ```julia
- field = datamanager.create_constant_free_size_field(Fieldname::String, Type_of_variable::Type, size::Tuple)
- fieldN, fieldNP1 = datamanager.create_free_size_field(Fieldname::String, Type_of_variable::Type, size::Tuple)
+ field = datamanager.create_constant_free_size_field(Fieldname::String, Type_of_variable::Type, size::NTuple)
+ fieldN, fieldNP1 = datamanager.create_free_size_field(Fieldname::String, Type_of_variable::Type, size::NTuple)
 ```
 !!! info "free size example"
     A constant node field with a matrix $3\times3$ per node can be defined in a free size field by
