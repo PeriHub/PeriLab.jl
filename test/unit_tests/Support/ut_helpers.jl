@@ -284,24 +284,18 @@ end
 end
 @testset "get_matrix_style" begin
     A = 1
-    @test length(size(A)) == 0
     Atest = PeriLab.Solver_control.Helpers.matrix_style(A)
     @test sum(size(Atest)) == 2
     A = [1;;]
-    @test length(size(A)) == 1
-    @test sum(size(A)) == 1
     Atest = PeriLab.Solver_control.Helpers.matrix_style(A)
     @test sum(size(Atest)) == 2
     A = [1 1; 1 1]
-    @test length(size(A)) == 2
-    @test sum(size(A)) == 4
     Atest = PeriLab.Solver_control.Helpers.matrix_style(A)
-    @test length(size(A)) == 2
-    @test sum(size(A)) == 4
+    @test length(size(Atest)) == 2
+    @test sum(size(Atest)) == 4
     A = [1 1 1; 1 1 1; 1 1 1]
-    @test sum(size(A)) == 6
     Atest = PeriLab.Solver_control.Helpers.matrix_style(A)
-    @test sum(size(A)) == 6
+    @test sum(size(Atest)) == 6
 end
 
 @testset "ut_find_files_with_ending" begin
