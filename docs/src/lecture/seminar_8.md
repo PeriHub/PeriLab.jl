@@ -87,5 +87,5 @@ u_error=inv(K_s)*F
 display(u-u_error)
 
 interal_force = K_s*(u-u_error)
-dispaly(internal_force)
+display(internal_force)
 ```

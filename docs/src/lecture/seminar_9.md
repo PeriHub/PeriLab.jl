@@ -3,9 +3,9 @@
 [Plain Model](https://github.com/PeriHub/PeriLab.jl/tree/main/examples/Seminars/Part_09)
 
 ### Steps
-1. choose your model category
-2. take the template file, rename it and copy it in the model folder
-3. give you model a name, this name defines how you call your model
+- choose your model category
+- take the template file, rename it and copy it in the model folder
+- give you model a name, this name defines how you call your model
 
 ```julia
 function damage_name()
@@ -21,7 +21,7 @@ end
         Damage Model: My Model
 ```
 
-4. Specify your model parameter
+- Specify your model parameter
 
 ```yaml
  Models:
@@ -31,7 +31,7 @@ end
         Important value: 200
 ```
 
-5. get this value in the code
+- get this value in the code
 
 
 ```julia
@@ -46,7 +46,7 @@ function init_model(datamanager::Module,
 end
 ```
 
-6. init_model is used to create model specific fields and to check if values, especially optional values exist
+- init_model is used to create model specific fields and to check if values, especially optional values exist
 
 ```julia
 function init_model(datamanager::Module,
@@ -72,14 +72,14 @@ function init_model(datamanager::Module,
 end
 ```
 
-7. If fields already exist, the field is returned
-8. Get fields and use them; if you want to now, what fields are already defined and usable
+- If fields already exist, the field is returned
+- Get fields and use them; if you want to now, what fields are already defined and usable
 
 ```julia
 datamanager.get_all_field_keys()
 ```
 
-9. All node fields can be exported to the result file
+- All node fields can be exported to the result file
 ```julia
 function compute_model(datamanager::Module,
                        nodes::AbstractVector{Int64},
@@ -97,7 +97,7 @@ function compute_model(datamanager::Module,
     return datamanager
 end
 ```
-10. If N and NP1 exist only NP1 will be exported
+- If N and NP1 exist only NP1 will be exported
 
 ```yaml
     Output1:
@@ -108,7 +108,7 @@ end
         my node field: true
         my constant node field: true
 ```
-11. Activate the model class. Material is set to true by default. The rest is set to zero.
+- Activate the model class. Material is set to true by default. The rest is set to zero.
 
 
 ```yaml
