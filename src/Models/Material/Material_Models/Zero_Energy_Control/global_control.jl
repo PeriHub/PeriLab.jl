@@ -57,7 +57,7 @@ function compute_control(datamanager::Module,
                                                     VectorOrMatrix = "Matrix")::Array{Float64,
                                                                                       3}
     rotation = datamanager.get_rotation()::Bool
-    angles = datamanager.get_field_if_exists("Angles")
+
     symmetry = material_parameter["Symmetry"]::String
     CVoigt = get_Hooke_matrix(datamanager,
                               material_parameter,
@@ -65,6 +65,7 @@ function compute_control(datamanager::Module,
                               dof)
     if !haskey(material_parameter, "UMAT Material Name")
         if rotation
+            angles = datamanager.get_field("Angles")
             create_zero_energy_mode_stiffness!(nodes, Val(dof), CVoigt, angles, Kinv,
                                                zStiff)
         else
@@ -178,9 +179,9 @@ Creates the zero energy mode stiffness
 """
 function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
                                             ::Val{DOF},
-                                            CVoigt::Union{MMatrix,Matrix{Float64}},
+                                            CVoigt::MMatrix{N,N,Float64,N2},
                                             Kinv::Array{Float64,3},
-                                            zStiff::Array{Float64,3}) where {DOF}
+                                            zStiff::Array{Float64,3}) where {DOF,N,N2}
     C = get_fourth_order(CVoigt, Val(DOF))  # construct once, if it's always same!
     for iID in nodes
         global_zero_energy_mode_stiffness(iID, C, Kinv, zStiff)
@@ -233,11 +234,12 @@ Creates the zero energy mode stiffness
 """
 function create_zero_energy_mode_stiffness!(nodes::AbstractVector{Int64},
                                             ::Val{DOF},
-                                            CVoigt::AbstractMatrix{Float64},
+                                            CVoigt::MMatrix{N,N,Float64,N2},
                                             angles::AbstractArray{Float64},
                                             Kinv::AbstractArray{Float64,3},
-                                            zStiff::AbstractArray{Float64,3}) where {DOF}
-    C = Array{Float64,4}(get_fourth_order(CVoigt, Val{DOF}))
+                                            zStiff::AbstractArray{Float64,3}) where {DOF,N,
+                                                                                     N2}
+    C = get_fourth_order(CVoigt, Val{DOF})
     for iID in nodes
         C = rotate_fourth_order_tensor(angles[iID, :], C, Val{DOF}, false)
         global_zero_energy_mode_stiffness(iID, C, Kinv, zStiff)

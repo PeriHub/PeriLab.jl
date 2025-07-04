@@ -15,10 +15,6 @@ using LoopVectorization
 using Unitful
 using CDDLib, Polyhedra
 
-global A2x2 = MMatrix{2,2}(zeros(Float64, 2, 2))
-global A3x3 = MMatrix{3,3}(zeros(Float64, 3, 3))
-global A6x6 = MMatrix{6,6}(zeros(Float64, 6, 6))
-
 export qdim
 export check_inf_or_nan
 export compute_geometry
@@ -434,23 +430,16 @@ function add_in_place!(C::AbstractMatrix{T},
 
     return C
 end
-function get_MMatrix(len::Int64)
-    global A2x2
-    global A3x3
-    global A6x6
-
+function get_MMatrix(len::Int64)::MMatrix
     if len == 4
-        A2x2 .= 0
-        return A2x2
+        return MMatrix{2,2}(zeros(Float64, 2, 2))
     elseif len == 9
-        A3x3 .= 0
-        return A3x3
+        return MMatrix{3,3}(zeros(Float64, 3, 3))
     elseif len == 36
-        A6x6 .= 0
-        return A6x6
+        return MMatrix{6,6}(zeros(Float64, 6, 6))
     else
         @error "MMatrix length $len not pre-allocated. Please add your size to helper.jl in get_MMatrix."
-        return nothing
+        return MMatrix{1,1}(zeros(Float64, 1, 1))
     end
 end
 function mul_in_place!(C::Vector{T}, A::Vector{T},
@@ -779,7 +768,7 @@ CVoigt = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 dof = 3
 result = get_fourth_order(CVoigt, dof)
 """
-function get_fourth_order(CVoigt::AbstractMatrix{Float64}, ::Val{DOF}) where {DOF}
+function get_fourth_order(CVoigt::T, ::Val{DOF}) where {DOF,T}
     return fromvoigt(SymmetricTensor{4,DOF}, CVoigt)
 end
 

@@ -84,17 +84,17 @@ Welcome to `PeriLab`, a comprehensive platform for working with peridynamics, de
 
 - 🔩 **Material models**: PeriLab supports various material models, such as elastic, plastic, and more, enabling simulation of complex materials and structures.
 
-- 🔨 **Damage models**: Damage models such as critical stretch or an energy based criterium are included to simulate different types of damage, such as crack propagation or delamination, in their peridynamic simulations.
+- 🔨 **Damage models**: [Damage](https://www.youtube.com/watch?v=ClV2ojQPrFM) models such as critical stretch or an energy based criterium are included to simulate different types of damage, such as crack propagation or delamination, in their peridynamic simulations.
 
-- 👊 **Contact**: Simulation of contact between objects is supported with a variety of contact conditions.
+- 👊 **Contact**: [Simulation](https://www.youtube.com/watch?v=qj7xGgmjEdE) of contact between objects is supported with a variety of contact conditions.
 
 - 👬 **FEM/PD coupling**: Coupling between Peridynamics and the Finite element method is supported.
 
-- 🔥 **Additive Manufacturing**: PeriLab supports additive manufacturing, allowing users to create custom additive models for their simulations.
+- 🔥 **Additive Manufacturing**: PeriLab supports [additive manufacturing](https://www.youtube.com/watch?v=J55n2xWJosA), allowing users to create custom additive models for their simulations.
 
 - 🔑 **Solver**: Different solvers like `Verlet` or `Static` can be utilized, swiching between those is also supported.
 
-- 🧲 **Multimodels**: PeriLab supports multimodels simulations, combining different types of peridynamics and damage models to create a comprehensive simulation environment.
+- 🧲 **Multi physics**: PeriLab supports [multimodels](https://www.youtube.com/watch?v=byhz-_RW0Lw) simulations, combining different types of peridynamic physical  and damage models to create a comprehensive simulation environment.
 
 - 🔌 **Subroutine Interfaces**: Subroutines, such as UMAT, VUMAT and HETVAL are usable as material models
 

@@ -525,7 +525,7 @@ non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
 """
 function get_properties(block_id::Int64, property::String)::Dict{String,Any}
     if check_property(block_id, property)
-        return convert(Dict{String,Any}, data["properties"][block_id][property])
+        return convert(Dict{String,Any}, data["properties"][block_id][property]) # TODO check why it is needed!
     end
     return Dict{String,Any}()::Dict{String,Any}
 end

@@ -106,11 +106,11 @@ function compute_stresses(datamanager::Module,
     mapping = get_mapping(dof)
     symmetry = get(material_parameter, "Symmetry", "default")::String
     for iID in nodes
-        hookeMatrix::Matrix{Float64} = get_Hooke_matrix(datamanager,
-                                                        material_parameter,
-                                                        symmetry,
-                                                        dof,
-                                                        iID)
+        hookeMatrix = get_Hooke_matrix(datamanager,
+                                       material_parameter,
+                                       symmetry,
+                                       dof,
+                                       iID)
         @views fast_mul!(stress_NP1[iID, :, :],
                          hookeMatrix,
                          strain_increment[iID, :, :],
