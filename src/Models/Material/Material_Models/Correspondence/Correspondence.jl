@@ -30,21 +30,21 @@ export compute_model
 export init_model
 export fields_for_local_synchronization
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict)
+  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict{String,Any})
 
 Initializes the material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
-  - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+  - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 
 # Returns
   - `datamanager::Data_manager`: Datamanager.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
-                    material_parameter::Dict)
+                    material_parameter::Dict{String,Any})
     # global dof
     # global rotation
     # global angles
@@ -138,7 +138,7 @@ Calculates the force densities of the material. This template has to be copied, 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::Union{SubArray, Vector{Int64}}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
@@ -149,7 +149,7 @@ Example:
 """
 function compute_model(datamanager::Module,
                        nodes::AbstractVector{Int64},
-                       material_parameter::Dict,
+                       material_parameter::Dict{String,Any},
                        block::Int64,
                        time::Float64,
                        dt::Float64,
@@ -222,14 +222,14 @@ function compute_model(datamanager::Module,
 end
 
 """
-    zero_energy_mode_compensation(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+    zero_energy_mode_compensation(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict{String,Any}, time::Float64, dt::Float64)
 
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
+- `material_parameter::Dict{String, Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
@@ -237,22 +237,22 @@ Global - J. Wan et al., "Improved method for zero-energy mode suppression in per
 """
 function zero_energy_mode_compensation(datamanager::Module,
                                        nodes::AbstractVector{Int64},
-                                       material_parameter::Dict,
+                                       material_parameter::Dict{String,Any},
                                        time::Float64,
                                        dt::Float64)
     if !haskey(material_parameter, "Zero Energy Control")
         if time == 0
             @warn "No zero energy control activated for corresponcence."
         end
-        return datamanager
+        return datamanager::Module
     end
-    if material_parameter["Zero Energy Control"] ==
-       Global_zero_energy_control.control_name()
+    if material_parameter["Zero Energy Control"]::String ==
+       Global_zero_energy_control.control_name()::String
         datamanager = Global_zero_energy_control.compute_control(datamanager,
                                                                  nodes,
                                                                  material_parameter,
                                                                  time,
-                                                                 dt)
+                                                                 dt)::Module
     end
     return datamanager
 end

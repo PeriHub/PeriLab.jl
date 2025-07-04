@@ -93,7 +93,7 @@ Initializes the material model.
 """
 function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
-    model_param = datamanager.get_properties(block, "Material Model")
+    model_param = datamanager.get_properties(block, "Material Model")::Dict{String,Any}
     if !haskey(model_param, "Material Model")
         @error "Block " * string(block) * " has no material model defined."
         return nothing
@@ -164,14 +164,14 @@ function fields_for_local_synchronization(datamanager, model, block)
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict{String,Any}, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
 
 Computes the material models
 
 # Arguments
 - `datamanager::Module`: The datamanager
 - `nodes::AbstractVector{Int64}`: The nodes
-- `model_param::Dict`: The model parameters
+- `model_param::Dict{String,Any}`: The model parameters
 - `block::Int64`: The block
 - `time::Float64`: The current time
 - `dt::Float64`: The time step
@@ -180,7 +180,7 @@ Computes the material models
 """
 function compute_model(datamanager::Module,
                        nodes::AbstractVector{Int64},
-                       model_param::Dict,
+                       model_param::Dict{String,Any},
                        block::Int64,
                        time::Float64,
                        dt::Float64,

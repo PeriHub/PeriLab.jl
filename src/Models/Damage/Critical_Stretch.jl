@@ -9,6 +9,7 @@ export compute_model
 export damage_name
 export init_model
 export fields_for_local_synchronization
+
 """
     damage_name()
 

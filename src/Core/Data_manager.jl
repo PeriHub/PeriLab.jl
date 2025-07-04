@@ -46,7 +46,6 @@ export get_num_responder
 export get_max_rank
 export get_cancel
 export get_output_frequency
-export get_rotation
 export get_element_rotation
 export init_properties
 export remove_active_model
@@ -524,11 +523,11 @@ color_value = get_properties(1, "color")  # Returns "red"
 # Try to retrieve a non-existent property for block 2
 non_existent_value = get_properties(2, "width")  # Returns an empty dictionary
 """
-function get_properties(block_id::Int64, property::String)
+function get_properties(block_id::Int64, property::String)::Dict{String,Any}
     if check_property(block_id, property)
-        return data["properties"][block_id][property]
+        return convert(Dict{String,Any}, data["properties"][block_id][property])
     end
-    return Dict()
+    return Dict{String,Any}()::Dict{String,Any}
 end
 
 """
@@ -549,7 +548,8 @@ This function retrieves a specific `value_name` associated with a specified `pro
 ```julia
 
 """
-function get_property(block_id::Int64, property::String, value_name::String)
+function get_property(block_id::Int64, property::String,
+                      value_name::String)
     if check_property(block_id, property) &&
        haskey(data["properties"][block_id][property], value_name)
         return data["properties"][block_id][property][value_name]
@@ -626,18 +626,6 @@ function get_verbose()
 end
 
 """
-    get_rotation()
-
-This function returns the `rotation` flag.
-
-# Returns
-- `rotation`::Bool: The value of the `rotation` variable.
-"""
-function get_rotation()
-    return data["rotation"]
-end
-
-"""
     get_element_rotation()
 
 This function returns the `element_rotation` flag.
@@ -689,18 +677,12 @@ This function initializes the properties dictionary. Order of dictionary defines
 function init_properties()
     block_id_list = get_block_id_list()
     for iblock in block_id_list
-        data["properties"][iblock] = OrderedDict{String,Dict}("Additive Model" => Dict{String,
-                                                                                       Any}(),
-                                                              "Damage Model" => Dict{String,
-                                                                                     Any}(),
-                                                              "Pre Calculation Model" => Dict{String,
-                                                                                              Any}(),
-                                                              "Thermal Model" => Dict{String,
-                                                                                      Any}(),
-                                                              "Degradation Model" => Dict{String,
-                                                                                          Any}(),
-                                                              "Material Model" => Dict{String,
-                                                                                       Any}())
+        data["properties"][iblock] = OrderedDict{String,Dict{String,Any}}()
+
+        for prop_name in ["Additive Model", "Damage Model", "Pre Calculation Model",
+            "Thermal Model", "Degradation Model", "Material Model"]
+            data["properties"][iblock][prop_name] = Dict{String,Any}()
+        end
     end
     return collect(keys(data["properties"][block_id_list[1]]))
 end
@@ -922,13 +904,15 @@ Sets the value of a specified `property` for a given `block_id`.
 - `value_name`::String: The name of the value within the specified `property`.
 - `value`::Any: The value to set for the specified `value_name`.
 """
-function set_property(block_id::Int64, property::String, value_name::String, value)
-    data["properties"][block_id][property][value_name] = value
+function set_property(block_id::Int64, property::String, value_name::String,
+                      value::T) where {T}
+    prop_dict = get!(data["properties"][block_id], property, Dict{String,Any}())
+    prop_dict[value_name] = value
 end
 
-function set_property(property::String, value_name::String, value)
+function set_property(property::String, value_name::String, value::T) where {T}
     for block_id in eachindex(data["properties"])
-        data["properties"][block_id][property][value_name] = value
+        set_property(block_id, property, value_name, value)
     end
 end
 
@@ -942,8 +926,12 @@ Sets the values of a specified `property` for a given `block_id`.
 - `property`::String: The name of the property.
 - `values`::Any: The values to set for the specified `property`.
 """
-function set_properties(block_id, property, values)
-    data["properties"][block_id][property] = values
+function set_properties(block_id::Int64, property::String, values::T) where {T}
+    if values isa Dict{String,Any}
+        data["properties"][block_id][property] = values
+    else
+        data["properties"][block_id][property] = convert(Dict{String,Any}, values)
+    end
 end
 
 """
@@ -955,9 +943,14 @@ Sets the values of a specified `property` for a all `blocks`. E.g. for FEM, beca
 - `property`::String: The name of the property.
 - `values`::Any: The values to set for the specified `property`.
 """
-function set_properties(property, values)
+function set_properties(property::String, values::T) where {T}
     for id in eachindex(data["properties"])
-        data["properties"][id][property] = values
+        # Typ-sichere Zuweisung
+        if values isa Dict{String,Any}
+            data["properties"][id][property] = values
+        else
+            data["properties"][id][property] = convert(Dict{String,Any}, values)
+        end
     end
 end
 

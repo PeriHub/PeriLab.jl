@@ -4,6 +4,7 @@
 export set_dof
 export get_dof
 export get_damage
+export get_rotation
 export set_current_time
 export get_current_time
 export set_step
@@ -72,6 +73,18 @@ get_dof()  # returns the current degree of freedom
 """
 function get_dof()::Int64
     return data["dof"]::Int64
+end
+
+"""
+    get_rotation()
+
+This function returns the `rotation` flag.
+
+# Returns
+- `rotation`::Bool: The value of the `rotation` variable.
+"""
+function get_rotation()::Bool
+    return data["rotation"]::Bool
 end
 
 """

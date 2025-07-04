@@ -41,22 +41,24 @@ Computes the zero energy control
 """
 function compute_control(datamanager::Module,
                          nodes::AbstractVector{Int64},
-                         material_parameter::Dict,
+                         material_parameter::Dict{String,Any},
                          time::Float64,
                          dt::Float64)
     dof = datamanager.get_dof()
-    deformation_gradient = datamanager.get_field("Deformation Gradient")
-    bond_force = datamanager.create_constant_bond_field("Bond Forces", Float64, dof)
-    undeformed_bond = datamanager.get_field("Bond Geometry")
-    deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
-    Kinv = datamanager.get_field("Inverse Shape Tensor")
+    deformation_gradient = datamanager.get_field("Deformation Gradient")::Array{Float64,3}
+    bond_force = datamanager.get_field("Bond Forces")::Vector{Vector{Vector{Float64}}}
+    undeformed_bond = datamanager.get_field("Bond Geometry")::Vector{Vector{Vector{Float64}}}
+    deformed_bond = datamanager.get_field("Deformed Bond Geometry",
+                                          "NP1")::Vector{Vector{Vector{Float64}}}
+    Kinv = datamanager.get_field("Inverse Shape Tensor")::Array{Float64,3}
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness",
                                                     Float64,
                                                     dof,
-                                                    VectorOrMatrix = "Matrix")
-    rotation::Bool = datamanager.get_rotation()
+                                                    VectorOrMatrix = "Matrix")::Array{Float64,
+                                                                                      3}
+    rotation = datamanager.get_rotation()::Bool
     angles = datamanager.get_field_if_exists("Angles")
-    symmetry = material_parameter["Symmetry"]
+    symmetry = material_parameter["Symmetry"]::String
     CVoigt = get_Hooke_matrix(datamanager,
                               material_parameter,
                               symmetry,
@@ -85,7 +87,7 @@ function compute_control(datamanager::Module,
                                        deformed_bond,
                                        bond_force)
     end
-    return datamanager
+    return datamanager::Module
 end
 
 """
