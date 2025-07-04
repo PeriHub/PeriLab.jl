@@ -410,7 +410,7 @@ end
           MMatrix{3,3}(zeros(Float64, 3, 3))
     @test PeriLab.Solver_control.Helpers.get_MMatrix(36) ==
           MMatrix{6,6}(zeros(Float64, 6, 6))
-    @test isnothing(PeriLab.Solver_control.Helpers.get_MMatrix(8))
+    @test size(PeriLab.Solver_control.Helpers.get_MMatrix(8)) == (1, 1)
 end
 
 @testset "ut_sub_in_place" begin

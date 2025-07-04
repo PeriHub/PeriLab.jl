@@ -22,7 +22,7 @@ end
 
 function compute_FEM(datamanager::Module,
                      elements::AbstractVector{Int64},
-                     params::Dict,
+                     params::Dict{String,Dict{String,Any}},
                      compute_stresses,
                      time::Float64,
                      dt::Float64)
@@ -74,7 +74,7 @@ function compute_FEM(datamanager::Module,
             stress_NP1[id_el, id_int, :],
             datamanager = compute_stresses(datamanager,
                                            dof,
-                                           params["Material Model"],
+                                           params["Material Model"]::Dict{String,Any},
                                            time,
                                            dt,
                                            strain_increment[id_el,
