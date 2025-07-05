@@ -389,7 +389,12 @@ Sends a value to a controller
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
-function send_value(comm::MPI.Comm, controller, send_msg)
+function send_value(comm::MPI.Comm, controller::Int64,
+                    send_msg::T) where {T<:Union{Float64,Int64,
+                                                 Vector{Float64},
+                                                 Vector{Int64},
+                                                 Matrix{Float64},
+                                                 Matrix{Int64}}}
 
     # recv_msg = MPI.Comm_rank(comm) == controller ? send_msg : nothing
     # recv_msg = MPI.bcast(send_msg, controller, comm)
@@ -408,7 +413,8 @@ Find and set core value min
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
-function find_and_set_core_value_min(comm::MPI.Comm, value::Union{Float64,Int64})
+function find_and_set_core_value_min(comm::MPI.Comm,
+                                     value::T) where {T<:Union{Float64,Int64}}
     return MPI.Allreduce(value, MPI.MIN, comm)
 end
 
@@ -423,7 +429,8 @@ Find and set core value max
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
-function find_and_set_core_value_max(comm::MPI.Comm, value::Union{Float64,Int64})
+function find_and_set_core_value_max(comm::MPI.Comm,
+                                     value::T) where {T<:Union{Float64,Int64}}
     return MPI.Allreduce(value, MPI.MAX, comm)
 end
 
@@ -438,12 +445,19 @@ Find and set core value sum
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
-function find_and_set_core_value_sum(comm::MPI.Comm, value::Any)
-    return MPI.Allreduce(value, MPI.SUM, comm)
+function find_and_set_core_value_min(comm::MPI.Comm,
+                                     value::T) where {T<:Union{Float64,Int64,
+                                                               Vector{Float64},
+                                                               Vector{Int64},
+                                                               Matrix{Float64},
+                                                               Matrix{Int64}}}
+    return MPI.Allreduce(value, MPI.MIN, comm)
 end
 
 """
-    find_and_set_core_value_avg(comm::MPI.Comm, value::Union{Float64,Int64})
+    find_and_set_core_value_avg(comm::MPI.Comm,
+                                     value::T,
+                                     nnodes::Int64) where {T<:Union{Float64,Int64}}
 
 Find and set core value avg
 
@@ -451,12 +465,13 @@ Find and set core value avg
 - `comm::MPI.Comm`: The MPI communicator
 - `value::Union{Float64,Int64}`: The value
 # Returns
-- `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+- `recv_msg::Float64`: The received a Float64 message
 """
 function find_and_set_core_value_avg(comm::MPI.Comm,
-                                     value::Union{Float64,Int64},
-                                     nnodes::Int64)
-    average = 0.0
+                                     value::T,
+                                     nnodes::Int64) where {T<:Union{Float64,Int64}}
+    average = zero(Float64)
+    # must be Float to avoid that at some cores it is Int and at some it is a Float
     if nnodes != 0
         average = value / nnodes
     end
@@ -474,11 +489,16 @@ Gather values
 # Returns
 - `recv_msg::Any`: The received message
 """
-function gather_values(comm::MPI.Comm, value::Any)
+function gather_values(comm::MPI.Comm,
+                       value::T) where {T<:Union{Float64,Int64,
+                                                 Vector{Float64},
+                                                 Vector{Int64},
+                                                 Matrix{Float64},
+                                                 Matrix{Int64}}}
     return MPI.gather(value, comm; root = 0)
 end
 
-function barrier(comm)
+function barrier(comm::MPI.Comm)
     MPI.Barrier(comm)
 end
 
