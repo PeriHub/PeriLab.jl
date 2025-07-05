@@ -419,6 +419,26 @@ function find_and_set_core_value_min(comm::MPI.Comm,
 end
 
 """
+    find_and_set_core_value_sum(comm::MPI.Comm, value::Union{Float64,Int64})
+
+Find and set core value sum
+
+# Arguments
+- `comm::MPI.Comm`: The MPI communicator
+- `value::Union{Float64,Int64}`: The value
+# Returns
+- `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
+function find_and_set_core_value_sum(comm::MPI.Comm,
+                                     value::T) where {T<:Union{Float64,Int64,
+                                                               Vector{Float64},
+                                                               Vector{Int64},
+                                                               Matrix{Float64},
+                                                               Matrix{Int64}}}
+    return MPI.Allreduce(value, MPI.SUM, comm)
+end
+
+"""
     find_and_set_core_value_max(comm::MPI.Comm, value::Union{Float64,Int64})
 
 Find and set core value max
@@ -435,7 +455,7 @@ function find_and_set_core_value_max(comm::MPI.Comm,
 end
 
 """
-    find_and_set_core_value_sum(comm::MPI.Comm, value::Union{Float64,Int64})
+    find_and_set_core_value_min(comm::MPI.Comm, value::Union{Float64,Int64})
 
 Find and set core value sum
 
