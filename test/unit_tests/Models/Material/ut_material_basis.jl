@@ -456,7 +456,7 @@ end
     symmetry = "isotropic"
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Young's Modulus" => E,
-                                 "Poisson's Ratio" => G,
+                                 "Poisson's Ratio" => nu,
                                  "Shear Modulus" => G,
                                  "Compute_Hook" => true)
     @test C == get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)

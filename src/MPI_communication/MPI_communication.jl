@@ -391,11 +391,14 @@ Sends a value to a controller
 """
 function send_value(comm::MPI.Comm, controller::Int64,
                     send_msg::T) where {T<:Union{Float64,Int64,
-                                                 Vector{Float64},
-                                                 Vector{Int64},
+                                                 Vector{Float64},Vector{Vector{Float64}},
+                                                 Vector{Int64},Vector{Vector{Int64}},
                                                  Matrix{Float64},
-                                                 Matrix{Int64}}}
-
+                                                 Matrix{Int64},
+                                                 Dict,
+                                                 Bool,
+                                                 Nothing,
+                                                 Any}}
     # recv_msg = MPI.Comm_rank(comm) == controller ? send_msg : nothing
     # recv_msg = MPI.bcast(send_msg, controller, comm)
     # return recv_msg
@@ -514,7 +517,8 @@ function gather_values(comm::MPI.Comm,
                                                  Vector{Float64},
                                                  Vector{Int64},
                                                  Matrix{Float64},
-                                                 Matrix{Int64}}}
+                                                 Matrix{Int64},
+                                                 Any}}
     return MPI.gather(value, comm; root = 0)
 end
 
