@@ -12,7 +12,7 @@ using .MPI_communication: send_single_value_from_vector, synch_responder_to_cont
                           synch_controller_to_responder,
                           synch_controller_bonds_to_responder,
                           split_vector, synch_controller_bonds_to_responder_flattened,
-                          send_vector_from_root_to_core_i, send_value,
+                          send_vector_from_root_to_core_i, broadcast_value,
                           find_and_set_core_value_min, find_and_set_core_value_max,
                           find_and_set_core_value_sum, find_and_set_core_value_max,
                           find_and_set_core_value_avg, gather_values, barrier
@@ -42,27 +42,27 @@ value = rank + 1
 value = find_and_set_core_value_max(comm, value)
 push_test!(test, (ncores == value), @__FILE__, @__LINE__)
 
-test = test_dict["ut_send_value"] = Dict("tests" => [], "line" => [])
+test = test_dict["ut_broadcast_value"] = Dict("tests" => [], "line" => [])
 if rank == 0
     send_msg = 100
 else
     send_msg = nothing
 end
-send_msg = send_value(comm, 0, send_msg)
+send_msg = broadcast_value(comm, send_msg)
 push_test!(test, (send_msg == 100), @__FILE__, @__LINE__)
 if rank == 0
     send_msg = true
 else
     send_msg = nothing
 end
-send_msg = send_value(comm, 0, send_msg)
+send_msg = broadcast_value(comm, send_msg)
 push_test!(test, (send_msg), @__FILE__, @__LINE__)
 if rank == 0
     send_msg = 100.5
 else
     send_msg = nothing
 end
-send_msg = send_value(comm, 0, send_msg)
+send_msg = broadcast_value(comm, send_msg)
 push_test!(test, (send_msg == 100.5), @__FILE__, @__LINE__)
 
 test = test_dict["ut_send_vector_from_root_to_core_i"] = Dict("tests" => [], "line" => [])
