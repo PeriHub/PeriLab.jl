@@ -164,7 +164,7 @@ end
 
 function eval_FEM(datamanager::Module,
                   elements::AbstractVector{Int64},
-                  params::Dict{String,Any},
+                  params::Dict,
                   time::Float64,
                   dt::Float64)
     return compute_FEM(datamanager,

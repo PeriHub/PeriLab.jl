@@ -22,7 +22,7 @@ end
 
 function compute_FEM(datamanager::Module,
                      elements::AbstractVector{Int64},
-                     params::Dict{String,Any},
+                     params::Dict,
                      compute_stresses,
                      time::Float64,
                      dt::Float64)
