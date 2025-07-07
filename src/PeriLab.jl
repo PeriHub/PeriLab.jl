@@ -402,7 +402,7 @@ function main(filename::String;
                 IO.merge_exodus_files(result_files, output_dir)
             end
             MPI.Barrier(comm)
-            if size > 1 || dry_run
+            if (size > 1 && !debug) || dry_run
                 IO.delete_files(result_files, output_dir)
             end
         end
