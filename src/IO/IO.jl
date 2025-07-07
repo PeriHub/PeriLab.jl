@@ -708,10 +708,9 @@ function get_global_values(output::Dict, datamanager::Module)
         elseif compute_class == "Node_Set_Data"
             nsets = datamanager.get_nsets()
             node_set = output[varname]["nodeset"]
-            node_list::Vector{Int64} = datamanager.get_local_nodes(nsets[node_set])
             global_value,
             nnodes = calculate_nodelist(datamanager, fieldname, dof,
-                                        calculation_type, node_list)
+                                        calculation_type, nsets[node_set])
         end
         if datamanager.get_max_rank() > 1
             global_value = find_global_core_value!(global_value, calculation_type, nnodes,
