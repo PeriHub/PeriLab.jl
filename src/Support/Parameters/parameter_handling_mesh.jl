@@ -185,6 +185,8 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
                 end
             end
             nsets[entry] = nodes
+        elseif nodesets[entry] == "All"
+            nsets[entry] = collect(1:size(mesh_df, 1))
         else
             nodes = split(nodesets[entry])
             nsets[entry] = parse.(Int, nodes)
