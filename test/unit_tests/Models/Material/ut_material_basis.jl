@@ -436,26 +436,28 @@ end
     @test C[4, 4] == 4
     @test C[5, 5] == 6
     @test C[6, 6] == 2
-
+    E = 7000
+    nu = 0.3
+    G = E / (2 * (1 + nu))
     symmetry = "Orthotropic"
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
-                                 "Young's Modulus X" => 7000,
-                                 "Young's Modulus Y" => 7000,
-                                 "Young's Modulus Z" => 7000,
-                                 "Poisson's Ratio XY" => 0.3,
-                                 "Poisson's Ratio YZ" => 0.3,
-                                 "Poisson's Ratio XZ" => 0.3,
-                                 "Shear Modulus XY" => 2000,
-                                 "Shear Modulus YZ" => 2000,
-                                 "Shear Modulus XZ" => 2000,
+                                 "Young's Modulus X" => E,
+                                 "Young's Modulus Y" => E,
+                                 "Young's Modulus Z" => E,
+                                 "Poisson's Ratio XY" => nu,
+                                 "Poisson's Ratio YZ" => nu,
+                                 "Poisson's Ratio XZ" => nu,
+                                 "Shear Modulus XY" => G,
+                                 "Shear Modulus YZ" => G,
+                                 "Shear Modulus XZ" => G,
                                  "Compute_Hook" => true)
     C = get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
 
     symmetry = "isotropic"
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
-                                 "Young's Modulus" => 7000,
-                                 "Poisson's Ratio" => 0.3,
-                                 "Shear Modulus" => 2000,
+                                 "Young's Modulus" => E,
+                                 "Poisson's Ratio" => nu,
+                                 "Shear Modulus" => G,
                                  "Compute_Hook" => true)
     @test C == get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
 end

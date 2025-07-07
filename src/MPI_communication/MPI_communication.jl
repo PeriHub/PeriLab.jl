@@ -384,47 +384,25 @@ Broadcast a value to all ranks
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
-- `controller::Int64`: The controller
 - `send_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The send message
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
-function broadcast_value(comm::MPI.Comm, send_msg)
-
+function broadcast_value(comm::MPI.Comm,
+                         send_msg::T) where {T<:Union{Float64,Int64,
+                                                      Vector{Float64},
+                                                      Vector{Vector{Float64}},
+                                                      Vector{Int64},Vector{Vector{Int64}},
+                                                      Matrix{Float64},
+                                                      Matrix{Int64},
+                                                      Dict,
+                                                      Bool,
+                                                      Nothing,
+                                                      Any}}
     # recv_msg = MPI.Comm_rank(comm) == controller ? send_msg : nothing
     # recv_msg = MPI.bcast(send_msg, controller, comm)
     # return recv_msg
     return MPI.bcast(send_msg, 0, comm)
-end
-
-"""
-    find_and_set_core_value_min(comm::MPI.Comm, value::Union{Float64,Int64})
-
-Find and set core value min
-
-# Arguments
-- `comm::MPI.Comm`: The MPI communicator
-- `value::Union{Float64,Int64}`: The value
-# Returns
-- `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
-"""
-function find_and_set_core_value_min(comm::MPI.Comm, value::Union{Float64,Int64})
-    return MPI.Allreduce(value, MPI.MIN, comm)
-end
-
-"""
-    find_and_set_core_value_max(comm::MPI.Comm, value::Union{Float64,Int64})
-
-Find and set core value max
-
-# Arguments
-- `comm::MPI.Comm`: The MPI communicator
-- `value::Union{Float64,Int64}`: The value
-# Returns
-- `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
-"""
-function find_and_set_core_value_max(comm::MPI.Comm, value::Union{Float64,Int64})
-    return MPI.Allreduce(value, MPI.MAX, comm)
 end
 
 """
@@ -438,14 +416,19 @@ Find and set core value sum
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
-function find_and_set_core_value_sum(comm::MPI.Comm, value::Union{Float64,Int64})
+function find_and_set_core_value_sum(comm::MPI.Comm,
+                                     value::T) where {T<:Union{Float64,Int64,
+                                                               Vector{Float64},
+                                                               Vector{Int64},
+                                                               Matrix{Float64},
+                                                               Matrix{Int64}}}
     return MPI.Allreduce(value, MPI.SUM, comm)
 end
 
 """
-    find_and_set_core_value_avg(comm::MPI.Comm, value::Union{Float64,Int64})
+    find_and_set_core_value_max(comm::MPI.Comm, value::Union{Float64,Int64})
 
-Find and set core value avg
+Find and set core value max
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
@@ -453,10 +436,49 @@ Find and set core value avg
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
+function find_and_set_core_value_max(comm::MPI.Comm,
+                                     value::T) where {T<:Union{Float64,Int64}}
+    return MPI.Allreduce(value, MPI.MAX, comm)
+end
+
+"""
+    find_and_set_core_value_min(comm::MPI.Comm, value::Union{Float64,Int64})
+
+Find and set core value sum
+
+# Arguments
+- `comm::MPI.Comm`: The MPI communicator
+- `value::Union{Float64,Int64}`: The value
+# Returns
+- `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
+"""
+function find_and_set_core_value_min(comm::MPI.Comm,
+                                     value::T) where {T<:Union{Float64,Int64,
+                                                               Vector{Float64},
+                                                               Vector{Int64},
+                                                               Matrix{Float64},
+                                                               Matrix{Int64}}}
+    return MPI.Allreduce(value, MPI.MIN, comm)
+end
+
+"""
+    find_and_set_core_value_avg(comm::MPI.Comm,
+                                     value::T,
+                                     nnodes::Int64) where {T<:Union{Float64,Int64}}
+
+Find and set core value avg
+
+# Arguments
+- `comm::MPI.Comm`: The MPI communicator
+- `value::Union{Float64,Int64}`: The value
+# Returns
+- `recv_msg::Float64`: The received a Float64 message
+"""
 function find_and_set_core_value_avg(comm::MPI.Comm,
-                                     value::Union{Float64,Int64},
-                                     nnodes::Int64)
-    average = 0.0
+                                     value::T,
+                                     nnodes::Int64) where {T<:Union{Float64,Int64}}
+    average = zero(Float64)
+    # must be Float to avoid that at some cores it is Int and at some it is a Float
     if nnodes != 0
         average = value / nnodes
     end
@@ -474,11 +496,17 @@ Gather values
 # Returns
 - `recv_msg::Any`: The received message
 """
-function gather_values(comm::MPI.Comm, value::Any)
+function gather_values(comm::MPI.Comm,
+                       value::T) where {T<:Union{Float64,Int64,
+                                                 Vector{Float64},
+                                                 Vector{Int64},
+                                                 Matrix{Float64},
+                                                 Matrix{Int64},
+                                                 Any}}
     return MPI.gather(value, comm; root = 0)
 end
 
-function barrier(comm)
+function barrier(comm::MPI.Comm)
     MPI.Barrier(comm)
 end
 

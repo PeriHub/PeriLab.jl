@@ -684,7 +684,7 @@ function get_global_values(output::Dict, datamanager::Module)
         end
         global_value = field_type(0)
         nnodes = 0
-        dof = 1
+        dof::Int64 = 1
         if haskey(output[varname], "dof")
             dof = output[varname]["dof"]
         else
