@@ -38,10 +38,8 @@ Get the output variable.
 - `output::String`: The output variable.
 """
 function get_output_variables(output::String, variables::Vector{String})
-    if output in variables
+    if output in variables || output * "NP1" in variables
         return output
-    elseif output * "NP1" in variables
-        return output * "NP1"
     else
         @warn '"' * output * '"' * " is not defined as variable"
     end

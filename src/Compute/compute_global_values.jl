@@ -64,7 +64,7 @@ function calculate_nodelist(datamanager::Module,
         @warn "Unknown calculation type $calculation_type"
         return nothing
     end
-    return value, Int64(length(local_nodes))
+    return value::field_type, Int64(length(local_nodes))
 end
 
 """
