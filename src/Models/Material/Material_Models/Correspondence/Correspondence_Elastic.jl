@@ -168,7 +168,7 @@ Example:
 """
 function compute_stresses(datamanager::Module,
                           dof::Int64,
-                          material_parameter::Dict,
+                          material_parameter::Dict{String,Any},
                           time::Float64,
                           dt::Float64,
                           strain_increment::Vector{Float64},

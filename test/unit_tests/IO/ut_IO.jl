@@ -31,6 +31,7 @@ test_data_manager.create_node_field("Forces", Float64, 6)
 
 block_list = ["block_1", "block_2"]
 test_data_manager.set_block_name_list(block_list)
+test_data_manager.set_block_id_list([1, 2])
 
 params = Dict("Outputs" => Dict("Output1" => Dict("Output Filename" => filename1,
                                                   "Flush File" => false,
