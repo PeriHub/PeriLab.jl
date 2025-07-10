@@ -58,24 +58,24 @@ function compute_FEM(datamanager::Module,
     G = get(parameter, "Shear Modulus", nothing)
     nu = get(parameter, "Poisson's Ratio", nothing)
 
-    if !inothing(K) && !isnothing(nu)
+    if !isnothing(K) && !isnothing(nu)
         E = 3 * K * (1 .- 2 * nu)
         G = 3 * K * (1 .- 2 * nu) ./ (2 .+ 2 * nu)
     end
-    if !inothing(G) && !isnothing(nu)
+    if !isnothing(G) && !isnothing(nu)
         E = 2 * G * (1 .+ nu)
         K = 2 * G * (1 .+ nu) ./ (3 .- 6 * nu)
     end
-    if !inothing(K) && !inothing(G)
+    if !isnothing(K) && !isnothing(G)
         E = 9 * K * G ./ (3 * K .+ G)
         nu = (3 * K .- 2 * G) ./ (6 * K .+ 2 * G)
     end
-    if !isnothing(E) && !inothing(G)
+    if !isnothing(E) && !isnothing(G)
         K = E * G ./ (9 * G .- 3 * E)
         nu = E ./ (2 * G) .- 1
     end
 
-    if !isnothing(E) && !inothing(K)
+    if !isnothing(E) && !isnothing(K)
         G = 3 * K * E ./ (9 * K .- E)
         nu = (3 * K .- E) ./ (6 * K)
     end
