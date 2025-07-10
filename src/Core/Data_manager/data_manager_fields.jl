@@ -21,6 +21,7 @@ Returns the field with the given name and time.
 - `field::Field`: The field with the given name and time.
 """
 function get_field(name::String, time::String = "Constant")
+    @assert !occursin("NP1", name)
     if time == "Constant"
         return _get_field(name)
     elseif time == "N"

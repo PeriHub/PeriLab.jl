@@ -353,7 +353,7 @@ end
     @test haskey(computes, "External_Displacements")
     @test !haskey(computes, "warn_test")
     @test computes["External_Forces"]["Variable"] == "A"
-    @test computes["External_Displacements"]["Variable"] == "BNP1"
+    @test computes["External_Displacements"]["Variable"] == "B"
 end
 @testset "ut_get_computes_names" begin
     testfield_keys = test_data_manager.get_all_field_keys()
@@ -384,7 +384,7 @@ end
                                                                              "Forces",
                                                                              "DisplacementsNP1"
                                                                          ]) ==
-          "DisplacementsNP1"
+          "Displacements"
     @test isnothing(PeriLab.Solver_control.Parameter_Handling.get_output_variables("Stress",
                                                                                    [
                                                                                        "Forces",

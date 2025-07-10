@@ -86,13 +86,13 @@ function init_data(params::Dict,
         end
         if size > 1
             @info "Synchronize data over cores"
-            fem_active = send_value(comm, 0, fem_active)
-            dof = send_value(comm, 0, dof)
-            overlap_map = send_value(comm, 0, overlap_map)
-            distribution = send_value(comm, 0, distribution)
-            nsets = send_value(comm, 0, nsets)
-            nlist = send_value(comm, 0, nlist)
-            nlist_filtered_ids = send_value(comm, 0, nlist_filtered_ids)
+            fem_active = broadcast_value(comm, fem_active)
+            dof = broadcast_value(comm, dof)
+            overlap_map = broadcast_value(comm, overlap_map)
+            distribution = broadcast_value(comm, distribution)
+            nsets = broadcast_value(comm, nsets)
+            nlist = broadcast_value(comm, nlist)
+            nlist_filtered_ids = broadcast_value(comm, nlist_filtered_ids)
         end
         num_controller::Int64 = send_single_value_from_vector(comm, 0, ntype["controllers"],
                                                               Int64)
@@ -136,8 +136,8 @@ function init_data(params::Dict,
         datamanager.set_fem(fem_active)
         if fem_active
             @debug "Set and synchronize elements"
-            element_distribution = send_value(comm, 0, element_distribution)
-            topology = send_value(comm, 0, topology)
+            element_distribution = broadcast_value(comm, element_distribution)
+            topology = broadcast_value(comm, topology)
             datamanager.set_num_elements(length(element_distribution[rank]))
             @debug "Set local topology vector"
             datamanager = get_local_element_topology(datamanager,
@@ -170,7 +170,7 @@ function create_and_distribute_bond_norm(comm::MPI.Comm,
                                          distribution::Vector{Vector{Int64}},
                                          bond_norm::Vector{Any},
                                          dof::Int64)
-    bond_norm = send_value(comm, 0, bond_norm)
+    bond_norm = broadcast_value(comm, bond_norm)
     bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
     datamanager = distribute_neighborhoodlist_to_cores(comm,
                                                        datamanager,
@@ -198,8 +198,8 @@ function contact_basis(datamanager::Module, params::Dict, mesh::DataFrame, comm,
         blocks = nothing
         points = nothing
     end
-    points = send_value(comm, 0, points)
-    blocks = send_value(comm, 0, blocks)
+    points = broadcast_value(comm, points)
+    blocks = broadcast_value(comm, blocks)
     datamanager.set_all_positions(points)
     datamanager.set_all_blocks(blocks)
     return datamanager
@@ -428,7 +428,7 @@ function distribution_to_cores(comm::MPI.Comm,
     else
         meshdata = Dict()
     end
-    meshdata = send_value(comm, 0, meshdata)
+    meshdata = broadcast_value(comm, meshdata)
     for fieldname in keys(meshdata)
         field_dof = length(meshdata[fieldname]["Mesh ID"])
         datafield = datamanager.create_constant_node_field(fieldname,

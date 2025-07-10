@@ -24,7 +24,7 @@ using .MPI_communication: send_single_value_from_vector, synch_responder_to_cont
                           synch_controller_to_responder,
                           synch_controller_bonds_to_responder,
                           split_vector, synch_controller_bonds_to_responder_flattened,
-                          send_vector_from_root_to_core_i, send_value,
+                          send_vector_from_root_to_core_i, broadcast_value,
                           find_and_set_core_value_min, find_and_set_core_value_sum,
                           find_and_set_core_value_max,
                           find_and_set_core_value_avg, gather_values, barrier
@@ -231,6 +231,9 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                 if fieldname[1] == key
                     fieldname[1] = computes[key]["Variable"]
                     fieldname[2] = "Constant"
+                    if datamanager.has_key(fieldname[1] * "NP1")
+                        fieldname[2] = "NP1"
+                    end
                     compute_name = string(key)
                     compute_params = computes[key]
                     global_var = true
@@ -447,10 +450,17 @@ function init_write_results(params::Dict,
 
     if datamanager.get_max_rank() > 1
         all_block_name_list = gather_values(comm, block_name_list)
+        all_block_id_list = gather_values(comm, block_id_list)
         if datamanager.get_rank() == 0
             block_name_list = unique(vcat(all_block_name_list...))
+            block_id_list = unique(vcat(all_block_id_list...))
         end
-        block_name_list = send_value(comm, 0, block_name_list)
+        block_name_list = broadcast_value(comm, block_name_list)
+        block_id_list = broadcast_value(comm, block_id_list)
+
+        #sort the block_name_list based on the ids in the block_id_list
+        sorted_indices = sortperm(block_id_list)  # Get the indices that sort b
+        block_name_list = block_name_list[sorted_indices]   # Reorder a using these indices
     end
 
     nsets = datamanager.get_nsets()
@@ -660,13 +670,19 @@ Get global values.
 """
 function get_global_values(output::Dict, datamanager::Module)
     global_values = []
-    block_ids = datamanager.get_field("Block_Id")
+    block_ids = datamanager.get_block_id_list()
     block_name_list = datamanager.get_block_name_list()
     for varname in keys(sort!(OrderedDict(output)))
         compute_class = output[varname]["compute_params"]["Compute Class"]
         calculation_type = output[varname]["compute_params"]["Calculation Type"]
         fieldname = output[varname]["compute_params"]["Variable"]
-        global_value = 0
+        field_type = Float64
+        if datamanager.has_key(fieldname * "NP1")
+            field_type = datamanager.get_field_type(fieldname * "NP1")
+        else
+            field_type = datamanager.get_field_type(fieldname)
+        end
+        global_value = field_type(0)
         nnodes = 0
         dof::Int64 = 1
         if haskey(output[varname], "dof")
@@ -675,6 +691,9 @@ function get_global_values(output::Dict, datamanager::Module)
             dof = [output[varname]["i_dof"], output[varname]["j_dof"]]
         end
         if compute_class == "Block_Data"
+            if !haskey(output[varname]["compute_params"], "Block")
+                @error "Missing Block for compute class $varname"
+            end
             block = output[varname]["compute_params"]["Block"]
             if block in block_name_list
                 block_id = block_ids[findfirst(==(block), block_name_list)]
@@ -687,11 +706,11 @@ function get_global_values(output::Dict, datamanager::Module)
                 end
             end
         elseif compute_class == "Node_Set_Data"
+            nsets = datamanager.get_nsets()
             node_set = output[varname]["nodeset"]
-            node_list = datamanager.get_local_nodes(node_set)
             global_value,
             nnodes = calculate_nodelist(datamanager, fieldname, dof,
-                                        calculation_type, node_list)
+                                        calculation_type, nsets[node_set])
         end
         if datamanager.get_max_rank() > 1
             global_value = find_global_core_value!(global_value, calculation_type, nnodes,
@@ -715,10 +734,11 @@ Find global core value.
 # Returns
 - `global_value::Union{Int64,Float64}`: The global value
 """
-function find_global_core_value!(global_value::Union{Int64,Float64},
+function find_global_core_value!(global_value::T,
                                  calculation_type::String,
                                  nnodes::Int64,
-                                 datamanager::Module)
+                                 datamanager::Module)::Float64 where {T<:Union{Int64,
+                                                                               Float64}}
     comm = datamanager.get_comm()
     if calculation_type == "Sum"
         return find_and_set_core_value_sum(comm, global_value)
@@ -730,7 +750,7 @@ function find_global_core_value!(global_value::Union{Int64,Float64},
         return find_and_set_core_value_avg(comm, global_value, nnodes)
     else
         @warn "Unknown calculation type $calculation_type"
-        return 0
+        return 0.0
     end
 end
 
@@ -921,8 +941,8 @@ function show_mpi_summary(log_file::String,
             block_name_list = unique(vcat(all_block_name_list...))
             block_id_list = unique(vcat(all_block_id_list...))
         end
-        block_name_list = send_value(comm, 0, block_name_list)
-        block_id_list = send_value(comm, 0, block_id_list)
+        block_name_list = broadcast_value(comm, block_name_list)
+        block_id_list = broadcast_value(comm, block_id_list)
     end
 
     nlist = datamanager.get_nlist()

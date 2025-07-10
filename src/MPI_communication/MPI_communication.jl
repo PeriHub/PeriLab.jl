@@ -10,7 +10,7 @@ export synch_controller_bonds_to_responder
 export split_vector
 export synch_controller_bonds_to_responder_flattened
 export send_vector_from_root_to_core_i
-export send_value
+export broadcast_value
 export find_and_set_core_value_min
 export find_and_set_core_value_sum
 export find_and_set_core_value_avg
@@ -378,47 +378,31 @@ function send_vector_from_root_to_core_i(comm::MPI.Comm, send_msg, recv_msg, dis
 end
 
 """
-    send_value(comm::MPI.Comm, controller, send_msg)
+    broadcast_value(comm::MPI.Comm, send_msg)
 
-Sends a value to a controller
+Broadcast a value to all ranks
 
 # Arguments
 - `comm::MPI.Comm`: The MPI communicator
-- `controller::Int64`: The controller
 - `send_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The send message
 # Returns
 - `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
 """
-function send_value(comm::MPI.Comm, controller::Int64,
-                    send_msg::T) where {T<:Union{Float64,Int64,
-                                                 Vector{Float64},Vector{Vector{Float64}},
-                                                 Vector{Int64},Vector{Vector{Int64}},
-                                                 Matrix{Float64},
-                                                 Matrix{Int64},
-                                                 Dict,
-                                                 Bool,
-                                                 Nothing,
-                                                 Any}}
+function broadcast_value(comm::MPI.Comm,
+                         send_msg::T) where {T<:Union{Float64,Int64,
+                                                      Vector{Float64},
+                                                      Vector{Vector{Float64}},
+                                                      Vector{Int64},Vector{Vector{Int64}},
+                                                      Matrix{Float64},
+                                                      Matrix{Int64},
+                                                      Dict,
+                                                      Bool,
+                                                      Nothing,
+                                                      Any}}
     # recv_msg = MPI.Comm_rank(comm) == controller ? send_msg : nothing
     # recv_msg = MPI.bcast(send_msg, controller, comm)
     # return recv_msg
-    return MPI.bcast(send_msg, controller, comm)
-end
-
-"""
-    find_and_set_core_value_min(comm::MPI.Comm, value::Union{Float64,Int64})
-
-Find and set core value min
-
-# Arguments
-- `comm::MPI.Comm`: The MPI communicator
-- `value::Union{Float64,Int64}`: The value
-# Returns
-- `recv_msg::Union{Int64,Vector{Float64},Vector{Int64},Vector{Bool}}`: The received message
-"""
-function find_and_set_core_value_min(comm::MPI.Comm,
-                                     value::T) where {T<:Union{Float64,Int64}}
-    return MPI.Allreduce(value, MPI.MIN, comm)
+    return MPI.bcast(send_msg, 0, comm)
 end
 
 """

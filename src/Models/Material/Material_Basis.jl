@@ -283,7 +283,7 @@ Returns the Hooke matrix of the material.
 - `matrix::Matrix{Float64}`: The Hooke matrix.
 """
 function get_Hooke_matrix(datamanager::Module,
-                          parameter::Dict{String,Any},
+                          parameter::Dict,
                           symmetry::String,
                           dof::Int64,
                           ID::Int64 = 1)

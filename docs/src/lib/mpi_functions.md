@@ -17,7 +17,7 @@ synch_controller_bonds_to_responder
 split_vector
 synch_controller_bonds_to_responder_flattened
 send_vector_from_root_to_core_i
-send_value
+broadcast_value
 find_and_set_core_value_min
 find_and_set_core_value_max
 find_and_set_core_value_sum
