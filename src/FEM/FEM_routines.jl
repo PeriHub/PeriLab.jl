@@ -51,7 +51,7 @@ function compute_FEM(datamanager::Module,
 
     stress_temp = @MVector zeros(3 * dof - 3)
     le::Int64 = 0
-    # TODO its a bad fix
+    #
     parameter = params["Material Model"]
     K = get(parameter, "Bulk Modulus", nothing)
     E = get(parameter, "Young's Modulus", nothing)
@@ -113,7 +113,7 @@ function compute_FEM(datamanager::Module,
             datamanager = compute_stresses(datamanager,
                                            dof,
                                            convert(Dict{String,Any},
-                                                   parameter),
+                                                   params["Material Model"]),
                                            time,
                                            dt,
                                            strain_increment[id_el,

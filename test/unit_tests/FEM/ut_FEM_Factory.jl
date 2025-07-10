@@ -9,14 +9,14 @@ using Test
 PeriLab.Data_manager.initialize_data()
 
 @testset "ut_valid_models" begin
-    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict()))
-    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict("Additive Model" => "a")))
-    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict("Damage Model" => "a")))
-    @test PeriLab.Solver_control.FEM.valid_models(Dict("Damage Model" => "a",
-                                                       "Additive Model" => "a",
-                                                       "Material Model" => "a Correspondence"))
-    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict("Thermal Model" => "a")))
-    @test PeriLab.Solver_control.FEM.valid_models(Dict("Material Model" => "a"))
+    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict{String,Any}()))
+    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict{String,Any}("Additive Model" => "a")))
+    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict{String,Any}("Damage Model" => "a")))
+    @test PeriLab.Solver_control.FEM.valid_models(Dict{String,Any}("Damage Model" => "a",
+                                                                   "Additive Model" => "a",
+                                                                   "Material Model" => "a Correspondence"))
+    @test isnothing(PeriLab.Solver_control.FEM.valid_models(Dict{String,Any}("Thermal Model" => "a")))
+    @test PeriLab.Solver_control.FEM.valid_models(Dict{String,Any}("Material Model" => "a"))
 end
 @testset "ut_init_FEM" begin
     test_data_manager = PeriLab.Data_manager
@@ -26,15 +26,16 @@ end
     test_data_manager.set_num_controller(6)
     rho = test_data_manager.create_constant_node_field("Density", Float64, 1)
     rho .= 2
-    test = PeriLab.Solver_control.FEM.init_FEM(Dict(), test_data_manager)
+    test = PeriLab.Solver_control.FEM.init_FEM(Dict{String,Any}(), test_data_manager)
     @test isnothing(test)
-    test = PeriLab.Solver_control.FEM.init_FEM(Dict("FEM" => Dict()), test_data_manager)
-    @test isnothing(test)
-    test_data_manager.set_dof(1)
-    test = PeriLab.Solver_control.FEM.init_FEM(Dict("FEM" => Dict("Degree" => 1)),
+    test = PeriLab.Solver_control.FEM.init_FEM(Dict{String,Any}("FEM" => Dict()),
                                                test_data_manager)
     @test isnothing(test)
-    test = PeriLab.Solver_control.FEM.init_FEM(Dict("FEM" => Dict("Degree" => 4)),
+    test_data_manager.set_dof(1)
+    test = PeriLab.Solver_control.FEM.init_FEM(Dict{String,Any}("FEM" => Dict("Degree" => 1)),
+                                               test_data_manager)
+    @test isnothing(test)
+    test = PeriLab.Solver_control.FEM.init_FEM(Dict{String,Any}("FEM" => Dict("Degree" => 4)),
                                                test_data_manager)
     @test isnothing(test)
     dof = 2
@@ -67,23 +68,23 @@ end
     test_data_manager.data["block_id_list"] = [1, 2]
     test_data_manager.init_properties()
 
-    params = Dict("FEM" => Dict("Degree" => 1,
-                                "Element Type" => "Lagrange",
-                                "Material Model" => "Elastic Model"),
-                  "Models" => Dict("Material Models" => Dict("Not FEM name" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                    "Symmetry" => "isotropic plane strain",
-                                                                                    "Young's Modulus" => 2.5e+3,
-                                                                                    "Poisson's Ratio" => 0.33,
-                                                                                    "Shear Modulus" => 2.0e3))))
+    params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
+                                            "Element Type" => "Lagrange",
+                                            "Material Model" => "Elastic Model"),
+                              "Models" => Dict("Material Models" => Dict("Not FEM name" => Dict("Material Model" => "Correspondence Elastic",
+                                                                                                "Symmetry" => "isotropic plane strain",
+                                                                                                "Young's Modulus" => 2.5e+3,
+                                                                                                "Poisson's Ratio" => 0.33,
+                                                                                                "Shear Modulus" => 2.0e3))))
     @test isnothing(PeriLab.Solver_control.FEM.init_FEM(params, test_data_manager))
-    params = Dict("FEM" => Dict("Degree" => 1,
-                                "Element Type" => "Lagrange",
-                                "Material Model" => "Elastic Model"),
-                  "Models" => Dict("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                     "Symmetry" => "isotropic plane strain",
-                                                                                     "Young's Modulus" => 2.5e+3,
-                                                                                     "Poisson's Ratio" => 0.33,
-                                                                                     "Shear Modulus" => 2.0e3))))
+    params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
+                                            "Element Type" => "Lagrange",
+                                            "Material Model" => "Elastic Model"),
+                              "Models" => Dict{String,Any}("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
+                                                                                                             "Symmetry" => "isotropic plane strain",
+                                                                                                             "Young's Modulus" => 2.5e+3,
+                                                                                                             "Poisson's Ratio" => 0.33,
+                                                                                                             "Shear Modulus" => 2.0e3))))
 
     test_data_manager = PeriLab.Solver_control.FEM.init_FEM(params, test_data_manager)
 
@@ -163,14 +164,14 @@ end
     test_data_manager.data["block_id_list"] = [1, 2]
     test_data_manager.init_properties()
 
-    params = Dict("FEM" => Dict("Degree" => 1,
-                                "Element Type" => "Lagrange",
-                                "Material Model" => "Elastic Model"),
-                  "Models" => Dict("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                                     "Symmetry" => "isotropic plane strain",
-                                                                                     "Young's Modulus" => 1.5,
-                                                                                     "Poisson's Ratio" => 0.33,
-                                                                                     "Shear Modulus" => 0.5639))))
+    params = Dict{String,Any}("FEM" => Dict("Degree" => 1,
+                                            "Element Type" => "Lagrange",
+                                            "Material Model" => "Elastic Model"),
+                              "Models" => Dict("Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
+                                                                                                 "Symmetry" => "isotropic plane strain",
+                                                                                                 "Young's Modulus" => 1.5,
+                                                                                                 "Poisson's Ratio" => 0.33,
+                                                                                                 "Shear Modulus" => 0.5639))))
 
     test_data_manager = PeriLab.Solver_control.FEM.init_FEM(params, test_data_manager)
     elements = Vector{Int64}([1, 2])

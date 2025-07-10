@@ -27,7 +27,7 @@ export eval_FEM
 global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
 Set_modules.include_files(module_list)
 
-function init_FEM(complete_params::Dict{String,Any}, datamanager::Module)
+function init_FEM(complete_params::Dict, datamanager::Module)
     if !haskey(complete_params, "FEM")
         return nothing
     end
@@ -140,7 +140,7 @@ function init_FEM(complete_params::Dict{String,Any}, datamanager::Module)
     return datamanager
 end
 
-function valid_models(params::Dict{String,Any})
+function valid_models(params::Dict)
     if haskey(params, "Additive Model")
         @warn "Additive models are not supported for FEM yet"
     end

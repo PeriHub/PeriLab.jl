@@ -67,13 +67,14 @@ using Test
                                                                              Float64,
                                                                              (nelements,
                                                                               prod(num_int)))
-    test_jacobian, test_determinant_jacobian = get_Jacobian(elements,
-                                                            dof,
-                                                            topology,
-                                                            coordinates,
-                                                            B,
-                                                            jacobian,
-                                                            determinant_jacobian)
+    test_jacobian,
+    test_determinant_jacobian = get_Jacobian(elements,
+                                             dof,
+                                             topology,
+                                             coordinates,
+                                             B,
+                                             jacobian,
+                                             determinant_jacobian)
     @test isnothing(test_jacobian)
     @test isnothing(test_determinant_jacobian)
     coordinates[1, 1] = 0
@@ -85,13 +86,14 @@ using Test
     coordinates[4, 1] = 1
     coordinates[4, 2] = 1
 
-    jacobian, determinant_jacobian = get_Jacobian(elements,
-                                                  dof,
-                                                  topology,
-                                                  coordinates,
-                                                  B,
-                                                  jacobian,
-                                                  determinant_jacobian)
+    jacobian,
+    determinant_jacobian = get_Jacobian(elements,
+                                        dof,
+                                        topology,
+                                        coordinates,
+                                        B,
+                                        jacobian,
+                                        determinant_jacobian)
 
     for i in 1:4
         @test determinant_jacobian[1, i] == 0.25
@@ -106,13 +108,14 @@ using Test
     coordinates[3, 2] = 0.5
     coordinates[4, 1] = 2
     coordinates[4, 2] = 0.5
-    jacobian, determinant_jacobian = get_Jacobian(elements,
-                                                  dof,
-                                                  topology,
-                                                  coordinates,
-                                                  B,
-                                                  jacobian,
-                                                  determinant_jacobian)
+    jacobian,
+    determinant_jacobian = get_Jacobian(elements,
+                                        dof,
+                                        topology,
+                                        coordinates,
+                                        B,
+                                        jacobian,
+                                        determinant_jacobian)
 
     for i in 1:4
         @test determinant_jacobian[1, i] == 0.25
@@ -128,13 +131,14 @@ using Test
     coordinates[4, 1] = 1.5
     coordinates[4, 2] = 1.0
 
-    jacobian, determinant_jacobian = get_Jacobian(elements,
-                                                  dof,
-                                                  topology,
-                                                  coordinates,
-                                                  B,
-                                                  jacobian,
-                                                  determinant_jacobian)
+    jacobian,
+    determinant_jacobian = get_Jacobian(elements,
+                                        dof,
+                                        topology,
+                                        coordinates,
+                                        B,
+                                        jacobian,
+                                        determinant_jacobian)
 
     for i in 1:4
         @test isapprox(determinant_jacobian[1, i], 0.25)
@@ -153,13 +157,14 @@ using Test
     coordinates[4, 1] = 1.0
     coordinates[4, 2] = 1.5
 
-    jacobian, determinant_jacobian = get_Jacobian(elements,
-                                                  dof,
-                                                  topology,
-                                                  coordinates,
-                                                  B,
-                                                  jacobian,
-                                                  determinant_jacobian)
+    jacobian,
+    determinant_jacobian = get_Jacobian(elements,
+                                        dof,
+                                        topology,
+                                        coordinates,
+                                        B,
+                                        jacobian,
+                                        determinant_jacobian)
     for i in 1:4
         @test isapprox(determinant_jacobian[1, i], 0.25)
 
@@ -235,7 +240,8 @@ end
 
     Ktest = zeros(8, 8)
     # checked with separate code; without jacobian
-    Ktest[1, :] = [
+    Ktest[1,
+          :] = [
         494.50549450549454,
         178.57142857142853,
         -302.1978021978022,
@@ -245,7 +251,8 @@ end
         -247.2527472527472,
         -178.57142857142853
     ]
-    Ktest[2, :] = [
+    Ktest[2,
+          :] = [
         178.57142857142853,
         494.5054945054945,
         13.736263736263746,
@@ -255,7 +262,8 @@ end
         -178.57142857142853,
         -247.2527472527472
     ]
-    Ktest[3, :] = [
+    Ktest[3,
+          :] = [
         -302.1978021978022,
         13.73626373626374,
         494.50549450549454,
@@ -265,7 +273,8 @@ end
         54.94505494505495,
         -13.736263736263744
     ]
-    Ktest[4, :] = [
+    Ktest[4,
+          :] = [
         -13.736263736263746,
         54.94505494505495,
         -178.57142857142853,
@@ -275,7 +284,8 @@ end
         13.736263736263744,
         -302.1978021978022
     ]
-    Ktest[5, :] = [
+    Ktest[5,
+          :] = [
         54.94505494505495,
         -13.736263736263746,
         -247.2527472527472,
@@ -285,7 +295,8 @@ end
         -302.1978021978022,
         13.736263736263737
     ]
-    Ktest[6, :] = [
+    Ktest[6,
+          :] = [
         13.73626373626374,
         -302.1978021978023,
         178.57142857142853,
@@ -295,7 +306,8 @@ end
         -13.736263736263744,
         54.94505494505495
     ]
-    Ktest[7, :] = [
+    Ktest[7,
+          :] = [
         -247.2527472527472,
         -178.57142857142853,
         54.94505494505495,
@@ -305,7 +317,8 @@ end
         494.50549450549454,
         178.57142857142853
     ]
-    Ktest[8, :] = [
+    Ktest[8,
+          :] = [
         -178.57142857142853,
         -247.2527472527472,
         -13.736263736263744,
@@ -333,13 +346,14 @@ end
                                                                              Float64,
                                                                              (nelements,
                                                                               prod(num_int)))
-    jacobian, determinant_jacobian = get_Jacobian(elements,
-                                                  dof,
-                                                  topology,
-                                                  coordinates,
-                                                  B,
-                                                  jacobian,
-                                                  determinant_jacobian)
+    jacobian,
+    determinant_jacobian = get_Jacobian(elements,
+                                        dof,
+                                        topology,
+                                        coordinates,
+                                        B,
+                                        jacobian,
+                                        determinant_jacobian)
     N = test_data_manager.get_field("N Matrix")
     rho = test_data_manager.create_constant_node_field("Density", Float64, 1)
 
@@ -367,23 +381,23 @@ end
 end
 
 @testset "ut_get_FE_material_model" begin
-    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                               "Element Type" => "Lagrange",
-                                               "Material Model" => "Elastic Model")),
-                  "Material Models" => Dict("Elastic Model 2" => Dict("Material Model" => "Correspondence Elastic",
-                                                                      "Symmetry" => "isotropic plane strain",
-                                                                      "Bulk Modulus" => 2.5e+3,
-                                                                      "Shear Modulus" => 1.15e3)))
+    params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
+                                                           "Element Type" => "Lagrange",
+                                                           "Material Model" => "Elastic Model")),
+                              "Material Models" => Dict("Elastic Model 2" => Dict("Material Model" => "Correspondence Elastic",
+                                                                                  "Symmetry" => "isotropic plane strain",
+                                                                                  "Bulk Modulus" => 2.5e+3,
+                                                                                  "Shear Modulus" => 1.15e3)))
 
     @test isnothing(get_FE_material_model(params, "FE_1"))
 
-    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                               "Element Type" => "Lagrange",
-                                               "Material Model" => "Elastic Model")),
-                  "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                    "Symmetry" => "isotropic plane strain",
-                                                                    "Bulk Modulus" => 2.5e+3,
-                                                                    "Shear Modulus" => 1.15e3)))
+    params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
+                                                           "Element Type" => "Lagrange",
+                                                           "Material Model" => "Elastic Model")),
+                              "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
+                                                                                "Symmetry" => "isotropic plane strain",
+                                                                                "Bulk Modulus" => 2.5e+3,
+                                                                                "Shear Modulus" => 1.15e3)))
 
     @test get_FE_material_model(params, "FE_1") ==
           Dict("Material Model" => "Correspondence Elastic",
@@ -393,9 +407,9 @@ end
 end
 
 @testset "ut_get_polynomial_degree" begin
-    @test isnothing(get_polynomial_degree(Dict(), 1))
-    @test isnothing(get_polynomial_degree(Dict(), 2))
-    @test isnothing(get_polynomial_degree(Dict(), 3))
+    @test isnothing(get_polynomial_degree(Dict{String,Any}(), 1))
+    @test isnothing(get_polynomial_degree(Dict{String,Any}(), 2))
+    @test isnothing(get_polynomial_degree(Dict{String,Any}(), 3))
 
     params = Dict("Degree" => 1)
 
@@ -579,9 +593,10 @@ end
     @test isnothing(N)
     @test isnothing(B)
     dof = 4
-    N, B = create_element_matrices(dof,
-                                   Vector{Int64}([1, 1, 1, 1]),
-                                   Lagrange_element.create_element_matrices)
+    N,
+    B = create_element_matrices(dof,
+                                Vector{Int64}([1, 1, 1, 1]),
+                                Lagrange_element.create_element_matrices)
     @test isnothing(N)
     @test isnothing(B)
     dof = 2
