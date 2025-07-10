@@ -29,14 +29,14 @@ using Test
     test_data_manager.create_node_field("Force Densities", Float64, dof)
 
     coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, dof)
-    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                               "Element Type" => "Lagrange",
-                                               "Material Model" => "Elastic Model")),
-                  "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                    "Symmetry" => "isotropic plane strain",
-                                                                    "Young's Modulus" => 2.5e+3,
-                                                                    "Poisson's Ratio" => 0.33,
-                                                                    "Shear Modulus" => 2.0e3)))
+    params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
+                                                           "Element Type" => "Lagrange",
+                                                           "Material Model" => "Elastic Model")),
+                              "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
+                                                                                "Symmetry" => "isotropic plane strain",
+                                                                                "Young's Modulus" => 2.5e+3,
+                                                                                "Poisson's Ratio" => 0.33,
+                                                                                "Shear Modulus" => 2.0e3)))
 
     topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64,
                                                                  (2, 4))
@@ -184,14 +184,14 @@ end
     test_data_manager.set_num_controller(4)
 
     coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, dof)
-    params = Dict("FEM" => Dict("FE_1" => Dict("Degree" => 1,
-                                               "Element Type" => "Lagrange",
-                                               "Material Model" => "Elastic Model")),
-                  "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
-                                                                    "Symmetry" => "isotropic plane strain",
-                                                                    "Young's Modulus" => 2.5e+3,
-                                                                    "Poisson's Ratio" => 0.33,
-                                                                    "Shear Modulus" => 2.0e3)))
+    params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
+                                                           "Element Type" => "Lagrange",
+                                                           "Material Model" => "Elastic Model")),
+                              "Material Models" => Dict("Elastic Model" => Dict("Material Model" => "Correspondence Elastic",
+                                                                                "Symmetry" => "isotropic plane strain",
+                                                                                "Young's Modulus" => 2.5e+3,
+                                                                                "Poisson's Ratio" => 0.33,
+                                                                                "Shear Modulus" => 2.0e3)))
 
     topology = test_data_manager.create_constant_free_size_field("FE Topology", Int64,
                                                                  (2, 4))
@@ -411,32 +411,32 @@ end
     @test isnothing(get_polynomial_degree(Dict{String,Any}(), 2))
     @test isnothing(get_polynomial_degree(Dict{String,Any}(), 3))
 
-    params = Dict("Degree" => 1)
+    params = Dict{String,Any}("Degree" => 1)
 
     @test get_polynomial_degree(params, 2) == [1, 1]
     @test get_polynomial_degree(params, 3) == [1, 1, 1]
 
-    params = Dict("Degree" => 2)
+    params = Dict{String,Any}("Degree" => 2)
     @test get_polynomial_degree(params, 2) == [2, 2]
     @test get_polynomial_degree(params, 3) == [2, 2, 2]
 
-    params = Dict("Degree" => 2.1)
+    params = Dict{String,Any}("Degree" => 2.1)
 
     @test get_polynomial_degree(params, 2) == [2, 2]
     @test get_polynomial_degree(params, 3) == [2, 2, 2]
 
-    params = Dict("Degree" => [2 3 1])
+    params = Dict{String,Any}("Degree" => [2 3 1])
     @test isnothing(get_polynomial_degree(params, 2))
     @test get_polynomial_degree(params, 3) == [2, 3, 1]
 
-    params = Dict("Degree" => [2.1 2])
+    params = Dict{String,Any}("Degree" => [2.1 2])
     @test get_polynomial_degree(params, 2) == [2, 2]
     @test isnothing(get_polynomial_degree(params, 3))
-    params = Dict("Degree" => "2")
+    params = Dict{String,Any}("Degree" => "2")
     @test get_polynomial_degree(params, 3) == [2, 2, 2]
-    params = Dict("Degree" => "2 2")
+    params = Dict{String,Any}("Degree" => "2 2")
     @test get_polynomial_degree(params, 2) == [2, 2]
-    params = Dict("Degree" => "2 1")
+    params = Dict{String,Any}("Degree" => "2 1")
     @test get_polynomial_degree(params, 2) == [2, 1]
 end
 @testset "ut_get_number_of_integration_points" begin
