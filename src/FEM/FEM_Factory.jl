@@ -27,11 +27,11 @@ export eval_FEM
 global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
 Set_modules.include_files(module_list)
 
-function init_FEM(complete_params::Dict, datamanager::Module)
+function init_FEM(complete_params::Dict{String,Any}, datamanager::Module)
     if !haskey(complete_params, "FEM")
         return nothing
     end
-    params = complete_params["FEM"]
+    params = convert(Dict{String,Any}, complete_params["FEM"])
     if isnothing(valid_models(params))
         return nothing
     end
@@ -42,6 +42,7 @@ function init_FEM(complete_params::Dict, datamanager::Module)
         return nothing
     end
     @info "Initialize FEM"
+    @warn "FEM Material models are set to all blocks. TODO must be changed in future."
     datamanager.set_property("FEM",
                              "Material Model",
                              complete_params["Models"]["Material Models"][params["Material Model"]])
@@ -139,7 +140,7 @@ function init_FEM(complete_params::Dict, datamanager::Module)
     return datamanager
 end
 
-function valid_models(params::Dict)
+function valid_models(params::Dict{String,Any})
     if haskey(params, "Additive Model")
         @warn "Additive models are not supported for FEM yet"
     end
@@ -164,7 +165,7 @@ end
 
 function eval_FEM(datamanager::Module,
                   elements::AbstractVector{Int64},
-                  params::Dict,
+                  params::Dict{String,Any},
                   time::Float64,
                   dt::Float64)
     return compute_FEM(datamanager,
@@ -194,7 +195,7 @@ Computes the force densities from the FEM nodes.
 # Returns
 
 """
-function force_densities(datamanager, nodes)
+function force_densities(datamanager::Module, nodes::AbstractArray{Int64})
     volume = datamanager.get_field("Volume")
     forces = datamanager.get_field("Forces", "NP1")
     force_densities = datamanager.get_field("Force Densities", "NP1")

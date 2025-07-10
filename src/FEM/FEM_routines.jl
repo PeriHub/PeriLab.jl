@@ -10,14 +10,16 @@ include("../Models/Material/Material_Basis.jl")
 using .Material_Basis: voigt_to_matrix
 include("../Support/Helpers.jl")
 using .Helpers: invert, determinant
-function get_FE_material_model(params::Dict, name::String)
+function get_FE_material_model(params::Dict{String,Any}, name::String)
     if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
         @error "Material model " *
                params["FEM"][name]["Material Model"] *
                " defined in FEM are not defined as material"
         return nothing
     end
-    return params["Material Models"][params["FEM"][name]["Material Model"]]
+    parameter = params["Material Models"][params["FEM"][name]["Material Model"]]
+
+    return parameter
 end
 
 function compute_FEM(datamanager::Module,
@@ -49,7 +51,43 @@ function compute_FEM(datamanager::Module,
 
     stress_temp = @MVector zeros(3 * dof - 3)
     le::Int64 = 0
+    # TODO its a bad fix
+    parameter = params["Material Model"]
+    K = get(parameter, "Bulk Modulus", nothing)
+    E = get(parameter, "Young's Modulus", nothing)
+    G = get(parameter, "Shear Modulus", nothing)
+    nu = get(parameter, "Poisson's Ratio", nothing)
 
+    if !inothing(K) && !isnothing(nu)
+        E = 3 * K * (1 .- 2 * nu)
+        G = 3 * K * (1 .- 2 * nu) ./ (2 .+ 2 * nu)
+    end
+    if !inothing(G) && !isnothing(nu)
+        E = 2 * G * (1 .+ nu)
+        K = 2 * G * (1 .+ nu) ./ (3 .- 6 * nu)
+    end
+    if !inothing(K) && !inothing(G)
+        E = 9 * K * G ./ (3 * K .+ G)
+        nu = (3 * K .- 2 * G) ./ (6 * K .+ 2 * G)
+    end
+    if !isnothing(E) && !inothing(G)
+        K = E * G ./ (9 * G .- 3 * E)
+        nu = E ./ (2 * G) .- 1
+    end
+
+    if !isnothing(E) && !inothing(K)
+        G = 3 * K * E ./ (9 * K .- E)
+        nu = (3 * K .- E) ./ (6 * K)
+    end
+    if !isnothing(E) && !isnothing(nu)
+        K = E ./ (3 .- 6 * nu)
+        G = E ./ (2 .+ 2 * nu)
+    end
+
+    parameter["Bulk Modulus"] = K
+    parameter["Young's Modulus"] = E
+    parameter["Shear Modulus"] = G
+    parameter["Poisson's Ratio"] = nu
     for id_el in elements
         topo = view(topology, id_el, :)
         le = dof * length(topo)
@@ -74,7 +112,8 @@ function compute_FEM(datamanager::Module,
             stress_NP1[id_el, id_int, :],
             datamanager = compute_stresses(datamanager,
                                            dof,
-                                           params["Material Model"],
+                                           convert(Dict{String,Any},
+                                                   parameter),
                                            time,
                                            dt,
                                            strain_increment[id_el,
@@ -258,7 +297,7 @@ function get_Jacobian(elements::Vector{Int64},
     return jacobian, determinant_jacobian
 end
 
-function get_polynomial_degree(params::Dict, dof::Int64)
+function get_polynomial_degree(params::Dict{String,Any}, dof::Int64)
     if !haskey(params, "Degree")
         @error "No element degree defined"
         return nothing
