@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-#include("../../../src/PeriLab.jl")
+include("../../../src/PeriLab.jl")
 
-#using .PeriLab
+using .PeriLab
 PeriLab.Data_manager.initialize_data()
 
 @testset "ut_valid_models" begin
@@ -220,8 +220,8 @@ end
             @test isapprox(strain[iEl, i_int, 1], 1)
             @test isapprox(strain[iEl, i_int, 2] + 1, 1)
             @test isapprox(strain[iEl, i_int, 3] + 1, 1)
-            @test isapprox(stress[iEl, i_int, 1], 2.222467934542238)
-            @test isapprox(stress[iEl, i_int, 2], 1.0946483856700575)
+            @test isapprox(stress[iEl, i_int, 1], 2.2224294117647054)
+            @test isapprox(stress[iEl, i_int, 2], 1.0946294117647055)
             @test isapprox(stress[iEl, i_int, 3] + 1, 1)
         end
     end

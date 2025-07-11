@@ -28,7 +28,7 @@ function coupling_name()
     return "Arlequin"
 end
 
-function init_coupling_model(datamanager::Module, nodes, fe_params::Dict)
+function init_coupling_model(datamanager::Module, nodes, fe_params::Dict{String,Any})
     @info "Coupling $(coupling_name()) is active."
     dof = datamanager.get_dof()
     p = get_polynomial_degree(fe_params, dof)

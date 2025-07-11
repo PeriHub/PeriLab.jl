@@ -28,8 +28,9 @@ function init_coupling(datamanager::Module, nodes, complete_params::Dict)
     end
     datamanager.set_model_module(coupling_model, mod)
 
-    ###TODO nodes and blcoks
-    datamanager = mod.init_coupling_model(datamanager, nodes, complete_params["FEM"])
+    ###TODO nodes and blocks
+    datamanager = mod.init_coupling_model(datamanager, nodes,
+                                          convert(Dict{String,Any}, complete_params["FEM"]))
     return datamanager
 end
 
