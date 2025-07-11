@@ -7,6 +7,28 @@ using MPI
 using DataStructures: OrderedDict
 include("../Support/Helpers.jl")
 using .Helpers: fill_in_place!
+
+##########################
+# Variables
+##########################
+
+const fields = Dict()
+const data = Dict()
+#####################
+
+struct DataField{T,N}
+    name::String
+    data::Array{T,N}
+    bond_or_node::String
+end
+
+struct FieldManager
+    fields::Dict{String,DataField}
+end
+
+fieldmanager = FieldManager(Dict{String,DataField}())
+#####
+
 include("./Data_manager/data_manager_contact.jl")
 include("./Data_manager/data_manager_FEM.jl")
 include("./Data_manager/data_manager_fields.jl")
@@ -73,13 +95,6 @@ export set_output_frequency
 export set_rotation
 export set_element_rotation
 
-##########################
-# Variables
-##########################
-const fields = Dict()
-const data = Dict()
-##########################
-
 """
     initialize_data()
 
@@ -87,6 +102,7 @@ Initialize all parameter in the datamanager and sets them to the default values.
 """
 function initialize_data()
     data["current_time"] = 0.0
+
     data["step"] = 0
     data["max_step"] = 0
     data["nnodes"] = 0
@@ -103,7 +119,7 @@ function initialize_data()
     data["aniso_crit_values"] = Dict()
     data["properties"] = OrderedDict()
     data["glob_to_loc"] = Dict()
-    data["field_array_type"] = Dict()
+    #data["field_array_type"] = Dict()
     data["field_types"] = Dict()
     data["field_names"] = Vector{String}([])
     data["fields_to_synch"] = Dict()
