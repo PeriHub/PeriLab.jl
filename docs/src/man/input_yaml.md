@@ -135,3 +135,6 @@ The information is stored in the [params dictionary](@ref "Parameters")
 ## `Surface Correction (optional)`
 - **Type**: String defining what model is used, currently only Volume Correction is included
 - **Update**: Bool defining if the surface is updated during the solving process, taking changes as fracture or additive processes into account
+
+##  `Contact (optional)`
+tbd

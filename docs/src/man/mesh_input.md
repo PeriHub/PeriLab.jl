@@ -7,7 +7,7 @@ The header of the mesh input file specifies the format of the subsequent data co
 
 **Variable definition**
 
-| Parameter | Datamanager name | Header name 2D | Header name 3D | Type | 
+| Parameter | Datamanager name | Header name 2D | Header name 3D | Type |
 |:---|:---|:---|:---|:---|
 |x, y, z (optional) coordinate of the node | Coordinates | x, y | x, y, z | Float64, Int64|
 | Definition to which block the node corresponds. Is needed in the Yaml file to define properties | Block_Id | block_id | block_id | Int64|
@@ -16,7 +16,7 @@ The header of the mesh input file specifies the format of the subsequent data co
 
 **Optional**
 
-| Parameter | Datamanager name | Header name 2D | Header name 3D | Type | 
+| Parameter | Datamanager name | Header name 2D | Header name 3D | Type |
 |:---|:---|:---|:---|:---|
 | Orientation of a Node | Angles | Angles | Anglesx, Anglesy, Anglesz | Float64, Int64|
 | Activation time of a node, e.g. used for additive manufacturing to define when the node will be acativated | Activation_Time | Activation_Time | Activation_Time | Float64, Int64|
@@ -42,6 +42,14 @@ header: x y block_id volume
 0.1 0.1 1 1.0E-02
 ...
 ```
+
+```yaml
+PeriLab:
+  Discretization:
+    Input Mesh File: example.txt
+...
+```
+
 
 # Abaqus Input
 
