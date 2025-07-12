@@ -582,7 +582,7 @@ end
     test_data_manager.initialize_data()
 
     @test test_data_manager.get_nnodes() == 0
-    @test test_data_manager.get_dof() == 2
+    @test test_data_manager.get_dof() == 0
     @test length(test_data_manager.get_all_field_keys()) == 0
 end
 
