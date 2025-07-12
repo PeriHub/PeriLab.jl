@@ -17,7 +17,10 @@ export init_model
 export material_name
 export compute_model
 export fields_for_local_synchronization
+
 ...
+
+end
 ```
 First you have to rename your module. It should be different from existing ones. The first character should be capital. The rest is your choice.
 
@@ -38,7 +41,7 @@ In the YAML file you can call your model like this. The id Mat_1 has to be appli
 ```
 The density and the horizon depends on your problem.
 
-!!! not "Mass density"
+!!! info "Mass density"
     The parameter density is defined in the blocks. Reason is that this parameter is used for other models as thermal as well.
 
 ```yaml
@@ -87,14 +90,12 @@ This function is used to specify properties which should be synchronized before 
 
 This feature is only needed for multicore applications. The main parameters are synchronized at the beginning of each time step.
 
-!!! warn "Cost of synchronization"
+!!! warning "Cost of synchronization"
     Be aware, that synchronization cost time. Therefore, try to avoid it if possible.
 
 ```julia
 function fields_for_local_synchronization(datamanager::Module, model::String)
-    # download_from_cores = false
-    # upload_to_cores = true
-    # datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
+
     return datamanager
 end
 ```
@@ -125,8 +126,6 @@ You can add as many functions as you want. You can also create files and include
 ### Template files
 
 [Additive](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Additive/Additive_template/additive_template.jl)
-
-
 
 [Contact](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Contact/Contact_template/contact_template.jl)
 

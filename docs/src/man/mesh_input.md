@@ -47,7 +47,6 @@ header: x y block_id volume
 PeriLab:
   Discretization:
     Input Mesh File: example.txt
-...
 ```
 
 
@@ -60,7 +59,6 @@ PeriLab:
   Discretization:
     Input Mesh File: ABAQUS_FILE.inp
     Type: Abaqus
-...
 ```
 
 All elements that are defined in a element set in the Abaqus input file will be translated to PeriLab nodes. The center and volume of the elements will be calculated automatically. Have a look at the [AbaqusReader.jl](https://github.com/JuliaFEM/AbaqusReader.jl) package to see what elements are supported.

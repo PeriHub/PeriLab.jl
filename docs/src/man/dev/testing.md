@@ -38,7 +38,6 @@ After testing you will get an overview over failed or errored tests. The test se
     2==3
 
 
-
 ## Unit tests
 Unit tests are tests to check functions. To do that you add a file the the unit_tests folder. The folder has the same structure as the src folder. Please add your test in place of the src code file where your function is located. It helps to find the tests. Add your tests (please take examples from already existing tests).
 
@@ -72,7 +71,6 @@ Code should be tested in parallel as shown below. The effect of core distributio
         run_perilab("additive_3d", 4, true, folder_name)
     end
 ```
-
 
 This file has to be called in the **runtests.jl**. You are able to define  .cmd with the following input if specific tolerances are needed.
 
