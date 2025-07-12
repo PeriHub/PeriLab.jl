@@ -66,7 +66,7 @@ end
 
 The function init_model is used to initialize the model. Here, you can check if parameters exist or set reference values. The dictionary material_params includes all parameters you had defined in your yaml.
 
-You can and should also create fields using the [datamanger](""datamanager.md).
+You can and should also create fields using the [datamanger](datamanager.md).
 
 ```julia
 function init_model(datamanager::Module,
@@ -123,16 +123,19 @@ You can add as many functions as you want. You can also create files and include
 
 
 ### Template files
-[Additive]("../../../../../../src/Models/Additive/Additive_template/additive_template.jl")
 
-[Contact]("../../../../../../src/Models/Contact/Contact_template/contact_template.jl")
+[Additive](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Additive/Additive_template/additive_template.jl)
 
-[Damage]("../../../../../../src/Models/Damage/Damage_template/damage_template.jl")
 
-[Non correspondence material]("../../../../../../src/Models/Material/Material_template/material_template.jl")
 
-[Correspondence material]("../../../../../../src/Models/Material/Material_template/correspondence_template.jl")
+[Contact](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Contact/Contact_template/contact_template.jl)
 
-[Pre calculation]("../../../../../../src/Models/Pre_calculation/Pre_calculation_template/pre_calculation_template.jl")
+[Damage](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Damage/Damage_template/damage_template.jl)
 
-[Thermal]("../../../../../../src/Models/Thermal/Thermal_template/thermal_template.jl")
+[Non correspondence material](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_template/material_template.jl)
+
+[Correspondence material](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_template/correspondence_template.jl)
+
+[Pre calculation](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Pre_calculation/Pre_calculation_template/pre_calculation_template.jl)
+
+[Thermal](https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Thermal/Thermal_template/thermal_template.jl)
