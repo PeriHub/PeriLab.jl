@@ -110,7 +110,7 @@ function initialize_data()
     data["num_responder"] = 0
     data["num_elements"] = 0
     data["nnsets"] = 0
-    data["dof"] = 2
+    data["dof"] = 0
     data["fem_option"] = false
     data["block_name_list"] = Vector{String}()
     data["block_id_list"] = Vector{Int64}()
