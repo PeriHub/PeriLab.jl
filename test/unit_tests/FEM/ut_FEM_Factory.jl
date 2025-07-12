@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-include("../../../src/PeriLab.jl")
+#include("../../../src/PeriLab.jl")
 
-using .PeriLab
+#using .PeriLab
 PeriLab.Data_manager.initialize_data()
 
 @testset "ut_valid_models" begin

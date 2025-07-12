@@ -54,6 +54,7 @@ set_dof(3)  # sets the degree of freedom to 3
 function set_dof(n::Int64)
     if n > 3 || n < 2
         @error "Degree of freedom $n is not supported."
+        return
     end
     data["dof"] = n
 end
@@ -232,4 +233,5 @@ set_num_controller(10)  # sets the number of nodes to 10
 function set_num_controller(n::Int64)
     data["num_controller"] = n
     set_nnodes()
+    return nothing
 end

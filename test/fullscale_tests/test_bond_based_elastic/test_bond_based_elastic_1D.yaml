@@ -60,4 +60,3 @@ PeriLab:
         Displacements: True
         Forces: True
         parameter: True
-        Visual: True

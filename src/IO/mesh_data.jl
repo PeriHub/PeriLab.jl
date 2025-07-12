@@ -98,7 +98,7 @@ function init_data(params::Dict,
                                                               Int64)
         num_responder::Int64 = send_single_value_from_vector(comm, 0, ntype["responder"],
                                                              Int64)
-        dof = datamanager.set_dof(dof)
+        datamanager.set_dof(dof)
         datamanager.set_overlap_map(overlap_map)
         datamanager.set_num_controller(num_controller)
         datamanager.set_num_responder(num_responder)

@@ -16,6 +16,25 @@ For a recangular plane following parameters needs to be defined:
 
 ![Discretization_BondFilters_RectangularPlane](../assets/Discretization_BondFilters_RectangularPlane.png)
 
+The yaml definition looks like this
+
+```yaml
+    Bond Filters:
+      bf_1:
+        Bottom Length: 2.0
+        Bottom Unit Vector X: 1.0
+        Bottom Unit Vector Y: 0.0
+        Bottom Unit Vector Z: 0.0
+        Lower Left Corner X: -0.5
+        Lower Left Corner Y: 0.0
+        Lower Left Corner Z: -1.0
+        Normal X: 0.0
+        Normal Y: 1.0
+        Normal Z: 0.0
+        Side Length: 2.0
+        Type: Rectangular_Plane
+```
+
 ## Disk
 
 For a disk following parameters needs to be defined:

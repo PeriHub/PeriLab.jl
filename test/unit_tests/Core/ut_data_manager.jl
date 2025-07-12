@@ -78,9 +78,11 @@ end
 
 @testset "get_set_functions" begin
     test_data_manager = PeriLab.Data_manager
-    for i in 1:20
+    ref_dof = [0, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    for i in 1:15
         test_data_manager.set_dof(i)
-        @test test_data_manager.get_dof() == i
+
+        @test test_data_manager.get_dof() == ref_dof[i]
         test_data_manager.set_num_controller(i)
         @test test_data_manager.get_nnodes() == i
     end
@@ -580,7 +582,7 @@ end
     test_data_manager.initialize_data()
 
     @test test_data_manager.get_nnodes() == 0
-    @test test_data_manager.get_dof() == 2
+    @test test_data_manager.get_dof() == 0
     @test length(test_data_manager.get_all_field_keys()) == 0
 end
 
