@@ -85,7 +85,8 @@ end
     PeriLab.Solver_control.Helpers.fastdot(a, b) == dot(a, b)
 end
 @testset "ut_get_mapping" begin
-    @test isnothing(PeriLab.Solver_control.Helpers.get_mapping(4))
+    @test length(PeriLab.Solver_control.Helpers.get_mapping(4)) == 0
+    @test length(PeriLab.Solver_control.Helpers.get_mapping(1)) == 0
 end
 
 @testset "ut_qdim" begin

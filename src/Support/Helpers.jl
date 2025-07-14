@@ -347,14 +347,21 @@ function find_point_in_element(el_topology, near_points, coor, fu, coupling_dict
     return coupling_dict
 end
 
-function get_mapping(dof::Int64)
+get_mapping_2d()::NTuple{3,Tuple{Int64,Int64}} = ((1, 1), (2, 2), (2, 1))
+get_mapping_3d()::NTuple{6,
+                         Tuple{Int64,Int64}} = ((1, 1), (2, 2), (3, 3), (2, 3), (1, 3),
+                                                (1, 2))
+
+function get_mapping(dof::Int64)::Union{NTuple{3,Tuple{Int64,Int64}},
+                                        NTuple{6,Tuple{Int64,Int64}},
+                                        Tuple{}}
     if dof == 2
-        return (1, 1), (2, 2), (2, 1)
+        return get_mapping_2d()
     elseif dof == 3
-        return (1, 1), (2, 2), (3, 3), (2, 3), (1, 3), (1, 2)
+        return get_mapping_3d()
     else
         @error "$dof is no valid mapping option."
-        return nothing
+        return ()
     end
 end
 
