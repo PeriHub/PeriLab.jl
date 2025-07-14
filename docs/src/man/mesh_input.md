@@ -7,7 +7,7 @@ The header of the mesh input file specifies the format of the subsequent data co
 
 **Variable definition**
 
-| Parameter | Datamanager name | Header name 2D | Header name 3D | Type | 
+| Parameter | Datamanager name | Header name 2D | Header name 3D | Type |
 |:---|:---|:---|:---|:---|
 |x, y, z (optional) coordinate of the node | Coordinates | x, y | x, y, z | Float64, Int64|
 | Definition to which block the node corresponds. Is needed in the Yaml file to define properties | Block_Id | block_id | block_id | Int64|
@@ -16,7 +16,7 @@ The header of the mesh input file specifies the format of the subsequent data co
 
 **Optional**
 
-| Parameter | Datamanager name | Header name 2D | Header name 3D | Type | 
+| Parameter | Datamanager name | Header name 2D | Header name 3D | Type |
 |:---|:---|:---|:---|:---|
 | Orientation of a Node | Angles | Angles | Anglesx, Anglesy, Anglesz | Float64, Int64|
 | Activation time of a node, e.g. used for additive manufacturing to define when the node will be acativated | Activation_Time | Activation_Time | Activation_Time | Float64, Int64|
@@ -43,6 +43,13 @@ header: x y block_id volume
 ...
 ```
 
+```yaml
+PeriLab:
+  Discretization:
+    Input Mesh File: example.txt
+```
+
+
 # Abaqus Input
 
 You can use the Abaqus input file to define the geometry of the simulation domain. In order to do that, refer in the input deck to your .inp file:
@@ -52,7 +59,6 @@ PeriLab:
   Discretization:
     Input Mesh File: ABAQUS_FILE.inp
     Type: Abaqus
-...
 ```
 
 All elements that are defined in a element set in the Abaqus input file will be translated to PeriLab nodes. The center and volume of the elements will be calculated automatically. Have a look at the [AbaqusReader.jl](https://github.com/JuliaFEM/AbaqusReader.jl) package to see what elements are supported.

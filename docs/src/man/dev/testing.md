@@ -38,7 +38,6 @@ After testing you will get an overview over failed or errored tests. The test se
     2==3
 
 
-
 ## Unit tests
 Unit tests are tests to check functions. To do that you add a file the the unit_tests folder. The folder has the same structure as the src folder. Please add your test in place of the src code file where your function is located. It helps to find the tests. Add your tests (please take examples from already existing tests).
 
@@ -48,7 +47,7 @@ Unit tests are tests to check functions. To do that you add a file the the unit_
 
 
 ## Full scale test
-Full scale models should be used to test features within a complete analyses. A complete model is run and tested against the result file.
+Full scale models should be used to test features within a complete analyses. A complete model is run and tested against the result file. This can be done for single and multi core simulations.
 
 **How to set up?**
 To create such test, you have to create a ''normal'' model and run it. Create a folder of your test and put all the information for the model inside. Create .jl file in the following structure
@@ -58,6 +57,18 @@ To create such test, you have to create a ''normal'' model and run it. Create a 
         run_perilab("additive_2d", 1, true, folder_name)
         run_perilab("additive_2d_heat", 1, true, folder_name)
         run_perilab("additive_3d", 1, true, folder_name)
+    end
+```
+
+Code should be tested in parallel as shown below. The effect of core distribution is tested. The reference is the single core solution.
+
+```julia
+    folder_name = basename(@__FILE__)[1:end-3]
+    cd("fullscale_tests/" * folder_name) do
+        run_perilab("additive_3d", 1, true, folder_name)
+        run_perilab("additive_3d", 2, true, folder_name)
+        run_perilab("additive_3d", 3, true, folder_name)
+        run_perilab("additive_3d", 4, true, folder_name)
     end
 ```
 
