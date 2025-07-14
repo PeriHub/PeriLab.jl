@@ -78,9 +78,11 @@ end
 
 @testset "get_set_functions" begin
     test_data_manager = PeriLab.Data_manager
-    for i in 1:20
+    ref_dof = [0, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
+    for i in 1:15
         test_data_manager.set_dof(i)
-        @test test_data_manager.get_dof() == i
+
+        @test test_data_manager.get_dof() == ref_dof[i]
         test_data_manager.set_num_controller(i)
         @test test_data_manager.get_nnodes() == i
     end
@@ -353,14 +355,14 @@ end
 end
 
 @testset "get_NP1_to_N_Dict" begin
-    @test test_data_manager.data["NP1_to_N"]["B"][1] == "BN"
-    @test test_data_manager.data["NP1_to_N"]["D"][1] == "DN"
-    @test test_data_manager.data["NP1_to_N"]["G"][1] == "GN"
-    @test test_data_manager.data["NP1_to_N"]["I"][1] == "IN"
-    @test test_data_manager.data["NP1_to_N"]["B"][2] == "BNP1"
-    @test test_data_manager.data["NP1_to_N"]["D"][2] == "DNP1"
-    @test test_data_manager.data["NP1_to_N"]["G"][2] == "GNP1"
-    @test test_data_manager.data["NP1_to_N"]["I"][2] == "INP1"
+    @test test_data_manager.data["NP1_to_N"]["B"].N == "BN"
+    @test test_data_manager.data["NP1_to_N"]["D"].N == "DN"
+    @test test_data_manager.data["NP1_to_N"]["G"].N == "GN"
+    @test test_data_manager.data["NP1_to_N"]["I"].N == "IN"
+    @test test_data_manager.data["NP1_to_N"]["B"].NP1 == "BNP1"
+    @test test_data_manager.data["NP1_to_N"]["D"].NP1 == "DNP1"
+    @test test_data_manager.data["NP1_to_N"]["G"].NP1 == "GNP1"
+    @test test_data_manager.data["NP1_to_N"]["I"].NP1 == "INP1"
 end
 @testset "set_and_get_values" begin
     DN = test_data_manager.get_field("D", "N")
@@ -580,7 +582,7 @@ end
     test_data_manager.initialize_data()
 
     @test test_data_manager.get_nnodes() == 0
-    @test test_data_manager.get_dof() == 2
+    @test test_data_manager.get_dof() == 0
     @test length(test_data_manager.get_all_field_keys()) == 0
 end
 

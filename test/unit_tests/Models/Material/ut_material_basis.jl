@@ -175,6 +175,7 @@ end
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(3)
+    test_data_manager.set_dof(2)
     ref_parameter = Dict("Material Model" => "PD Solid Elastic",
                          "Bulk Modulus" => 0,
                          "Computed" => true,
