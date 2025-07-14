@@ -355,14 +355,14 @@ end
 end
 
 @testset "get_NP1_to_N_Dict" begin
-    @test test_data_manager.data["NP1_to_N"]["B"][1] == "BN"
-    @test test_data_manager.data["NP1_to_N"]["D"][1] == "DN"
-    @test test_data_manager.data["NP1_to_N"]["G"][1] == "GN"
-    @test test_data_manager.data["NP1_to_N"]["I"][1] == "IN"
-    @test test_data_manager.data["NP1_to_N"]["B"][2] == "BNP1"
-    @test test_data_manager.data["NP1_to_N"]["D"][2] == "DNP1"
-    @test test_data_manager.data["NP1_to_N"]["G"][2] == "GNP1"
-    @test test_data_manager.data["NP1_to_N"]["I"][2] == "INP1"
+    @test test_data_manager.data["NP1_to_N"]["B"].N == "BN"
+    @test test_data_manager.data["NP1_to_N"]["D"].N == "DN"
+    @test test_data_manager.data["NP1_to_N"]["G"].N == "GN"
+    @test test_data_manager.data["NP1_to_N"]["I"].N == "IN"
+    @test test_data_manager.data["NP1_to_N"]["B"].NP1 == "BNP1"
+    @test test_data_manager.data["NP1_to_N"]["D"].NP1 == "DNP1"
+    @test test_data_manager.data["NP1_to_N"]["G"].NP1 == "GNP1"
+    @test test_data_manager.data["NP1_to_N"]["I"].NP1 == "INP1"
 end
 @testset "set_and_get_values" begin
     DN = test_data_manager.get_field("D", "N")
