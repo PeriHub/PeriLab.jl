@@ -26,7 +26,7 @@ function get_field(name::String, time::String = "Constant")
         return _get_field(name)
     elseif time == "N"
         try
-            return _get_field(data["NP1_to_N"][name][1])
+            return _get_field(data["NP1_to_N"][name].N)
         catch
             @error "Field ''" *
                    name *
@@ -35,7 +35,7 @@ function get_field(name::String, time::String = "Constant")
         end
     elseif time == "NP1"
         try
-            return _get_field(data["NP1_to_N"][name][2])
+            return _get_field(data["NP1_to_N"][name].NP1)
         catch
             @error "Field ''" *
                    name *
@@ -63,9 +63,11 @@ function get_field_if_exists(name::String, time::String = "Constant")
     return has_key(name) ? get_field(name, time) : nothing
 end
 
-function _get_data(f::DataField{T,N}) where {T,N}
+# Typstabile Getter
+function (f::DataField{T,N})() where {T,N}
     return f.data::Array{T,N}
 end
+
 """
     _get_field(name::String)
 
@@ -76,9 +78,9 @@ Returns the field with the given name.
 # Returns
 - `field::Field`: The field with the given name.
 """
-function _get_field(name::String)
+function _get_field(name::String)::Union{Array,Nothing}
     try
-        return _get_data(fieldmanager.fields[name])
+        return fieldmanager.fields[name]()
     catch
         @error "Field ''" *
                name *
@@ -365,9 +367,4 @@ struct Field{T,N}
     vartype::Type{T}
     bond_or_node::String
     dof::Union{Int64,Tuple{Vararg{Int64}}}
-end
-
-# Typstabile Getter
-function (f::DataField{T,N})() where {T,N}
-    return f.data::Array{T,N}
 end

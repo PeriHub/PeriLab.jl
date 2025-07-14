@@ -21,10 +21,18 @@ Sets the NP1_to_N dataset
 - `name`::String: The name of the field.
 - `type`::Type The field type
 """
-function set_NP1_to_N(name::String, type::Type)
+function set_NP1_to_N(name::String, ::Type{T}) where {T}
+    println(name)
     if !has_key(name)
-        data["NP1_to_N"][name] = [name * "N", name * "NP1", zero(type)]
+        data["NP1_to_N"][name] = NP1_to_N(name * "N", name * "NP1", zero(T))
     end
+end
+
+function swap_n_np1!(entry::NP1_to_N{T}) where {T}
+    tmp = entry.N
+    entry.N = entry.NP1
+    entry.NP1 = tmp
+    return nothing
 end
 
 """
@@ -42,22 +50,21 @@ function switch_NP1_to_N() ##TODO check type stability
             switch_bonds!(field_N, field_NP1)
             continue
         end
-        data["NP1_to_N"][key][1],
-        data["NP1_to_N"][key][2] = data["NP1_to_N"][key][2],
-                                   data["NP1_to_N"][key][1]
+        swap_n_np1!(data["NP1_to_N"][key])
+
         field_NP1 = get_field(key, "NP1")
-        fill_field!(field_NP1, active, key)
+        fill_field!(field_NP1, active, data["NP1_to_N"][key].value)
     end
 end
 const NestedArray{T} = Union{AbstractArray{<:AbstractArray{T}},
                              AbstractArray{<:AbstractArray{<:AbstractArray{T}}},
                              Vector{Vector{Vector{T}}}}
 function fill_field!(field_NP1::NestedArray{T},
-                     active::Vector{Bool}, key::String) where {T<:Union{Int64,Float64,Bool}}
-    fill_in_place!(field_NP1, data["NP1_to_N"][key][3], active)
+                     active::Vector{Bool}, value::T) where {T<:Union{Int64,Float64,Bool}}
+    fill_in_place!(field_NP1, value, active)
 end
 
 function fill_field!(field_NP1::AbstractArray{T},
-                     active::Vector{Bool}, key::String) where {T<:Union{Int64,Float64,Bool}}
-    fill!(field_NP1, data["NP1_to_N"][key][3])
+                     active::Vector{Bool}, value::T) where {T<:Union{Int64,Float64,Bool}}
+    fill!(field_NP1, value)
 end

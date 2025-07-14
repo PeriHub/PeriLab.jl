@@ -26,6 +26,12 @@ struct FieldManager
     fields::Dict{String,DataField}
 end
 
+mutable struct NP1_to_N{T}
+    N::String
+    NP1::String
+    value::T
+end
+
 fieldmanager = FieldManager(Dict{String,DataField}())
 #####
 
@@ -154,7 +160,7 @@ function initialize_data()
     data["element_rotation"] = false
     data["active_models"] = OrderedDict{String,Module}()
     data["all_active_models"] = OrderedDict{String,Module}()
-    data["NP1_to_N"] = Dict{String,Vector{}}()
+    data["NP1_to_N"] = Dict{String,NP1_to_N}()
     data["coupling_fe_nodes"] = []
     data["BC_free_dof"] = []
     data["Contact Nodes"] = Dict{Int64,Vector{Int64}}()
@@ -585,7 +591,7 @@ This function returns the rank of the core.
 ```julia
 current_rank = get_rank()
 """
-function get_rank()
+function get_rank()::Int64
     return data["rank"]
 end
 
@@ -601,7 +607,7 @@ This function returns the maximal rank of MPI the `max_rank`.
 ```julia
 rank = get_max_rank()
 """
-function get_max_rank()
+function get_max_rank()::Int64
     return data["max_rank"]
 end
 
