@@ -11,8 +11,7 @@ PeriLab:
     Input Mesh File: Zugstab_small.gcode
     Gcode:
       Overwrite Mesh: True
-      dx: 1.0
-      dy: 1.0
+      Sampling: 1.5
       Width: 0.4
       Scale: 1.0
       Start Command: "TYPE:Solid infill,TYPE:Perimeter"
@@ -34,7 +33,6 @@ PeriLab:
         Print Bed Temperature: 298.15
         Environmental Temperature: 298.15
         Heat Transfer Coefficient: 15.0e-3
-        Required Specific Volume: 1.3
   Blocks:
     Middle:
       Block ID: 1
@@ -68,7 +66,7 @@ PeriLab:
     Final Time: 810
     Verlet:
       Safety Factor: 1.0
-      Fixed dt: 1.0
+      Fixed dt: 0.3
   Outputs:
     Output1:
       Output Filename: "additive_gcode"
@@ -78,3 +76,4 @@ PeriLab:
         Temperature: True
         Heat Flow: True
         Active: True
+        Specific Volume: True

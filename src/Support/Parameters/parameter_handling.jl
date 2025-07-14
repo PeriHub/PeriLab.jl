@@ -326,12 +326,7 @@ global expected_structure = Dict("PeriLab" => [
                                                                                            Bool,
                                                                                            true
                                                                                        ],
-                                                                                       "dx" => [
-                                                                                           Union{Float64,
-                                                                                                 Int64},
-                                                                                           true
-                                                                                       ],
-                                                                                       "dy" => [
+                                                                                       "Sampling" => [
                                                                                            Union{Float64,
                                                                                                  Int64},
                                                                                            true
@@ -746,11 +741,6 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                          false
                                                                                                      ],
                                                                                                      "Environmental Temperature" => [
-                                                                                                         Union{Float64,
-                                                                                                               Int64},
-                                                                                                         false
-                                                                                                     ],
-                                                                                                     "Required Specific Volume" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},
                                                                                                          false

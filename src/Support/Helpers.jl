@@ -36,6 +36,7 @@ export sub_in_place!
 export add_in_place!
 export div_in_place!
 export fill_in_place!
+export normalize_in_place!
 export fastdot
 export fast_mul!
 export mat_mul!
@@ -476,6 +477,13 @@ function mul_in_place!(D::Vector{Vector{T}},
         end
     end
 end
+function sub_in_place!(C::Vector{T}, A::Vector{T}, B::Vector{T}) where {T<:Number}
+    @assert length(C) == length(A) == length(B)
+
+    @inbounds for i in eachindex(A)
+        C[i] = A[i] - B[i]
+    end
+end
 function sub_in_place!(C::Vector{Vector{T}},
                        A::Vector{Vector{T}},
                        B::Vector{Vector{T}}) where {T<:Union{Int64,Float64,Bool}}
@@ -582,6 +590,12 @@ function fill_in_place!(A::Vector{Vector{Array{T,N}}},
                 A[i][j] .= value
             end
         end
+    end
+end
+function normalize_in_place!(B::Vector{T}, A::Vector{T}) where {T<:Number}
+    nrm = norm(A)
+    @inbounds for i in eachindex(A)
+        B[i] = A[i] / nrm
     end
 end
 # function fourth_order_times_second_order_tensor(C, s1, s2, s3, dof)
