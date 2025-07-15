@@ -101,7 +101,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
 
     if occursin("Correspondence", model_param["Material Model"])
         datamanager.set_model_module("Correspondence", Correspondence)
-        return Correspondence.init_model(datamanager, nodes, model_param)
+        return Correspondence.init_model(datamanager, nodes, block, model_param)
     end
 
     material_models = split(model_param["Material Model"], "+")
@@ -111,6 +111,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
         mod = Set_modules.create_module_specifics(material_model,
                                                   module_list,
                                                   "material_name")
+        datamanager.set_analysis_model("Material Model", block, material_model)
         if isnothing(mod)
             @error "No material of name " * material_model * " exists."
         end

@@ -30,13 +30,14 @@ export compute_model
 export init_model
 export fields_for_local_synchronization
 """
-  init_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict{String,Any})
+  init_model(datamanager::Module, nodes::AbstractVector{Int64}, block::Int64, material_parameter::Dict{String,Any})
 
-Initializes the material model.
+Initializes the correspondence material model.
 
 # Arguments
   - `datamanager::Data_manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
+  - `block::Int64`: Block id of the current block.
   - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 
 # Returns
@@ -44,6 +45,7 @@ Initializes the material model.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
+                    block::Int64,
                     material_parameter::Dict{String,Any})
     # global dof
     # global rotation
@@ -63,6 +65,7 @@ function init_model(datamanager::Module,
     material_models = map(r -> strip(r), material_models)
     #occursin("Correspondence", material_name)
     for material_model in material_models
+        datamanager.set_analysis_model("Correspondence Model", block, material_model)
         mod = Set_modules.create_module_specifics(material_model,
                                                   module_list,
                                                   "correspondence_name")
@@ -163,7 +166,22 @@ function compute_model(datamanager::Module,
                                                             dt,
                                                             to)
     end
+    return compute_correspondence_model(datamanager,
+                                        nodes,
+                                        material_parameter,
+                                        block,
+                                        time,
+                                        dt,
+                                        to)
+end
 
+function compute_correspondence_model(datamanager::Module,
+                                      nodes::AbstractVector{Int64},
+                                      material_parameter::Dict{String,Any},
+                                      block::Int64,
+                                      time::Float64,
+                                      dt::Float64,
+                                      to::TimerOutput)
     rotation::Bool = datamanager.get_rotation()
     dof = datamanager.get_dof()
     deformation_gradient = datamanager.get_field("Deformation Gradient")
@@ -186,10 +204,10 @@ function compute_model(datamanager::Module,
         strain_increment = rotate(nodes, strain_increment, rotation_tensor, false)
     end
 
-    material_models = split(material_parameter["Material Model"], "+")
-    material_models = map(r -> strip(r), material_models)
+    # material_models = split(material_parameter["Material Model"], "+")
+    # material_models = map(r -> strip(r), material_models)
     @timeit to "Calculated material" begin
-        for material_model in material_models
+        for material_model in datamanager.get_analysis_model("Correspondence Model", block)
             mod = datamanager.get_model_module(material_model)
 
             mod.compute_stresses(datamanager,

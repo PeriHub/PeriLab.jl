@@ -235,3 +235,23 @@ function set_num_controller(n::Int64)
     set_nnodes()
     return nothing
 end
+
+function set_analysis_model(what::String, block_id::Int64, model::AbstractString)
+    if !haskey(data, what)
+        data[what] = Dict{Int64,Vector{String}}([])
+    end
+    if !haskey(data[what], block_id)
+        data[what][block_id] = Vector{String}([])
+    end
+    if !(model in data[what][block_id])
+        push!(data[what][block_id])
+    end
+end
+
+function get_analysis_model(what::String, block_id::Int64)::Vector{String}
+    if !haskey(data, what)
+        @error "No model class $what exists. Please check the initialization."
+        return Vector{String}([])
+    end
+    return data[what][block_id]
+end
