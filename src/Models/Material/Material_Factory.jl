@@ -5,7 +5,6 @@
 module Material
 include("../../Core/Module_inclusion/set_Modules.jl")
 include("Material_Basis.jl")
-using LinearAlgebra
 using .Material_Basis:
                        get_all_elastic_moduli,
                        distribute_forces!,
@@ -186,24 +185,27 @@ function compute_model(datamanager::Module,
                        time::Float64,
                        dt::Float64,
                        to::TimerOutput)
-    if occursin("Correspondence", model_param["Material Model"])
-        @timeit to "corresponcence" begin
-            datamanager = Correspondence.compute_model(datamanager, nodes, model_param,
-                                                       block, time,
-                                                       dt,
-                                                       to)
-            return datamanager
+    @timeit to "all" begin
+        if occursin("Correspondence", model_param["Material Model"])
+            @timeit to "corresponcence" begin
+                datamanager = Correspondence.compute_model(datamanager, nodes, model_param,
+                                                           block, time,
+                                                           dt,
+                                                           to)
+                return datamanager
+            end
         end
-    end
-    material_models = split(model_param["Material Model"], "+")
-    material_models = map(r -> strip(r), material_models)
-    for material_model in material_models
-        mod = datamanager.get_model_module(material_model)
+        material_models = split(model_param["Material Model"], "+")
+        material_models = map(r -> strip(r), material_models)
+        for material_model in material_models
+            mod = datamanager.get_model_module(material_model)
 
-        datamanager = mod.compute_model(datamanager, nodes, model_param, block, time, dt,
-                                        to)
+            datamanager = mod.compute_model(datamanager, nodes, model_param, block, time,
+                                            dt,
+                                            to)
+        end
+        return datamanager
     end
-    return datamanager
 end
 
 """
