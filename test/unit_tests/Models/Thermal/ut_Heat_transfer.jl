@@ -55,7 +55,7 @@ using .Heat_transfer
     bond_norm[10] = [[1, 0]]
     volume = test_data_manager.create_constant_node_field("Volume", Float64, 1, 0.25)
     specific_volume = test_data_manager.create_constant_node_field("specific_volume",
-                                                                   Float64, 1)
+                                                                   Int64, 1)
     active = test_data_manager.create_constant_node_field("Active", Bool, 1, true)
     specific_volume_check = test_data_manager.create_constant_node_field("Specific Volume Check",
                                                                          Bool, 1, true)
