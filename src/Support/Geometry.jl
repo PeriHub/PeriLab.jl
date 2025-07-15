@@ -346,9 +346,9 @@ Calculate strains for specified nodes based on deformation gradients.
 This function iterates over the specified nodes and computes strain at each node using the given deformation gradients.
 
 """
-function compute_strain(nodes::Union{Base.OneTo{Int64},Vector{Int64},SubArray},
-                        deformation_gradient::Union{Array{Float64,3},SubArray},
-                        strain::Union{Array{Float64,3},SubArray})
+function compute_strain(nodes::AbstractArray{Int64},
+                        deformation_gradient::T,
+                        strain::T) where {T<:AbstractArray}
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     for iID in nodes
         @views mat_mul_transpose_mat!(strain[iID, :, :],
@@ -372,7 +372,8 @@ Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package
 - Rotation tensor
 
 """
-function rotation_tensor(angles::Union{Vector{Float64},Vector{Int64}}, dof::Int64)
+function rotation_tensor(angles::T,
+                         dof::Int64) where {T<:Union{Vector{Float64},Vector{Int64}}}
     if length(angles) == 3
         if dof != 3
             @error "Rotation tensor not defined for 2D"

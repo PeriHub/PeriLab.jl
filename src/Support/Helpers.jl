@@ -369,8 +369,8 @@ function matrix_diff!(s3::AbstractArray{Float64,3}, nodes::AbstractArray{Int64},
                       s2::AbstractArray{Float64,3},
                       s1::AbstractArray{Float64,3})
     @views @inbounds for iID in nodes
-        @inbounds @fastmath @views for m in axes(s1[iID, :, :], 1),
-                                       n in axes(s1[iID, :, :], 2)
+        @inbounds @fastmath @views for m in axes(s1, 2),
+                                       n in axes(s1, 3)
             s3[iID, m, n] = s2[iID, m, n] - s1[iID, m, n]
         end
     end
@@ -538,7 +538,7 @@ function div_in_place!(C::Vector{Vector{T}},
         C[i] .= A[i] ./ B[i]
     end
 end
-function fastdot(a::AbstractArray, b::AbstractArray, absolute = false)
+function fastdot(a::AbstractArray{Float64}, b::AbstractArray{Float64}, absolute = false)
     c = zero(eltype(a))
     @assert length(a) == length(b)
     @inbounds @simd for i in eachindex(a, b)
@@ -667,9 +667,9 @@ function get_active_update_nodes(active, update, nodes, index)
     return view(index, 1:count)
 end
 
-function find_active_nodes(active,
-                           active_nodes::Union{Vector{Int64},SubArray},
-                           nodes,
+function find_active_nodes(active::AbstractVector{Bool},
+                           active_nodes::AbstractVector{Int64},
+                           nodes::AbstractVector{Int64},
                            false_or_true::Bool = true)
     count::Int64 = 0
     for node in nodes
@@ -893,9 +893,9 @@ function smat(A::AbstractMatrix{Float64})
 end
 
 function find_local_neighbors(nID::Int64,
-                              coordinates::Union{SubArray,Matrix{Float64},Matrix{Int64}},
-                              nlist::Union{Vector{Int64},SubArray{Int64}},
-                              bond_horizon::Union{Float64,Int64})
+                              coordinates::AbstractMatrix{Float64},
+                              nlist::AbstractVector{Int64},
+                              bond_horizon::T) where {T<:Union{Float64,Int64}}
     # excludes right now iID node in the coordinates list. Because it is an abritrary sublist it should be fine.
     # saving faster than recalculation?
     nlist_without_neighbor = view(nlist[nlist .!= nID], :)
@@ -945,8 +945,8 @@ Rotates the matrix.
 - `matrix::SubArray`: Matrix.
 """
 function rotate(nodes::AbstractVector{Int64},
-                matrix::Union{SubArray,Array{Float64,3}},
-                rot::Union{SubArray,Array{Float64,3}},
+                matrix::AbstractArray{Float64},
+                rot::AbstractArray{Float64},
                 back::Bool)
     for iID in nodes
         matrix[iID, :,

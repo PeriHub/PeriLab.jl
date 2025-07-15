@@ -140,7 +140,7 @@ function initialize_data()
     data["inverse_nlist"] = []
     data["model_modules"] = OrderedDict{String,Module}()
     data["nsets"] = Dict{String,Vector{Int64}}()
-    data["overlap_map"] = Dict()
+    data["overlap_map"] = Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}()
     data["contact_overlap_map"] = Dict()
     data["pre_calculation_order"] = [
         "Deformed Bond Geometry",
