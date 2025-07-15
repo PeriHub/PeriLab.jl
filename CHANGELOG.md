@@ -8,6 +8,27 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.6] - 2025-07-15
+
+
+### Added
+
+- Dwell (G4) callback #292
+- 1D Bond based example
+
+### Fixed
+
+- Bond field export #288
+- Node set id assignment
+- Global value export for MPI
+
+### Changed
+
+- Reworked the gcode reader and specifc volume
+- Optimized heat transfer module
+- Substructured the datamanager for better readability
+- Improve typstability and MPI calls
+
 ## [1.4.5] - 2025-06-30
 
 ### Added
