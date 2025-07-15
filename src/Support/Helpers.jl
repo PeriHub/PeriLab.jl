@@ -923,14 +923,12 @@ Create a progress bar if the rank is 0. The progress bar ranges from 1 to nsteps
 # Returns
 - ProgressBar or UnitRange: If rank is 0, a ProgressBar object is returned. Otherwise, a range from 1 to nsteps + 1 is returned.
 """
+progress_bar_stable_type(::Val{true}, nsteps::Int64) = ProgressBar(1:(nsteps + 1))  # show progress
+progress_bar_stable_type(::Val{false}, nsteps::Int64) = 1:(nsteps + 1)              # silent
+
 function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
-    # Check if rank is equal to 0.
-    if rank == 0 && !silent
-        # If rank is 0, create and return a ProgressBar from 1 to nsteps + 1.
-        return ProgressBar(1:(nsteps + 1))
-    end
-    # If rank is not 0, return a range from 1 to nsteps + 1.
-    return 1:(nsteps + 1)
+    show_progress = rank == 0 && !silent
+    return progress_bar_stable_type(Val(show_progress), nsteps)
 end
 
 """

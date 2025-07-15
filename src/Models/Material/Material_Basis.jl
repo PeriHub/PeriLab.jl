@@ -506,21 +506,28 @@ function distribute_forces!(force_densities::Matrix{Float64},
                             nlist::Vector{Vector{Int64}},
                             bond_force::Vector{Vector{Vector{Float64}}},
                             volume::Vector{Float64},
-                            bond_damage::Vector{Vector{Float64}})
+                            bond_damage::Vector{Vector{Float64}})::Nothing
     @inbounds @fastmath for iID in nodes
-        @views @inbounds @fastmath for jID in axes(nlist[iID], 1)
-            @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
-                #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
-                force_densities[iID,
-                                m] += bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[nlist[iID][jID]]
-                force_densities[nlist[iID][jID],
-                                m] -= bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] * volume[iID]
+        # Cache arrays to help type inference
+        neighbors = nlist[iID]
+        neighbor_forces = bond_force[iID]
+        neighbor_damage = bond_damage[iID]
+        vol_i = volume[iID]
+
+        @inbounds @fastmath for jID_idx in eachindex(neighbors)
+            jID = neighbors[jID_idx]
+            damage_factor = neighbor_damage[jID_idx]
+            vol_j = volume[jID]
+            forces_j = neighbor_forces[jID_idx]
+
+            @inbounds @fastmath for m in eachindex(forces_j)
+                force_contribution = damage_factor * forces_j[m]
+                force_densities[iID, m] += force_contribution * vol_j
+                force_densities[jID, m] -= force_contribution * vol_i
             end
         end
     end
+    return nothing
 end
 
 """

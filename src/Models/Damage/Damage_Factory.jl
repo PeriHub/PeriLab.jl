@@ -111,14 +111,14 @@ function damage_index(datamanager::Module,
     for iID in nodes
         bond_damageNP1[iID][nlist_filtered_ids[iID]] .= 1
     end
-    return damage_index(datamanager::Module, nodes::AbstractVector{Int64})
+    return damage_index(datamanager, nodes)
 end
 
 function damage_index(datamanager::Module, nodes::AbstractVector{Int64})
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    bond_damageNP1 = datamanager.get_bond_damage("NP1")
-    damage = datamanager.get_damage("NP1")
+    nlist = datamanager.get_nlist()::Vector{Vector{Int64}}
+    volume = datamanager.get_field("Volume")::AbstractVector{Float64}
+    bond_damageNP1 = datamanager.get_bond_damage("NP1")::Vector{Vector{Float64}}
+    damage = datamanager.get_damage("NP1")::AbstractVector{Float64}
     compute_index(damage, nodes, volume, nlist, bond_damageNP1)
     return datamanager
 end
@@ -127,7 +127,7 @@ function compute_index(damage::AbstractVector{Float64},
                        nodes::AbstractVector{Int64},
                        volume::AbstractVector{Float64},
                        nlist::Vector{Vector{Int64}},
-                       bond_damage::Vector{Vector{Float64}})
+                       bond_damage::Vector{Vector{Float64}})::Nothing
     @inbounds @fastmath for iID in nodes
         undamaged_volume = 0.0  # More explicit than zero(Float64)
         totalDamage = 0.0
@@ -150,6 +150,7 @@ function compute_index(damage::AbstractVector{Float64},
             damage[iID] = totalDamage / undamaged_volume
         end
     end
+    return nothing
 end
 
 """
