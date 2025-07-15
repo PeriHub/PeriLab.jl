@@ -27,7 +27,6 @@ Set_modules.include_files(module_list)
 export init_model
 export material_name
 export compute_model
-export init_model
 export fields_for_local_synchronization
 """
   init_model(datamanager::Module, nodes::AbstractVector{Int64}, block::Int64, material_parameter::Dict{String,Any})
@@ -74,7 +73,8 @@ function init_model(datamanager::Module,
             return nothing
         end
         datamanager.set_model_module(material_model, mod)
-        datamanager = mod.init_model(datamanager, nodes, material_parameter)
+        datamanager = mod.init_model(datamanager, nodes,
+                                     material_parameter)
     end
     if haskey(material_parameter, "Bond Associated") &&
        material_parameter["Bond Associated"]
@@ -124,7 +124,8 @@ function fields_for_local_synchronization(datamanager::Module,
     for material_model in material_models
         mod = datamanager.get_model_module(material_model)
 
-        datamanager = mod.fields_for_local_synchronization(datamanager, model)
+        datamanager = mod.fields_for_local_synchronization(datamanager,
+                                                           model)
         if model_param["Bond Associated"]
             Bond_Associated_Correspondence.fields_for_local_synchronization(datamanager,
                                                                             model)
@@ -224,14 +225,14 @@ function compute_correspondence_model(datamanager::Module,
     if rotation
         stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
     end
-    @timeit to "Calculated bond force" bond_force=calculate_bond_force(nodes,
-                                                                       dof,
-                                                                       deformation_gradient,
-                                                                       undeformed_bond,
-                                                                       bond_damage,
-                                                                       inverse_shape_tensor,
-                                                                       stress_NP1,
-                                                                       bond_force)
+    @timeit to "Calculated bond force" bond_force=calculate_bond_force!(nodes,
+                                                                        dof,
+                                                                        deformation_gradient,
+                                                                        undeformed_bond,
+                                                                        bond_damage,
+                                                                        inverse_shape_tensor,
+                                                                        stress_NP1,
+                                                                        bond_force)
     # TODO general interface, because it might be a flexbile Set_modules interface in future
     @timeit to "zero energy" datamanager=zero_energy_mode_compensation(datamanager, nodes,
                                                                        material_parameter,
@@ -291,32 +292,32 @@ Calculate bond forces for specified nodes based on deformation gradients.
 # Returns
 - `bond_force::Vector{Vector{Vector{Float64}}}`: Bond force.
 """
-function calculate_bond_force(nodes::AbstractVector{Int64},
-                              dof::Int64,
-                              deformation_gradient::Array{Float64,3},
-                              undeformed_bond::Vector{Vector{Vector{Float64}}},
-                              bond_damage::Vector{Vector{Float64}},
-                              inverse_shape_tensor::Array{Float64,3},
-                              stress_NP1::Array{Float64,3},
-                              bond_force::Vector{Vector{Vector{Float64}}})
+function calculate_bond_force!(nodes::AbstractVector{Int64},
+                               dof::Int64,
+                               deformation_gradient::Array{Float64,3},
+                               undeformed_bond::Vector{Vector{Vector{Float64}}},
+                               bond_damage::Vector{Vector{Float64}},
+                               inverse_shape_tensor::Array{Float64,3},
+                               stress_NP1::Array{Float64,3},
+                               bond_force::Vector{Vector{Vector{Float64}}})
     if dof == 2
-        calculate_bond_force_2d!(bond_force,
-                                 nodes,
-                                 deformation_gradient,
-                                 undeformed_bond,
-                                 bond_damage,
-                                 inverse_shape_tensor,
-                                 stress_NP1)
+        return calculate_bond_force_2d!(bond_force,
+                                        nodes,
+                                        deformation_gradient,
+                                        undeformed_bond,
+                                        bond_damage,
+                                        inverse_shape_tensor,
+                                        stress_NP1)
     elseif dof == 3
-        calculate_bond_force_3d!(bond_force,
-                                 nodes,
-                                 deformation_gradient,
-                                 undeformed_bond,
-                                 bond_damage,
-                                 inverse_shape_tensor,
-                                 stress_NP1)
+        return calculate_bond_force_3d!(bond_force,
+                                        nodes,
+                                        deformation_gradient,
+                                        undeformed_bond,
+                                        bond_damage,
+                                        inverse_shape_tensor,
+                                        stress_NP1)
     end
-    return bond_force
+    #return bond_force
 end
 
 function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
@@ -327,16 +328,21 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
                                   inverse_shape_tensor::Array{Float64,3},
                                   stress_NP1::Array{Float64,3})
     pk_stress = MMatrix{2,2}(zeros(2, 2))
+    temp = MMatrix{2,2}(zeros(Float64, 2, 2))
     @inbounds @fastmath for iID in nodes
-        compute_Piola_Kirchhoff_stress!(stress_NP1[iID, :, :],
-                                        deformation_gradient[iID, :, :], pk_stress)
-        temp = MMatrix{2,2}(zeros(Float64, 2, 2))
+        compute_Piola_Kirchhoff_stress!(SMatrix{2,2}(@views stress_NP1[iID, :,
+                                                                       :]),
+                                        SMatrix{2,2}(@views deformation_gradient[iID,
+                                                                                 :,
+                                                                                 :]),
+                                        pk_stress)
 
-        mat_mul!(temp, pk_stress, SMatrix{2,2}(@views inverse_shape_tensor[iID, :, :]))
+        mat_mul!(temp, SMatrix{2,2}(pk_stress),
+                 SMatrix{2,2}(@views inverse_shape_tensor[iID, :, :]))
 
         @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)
             @inbounds @fastmath for idof in 1:2
-                b_fi = 0.0
+                b_fi = Float64(0.0)
                 @inbounds @fastmath for jdof in 1:2
                     b_fi += temp[idof, jdof] *
                             bond_damage[iID][jID] *
@@ -346,7 +352,6 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
             end
         end
     end
-    return bond_force
 end
 
 function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
@@ -357,16 +362,20 @@ function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
                                   inverse_shape_tensor::Array{Float64,3},
                                   stress_NP1::Array{Float64,3})
     pk_stress = MMatrix{3,3}(zeros(3, 3))
+    temp = MMatrix{3,3}(zeros(Float64, 3, 3))
     @inbounds @fastmath for iID in nodes
-        SMatrix{3,3}(compute_Piola_Kirchhoff_stress!(stress_NP1[iID, :, :],
-                                                     deformation_gradient[iID, :, :],
-                                                     pk_stress))
-        temp = MMatrix{3,3}(zeros(Float64, 3, 3))
+        @views compute_Piola_Kirchhoff_stress!(SMatrix{3,3}(stress_NP1[iID, :,
+                                                                       :]),
+                                               SMatrix{3,3}(deformation_gradient[iID,
+                                                                                 :,
+                                                                                 :]),
+                                               pk_stress)
 
-        mat_mul!(temp, pk_stress, SMatrix{3,3}(inverse_shape_tensor[iID, :, :]))
+        mat_mul!(temp, SMatrix{3,3}(pk_stress),
+                 SMatrix{3,3}(inverse_shape_tensor[iID, :, :]))
         @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)
             @inbounds @fastmath for idof in 1:3
-                b_fi = 0.0
+                b_fi = Float64(0.0)
                 @inbounds @fastmath for jdof in 1:3
                     @views b_fi += temp[idof, jdof] *
                                    bond_damage[iID][jID] *
@@ -376,7 +385,6 @@ function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
             end
         end
     end
-    return bond_force
 end
 
 end

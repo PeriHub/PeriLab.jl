@@ -244,7 +244,7 @@ function set_analysis_model(what::String, block_id::Int64, model::AbstractString
         data[what][block_id] = Vector{String}([])
     end
     if !(model in data[what][block_id])
-        push!(data[what][block_id])
+        push!(data[what][block_id], model)
     end
 end
 

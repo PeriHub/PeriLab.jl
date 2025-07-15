@@ -121,7 +121,7 @@ function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
-            bond_force_computation!(zStiff[iID, :, :], df, bond_force[iID][nID])
+            @views bond_force_computation!(zStiff[iID, :, :], df, bond_force[iID][nID][:])
         end
     end
 end

@@ -118,7 +118,7 @@ function compute_model(datamanager::Module,
         if !surface_nodes[iID] && (additive_enabled || !allow_surface_change)
             continue
         end
-        if specific_volume[iID] > 0.0 || !allow_surface_change
+        if specific_volume[iID] > 0 || !allow_surface_change
             if !additive_enabled
                 surface_nodes[iID] = true
             end
@@ -152,34 +152,39 @@ Calculates the specific volume.
 # Returns
 - `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function calculate_specific_volume!(specific_volume::Vector{Float64},
+function calculate_specific_volume!(specific_volume::Vector{Int64},
                                     nodes::AbstractVector{Int64},
                                     nlist::Union{SubArray,Vector{Vector{Int64}}},
                                     active::Vector{Bool},
-                                    bond_norm,
-                                    rotation_tensor,
-                                    specific_volume_check,
-                                    dof)
+                                    bond_norm::Vector{Vector{Vector{Float64}}},
+                                    rotation_tensor::Union{Array{Float64,3},Nothing},
+                                    specific_volume_check::Vector{Bool},
+                                    dof::Int64)
     directions = [[1, 0], [-1, 0], [0, 1], [0, -1]]
     if dof == 3
         directions = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
     end
+    directions_free = fill(true, dof*2)
     for iID in nodes
         if !specific_volume_check[iID]
             continue
         end
-        directions_free = fill(true, dof*2)
+        if !isnothing(rotation_tensor)
+            directions = [rotation_tensor[iID, :, :] * direction
+                          for direction in directions]
+        end
+        directions_free .= true
         for (jID, neighborID) in enumerate(nlist[iID])
-            if active[neighborID]
-                for (kID, direction) in enumerate(directions)
-                    if directions_free[kID]
-                        if dot(bond_norm[iID][jID],
-                               isnothing(rotation_tensor) ? direction :
-                               rotation_tensor[iID, :, :] * direction) > 0.5
-                            directions_free[kID] = false
-                            break
-                        end
-                    end
+            if !active[neighborID]
+                continue
+            end
+            for (kID, direction) in enumerate(directions)
+                if !directions_free[kID]
+                    continue
+                end
+                if dot(bond_norm[iID][jID], direction) > 0.5
+                    directions_free[kID] = false
+                    break
                 end
             end
         end
