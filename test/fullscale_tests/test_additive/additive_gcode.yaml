@@ -63,7 +63,8 @@ PeriLab:
     Material Models: False
     Thermal Models: True
     Initial Time: 0.0
-    Final Time: 810
+    # Final Time: 810
+    Final Time: 100
     Verlet:
       Safety Factor: 1.0
       Fixed dt: 0.3

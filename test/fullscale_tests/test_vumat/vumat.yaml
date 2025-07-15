@@ -91,7 +91,7 @@ PeriLab:
       Type: Initial
   Solver:
     Initial Time: 0.0
-    Final Time: 1.0
+    Final Time: 0.01
     Thermal Models: True
     Verlet:
       # Fixed dt: 0.1
