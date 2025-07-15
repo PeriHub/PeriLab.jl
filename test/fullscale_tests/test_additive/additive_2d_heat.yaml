@@ -16,7 +16,6 @@ PeriLab:
         Thermal Model: "Heat Transfer"
         Type: "Bond based"
         Specific Heat Capacity: 1
-        Required Specific Volume: 1.1
         Heat Transfer Coefficient: 2000.0
         Environmental Temperature: 30
         Thermal Conductivity: 0.12

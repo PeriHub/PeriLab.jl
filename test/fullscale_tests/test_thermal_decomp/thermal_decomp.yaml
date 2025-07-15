@@ -16,7 +16,6 @@ PeriLab:
         Thermal Conductivity: 0.12
         Heat Transfer Coefficient: 15.0e-3
         Environmental Temperature: 200
-        Required Specific Volume: 1.3
     Degradation Models:
      Degradation test:
         Degradation Model: "Thermal Decomposition"

@@ -42,54 +42,43 @@ using .Heat_transfer
     nlist[8] = [5, 7, 9]
     nlist[9] = [6, 8]
     nlist[10] = [9]
-    volume = test_data_manager.create_constant_node_field("Volume", Float64, 1)
-    volume .= 0.25
+    bond_norm = test_data_manager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
+    bond_norm[1] = [[1, 0], [-1, 0]]
+    bond_norm[2] = [[1, 0], [-1, 0], [0, 1]]
+    bond_norm[3] = [[1, 0], [0.5, 0.5]]
+    bond_norm[4] = [[1, 0], [-1, 0], [0, -1]]
+    bond_norm[5] = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+    bond_norm[6] = [[1, 0], [-1, 0], [0, 1]]
+    bond_norm[7] = [[1, 0], [0, -1]]
+    bond_norm[8] = [[1, 0], [-1, 0], [0, 1]]
+    bond_norm[9] = [[1, 0], [0, 1]]
+    bond_norm[10] = [[1, 0]]
+    volume = test_data_manager.create_constant_node_field("Volume", Float64, 1, 0.25)
     specific_volume = test_data_manager.create_constant_node_field("specific_volume",
                                                                    Float64, 1)
-    horizon = test_data_manager.create_constant_node_field("Horizon", Float64, 1)
-    horizon .= 0.55
-    active = test_data_manager.create_constant_node_field("Active", Bool, 1)
-    active .= true
-    result = Heat_transfer.calculate_specific_volume(nodes,
-                                                     nlist,
-                                                     volume,
-                                                     active,
-                                                     specific_volume,
-                                                     dof,
-                                                     horizon)
-    @test result == [
-        1.0,
-        0.6666666666666666,
-        1.0,
-        0.6666666666666666,
-        0.5,
-        0.6666666666666666,
-        1.0,
-        0.6666666666666666,
-        1.0,
-        2.0
-    ]
-
-    dof = 3
-    test_data_manager.set_dof(dof)
-    result = Heat_transfer.calculate_specific_volume(nodes,
-                                                     nlist,
-                                                     volume,
-                                                     active,
-                                                     specific_volume,
-                                                     dof,
-                                                     horizon)
-    @test result == [
+    active = test_data_manager.create_constant_node_field("Active", Bool, 1, true)
+    specific_volume_check = test_data_manager.create_constant_node_field("Specific Volume Check",
+                                                                         Bool, 1, true)
+    rotation_tensor = nothing
+    Heat_transfer.calculate_specific_volume!(specific_volume,
+                                             nodes,
+                                             nlist,
+                                             active,
+                                             bond_norm,
+                                             rotation_tensor,
+                                             specific_volume_check,
+                                             dof)
+    @test specific_volume == [
         2.0,
-        1.3333333333333335,
-        2.0,
-        1.3333333333333335,
         1.0,
-        1.3333333333333335,
+        3.0,
+        1.0,
+        0.0,
+        1.0,
         2.0,
-        1.3333333333333335,
+        1.0,
         2.0,
-        4.0
+        3.0
     ]
 end
 
@@ -104,7 +93,8 @@ end
     @test Heat_transfer.compute_model(test_data_manager,
                                       Vector{Int64}(1:10),
                                       Dict("Heat Transfer Coefficient" => 1,
-                                           "Environmental Temperature" => 1.2),
+                                           "Environmental Temperature" => 1.2,
+                                           "Allow Surface Change" => false),
                                       1,
                                       1.0,
                                       1.0) == test_data_manager
@@ -115,7 +105,8 @@ end
     @test Heat_transfer.compute_model(test_data_manager,
                                       Vector{Int64}(1:10),
                                       Dict("Heat Transfer Coefficient" => 1,
-                                           "Environmental Temperature" => 1.2),
+                                           "Environmental Temperature" => 1.2,
+                                           "Allow Surface Change" => false),
                                       1,
                                       1.0,
                                       1.0) == test_data_manager

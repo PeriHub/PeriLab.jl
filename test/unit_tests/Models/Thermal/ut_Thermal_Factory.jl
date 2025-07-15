@@ -28,6 +28,20 @@ end
 @testset "init_model" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
+    test_data_manager.set_dof(2)
+    test_data_manager.set_num_controller(4)
+    nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+    nn[1] = 2
+    nn[2] = 3
+    nn[3] = 1
+    nn[4] = 2
+    nlist = test_data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist[1] = [2, 3]
+    nlist[2] = [1, 3, 4]
+    nlist[3] = [2]
+    nlist[4] = [2, 3]
+    bond_geometry = test_data_manager.create_constant_bond_field("Bond Geometry", Float64,
+                                                                 2, 1)
     test_data_manager.set_block_id_list([1, 2])
     test_data_manager.init_properties()
     test_data_manager.set_properties(1,

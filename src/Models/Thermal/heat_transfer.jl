@@ -3,9 +3,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Heat_transfer
+using LinearAlgebra: dot
 export compute_model
 export thermal_model_name
 export init_model
+include("../../Support/Helpers.jl")
+using .Helpers: normalize_in_place!
 """
     thermal_model_name()
 
@@ -43,6 +46,18 @@ Inits the thermal model. This template has to be copied, the file renamed and ed
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
                     thermal_parameter::Dict)
+    nlist = datamanager.get_nlist()
+    dof = datamanager.get_dof()
+
+    datamanager.create_constant_node_field("Specific Volume Check", Bool, 1, true)
+
+    undeformed_bond = datamanager.get_field("Bond Geometry")
+    bond_norm_field = datamanager.create_constant_bond_field("Bond Norm", Float64, dof, 1)
+    for iID in nodes
+        for (jID, neighborID) in enumerate(nlist[iID])
+            normalize_in_place!(bond_norm_field[iID][jID], undeformed_bond[iID][jID])
+        end
+    end
     return datamanager
 end
 
@@ -73,7 +88,6 @@ function compute_model(datamanager::Module,
     volume = datamanager.get_field("Volume")
     kappa = thermal_parameter["Heat Transfer Coefficient"]
     Tenv = thermal_parameter["Environmental Temperature"]
-    req_specific_volume = get(thermal_parameter, "Required Specific Volume", 1.1)
     allow_surface_change = get(thermal_parameter, "Allow Surface Change", true)
     additive_enabled = haskey(datamanager.get_active_models(), "Additive Model")
     heat_flow = datamanager.get_field("Heat Flow", "NP1")
@@ -81,26 +95,30 @@ function compute_model(datamanager::Module,
     surface_nodes = datamanager.get_field("Surface_Nodes")
     specific_volume = datamanager.get_field("Specific Volume")
     active = datamanager.get_field("Active")
-    horizon = datamanager.get_field("Horizon")
+    bond_norm = datamanager.get_field("Bond Norm")
+    rotation_tensor = datamanager.get_rotation() ?
+                      datamanager.get_field("Rotation Tensor") : nothing
+    specific_volume_check = datamanager.get_field("Specific Volume Check")
     nlist = datamanager.get_nlist()
     dx = 1.0
 
     kappa = thermal_parameter["Heat Transfer Coefficient"]
 
     if allow_surface_change
-        specific_volume = calculate_specific_volume(nodes,
-                                                    nlist,
-                                                    volume,
-                                                    active,
-                                                    specific_volume,
-                                                    dof,
-                                                    horizon)
+        calculate_specific_volume!(specific_volume,
+                                   nodes,
+                                   nlist,
+                                   active,
+                                   bond_norm,
+                                   rotation_tensor,
+                                   specific_volume_check,
+                                   dof)
     end
     for iID in nodes
         if !surface_nodes[iID] && (additive_enabled || !allow_surface_change)
             continue
         end
-        if specific_volume[iID] > req_specific_volume || !allow_surface_change
+        if specific_volume[iID] > 0.0 || !allow_surface_change
             if !additive_enabled
                 surface_nodes[iID] = true
             end
@@ -110,7 +128,7 @@ function compute_model(datamanager::Module,
                 dx = volume[iID]^(1 / 3)
             end
             heat_flow[iID] += (kappa * (temperature[iID] - Tenv)) / dx *
-                              floor(specific_volume[iID])
+                              specific_volume[iID]
         else
             surface_nodes[iID] = false
         end
@@ -134,40 +152,43 @@ Calculates the specific volume.
 # Returns
 - `specific_volume::Union{SubArray,Vector{Bool}}`: The surface nodes.
 """
-function calculate_specific_volume(nodes::AbstractVector{Int64},
-                                   nlist::Union{SubArray,Vector{Vector{Int64}}},
-                                   volume::Vector{Float64},
-                                   active::Vector{Bool},
-                                   specific_volume::Vector{Float64},
-                                   dof::Int64,
-                                   horizon::Vector{Float64})
+function calculate_specific_volume!(specific_volume::Vector{Float64},
+                                    nodes::AbstractVector{Int64},
+                                    nlist::Union{SubArray,Vector{Vector{Int64}}},
+                                    active::Vector{Bool},
+                                    bond_norm,
+                                    rotation_tensor,
+                                    specific_volume_check,
+                                    dof)
+    directions = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+    if dof == 3
+        directions = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
+    end
     for iID in nodes
-        neighbor_volume = 0.0
+        if !specific_volume_check[iID]
+            continue
+        end
+        directions_free = fill(true, dof*2)
         for (jID, neighborID) in enumerate(nlist[iID])
             if active[neighborID]
-                neighbor_volume += volume[neighborID]
+                for (kID, direction) in enumerate(directions)
+                    if directions_free[kID]
+                        if dot(bond_norm[iID][jID],
+                               isnothing(rotation_tensor) ? direction :
+                               rotation_tensor[iID, :, :] * direction) > 0.5
+                            directions_free[kID] = false
+                            break
+                        end
+                    end
+                end
             end
         end
-        if dof == 2
-            horizon_volume = pi * horizon[iID]^2
-        elseif dof == 3
-            horizon_volume = 4 / 3 * pi * horizon[iID]^3
+        # If the up direction is not free, the specific_volume should not change
+        if dof == 3 && !directions_free[5]
+            specific_volume_check[iID] = false
         end
-        if neighbor_volume != 0.0
-            specific_volume[iID] = horizon_volume / neighbor_volume
-        end
+        specific_volume[iID] = sum(directions_free)
     end
-
-    if dof == 2
-        scaling_factor = 2.0 / maximum(specific_volume)
-    elseif dof == 3
-        scaling_factor = 4.0 / maximum(specific_volume)
-    end
-    if !isinf(scaling_factor)
-        specific_volume .*= scaling_factor
-    end
-
-    return specific_volume
 end
 
 """

@@ -10,7 +10,7 @@ using PrettyTables
 include("bond_filters.jl")
 include("gcode.jl")
 include("volume.jl")
-include("../Support/Helpers.jl")
+# include("../Support/Helpers.jl")
 using .Helpers: fastdot, get_nearest_neighbors
 include("./logging.jl")
 using .Logging_module: print_table

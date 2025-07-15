@@ -31,7 +31,6 @@ PeriLab:
         Print Bed Temperature: 60.0
         # Thermal Expansion Coefficient: 7.0e-5
         # Reference Temperature: 0.
-        Required Specific Volume: 1.6
   Blocks:
     block_1:
       Block ID: 1

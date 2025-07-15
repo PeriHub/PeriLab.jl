@@ -15,22 +15,14 @@ function parse_commandline()
     s = ArgParseSettings()
 
     @add_arg_table! s begin
-        "--dx", "-x"
-        help = "dx"
-        arg_type = Float64
-        default = 0.2
-        "--dy", "-y"
-        help = "dy"
+        "--sampling", "-s"
+        help = "sampling"
         arg_type = Float64
         default = 0.2
         "--width", "-w"
         help = "width"
         arg_type = Float64
         default = 0.4
-        "--scale", "-s"
-        help = "scale"
-        arg_type = Float64
-        default = 1.0
         "--plot_enabled", "-p"
         help = "plot_enabled"
         arg_type = Bool
@@ -69,23 +61,12 @@ function normalize_in_place!(B::Vector{T}, A::Vector{T}) where {T<:Number}
         B[i] = A[i] / nrm
     end
 end
-function closest_point_to_vector(start_point::Vector{Float64},
-                                 dir::Vector{Float64},
-                                 point::Vector{Float64},
-                                 closest_point::Vector{Float64},
-                                 point_diff::Vector{Float64})
+function distance_along_line(dir::Vector{Float64}, point_diff::Vector{Float64})
 
     # Calculate the distance from the point to the line segment
     distance_along_line = dot(point_diff, dir) / dot(dir, dir)
 
-    # Calculate the closest point on the line segment
-    closest_point .= start_point .+ (dir .* distance_along_line)
-
-    # Calculate the distance from the closest point to the point
-    distance_to_closest_point = sqrt((point[1] - closest_point[1])^2 +
-                                     (point[2] - closest_point[2])^2)
-
-    return distance_along_line, distance_to_closest_point
+    return distance_along_line
 end
 """
     stripComments(line::String)::String
@@ -204,7 +185,7 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject)
     # end
 end
 
-function write_mesh(gcode_file, find_min_max, discretization, commands_dict,
+function write_mesh(gcode_file, commands_dict,
                     pd_mesh = Dict())
 
     # create any data object
@@ -225,7 +206,6 @@ function write_mesh(gcode_file, find_min_max, discretization, commands_dict,
     myPrinter["previous_time"] = 0.0
     myPrinter["previous_extruding"] = false
     myPrinter["relevant_component"] = true
-    myPrinter["find_min_max"] = find_min_max
     myPrinter["x_min"] = 1.e100
     myPrinter["x_max"] = 0.0
     myPrinter["y_min"] = 1.e100
@@ -238,6 +218,7 @@ function write_mesh(gcode_file, find_min_max, discretization, commands_dict,
     callbacks = Dict{String,Function}()
     callbacks["G0"] = move # just move the printhead
     callbacks["G1"] = extrude  # move the printhead as well as extrude material
+    callbacks["G4"] = dwell
     callbacks["new_layer"] = new_layer
 
     if !isnothing(commands_dict["Start"])
@@ -262,22 +243,20 @@ function write_mesh(gcode_file, find_min_max, discretization, commands_dict,
     # parse g-code file and simulate print using our own callbacks and data object
     parseFile(gcode_file, callbacks, myPrinter)
 
-    if find_min_max
-        @info "Minimum and maximum values:"
-        @info "X min/max:", myPrinter["x_min"], myPrinter["x_max"]
-        @info "Y min/max:", myPrinter["y_min"], myPrinter["y_max"]
-        layer_heights = round.(diff(myPrinter["layers"]); digits = 10)
-        if !all(layer_heights .== layer_heights[1])
-            @warn "Layer heights are not equal"
-            @warn layer_heights
-        end
-        @info "Layers: $(myPrinter["layers"])"
-        return ndgrid(myPrinter["x_min"]:discretization[1]:myPrinter["x_max"],
-                      myPrinter["y_min"]:discretization[2]:myPrinter["y_max"]),
-               layer_heights[1]
+    if pd_mesh["plot_enabled"]
+        myPrinter["plot"] = scatter!(myPrinter["plot"],
+                                     pd_mesh["x_peri"],
+                                     pd_mesh["y_peri"],
+                                     title = "Layer" * string(myPrinter["z"]),
+                                     xlabel = "X",
+                                     ylabel = "Y",
+                                     ma = 0.5,
+                                     ms = 1)
+        savefig(myPrinter["plot"], "Output/layer" * string(myPrinter["z"]) * ".svg")
+        myPrinter["plot"] = Plots.plot()
+        pd_mesh["x_peri"] = []
+        pd_mesh["y_peri"] = []
     end
-    # Show printer data after print with some interesting stats
-    # @show myPrinter;
 
     return
 end
@@ -285,6 +264,7 @@ end
 function move(cmds, dataobject)
     movement(cmds, dataobject)
     dataobject["previous_extruding"] = false
+    dataobject["pd_mesh"]["remaining_distance"] = dataobject["pd_mesh"]["sampling"] / 2
 end
 
 function check_min_max(dataobject, str)
@@ -398,20 +378,16 @@ function extrude(cmds, dataobject)
         dataobject["filamentUsage"] += de
         # println(dataobject["filamentUsage"]);5
         if dataobject["relevant_component"]
-            check_min_max(dataobject, "x")
-            check_min_max(dataobject, "y")
-            if !dataobject["find_min_max"]
-                if dataobject["pd_mesh"]["plot_enabled"]
-                    dataobject["plot"] = plot!(dataobject["plot"],
-                                               [dataobject["previous_x"], dataobject["x"]],
-                                               [dataobject["previous_y"], dataobject["y"]],
-                                               # label = "Plot",
-                                               legend = false,
-                                               lc = :black,
-                                               lw = 1)
-                end
-                write_pd_mesh(dataobject)
+            if dataobject["pd_mesh"]["plot_enabled"]
+                dataobject["plot"] = plot!(dataobject["plot"],
+                                           [dataobject["previous_x"], dataobject["x"]],
+                                           [dataobject["previous_y"], dataobject["y"]],
+                                           # label = "Plot",
+                                           legend = false,
+                                           lc = :black,
+                                           lw = 1)
             end
+            write_pd_mesh(dataobject)
         end
         dataobject["previous_x"] = dataobject["x"]
         dataobject["previous_y"] = dataobject["y"]
@@ -419,6 +395,19 @@ function extrude(cmds, dataobject)
     end
 end
 
+function dwell(cmds, dataobject)
+    s = findfirst((x -> lowercase(x.first) == "s"), cmds)
+    p = findfirst((x -> lowercase(x.first) == "p"), cmds)
+    wait_time = 0.0
+    if s !== nothing
+        wait_time = parse(Float64, cmds[s].second)
+    end
+    if p !== nothing
+        wait_time = parse(Float64, cmds[p].second)/1000
+    end
+    dataobject["previous_time"] = dataobject["time"]
+    dataobject["time"] += wait_time
+end
 function switch_on(dataobject)
     dataobject["relevant_component"] = true
 end
@@ -433,11 +422,8 @@ function new_layer(z, dataobject)
     if dataobject["finsihed"]
         return
     end
-    if dataobject["find_min_max"]
-        push!(dataobject["layers"], z)
-        return
-    end
     pd_mesh = dataobject["pd_mesh"]
+    pd_mesh["remaining_distance"] = pd_mesh["sampling"] / 2
     if pd_mesh["plot_enabled"]
         dataobject["plot"] = scatter!(dataobject["plot"],
                                       pd_mesh["x_peri"],
@@ -452,8 +438,6 @@ function new_layer(z, dataobject)
         pd_mesh["x_peri"] = []
         pd_mesh["y_peri"] = []
     end
-
-    fill!(pd_mesh["used_ids"], false)
 end
 function write_pd_mesh(dataobject)
     pd_mesh = dataobject["pd_mesh"]
@@ -466,116 +450,83 @@ function write_pd_mesh(dataobject)
     distance = norm(pd_mesh["point_diff"])
     v = distance / (dataobject["time"] - dataobject["previous_time"])
     normalize_in_place!(pd_mesh["dir"], pd_mesh["point_diff"])
-    neighbors = []
-    if distance <= min(pd_mesh["discretization"][1], pd_mesh["discretization"][2])
-        idxs = inrange(pd_mesh["balltree"],
-                       pd_mesh["point"],
-                       max(pd_mesh["discretization"][1], pd_mesh["discretization"][2]))
-        # add idxs if distance is less than or equal to discretization
-        for i in eachindex(idxs)
-            push!(neighbors, idxs[i])
-        end
+    # @info "Rem. Dist1: $(pd_mesh["remaining_distance"])"
+    if distance + pd_mesh["remaining_distance"] < pd_mesh["sampling"]
+        pd_mesh["remaining_distance"] = pd_mesh["remaining_distance"] + distance
+        return
     else
-        # @info pd_mesh["start_point"]
-        # @info pd_mesh["point"]
-        dx = pd_mesh["start_point"][1] > pd_mesh["point"][1] ?
-             -pd_mesh["discretization"][1] : pd_mesh["discretization"][1]
-        dy = pd_mesh["start_point"][2] > pd_mesh["point"][2] ?
-             -pd_mesh["discretization"][2] : pd_mesh["discretization"][2]
-        (xg,
-         yg) = ndgrid((pd_mesh["start_point"][1] - dx):dx:(pd_mesh["point"][1] + dx),
-                      (pd_mesh["start_point"][2] - dy):dy:(pd_mesh["point"][2] + dy))
-        nnodes = length(xg)
-        # @info nnodes
-        grid = zeros(2, nnodes + 1)
-        for i in 1:nnodes
-            grid[1, i] = xg[i]
-            grid[2, i] = yg[i]
-        end
-        grid[1, end] = pd_mesh["point"][1]
-        grid[2, end] = pd_mesh["point"][2]
-        idxs = inrange(pd_mesh["balltree"],
-                       grid,
-                       max(pd_mesh["discretization"][1], pd_mesh["discretization"][2]))
-        # @info length(idxs)
-        # for i in eachindex(xg)
-        #     idxs, dists = knn(pd_mesh["balltree"], grid, 4, true)
-        for i in eachindex(idxs)
-            # @info length(idxs[i])
-            for j in eachindex(idxs[i])
-                push!(neighbors, idxs[i][j])
-            end
-        end
-        # end
+        pd_mesh["remaining_distance"] = pd_mesh["sampling"] - pd_mesh["remaining_distance"]
     end
-    if length(neighbors) == 0
+
+    # @info "Start1: $(pd_mesh["start_point"])"
+    # @info "End: $(pd_mesh["point"])"
+    # @info "Distance1: $(distance)"
+    # @info "Rem. Dist2: $(pd_mesh["remaining_distance"])"
+    # @info "Direction: $(pd_mesh["dir"])"
+
+    pd_mesh["start_point"][1] += pd_mesh["remaining_distance"] * pd_mesh["dir"][1]
+    pd_mesh["start_point"][2] += pd_mesh["remaining_distance"] * pd_mesh["dir"][2]
+    sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
+    distance = norm(pd_mesh["point_diff"])
+
+    line_x = []
+    line_y = []
+
+    num_of_points_on_line::Int64 = floor(distance / pd_mesh["sampling"]) + 1
+    pd_mesh["remaining_distance"] = mod(distance, pd_mesh["sampling"])
+
+    # @info "Start2: $(pd_mesh["start_point"])"
+    # @info "Distance2: $(distance)"
+    # @info "Point Diff: $(pd_mesh["point_diff"])"
+    # @info "Points on line: $(num_of_points_on_line)"
+    # @info "Rem. Dist3: $(pd_mesh["remaining_distance"])"
+
+    if num_of_points_on_line > 1
+        line_x = collect(range(pd_mesh["start_point"][1],
+                               pd_mesh["point"][1]-pd_mesh["remaining_distance"]*pd_mesh["dir"][1],
+                               num_of_points_on_line))
+        line_y = collect(range(pd_mesh["start_point"][2],
+                               pd_mesh["point"][2]-pd_mesh["remaining_distance"]*pd_mesh["dir"][2],
+                               num_of_points_on_line))
+    else
+        line_x = [pd_mesh["start_point"][1]]
+        line_y = [pd_mesh["start_point"][2]]
+    end
+
+    if length(line_x) == 0
         return
     end
-    # @info neighbors
-    for i in eachindex(neighbors)
-        if pd_mesh["used_ids"][neighbors[i]]
-            continue
-        end
-        pd_mesh["point"][1] = pd_mesh["grid"][1, neighbors[i]]
-        pd_mesh["point"][2] = pd_mesh["grid"][2, neighbors[i]]
+
+    for i in eachindex(line_x)
+        pd_mesh["point"][1] = line_x[i]
+        pd_mesh["point"][2] = line_y[i]
         sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
-        distance_along_line,
-        distance_to_closest_point = closest_point_to_vector(pd_mesh["start_point"],
-                                                            pd_mesh["dir"],
-                                                            pd_mesh["point"],
-                                                            pd_mesh["closest_point"],
-                                                            pd_mesh["point_diff"])
-        if distance_to_closest_point <= pd_mesh["width"] / 2 &&
-           distance_along_line <= distance &&
-           distance_along_line >= -pd_mesh["width"] / 2
-            time_to_activation = distance_along_line / v
-            pd_mesh["used_ids"][neighbors[i]] = true
-            push!(pd_mesh["mesh_df"],
-                  [
-                      pd_mesh["point"][1],
-                      pd_mesh["point"][2],
-                      dataobject["z"],
-                      1,
-                      pd_mesh["volume"],
-                      time_to_activation + dataobject["previous_time"]
-                  ])
-            if pd_mesh["plot_enabled"]
-                push!(pd_mesh["x_peri"], pd_mesh["point"][1])
-                push!(pd_mesh["y_peri"], pd_mesh["point"][2])
-            end
+        dist_along_line = distance_along_line(pd_mesh["dir"], pd_mesh["point_diff"])
+
+        time_to_activation = dist_along_line / v
+        push!(pd_mesh["mesh_df"],
+              [
+                  pd_mesh["point"][1],
+                  pd_mesh["point"][2],
+                  dataobject["z"],
+                  1,
+                  pd_mesh["volume"],
+                  time_to_activation + dataobject["previous_time"],
+                  180*atan(pd_mesh["dir"][2], pd_mesh["dir"][1])/pi
+              ])
+        if pd_mesh["plot_enabled"]
+            push!(pd_mesh["x_peri"], pd_mesh["point"][1])
+            push!(pd_mesh["y_peri"], pd_mesh["point"][2])
         end
     end
 end
 
 function main(gcode_file::String,
-              dx::Float64,
-              dy::Float64,
-              scale::Float64,
+              sampling::Float64,
               width::Float64,
               plot_enabled::Bool,
               commands_dict)
-    discretization = [dx * scale, dy * scale]
-
     @info "Read gcode file $gcode_file"
-    @info "Params: dx $dx, dy $dy, width $width and scale $scale "
-    (grid_x, grid_y), height = write_mesh(gcode_file, true, discretization, commands_dict)
-
-    discretization = [dx * scale, dy * scale, (height / 2) * scale]
-
-    nnodes = length(grid_x)
-
-    grid = zeros(2, nnodes)
-
-    for i in 1:nnodes
-        grid[1, i] = grid_x[i]
-        grid[2, i] = grid_y[i]
-    end
-
-    balltree = BallTree(grid)
-
-    # grid_x = reduce(vcat, xg)
-    # grid_y = reduce(vcat, yg)
-    # grid_x, grid_y = write_mesh(gcode_file, true, discretization)
 
     pd_mesh = Dict{String,Any}()
     pd_mesh["plot_enabled"] = plot_enabled
@@ -583,17 +534,16 @@ function main(gcode_file::String,
         pd_mesh["x_peri"] = []
         pd_mesh["y_peri"] = []
     end
-    pd_mesh["balltree"] = balltree
-    pd_mesh["discretization"] = discretization
-    pd_mesh["volume"] = discretization[1] * discretization[2] * discretization[3]
-    pd_mesh["grid"] = grid
+    pd_mesh["sampling"] = sampling
+    pd_mesh["volume"] = sampling * width * width
+    # pd_mesh["grid"] = grid
     # pd_mesh["grid_y"] = grid_y
     pd_mesh["previous_time"] = 0
     pd_mesh["previous_x"] = 0
     pd_mesh["previous_y"] = 0
     pd_mesh["previous_z"] = 0
     pd_mesh["previous_extruding"] = 0
-    pd_mesh["used_ids"] = fill(false, nnodes)
+    pd_mesh["remaining_distance"] = sampling / 2
     pd_mesh["width"] = width
 
     pd_mesh["mesh_df"] = DataFrame(x = Float64[],
@@ -601,15 +551,15 @@ function main(gcode_file::String,
                                    z = Float64[],
                                    k = Int64[],
                                    volume = Float64[],
-                                   time = Float64[])
-    pd_mesh["closest_point"] = zeros(2)
+                                   time = Float64[],
+                                   angle = Float64[])
     pd_mesh["dir"] = zeros(2)
     pd_mesh["start_point"] = zeros(2)
     pd_mesh["point"] = zeros(2)
     pd_mesh["point_diff"] = zeros(2)
 
     @info "Writing mesh"
-    write_mesh(gcode_file, false, discretization, commands_dict, pd_mesh)
+    write_mesh(gcode_file, commands_dict, pd_mesh)
 
     txt_file = joinpath("Output", split(replace(gcode_file, ".gcode" => ".txt"), "/")[end])
     @info "Number of points: $(size(pd_mesh["mesh_df"],1))"
@@ -628,8 +578,6 @@ commands_dict["Stop"] = parsed_args["stop"]
 commands_dict["End"] = parsed_args["end"]
 
 main(parsed_args["filename"],
-     parsed_args["dx"],
-     parsed_args["dy"],
-     parsed_args["scale"],
+     parsed_args["sampling"],
      parsed_args["width"],
      parsed_args["plot_enabled"], commands_dict)
