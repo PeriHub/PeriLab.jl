@@ -12,6 +12,7 @@ using .Material_Basis:
                        get_all_elastic_moduli,
                        init_local_damping_due_to_damage,
                        local_damping_due_to_damage
+using LinearAlgebra: dot
 using .Set_modules
 using TimerOutputs
 using StaticArrays
