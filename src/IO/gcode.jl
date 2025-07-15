@@ -167,6 +167,7 @@ function write_mesh(gcode_file, commands_dict,
     callbacks = Dict{String,Function}()
     callbacks["G0"] = move # just move the printhead
     callbacks["G1"] = extrude  # move the printhead as well as extrude material
+    callbacks["G4"] = dwell
     callbacks["new_layer"] = new_layer
 
     if !isnothing(commands_dict["Start"])
@@ -319,6 +320,19 @@ function extrude(cmds, dataobject)
     end
 end
 
+function dwell(cmds, dataobject)
+    s = findfirst((x -> lowercase(x.first) == "s"), cmds)
+    p = findfirst((x -> lowercase(x.first) == "p"), cmds)
+    wait_time = 0.0
+    if s !== nothing
+        wait_time = parse(Float64, cmds[s].second)
+    end
+    if p !== nothing
+        wait_time = parse(Float64, cmds[p].second)/1000
+    end
+    dataobject["previous_time"] = dataobject["time"]
+    dataobject["time"] += wait_time
+end
 function switch_on(dataobject)
     dataobject["relevant_component"] = true
 end
