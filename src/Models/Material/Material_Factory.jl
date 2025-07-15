@@ -151,12 +151,11 @@ Defines all synchronization fields for local synchronization
 function fields_for_local_synchronization(datamanager, model, block)
     model_param = datamanager.get_properties(block, "Material Model")
     if occursin("Correspondence", model_param["Material Model"])
-        return Correspondence.fields_for_local_synchronization(datamanager, model,
+        return Correspondence.fields_for_local_synchronization(datamanager, model, block,
                                                                model_param)
     end
-    material_models = split(model_param["Material Model"], "+")
-    material_models = map(r -> strip(r), material_models)
-    for material_model in material_models
+
+    for material_model in datamanager.get_analysis_model("Material Model", block)
         mod = datamanager.get_model_module(material_model)
         mod.fields_for_local_synchronization(datamanager, model)
     end
@@ -195,9 +194,8 @@ function compute_model(datamanager::Module,
                 return datamanager
             end
         end
-        material_models = split(model_param["Material Model"], "+")
-        material_models = map(r -> strip(r), material_models)
-        for material_model in material_models
+
+        for material_model in datamanager.get_analysis_model("Material Model", block)
             mod = datamanager.get_model_module(material_model)
 
             datamanager = mod.compute_model(datamanager, nodes, model_param, block, time,

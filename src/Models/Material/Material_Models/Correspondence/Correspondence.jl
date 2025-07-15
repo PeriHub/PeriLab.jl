@@ -118,10 +118,9 @@ Returns a user developer defined local synchronization. This happens before each
 """
 function fields_for_local_synchronization(datamanager::Module,
                                           model::String,
+                                          block::Int64,
                                           model_param::Dict)
-    material_models = split(model_param["Material Model"], "+")
-    material_models = map(r -> strip(r), material_models)
-    for material_model in material_models
+    for material_model in datamanager.get_analysis_model("Correspondence Model", block)
         mod = datamanager.get_model_module(material_model)
 
         datamanager = mod.fields_for_local_synchronization(datamanager,
@@ -211,6 +210,7 @@ function compute_correspondence_model(datamanager::Module,
         for material_model in datamanager.get_analysis_model("Correspondence Model", block)
             mod = datamanager.get_model_module(material_model)
 
+            #stress_NP1 =
             mod.compute_stresses(datamanager,
                                  nodes,
                                  dof,
@@ -222,17 +222,18 @@ function compute_correspondence_model(datamanager::Module,
                                  stress_NP1)
         end
     end
+
     if rotation
         stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
     end
-    @timeit to "Calculated bond force" bond_force=calculate_bond_force!(nodes,
-                                                                        dof,
-                                                                        deformation_gradient,
-                                                                        undeformed_bond,
-                                                                        bond_damage,
-                                                                        inverse_shape_tensor,
-                                                                        stress_NP1,
-                                                                        bond_force)
+    @timeit to "Calculated bond force" calculate_bond_force!(nodes,
+                                                             dof,
+                                                             deformation_gradient,
+                                                             undeformed_bond,
+                                                             bond_damage,
+                                                             inverse_shape_tensor,
+                                                             stress_NP1,
+                                                             bond_force)
     # TODO general interface, because it might be a flexbile Set_modules interface in future
     @timeit to "zero energy" datamanager=zero_energy_mode_compensation(datamanager, nodes,
                                                                        material_parameter,
@@ -330,12 +331,12 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
     pk_stress = MMatrix{2,2}(zeros(2, 2))
     temp = MMatrix{2,2}(zeros(Float64, 2, 2))
     @inbounds @fastmath for iID in nodes
-        compute_Piola_Kirchhoff_stress!(SMatrix{2,2}(@views stress_NP1[iID, :,
-                                                                       :]),
-                                        SMatrix{2,2}(@views deformation_gradient[iID,
-                                                                                 :,
-                                                                                 :]),
-                                        pk_stress)
+        @views compute_Piola_Kirchhoff_stress!(SMatrix{2,2}(@views stress_NP1[iID, :,
+                                                                              :]),
+                                               SMatrix{2,2}(@views deformation_gradient[iID,
+                                                                                        :,
+                                                                                        :]),
+                                               pk_stress)
 
         mat_mul!(temp, SMatrix{2,2}(pk_stress),
                  SMatrix{2,2}(@views inverse_shape_tensor[iID, :, :]))

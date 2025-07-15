@@ -111,12 +111,13 @@ function compute_stresses(datamanager::Module,
                                        symmetry,
                                        dof,
                                        iID)
-        fast_mul!(stress_NP1[iID, :, :],
-                  hookeMatrix,
-                  strain_increment[iID, :, :],
-                  stress_N[iID, :, :],
-                  mapping)
+        @views fast_mul!(stress_NP1[iID, :, :],
+                         hookeMatrix,
+                         strain_increment[iID, :, :],
+                         stress_N[iID, :, :],
+                         mapping)
     end
+    # return stress_NP1
 end
 
 function compute_stresses_ba(datamanager::Module,
