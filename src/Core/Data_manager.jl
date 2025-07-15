@@ -139,6 +139,7 @@ function initialize_data()
     data["filedirectory"] = ""
     data["inverse_nlist"] = []
     data["model_modules"] = OrderedDict{String,Module}()
+    data["analysis_models"] = Dict()
     data["nsets"] = Dict{String,Vector{Int64}}()
     data["overlap_map"] = Dict{Int64,Dict{Int64,Dict{String,Vector{Int64}}}}()
     data["contact_overlap_map"] = Dict()
