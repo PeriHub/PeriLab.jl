@@ -117,7 +117,6 @@ function compute_stresses(datamanager::Module,
                          stress_N[iID, :, :],
                          mapping)
     end
-    # return stress_NP1
 end
 
 function compute_stresses_ba(datamanager::Module,
