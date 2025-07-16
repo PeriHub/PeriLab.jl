@@ -509,9 +509,9 @@ function distribute_forces!(force_densities::Matrix{Float64},
                             bond_damage::Vector{Vector{Float64}})::Nothing
     @inbounds @fastmath for iID in nodes
         # Cache arrays to help type inference
-        neighbors = nlist[iID]
-        neighbor_forces = bond_force[iID]
-        neighbor_damage = bond_damage[iID]
+        @views neighbors = nlist[iID]
+        @views neighbor_forces = bond_force[iID]
+        @views neighbor_damage = bond_damage[iID]
         vol_i = volume[iID]
 
         @inbounds @fastmath for jID_idx in eachindex(neighbors)

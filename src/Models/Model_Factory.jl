@@ -331,7 +331,8 @@ function compute_models(datamanager::Module,
                                    synchronise_field)
 
         @timeit to "distribute_force_densities" Material.distribute_force_densities(datamanager,
-                                                                                    active_nodes)
+                                                                                    active_nodes,
+                                                                                    to)
     end
 
     if fem_option

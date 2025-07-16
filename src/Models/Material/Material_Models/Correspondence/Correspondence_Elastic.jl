@@ -111,11 +111,10 @@ function compute_stresses(datamanager::Module,
                                        symmetry,
                                        dof,
                                        iID)
-        @views fast_mul!(stress_NP1[iID, :, :],
-                         hookeMatrix,
-                         strain_increment[iID, :, :],
-                         stress_N[iID, :, :],
-                         mapping)
+        @views sNP1 = stress_NP1[iID, :, :]
+        @views sInc = strain_increment[iID, :, :]
+        @views sN = stress_N[iID, :, :]
+        fast_mul!(sNP1, hookeMatrix, sInc, sN, mapping)
     end
 end
 

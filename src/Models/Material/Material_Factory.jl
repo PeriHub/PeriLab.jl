@@ -247,29 +247,31 @@ Distribute the force densities.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
 """
-function distribute_force_densities(datamanager::T,
-                                    nodes::AbstractVector{Int64}) where {T}
-    nlist = datamanager.get_nlist()
-    nlist_filtered_ids = datamanager.get_filtered_nlist()
-    bond_force = datamanager.get_field("Bond Forces")
-    force_densities = datamanager.get_field("Force Densities", "NP1")
-    volume = datamanager.get_field("Volume")
-    bond_damage = datamanager.get_bond_damage("NP1")
-
+function distribute_force_densities(datamanager::Module,
+                                    nodes::AbstractVector{Int64}, to::TimerOutput)
+    @timeit to "load data" begin
+        nlist = datamanager.get_nlist()
+        nlist_filtered_ids = datamanager.get_filtered_nlist()
+        bond_force = datamanager.get_field("Bond Forces")
+        force_densities = datamanager.get_field("Force Densities", "NP1")
+        volume = datamanager.get_field("Volume")
+        bond_damage = datamanager.get_bond_damage("NP1")
+    end
     if !isnothing(nlist_filtered_ids)
         bond_norm = datamanager.get_field("Bond Norm")
         displacements = datamanager.get_field("Displacements", "NP1")
-        force_densities = distribute_forces!(force_densities,
-                                             nodes,
-                                             nlist,
-                                             nlist_filtered_ids,
-                                             bond_force,
-                                             volume,
-                                             bond_damage,
-                                             displacements,
-                                             bond_norm)
+        @timeit to "local dist" force_densities=distribute_forces!(force_densities,
+                                                                   nodes,
+                                                                   nlist,
+                                                                   nlist_filtered_ids,
+                                                                   bond_force,
+                                                                   volume,
+                                                                   bond_damage,
+                                                                   displacements,
+                                                                   bond_norm)
     else
-        distribute_forces!(force_densities, nodes, nlist, bond_force, volume, bond_damage)
+        @timeit to "local dist" distribute_forces!(force_densities, nodes, nlist,
+                                                   bond_force, volume, bond_damage)
     end
 end
 end

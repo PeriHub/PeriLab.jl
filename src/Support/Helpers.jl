@@ -348,21 +348,14 @@ function find_point_in_element(el_topology, near_points, coor, fu, coupling_dict
     return coupling_dict
 end
 
-get_mapping_2d()::NTuple{3,Tuple{Int64,Int64}} = ((1, 1), (2, 2), (2, 1))
-get_mapping_3d()::NTuple{6,
-                         Tuple{Int64,Int64}} = ((1, 1), (2, 2), (3, 3), (2, 3), (1, 3),
-                                                (1, 2))
-
-function get_mapping(dof::Int64)::Union{NTuple{3,Tuple{Int64,Int64}},
-                                        NTuple{6,Tuple{Int64,Int64}},
-                                        Tuple{}}
+function get_mapping(dof::Int64)::Matrix{Int64}
     if dof == 2
-        return get_mapping_2d()
+        return [1 1; 2 2; 2 1]
     elseif dof == 3
-        return get_mapping_3d()
+        return [1 1; 2 2; 3 3; 2 3; 1 3; 1 2]
     else
         @error "$dof is no valid mapping option."
-        return ()
+        return Matrix{Int64}(undef, 0, 0)
     end
 end
 
@@ -377,17 +370,19 @@ function matrix_diff!(s3::AbstractArray{Float64,3}, nodes::AbstractArray{Int64},
     end
 end
 
-function fast_mul!(stress_NP1::AbstractMatrix{Float64},
-                   C::AbstractArray{Float64},
-                   strain_increment::AbstractMatrix{Float64},
-                   stress_N::AbstractMatrix{Float64},
-                   mapping::NTuple{N,Tuple{Int,Int}}) where {N}
-    @inbounds @fastmath for m in 1:N
-        i, j = mapping[m]
+@inline function fast_mul!(stress_NP1::AbstractMatrix{Float64},
+                           C::AbstractMatrix{Float64},
+                           strain_increment::AbstractMatrix{Float64},
+                           stress_N::AbstractMatrix{Float64},
+                           mapping::Matrix{Int64})
+    @inbounds @fastmath for m in axes(mapping, 1)
+        i = mapping[m, 1]
+        j = mapping[m, 2]
         sNP1 = stress_N[i, j]
 
-        for k in 1:N
-            ki, kj = mapping[k]
+        for k in axes(mapping, 1)
+            ki = mapping[k, 1]
+            kj = mapping[k, 2]
             sNP1 += C[m, k] * strain_increment[ki, kj]
         end
 
@@ -397,8 +392,6 @@ function fast_mul!(stress_NP1::AbstractMatrix{Float64},
             stress_NP1[j, i] = sNP1
         end
     end
-
-    return stress_NP1
 end
 
 function mat_mul!(C::AbstractMatrix{T}, A::AbstractMatrix{T},
