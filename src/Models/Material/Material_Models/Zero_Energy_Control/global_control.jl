@@ -121,12 +121,13 @@ function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
-            @views bond_force_computation!(zStiff[iID, :, :], df, bond_force[iID][nID][:])
+            @views bond_force_computation_2d!(zStiff[iID, :, :], df,
+                                              bond_force[iID][nID])
         end
     end
 end
-function bond_force_computation!(zStiff::AbstractArray{Float64}, df::MVector{2},
-                                 bond_force::T) where {T<:Union{SubArray,Vector{Float64}}}
+function bond_force_computation_2d!(zStiff::AbstractArray{Float64}, df::MVector{2},
+                                    bond_force::Vector{Float64})
     @inbounds @fastmath @views for m in axes(zStiff, 1)
         bf_i = zero(eltype(zStiff))
         @inbounds @fastmath @views for n in axes(zStiff, 2)
@@ -135,8 +136,8 @@ function bond_force_computation!(zStiff::AbstractArray{Float64}, df::MVector{2},
         bond_force[m] += bf_i
     end
 end
-function bond_force_computation!(zStiff::AbstractArray{Float64}, df::MVector{3},
-                                 bond_force::T) where {T<:Union{SubArray,Vector{Float64}}}
+function bond_force_computation_3d!(zStiff::AbstractArray{Float64}, df::MVector{3},
+                                    bond_force::Vector{Float64})
     @inbounds @fastmath @views for m in axes(zStiff, 1)
         bf_i = zero(eltype(zStiff))
         @inbounds @fastmath @views for n in axes(zStiff, 2)
@@ -164,7 +165,8 @@ function get_zero_energy_mode_force_3d!(nodes::AbstractVector{Int64},
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
-            bond_force_computation!(zStiff[iID, :, :], df, bond_force[iID][nID])
+            @views bond_force_computation_3d!(zStiff[iID, :, :], df,
+                                              bond_force[iID][nID])
         end
     end
 end
