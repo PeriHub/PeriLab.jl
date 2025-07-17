@@ -227,6 +227,7 @@ function main(filename::String;
               debug::Bool = false,
               silent::Bool = false,
               reload::Bool = false,)
+    reset_timer!(to)
     @timeit to "PeriLab" begin
         if !MPI.Initialized()
             MPI.Init()
@@ -247,7 +248,7 @@ function main(filename::String;
             Logging_module.init_logging(filename, debug, silent, rank, size)
             if rank == 0
                 if !silent
-                    print_banner(size>1)
+                    print_banner(size > 1)
                 end
                 @info "\n PeriLab version: $PERILAB_VERSION\n Copyright: Dr.-Ing. Christian Willberg, M.Sc. Jan-Timo Hesse\n Contact: christian.willberg@dlr.de, jan-timo.hesse@dlr.de\n GitHub: https://github.com/PeriHub/PeriLab.jl\n DOI: 10.1016/j.softx.2024.101700\n License: BSD-3-Clause\n ---------------------------------------------------------------\n"
                 @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
