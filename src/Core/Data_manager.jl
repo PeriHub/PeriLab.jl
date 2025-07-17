@@ -31,8 +31,20 @@ mutable struct NP1_to_N{T}
     NP1::String
     value::T
 end
-
+# concept
+struct Model_basics
+    nnodes::Int64
+    num_controller::Int64
+    num_responder::Int64
+    num_elements::Int64
+    nnsets::Int64
+    dof::Int64
+end
+mutable struct ModelManager
+    basics::Model_basics
+end
 fieldmanager = FieldManager(Dict{String,DataField}())
+modelmanager = ModelManager(Model_basics(0, 0, 0, 0, 0, 0))
 #####
 
 include("./Data_manager/data_manager_contact.jl")
@@ -107,16 +119,18 @@ export set_element_rotation
 Initialize all parameter in the datamanager and sets them to the default values.
 """
 function initialize_data()
-    data["current_time"] = 0.0
-
-    data["step"] = 0
-    data["max_step"] = 0
     data["nnodes"] = 0
     data["num_controller"] = 0
     data["num_responder"] = 0
     data["num_elements"] = 0
     data["nnsets"] = 0
     data["dof"] = 0
+
+    data["current_time"] = 0.0
+
+    data["step"] = 0
+    data["max_step"] = 0
+
     data["fem_option"] = false
     data["block_name_list"] = Vector{String}()
     data["block_id_list"] = Vector{Int64}()
@@ -185,6 +199,13 @@ function initialize_data()
     fields[Bool] = Dict()
 end
 ###################################
+
+function create_struct_model_basics()
+    modelmanager(Model_basics(data["num_controller"] + data["num_responder"],
+                              data["num_controller"],
+                              data["num_responder"], data["num_elements"], data["nnsets"],
+                              data["dof"]))
+end
 
 """
     add_active_model(key::String, module_name::Module)
