@@ -8,8 +8,13 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
-## [1.4.6] - 2025-07-15
+## [1.4.7] - 2025-07-17
 
+### Fixed
+
+- Bond rotation for heat transfer
+
+## [1.4.6] - 2025-07-15
 
 ### Added
 

@@ -164,25 +164,23 @@ function calculate_specific_volume!(specific_volume::Vector{Int64},
     if dof == 3
         directions = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
     end
+    rot_directions = copy(directions)
     directions_free = fill(true, dof*2)
     for iID in nodes
-        if !specific_volume_check[iID]
-            continue
-        end
+        !specific_volume_check[iID] && continue
+
         if !isnothing(rotation_tensor)
-            directions = [rotation_tensor[iID, :, :] * direction
-                          for direction in directions]
+            rot_directions = [rotation_tensor[iID, :, :] * direction
+                              for direction in directions]
         end
         directions_free .= true
         for (jID, neighborID) in enumerate(nlist[iID])
-            if !active[neighborID]
-                continue
-            end
-            for (kID, direction) in enumerate(directions)
-                if !directions_free[kID]
-                    continue
-                end
-                if dot(bond_norm[iID][jID], direction) > 0.5
+            !active[neighborID] && continue
+
+            for (kID, direction) in enumerate(rot_directions)
+                !directions_free[kID] && continue
+
+                if dot(bond_norm[iID][jID], direction) >= 0.5
                     directions_free[kID] = false
                     break
                 end
@@ -195,7 +193,6 @@ function calculate_specific_volume!(specific_volume::Vector{Int64},
         specific_volume[iID] = sum(directions_free)
     end
 end
-
 """
     fields_for_local_synchronization(datamanager::Module, model::String)
 
