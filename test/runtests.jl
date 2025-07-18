@@ -209,6 +209,9 @@ MPI.Init()
         @testset "test_surface_correction" begin
             include("fullscale_tests/test_Surface_correction/test_Surface_correction.jl")
         end
+        @testset "test_global_variables" begin
+            include("fullscale_tests/test_global_variables/test_global_variables.jl")
+        end
         @testset "test_multistep" begin
             include("fullscale_tests/test_multistep/test_multistep.jl")
         end

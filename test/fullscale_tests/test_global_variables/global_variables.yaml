@@ -1,0 +1,102 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1 2 7 8 13 14
+      Node Set 2: 3 4 9 10 15 16
+      Node Set 3: 5 6 11 12 17 18
+    Type: "Text File"
+    Input Mesh File: "test_mesh.txt"
+  Models:
+    Material Models:
+      Mat_1:
+        Material Model: "PD Solid Elastic"
+        Young's Modulus: 70000.0
+        Poisson's Ratio: 0.3
+  Blocks:
+    block_1:
+      Block ID: 1
+      Density: 1.95e-06
+      Horizon: 2.1
+      Material Model: Mat_1
+    block_2:
+      Block ID: 2
+      Density: 1.95e-06
+      Horizon: 2.1
+      Material Model: Mat_1
+    block_3:
+      Block ID: 3
+      Density: 1.95e-06
+      Horizon: 2.1
+      Material Model: Mat_1
+  Boundary Conditions:
+    BC_1:
+      Variable: Displacements
+      Node Set: Node Set 1
+      Coordinate: x
+      Value: 0
+      Type: Dirichlet
+    BC_2:
+      Variable: Displacements
+      Node Set: Node Set 3
+      Coordinate: x
+      Value: 0.1*t
+      Type: Dirichlet
+  Solver:
+    Initial Time: 0.0
+    Final Time: 5.0e-5
+    Verlet:
+      Fixed dt: 5.0e-6
+      Safety Factor: 1.0
+  Compute Class Parameters:
+    Block_Data_Sum:
+      Compute Class: Block_Data
+      Calculation Type: Sum
+      Block: block_1
+      Variable: Displacements
+    Block_Data_Average:
+      Compute Class: Block_Data
+      Calculation Type: Average
+      Block: block_2
+      Variable: Displacements
+    Node_Set_Data_Maximum:
+      Compute Class: Node_Set_Data
+      Calculation Type: Maximum
+      Node Set: Node Set 1
+      Variable: Displacements
+    Node_Set_Data_Minimum:
+      Compute Class: Node_Set_Data
+      Calculation Type: Minimum
+      Node Set: Node Set 2
+      Variable: Displacements
+    Nearest_Point_Data:
+      Compute Class: Nearest_Point_Data
+      X: 0.4
+      Y: 0.5
+      Z: 0
+      Variable: Displacements
+  Outputs:
+    Output1:
+      Output Filename: "global_variables"
+      Output File Type: Exodus
+      Output Frequency: 1
+      Output Variables:
+        Displacements: True
+        Block_Data_Sum: True
+        Block_Data_Average: True
+        Node_Set_Data_Maximum: True
+        Node_Set_Data_Minimum: True
+        Nearest_Point_Data: True
+    Output2:
+      Output Filename: "global_variables"
+      Output File Type: CSV
+      Output Frequency: 1
+      Output Variables:
+        Block_Data_Sum: True
+        Block_Data_Average: True
+        Node_Set_Data_Maximum: True
+        Node_Set_Data_Minimum: True
+        Nearest_Point_Data: True

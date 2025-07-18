@@ -7,6 +7,8 @@ using Test
 using MPI
 using JSON3
 using Logging
+using CSV
+using DataFrames
 using PeriLab
 
 export run_perilab
@@ -15,7 +17,7 @@ export run_mpi_test
 export push_test!
 
 function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
-                     reload = false)
+                     reload = false, compare_csv = false)
     if cores == 1
         PeriLab.main(filename * ".yaml"; silent = silent, reload = reload)
     else
@@ -50,6 +52,26 @@ function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
         end
     else
         rm(filename * ".e")
+    end
+    if compare_csv
+        csv_same = true
+        results_csv = CSV.read(open(filename * ".csv"), DataFrame)
+        reference_csv = CSV.read(open("./Reference/" * filename * ".csv"), DataFrame)
+        for i in 1:size(reference_csv)[2]
+            @test results_csv[:, i] ≈ reference_csv[:, i] #atol=1e-9
+            if !(results_csv[:, i] ≈ reference_csv[:, i])
+                csv_same = false
+                @info results_csv[:, i]
+                @info reference_csv[:, i]
+            end
+        end
+        if csv_same
+            rm(filename * ".csv")
+        end
+    else
+        if isfile(filename * ".csv")
+            rm(filename * ".csv")
+        end
     end
 end
 
