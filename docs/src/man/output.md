@@ -4,7 +4,7 @@
 Currently `Exodus` and `CSV` are supported as output types.
 
 !!! warning "CSV File"
-    Only variables that are defined as global variables are supported.
+    Only variables that are defined as global variables are supported, see Compute Class Parameters for more information.
 
 !!! tip "Flush File"
     By default the output files will be flushed after each write-step, meaning you can look at the results while the simulation is still running.
@@ -61,3 +61,27 @@ Below you can find a list of all current Output Variables and the necessary Prer
 
 !!! info "Own Variables"
     All variables that are defined as global variables are supported as well as those defined in the mesh input f.e.: `Angles`
+
+## Compute Class Parameters
+
+In order to compute output values for a defined nodesets or blocks, especially for the CSV output format, you can use the following parameters:
+
+```yaml
+Compute Class Parameters:
+    Block_Forces:
+        Compute Class: Block_Data
+        Calculation Type: Sum
+        Block: block_name
+        Variable: Forces
+    NodeSet_Forces:
+        Compute Class: Node_Set_Data
+        Calculation Type: Average
+        Node Set: nodeset_name
+        Variable: Forces
+```
+Available compute classes are "Block_Data" or "Node_Set_Data".
+
+Supported calculation types are "Sum", "Average", "Maximum", and "Minimum".
+
+!!! tip "Referencing the compute class"
+    The created variable can be used for CSV as well as Exodus Outputs by referencing it's name in the Output Variable list.
