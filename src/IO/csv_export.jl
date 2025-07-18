@@ -28,7 +28,7 @@ function create_result_file(filename::String, outputs::Dict)
     for key in keys(sort!(OrderedDict(outputs["Fields"])))
         header = string(header, key, ",")
     end
-    write(csv_file, header * "\n")
+    write(csv_file, header[1:(end - 1)] * "\n")
 
     return Dict("filename" => filename, "file" => csv_file, "type" => "CSV")
 end
@@ -47,6 +47,6 @@ function write_global_results_in_csv(csv_file::IOStream, time::Float64, global_v
     for value in global_values
         value_string = string(value_string, value, ",")
     end
-    value_string = value_string * "\n"
+    value_string = value_string[1:(end - 1)] * "\n"
     write(csv_file, value_string)
 end

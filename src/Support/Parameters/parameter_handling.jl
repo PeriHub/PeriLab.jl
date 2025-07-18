@@ -152,17 +152,31 @@ global expected_structure = Dict("PeriLab" => [
                                                                                            false
                                                                                        ],
                                                                                        "Node Set" => [
-                                                                                           Union{Int64,
-                                                                                                 String},
+                                                                                           String,
                                                                                            false
                                                                                        ],
                                                                                        "Calculation Type" => [
                                                                                            String,
-                                                                                           true
+                                                                                           false
                                                                                        ],
                                                                                        "Compute Class" => [
                                                                                            String,
                                                                                            true
+                                                                                       ],
+                                                                                       "X" => [
+                                                                                           Union{Float64,
+                                                                                                 Int64},
+                                                                                           false
+                                                                                       ],
+                                                                                       "Y" => [
+                                                                                           Union{Float64,
+                                                                                                 Int64},
+                                                                                           false
+                                                                                       ],
+                                                                                       "Z" => [
+                                                                                           Union{Float64,
+                                                                                                 Int64},
+                                                                                           false
                                                                                        ],
                                                                                        "Variable" => [
                                                                                            String,

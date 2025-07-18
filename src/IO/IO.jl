@@ -33,6 +33,7 @@ using .Helpers: progress_bar
 
 using .Parameter_Handling
 using OrderedCollections: OrderedDict
+using NearestNeighbors: KDTree, nn
 export initialize_data
 export init_write_results
 export get_results_mapping
@@ -239,6 +240,26 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                     global_var = true
                     if computes[key]["Compute Class"] == "Node_Set_Data"
                         nodeset = computes[key]["Node Set"]
+                    elseif computes[key]["Compute Class"] == "Nearest_Point_Data"
+                        #find neares_point_id and reduce over cores
+
+                        coor = datamanager.get_field("Coordinates")
+                        point = [computes[key]["X"], computes[key]["Y"], computes[key]["Z"]]
+                        tree = KDTree(coor'; leafsize = 2)
+                        nearest_point_id, nearest_point_distance = nn(tree, point)
+                        if datamanager.get_max_rank() > 1
+                            min_global_distance = nearest_point_distance
+                            find_and_set_core_value_min(datamanager.get_comm(),
+                                                        min_global_distance)
+                            if min_global_distance != nearest_point_distance
+                                #Point on other core is closer to point
+                                nodeset = []
+                            else
+                                nodeset = [nearest_point_id]
+                            end
+                        else
+                            nodeset = [nearest_point_id]
+                        end
                     end
                 end
             end
@@ -674,7 +695,8 @@ function get_global_values(output::Dict, datamanager::Module)
     block_name_list = datamanager.get_block_name_list()
     for varname in keys(sort!(OrderedDict(output)))
         compute_class = output[varname]["compute_params"]["Compute Class"]
-        calculation_type = output[varname]["compute_params"]["Calculation Type"]
+        calculation_type = get(output[varname]["compute_params"], "Calculation Type",
+                               "Single_Point")
         fieldname = output[varname]["compute_params"]["Variable"]
         field_type = Float64
         if datamanager.has_key(fieldname * "NP1")
@@ -711,6 +733,11 @@ function get_global_values(output::Dict, datamanager::Module)
             global_value,
             nnodes = calculate_nodelist(datamanager, fieldname, dof,
                                         calculation_type, nsets[node_set])
+        elseif compute_class == "Nearest_Point_Data"
+            neares_point_id = output[varname]["nodeset"]
+            global_value,
+            nnodes = calculate_nodelist(datamanager, fieldname, dof,
+                                        calculation_type, neares_point_id)
         end
         if datamanager.get_max_rank() > 1
             global_value = find_global_core_value!(global_value, calculation_type, nnodes,
@@ -748,6 +775,8 @@ function find_global_core_value!(global_value::T,
         return find_and_set_core_value_min(comm, global_value)
     elseif calculation_type == "Average"
         return find_and_set_core_value_avg(comm, global_value, nnodes)
+    elseif calculation_type == "Single_Point"
+        return find_and_set_core_value_max(comm, global_value) #TODO: Check if this works
     else
         @warn "Unknown calculation type $calculation_type"
         return 0.0
