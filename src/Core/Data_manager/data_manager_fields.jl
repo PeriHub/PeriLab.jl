@@ -290,7 +290,7 @@ The field with the given `name` and specified characteristics.
 """
 function create_field(name::String,
                       vartype::Type{T},
-                      bond_or_node::String,
+                      field_type::String,
                       dof::Q,
                       value::T,
                       VectorOrMatrix::String = "Vector") where {T<:Union{Int64,Float64,
@@ -304,7 +304,7 @@ function create_field(name::String,
         return _get_field(name)
     end
 
-    if bond_or_node == "Node_Field"
+    if field_type == "Node_Field"
         if dof == 1
             fieldmanager.fields[name] = DataField(name, fill(value, data["nnodes"]),
                                                   VectorOrMatrix)
@@ -321,7 +321,7 @@ function create_field(name::String,
                 # fields[vartype][name] = [fill(value,dof) for j=1:data["nnodes"]]
             end
         end
-    elseif bond_or_node == "Bond_Field"
+    elseif field_type == "Bond_Field"
         nBonds = _get_field("Number of Neighbors")
         if dof == 1
             fieldmanager.fields[name] = DataField(name, [fill(value, n) for n in nBonds],
@@ -340,7 +340,7 @@ function create_field(name::String,
                                                       VectorOrMatrix)
             end
         end
-    elseif bond_or_node == "Element_Field"
+    elseif field_type == "Element_Field"
         nElements = _get_field("Number of Element Neighbors")
         if dof == 1
             fieldmanager.fields[name] = DataField(name, [fill(value, n) for n in nElements],
@@ -350,12 +350,12 @@ function create_field(name::String,
                                                   [fill(value, (n, dof)) for n in nElements],
                                                   VectorOrMatrix)
         end
-    elseif bond_or_node == "Free_Size_Field"
+    elseif field_type == "Free_Size_Field"
         fieldmanager.fields[name] = DataField(name, Array{vartype}(zeros(dof)),
                                               "Free_Size_Field")
     end
 
-    data["field_types"][name] = vartype
+    data["field_types"][name] = Dict("type" => field_type, "vartype" => vartype)
 
     data["field_names"] = Vector{String}(collect(keys(data["field_types"])))
     return _get_field(name)

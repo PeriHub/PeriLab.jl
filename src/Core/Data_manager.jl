@@ -357,9 +357,13 @@ Get the type of a field
 # Returns
 - `get_field_type` (string): returns the type of a field
 """
-function get_field_type(name::String)
+function get_field_type(name::String, vartype::Bool = true)
     if name in data["field_names"]
-        return data["field_types"][name]
+        if vartype
+            return data["field_types"][name]["vartype"]
+        else
+            return data["field_types"][name]["type"]
+        end
     end
     @error "Field ''" * name * "'' does not exist."
     return nothing

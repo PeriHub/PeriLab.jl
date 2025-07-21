@@ -228,6 +228,12 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             global_var = false
             nodeset = []
 
+            field_type = datamanager.get_field_type(fieldname[1]*fieldname[2], false)
+
+            if !(field_type in ["Node_Field", "Element_Field"])
+                @error "Fieldtype $field_type of field $(fieldname[1]) is not supported."
+            end
+
             for key in keys(computes)
                 if fieldname[1] == key
                     fieldname[1] = computes[key]["Variable"]
