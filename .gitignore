@@ -13,6 +13,7 @@ Manifest.toml
 *.out
 *.sbatch
 !**/Reference/*.e*
+!**/Reference/*.csv*
 LocalPreferences.toml
 
 test/tryout/

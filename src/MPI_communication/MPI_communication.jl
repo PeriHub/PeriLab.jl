@@ -477,12 +477,7 @@ Find and set core value avg
 function find_and_set_core_value_avg(comm::MPI.Comm,
                                      value::T,
                                      nnodes::Int64) where {T<:Union{Float64,Int64}}
-    average = zero(Float64)
-    # must be Float to avoid that at some cores it is Int and at some it is a Float
-    if nnodes != 0
-        average = value / nnodes
-    end
-    return MPI.Allreduce(average, MPI.SUM, comm) / MPI.Comm_size(comm)
+    return MPI.Allreduce(value, MPI.SUM, comm) / MPI.Allreduce(nnodes, MPI.SUM, comm)
 end
 
 """

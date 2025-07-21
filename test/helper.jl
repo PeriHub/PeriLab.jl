@@ -54,24 +54,12 @@ function run_perilab(filename, cores, compare, folder_name = ""; silent = true,
         rm(filename * ".e")
     end
     if compare_csv
-        csv_same = true
         results_csv = CSV.read(open(filename * ".csv"), DataFrame)
         reference_csv = CSV.read(open("./Reference/" * filename * ".csv"), DataFrame)
         for i in 1:size(reference_csv)[2]
-            @test results_csv[:, i] ≈ reference_csv[:, i] #atol=1e-9
-            if !(results_csv[:, i] ≈ reference_csv[:, i])
-                csv_same = false
-                @info results_csv[:, i]
-                @info reference_csv[:, i]
-            end
+            @test results_csv[:, i] ≈ reference_csv[:, i] atol=1e-15
         end
-        if csv_same
-            rm(filename * ".csv")
-        end
-    else
-        if isfile(filename * ".csv")
-            rm(filename * ".csv")
-        end
+        rm(filename * ".csv")
     end
 end
 

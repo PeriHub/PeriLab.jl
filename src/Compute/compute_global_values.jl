@@ -58,7 +58,11 @@ function calculate_nodelist(datamanager::Module,
         if length(local_nodes) == 0
             value = field_type(0)
         else
-            value = global_value_avg(field, dof, local_nodes)
+            if datamanager.get_mpi_active()
+                value = global_value_sum(field, dof, local_nodes)
+            else
+                value = global_value_avg(field, dof, local_nodes)
+            end
         end
     elseif calculation_type == "Single_Point"
         if length(local_nodes) == 0
