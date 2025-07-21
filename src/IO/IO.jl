@@ -247,7 +247,7 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                         point = [computes[key]["X"], computes[key]["Y"], computes[key]["Z"]]
                         tree = KDTree(coor'; leafsize = 2)
                         nearest_point_id, nearest_point_distance = nn(tree, point)
-                        if datamanager.get_max_rank() > 1
+                        if datamanager.get_mpi_active()
                             min_global_distance = nearest_point_distance
                             find_and_set_core_value_min(datamanager.get_comm(),
                                                         min_global_distance)
@@ -469,7 +469,7 @@ function init_write_results(params::Dict,
     block_name_list = datamanager.get_block_name_list()
     block_id_list = datamanager.get_block_id_list()
 
-    if datamanager.get_max_rank() > 1
+    if datamanager.get_mpi_active()
         all_block_name_list = gather_values(comm, block_name_list)
         all_block_id_list = gather_values(comm, block_id_list)
         if datamanager.get_rank() == 0
@@ -509,7 +509,7 @@ function init_write_results(params::Dict,
         rank = datamanager.get_rank()
         max_rank = datamanager.get_max_rank()
         if ".e" == filename[(end - 1):end]
-            if datamanager.get_max_rank() > 1
+            if datamanager.get_mpi_active()
                 filename = filename *
                            "." *
                            string(max_rank) *
@@ -739,7 +739,7 @@ function get_global_values(output::Dict, datamanager::Module)
             nnodes = calculate_nodelist(datamanager, fieldname, dof,
                                         calculation_type, neares_point_id)
         end
-        if datamanager.get_max_rank() > 1
+        if datamanager.get_mpi_active()
             global_value = find_global_core_value!(global_value, calculation_type, nnodes,
                                                    datamanager)
         end
@@ -963,7 +963,7 @@ function show_mpi_summary(log_file::String,
     block_Id = datamanager.get_field("Block_Id")
     block_name_list = datamanager.get_block_name_list()
     block_id_list = datamanager.get_block_id_list()
-    if datamanager.get_max_rank() > 1
+    if datamanager.get_mpi_active()
         all_block_name_list = gather_values(comm, block_name_list)
         all_block_id_list = gather_values(comm, block_id_list)
         if datamanager.get_rank() == 0

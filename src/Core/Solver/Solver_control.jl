@@ -67,7 +67,7 @@ function init(params::Dict,
     block_nodes = get_block_nodes(block_ids, nnodes)
     block_name_list,
     block_id_list = get_block_names_and_ids(params, block_ids,
-                                            datamanager.get_max_rank() > 1)
+                                            datamanager.get_mpi_active())
     datamanager.set_block_name_list(block_name_list)
     datamanager.set_block_id_list(block_id_list)
     density = datamanager.create_constant_node_field("Density", Float64, 1)

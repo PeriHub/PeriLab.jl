@@ -155,6 +155,7 @@ function initialize_data()
     data["rank"] = 0
     data["cancel"] = false
     data["max_rank"] = 0
+    data["mpi_active"] = false
     data["silent"] = false
     data["verbose"] = false
     data["rotation"] = false
@@ -613,6 +614,22 @@ function get_max_rank()::Int64
 end
 
 """
+    get_mpi_active()
+
+This function returns if MPI is active.
+
+# Returns
+- `mpi_active`::Bool
+
+# Example
+```julia
+rank = get_mpi_active()
+"""
+function get_mpi_active()::Bool
+    return data["mpi_active"]
+end
+
+"""
     get_cancel()
 
 This function returns the `cancel` flag.
@@ -1002,6 +1019,9 @@ Sets the maximum rank globally.
 - `value::Int64`: The value to set as the maximum rank.
 """
 function set_max_rank(value::Int64)
+    if value > 1
+        data["mpi_active"] = true
+    end
     data["max_rank"] = value
 end
 
