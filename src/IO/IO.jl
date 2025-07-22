@@ -265,7 +265,11 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             end
             # end
 
-            field_type = datamanager.get_field_type(fieldname[1]*fieldname[2], false)
+            if fieldname[2] == "Constant"
+                field_type = datamanager.get_field_type(fieldname[1], false)
+            else
+                field_type = datamanager.get_field_type(fieldname[1]*fieldname[2], false)
+            end
 
             if !(field_type in ["Node_Field", "Element_Field"])
                 @error "Fieldtype $field_type of field $(fieldname[1]) is not supported."
