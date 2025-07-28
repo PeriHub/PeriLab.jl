@@ -106,7 +106,7 @@ PeriLab:
           Critical Value X: 2
           Critical Value Y: 0.5
         Critical Value: 10.0
-        Damage Model: Critical Energy
+        Damage Model: Critical Energy Anisotropic
     Material Models:
       Aluminium:
         Material Model: PD Solid Elastic
