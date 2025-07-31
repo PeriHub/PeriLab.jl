@@ -708,6 +708,7 @@ function get_global_values(output::Dict, datamanager::Module)
         calculation_type = get(output[varname]["compute_params"], "Calculation Type",
                                "Single_Point")
         fieldname = output[varname]["compute_params"]["Variable"]
+        extra_equation = get(output[varname]["compute_params"], "Equation", nothing)
         field_type = Float64
         if datamanager.has_key(fieldname * "NP1")
             field_type = datamanager.get_field_type(fieldname * "NP1")
@@ -752,6 +753,10 @@ function get_global_values(output::Dict, datamanager::Module)
         if datamanager.get_mpi_active()
             global_value = find_global_core_value!(global_value, calculation_type, nnodes,
                                                    datamanager)
+        end
+        if !isnothing(extra_equation)
+            global x = global_value
+            global_value = eval(Meta.parse(extra_equation))
         end
         append!(global_values, global_value)
     end

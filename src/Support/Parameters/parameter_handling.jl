@@ -181,6 +181,10 @@ global expected_structure = Dict("PeriLab" => [
                                                                                        "Variable" => [
                                                                                            String,
                                                                                            true
+                                                                                       ],
+                                                                                       "Equation" => [
+                                                                                           String,
+                                                                                           false
                                                                                        ]),
                                                                          true
                                                                      ]),
