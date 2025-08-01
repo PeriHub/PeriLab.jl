@@ -284,7 +284,8 @@ Funding and acknowledgment infos can be found under [acknowledgments](ACKNOWLEDG
 [Magdeburg-Stendal University of Applied Science](http://www.h2.de)                                                                  |
  <img src="https://www.cd.ovgu.de/cd_media/CD_OVGU/Downloads/Logo_jpg_png_svg_EPS_pdf/Logodownload/OVGU_Logo-download-1-p-1960.jpeg" height="200" title="Otto von Guericke University Magdeburg"> |
 |[Otto von Guericke University Magdeburg](http://www.ovgu.de)|
-
+ <img src="https://cdn.chimpify.net/5b34fb88a8587269268b457d/2018/07/SWMS_logo.png" height="200" title="SWMS Systemtechnik Ingenieurgesellschaft mbH"> |
+|[SWMS Systemtechnik Ingenieurgesellschaft mbH](https://www.swms.de)|
 
 ### Authors
 <p>
