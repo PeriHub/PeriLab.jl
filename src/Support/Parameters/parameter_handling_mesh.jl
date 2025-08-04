@@ -175,7 +175,9 @@ function get_node_sets(params::Dict, path::String, mesh_df::DataFrame)
             for id in 1:size(mesh_df, 1)
                 global x = mesh_df[!, "x"][id]
                 global y = mesh_df[!, "y"][id]
-                global z = mesh_df[!, "z"][id]
+                if occursin("z", nodesets[entry])
+                    global z = mesh_df[!, "z"][id]
+                end
                 try
                     if eval(Meta.parse(nodesets[entry]))
                         push!(nodes, id)
