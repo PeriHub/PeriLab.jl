@@ -412,6 +412,7 @@ function main(filename::String;
         TimerOutputs.complement!(to)
         @info to
     end
+    @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
     @info "PeriLab finished"
 end
 
