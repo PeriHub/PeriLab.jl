@@ -5,6 +5,7 @@
 
 using LinearAlgebra
 using LazyGrids
+using Rotations
 using CSV, DataFrames
 using ProgressBars
 using NearestNeighbors
@@ -99,7 +100,7 @@ function parseFile(path::String, callbacks::Dict{String,Function}, dataObject, s
             if occursin(";Z:", x)
                 command = "new_layer"
                 z = parse(Float64, split(x, ":")[2])
-                callbacks[command](z, dataObject)
+                callbacks[command](dataObject, z)
                 continue
             else
                 command = x[2:end]
@@ -147,6 +148,7 @@ function write_mesh(gcode_file, commands_dict,
     myPrinter["y"] = 0.0
     myPrinter["previous_x"] = 0.0
     myPrinter["previous_y"] = 0.0
+    myPrinter["previous_z"] = 0.0
     myPrinter["z"] = 0.0
     myPrinter["e"] = 0.0
     myPrinter["filamentUsage"] = 0.0 # store total filament usage (printed length of filament)
@@ -162,6 +164,8 @@ function write_mesh(gcode_file, commands_dict,
     myPrinter["pd_mesh"] = pd_mesh
     myPrinter["layers"] = []
     myPrinter["finsihed"] = false
+    myPrinter["layer_points"] = Matrix{Int}(undef, 0, 3)
+    myPrinter["up_vector"] = [0, 0, 1]
 
     # Setup a dictionary of callbacks for specified commands
     callbacks = Dict{String,Function}()
@@ -198,7 +202,8 @@ end
 function move(cmds, dataobject)
     movement(cmds, dataobject)
     dataobject["previous_extruding"] = false
-    dataobject["pd_mesh"]["remaining_distance"] = dataobject["pd_mesh"]["sampling"] / 2
+    new_layer(dataobject)
+    # dataobject["pd_mesh"]["remaining_distance"] = dataobject["pd_mesh"]["sampling"] / 2
 end
 
 function check_min_max(dataobject, str)
@@ -220,6 +225,7 @@ It is calculated by watching the `X`, `Y` and `Z` axes movement.
 function movement(cmds, dataobject)
     dataobject["previous_x"] = dataobject["x"]
     dataobject["previous_y"] = dataobject["y"]
+    dataobject["previous_z"] = dataobject["z"]
 
     dx = 0.0
     dy = 0.0
@@ -252,9 +258,9 @@ function movement(cmds, dataobject)
     z = findfirst((x -> lowercase(x.first) == "z"), cmds)
     if z !== nothing
         val = parse(Float64, cmds[z].second)
-        if val > dataobject["z"] && x !== nothing
-            new_layer(val, dataobject)
-        end
+        # if val > dataobject["z"] && x !== nothing
+        #     new_layer(dataobject)
+        # end
 
         if dataobject["positioning"] === "absolute"
             dz = val - dataobject["z"]
@@ -267,6 +273,9 @@ function movement(cmds, dataobject)
     f = findfirst((x -> lowercase(x.first) == "f"), cmds)
     if f !== nothing
         val = parse(Float64, cmds[f].second)
+        if val == 0 && x !== nothing
+            new_layer(dataobject)
+        end
 
         if dataobject["positioning"] === "absolute"
             dataobject["f"] = val
@@ -316,6 +325,9 @@ function extrude(cmds, dataobject)
         end
         dataobject["previous_x"] = dataobject["x"]
         dataobject["previous_y"] = dataobject["y"]
+        dataobject["previous_z"] = dataobject["z"]
+        dataobject["layer_points"] = [dataobject["layer_points"];
+                                      [dataobject["x"] dataobject["y"] dataobject["z"]]]
         dataobject["previous_extruding"] = true
     end
 end
@@ -343,22 +355,50 @@ function finished(dataobject)
     dataobject["relevant_component"] = false
     dataobject["finsihed"] = true
 end
-function new_layer(z, dataobject)
-    if dataobject["finsihed"]
+function new_layer(dataobject, z = -1)
+    if dataobject["finsihed"] | !dataobject["relevant_component"]
         return
     end
     pd_mesh = dataobject["pd_mesh"]
     pd_mesh["remaining_distance"] = pd_mesh["sampling"] / 2
+
+    if size(dataobject["layer_points"])[1] != 0
+        kdtree = KDTree(transpose(dataobject["layer_points"]))
+        point = [dataobject["x"], dataobject["y"], dataobject["z"]]
+        if z != -1
+            point = [dataobject["x"], dataobject["y"], z]
+        end
+        idx, dist = nn(kdtree, point)
+        point_diff = point - dataobject["layer_points"][idx, :]
+        dataobject["up_vector"] = point_diff ./ norm(point_diff)
+        dataobject["layer_points"] = Matrix{Int}(undef, 0, 3)
+    end
+end
+function tait_bryant_angles(orientation_vector, up_vector = [0, 0, 1])
+    forward = orientation_vector ./ norm(orientation_vector)
+    right = cross(up_vector, forward)
+    right /= norm(right)
+
+    up = cross(forward, right);
+    up /= norm(up)
+
+    R=hcat(forward, right, up)
+    angles = Rotations.params(RotXYZ(R))
+
+    return angles[1], angles[2], angles[3]
 end
 function write_pd_mesh(dataobject)
     pd_mesh = dataobject["pd_mesh"]
 
     pd_mesh["start_point"][1] = dataobject["previous_x"]
     pd_mesh["start_point"][2] = dataobject["previous_y"]
+    pd_mesh["start_point"][3] = dataobject["previous_z"]
     pd_mesh["point"][1] = dataobject["x"]
     pd_mesh["point"][2] = dataobject["y"]
+    pd_mesh["point"][3] = dataobject["z"]
     sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
     distance = norm(pd_mesh["point_diff"])
+    roll, pitch, yaw = tait_bryant_angles(pd_mesh["point_diff"], dataobject["up_vector"])
     v = distance / (dataobject["time"] - dataobject["previous_time"])
     normalize_in_place!(pd_mesh["dir"], pd_mesh["point_diff"])
     if distance + pd_mesh["remaining_distance"] < pd_mesh["sampling"]
@@ -370,11 +410,13 @@ function write_pd_mesh(dataobject)
 
     pd_mesh["start_point"][1] += pd_mesh["remaining_distance"] * pd_mesh["dir"][1]
     pd_mesh["start_point"][2] += pd_mesh["remaining_distance"] * pd_mesh["dir"][2]
+    pd_mesh["start_point"][3] += pd_mesh["remaining_distance"] * pd_mesh["dir"][3]
     sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
     distance = norm(pd_mesh["point_diff"])
 
     line_x = []
     line_y = []
+    line_z = []
 
     num_of_points_on_line::Int64 = floor(distance / pd_mesh["sampling"]) + 1
     pd_mesh["remaining_distance"] = mod(distance, pd_mesh["sampling"])
@@ -386,9 +428,13 @@ function write_pd_mesh(dataobject)
         line_y = collect(range(pd_mesh["start_point"][2],
                                pd_mesh["point"][2]-pd_mesh["remaining_distance"]*pd_mesh["dir"][2],
                                num_of_points_on_line))
+        line_z = collect(range(pd_mesh["start_point"][3],
+                               pd_mesh["point"][3]-pd_mesh["remaining_distance"]*pd_mesh["dir"][3],
+                               num_of_points_on_line))
     else
         line_x = [pd_mesh["start_point"][1]]
         line_y = [pd_mesh["start_point"][2]]
+        line_z = [pd_mesh["start_point"][3]]
     end
 
     if length(line_x) == 0
@@ -398,6 +444,7 @@ function write_pd_mesh(dataobject)
     for i in eachindex(line_x)
         pd_mesh["point"][1] = line_x[i]
         pd_mesh["point"][2] = line_y[i]
+        pd_mesh["point"][3] = line_z[i]
         sub_in_place!(pd_mesh["point_diff"], pd_mesh["point"], pd_mesh["start_point"])
         dist_along_line = distance_along_line(pd_mesh["dir"], pd_mesh["point_diff"])
 
@@ -406,7 +453,7 @@ function write_pd_mesh(dataobject)
         if !isnothing(pd_mesh["blocks"])
             global x = pd_mesh["point"][1]
             global y = pd_mesh["point"][2]
-            global z = dataobject["z"]
+            global z = pd_mesh["point"][3]
             for block in pd_mesh["blocks"]
                 if eval(Meta.parse(block[2]))
                     block_id = block[1]
@@ -417,13 +464,13 @@ function write_pd_mesh(dataobject)
               [
                   pd_mesh["point"][1],
                   pd_mesh["point"][2],
-                  dataobject["z"],
+                  pd_mesh["point"][3],
                   block_id,
                   pd_mesh["volume"],
                   time_to_activation + dataobject["previous_time"],
-                  0.0,
-                  0.0,
-                  180*atan(pd_mesh["dir"][2], pd_mesh["dir"][1])/pi
+                  roll * 180 / pi,
+                  pitch * 180 / pi,
+                  yaw * 180 / pi
               ])
     end
 end
@@ -457,10 +504,6 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     pd_mesh = Dict{String,Any}()
     pd_mesh["sampling"] = sampling
     pd_mesh["volume"] = sampling * width * width
-    pd_mesh["previous_time"] = 0
-    pd_mesh["previous_x"] = 0
-    pd_mesh["previous_y"] = 0
-    pd_mesh["previous_z"] = 0
     pd_mesh["previous_extruding"] = 0
     pd_mesh["width"] = width
     pd_mesh["remaining_distance"] = sampling / 2
@@ -475,10 +518,10 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
                                    Angles_x = Float64[],
                                    Angles_y = Float64[],
                                    Angles_z = Float64[])
-    pd_mesh["dir"] = zeros(2)
-    pd_mesh["start_point"] = zeros(2)
-    pd_mesh["point"] = zeros(2)
-    pd_mesh["point_diff"] = zeros(2)
+    pd_mesh["dir"] = zeros(3)
+    pd_mesh["start_point"] = zeros(3)
+    pd_mesh["point"] = zeros(3)
+    pd_mesh["point_diff"] = zeros(3)
 
     @info "Writing mesh"
     write_mesh(gcode_file, commands_dict, silent, pd_mesh)

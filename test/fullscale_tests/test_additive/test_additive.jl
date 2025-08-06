@@ -8,4 +8,5 @@ cd("fullscale_tests/" * folder_name) do
     run_perilab("additive_2d_heat", 1, true, folder_name)
     run_perilab("additive_3d", 1, true, folder_name)
     run_perilab("additive_gcode", 1, true, folder_name)
+    run_perilab("additive_curved", 1, true, folder_name)
 end

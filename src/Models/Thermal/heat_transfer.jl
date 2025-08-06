@@ -180,7 +180,7 @@ function calculate_specific_volume!(specific_volume::Vector{Int64},
             for (kID, direction) in enumerate(rot_directions)
                 !directions_free[kID] && continue
 
-                if dot(bond_norm[iID][jID], direction) >= 0.5
+                if dot(bond_norm[iID][jID], direction) >= 0.6
                     directions_free[kID] = false
                     break
                 end

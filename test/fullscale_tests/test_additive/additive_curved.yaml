@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+PeriLab:
+  Blocks:
+    All:
+      Additive Model: Additive Model 1
+      Block ID: 1
+      Density: 2.81e-09
+      Horizon: 1.0
+      Material Model: PLA
+      Specific Heat Capacity: 1800000000.0
+      Thermal Model: Thermal Test
+  Discretization:
+    Gcode:
+      Overwrite Mesh: true
+      Scale: 1.0
+      Width: 0.5
+      Sampling: 0.5
+    Input Mesh File: GuideCurve.gcode
+    Type: Gcode
+  Models:
+    Additive Models:
+      Additive Model 1:
+        Additive Model: Simple
+        Print Temperature: 653.15
+    Material Models:
+      PLA:
+        Material Model: "PD Solid Elastic"
+        Bulk Modulus: 130.0e9
+        Shear Modulus: 78.0e9
+    Thermal Models:
+      Thermal Test:
+        Environmental Temperature: 298.15
+        Heat Transfer Coefficient: 0.015
+        Print Bed Temperature: 298.15
+        Thermal Conductivity: 0.12
+        Thermal Conductivity Print Bed: 1.2
+        Thermal Model: Thermal Flow + Heat Transfer
+        Type: Bond based
+  Outputs:
+    Output1:
+      Number of Output Steps: 100
+      Output File Type: Exodus
+      Output Filename: additive_curved
+      Output Variables:
+        Temperature: True
+        Heat Flow: True
+        Active: True
+        Specific Volume: True
+  Solver:
+    Additive Models: true
+    Final Time: 100.0
+    Initial Time: 0.0
+    Material Models: false
+    Thermal Models: true
+    Verlet:
+      Fixed dt: 1.0
+      Safety Factor: 1.0
