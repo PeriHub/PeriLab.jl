@@ -8,6 +8,24 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.8] - 2025-08-07
+
+### Added
+
+- Curved Gcode interpretation
+- Nearest Point Data Compute Class
+- Global Variable fullscale test
+- Fieldtype check befor export #287
+
+### Fixed
+
+- Global Variable calculation for MPI #285
+- Nodeset evaluation for 2D
+
+### Changed
+
+- Moved the anisotropic damage calculation to a new material model
+
 ## [1.4.7] - 2025-07-17
 
 ### Fixed
