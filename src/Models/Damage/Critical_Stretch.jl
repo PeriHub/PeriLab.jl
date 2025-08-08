@@ -82,6 +82,8 @@ function compute_model(datamanager::Module,
             return datamanager
         end
     end
+    stretch::Float64 = 0.0
+    crit_stretch::Float64 = 0.0
     for iID in nodes
         @fastmath @inbounds @simd for jID in eachindex(nlist[iID])
             # stretch = (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) /
@@ -96,11 +98,7 @@ function compute_model(datamanager::Module,
                                                       block] : critical_stretch
             end
 
-            if tension
-                @views stretch = temp[iID][jID]
-            else
-                @views stretch = abs(temp[iID][jID])
-            end
+            stretch = tension ? temp[iID][jID] : abs(temp[iID][jID])
             if stretch > crit_stretch
                 bond_damageNP1[iID][jID] = 0.0
                 update_list[iID] = true
