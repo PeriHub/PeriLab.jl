@@ -285,12 +285,23 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
             if fieldname[1] == "State Variables"
                 nstatev = length(sizedatafield) == 1 ? 1 : sizedatafield[2]
                 for dof in 1:nstatev
-                    output_mapping[id]["Fields"]["State_Variable_" * string(dof)] = Dict("fieldname" => fieldname[1],
-                                                                                         "time" => fieldname[2],
-                                                                                         "global_var" => global_var,
-                                                                                         "dof" => dof,
-                                                                                         "type" => typeof(datafield[1,
-                                                                                                                    1]))
+                    if global_var
+                        output_mapping[id]["Fields"][compute_name * "_" * string(dof)] = Dict("fieldname" => fieldname[1],
+                                                                                              "time" => fieldname[2],
+                                                                                              "global_var" => global_var,
+                                                                                              "dof" => dof,
+                                                                                              "type" => typeof(datafield[1,
+                                                                                                                         1]),
+                                                                                              "compute_params" => compute_params,
+                                                                                              "nodeset" => nodeset)
+                    else
+                        output_mapping[id]["Fields"]["State_Variable_" * string(dof)] = Dict("fieldname" => fieldname[1],
+                                                                                             "time" => fieldname[2],
+                                                                                             "global_var" => global_var,
+                                                                                             "dof" => dof,
+                                                                                             "type" => typeof(datafield[1,
+                                                                                                                        1]))
+                    end
                 end
                 continue
             end

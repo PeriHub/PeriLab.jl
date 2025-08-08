@@ -63,9 +63,13 @@ function get_computes(params::Dict, variables::Vector{String})
     end
     for compute in keys(params["Compute Class Parameters"])
         if haskey(params["Compute Class Parameters"][compute], "Variable")
+            output = get_output_variables(params["Compute Class Parameters"][compute]["Variable"],
+                                          variables)
+            if isnothing(output)
+                continue
+            end
             computes[compute] = params["Compute Class Parameters"][compute]
-            computes[compute]["Variable"] = get_output_variables(computes[compute]["Variable"],
-                                                                 variables)
+            computes[compute]["Variable"] = output
         else
             @warn "No output variables are defined for " *
                   output *
