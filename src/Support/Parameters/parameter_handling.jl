@@ -760,7 +760,8 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                      ],
                                                                                                      "Environmental Temperature" => [
                                                                                                          Union{Float64,
-                                                                                                               Int64},
+                                                                                                               Int64,
+                                                                                                               String},
                                                                                                          false
                                                                                                      ],
                                                                                                      "Allow Surface Change" => [

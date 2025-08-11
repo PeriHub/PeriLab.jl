@@ -87,7 +87,12 @@ function compute_model(datamanager::Module,
     dof = datamanager.get_dof()
     volume = datamanager.get_field("Volume")
     kappa = thermal_parameter["Heat Transfer Coefficient"]
-    Tenv = thermal_parameter["Environmental Temperature"]
+    if thermal_parameter["Environmental Temperature"] isa String
+        global t = time
+        Tenv = eval(Meta.parse(thermal_parameter["Environmental Temperature"]))
+    else
+        Tenv = thermal_parameter["Environmental Temperature"]
+    end
     allow_surface_change = get(thermal_parameter, "Allow Surface Change", true)
     additive_enabled = haskey(datamanager.get_active_models(), "Additive Model")
     heat_flow = datamanager.get_field("Heat Flow", "NP1")
