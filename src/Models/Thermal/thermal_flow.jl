@@ -54,6 +54,11 @@ function init_model(datamanager::Module,
             @warn "Print bed temperature can only be defined for 3D problems. Its deactivated."
             delete!(thermal_parameter, "Print Bed Temperature")
         end
+        coordinates = datamanager.get_field("Coordinates")
+        print_bed_z_coord = get(thermal_parameter, "Print Bed Z Coordinate", 0.0)
+        if print_bed_z_coord >= minimum(coordinates[:, 3])
+            @error "The Print Bed Z Coordinate needs to be smaller than the minimum Z coordinate."
+        end
     end
     if !haskey(thermal_parameter, "Thermal Conductivity")
         @error "Thermal Conductivity not defined."
@@ -96,6 +101,7 @@ function compute_model(datamanager::Module,
     undeformed_bond_length = datamanager.get_field("Bond Length")
     volume = datamanager.get_field("Volume")
     temperature = datamanager.get_field("Temperature", "NP1")
+    active = datamanager.get_field("Active")
     lambda = thermal_parameter["Thermal Conductivity"]
     rotation::Bool = datamanager.get_element_rotation()
     rotation_tensor = nothing
@@ -106,15 +112,14 @@ function compute_model(datamanager::Module,
 
     t_bed = 0.0
     lambda_bed = 0.0
-    print_bed = nothing
 
     if haskey(thermal_parameter, "Print Bed Temperature")
         apply_print_bed = true
         t_bed = thermal_parameter["Print Bed Temperature"]
         lambda_bed = thermal_parameter["Thermal Conductivity Print Bed"]
-        # print_bed = datamanager.get_field("Print_bed")
     end
 
+    print_bed_z_coord = get(thermal_parameter, "Print Bed Z Coordinate", 0.0)
     lambda = thermal_parameter["Thermal Conductivity"]
 
     if thermal_parameter["Type"] == "Bond based"
@@ -129,9 +134,10 @@ function compute_model(datamanager::Module,
                                                        apply_print_bed,
                                                        t_bed,
                                                        lambda_bed,
-                                                       print_bed,
+                                                       print_bed_z_coord,
                                                        coordinates,
                                                        bond_damage,
+                                                       active,
                                                        undeformed_bond,
                                                        undeformed_bond_length,
                                                        horizon,
@@ -244,9 +250,10 @@ function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
                                             apply_print_bed::Bool,
                                             t_bed::Float64,
                                             lambda_bed::Float64,
-                                            print_bed,
+                                            print_bed_z_coord::Float64,
                                             coordinates::Matrix{Float64},
                                             bond_damage::Vector{Vector{Float64}},
+                                            active::Vector{Bool},
                                             undeformed_bond::Vector{Vector{Vector{Float64}}},
                                             undeformed_bond_length::Vector{Vector{Float64}},
                                             horizon::Vector{Float64},
@@ -255,43 +262,31 @@ function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
                                             heat_flow::Vector{Float64})
     kernel::Float64 = 0.0
     for iID in nodes
+        if !active[iID]
+            continue
+        end
         if dof == 2
             kernel = 6.0 / (pi * horizon[iID]^3)
         else
             kernel = 6.0 / (pi * horizon[iID]^4)
         end
-        # if apply_print_bed && print_bed[iID] != 0
-        #   temp_state = t_bed - temperature[iID]
-        #   # heat_flow[iID] -= lambda_bed * temp_state * 3 * print_bed[iID]
-        #   heat_flow[iID] -= lambda_bed * temp_state * 3 / print_bed[iID]
-        # end
+        if apply_print_bed
+            print_bed_distance = coordinates[iID, 3] - print_bed_z_coord
+            if print_bed_distance < horizon[iID]
+                temp_state = t_bed - temperature[iID]
+                print_bed_volume = (pi*print_bed_distance^2/3)*(3*horizon[iID]-print_bed_distance) #Partial spherical volume below print bed
+                heat_flow[iID] -= lambda_bed * kernel * temp_state * print_bed_volume /
+                                  print_bed_distance
+            end
+        end
         for (jID, neighborID) in enumerate(nlist[iID])
             if bond_damage[iID][jID] == 0
                 continue
             end
-            if apply_print_bed
-                # check if node is near print bed and if the mirror neighbor is in a higher layer
-                if coordinates[iID, 3] < horizon[iID] && undeformed_bond[iID][jID][3] > 0
-                    # check if mirrored neighbor would be lower z=0
-                    if coordinates[iID, 3] - undeformed_bond[iID][jID][3] <= 0
-                        temp_state = bond_damage[iID][jID] * (t_bed - temperature[iID])
-                        if coordinates[iID, 3] == 0.0
-                            heat_flow[iID] -= lambda_bed * kernel * temp_state /
-                                              undeformed_bond_length[iID][jID] *
-                                              volume[neighborID]
-                        else
-                            heat_flow[iID] -= lambda_bed * kernel * temp_state /
-                                              coordinates[iID, 3] *
-                                              volume[neighborID]
-                        end
-                    end
-                end
-            end
             temp_state = bond_damage[iID][jID] *
                          (temperature[neighborID] - temperature[iID])
-            heat_flow[iID] -= lambda * kernel * temp_state /
-                              undeformed_bond_length[iID][jID] *
-                              volume[neighborID]
+            heat_flow[iID] -= lambda * kernel * temp_state *
+                              volume[neighborID]/undeformed_bond_length[iID][jID]
         end
     end
     return heat_flow

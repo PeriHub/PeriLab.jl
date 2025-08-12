@@ -793,6 +793,11 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                                Int64},
                                                                                                          false
                                                                                                      ],
+                                                                                                     "Print Bed Z Coordinate" => [
+                                                                                                         Union{Float64,
+                                                                                                               Int64},
+                                                                                                         false
+                                                                                                     ],
                                                                                                      "File" => [
                                                                                                          String,
                                                                                                          false
