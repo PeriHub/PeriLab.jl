@@ -8,6 +8,18 @@ SPDX-License-Identifier: BSD-3-Clause
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.9] - 2025-08-13
+
+### Added
+
+- Print Bed Z Coordinate
+- Time dependent environmental temperature
+- Allow state variables for compute parameters
+
+### Fixed
+
+- Optimized Print Bed thermal flow
+
 ## [1.4.8] - 2025-08-07
 
 ### Added

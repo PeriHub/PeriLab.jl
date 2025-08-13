@@ -100,7 +100,7 @@ Welcome to `PeriLab`, a comprehensive platform for working with peridynamics, de
 
 - ⚡ **MPI**: PeriLab supports parallel computing using Message Passing Interface (MPI) technology to improve simulation performance on high-performance clusters.
 
-- 🔁 **Multistep simulations**: PeriLab supports the definition of multiple solver steps, allowing to combine different enviromental conditions in a single run.
+- 🔁 **Multistep simulations**: PeriLab supports the definition of multiple solver steps, allowing to combine different environmental conditions in a single run.
 
 - 📐 **Surface Correction**: PeriLab provides tools for surface correction, such as the `Volume correction` method.
 
