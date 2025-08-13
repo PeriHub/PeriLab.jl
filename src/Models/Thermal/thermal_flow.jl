@@ -53,11 +53,12 @@ function init_model(datamanager::Module,
         if dof < 3
             @warn "Print bed temperature can only be defined for 3D problems. Its deactivated."
             delete!(thermal_parameter, "Print Bed Temperature")
-        end
-        coordinates = datamanager.get_field("Coordinates")
-        print_bed_z_coord = get(thermal_parameter, "Print Bed Z Coordinate", 0.0)
-        if print_bed_z_coord >= minimum(coordinates[:, 3])
-            @error "The Print Bed Z Coordinate needs to be smaller than the minimum Z coordinate."
+        else
+            coordinates = datamanager.get_field("Coordinates")
+            print_bed_z_coord = get(thermal_parameter, "Print Bed Z Coordinate", 0.0)
+            if print_bed_z_coord >= minimum(coordinates[:, 3])
+                @error "The Print Bed Z Coordinate needs to be smaller than the minimum Z coordinate."
+            end
         end
     end
     if !haskey(thermal_parameter, "Thermal Conductivity")
