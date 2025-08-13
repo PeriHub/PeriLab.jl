@@ -39,6 +39,17 @@ using .Thermal_Flow
                      "Thermal Conductivity" => 100,
                      "Print Bed Temperature" => 2)
 
+    coordinates = test_data_manager.create_constant_node_field("Coordinates", Float64, 3)
+    coordinates[1, 1] = 0
+    coordinates[1, 2] = 0
+    coordinates[1, 3] = 1
+    coordinates[2, 1] = 1
+    coordinates[2, 2] = 0
+    coordinates[2, 3] = 1
+    coordinates[3, 1] = 1
+    coordinates[3, 2] = 1
+    coordinates[3, 3] = 1
+
     test_data_manager.set_dof(3)
     @test Thermal_Flow.init_model(test_data_manager, Vector{Int64}(1:3), parameter) ==
           test_data_manager
