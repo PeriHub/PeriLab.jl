@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM julia:latest as build
+FROM julia:latest AS build
 
 WORKDIR /env
 
@@ -18,7 +18,7 @@ RUN apt-get update \
 RUN julia --project=@. -e 'using PackageCompiler; create_app(".", "build", executables=["PeriLab" => "main", "get_examples" => "get_examples"], force=true)'
 
 #TODO: use alpine
-FROM debian:bookworm-slim as main
+FROM debian:trixie-slim AS main
 
 WORKDIR /app
 
@@ -38,8 +38,7 @@ ENV PATH="/app/PeriLab/bin:${PATH}"
 RUN apt-get update && apt-get install -yq openssh-server libxml2
 
 # Configure SSH server
-RUN mkdir /var/run/sshd \
-    && echo 'root:root' | chpasswd \
+RUN echo 'root:root' | chpasswd \
     && sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /etc/ssh/sshd_config \
     && sed -i'' -e's/^#PasswordAuthentication yes$/PasswordAuthentication yes/' /etc/ssh/sshd_config \
     && sed -i'' -e's/^#PermitEmptyPasswords no$/PermitEmptyPasswords yes/' /etc/ssh/sshd_config \
