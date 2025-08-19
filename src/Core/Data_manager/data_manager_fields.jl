@@ -63,9 +63,9 @@ function get_field_if_exists(name::String, time::String = "Constant")
     return has_key(name) ? get_field(name, time) : nothing
 end
 
-# Typstabile Getter
-function (f::DataField{T,N})() where {T,N}
-    return f.data::Array{T,N}
+# Typstabil Getter
+function (f::DataField{T})() where {T}
+    return f.structured
 end
 
 """
@@ -305,42 +305,15 @@ function create_field(name::String,
     end
 
     if field_type == "Node_Field"
-        if dof == 1
-            fieldmanager.fields[name] = DataField(name, fill(value, data["nnodes"]),
-                                                  VectorOrMatrix)
-        else
-            if VectorOrMatrix == "Matrix"
-                fieldmanager.fields[name] = DataField(name,
-                                                      fill(value,
-                                                           (data["nnodes"], dof, dof)),
-                                                      VectorOrMatrix)
-            else
-                fieldmanager.fields[name] = DataField(name,
-                                                      fill(value, data["nnodes"], dof),
-                                                      VectorOrMatrix)
-                # fields[vartype][name] = [fill(value,dof) for j=1:data["nnodes"]]
-            end
-        end
+        fieldmanager.fields[name] = NodeField(name, vartype, vartype(value), data["nnodes"],
+                                              dof, VectorOrMatrix == "Matrix")
     elseif field_type == "Bond_Field"
         nBonds = _get_field("Number of Neighbors")
-        if dof == 1
-            fieldmanager.fields[name] = DataField(name, [fill(value, n) for n in nBonds],
-                                                  VectorOrMatrix)
-        else
-            if VectorOrMatrix == "Matrix"
-                fieldmanager.fields[name] = DataField(name,
-                                                      [fill(value, (n, dof, dof))
-                                                       for n in nBonds],
-                                                      VectorOrMatrix)
-            else
-                # fields[vartype][name] = [fill(value, (n, dof)) for n in nBonds]
-                fieldmanager.fields[name] = DataField(name,
-                                                      [[fill(value, dof) for j in 1:n]
-                                                       for n in nBonds],
-                                                      VectorOrMatrix)
-            end
-        end
-    elseif field_type == "Element_Field"
+
+        fieldmanager.fields[name] = BondField(name, vartype, vartype(value), nBonds,
+                                              dof, VectorOrMatrix == "Matrix")
+
+    elseif field_type == "Element_Field" # tbd
         nElements = _get_field("Number of Element Neighbors")
         if dof == 1
             fieldmanager.fields[name] = DataField(name, [fill(value, n) for n in nElements],
@@ -351,20 +324,11 @@ function create_field(name::String,
                                                   VectorOrMatrix)
         end
     elseif field_type == "Free_Size_Field"
-        fieldmanager.fields[name] = DataField(name, Array{vartype}(zeros(dof)),
-                                              "Free_Size_Field")
+        fieldmanager.fields[name] = FreeSizeField(name, vartype, vartype(value), dof)
     end
 
     data["field_types"][name] = Dict("type" => field_type, "vartype" => vartype)
 
     data["field_names"] = Vector{String}(collect(keys(data["field_types"])))
     return _get_field(name)
-end
-
-struct Field{T,N}
-    data::Array{T,N}
-    name::String
-    vartype::Type{T}
-    bond_or_node::String
-    dof::Union{Int64,Tuple{Vararg{Int64}}}
 end

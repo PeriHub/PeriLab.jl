@@ -4,37 +4,25 @@
 
 module Data_manager
 using MPI
+using Parameters
 using DataStructures: OrderedDict
 include("../Support/Helpers.jl")
 using .Helpers: fill_in_place!
 
-##########################
-# Variables
-##########################
-
-const fields = Dict()
+#####
+include("./Data_manager/datamanager_data_types.jl")
 const data = Dict()
+fields = Dict()
 #####################
-
-struct DataField{T,N}
-    name::String
-    data::Array{T,N}
-    bond_or_node::String
-end
 
 struct FieldManager
     fields::Dict{String,DataField}
 end
-
 mutable struct NP1_to_N{T}
     N::String
     NP1::String
     value::T
 end
-
-fieldmanager = FieldManager(Dict{String,DataField}())
-#####
-
 include("./Data_manager/data_manager_contact.jl")
 include("./Data_manager/data_manager_FEM.jl")
 include("./Data_manager/data_manager_fields.jl")
@@ -42,6 +30,11 @@ include("./Data_manager/data_manager_MPI.jl")
 include("./Data_manager/data_manager_solving_process.jl")
 include("./Data_manager/data_manager_status_vars.jl")
 include("./Data_manager/data_manager_utilities.jl")
+##########################
+# Variables
+##########################
+
+fieldmanager = FieldManager(Dict{String,DataField}())
 export add_active_model
 export fem_active
 export initialize_data

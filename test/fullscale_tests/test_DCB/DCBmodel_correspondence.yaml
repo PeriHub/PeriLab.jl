@@ -105,7 +105,7 @@ PeriLab:
     Final Time: 0.0002
     Initial Time: 0.0
     Material Models: true
-    Damage Models: true
+    Damage Models: false
     Verlet:
       Safety Factor: 0.9
       Numerical Damping: 5.0e-06
