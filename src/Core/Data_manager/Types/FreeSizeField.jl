@@ -6,14 +6,10 @@ struct FreeSizeField{T,N} <: DataField{T}
     name::String
     data::Array{T,N}
 
-    function FreeSizeField(name::String, ::Type{T}, value::T, dims::Vararg{Int}) where {T}
-        data = fill(value, dims)
+    function FreeSizeField(name::String, ::Type{T}, value::T,
+                           dims::Vararg{Int}) where {T<:Union{Float64,Int64,Bool}}
+        data = Array{T,N}(fill(value, dims))
         N = length(dims)
         new{T,N}(name, data)
     end
 end
-
-Base.size(fsf::FreeSizeField) = size(fsf.data)
-Base.getindex(fsf::FreeSizeField, i...) = getindex(fsf.data, i...)
-Base.setindex!(fsf::FreeSizeField, v, i...) = setindex!(fsf.data, v, i...)
-Base.IndexStyle(::Type{<:FreeSizeField}) = IndexLinear()

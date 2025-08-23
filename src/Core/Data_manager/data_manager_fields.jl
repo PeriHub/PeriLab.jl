@@ -309,7 +309,6 @@ function create_field(name::String,
                                               dof, VectorOrMatrix == "Matrix")
     elseif field_type == "Bond_Field"
         nBonds = _get_field("Number of Neighbors")
-
         fieldmanager.fields[name] = BondField(name, vartype, vartype(value), nBonds,
                                               dof, VectorOrMatrix == "Matrix")
 
@@ -317,7 +316,6 @@ function create_field(name::String,
         nElements = _get_field("Number of Element Neighbors")
         fieldmanager.fields[name] = ElementField(name, [fill(value, n) for n in nElements],
                                                  VectorOrMatrix == "Matrix")
-
     elseif field_type == "Free_Size_Field"
         fieldmanager.fields[name] = FreeSizeField(name, vartype, vartype(value), dof)
     end
