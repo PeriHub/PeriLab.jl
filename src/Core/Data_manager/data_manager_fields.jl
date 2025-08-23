@@ -315,14 +315,9 @@ function create_field(name::String,
 
     elseif field_type == "Element_Field" # tbd
         nElements = _get_field("Number of Element Neighbors")
-        if dof == 1
-            fieldmanager.fields[name] = DataField(name, [fill(value, n) for n in nElements],
-                                                  VectorOrMatrix)
-        else
-            fieldmanager.fields[name] = DataField(name,
-                                                  [fill(value, (n, dof)) for n in nElements],
-                                                  VectorOrMatrix)
-        end
+        fieldmanager.fields[name] = ElementField(name, [fill(value, n) for n in nElements],
+                                                 VectorOrMatrix == "Matrix")
+
     elseif field_type == "Free_Size_Field"
         fieldmanager.fields[name] = FreeSizeField(name, vartype, vartype(value), dof)
     end

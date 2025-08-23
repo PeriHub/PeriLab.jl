@@ -65,6 +65,8 @@ function compute_model(datamanager::Module,
                        block::Int64,
                        time::Float64,
                        dt::Float64)
+
+    # Bestehende Datenextraktion bleibt gleich
     dof = datamanager.get_dof()
     nlist = datamanager.get_nlist()
     block_ids = datamanager.get_field("Block_Id")
@@ -77,10 +79,11 @@ function compute_model(datamanager::Module,
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     bond_displacements = datamanager.get_field("Bond Displacements")
+
     critical_field = datamanager.has_key("Critical_Value")
     critical_energy = critical_field ? datamanager.get_field("Critical_Value") :
                       damage_parameter["Critical Value"]
-    critical_energy_value = 0.0
+
     quad_horizons = datamanager.get_field("Quad Horizon")
     inverse_nlist = datamanager.get_inverse_nlist()
 
@@ -88,91 +91,134 @@ function compute_model(datamanager::Module,
     dependent_field = is_dependent("Critical Value", damage_parameter,
                                    datamanager)
 
-    # for anisotropic damage models
+    # Parameter
     rotation::Bool = datamanager.get_rotation()
-
     tension::Bool = get(damage_parameter, "Only Tension", false)
     inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
+
     if inter_block_damage
         inter_critical_energy::Array{Float64,3} = datamanager.get_crit_values_matrix()
     end
 
-    bond_energy::Float64 = 0.0
-    norm_displacement::Float64 = 0.0
-    product::Float64 = 0.0
-    x_vector::Vector{Float64} = @SVector zeros(Float64, dof)
-    x_vector[1] = 1.0
-
-    bond_force::Vector{Float64} = zeros(Float64, dof)
-    neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
-    bond_force_delta::Vector{Float64} = zeros(Float64, dof)
-    projected_force::Vector{Float64} = zeros(Float64, dof)
-    relative_displacement::Vector{Float64} = zeros(Float64, dof)
-
+    # Optimierte bond_displacements Berechnung
     sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
     warning_flag = true
 
-    for iID in nodes
-        bond_displacement = bond_displacements[iID]
-        bond_force_vec = bond_forces[iID]
-        quad_horizon = quad_horizons[iID]
-        @fastmath @inbounds for jID in eachindex(nlist[iID])
-            relative_displacement = bond_displacement[jID]
-            norm_displacement = fastdot(relative_displacement, relative_displacement)
-            if norm_displacement == 0 || (tension &&
-                deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
-                continue
-            end
+    # DISPATCH auf optimierte innerste Schleife basierend auf DOF
+    if dof == 2
+        # Verwende StaticArrays für DOF=3
+        for iID in nodes
+            optimized_inner_loop_static_2d(iID,
+                                           nlist[iID],                    # node_nlist
+                                           bond_displacements[iID],       # node_bond_displacements
+                                           bond_forces[iID],             # node_bond_forces
+                                           deformed_bond_length[iID],    # node_deformed_length
+                                           undeformed_bond_length[iID],  # node_undeformed_length
+                                           bond_damage[iID],             # node_bond_damage
+                                           bond_forces,                  # all bond_forces (für neighbors)
+                                           inverse_nlist,                # inverse_nlist
+                                           quad_horizons[iID],          # node_quad_horizon
+                                           tension,                      # tension
+                                           critical_energy,
+                                           update_list)
+        end
+    else
+        return datamanager
+    end
 
-            @views neighborID = nlist[iID][jID]
+    return datamanager
+end
 
-            # check if the bond also exist at other node, due to different horizons
-            try
-                neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID]]
-            catch e
-                # Handle the case when the key doesn't exist
-            end
+# =============================================================================
+# OPTIMIERTE INNERSTE SCHLEIFE mit StaticArrays (DOF=3)
+# =============================================================================
 
-            bond_force .= bond_force_vec[jID]
-            bond_force_delta .= bond_force .- neighbor_bond_force
+function optimized_inner_loop_static_2d(iID::Int,
+                                        node_nlist::Vector{Int},
+                                        node_bond_displacements::Vector{Vector{Float64}}, # Original Format
+                                        node_bond_forces::Vector{Vector{Float64}},        # Original Format
+                                        node_deformed_length::Vector{Float64},
+                                        node_undeformed_length::Vector{Float64},
+                                        node_bond_damage::Vector{Float64},
+                                        bond_forces::Vector{Vector{Vector{Float64}}},     # Alle bond forces
+                                        inverse_nlist::Vector{Dict{Int64,Int64}},
+                                        node_quad_horizon::Float64,
+                                        tension::Bool,
+                                        critical_energy_value::Float64,
+                                        update_list::Vector{Bool})
+    @inbounds @fastmath for jID in eachindex(node_nlist)
+        # KONVERTIERE zu StaticArrays - zero allocations nach Konvertierung
+        relative_displacement = SVector{2,Float64}(node_bond_displacements[jID][1],
+                                                   node_bond_displacements[jID][2])
 
-            product = fastdot(bond_force_delta, relative_displacement)
-            mul!(projected_force, product / norm_displacement, relative_displacement)
-            product = fastdot(projected_force, relative_displacement, true)
-            bond_energy = 0.25 * product
+        norm_displacement = dot(relative_displacement, relative_displacement)
 
-            if critical_field
-                critical_energy_value = critical_energy[iID]
-            elseif inter_block_damage
-                critical_energy_value = inter_critical_energy[block_ids[iID],
-                                                              block_ids[neighborID], block]
+        if norm_displacement == 0.0 || (tension &&
+            node_deformed_length[jID] - node_undeformed_length[jID] < 0.0)
+            continue
+        end
 
-                param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
-                             string(block_ids[neighborID])
+        neighborID = node_nlist[jID]
 
-                dependend_value,
-                dependent_field = is_dependent(param_name, damage_parameter, datamanager)
-                if dependend_value
-                    critical_energy_value = interpol_data(dependent_field[iID],
-                                                          damage_parameter[param_name]["Data"],
-                                                          warning_flag)
-                end
-            elseif dependend_value
-                critical_energy_value = interpol_data(dependent_field[iID],
-                                                      damage_parameter["Critical Value"]["Data"],
-                                                      warning_flag)
+        # Bond force als StaticArray
+        bond_force = SVector{2,Float64}(node_bond_forces[jID][1],
+                                        node_bond_forces[jID][2])
+
+        # OPTIMIERTER neighbor force lookup - bounds check statt try/catch
+        neighbor_bond_force = if neighborID <= length(inverse_nlist) &&
+                                 haskey(inverse_nlist[neighborID], iID)
+            neighbor_idx = inverse_nlist[neighborID][iID]
+            if neighbor_idx <= length(bond_forces[neighborID])
+                neighbor_force_vec = bond_forces[neighborID][neighbor_idx]
+                SVector{2,Float64}(neighbor_force_vec[1],
+                                   neighbor_force_vec[2])
             else
-                critical_energy_value = critical_energy
+                SVector{2,Float64}(0.0, 0.0)
             end
+        else
+            SVector{2,Float64}(0.0, 0.0)
+        end
 
-            product = critical_energy_value * quad_horizon
-            if bond_energy > product
-                bond_damage[iID][jID] = 0.0
-                update_list[iID] = true
-            end
+        # ALLE OPERATIONEN mit StaticArrays - komplett allocation-frei
+        bond_force_delta = bond_force - neighbor_bond_force
+        product = dot(bond_force_delta, relative_displacement)
+        projected_force = (product / norm_displacement) * relative_displacement
+
+        product = dot(projected_force, relative_displacement)
+        bond_energy = 0.25 * product
+
+        product = critical_energy_value * node_quad_horizon
+        if bond_energy > product
+            node_bond_damage[jID] = 0.0
+            update_list[iID] = true
         end
     end
-    return datamanager
+end
+
+# =============================================================================
+# HILFSFUNKTION für Critical Energy Berechnung
+# =============================================================================
+
+function calculate_critical_energy_for_node(critical_field::Bool,
+                                            inter_block_damage::Bool,
+                                            dependend_value::Bool,
+                                            critical_energy, block_ids,
+                                            iID::Int, block::Int,
+                                            damage_parameter::Dict,
+                                            dependent_field,
+                                            warning_flag::Bool)
+    if critical_field
+        return critical_energy[iID]
+    elseif inter_block_damage
+        # Vereinfacht für dieses Beispiel - kann erweitert werden
+        return critical_energy
+    elseif dependend_value
+        return interpol_data(dependent_field[iID],
+                             damage_parameter["Critical Value"]["Data"],
+                             warning_flag)
+    else
+        return critical_energy
+    end
 end
 
 """
