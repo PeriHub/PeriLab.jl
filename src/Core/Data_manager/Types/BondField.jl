@@ -51,7 +51,7 @@ end
 
 struct VectorBondField{T} <: BondField{T}
     name::String
-    data::Vector{T}
+    data::Vector{Matrix{T}}
 
     function VectorBondField(name::String, ::Type{T}, value::T,
                              nBonds::Vector{Int64},
