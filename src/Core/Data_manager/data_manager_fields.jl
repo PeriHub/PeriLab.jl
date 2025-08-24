@@ -64,8 +64,8 @@ function get_field_if_exists(name::String, time::String = "Constant")
 end
 
 # Typstabil Getter
-function (f::DataField{T})() where {T}
-    return f.structured
+function (f::DataField{T})() where {T<:Union{Bool,Int64,Float64}}
+    return f.data
 end
 
 """
@@ -79,9 +79,9 @@ Returns the field with the given name.
 - `field::Field`: The field with the given name.
 """
 function _get_field(name::String)::Union{Array,Nothing}
-    try
+    if name in data["field_names"]
         return fieldmanager.fields[name]()
-    catch
+    else
         @error "Field ''" *
                name *
                "'' does not exist. Check if it is initialized as non-constant."
