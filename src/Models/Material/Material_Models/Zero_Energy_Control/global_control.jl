@@ -45,10 +45,10 @@ function compute_control(datamanager::Module,
                          dt::Float64)
     dof = datamanager.get_dof()
     deformation_gradient = datamanager.get_field("Deformation Gradient")::Array{Float64,3}
-    bond_force = datamanager.get_field("Bond Forces")::Vector{Vector{Vector{Float64}}}
-    undeformed_bond = datamanager.get_field("Bond Geometry")::Vector{Vector{Vector{Float64}}}
+    bond_force = datamanager.get_field("Bond Forces")::Vector{Matrix{Float64}}
+    undeformed_bond = datamanager.get_field("Bond Geometry")::Vector{Matrix{Float64}}
     deformed_bond = datamanager.get_field("Deformed Bond Geometry",
-                                          "NP1")::Vector{Vector{Vector{Float64}}}
+                                          "NP1")::Vector{Matrix{Float64}}
     Kinv = datamanager.get_field("Inverse Shape Tensor")::Array{Float64,3}
     zStiff = datamanager.create_constant_node_field("Zero Energy Stiffness",
                                                     Float64,
@@ -108,16 +108,16 @@ Computes the zero energy mode force
 function get_zero_energy_mode_force_2d!(nodes::AbstractVector{Int64},
                                         zStiff::Array{Float64,3},
                                         deformation_gradient::Array{Float64,3},
-                                        undeformed_bond::Vector{Vector{Vector{Float64}}},
-                                        deformed_bond::Vector{Vector{Vector{Float64}}},
-                                        bond_force::Vector{Vector{Vector{Float64}}})
+                                        undeformed_bond::Vector{Matrix{Float64}},
+                                        deformed_bond::Vector{Matrix{Float64}},
+                                        bond_force::Vector{Matrix{Float64}})
     df = MVector{2}(zeros(Float64, 2))
     @inbounds @fastmath for iID in nodes
         @inbounds @fastmath @views for nID in axes(undeformed_bond[iID], 1)
             @inbounds @fastmath @views for m in axes(deformation_gradient, 2)
                 df_i = zero(eltype(deformation_gradient))
                 @inbounds @fastmath @views for n in axes(deformation_gradient, 3)
-                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID][n]
+                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID, n]
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
@@ -161,12 +161,12 @@ function get_zero_energy_mode_force_3d!(nodes::AbstractVector{Int64},
             @inbounds @fastmath @views for m in axes(deformation_gradient, 2)
                 df_i = zero(eltype(deformation_gradient))
                 @inbounds @fastmath @views for n in axes(deformation_gradient, 3)
-                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID][n]
+                    df_i += deformation_gradient[iID, m, n] * undeformed_bond[iID][nID, n]
                 end
                 df[m] = df_i - deformed_bond[iID][nID][m]
             end
             @views bond_force_computation_3d!(zStiff[iID, :, :], df,
-                                              bond_force[iID][nID])
+                                              bond_force[iID][nID, :])
         end
     end
 end

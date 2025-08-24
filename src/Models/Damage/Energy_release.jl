@@ -140,7 +140,7 @@ function optimized_inner_loop_static_2d(iID::Int,
                                         node_deformed_length::Vector{Float64},
                                         node_undeformed_length::Vector{Float64},
                                         node_bond_damage::Vector{Float64},
-                                        bond_forces::Vector{Vector{Vector{Float64}}},     # Alle bond forces
+                                        bond_forces::Vector{Matrix{Float64}},     # Alle bond forces
                                         inverse_nlist::Vector{Dict{Int64,Int64}},
                                         node_quad_horizon::Float64,
                                         tension::Bool,
@@ -148,8 +148,8 @@ function optimized_inner_loop_static_2d(iID::Int,
                                         update_list::Vector{Bool})
     @inbounds @fastmath for jID in eachindex(node_nlist)
         # KONVERTIERE zu StaticArrays - zero allocations nach Konvertierung
-        relative_displacement = SVector{2,Float64}(node_bond_displacements[jID][1],
-                                                   node_bond_displacements[jID][2])
+        relative_displacement = SVector{2,Float64}(node_bond_displacements[jID, 1],
+                                                   node_bond_displacements[jID, 2])
 
         norm_displacement = dot(relative_displacement, relative_displacement)
 
@@ -161,8 +161,8 @@ function optimized_inner_loop_static_2d(iID::Int,
         neighborID = node_nlist[jID]
 
         # Bond force als StaticArray
-        bond_force = SVector{2,Float64}(node_bond_forces[jID][1],
-                                        node_bond_forces[jID][2])
+        bond_force = SVector{2,Float64}(node_bond_forces[jID, 1],
+                                        node_bond_forces[jID, 2])
 
         # OPTIMIERTER neighbor force lookup - bounds check statt try/catch
         neighbor_bond_force = if neighborID <= length(inverse_nlist) &&

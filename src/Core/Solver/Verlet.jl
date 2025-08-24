@@ -43,7 +43,7 @@ Calculate the critical time step for a thermodynamic simulation based on  [Oterk
 This function iterates over a collection of nodes and computes the critical time step for each node using provided input data and parameters.
 
 # Arguments
-- `nodes::Union{SubArray, Vector{Int64}}`: The collection of nodes to calculate the critical time step for.
+- `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
 - `datamanager::Module`: The data manager module that provides access to required data fields.
 - `lambda::Float64`: The material parameter used in the calculations.
 - `Cv::Float64`: The heat capacity at constant volume used in the calculations.
@@ -103,7 +103,7 @@ Calculate the critical time step for a mechanical simulation using a bond-based 
 This function iterates over a collection of nodes and computes the critical time step for each node based on the given input data and parameters.
 
 # Arguments
-- `nodes::Union{SubArray, Vector{Int64}}`: The collection of nodes to calculate the critical time step for.
+- `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
 - `datamanager::Module`: The data manager module that provides access to required data fields.
 - `bulk_modulus::Float64`: The bulk modulus used in the calculations.
 

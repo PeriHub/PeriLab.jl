@@ -140,7 +140,7 @@ Calculates the force densities of the material. This template has to be copied, 
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray, Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
@@ -285,22 +285,22 @@ Calculate bond forces for specified nodes based on deformation gradients.
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `deformation_gradient::SubArray`: Deformation gradient.
-- `undeformed_bond::Vector{Vector{Vector{Float64}}}`: Undeformed bond geometry.
+- `undeformed_bond::Vector{Matrix{Float64}}`: Undeformed bond geometry.
 - `bond_damage::Vector{Vector{Float64}}`: Bond damage.
 - `inverse_shape_tensor::Array{Float64, 3}`: Inverse shape tensor.
 - `stress_NP1::Array{Float64, 3}`: Stress at time step n+1.
-- `bond_force::Vector{Vector{Vector{Float64}}}`: Bond force.
+- `bond_force::Vector{Matrix{Float64}}`: Bond force.
 # Returns
-- `bond_force::Vector{Vector{Vector{Float64}}}`: Bond force.
+- `bond_force::Vector{Matrix{Float64}}`: Bond force.
 """
 function calculate_bond_force!(nodes::AbstractVector{Int64},
                                dof::Int64,
                                deformation_gradient::Array{Float64,3},
-                               undeformed_bond::Vector{Vector{Vector{Float64}}},
+                               undeformed_bond::Vector{Matrix{Float64}},
                                bond_damage::Vector{Vector{Float64}},
                                inverse_shape_tensor::Array{Float64,3},
                                stress_NP1::Array{Float64,3},
-                               bond_force::Vector{Vector{Vector{Float64}}})
+                               bond_force::Vector{Matrix{Float64}})
     if dof == 2
         return calculate_bond_force_2d!(bond_force,
                                         nodes,
@@ -321,10 +321,10 @@ function calculate_bond_force!(nodes::AbstractVector{Int64},
     #return bond_force
 end
 
-function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
+function calculate_bond_force_2d!(bond_force::Vector{Matrix{Float64}},
                                   nodes::AbstractVector{Int64},
                                   deformation_gradient::Array{Float64,3},
-                                  undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                  undeformed_bond::Vector{Matrix{Float64}},
                                   bond_damage::Vector{Vector{Float64}},
                                   inverse_shape_tensor::Array{Float64,3},
                                   stress_NP1::Array{Float64,3})
@@ -347,18 +347,18 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
                 @inbounds @fastmath for jdof in 1:2
                     b_fi += temp[idof, jdof] *
                             bond_damage[iID][jID] *
-                            undeformed_bond[iID][jID][jdof]
+                            undeformed_bond[iID][jID, jdof]
                 end
-                bond_force[iID][jID][idof] = b_fi
+                bond_force[iID][jID, idof] = b_fi
             end
         end
     end
 end
 
-function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
+function calculate_bond_force_3d!(bond_force::Vector{Matrix{Float64}},
                                   nodes::AbstractVector{Int64},
                                   deformation_gradient::Array{Float64,3},
-                                  undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                  undeformed_bond::Vector{Matrix{Float64}},
                                   bond_damage::Vector{Vector{Float64}},
                                   inverse_shape_tensor::Array{Float64,3},
                                   stress_NP1::Array{Float64,3})
@@ -380,9 +380,9 @@ function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
                 @inbounds @fastmath for jdof in 1:3
                     @views b_fi += temp[idof, jdof] *
                                    bond_damage[iID][jID] *
-                                   undeformed_bond[iID][jID][jdof]
+                                   undeformed_bond[iID][jID, jdof]
                 end
-                bond_force[iID][jID][idof] = b_fi
+                bond_force[iID][jID, idof] = b_fi
             end
         end
     end

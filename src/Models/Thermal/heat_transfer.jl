@@ -161,7 +161,7 @@ function calculate_specific_volume!(specific_volume::Vector{Int64},
                                     nodes::AbstractVector{Int64},
                                     nlist::Union{SubArray,Vector{Vector{Int64}}},
                                     active::Vector{Bool},
-                                    bond_norm::Vector{Vector{Vector{Float64}}},
+                                    bond_norm::Vector{Matrix{Float64}},
                                     rotation_tensor::Union{Array{Float64,3},Nothing},
                                     specific_volume_check::Vector{Bool},
                                     dof::Int64)
@@ -170,13 +170,13 @@ function calculate_specific_volume!(specific_volume::Vector{Int64},
         directions = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
     end
     rot_directions = copy(directions)
-    directions_free = fill(true, dof*2)
+    directions_free = fill(true, dof * 2)
     for iID in nodes
         !specific_volume_check[iID] && continue
 
         if !isnothing(rotation_tensor)
-            rot_directions = [rotation_tensor[iID, :, :] * direction
-                              for direction in directions]
+            @views rot_directions = [rotation_tensor[iID, :, :] * direction
+                                     for direction in directions]
         end
         directions_free .= true
         for (jID, neighborID) in enumerate(nlist[iID])

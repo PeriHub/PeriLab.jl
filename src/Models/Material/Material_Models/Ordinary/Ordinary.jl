@@ -78,9 +78,9 @@ Calculate the forces on the bonds in a peridynamic material.
 
 function get_bond_forces(nodes::AbstractVector{Int64},
                          bond_force_length::AbstractVector{<:AbstractVector{Float64}},
-                         deformed_bond::Vector{Vector{Vector{Float64}}},
+                         deformed_bond::Vector{Matrix{Float64}},
                          deformed_bond_length::Vector{Vector{Float64}},
-                         bond_force::Vector{Vector{Vector{Float64}}},
+                         bond_force::Vector{Matrix{Float64}},
                          temp::Vector{Vector{Float64}})
     div_in_place!(temp, bond_force_length, deformed_bond_length)
     for iID in nodes

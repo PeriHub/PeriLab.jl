@@ -177,7 +177,7 @@ function compute_heat_flow_state_correspondence(nodes::AbstractVector{Int64},
                                                 lambda::Union{Matrix{Float64},MMatrix},
                                                 rotation_tensor,
                                                 bond_damage::Vector{Vector{Float64}},
-                                                undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                                undeformed_bond::Vector{Matrix{Float64}},
                                                 Kinv::Array{Float64,3},
                                                 temperature::Vector{Float64},
                                                 volume::Vector{Float64},
@@ -190,17 +190,18 @@ function compute_heat_flow_state_correspondence(nodes::AbstractVector{Int64},
             temp_state = (temperature[neighborID] - temperature[iID]) *
                          volume[neighborID] *
                          bond_damage[iID][jID]
-            H .+= temp_state .* undeformed_bond[iID][jID]
+            @views H .+= temp_state .* undeformed_bond[iID][jID, :]
         end
-        nablaT = Kinv[iID, :, :] * H
+        @views nablaT = Kinv[iID, :, :] * H
 
         if isnothing(rotation_tensor)
             q = lambda * nablaT
         else
-            q = rotate_second_order_tensor(rotation_tensor[iID, :, :], lamba[:, :], false)
+            @views q = rotate_second_order_tensor(rotation_tensor[iID, :, :], lamba[:, :],
+                                                  false)
         end
         for (jID, neighborID) in enumerate(nlist[iID])
-            temp = Kinv[iID, :, :] * undeformed_bond[iID][jID]
+            @views temp = Kinv[iID, :, :] * undeformed_bond[iID][jID, :]
             heat_flow[iID] -= fastdot(temp, q) * volume[neighborID]
             heat_flow[neighborID] += fastdot(temp, q) * volume[iID]
         end
@@ -247,7 +248,7 @@ function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
                                             print_bed,
                                             coordinates::Matrix{Float64},
                                             bond_damage::Vector{Vector{Float64}},
-                                            undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                            undeformed_bond::Vector{Matrix{Float64}},
                                             undeformed_bond_length::Vector{Vector{Float64}},
                                             horizon::Vector{Float64},
                                             temperature::Vector{Float64},
@@ -271,9 +272,9 @@ function compute_heat_flow_state_bond_based(nodes::AbstractVector{Int64},
             end
             if apply_print_bed
                 # check if node is near print bed and if the mirror neighbor is in a higher layer
-                if coordinates[iID, 3] < horizon[iID] && undeformed_bond[iID][jID][3] > 0
+                if coordinates[iID, 3] < horizon[iID] && undeformed_bond[iID][jID, 3] > 0
                     # check if mirrored neighbor would be lower z=0
-                    if coordinates[iID, 3] - undeformed_bond[iID][jID][3] <= 0
+                    if coordinates[iID, 3] - undeformed_bond[iID][jID, 3] <= 0
                         temp_state = bond_damage[iID][jID] * (t_bed - temperature[iID])
                         if coordinates[iID, 3] == 0.0
                             heat_flow[iID] -= lambda_bed * kernel * temp_state /

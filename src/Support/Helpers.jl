@@ -494,15 +494,15 @@ function sub_in_place!(C::Vector{Vector{T}},
         C[i] .= A[i] .- B[i]
     end
 end
-function sub_in_place!(C::Vector{Vector{Vector{T}}},
-                       A::Vector{Vector{Vector{T}}},
-                       B::Vector{Vector{Vector{T}}}) where {T<:Union{Int64,Float64,Bool}}
+function sub_in_place!(C::Vector{Matrix{T}},
+                       A::Vector{Matrix{T}},
+                       B::Vector{Matrix{T}}) where {T<:Union{Int64,Float64,Bool}}
     # Check if dimensions match
     @assert length(C) == length(A) == length(B)
 
     @inbounds for i in eachindex(A)
         @inbounds for j in eachindex(A[i])
-            C[i][j] .= A[i][j] .- B[i][j]
+            C[i, j] .= A[i, j] .- B[i, j]
         end
     end
 end
@@ -570,13 +570,13 @@ function fill_in_place!(A::Vector{Array{T,N}},
         end
     end
 end
-function fill_in_place!(A::Vector{Vector{Vector{T}}},
+function fill_in_place!(A::Vector{Matrix{T}},
                         value::T,
                         active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
     @inbounds for i in eachindex(A)
         if active[i]
             @inbounds for j in eachindex(A[i])
-                A[i][j] .= value
+                A[i, j] .= value
             end
         end
     end
@@ -587,7 +587,7 @@ function fill_in_place!(A::Vector{Vector{Array{T,N}}},
     @inbounds for i in eachindex(A)
         if active[i]
             @inbounds for j in eachindex(A[i])
-                A[i][j] .= value
+                A[i, j] .= value
             end
         end
     end

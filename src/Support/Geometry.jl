@@ -14,7 +14,7 @@ export compute_shape_tensors!
 export compute_deformation_gradients!
 
 """
-     bond_geometry(undeformed_bond::Vector{Vector{Vector{Float64}}},
+     bond_geometry(undeformed_bond::Vector{Matrix{Float64}},
     undeformed_bond_length::Vector{Vector{Float64}},
     nodes::AbstractVector{Int64},
     nlist::Vector{Vector{Int64}},
@@ -49,11 +49,11 @@ Calculate bond geometries between nodes based on their coordinates.
  undeformed_bond(nodes, dof, nlist, coor, undeformed_bond)
 """
 
-function bond_geometry!(undeformed_bond::Vector{Vector{Vector{Float64}}},
+function bond_geometry!(undeformed_bond::Vector{Matrix{Float64}},
                         undeformed_bond_length::Vector{Vector{Float64}},
                         nodes::AbstractVector{Int64},
                         nlist::Vector{Vector{Int64}},
-                        coor::Union{SubArray,Matrix{Float64},Matrix{Int64}})
+                        coor::AbstractMatrix{Float64})
     for iID in nodes
         calculate_bond_length!(undeformed_bond[iID],
                                undeformed_bond_length[iID],
@@ -63,27 +63,27 @@ function bond_geometry!(undeformed_bond::Vector{Vector{Vector{Float64}}},
     end
 end
 
-@inline function calculate_bond_length!(bond_vectors::Vector{Vector{T}},
-                                        bond_norm::Vector{T},
+@inline function calculate_bond_length!(bond_vectors::Matrix{Float64},
+                                        bond_norm::Vector{Float64},
                                         iID::Int64,
-                                        coor::Matrix{T},
-                                        nlist::Vector{Int64}) where {T<:AbstractFloat}
+                                        coor::Matrix{Float64},
+                                        nlist::Vector{Int64})
     @inbounds @fastmath for m in axes(nlist, 1)
-        cmn = zero(T)
+        cmn = zero(Float64)
         @inbounds @fastmath for n in axes(coor, 2)
-            bond_vectors[m][n] = coor[nlist[m], n] - coor[iID, n]
-            cmn += bond_vectors[m][n] * bond_vectors[m][n]
+            bond_vectors[m, n] = coor[nlist[m], n] - coor[iID, n]
+            cmn += bond_vectors[m, n] * bond_vectors[m, n]
         end
         bond_norm[m] = sqrt(cmn)
     end
 end
 """
-    compute_shape_tensors!(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+    compute_shape_tensors!(nodes::AbstractVector{Int64}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
 Calculate the shape tensor and its inverse for a set of nodes in a computational mechanics context.
 
 # Arguments
-- `nodes::Union{SubArray, Vector{Int64}}`: A vector of integers representing node IDs.
+- `nodes::AbstractVector{Int64}`: A vector of integers representing node IDs.
 - `dof::Int64`: An integer representing the degrees of freedom.
 - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
 - `volume`: A vector or array containing volume information for each node.
@@ -171,12 +171,12 @@ function compute_shape_tensor!(shape_tensor,
 end
 
 """
-    compute_deformation_gradients!(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
+    compute_deformation_gradients!(nodes::AbstractVector{Int64}, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 
 Calculate the deformation gradient tensor for a set of nodes in a computational mechanics context.
 
 # Arguments
-- `nodes::Union{SubArray, Vector{Int64}}`: A vector of integers representing node IDs.
+- `nodes::AbstractVector{Int64}`: A vector of integers representing node IDs.
 - `dof::Int64`: An integer representing the degrees of freedom.
 - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
 - `volume`: A vector or array containing volume information for each node.
@@ -216,8 +216,8 @@ function compute_deformation_gradients!(deformation_gradient::Array{Float64,3},
                                         volume::Vector{Float64},
                                         omega::Vector{Vector{Float64}},
                                         bond_damage::Vector{Vector{Float64}},
-                                        deformed_bond::Vector{Vector{Vector{Float64}}},
-                                        undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                        deformed_bond::Vector{Matrix{Float64}},
+                                        undeformed_bond::Vector{Matrix{Float64}},
                                         inverse_shape_tensor::Array{Float64,3})
     if dof == 2
         temp = @MMatrix zeros(2, 2)
@@ -336,7 +336,7 @@ end
 Calculate strains for specified nodes based on deformation gradients.
 
 ## Arguments
--  `nodes::Union{SubArray, Vector{Int64}}`: List of nodes
+- `nodes::AbstractVector{Int64}`: List of nodes
 - `deformation_gradient`: Deformation gradient at current time step (2D or 3D array).
 
 ## Returns

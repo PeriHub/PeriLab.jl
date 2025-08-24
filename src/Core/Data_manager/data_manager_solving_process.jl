@@ -57,7 +57,7 @@ function switch_NP1_to_N() ##TODO check type stability
 end
 const NestedArray{T} = Union{AbstractArray{<:AbstractArray{T}},
                              AbstractArray{<:AbstractArray{<:AbstractArray{T}}},
-                             Vector{Vector{Vector{T}}}}
+                             Vector{Matrix{T}}}
 function fill_field!(field_NP1::NestedArray{T},
                      active::Vector{Bool}, value::T) where {T<:Union{Int64,Float64,Bool}}
     fill_in_place!(field_NP1, value, active)
