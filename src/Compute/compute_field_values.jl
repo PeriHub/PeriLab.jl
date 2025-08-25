@@ -46,7 +46,8 @@ function get_partial_stresses(datamanager::Module, nodes::AbstractVector{Int64})
 
     for iID in nodes
         str = @view stress[iID, :, :]
-        add_in_place!(str, bond_forces[iID], undeformed_bond[iID], volume[iID])
+        @views add_in_place!(str, bond_forces[iID][:, :], undeformed_bond[iID][:, :],
+                             volume[iID])
     end
     return datamanager
 end

@@ -188,10 +188,10 @@ function compute_model(datamanager::Module,
     @timeit to "all" begin
         if occursin("Correspondence", model_param["Material Model"])
             @timeit to "corresponcence" begin
-                datamanager = Correspondence.compute_model(datamanager, nodes, model_param,
-                                                           block, time,
-                                                           dt,
-                                                           to)
+                Correspondence.compute_model(datamanager, nodes, model_param,
+                                             block, time,
+                                             dt,
+                                             to)
                 return datamanager
             end
         end

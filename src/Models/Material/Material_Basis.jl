@@ -501,6 +501,27 @@ Distribute the forces on the nodes
 # Returns
 - `force_densities::Matrix{Float64}`: The force densities.
 """
+@inline function distribute_node_forces!(force_densities::Matrix{Float64},
+                                         iID::Int64,
+                                         neighbors::Vector{Int64},
+                                         neighbor_forces::Matrix{Float64},
+                                         neighbor_damage::Vector{Float64},
+                                         volume::Vector{Float64})::Nothing
+    vol_i = volume[iID]
+    @inbounds @fastmath for (jID, nID) in enumerate(neighbors)
+        damage_factor = neighbor_damage[jID]
+        vol_j = volume[nID]
+        forces_j = @views neighbor_forces[jID, :]
+
+        @inbounds @fastmath for m in eachindex(forces_j)
+            force_contribution = damage_factor * forces_j[m]
+            force_densities[iID, m] += force_contribution * vol_j
+            force_densities[nID, m] -= force_contribution * vol_i
+        end
+    end
+    return nothing
+end
+
 function distribute_forces!(force_densities::Matrix{Float64},
                             nodes::AbstractVector{Int64},
                             nlist::Vector{Vector{Int64}},
@@ -509,23 +530,9 @@ function distribute_forces!(force_densities::Matrix{Float64},
                             bond_damage::Vector{Vector{Float64}})::Nothing
     @inbounds @fastmath for iID in nodes
         # Cache arrays to help type inference
-        @views neighbors = nlist[iID]
-        @views neighbor_forces = bond_force[iID]
-        @views neighbor_damage = bond_damage[iID]
-        vol_i = volume[iID]
 
-        @inbounds @fastmath for jID_idx in eachindex(neighbors)
-            jID = neighbors[jID_idx]
-            damage_factor = neighbor_damage[jID_idx]
-            vol_j = volume[jID]
-            forces_j = neighbor_forces[jID_idx]
-
-            @inbounds @fastmath for m in eachindex(forces_j)
-                force_contribution = damage_factor * forces_j[m]
-                force_densities[iID, m] += force_contribution * vol_j
-                force_densities[jID, m] -= force_contribution * vol_i
-            end
-        end
+        distribute_node_forces!(force_densities, iID, nlist[iID], bond_force[iID],
+                                bond_damage[iID], volume)
     end
     return nothing
 end

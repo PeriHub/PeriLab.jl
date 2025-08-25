@@ -62,7 +62,7 @@ Transforming a matrix representation in a Vector{Vector} representation.
 # Returns
 - ``: transformed data
 """
-function matrix_to_vector(mat::Union{Matrix{Float64},Matrix{Int64}})
+function matrix_to_vector(mat::T) where {T<:Union{Matrix{Float64},Matrix{Int64}}}
     return [vec(mat[i, :]) for i in eachindex(axes(mat, 1))]
 end
 
@@ -415,8 +415,8 @@ function mat_mul_transpose_mat!(C::AbstractMatrix{T}, A::AbstractMatrix{T},
     end
 end
 function add_in_place!(C::AbstractMatrix{T},
-                       A::Vector{Vector{T}},
-                       B::Vector{Vector{T}},
+                       A::AbstractMatrix{T},
+                       B::AbstractMatrix{T},
                        factor = 1) where {T<:Union{Int64,Float64,Bool}}
     m = length(A)
     n = length(A[1])
@@ -424,7 +424,7 @@ function add_in_place!(C::AbstractMatrix{T},
     for i in 1:n
         for j in 1:n
             for k in 1:m
-                C[i, j] += A[k][i] * B[k][j] * factor
+                C[i, j] += A[k, i] * B[k, j] * factor
             end
         end
     end
@@ -461,6 +461,19 @@ function mul_in_place!(C::Vector{Vector{T}},
     @inbounds for i in eachindex(A)
         @inbounds for j in eachindex(A[i])
             C[i][j] = A[i][j] * B[i]
+        end
+    end
+end
+
+function mul_in_place!(C::Vector{Vector{T}},
+                       A::Vector{Vector{T}},
+                       B::Vector{T}) where {T<:Union{Int64,Float64,Bool}}
+    # Check if dimensions match
+    @assert length(C) == length(A) == length(B)
+
+    @inbounds for i in eachindex(A)
+        @inbounds for j in eachindex(A[i])
+            C[i, j] = A[i, j] * B[i]
         end
     end
 end

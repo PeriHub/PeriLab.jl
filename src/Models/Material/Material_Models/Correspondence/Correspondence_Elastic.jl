@@ -72,7 +72,7 @@ function correspondence_name()
 end
 
 """
-    compute_stresses(datamanager::Module, iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+    compute_stresses(datamanager::Module, iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::AbstractArray{Float64,3}, stress_N::AbstractArray{Float64,3}, stress_NP1::AbstractArray{Float64,3})
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -83,13 +83,13 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
+- `strainInc::AbstractArray{Float64,3}`: Strain increment.
+- `stress_N::AbstractArray{Float64,3}`: Stress of step N.
+- `stress_NP1::AbstractArray{Float64,3}`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
-- `stress_NP1::SubArray`: updated stresses
+- `stress_NP1::AbstractArray{Float64,3}`: updated stresses
 Example:
 ```julia
 ```
@@ -145,7 +145,7 @@ function compute_stresses_ba(datamanager::Module,
 end
 
 """
-    compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+    compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::AbstractArray{Float64,3}, stress_N::AbstractArray{Float64,3}, stress_NP1::AbstractArray{Float64,3})
 
 Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -155,12 +155,12 @@ Calculates the stresses of a single node. Needed for FEM. This template has to b
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
+- `strainInc::AbstractArray{Float64,3}`: Strain increment.
+- `stress_N::AbstractArray{Float64,3}`: Stress of step N.
+- `stress_NP1::AbstractArray{Float64,3}`: Stress of step N+1.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
-- `stress_NP1::SubArray`: updated stresses
+- `stress_NP1::AbstractArray{Float64,3}`: updated stresses
 Example:
 ```julia
 ```
