@@ -102,7 +102,7 @@ damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 
 # Arguments
 - `datamanager::Data_manager`: all model data
-- `nodes::Union{SubArray, Vector{Int64}}`: corresponding nodes to this model
+- `nodes::AbstractVector{Int64}`: corresponding nodes to this model
 """
 function damage_index(datamanager::Module,
                       nodes::AbstractVector{Int64},
