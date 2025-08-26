@@ -359,7 +359,7 @@ function get_mapping(dof::Int64)::Matrix{Int64}
     end
 end
 
-function matrix_diff!(s3::AbstractArray{Float64,3}, nodes::AbstractArray{Int64},
+function matrix_diff!(s3::AbstractArray{Float64,3}, nodes::AbstractVector{Int64},
                       s2::AbstractArray{Float64,3},
                       s1::AbstractArray{Float64,3})
     @views @inbounds for iID in nodes
@@ -889,9 +889,11 @@ function smat(A::AbstractMatrix{Float64})
     size_A = size(A)
 
     if size_A == (2, 2)
-        return SMatrix{2,2,Float64}(A)
+        return SMatrix{2,2,Float64}(A[1, 1], A[2, 1], A[1, 2], A[2, 2])
     elseif size_A == (3, 3)
-        return SMatrix{3,3,Float64}(A)
+        return SMatrix{3,3,Float64}(A[1, 1], A[2, 1], A[3, 1],
+                                    A[1, 2], A[2, 2], A[3, 2],
+                                    A[1, 3], A[2, 3], A[3, 3])
     else
         # Fallback for other sizes, returning a copy to ensure immutability
         # or you can throw an error if unsupported sizes are not allowed

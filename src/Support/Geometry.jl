@@ -53,7 +53,7 @@ function bond_geometry!(undeformed_bond::Vector{Vector{Vector{Float64}}},
                         undeformed_bond_length::Vector{Vector{Float64}},
                         nodes::AbstractVector{Int64},
                         nlist::Vector{Vector{Int64}},
-                        coor::Union{SubArray,Matrix{Float64},Matrix{Int64}})
+                        coor::AbstractMatrix{Float64})
     for iID in nodes
         calculate_bond_length!(undeformed_bond[iID],
                                undeformed_bond_length[iID],
@@ -63,27 +63,28 @@ function bond_geometry!(undeformed_bond::Vector{Vector{Vector{Float64}}},
     end
 end
 
-@inline function calculate_bond_length!(bond_vectors::Vector{Vector{T}},
-                                        bond_norm::Vector{T},
+@inline function calculate_bond_length!(bond_vectors::Vector{Vector{Float64}},
+                                        bond_norm::Vector{Float64},
                                         iID::Int64,
-                                        coor::Matrix{T},
-                                        nlist::Vector{Int64}) where {T<:AbstractFloat}
-    @inbounds @fastmath for m in axes(nlist, 1)
-        cmn = zero(T)
+                                        coor::Matrix{Float64},
+                                        nlist::Vector{Int64})
+    @inbounds @fastmath for (m, nID) in enumerate(nlist)
+        cmn = 0.0
         @inbounds @fastmath for n in axes(coor, 2)
-            bond_vectors[m][n] = coor[nlist[m], n] - coor[iID, n]
-            cmn += bond_vectors[m][n] * bond_vectors[m][n]
+            diff = coor[nID, n] - coor[iID, n]
+            bond_vectors[m][n] = diff
+            cmn += diff * diff
         end
         bond_norm[m] = sqrt(cmn)
     end
 end
 """
-    compute_shape_tensors!(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
+    compute_shape_tensors!(nodes::AbstractVector{Int64}, nlist, volume, omega, bond_damage, undeformed_bond, shape_tensor, inverse_shape_tensor)
 
 Calculate the shape tensor and its inverse for a set of nodes in a computational mechanics context.
 
 # Arguments
-- `nodes::Union{SubArray, Vector{Int64}}`: A vector of integers representing node IDs.
+- `nodes::AbstractVector{Int64}`: A vector of integers representing node IDs.
 - `dof::Int64`: An integer representing the degrees of freedom.
 - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
 - `volume`: A vector or array containing volume information for each node.
@@ -114,22 +115,21 @@ undeformed_bond = rand(Float64, length(nodes), length(nlist[1]), dof)
 shape_tensor = zeros(Float64, length(nodes), dof, dof)
 inverse_shape_tensor = zeros(Float64, length(nodes), dof, dof)
 """
-function compute_shape_tensors!(shape_tensor,
-                                inverse_shape_tensor,
+function compute_shape_tensors!(shape_tensor::Array{Float64,3},
+                                inverse_shape_tensor::Array{Float64,3},
                                 nodes::AbstractVector{Int64},
-                                nlist,
-                                volume,
-                                omega,
-                                bond_damage,
-                                undeformed_bond)
+                                nlist::Vector{Vector{Int64}},
+                                volume::Vector{Float64},
+                                omega::Vector{Vector{Float64}},
+                                bond_damage::Vector{Vector{Float64}},
+                                undeformed_bond::Vector{Vector{Vector{Float64}}})
     for iID in nodes
-        compute_shape_tensor!(shape_tensor,
-                              volume,
-                              omega[iID],
-                              bond_damage[iID],
-                              undeformed_bond[iID],
-                              nlist,
-                              iID)
+        @views compute_shape_tensor!(shape_tensor,
+                                     volume[nlist[iID]],
+                                     omega[iID],
+                                     bond_damage[iID],
+                                     undeformed_bond[iID],
+                                     iID)
 
         #mul!(
         #    shape_tensor[iID, :, :],
@@ -137,9 +137,9 @@ function compute_shape_tensors!(shape_tensor,
         #    undeformed_bond[iID],
         #)
 
-        inverse_shape_tensor[iID, :,
-                             :] .= invert(shape_tensor[iID, :, :],
-                                          "Shape Tensor is singular and cannot be inverted).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
+        @views inverse_shape_tensor[iID, :,
+                                    :] .= invert(shape_tensor[iID, :, :],
+                                                 "Shape Tensor is singular and cannot be inverted).\n - Check if your mesh is 3D, but has only one layer of nodes\n - Check number of damaged bonds.")
     end
 end
 
@@ -149,19 +149,18 @@ end
 #
 #end
 
-function compute_shape_tensor!(shape_tensor,
-                               volume,
-                               omega,
-                               bond_damage,
-                               undeformed_bond,
-                               nlist,
-                               iID)
+function compute_shape_tensor!(shape_tensor::Array{Float64,3},
+                               volume::AbstractVector{Float64},
+                               omega::Vector{Float64},
+                               bond_damage::Vector{Float64},
+                               undeformed_bond::Vector{Vector{Float64}},
+                               iID::Int64)
     @inbounds @fastmath for m in axes(shape_tensor, 2), n in axes(shape_tensor, 3)
         Cmn = zero(eltype(shape_tensor))
         @inbounds @fastmath for k in axes(undeformed_bond, 1)
             Cmn += undeformed_bond[k][m] *
                    undeformed_bond[k][n] *
-                   volume[nlist[iID][k]] *
+                   volume[k] *
                    omega[k] *
                    bond_damage[k]
         end
@@ -171,12 +170,12 @@ function compute_shape_tensor!(shape_tensor,
 end
 
 """
-    compute_deformation_gradients!(nodes::Union{SubArray, Vector{Int64}}, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
+    compute_deformation_gradients!(nodes::AbstractVector{Int64}, nlist, volume, omega, bond_damage, undeformed_bond, deformed_bond, inverse_shape_tensor, deformation_gradient)
 
 Calculate the deformation gradient tensor for a set of nodes in a computational mechanics context.
 
 # Arguments
-- `nodes::Union{SubArray, Vector{Int64}}`: A vector of integers representing node IDs.
+- `nodes::AbstractVector{Int64}`: A vector of integers representing node IDs.
 - `dof::Int64`: An integer representing the degrees of freedom.
 - `nlist`: A data structure (e.g., a list or array) representing neighboring node IDs for each node.
 - `volume`: A vector or array containing volume information for each node.
@@ -209,6 +208,7 @@ inverse_shape_tensor = rand(Float64, length(nodes), dof, dof)
 deformation_gradient = zeros(Float64, length(nodes), dof, dof)
 
 """
+
 function compute_deformation_gradients!(deformation_gradient::Array{Float64,3},
                                         nodes::AbstractVector{Int64},
                                         dof::Int64,
@@ -226,37 +226,36 @@ function compute_deformation_gradients!(deformation_gradient::Array{Float64,3},
     end
     for iID in nodes
         if deformed_bond[iID] == undeformed_bond[iID]
-            deformation_gradient[iID, :, :] = I(dof)
+            @inbounds for i in 1:dof, j in 1:dof
+                deformation_gradient[iID, i, j] = (i == j) ? 1.0 : 0.0
+            end
+
             continue
         end
-        compute_deformation_gradient!(temp,
-                                      bond_damage[iID],
-                                      deformed_bond[iID],
-                                      undeformed_bond[iID],
-                                      volume,
-                                      omega[iID],
-                                      nlist,
-                                      iID)
+        @views compute_deformation_gradient!(temp,
+                                             bond_damage[iID],
+                                             deformed_bond[iID],
+                                             undeformed_bond[iID],
+                                             volume[nlist[iID]],
+                                             omega[iID])
         dg = @view deformation_gradient[iID, :, :]
-        mul!(dg, temp, inverse_shape_tensor[iID, :, :])
+        @views mul!(dg, temp, inverse_shape_tensor[iID, :, :])
     end
 end
 
-function compute_deformation_gradient!(deformation_gradient,
-                                       bond_damage,
-                                       deformed_bond,
-                                       undeformed_bond,
-                                       volume::Vector{Float64},
-                                       omega,
-                                       nlist,
-                                       iID)
+function compute_deformation_gradient!(deformation_gradient::AbstractMatrix{Float64},
+                                       bond_damage::Vector{Float64},
+                                       deformed_bond::Vector{Vector{Float64}},
+                                       undeformed_bond::Vector{Vector{Float64}},
+                                       volume::AbstractVector{Float64},
+                                       omega::Vector{Float64})
     @inbounds @fastmath for m in axes(deformation_gradient, 1),
                             n in axes(deformation_gradient, 2)
         Cmn = zero(eltype(deformation_gradient))
         @inbounds @fastmath for k in axes(undeformed_bond, 1)
             Cmn += deformed_bond[k][m] *
                    undeformed_bond[k][n] *
-                   volume[nlist[iID][k]] *
+                   volume[k] *
                    omega[k] *
                    bond_damage[k]
         end
@@ -336,7 +335,7 @@ end
 Calculate strains for specified nodes based on deformation gradients.
 
 ## Arguments
--  `nodes::Union{SubArray, Vector{Int64}}`: List of nodes
+-  `nodes::AbstractVector{Int64}`: List of nodes
 - `deformation_gradient`: Deformation gradient at current time step (2D or 3D array).
 
 ## Returns
@@ -346,9 +345,9 @@ Calculate strains for specified nodes based on deformation gradients.
 This function iterates over the specified nodes and computes strain at each node using the given deformation gradients.
 
 """
-function compute_strain(nodes::AbstractArray{Int64},
-                        deformation_gradient::T,
-                        strain::T) where {T<:AbstractArray}
+function compute_strain(nodes::AbstractVector{Int64},
+                        deformation_gradient::AbstractArray{Float64},
+                        strain::AbstractArray{Float64})
     # https://en.wikipedia.org/wiki/Strain_(mechanics)
     for iID in nodes
         @views mat_mul_transpose_mat!(strain[iID, :, :],

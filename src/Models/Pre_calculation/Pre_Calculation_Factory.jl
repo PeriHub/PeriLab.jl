@@ -106,7 +106,11 @@ function compute_model(datamanager::Module,
             continue
         end
         mod = datamanager.get_model_module(pre_calculation_model)
-        datamanager = mod.compute(datamanager, nodes, model_param, block)
+
+        @timeit to "compute $pre_calculation_model" datamanager=mod.compute(datamanager,
+                                                                            nodes,
+                                                                            model_param,
+                                                                            block)
     end
 
     return datamanager
