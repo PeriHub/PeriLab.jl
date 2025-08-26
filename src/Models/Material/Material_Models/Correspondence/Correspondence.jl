@@ -140,7 +140,7 @@ Calculates the force densities of the material. This template has to be copied, 
 
 # Arguments
 - `datamanager::Data_manager`: Datamanager.
-- `nodes::Union{SubArray, Vector{Int64}}`: List of block nodes.
+- `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.

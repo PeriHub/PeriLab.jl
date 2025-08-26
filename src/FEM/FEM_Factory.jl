@@ -195,7 +195,7 @@ Computes the force densities from the FEM nodes.
 # Returns
 
 """
-function force_densities(datamanager::Module, nodes::AbstractArray{Int64})
+function force_densities(datamanager::Module, nodes::AbstractVector{Int64})
     volume = datamanager.get_field("Volume")
     forces = datamanager.get_field("Forces", "NP1")
     force_densities = datamanager.get_field("Force Densities", "NP1")
