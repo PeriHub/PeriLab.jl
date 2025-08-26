@@ -210,7 +210,6 @@ function compute_correspondence_model(datamanager::Module,
         for material_model in datamanager.get_analysis_model("Correspondence Model", block)
             mod = datamanager.get_model_module(material_model)
 
-            #stress_NP1 =
             mod.compute_stresses(datamanager,
                                  nodes,
                                  dof,

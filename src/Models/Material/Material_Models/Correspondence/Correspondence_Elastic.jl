@@ -49,6 +49,19 @@ Initializes the material model.
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
                     material_parameter::Dict)
+    dof = datamanager.get_dof()
+    hooke_matrix = datamanager.create_constant_node_field("Hooke Matrix", Float64,
+                                                          Int64((dof * (dof + 1)) / 2),
+                                                          VectorOrMatrix = "Matrix")
+    symmetry = get(material_parameter, "Symmetry", "default")::String
+    for iID in nodes
+        @views hooke_matrix[iID, :,
+                            :] = get_Hooke_matrix(datamanager,
+                                                  material_parameter,
+                                                  symmetry,
+                                                  dof,
+                                                  iID)
+    end
     return datamanager
 end
 """
@@ -104,17 +117,12 @@ function compute_stresses(datamanager::Module,
                           stress_N::AbstractArray{Float64},
                           stress_NP1::AbstractArray{Float64})
     mapping = get_mapping(dof)
-    symmetry = get(material_parameter, "Symmetry", "default")::String
+    hooke_matrix = datamanager.get_field("Hooke Matrix")
     for iID in nodes
-        hookeMatrix = get_Hooke_matrix(datamanager,
-                                       material_parameter,
-                                       symmetry,
-                                       dof,
-                                       iID)
         @views sNP1 = stress_NP1[iID, :, :]
         @views sInc = strain_increment[iID, :, :]
         @views sN = stress_N[iID, :, :]
-        fast_mul!(sNP1, hookeMatrix, sInc, sN, mapping)
+        @views fast_mul!(sNP1, hooke_matrix[iID, :, :], sInc, sN, mapping)
     end
 end
 
