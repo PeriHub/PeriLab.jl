@@ -17,6 +17,7 @@ PeriLab:
       Overwrite Mesh: true
       Scale: 1.0
       Width: 0.5
+      Height: 0.5
       Sampling: 0.5
     Input Mesh File: GuideCurve.gcode
     Type: Gcode

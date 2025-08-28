@@ -479,6 +479,7 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
     sampling = params["Discretization"]["Gcode"]["Sampling"]
     scale = get(params["Discretization"]["Gcode"], "Scale", 1)
     width = params["Discretization"]["Gcode"]["Width"]
+    height = params["Discretization"]["Gcode"]["Height"]
     blocks = get(params["Discretization"]["Gcode"], "Blocks", nothing)
 
     commands_dict = Dict{String,Any}()
@@ -503,7 +504,7 @@ function get_gcode_mesh(gcode_file::String, params::Dict, silent)
 
     pd_mesh = Dict{String,Any}()
     pd_mesh["sampling"] = sampling
-    pd_mesh["volume"] = sampling * width * width
+    pd_mesh["volume"] = sampling * width * height
     pd_mesh["previous_extruding"] = 0
     pd_mesh["width"] = width
     pd_mesh["remaining_distance"] = sampling / 2

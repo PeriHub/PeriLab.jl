@@ -354,6 +354,11 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                  Int64},
                                                                                            true
                                                                                        ],
+                                                                                       "Height" => [
+                                                                                           Union{Float64,
+                                                                                                 Int64},
+                                                                                           true
+                                                                                       ],
                                                                                        "Scale" => [
                                                                                            Union{Float64,
                                                                                                  Int64},
