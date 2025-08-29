@@ -124,44 +124,44 @@ end
 
 """
     compute_dilatation(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}},
-                             undeformed_bond_length::Vector{Vector{T}},
-                             deformed_bond_length::Vector{Vector{T}},
-                             bond_damage::Vector{Vector{T}},
-                             volume::Vector{T},
-                             weighted_volume::Vector{T},
-                             omega::Vector{Vector{T}},
-                             theta::Vector{T}) where {T<:AbstractFloat}
+                             undeformed_bond_length::Vector{Vector{Float64}},
+                             deformed_bond_length::Vector{Vector{Float64}},
+                             bond_damage::Vector{Vector{Float64}},
+                             volume::Vector{Float64},
+                             weighted_volume::Vector{Float64},
+                             omega::Vector{Vector{Float64}},
+                             theta::Vector{Float64})
 
 Calculate the dilatation for each node, [SillingSA2007](@cite).
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: Nodes.
 - `nlist::Vector{Vector{Int64}}`: Neighbor list.
-- `undeformed_bond_length::Vector{Vector{T}}`: Bond geometry.
-- `deformed_bond_length::Vector{Vector{T}}`: Deformed bond geometry.
-- `bond_damage::Vector{Vector{T}}`: Bond damage.
-- `volume::Vector{T}`: Volume.
-- `weighted_volume::Vector{T}`: Weighted volume.
-- `omega::Vector{Vector{T}}`: Influence function.
+- `undeformed_bond_length::Vector{Vector{Float64}}`: Bond geometry.
+- `deformed_bond_length::Vector{Vector{Float64}}`: Deformed bond geometry.
+- `bond_damage::Vector{Vector{Float64}}`: Bond damage.
+- `volume::Vector{Float64}`: Volume.
+- `weighted_volume::Vector{Float64}`: Weighted volume.
+- `omega::Vector{Vector{Float64}}`: Influence function.
 # Returns
 - `theta::Vector{Float64}`: Dilatation.
 """
 
 function compute_dilatation!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}},
-                             undeformed_bond_length::Vector{Vector{T}},
-                             deformed_bond_length::Vector{Vector{T}},
-                             bond_damage::Vector{Vector{T}},
-                             volume::Vector{T},
-                             weighted_volume::Vector{T},
-                             omega::Vector{Vector{T}},
-                             theta::Vector{T}) where {T<:AbstractFloat}
+                             undeformed_bond_length::Vector{Vector{Float64}},
+                             deformed_bond_length::Vector{Vector{Float64}},
+                             bond_damage::Vector{Vector{Float64}},
+                             volume::Vector{Float64},
+                             weighted_volume::Vector{Float64},
+                             omega::Vector{Vector{Float64}},
+                             theta::Vector{Float64})
     @inbounds for iID in nodes
-        if weighted_volume[iID] == zero(T)
-            theta[iID] = zero(T)
+        if weighted_volume[iID] == zero(Float64)
+            theta[iID] = zero(Float64)
             continue
         end
 
-        th = zero(T)
+        th = zero(Float64)
         @fastmath @simd for jID in eachindex(nlist[iID])
             th += omega[iID][jID] *
                   bond_damage[iID][jID] *
@@ -169,7 +169,7 @@ function compute_dilatation!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{
                   (deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID]) *
                   volume[nlist[iID][jID]]
         end
-        theta[iID] = T(3) * th / weighted_volume[iID]
+        theta[iID] = Float64(3) * th / weighted_volume[iID]
     end
 end
 
