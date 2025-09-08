@@ -42,14 +42,15 @@ SPDX-License-Identifier: BSD-3-Clause
 [youtube-img]: https://img.shields.io/youtube/channel/subscribers/UCeky7HtUGlOJ2OKknvl6YnQ
 [youtube-url]: https://www.youtube.com/@PeriHub
 
-[hirse-img]: https://img.shields.io/badge/Promo-8db427?label=HiRSE&labelColor=005aa0&link=https%3A%2F%2Fgo.fzj.de%2FCodePromo
+[hirse-img]: https://img.shields.io/badge/Promo-8db427?label=HiRSE&labelColor=005aa0
+[hrise-url]: https%3A%2F%2Fgo.fzj.de%2FCodePromo
 
 | **Documentation** | **Build Status** |  **Quality** |
 |:----:|:----:|:----:|
 | [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url] [![][cov-img]][cov-url] | [![][aqua-img]][aqua-url] [![][sciml-img]][sciml-url] |
 | **Deployment** | **License** | **Socials** |
 | [![][release-img]][release-url]  [![][docker-img]][docker-url] | [![][license-img]][license-url] [![][doi-img]][doi-url] | [![][youtube-img]][youtube-url] ![HiRSE Code Promo 
-Badge][hirse-img] |
+Badge][hirse-img][hrise-url] |
 
 Welcome to `PeriLab`, a comprehensive platform for working with peridynamics, designed to support researchers and practitioners at all levels of expertise.
 
