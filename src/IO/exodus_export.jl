@@ -4,7 +4,7 @@
 
 using Exodus
 using Dates
-using OrderedCollections: OrderedDict
+using OrderedCollections
 export get_paraview_coordinates
 export create_result_file
 export init_results_in_exodus

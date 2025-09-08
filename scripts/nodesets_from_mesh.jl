@@ -44,7 +44,7 @@ function main(file, nodesets, blocks = [])
     end
 
     if !isempty(blocks) > 0
-        for id in 1:size(mesh, 1)
+        for id in axes(mesh, 1)
             global i = id
             for block_id in eachindex(blocks)
                 if eval(Meta.parse(blocks[block_id]))

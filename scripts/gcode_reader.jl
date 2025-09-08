@@ -598,6 +598,7 @@ function main(gcode_file::String,
     pd_mesh["previous_extruding"] = 0
     pd_mesh["remaining_distance"] = sampling / 2
     pd_mesh["width"] = width
+    pd_mesh["height"] = height
 
     pd_mesh["mesh_df"] = DataFrame(x = Float64[],
                                    y = Float64[],
@@ -635,4 +636,5 @@ commands_dict["End"] = parsed_args["end"]
 main(parsed_args["filename"],
      parsed_args["sampling"],
      parsed_args["width"],
+     parsed_args["height"],
      parsed_args["plot_enabled"], commands_dict)

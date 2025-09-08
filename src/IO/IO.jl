@@ -32,7 +32,7 @@ using .MPI_communication: send_single_value_from_vector, synch_responder_to_cont
 using .Helpers: progress_bar
 
 using .Parameter_Handling
-using OrderedCollections: OrderedDict
+using OrderedCollections
 using NearestNeighbors: KDTree, nn
 export initialize_data
 export init_write_results

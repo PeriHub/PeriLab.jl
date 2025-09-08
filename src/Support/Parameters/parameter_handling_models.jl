@@ -78,7 +78,7 @@ function get_model_parameter(params::Dict,
                                                        params["Models"][model * "s"][id][file_key]))
                 key_name = file_key
             end
-            for i in 2:size(data, 2)
+            for i in axes(data, 2)[2:end]
                 if header[i] != replace(key_name, " " => "_")
                     continue
                 end
