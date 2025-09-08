@@ -49,7 +49,7 @@ SPDX-License-Identifier: BSD-3-Clause
 | [![][docs-stable-img]][docs-stable-url] [![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url] [![][cov-img]][cov-url] | [![][aqua-img]][aqua-url] [![][sciml-img]][sciml-url] |
 | **Deployment** | **License** | **Socials** |
 | [![][release-img]][release-url]  [![][docker-img]][docker-url] | [![][license-img]][license-url] [![][doi-img]][doi-url] | [![][youtube-img]][youtube-url] ![HiRSE Code Promo 
-Badge](hirse-img) |
+Badge][hirse-img] |
 
 Welcome to `PeriLab`, a comprehensive platform for working with peridynamics, designed to support researchers and practitioners at all levels of expertise.
 
