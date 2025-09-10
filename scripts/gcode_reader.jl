@@ -24,6 +24,10 @@ function parse_commandline()
         help = "width"
         arg_type = Float64
         default = 0.4
+        "--height", "-w"
+        help = "height"
+        arg_type = Float64
+        default = 0.2
         "--plot_enabled", "-p"
         help = "plot_enabled"
         arg_type = Bool
@@ -575,6 +579,7 @@ end
 function main(gcode_file::String,
               sampling::Float64,
               width::Float64,
+              height::Float64,
               plot_enabled::Bool,
               commands_dict)
     @info "Read gcode file $gcode_file"
@@ -586,13 +591,14 @@ function main(gcode_file::String,
         pd_mesh["y_peri"] = []
     end
     pd_mesh["sampling"] = sampling
-    pd_mesh["volume"] = sampling * width * width
+    pd_mesh["volume"] = sampling * width * height
     # pd_mesh["grid"] = grid
     # pd_mesh["grid_y"] = grid_y
     pd_mesh["previous_time"] = 0
     pd_mesh["previous_extruding"] = 0
     pd_mesh["remaining_distance"] = sampling / 2
     pd_mesh["width"] = width
+    pd_mesh["height"] = height
 
     pd_mesh["mesh_df"] = DataFrame(x = Float64[],
                                    y = Float64[],
@@ -630,4 +636,5 @@ commands_dict["End"] = parsed_args["end"]
 main(parsed_args["filename"],
      parsed_args["sampling"],
      parsed_args["width"],
+     parsed_args["height"],
      parsed_args["plot_enabled"], commands_dict)

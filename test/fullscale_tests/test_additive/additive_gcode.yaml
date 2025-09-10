@@ -13,6 +13,7 @@ PeriLab:
       Overwrite Mesh: True
       Sampling: 1.5
       Width: 0.4
+      Height: 0.4
       Scale: 1.0
       Start Command: "TYPE:Solid infill,TYPE:Perimeter"
       Stop Command: "TYPE:Custom,TYPE:Skirt/Brim"

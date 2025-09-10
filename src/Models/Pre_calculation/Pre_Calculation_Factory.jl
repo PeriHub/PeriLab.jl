@@ -3,9 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Pre_Calculation
-using DataStructures: OrderedDict
 include("../../Core/Module_inclusion/set_Modules.jl")
-using DataStructures: OrderedDict
+using DataStructures
 using .Set_modules
 global module_list = Set_modules.find_module_files(@__DIR__, "pre_calculation_name")
 Set_modules.include_files(module_list)

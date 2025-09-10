@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 using CSV
-using OrderedCollections: OrderedDict
+using OrderedCollections
 export create_result_file
 export write_global_results_in_csv
 
