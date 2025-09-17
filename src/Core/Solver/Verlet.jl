@@ -562,7 +562,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                                      false)
                 end
 
-                forces[active_nodes, :] += external_forces[active_nodes, :]
+                @views forces[active_nodes, :] += external_forces[active_nodes, :]
                 @views force_densities[active_nodes,
                                        :] += external_force_densities[active_nodes,
                                                                       :] .+
