@@ -417,7 +417,7 @@ end
 function add_in_place!(C::AbstractMatrix{T},
                        A::Vector{Vector{T}},
                        B::Vector{Vector{T}},
-                       factor = 1) where {T<:Union{Int64,Float64,Bool}}
+                       factor = 1) where {T<:Union{Int64,Float64}}
     m = length(A)
     n = length(A[1])
 

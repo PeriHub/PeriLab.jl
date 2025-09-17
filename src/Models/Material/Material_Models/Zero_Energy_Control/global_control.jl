@@ -148,13 +148,11 @@ function bond_force_computation_3d!(zStiff::AbstractArray{Float64}, df::MVector{
 end
 
 function get_zero_energy_mode_force_3d!(nodes::AbstractVector{Int64},
-                                        zStiff,
-                                        deformation_gradient,
-                                        undeformed_bond,
-                                        deformed_bond,
-                                        bond_force)
-    # Working code
-    # bond_force[iID][:, :] = (-zStiff[iID, :, :] * (deformation_gradient[iID, :, :] * (undeformed_bond[iID])' - (deformed_bond[iID])'))'
+                                        zStiff::AbstractArray{Float64},
+                                        deformation_gradient::Array{Float64,3},
+                                        undeformed_bond::Vector{Vector{Vector{Float64}}},
+                                        deformed_bond::Vector{Vector{Vector{Float64}}},
+                                        bond_force::Vector{Vector{Vector{Float64}}})
     df = MVector{3}(zeros(Float64, 3))
     @inbounds @fastmath for iID in nodes
         @inbounds @fastmath @views for nID in axes(undeformed_bond[iID], 1)
@@ -211,7 +209,7 @@ Creates the zero energy mode stiffness, based on the UMAT interface
 """
 
 function global_zero_energy_mode_stiffness(ID::Int64,
-                                           C,
+                                           C::AbstractArray{Float64,4},
                                            Kinv::Array{Float64,3},
                                            zStiff::Array{Float64,3})
 
@@ -267,10 +265,10 @@ Rotates the fourth order tensor
 # Returns
 - `C::Array{Float64,4}`: The fourth order tensor
 """
-function rotate_fourth_order_tensor(angles::Union{Vector{Float64},Vector{Int64}},
+function rotate_fourth_order_tensor(angles::Vector{T},
                                     C::Array{Float64,4},
                                     dof::Int64,
-                                    back::Bool)
+                                    back::Bool) where {T<:Union{Int64,Float64}}
     rot = rotation_tensor(angles, dof)
     @views R = rot[1:dof, 1:dof]
     if back
