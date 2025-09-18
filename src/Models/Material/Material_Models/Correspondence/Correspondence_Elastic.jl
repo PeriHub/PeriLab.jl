@@ -108,7 +108,7 @@ Example:
 ```
 """
 function compute_stresses(datamanager::Module,
-                          nodes,
+                          nodes::AbstractVector{Int64},
                           dof::Int64,
                           material_parameter::Dict,
                           time::Float64,

@@ -47,6 +47,19 @@ export get_hexagon
 export nearest_point_id
 export get_shared_horizon
 
+const MAPPING_2D = @SMatrix [1 1; 2 2; 2 1]
+const MAPPING_3D = @SMatrix [1 1; 2 2; 3 3; 2 3; 1 3; 1 2]
+
+@inline function get_mapping(dof::Int64)
+    if dof == 2
+        return MAPPING_2D
+    elseif dof == 3
+        return MAPPING_3D
+    else
+        @error "$dof is no valid mapping option."
+        return Matrix{Int64}(undef, 0, 0)
+    end
+end
 function get_shared_horizon(datamanager, id)
     horizon = datamanager.get_field("Shared Horizon")
     return horizon[id]
@@ -348,17 +361,6 @@ function find_point_in_element(el_topology, near_points, coor, fu, coupling_dict
     return coupling_dict
 end
 
-function get_mapping(dof::Int64)::Matrix{Int64}
-    if dof == 2
-        return [1 1; 2 2; 2 1]
-    elseif dof == 3
-        return [1 1; 2 2; 3 3; 2 3; 1 3; 1 2]
-    else
-        @error "$dof is no valid mapping option."
-        return Matrix{Int64}(undef, 0, 0)
-    end
-end
-
 function matrix_diff!(s3::AbstractArray{Float64,3}, nodes::AbstractVector{Int64},
                       s2::AbstractArray{Float64,3},
                       s1::AbstractArray{Float64,3})
@@ -374,7 +376,7 @@ end
                            C::AbstractMatrix{Float64},
                            strain_increment::AbstractMatrix{Float64},
                            stress_N::AbstractMatrix{Float64},
-                           mapping::Matrix{Int64})
+                           mapping::SMatrix)
     @inbounds @fastmath for m in axes(mapping, 1)
         i = mapping[m, 1]
         j = mapping[m, 2]
