@@ -100,9 +100,9 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
-- `stress_N::SubArray`: Stress of step N.
-- `stress_NP1::SubArray`: Stress of step N+1.
+- `strainInc::AbstractArray{Float64,3}`: Strain increment.
+- `stress_N::AbstractArray{Float64,3}`: Stress of step N.
+- `stress_NP1::AbstractArray{Float64,3}`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
 # Returns
 - `datamanager::Data_manager`: Datamanager.
@@ -118,9 +118,9 @@ function compute_stresses(datamanager::Module,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::Union{SubArray,Array{Float64,3}},
-                          stress_N::Union{SubArray,Array{Float64,3}},
-                          stress_NP1::Union{SubArray,Array{Float64,3}})
+                          strain_increment::AbstractArray{Float64,3},
+                          stress_N::AbstractArray{Float64,3},
+                          stress_NP1::AbstractArray{Float64,3})
     von_Mises_stress_yield = datamanager.get_field("von Mises Yield Stress", "NP1")
     plastic_strain_N = datamanager.get_field("Plastic Strain", "N")
     plastic_strain_NP1 = datamanager.get_field("Plastic Strain", "NP1")

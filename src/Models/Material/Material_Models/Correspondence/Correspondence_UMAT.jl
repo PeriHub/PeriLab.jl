@@ -205,9 +205,9 @@ function compute_stresses(datamanager::Module,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::Union{SubArray,Array{Float64,3}},
-                          stress_N::Union{SubArray,Array{Float64,3}},
-                          stress_NP1::Union{SubArray,Array{Float64,3}})
+                          strain_increment::AbstractArray{Float64,3},
+                          stress_N::AbstractArray{Float64,3},
+                          stress_NP1::AbstractArray{Float64,3})
     # the notation from the Abaqus Fortran subroutine is used.
     nstatev = material_parameter["Number of State Variables"]
     nprops = material_parameter["Number of Properties"]
@@ -497,10 +497,10 @@ function compute_stresses_ba(datamanager::Module,
                              material_parameter::Dict,
                              time::Float64,
                              dt::Float64,
-                             strain_increment::Union{SubArray,Array{Float64,3},
+                             strain_increment::Union{AbstractArray{Float64,3},
                                                      Vector{Float64}},
                              stress_N::Union{SubArray,Array{Float64,3},Vector{Float64}},
-                             stress_NP1::Union{SubArray,Array{Float64,3},
+                             stress_NP1::Union{AbstractArray{Float64,3},
                                                Vector{Float64}})
     @error "$(correspondence_name()) not yet implemented for bond associated."
 end

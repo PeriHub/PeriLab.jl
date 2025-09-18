@@ -118,9 +118,9 @@ function compute_stresses(datamanager::Module,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::Union{SubArray,Array{Float64,3}},
-                          stress_N::Union{SubArray,Array{Float64,3}},
-                          stress_NP1::Union{SubArray,Array{Float64,3}},
+                          strain_increment::AbstractArray{Float64},
+                          stress_N::AbstractArray{Float64},
+                          stress_NP1::AbstractArray{Float64},
                           iID_jID_nID::Tuple = ())
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."

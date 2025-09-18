@@ -540,16 +540,20 @@ Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
 # Returns
 - `voigt::Vector{Float64}`: The Voigt notation.
 """
-function matrix_to_voigt(matrix)
+
+function matrix_to_voigt(matrix::AbstractMatrix{Float64})
     if length(matrix) == 4
-        return [matrix[1, 1]; matrix[2, 2]; 0.5 * (matrix[1, 2] + matrix[2, 1])]
+        @inbounds return @SVector [matrix[1, 1],
+            matrix[2, 2],
+            0.5 * (matrix[1, 2] + matrix[2, 1])]
+
     elseif length(matrix) == 9
-        return [matrix[1, 1]
-                matrix[2, 2]
-                matrix[3, 3]
-                0.5 * (matrix[2, 3] + matrix[3, 2])
-                0.5 * (matrix[1, 3] + matrix[3, 1])
-                0.5 * (matrix[1, 2] + matrix[2, 1])]
+        @inbounds return @SVector [matrix[1, 1],
+            matrix[2, 2],
+            matrix[3, 3],
+            0.5 * (matrix[2, 3] + matrix[3, 2]),
+            0.5 * (matrix[1, 3] + matrix[3, 1]),
+            0.5 * (matrix[1, 2] + matrix[2, 1])]
     else
         @error "Unsupported matrix size for matrix_to_voigt"
         return nothing
@@ -580,28 +584,28 @@ function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
 end
 
 """
-    matrix_to_vector(matrix)
+    matrix_to_vector(matrix::AbstractMatrix{Float64})
 
 Convert a 3x3 matrix to a 6x1 vector
 
 # Arguments
 - `matrix::Matrix{Float64}`: The matrix.
 # Returns
-- `vector::Vector{Float64}`: The vector.
+- `vector::SVector{Float64}`: The Vorigt vector.
 """
-function matrix_to_vector(matrix)
+function matrix_to_vector(matrix::AbstractMatrix{Float64})
     if length(matrix) == 4
-        return [matrix[1, 1]; matrix[2, 2]; 0.0; matrix[1, 2]; matrix[2, 1]]
+        @inbounds return @SVector [
+            matrix[1, 1],
+            matrix[2, 2],
+            0.0,
+            matrix[1, 2],
+            matrix[2, 1]
+        ]
     elseif length(matrix) == 9
-        return [matrix[1, 1]
-                matrix[2, 2]
-                matrix[3, 3]
-                matrix[1, 2]
-                matrix[2, 3]
-                matrix[3, 1]
-                matrix[2, 1]
-                matrix[3, 2]
-                matrix[1, 3]]
+        @inbounds return @SVector [matrix[1, 1], matrix[2, 2], matrix[3, 3],
+            matrix[1, 2], matrix[2, 3], matrix[3, 1],
+            matrix[2, 1], matrix[3, 2], matrix[1, 3]]
     end
 end
 
@@ -757,8 +761,8 @@ end
 """
 
 function get_von_mises_yield_stress(von_Mises_stress::Float64,
-                                    spherical_stress,
-                                    deviatoric_stress)
+                                    spherical_stress::AbstractMatrix{Float64},
+                                    deviatoric_stress::AbstractMatrix{Float64})
     temp = zero(eltype(deviatoric_stress))
     @views @inbounds @fastmath for i in axes(deviatoric_stress, 1)
         for j in axes(deviatoric_stress, 2)
@@ -798,7 +802,7 @@ end
 - `strain::Matrix{Float64}`: Strain
 """
 function get_strain(stress_NP1::Matrix{Float64},
-                    hooke_matrix::Union{Matrix{Float64},MMatrix,SMatrix})
+                    hooke_matrix::AbstractMatrix{Float64})
     return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
 end
 
@@ -827,22 +831,23 @@ end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64},
                            E::Union{SubArray,Vector{Float64},Vector{Int64}},
-                           bond_force)
+                           bond_force::Vector{Vector{Float64}})
     @inbounds @fastmath for i in nodes
-        @views @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i, j] *= E[i]
+        @views @inbounds @fastmath for bf in bond_force[i]
+            bf *= E[i]
         end
     end
 end
 
-function apply_pointwise_E(nodes::AbstractVector{Int64}, bond_force, dependent_field)
+function apply_pointwise_E(nodes::AbstractVector{Int64},
+                           bond_force::Vector{Vector{Float64}}, dependent_field)
     warning_flag = true
     @inbounds @fastmath for i in nodes
         E_int = interpol_data(dependent_field[i],
                               damage_parameter["Young's Modulus"]["Data"],
                               warning_flag)
-        @views @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i, j] *= E_int
+        @views @inbounds @fastmath for bf in bond_force[i]
+            bf *= E_int
         end
     end
 end

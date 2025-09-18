@@ -706,10 +706,12 @@ Example:
 loc_to_glob(1:10)  # converts the local index to the global index
 ```
 """
-function loc_to_glob(range::Union{UnitRange{Int64},Vector{Int64}})
+function loc_to_glob(range::Vector{Int64})
     return data["distribution"][range]
 end
-
+function loc_to_glob(range::UnitRange{Int64})
+    return data["distribution"][range]
+end
 """
     init_properties()
 

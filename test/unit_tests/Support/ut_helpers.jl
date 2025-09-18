@@ -323,9 +323,11 @@ end
 # only interface test, because the called fromVoigt function is tested in "Tensors"
 @testset "ut_get_fourth_order" begin
     @test size(PeriLab.Solver_control.Helpers.get_fourth_order(zeros(Float64, 6, 6),
-                                                               Val(3))) == (3, 3, 3, 3)
+                                                               3)) == (3, 3, 3, 3)
     @test size(PeriLab.Solver_control.Helpers.get_fourth_order(zeros(Float64, 3, 3),
-                                                               Val(2))) == (2, 2, 2, 2)
+                                                               2)) == (2, 2, 2, 2)
+    @test size(PeriLab.Solver_control.Helpers.get_fourth_order(zeros(Float64, 3, 3),
+                                                               1)) == (0, 0, 0, 0)
 end
 
 @testset "ut_progress_bar" begin

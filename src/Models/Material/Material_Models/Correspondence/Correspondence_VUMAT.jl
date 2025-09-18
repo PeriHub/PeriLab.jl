@@ -170,9 +170,9 @@ function compute_stresses(datamanager::Module,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::Union{SubArray,Array{Float64,3}},
-                          stress_N::Union{SubArray,Array{Float64,3}},
-                          stress_NP1::Union{SubArray,Array{Float64,3}})
+                          strain_increment::AbstractArray{Float64,3},
+                          stress_N::AbstractArray{Float64,3},
+                          stress_NP1::AbstractArray{Float64,3})
     nnodes = length(nodes)
     # Number of normal stress components at this point
     ndi = dof

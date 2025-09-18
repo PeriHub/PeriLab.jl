@@ -6,7 +6,7 @@ module Helpers
 
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
 using Meshes
-using Tensors
+#using Tensors
 using Dierckx
 using ProgressBars
 using LinearAlgebra
@@ -53,7 +53,7 @@ function get_shared_horizon(datamanager, id)
 end
 
 """
-     matrix_to_vector(mat::Union{Matrix{Float64},Matrix{Int64}})
+     matrix_to_vector(mat::Matrix{T}) where {T<:Union{Float64,Int64}}
 
 Transforming a matrix representation in a Vector{Vector} representation.
 
@@ -62,7 +62,7 @@ Transforming a matrix representation in a Vector{Vector} representation.
 # Returns
 - ``: transformed data
 """
-function matrix_to_vector(mat::Union{Matrix{Float64},Matrix{Int64}})
+function matrix_to_vector(mat::Matrix{T}) where {T<:Union{Float64,Int64}}
     return [vec(mat[i, :]) for i in eachindex(axes(mat, 1))]
 end
 
@@ -774,7 +774,7 @@ of the tensor.
 - `dof::Int64`: The dimension of the resulting symmetric fourth-order tensor.
 
 # Returns
-- `SymmetricFourthOrderTensor{dof}`: A symmetric fourth-order tensor of dimension `dof`.
+- `Array{Float64,4}`: A symmetric fourth-order tensor of dimension `dof`.
 
 # Example
 ```julia
@@ -782,8 +782,90 @@ CVoigt = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
 dof = 3
 result = get_fourth_order(CVoigt, dof)
 """
-function get_fourth_order(CVoigt::T, ::Val{DOF}) where {DOF,T}
-    return fromvoigt(SymmetricTensor{4,DOF}, CVoigt)
+function get_fourth_order(CVoigt::AbstractMatrix{Float64}, dof::Int64)
+    if dof==2
+        return voigt_to_tensor4_2d!(zeros(Float64, 2, 2, 2, 2), CVoigt)
+
+    elseif dof==3
+        return voigt_to_tensor4_3d!(zeros(Float64, 3, 3, 3, 3), CVoigt)
+    else
+        @error "$dof is not a valid option. Only dof 2 and 3 are supported."
+        return zeros(Float64, 0, 0, 0, 0)
+    end
+end
+
+function voigt_to_tensor4_2d!(T4::Array{Float64,4}, C_voigt::AbstractMatrix{Float64})
+    @inbounds begin
+        T4[1, 1, 1, 1] = C_voigt[1, 1]
+        T4[2, 2, 2, 2] = C_voigt[2, 2]
+
+        T4[1, 1, 2, 2] = C_voigt[1, 2]
+        T4[2, 2, 1, 1] = C_voigt[2, 1]
+
+        c33 = C_voigt[3, 3]
+        T4[1, 2, 1, 2] = T4[1, 2, 2, 1] = T4[2, 1, 1, 2] = T4[2, 1, 2, 1] = c33
+
+        c13 = C_voigt[1, 3]
+        T4[1, 1, 1, 2] = T4[1, 1, 2, 1] = c13
+
+        c23 = C_voigt[2, 3]
+        T4[2, 2, 1, 2] = T4[2, 2, 2, 1] = c23
+
+        c31 = C_voigt[3, 1]
+        T4[1, 2, 1, 1] = T4[2, 1, 1, 1] = c31
+
+        c32 = C_voigt[3, 2]
+        T4[1, 2, 2, 2] = T4[2, 1, 2, 2] = c32
+    end
+
+    return T4
+end
+function voigt_to_tensor4_3d!(T4::Array{Float64,4}, C_voigt::AbstractMatrix{Float64})
+    @inbounds begin
+        c11, c22, c33 = C_voigt[1, 1], C_voigt[2, 2], C_voigt[3, 3]
+        c12, c13, c23 = C_voigt[1, 2], C_voigt[1, 3], C_voigt[2, 3]
+        c44, c55, c66 = C_voigt[4, 4], C_voigt[5, 5], C_voigt[6, 6]
+
+        T4[1, 1, 1, 1] = c11
+        T4[2, 2, 2, 2] = c22
+        T4[3, 3, 3, 3] = c33
+
+        T4[1, 1, 2, 2] = T4[2, 2, 1, 1] = c12
+        T4[1, 1, 3, 3] = T4[3, 3, 1, 1] = c13
+        T4[2, 2, 3, 3] = T4[3, 3, 2, 2] = c23
+
+        T4[2, 3, 2, 3] = T4[2, 3, 3, 2] = T4[3, 2, 2, 3] = T4[3, 2, 3, 2] = c44
+        T4[1, 3, 1, 3] = T4[1, 3, 3, 1] = T4[3, 1, 1, 3] = T4[3, 1, 3, 1] = c55
+        T4[1, 2, 1, 2] = T4[1, 2, 2, 1] = T4[2, 1, 1, 2] = T4[2, 1, 2, 1] = c66
+
+        if C_voigt[1, 4] != 0 || C_voigt[1, 5] != 0 || C_voigt[1, 6] != 0 ||
+           C_voigt[2, 4] != 0 || C_voigt[2, 5] != 0 || C_voigt[2, 6] != 0 ||
+           C_voigt[3, 4] != 0 || C_voigt[3, 5] != 0 || C_voigt[3, 6] != 0 ||
+           C_voigt[4, 5] != 0 || C_voigt[4, 6] != 0 || C_voigt[5, 6] != 0
+            c14, c15, c16 = C_voigt[1, 4], C_voigt[1, 5], C_voigt[1, 6]
+            c24, c25, c26 = C_voigt[2, 4], C_voigt[2, 5], C_voigt[2, 6]
+            c34, c35, c36 = C_voigt[3, 4], C_voigt[3, 5], C_voigt[3, 6]
+            c45, c46, c56 = C_voigt[4, 5], C_voigt[4, 6], C_voigt[5, 6]
+
+            T4[1, 1, 2, 3] = T4[1, 1, 3, 2] = T4[2, 3, 1, 1] = T4[3, 2, 1, 1] = c14
+            T4[1, 1, 1, 3] = T4[1, 1, 3, 1] = T4[1, 3, 1, 1] = T4[3, 1, 1, 1] = c15
+            T4[1, 1, 1, 2] = T4[1, 1, 2, 1] = T4[1, 2, 1, 1] = T4[2, 1, 1, 1] = c16
+            T4[2, 2, 2, 3] = T4[2, 2, 3, 2] = T4[2, 3, 2, 2] = T4[3, 2, 2, 2] = c24
+            T4[2, 2, 1, 3] = T4[2, 2, 3, 1] = T4[1, 3, 2, 2] = T4[3, 1, 2, 2] = c25
+            T4[2, 2, 1, 2] = T4[2, 2, 2, 1] = T4[1, 2, 2, 2] = T4[2, 1, 2, 2] = c26
+            T4[3, 3, 2, 3] = T4[3, 3, 3, 2] = T4[2, 3, 3, 3] = T4[3, 2, 3, 3] = c34
+            T4[3, 3, 1, 3] = T4[3, 3, 3, 1] = T4[1, 3, 3, 3] = T4[3, 1, 3, 3] = c35
+            T4[3, 3, 1, 2] = T4[3, 3, 2, 1] = T4[1, 2, 3, 3] = T4[2, 1, 3, 3] = c36
+            T4[2, 3, 1, 3] = T4[2, 3, 3, 1] = T4[3, 2, 1, 3] = T4[3, 2, 3, 1] = c45
+            T4[1, 3, 2, 3] = T4[1, 3, 3, 2] = T4[3, 1, 2, 3] = T4[3, 1, 3, 2] = c45
+            T4[2, 3, 1, 2] = T4[2, 3, 2, 1] = T4[3, 2, 1, 2] = T4[3, 2, 2, 1] = c46
+            T4[1, 2, 2, 3] = T4[1, 2, 3, 2] = T4[2, 1, 2, 3] = T4[2, 1, 3, 2] = c46
+            T4[1, 3, 1, 2] = T4[1, 3, 2, 1] = T4[3, 1, 1, 2] = T4[3, 1, 2, 1] = c56
+            T4[1, 2, 1, 3] = T4[1, 2, 3, 1] = T4[2, 1, 1, 3] = T4[2, 1, 3, 1] = c56
+        end
+    end
+
+    return T4
 end
 
 """
@@ -941,13 +1023,13 @@ function progress_bar(rank::Int64, nsteps::Int64, silent::Bool)
 end
 
 """
-    rotate(nodes::AbstractVector{Int64}, dof::Int64, matrix::Union{SubArray,Array{Float64,3}}, angles::SubArray, back::Bool)
+    rotate(nodes::AbstractVector{Int64}, dof::Int64, matrix::AbstractArray{Float64,3}, angles::SubArray, back::Bool)
 
 Rotates the matrix.
 
 # Arguments
 - `nodes::AbstractVector{Int64}`: List of block nodes.
-- `matrix::Union{SubArray,Array{Float64,3}}`: Matrix.
+- `matrix::AbstractArray{Float64,3}`: Matrix.
 - `rot::SubArray`: Rotation tensor.
 - `back::Bool`: Back.
 # Returns
