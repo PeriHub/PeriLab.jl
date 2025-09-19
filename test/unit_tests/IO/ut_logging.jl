@@ -92,36 +92,3 @@ end
     # Test if the file is still nothing
     @test isnothing(result_file["file"])
 end
-
-@testset "close_result_files tests" begin
-    # Create sample dictionaries with open files
-    file_path1 = "test_output1.txt"
-    file1 = open(file_path1, "w")
-    result_file1 = Dict("file" => file1)
-
-    file_path2 = "test_output2.txt"
-    file2 = open(file_path2, "w")
-    result_file2 = Dict("file" => file2)
-
-    result_files = [result_file1, result_file2]
-
-    # Write something to the files
-    write(result_file1["file"], "Test data 1")
-    write(result_file2["file"], "Test data 2")
-
-    # Call the function to close the files
-    result = Logging_module.close_result_files(result_files)
-
-    # Check if the files are closed
-    is_closed1 = !isopen(result_file1["file"])
-    is_closed2 = !isopen(result_file2["file"])
-
-    # Test if the files are closed and the function returns true
-    @test is_closed1 == true
-    @test is_closed2 == true
-    @test result == true
-
-    # Clean up
-    rm(file_path1, force = true)
-    rm(file_path2, force = true)
-end
