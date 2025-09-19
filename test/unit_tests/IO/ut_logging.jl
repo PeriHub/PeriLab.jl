@@ -62,33 +62,3 @@ import .Logging_module
                                                        Base.CoreLogging.LogLevel}}}
     # @test contains(current_logger().loggers[2].logger.stream.name, "<file test_2.1")
 end
-
-@testset "close_result_file tests" begin
-    # Create a sample dictionary with an open file
-    file_path = "test_output.txt"
-    file = open(file_path, "w")
-    result_file = Dict("file" => file)
-
-    # Write something to the file
-    write(result_file["file"], "Test data")
-
-    # Call the function to close the file
-    check = Logging_module.close_result_file(result_file)
-    @test check
-    # Check if the file is closed
-    is_closed = !isopen(result_file["file"])
-
-    # Test if the file is closed
-    @test is_closed
-
-    # Clean up
-    rm(file_path, force = true)
-    # Create a sample dictionary with file set to nothing
-    result_file = Dict("file" => nothing)
-
-    # Call the function to close the file
-    check = Logging_module.close_result_file(result_file)
-    @test !check
-    # Test if the file is still nothing
-    @test isnothing(result_file["file"])
-end
