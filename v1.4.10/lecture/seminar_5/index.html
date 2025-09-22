@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Seminar 5 · PeriLab</title><meta name="title" content="Seminar 5 · PeriLab"/><meta property="og:title" content="Seminar 5 · PeriLab"/><meta property="twitter:title" content="Seminar 5 · PeriLab"/><meta name="description" content="Documentation for PeriLab."/><meta property="og:description" content="Documentation for PeriLab."/><meta property="twitter:description" content="Documentation for PeriLab."/><meta property="og:url" content="https://github.com/PeriHub/PeriLab.jl/lecture/seminar_5/"/><meta property="twitter:url" content="https://github.com/PeriHub/PeriLab.jl/lecture/seminar_5/"/><link rel="canonical" href="https://github.com/PeriHub/PeriLab.jl/lecture/seminar_5/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img class="docs-light-only" src="../../assets/logo.png" alt="PeriLab logo"/><img class="docs-dark-only" src="../../assets/logo-dark.png" alt="PeriLab logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">PeriLab</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Introduction</a></li><li><a class="tocitem" href="../../man/basics/">First Steps with PeriLab</a></li><li><span class="tocitem">User Guide</span><ul><li><a class="tocitem" href="../../man/getting_started/">Getting Started</a></li><li><a class="tocitem" href="../../man/input_yaml/">Input File</a></li><li><a class="tocitem" href="../../man/mesh_input/">Mesh and Nodesets</a></li><li><a class="tocitem" href="../../man/bond_filter/">Bond-Filter</a></li><li><input class="collapse-toggle" id="menuitem-3-5" type="checkbox"/><label class="tocitem" for="menuitem-3-5"><span class="docs-label">Models</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../man/models/overview/">Overview</a></li><li><a class="tocitem" href="../../man/models/materials/">Material Models</a></li><li><a class="tocitem" href="../../man/models/damage/">Damage Models</a></li><li><a class="tocitem" href="../../man/models/thermal/">Thermal Models</a></li><li><a class="tocitem" href="../../man/models/additive/">Additive Models</a></li><li><a class="tocitem" href="../../man/models/contact/">Contact Models</a></li></ul></li><li><a class="tocitem" href="../../man/output/">Output</a></li><li><a class="tocitem" href="../../man/solver/solver/">Solver</a></li></ul></li><li><span class="tocitem">Theory</span><ul><li><a class="tocitem" href="../../theory/theory/">Basics</a></li><li><input class="collapse-toggle" id="menuitem-4-2" type="checkbox"/><label class="tocitem" for="menuitem-4-2"><span class="docs-label">Peridynamic Basics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../theory/theory_bondbased/">Bond-based</a></li><li><a class="tocitem" href="../../theory/theory_ordinary/">Ordinary state-based</a></li><li><a class="tocitem" href="../../theory/theory_correspondence/">Non-Ordinary state-based</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-3" type="checkbox"/><label class="tocitem" for="menuitem-4-3"><span class="docs-label">Multi-Physics</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../theory/theory_thermal/">Thermal Models</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-4" type="checkbox"/><label class="tocitem" for="menuitem-4-4"><span class="docs-label">Finite Element Method</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../theory/theory_FEM/">FEM</a></li><li><a class="tocitem" href="../../theory/theory_FEM_PD_coupling/">Finite Element - Peridynamics coupling</a></li></ul></li><li><input class="collapse-toggle" id="menuitem-4-5" type="checkbox"/><label class="tocitem" for="menuitem-4-5"><span class="docs-label">Modelling strategies</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../../theory/theory_surface_correction/">Surface Correction</a></li></ul></li></ul></li><li><span class="tocitem">Non-local structural mechanics and peridynamics</span><ul><li><a class="tocitem" href="../lecture/">Course Description</a></li><li><input class="collapse-toggle" id="menuitem-5-2" type="checkbox" checked/><label class="tocitem" for="menuitem-5-2"><span class="docs-label">Seminars</span><i class="docs-chevron"></i></label><ul class="collapsed"><li><a class="tocitem" href="../seminar_1/">Seminar 1</a></li><li><a class="tocitem" href="../seminar_2/">Seminar 2</a></li><li><a class="tocitem" href="../seminar_3/">Seminar 3</a></li><li><a class="tocitem" href="../seminar_4/">Seminar 4</a></li><li class="is-active"><a class="tocitem" href>Seminar 5</a><ul class="internal"><li><a class="tocitem" href="#Seminar-5:-From-bond-based-to-state-based-II-(Application)"><span>Seminar 5: From bond-based to state-based II (Application)</span></a></li><li><a class="tocitem" href="#Create-you-own-model"><span>Create you own model</span></a></li></ul></li><li><a class="tocitem" href="../seminar_6/">Seminar 6</a></li><li><a class="tocitem" href="../seminar_7/">Seminar 7</a></li><li><a class="tocitem" href="../seminar_8/">Seminar 8</a></li><li><a class="tocitem" href="../seminar_9/">Seminar 9</a></li></ul></li></ul></li><li><a class="tocitem" href="../../lib/faq/">FAQ</a></li><li><a class="tocitem" href="../../lib/glossar/">Glossar</a></li><li><a class="tocitem" href="../../lib/references/">References</a></li><li><a class="tocitem" href="../../lib/links/">Useful Links</a></li><li><span class="tocitem">Development</span><ul><li><a class="tocitem" href="../../man/dev/developement_guide/">Guide</a></li><li><a class="tocitem" href="../../man/dev/start_dev/">Getting started</a></li><li><a class="tocitem" href="../../man/dev/datamanager/">Datamanager</a></li><li><a class="tocitem" href="../../man/dev/module_integration/">Module integration</a></li><li><a class="tocitem" href="../../man/dev/testing/">Software Testing</a></li></ul></li><li><span class="tocitem">API</span><ul><li><a class="tocitem" href="../../lib/model_factory_functions/">Model Factory</a></li><li><a class="tocitem" href="../../lib/data_manager_functions/">Data Manager</a></li><li><a class="tocitem" href="../../lib/solver_functions/">Solver</a></li><li><a class="tocitem" href="../../lib/io_functions/">IO</a></li><li><a class="tocitem" href="../../lib/geometry_functions/">Geometry</a></li><li><a class="tocitem" href="../../lib/mpi_functions/">MPI</a></li><li><a class="tocitem" href="../../lib/helper_functions/">Helper</a></li><li><a class="tocitem" href="../../lib/logging_functions/">Logging</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Non-local structural mechanics and peridynamics</a></li><li><a class="is-disabled">Seminars</a></li><li class="is-active"><a href>Seminar 5</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Seminar 5</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/PeriHub/PeriLab.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/PeriHub/PeriLab.jl/blob/main/docs/src/lecture/seminar_5.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h2 id="Seminar-5:-From-bond-based-to-state-based-II-(Application)"><a class="docs-heading-anchor" href="#Seminar-5:-From-bond-based-to-state-based-II-(Application)">Seminar 5: From bond-based to state-based II (Application)</a><a id="Seminar-5:-From-bond-based-to-state-based-II-(Application)-1"></a><a class="docs-heading-anchor-permalink" href="#Seminar-5:-From-bond-based-to-state-based-II-(Application)" title="Permalink"></a></h2><p>Convergence of the different methods</p><p><img src="../../assets/ECCOMAS_convergence.png" alt/></p><p>Figure taken from [<a href="../../lib/references/#RaedelM2017">35</a>]</p><pre><code class="language-yaml hljs">PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1
+      Node Set 2: 5
+    Type: &quot;Text File&quot;
+    Input Mesh File: &quot;truss.txt&quot;
+  Models:
+    Material Models:
+      Test:
+        Material Model: &quot;PD Solid Elastic&quot;
+        Symmetry: &quot;isotropic plane stress&quot;
+        Young&#39;s Modulus: 7000
+        Poisson&#39;s Ratio: 0.3
+  Blocks:
+    block_1:
+      Block ID: 1
+      Material Model: &quot;Test&quot;
+      Density: 2e-9
+      Horizon: 2
+  Boundary Conditions:
+    BC_1:
+      Variable: &quot;Displacements&quot;
+      Node Set: &quot;Node Set 1&quot;
+      Coordinate: &quot;x&quot;
+      Value: &quot;100*t&quot;
+      Type: Dirichlet
+    BC_2:
+      Variable: &quot;Displacements&quot;
+      Coordinate: &quot;x&quot;
+      Node Set: &quot;Node Set 2&quot;
+      Value: &quot;0.1*t&quot;
+      Type: Dirichlet
+  Solver:
+    Material Models: True
+    Initial Time: 0.0
+    Final Time: 1.0
+    Number of Steps: 20
+    Static:
+      Show solver iteration: true
+      Residual tolerance: 1e-7
+      Solution tolerance: 1e-8
+      Residual scaling: 7000
+      m: 550
+      Maximum number of iterations: 100
+  Outputs:
+    Output1:
+      Output Filename: &quot;truss&quot;
+      Output File Type: Exodus
+      Number of Output Steps: 20
+      Output Variables:
+        Displacements: True
+        Number of Neighbors: True
+        Forces: True</code></pre><p><a href="https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/Ordinary.jl">Ordinary</a> <a href="https://github.com/PeriHub/PeriLab.jl/blob/main/src/Models/Material/Material_Models/Ordinary/PD_Solid_Elastic.jl">PD Solid Elastic</a></p><p><strong>Difference to PD Solid.</strong></p><pre><code class="language-yaml hljs">PeriLab:
+  Discretization:
+    Node Sets:
+      Node Set 1: 1
+      Node Set 2: 5
+    Type: &quot;Text File&quot;
+    Input Mesh File: &quot;truss.txt&quot;
+  Models:
+    Material Models:
+      Test:
+        Material Model: &quot;Correspondence Elastic&quot;
+        Symmetry: &quot;isotropic plane stress&quot;
+        Young&#39;s Modulus: 7000
+        Poisson&#39;s Ratio: 0.3
+        Global Control: true
+  Outputs:
+    Output1:
+      Output Filename: &quot;truss&quot;
+      Output File Type: Exodus
+      Number of Output Steps: 20
+      Output Variables:
+        Displacements: True
+        Number of Neighbors: True
+        Forces: True
+        Cauchy Stress: True</code></pre><p><a href="https://github.com/PeriHub/PeriLab.jl/tree/main/examples/Seminars/Part_05">Models for the seminar</a></p><h2 id="Create-you-own-model"><a class="docs-heading-anchor" href="#Create-you-own-model">Create you own model</a><a id="Create-you-own-model-1"></a><a class="docs-heading-anchor-permalink" href="#Create-you-own-model" title="Permalink"></a></h2><ul><li>create a mesh (block.jl is an example)</li><li>specify node lists for boundary conditions</li><li>define your yaml file</li><li>run your model</li><li>analyse it in <a href="https://www.paraview.org/">Paraview</a></li></ul><script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+    startOnLoad: true,
+    theme: "neutral"
+});
+</script></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../seminar_4/">« Seminar 4</a><a class="docs-footer-nextpage" href="../seminar_6/">Seminar 6 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Monday 22 September 2025 12:36">Monday 22 September 2025</span>. Using Julia version 1.10.10.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
