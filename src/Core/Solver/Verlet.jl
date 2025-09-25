@@ -120,8 +120,8 @@ This function depends on the following data fields from the `datamanager` module
 """
 function compute_mechanical_critical_time_step(nodes::AbstractVector{Int64},
                                                datamanager::Module,
-                                               bulk_modulus::Union{Float64,Int64,SubArray,
-                                                                   Vector{Float64}})
+                                               bulk_modulus::Union{Float64,Int64,
+                                                                   AbstractVector{Float64}})
     critical_time_step::Float64 = 1.0e50
     nlist = datamanager.get_nlist()
     density = datamanager.get_field("Density")
