@@ -77,7 +77,7 @@ function compute_model(datamanager::Module,
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
     bond_displacements = datamanager.get_field("Bond Displacements")
-    critical_field = datamanager.has_key("Critical_Value")
+
     critical_energy = critical_field ? datamanager.get_field("Critical_Value") :
                       damage_parameter["Critical Value"]
     critical_energy_value = 0.0
@@ -145,7 +145,7 @@ function compute_model(datamanager::Module,
                 critical_energy_value = critical_energy[iID]
             elseif inter_block_damage
                 critical_energy_value = inter_critical_energy[block_ids[iID],
-                                                              block_ids[neighborID], block]
+                block_ids[neighborID], block]
 
                 param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
                              string(block_ids[neighborID])
