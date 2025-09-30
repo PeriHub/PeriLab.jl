@@ -269,7 +269,7 @@ global expected_structure = Dict("PeriLab" => [
                                                                                                      "Normal Z" => [
                                                                                                          Union{Float64,
                                                                                                                Int64},
-                                                                                                         true
+                                                                                                         false
                                                                                                      ],
                                                                                                      "Lower Left Corner X" => [
                                                                                                          Union{Float64,

@@ -341,7 +341,6 @@ function main(filename::String;
                                                                                      filedirectory,
                                                                                      datamanager,
                                                                                      PERILAB_VERSION)
-                    Logging_module.set_result_files(result_files)
                 end
                 IO.set_output_frequency(params,
                                         datamanager,
@@ -392,7 +391,9 @@ function main(filename::String;
             if e isa InterruptException
                 @info "PeriLab was interrupted"
             elseif !isa(e, DomainError)
-                rethrow(e)
+                if !silent
+                    rethrow(e)
+                end
             end
         end
         if !isnothing(result_files)
