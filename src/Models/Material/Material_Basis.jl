@@ -123,7 +123,7 @@ function get_value(datamanager::Module,
 end
 
 """
-    get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}})
+	get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}})
 
 Returns the elastic moduli of the material.
 
@@ -249,7 +249,7 @@ function get_all_elastic_moduli(datamanager::Module,
 
     if state_factor_defined && datamanager.has_key("State Variables")
         state_factor = datamanager.get_field("State Variables")[:,
-                                                                parameter["State Factor ID"]]
+        parameter["State Factor ID"]]
         K .*= state_factor
         E .*= state_factor
         G .*= state_factor
@@ -269,7 +269,7 @@ function get_all_elastic_moduli(datamanager::Module,
 end
 
 """
-    get_Hooke_matrix(datamanager::Module, parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
+	get_Hooke_matrix(datamanager::Module, parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
 
 Returns the Hooke matrix of the material.
 
@@ -429,7 +429,7 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
 end
 
 """
-    distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
@@ -472,22 +472,22 @@ function distribute_forces!(force_densities::Matrix{Float64},
             @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
                 force_densities[iID,
-                                m] += bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[nlist[iID][jID]] *
-                                      bond_mod[jID][m]
+                m] += bond_damage[iID][jID] *
+                                           bond_force[iID][jID][m] *
+                                           volume[nlist[iID][jID]] *
+                                           bond_mod[jID][m]
                 force_densities[nlist[iID][jID],
-                                m] -= bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[iID] *
-                                      bond_mod[jID][m]
+                m] -= bond_damage[iID][jID] *
+                                                       bond_force[iID][jID][m] *
+                                                       volume[iID] *
+                                                       bond_mod[jID][m]
             end
         end
     end
 end
 
 """
-    distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
@@ -531,7 +531,7 @@ function distribute_forces!(force_densities::Matrix{Float64},
 end
 
 """
-    matrix_to_voigt(matrix)
+	matrix_to_voigt(matrix)
 
 Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
 
@@ -561,7 +561,7 @@ function matrix_to_voigt(matrix::AbstractMatrix{Float64})
 end
 
 """
-    voigt_to_matrix(voigt::Union{Vector{Float64},Vector{Int64}})
+	voigt_to_matrix(voigt::Union{Vector{Float64},Vector{Int64}})
 
 Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
 
@@ -584,7 +584,7 @@ function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
 end
 
 """
-    matrix_to_vector(matrix::AbstractMatrix{Float64})
+	matrix_to_vector(matrix::AbstractMatrix{Float64})
 
 Convert a 3x3 matrix to a 6x1 vector
 
@@ -610,7 +610,7 @@ function matrix_to_vector(matrix::AbstractMatrix{Float64})
 end
 
 """
-    vector_to_matrix(matrix)
+	vector_to_matrix(matrix)
 
 Convert a 6x1 vector to a 3x3 matrix
 
@@ -634,7 +634,7 @@ function vector_to_matrix(vector)
 end
 
 """
-    check_symmetry(prop::Dict, dof::Int64)
+	check_symmetry(prop::Dict, dof::Int64)
 
 Check if the symmetry information is present in the material dictionary.
 
@@ -660,7 +660,7 @@ function check_symmetry(prop::Dict, dof::Int64)
 end
 
 """
-    flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
+	flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
 
 Allows the modification of the yield stress at a specific position. This is typically used as starting point for plastic deformation.
 
@@ -719,7 +719,7 @@ function flaw_function(params::Dict,
 end
 
 """
-    get_symmetry(material::Dict)
+	get_symmetry(material::Dict)
 
 Return the symmetry information from the given material dictionary.
 
@@ -749,7 +749,7 @@ function get_symmetry(material::Dict)
 end
 
 """
-    get_von_mises_yield_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
+	get_von_mises_yield_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
 
 # Arguments
 - `von_Mises_stress::Float64`: Von Mises stress
@@ -793,7 +793,7 @@ function compute_deviatoric_and_spherical_stresses(stress,
 end
 
 """
-    get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
+	get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
 
 # Arguments
 - `stress_NP1::Matrix{Float64}`: Stress.
@@ -821,10 +821,10 @@ function compute_Piola_Kirchhoff_stress!(stress::AbstractMatrix{Float64},
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64}, E::Union{Int64,Float64},
-                           bond_force)
+                           bond_force::Vector{Vector{Float64}})
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i, j] *= E
+            bond_force[i][j] *= E
         end
     end
 end
