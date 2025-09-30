@@ -14,11 +14,11 @@ nodes = 9
 dof = 2  # 2D problem
 
 # Initialize data manager
-dm.initialize_data()
 dm.set_num_controller(nodes)
 dm.set_dof(dof)
 
 # Create node fields
+positions = dm.create_constant_node_field("Coordinates", Float64, dof)
 nn = dm.create_constant_node_field("Number of Neighbors", Int64, 1)
 h = dm.create_constant_node_field("Horizon", Float64, 1)
 volume = dm.create_constant_node_field("Volume", Float64, 1, 0.1)
@@ -32,17 +32,15 @@ volume = dm.create_constant_node_field("Force", Float64, 1, 0.1)
 # 4 5 6
 # 1 2 3
 
-positions = [
-    [0.0, 0.0],  # Node 1
-    [1.0, 0.0],  # Node 2
-    [2.0, 0.0],  # Node 3
-    [0.0, 1.0],  # Node 4
-    [1.0, 1.0],  # Node 5 (center)
-    [2.0, 1.0],  # Node 6
-    [0.0, 2.0],  # Node 7
-    [1.0, 2.0],  # Node 8
-    [2.0, 2.0]   # Node 9
-]
+positions[:, :] = [0.0 0.0; # Node 1
+                   1.0 0.0; # Node 2
+                   2.0 0.0; # Node 3
+                   0.0 1.0; # Node 4
+                   1.0 1.0; # Node 5 (center)
+                   2.0 1.0; # Node 6
+                   0.0 2.0; # Node 7
+                   1.0 2.0; # Node 8
+                   2.0 2.0;]
 dg_N, dg_NP1 = dm.create_node_field("Deformed Coordinates", Float64, dof)
 dg_N = copy(positions)
 # Set horizon for each node (e.g., 1.5 to reach nearest neighbors)
