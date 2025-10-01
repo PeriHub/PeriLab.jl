@@ -243,9 +243,7 @@ function compute_plastic_model(stress_NP1,
                                               deviatoric_stress_NP1,
                                               dof)
 
-    von_Mises_stress_yield = get_von_mises_yield_stress(von_Mises_stress_yield,
-                                                        spherical_stress_NP1,
-                                                        deviatoric_stress_NP1)
+    von_Mises_stress_yield = get_von_mises_yield_stress(deviatoric_stress_NP1)
     if von_Mises_stress_yield < reduced_yield_stress
         # material is elastic and nothing happens
         plastic_strain_NP1 = plastic_strain_N
@@ -256,9 +254,7 @@ function compute_plastic_model(stress_NP1,
                               deviatoric_stress_magnitude_NP1
     @views stress_NP1 = deviatoric_stress_NP1 + spherical_stress_NP1 .* I(dof)
 
-    von_Mises_stress_yield = get_von_mises_yield_stress(von_Mises_stress_yield,
-                                                        spherical_stress_NP1,
-                                                        deviatoric_stress_NP1)
+    von_Mises_stress_yield = get_von_mises_yield_stress(spherical_stress_NP1)
     #https://de.wikipedia.org/wiki/Plastizit%C3%A4tstheorie
     #############################
     # comment taken from Peridigm elastic_plastic_correspondence.cxx

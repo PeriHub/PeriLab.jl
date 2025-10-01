@@ -749,20 +749,16 @@ function get_symmetry(material::Dict)
 end
 
 """
-	get_von_mises_yield_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
+	get_von_mises_yield_stress(deviatoric_stress::AbstractMatrix{Float64})
 
 # Arguments
-- `von_Mises_stress::Float64`: Von Mises stress
-- `dof::Int64`: Degree of freedom.
-- `stress_NP1::Matrix{Float64}`: Stress.
+- `deviatoric_stress_NP1::AbstractMatrix{Float64}`: Deviatoric stress
 # returns
-- `spherical_stress_NP1::Float64`: Spherical stress
-- `deviatoric_stress_NP1::Matrix{Float64}`: Deviatoric stress
+- `von_Mises_stress::Float64`: Von Mises stress
+
 """
 
-function get_von_mises_yield_stress(von_Mises_stress::Float64,
-                                    spherical_stress::AbstractMatrix{Float64},
-                                    deviatoric_stress::AbstractMatrix{Float64})
+function get_von_mises_yield_stress(deviatoric_stress::AbstractMatrix{Float64})
     temp = zero(eltype(deviatoric_stress))
     @views @inbounds @fastmath for i in axes(deviatoric_stress, 1)
         for j in axes(deviatoric_stress, 2)
@@ -770,9 +766,7 @@ function get_von_mises_yield_stress(von_Mises_stress::Float64,
         end
     end
 
-    von_Mises_stress = sqrt(3.0 / 2.0 * temp)
-
-    return von_Mises_stress
+    return sqrt(3.0 / 2.0 * temp)
 end
 
 function compute_deviatoric_and_spherical_stresses(stress,
