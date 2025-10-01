@@ -137,12 +137,12 @@ function compute_bb_force!(bond_force::Vector{Vector{Float64}},
                            undeformed_bond_length::Vector{Float64},
                            deformed_bond::Vector{Vector{Float64}})
     @inbounds @fastmath for i in axes(bond_force, 1)
-        @inbounds @fastmath for (j, bf) in enumerate(bond_force[i])
-            bf = (constant *
-                  bond_damage[i] *
-                  (deformed_bond_length[i] - undeformed_bond_length[i]) /
-                  undeformed_bond_length[i]) * deformed_bond[i][j] /
-                 deformed_bond_length[i]
+        @inbounds @fastmath for j in eachindex(bond_force[i])
+            bond_force[i][j] = (constant *
+                                bond_damage[i] *
+                                (deformed_bond_length[i] - undeformed_bond_length[i]) /
+                                undeformed_bond_length[i]) * deformed_bond[i][j] /
+                               deformed_bond_length[i]
         end
     end
 end
