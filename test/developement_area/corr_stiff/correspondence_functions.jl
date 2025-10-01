@@ -127,7 +127,7 @@ Arguments:
 Returns:
 - T4: 4th order elasticity tensor (2x2x2x2)
 """
-function voigt_to_tensor4_2d(C_voigt::Matrix{Float64})
+function voigt_to_tensor4_2d(C_voigt::AbstractMatrix{Float64})
     T4 = zeros(2, 2, 2, 2)
 
     # Standard 2D Voigt notation mapping:
