@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module CorrespondenceStiffnessMatrix
-
+using SparseArrays
 include("correspondence_functions.jl")
 
 """
@@ -240,91 +240,64 @@ Arguments:
 Returns:
 - K: Sparse global stiffness matrix (nnodes*dof × nnodes*dof)
 """
+
 function assemble_stiffness_contributions_sparse(nnodes::Int64,
                                                  dof::Int64,
                                                  C_Voigt::Array{Float64,3},
-                                                 inverse_shape_tensor::Array{Float64,3},
+                                                 inverse_shape_tensor::Array{Float64,
+                                                                             3},
                                                  nlist::Vector{Vector{Int64}},
                                                  volume::Vector{Float64},
                                                  bond_geometry::Vector{Vector{Vector{Float64}}},
                                                  omega::Vector{Vector{Float64}})
-    total_dof = nnodes * dof
+    K = zeros(nnodes*dof, nnodes*dof)
+    # Process each node i
+    for i in 1:nnodes
+        D_inv = inverse_shape_tensor[i, :, :]
+        @views C_tensor = voigt_to_tensor4_2d(C_Voigt[i, :, :])
 
-    # Pre-allocate sparse matrix components
-    I = Int64[]
-    J = Int64[]
-    V = Float64[]
-
-    # Temporary storage for K_ij contributions
-    K_ij_storage = zeros(dof, nnodes * dof)
-
-    # Process each node iID
-    for iID in 1:nnodes
-        D_inv = inverse_shape_tensor[iID, :, :]
-        @views C_tensor = voigt_to_tensor4_2d(C_Voigt[iID, :, :])
-
-        # Compute all K_ijk operators for this node
-        K_ijk = compute_all_linearized_operators(iID, C_tensor, D_inv,
+        K_ijk = compute_all_linearized_operators(i, C_tensor, D_inv,
                                                  volume, bond_geometry,
                                                  omega, nlist)
 
-        # Process each neighbor jID of node iID
-        for (jID, njID) in enumerate(nlist[iID])
-            X_ij = bond_geometry[iID][jID]
-            omega_ij = omega[iID][njID]
-            V_i = volume[iID]
-            V_j = volume[jID]
+        # Process each neighbor j of node i
+        for (j_idx, j) in enumerate(nlist[i])
+            omega_ij = omega[i][j_idx]
+            V_i = volume[i]
+            V_j = volume[j]
 
-            # Reset local K_ij matrix for this bond
-            K_ij_storage .= 0.0
+            # Local K_ij matrix for this bond
+            K_ij = zeros(dof, nnodes * dof)
 
-            # Sum over all kID in neighborhood of iID
-            for (kID, nkID) in enumerate(nlist[iID])
-                omega_ik = omega[iID][nkID]
-                V_k = volume[kID]
+            # Sum over all k in neighborhood of i
+            for (k_idx, k) in enumerate(nlist[i])
+                omega_ik = omega[i][k_idx]
+                V_k = volume[k]
 
                 # Get pre-computed K_ijk block
-                K_block = K_ijk[(iID, jID, kID)]
+                # This already contains temp = CB_ik : D_i^(-1) ⊗ X_ij
+                K_block = K_ijk[(i, j, k)]
 
                 # Fill K_ij based on K_block
                 for m in 1:dof
                     for o in 1:dof
-                        K_ij_storage[m, (iID-1)*dof+o] -= omega_ij * V_k * omega_ik *
-                                                          K_block[m, o]
-                        K_ij_storage[m, (kID-1)*dof+o] += omega_ij * V_k * omega_ik *
-                                                          K_block[m, o]
+                        K_ij[m, (i-1)*dof+o] -= omega_ij * V_k * omega_ik * K_block[m, o]
+                        K_ij[m, (k-1)*dof+o] += omega_ij * V_k * omega_ik * K_block[m, o]
                     end
                 end
             end
 
-            # Add K_ij contributions to sparse arrays
+            # Add K_ij to global matrix K
             for m in 1:dof
-                row_j = (jID-1)*dof + m
-                row_i = (iID-1)*dof + m
-
-                for n in 1:total_dof
-                    val = K_ij_storage[m, n]
-
-                    if abs(val) > 1e-16  # Only store non-zero entries
-                        # Contribution to row jID
-                        push!(I, row_j)
-                        push!(J, n)
-                        push!(V, -val * V_i)
-
-                        # Contribution to row iID
-                        push!(I, row_i)
-                        push!(J, n)
-                        push!(V, val * V_j)
-                    end
+                for n in 1:(nnodes * dof)
+                    K[(j-1)*dof+m, n] -= K_ij[m, n] * V_i
+                    K[(i-1)*dof+m, n] += K_ij[m, n] * V_j
                 end
             end
         end
     end
 
-    # Create sparse matrix (duplicate entries will be automatically summed)
-    K = sparse(I, J, V, total_dof, total_dof)
-
-    return K
+    return sparse(K)
 end
 
 """

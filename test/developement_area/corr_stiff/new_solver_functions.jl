@@ -22,7 +22,6 @@ function compute_displacements!(K::SparseMatrixCSC{Float64,Int64},
                                 u::Vector{Float64},
                                 F::Vector{Float64},
                                 F_temp::Vector{Float64},
-                                lu_fact::SuiteSparse.UMFPACK.UmfpackLU{Float64,Int64},
                                 temp::Vector{Float64})
 
     # Compute modified force: F_modified = F - K * u_prescribed
@@ -31,10 +30,10 @@ function compute_displacements!(K::SparseMatrixCSC{Float64,Int64},
     F_temp .= F .- F_temp  # F_temp = F - K*u (in-place)
 
     # Solve for free DOFs: K_reduced * u_free = F_temp[non_BCs]
-    @views ldiv!(temp, lu_fact, F_temp[non_BCs])
+    #@views ldiv!(temp, lu(K[non_BCs, non_BCs]), F_temp[non_BCs])
 
     # Update displacement vector at free DOFs
-    @views u[non_BCs] .= temp
+    @views u[non_BCs] .= K[non_BCs, non_BCs] / F_temp[non_BCs]'
 
     return nothing
 end
