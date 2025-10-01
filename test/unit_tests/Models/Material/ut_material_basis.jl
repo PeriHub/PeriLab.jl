@@ -19,8 +19,8 @@ using .Material_Basis:
                        compute_Piola_Kirchhoff_stress!,
                        apply_pointwise_E,
                        init_local_damping_due_to_damage
-## include("../../../../src/PeriLab.jl")
-## using .PeriLab
+#include("../../../../src/PeriLab.jl")
+#using .PeriLab
 
 @testset "ut_init_local_damping_due_to_damage" begin
     test_data_manager = PeriLab.Data_manager
@@ -41,30 +41,40 @@ end
 @testset "ut_apply_pointwise_E" begin
     nodes = 2:3
 
-    bond_force=[ones(2), ones(2), ones(2), ones(2)]
+    bond_force=[[ones(2), ones(2)], [ones(2), ones(2)], [ones(2), ones(2)]]
     E = 3.3
-    bond_force[2][2] = 3
+    bond_force[3][2][2] = 3
     apply_pointwise_E(nodes, E, bond_force)
-    @test bond_force[1][1] == 1
-    @test bond_force[1][2] == 1
-    @test bond_force[2][1] == E
-    @test bond_force[2][2] == 3 * E
-    @test bond_force[3][1] == E
-    @test bond_force[3][2] == E
-    @test bond_force[4][1] == 1
-    @test bond_force[4][2] == 1
+    @test bond_force[1][1][1] == 1
+    @test bond_force[1][1][2] == 1
+    @test bond_force[1][2][1] == 1
+    @test bond_force[1][2][2] == 1
+    @test bond_force[2][2][1] == E
+    @test bond_force[2][2][2] == E
+    @test bond_force[2][2][1] == E
+    @test bond_force[2][2][2] == E
+    @test bond_force[3][1][1] == E
+    @test bond_force[3][1][2] == E
+    @test bond_force[3][2][1] == E
+    @test bond_force[3][2][2] == 3 * E
 
-    bond_force=[ones(2), ones(2), ones(2), ones(2)]
+    bond_force=[[ones(2), ones(2)], [ones(2), ones(2)], [ones(2), ones(2), ones(2)]]
     E = zeros(4)
     apply_pointwise_E(nodes, E, bond_force)
-    @test bond_force[1][1] == 1
-    @test bond_force[1][2] == 1
-    @test bond_force[2][1] == 0
-    @test bond_force[2][2] == 0
-    @test bond_force[3][1] == 0
-    @test bond_force[3][2] == 0
-    @test bond_force[4][1] == 1
-    @test bond_force[4][2] == 1
+    @test bond_force[1][1][1] == 1
+    @test bond_force[1][1][2] == 1
+    @test bond_force[1][2][1] == 1
+    @test bond_force[1][2][2] == 1
+    @test bond_force[2][1][1] == 0
+    @test bond_force[2][1][2] == 0
+    @test bond_force[2][2][1] == 0
+    @test bond_force[2][2][2] == 0
+    @test bond_force[3][1][1] == 0
+    @test bond_force[3][1][2] == 0
+    @test bond_force[3][2][1] == 0
+    @test bond_force[3][2][2] == 0
+    @test bond_force[3][3][1] == 0
+    @test bond_force[3][3][2] == 0
 end
 
 @testset "ut_distribute_forces" begin
@@ -479,8 +489,8 @@ end
     @test voigt[1] == 1
     @test voigt[2] == 4
     @test voigt[3] == 2.5
-    matrix = [1 2 3; 4 5 6; 7 8 9]
-    voigt = Matrix{Float64}(matrix_to_voigt(matrix))
+    matrix = Matrix{Float64}([1 2 3; 4 5 6; 7 8 9])
+    voigt = matrix_to_voigt(matrix)
     @test voigt[1] == 1
     @test voigt[2] == 5
     @test voigt[3] == 9

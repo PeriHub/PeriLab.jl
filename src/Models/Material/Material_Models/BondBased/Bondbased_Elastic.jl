@@ -58,7 +58,7 @@ function init_model(datamanager::Module,
 end
 
 """
-    material_name()
+	material_name()
 
 Returns the name of the material model.
 """
@@ -67,7 +67,7 @@ function material_name()
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+	compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
@@ -138,18 +138,17 @@ function compute_bb_force!(bond_force,
                            deformed_bond)
     @inbounds @fastmath for i in axes(bond_force, 1)
         @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i,
-                       j] = (constant *
-                             bond_damage[i] *
-                             (deformed_bond_length[i] - undeformed_bond_length[i]) /
-                             undeformed_bond_length[i]) * deformed_bond[i, j] /
-                            deformed_bond_length[i]
+            bond_force[i][j] = (constant *
+                                bond_damage[i] *
+                                (deformed_bond_length[i] - undeformed_bond_length[i]) /
+                                undeformed_bond_length[i]) * deformed_bond[i][j] /
+                               deformed_bond_length[i]
         end
     end
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+	fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 

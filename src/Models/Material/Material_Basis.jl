@@ -821,33 +821,33 @@ function compute_Piola_Kirchhoff_stress!(stress::AbstractMatrix{Float64},
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64}, E::Union{Int64,Float64},
-                           bond_force::Vector{Vector{Float64}})
+                           bond_force::Vector{Vector{Vector{Float64}}})
     @inbounds @fastmath for i in nodes
-        @views @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i][j] *= E
+        @views @inbounds @fastmath for bf in bond_force[i]
+            bf .*= E
         end
     end
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64},
                            E::Union{SubArray,Vector{Float64},Vector{Int64}},
-                           bond_force::Vector{Vector{Float64}})
+                           bond_force::Vector{Vector{Vector{Float64}}})
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for bf in bond_force[i]
-            bf *= E[i]
+            bf .*= E[i]
         end
     end
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64},
-                           bond_force::Vector{Vector{Float64}}, dependent_field)
+                           bond_force::Vector{Vector{Vector{Float64}}}, dependent_field)
     warning_flag = true
     @inbounds @fastmath for i in nodes
         E_int = interpol_data(dependent_field[i],
                               damage_parameter["Young's Modulus"]["Data"],
                               warning_flag)
         @views @inbounds @fastmath for bf in bond_force[i]
-            bf *= E_int
+            bf .*= E_int
         end
     end
 end
