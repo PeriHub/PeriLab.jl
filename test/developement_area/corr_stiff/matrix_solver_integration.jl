@@ -51,119 +51,24 @@ for iID in 1:nodes
     end
 end
 
-function assemble_stiffness_contributions_sparse_edit(nnodes::Int64,
-                                                      dof::Int64,
-                                                      C_Voigt::Array{Float64,3},
-                                                      inverse_shape_tensor::Array{Float64,
-                                                                                  3},
-                                                      nlist::Vector{Vector{Int64}},
-                                                      volume::Vector{Float64},
-                                                      bond_geometry::Vector{Vector{Vector{Float64}}},
-                                                      omega::Vector{Vector{Float64}})
-    K = zeros(nnodes*dof, nnodes*dof)
-    # Process each node i
-    for i in 1:nnodes
-        D_inv = inverse_shape_tensor[i, :, :]
-        @views C_tensor = voigt_to_tensor4_2d(C_Voigt[i, :, :])
-
-        K_ijk = compute_all_linearized_operators(i, C_tensor, D_inv,
-                                                 volume, bond_geometry,
-                                                 omega, nlist)
-
-        # Process each neighbor j of node i
-        for (j_idx, j) in enumerate(nlist[i])
-            omega_ij = omega[i][j_idx]
-            V_i = volume[i]
-            V_j = volume[j]
-
-            # Local K_ij matrix for this bond
-            K_ij = zeros(dof, nnodes * dof)
-
-            # Sum over all k in neighborhood of i
-            for (k_idx, k) in enumerate(nlist[i])
-                omega_ik = omega[i][k_idx]
-                V_k = volume[k]
-
-                # Get pre-computed K_ijk block
-                # This already contains temp = CB_ik : D_i^(-1) ⊗ X_ij
-                K_block = K_ijk[(i, j, k)]
-
-                # Fill K_ij based on K_block
-                for m in 1:dof
-                    for o in 1:dof
-                        K_ij[m, (i-1)*dof+o] -= omega_ij * V_k * omega_ik * K_block[m, o]
-                        K_ij[m, (k-1)*dof+o] += omega_ij * V_k * omega_ik * K_block[m, o]
-                    end
-                end
-            end
-
-            # Add K_ij to global matrix K
-            for m in 1:dof
-                for n in 1:(nnodes * dof)
-                    K[(j-1)*dof+m, n] -= K_ij[m, n] * V_i
-                    K[(i-1)*dof+m, n] += K_ij[m, n] * V_j
-                end
-            end
-        end
-    end
-
-    return sparse(K)
-end
-
-function compute_all_linearized_operators(iID::Int64, C_tensor::Array{Float64,4},
-                                          D_inv::Matrix{Float64}, volume::Vector{Float64},
-                                          bond_geometry::Vector{Vector{Vector{Float64}}},
-                                          omega::Vector{Vector{Float64}},
-                                          nlist::Vector{Vector{Int64}})
-    K_operators = Dict{Tuple{Int64,Int64,Int64},Matrix{Float64}}()
-
-    # Loop over all neighbors jID of node iID
-    for (jID, njID) in enumerate(nlist[iID])
-        X_ij = bond_geometry[iID][jID]
-        omega_ij = omega[iID][jID]
-
-        # Loop over all neighbors kID of node iID
-        for (kID, nkID) in enumerate(nlist[iID])
-            V_k = volume[kID]
-            omega_ik = omega[iID][kID]
-            X_ik = bond_geometry[iID][kID]
-
-            # Create B-tensor with omega_ik * V_k / 2 factor
-            B_ik = create_B_tensor(D_inv, X_ik, V_k, omega_ik)
-            CB = contraction(C_tensor, B_ik)
-
-            # Compute K_ijk operator
-            K_ijk = compute_linearized_operator(CB, D_inv,
-                                                X_ij, omega_ij, V_k, omega_ik)
-            K_operators[(iID, njID, nkID)] = K_ijk
-        end
-    end
-
-    return K_operators
-end
-
 # Assemble contributions from each node
-K_sparse = assemble_stiffness_contributions_sparse_edit(nodes,              # nnodes
-                                                        dof,                # dof
-                                                        C_voigt,            # C_Voigt
-                                                        inverse_shape_tensor, # inverse_shape_tensor
-                                                        nlist,              # nlist
-                                                        volume,      # volume
-                                                        bond_geometry,      # bond_geometry
-                                                        omega)
+K_sparse = assemble_stiffness_contributions_sparse(nodes,              # nnodes
+                                                   dof,                # dof
+                                                   C_voigt,            # C_Voigt
+                                                   inverse_shape_tensor, # inverse_shape_tensor
+                                                   nlist,              # nlist
+                                                   volume,      # volume
+                                                   bond_geometry,      # bond_geometry
+                                                   omega)
 
-function compute_displacments!(K::SparseMatrixCSC{Float64,Int64}, non_BCs::Vector{Int64},
-                               u::Vector{Float64}, F::Vector{Float64})
-    @views F = K*u
-    @views u[non_BCs] = K[non_BCs, non_BCs] / F[non_BCs]'
-end
-
-F = zeros(nodes*dof)
+F_int = zeros(nodes*dof)
+F_extern = zeros(nodes*dof)
 u = zeros(nodes*dof)
+temp = zeros(nodes*dof)
 u[16:18] .= 0.1
-non_BCs=collect(5:15)
+non_BCs=append!(collect(1:9), collect(13:15))
 
-compute_displacments!(K, non_BCs, u, F)
+compute_displacements!(K_sparse, non_BCs, u, F_extern, F_int, temp)
 
 function run_solver(solver_options, datamanager)
     @info "Run Linear Static Solver"
