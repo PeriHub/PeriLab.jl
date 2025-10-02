@@ -2,9 +2,15 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Matrix_linear_static
+module Linear_static_matrix_based
+using ProgressBars: set_multiline_postfix, set_postfix
+using Printf
 using SparseArrays
 using LinearAlgebra
+using TimerOutputs
+
+include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
+using .Correspondence_matrix_based
 
 """
 	init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
@@ -44,7 +50,25 @@ function init_solver(solver_options::Dict{Any,Any},
     # hier wird erstmal K bestimmt, bevor es woanders hinkommt.
     # indizes prüfen
     # vec und reshape prüfen
+    #first test constant material
+    println(params)
+    nodes = collect(1:datamanager.get_nnodes())
+    Correspondence_matrix_based.init(nodes, datamanager, params["Material"]["Mat_1"])
 
+    dof = datamanager.get_dof()
+    C_voigt = datamanager.get_field("Hooke Matrix")
+    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
+    nlist = datamanager.get_nlist()
+    volume = datamanager.get_field("Volume")
+    bond_geometry = datamanager.get_field("Bond Geometry")
+    K_sparse = assemble_stiffness_contributions_sparse(nodes,              # nnodes
+                                                       dof,                # dof
+                                                       C_voigt,            # C_Voigt
+                                                       inverse_shape_tensor, # inverse_shape_tensor
+                                                       nlist,              # nlist
+                                                       volume,      # volume
+                                                       bond_geometry,      # bond_geometry
+                                                       omega)
 end
 
 function run_solver(solver_options::Dict{Any,Any},
@@ -103,7 +127,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                    vec(force_densities),
                                    vec(external_force_densities))
 
-            @views deformed_coorNP1 := coor .+ uNP1
+            @views deformed_coorNP1 .= coor .+ uNP1
 
             if "Material" in solver_options["Models"]
                 # TODO rename function -> missleading, because strains are also covered. Has to be something like a factory class

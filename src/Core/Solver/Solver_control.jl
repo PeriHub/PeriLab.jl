@@ -19,6 +19,7 @@ using .Parameter_Handling:
 using .Helpers: fastdot, check_inf_or_nan, get_block_nodes
 include("../../Models/Model_Factory.jl")
 include("Verlet.jl")
+include("Matrix_linear_static.jl")
 include("Static_solver.jl")
 include("../BC_manager.jl")
 include("../../MPI_communication/MPI_communication.jl")
@@ -33,6 +34,7 @@ include("../Influence_function.jl")
 using .Model_Factory: init_models, read_properties
 using .Boundary_conditions: init_BCs
 using .Verlet
+using .Linear_static_matrix_based
 using .FEM
 using .Influence_function
 using TimerOutputs
@@ -41,7 +43,7 @@ export init
 export solver
 
 """
-    init(params::Dict, datamanager::Module)
+	init(params::Dict, datamanager::Module)
 
 Initialize the solver
 
@@ -118,26 +120,30 @@ function init(params::Dict,
                                                                    synchronise_field,
                                                                    to)
     @debug "Init Boundary Conditions"
+
     @timeit to "init_BCs" bcs=Boundary_conditions.init_BCs(params, datamanager)
+    # get name and checks if it is there
     solver_options["Solver"] = get_solver_name(solver_params)
+
+    @info "Init " * get_solver_name(solver_params)
     if get_solver_name(solver_params) == "Verlet"
-        @debug "Init " * get_solver_name(solver_params)
         @timeit to "init_solver" Verlet.init_solver(solver_options,
                                                     solver_params,
                                                     bcs,
                                                     datamanager,
                                                     block_nodes)
     elseif solver_options["Solver"] == "Static"
-        @debug "Init " * get_solver_name(solver_params)
         @timeit to "init_solver" Static_solver.init_solver(solver_options,
                                                            solver_params,
                                                            bcs,
                                                            datamanager,
                                                            block_nodes)
-
-    else
-        @error get_solver_name(solver_params) * " is no valid solver."
-        return nothing
+    elseif solver_options["Solver"] == "Linear Static Matrix Based"
+        @timeit to "init_solver" Linear_static_matrix_based.init_solver(solver_options,
+                                                                        solver_params,
+                                                                        bcs,
+                                                                        datamanager,
+                                                                        block_nodes)
     end
 
     if datamanager.fem_active()
@@ -158,7 +164,7 @@ function init(params::Dict,
 end
 
 """
-    set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
+	set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
 
 Sets the density of the nodes in the dictionary.
 
@@ -177,7 +183,7 @@ function set_density(params::Dict, block_nodes::Dict, density::Vector{Float64})
 end
 
 """
-    set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
+	set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
 
 Sets the density of the nodes in the dictionary.
 
@@ -224,7 +230,7 @@ function set_angles(datamanager::Module, params::Dict, block_nodes::Dict)
 end
 
 """
-    set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
+	set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
 
 Sets the fem_block of the nodes in the dictionary.
 
@@ -243,7 +249,7 @@ function set_fem_block(params::Dict, block_nodes::Dict, fem_block::Vector{Bool})
 end
 
 """
-    set_horizon(params::Dict, block_nodes::Dict, horizon::Vector{Float64})
+	set_horizon(params::Dict, block_nodes::Dict, horizon::Vector{Float64})
 
 Sets the horizon of the nodes in the dictionary.
 
@@ -262,7 +268,7 @@ function set_horizon(params::Dict, block_nodes::Dict, horizon::Vector{Float64})
 end
 
 """
-    solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, to, silent::Bool)
+	solver(solver_options::Dict{String,Any}, block_nodes::Dict{Int64,Vector{Int64}}, bcs::Dict{Any,Any}, datamanager::Module, outputs::Dict{Int64,Dict{}}, result_files::Vector{Any}, write_results, to, silent::Bool)
 
 Runs the solver.
 
@@ -318,7 +324,7 @@ function solver(solver_options::Dict{Any,Any},
 end
 
 """
-    synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
+	synchronise_field(comm, synch_fields::Dict, overlap_map, get_field, synch_field::String, direction::String)
 
 Synchronises field.
 
@@ -375,7 +381,7 @@ function synchronise_field(comm,
 end
 
 """
-    remove_models(datamanager::Module, solver_options::Vector{String})
+	remove_models(datamanager::Module, solver_options::Vector{String})
 
 Sets the active models to false if they are deactivated in the solver. They can be active, because they are defined as model and in the blocks.
 
