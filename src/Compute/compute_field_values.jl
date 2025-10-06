@@ -131,22 +131,21 @@ function calculate_stresses(datamanager::Module,
                             options::Dict{String,Any})
     active_list = datamanager.get_field("Active")
     for block in eachindex(block_nodes)
+        correspondence = occursin("Correspondence",
+                                  datamanager.get_properties(block, "Material Model")["Material Model"])
         if options["Calculate Cauchy"] |
            options["Calculate von Mises stress"] |
-           options["Calculate Strain"]
+           options["Calculate Strain"] | correspondence
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes, block_nodes[block])
-            if !occursin("Correspondence",
-                         datamanager.get_properties(block, "Material Model")["Material Model"])
+            if !correspondence
                 datamanager = get_partial_stresses(datamanager, active_nodes)
             end
         end
-        if options["Calculate von Mises stress"]
+        if options["Calculate von Mises stress"] | correspondence
             datamanager = calculate_von_mises_stress(datamanager, active_nodes)
         end
-        if options["Calculate Strain"] &&
-           !occursin("Correspondence",
-                     datamanager.get_properties(block, "Material Model")["Material Model"])
+        if options["Calculate Strain"] && !correspondence
             material_parameter = datamanager.get_properties(block, "Material Model")
             hookeMatrix = get_Hooke_matrix(datamanager,
                                            material_parameter,
