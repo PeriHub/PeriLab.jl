@@ -12,7 +12,7 @@ export compute
 export fields_for_local_synchronization
 
 """
-    pre_calculation_name()
+	pre_calculation_name()
 
 Gives the pre_calculation name. It is needed for comparison with the yaml input deck.
 
@@ -32,7 +32,7 @@ function pre_calculation_name()
 end
 
 """
-    init_model(datamanager, nodes, parameter)
+	init_model(datamanager, nodes, parameter)
 
 Inits the shape tensor calculation.
 
@@ -53,11 +53,30 @@ function init_model(datamanager::Module,
                                            VectorOrMatrix = "Matrix")
     datamanager.create_constant_node_field("Inverse Shape Tensor", Float64, dof,
                                            VectorOrMatrix = "Matrix")
+
+    # should be done here, because the shape tensor is needed for the matrix based correspondence models
+    nlist = datamanager.get_nlist()
+    volume = datamanager.get_field("Volume")
+    omega = datamanager.get_field("Influence Function")
+    bond_damage = datamanager.get_bond_damage("NP1")
+    undeformed_bond = datamanager.get_field("Bond Geometry")
+    shape_tensor = datamanager.get_field("Shape Tensor")
+    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
+
+    compute_shape_tensors!(shape_tensor,
+                           inverse_shape_tensor,
+                           nodes,
+                           nlist,
+                           volume,
+                           omega,
+                           bond_damage,
+                           undeformed_bond)
+
     return datamanager
 end
 
 """
-    compute(datamanager::Module, nodes::AbstractVector{Int64})
+	compute(datamanager::Module, nodes::AbstractVector{Int64})
 
 Compute the shape tensor.
 
@@ -95,7 +114,7 @@ function compute(datamanager::Module,
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+	fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 
