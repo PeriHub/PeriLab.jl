@@ -3,10 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_matrix_based
-
+include("../../Material_Basis.jl")
+include("../../../../Support/Helpers.jl")
+using .Helpers: get_fourth_order
+using .Material_Basis: get_Hooke_matrix
 using SparseArrays
 
-export init
+export init_model
 
 """
 Peridynamic Correspondence Stiffness Matrix Assembly with Voigt Notation
@@ -256,7 +259,7 @@ function assemble_stiffness_contributions_sparse(nnodes::Int64,
     # Process each node i
     for i in 1:nnodes
         D_inv = inverse_shape_tensor[i, :, :]
-        @views C_tensor = voigt_to_tensor4_2d(C_Voigt[i, :, :])
+        @views C_tensor = get_fourth_order(C_Voigt[i, :, :], dof)
 
         K_ijk = compute_all_linearized_operators(i, C_tensor, D_inv,
                                                  volume, bond_geometry,

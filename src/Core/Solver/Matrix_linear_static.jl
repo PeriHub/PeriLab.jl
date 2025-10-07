@@ -10,7 +10,7 @@ using LinearAlgebra
 using TimerOutputs
 
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
-using .Correspondence_matrix_based
+using .Correspondence_matrix_based: assemble_stiffness_contributions_sparse
 
 """
 	init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
@@ -51,9 +51,11 @@ function init_solver(solver_options::Dict{Any,Any},
     # indizes prüfen
     # vec und reshape prüfen
     #first test constant material
-    println(params)
-    nodes = collect(1:datamanager.get_nnodes())
-    Correspondence_matrix_based.init(nodes, datamanager, params["Material"]["Mat_1"])
+
+    for (block, nodes) in pairs(block_nodes)
+        model_param = datamanager.get_properties(block, "Material Model")
+        Correspondence_matrix_based.init_model(datamanager, nodes, model_param)
+    end
 
     dof = datamanager.get_dof()
     C_voigt = datamanager.get_field("Hooke Matrix")
@@ -61,7 +63,8 @@ function init_solver(solver_options::Dict{Any,Any},
     nlist = datamanager.get_nlist()
     volume = datamanager.get_field("Volume")
     bond_geometry = datamanager.get_field("Bond Geometry")
-    K_sparse = assemble_stiffness_contributions_sparse(nodes,              # nnodes
+    omega = datamanager.get_field("Influence Function")
+    K_sparse = assemble_stiffness_contributions_sparse(datamanager.get_nnodes(),              # nnodes
                                                        dof,                # dof
                                                        C_voigt,            # C_Voigt
                                                        inverse_shape_tensor, # inverse_shape_tensor
@@ -69,6 +72,7 @@ function init_solver(solver_options::Dict{Any,Any},
                                                        volume,      # volume
                                                        bond_geometry,      # bond_geometry
                                                        omega)
+    display(K_sparse)
 end
 
 function run_solver(solver_options::Dict{Any,Any},
