@@ -224,6 +224,11 @@ function compute_all_linearized_operators(iID::Int64, C_tensor::Array{Float64,4}
     return K_operators
 end
 
+function add_zero_energy_stiff(K, nnodes, dof, C_Voigt,
+                               inverse_shape_tensor, nlist, volume,
+                               bond_geometry, omega)
+end
+
 """
 	assemble_stiffness_contributions_sparse(nnodes, dof, C_Voigt,
 										   inverse_shape_tensor, nlist, volume,
