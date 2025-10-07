@@ -318,6 +318,19 @@ function solver(solver_options::Dict{Any,Any},
                                         compute_parabolic_problems_after_model_evaluation,
                                         to,
                                         silent)
+    elseif solver_options["Solver"] == "Linear Static Matrix Based"
+        return Linear_static_matrix_based.run_solver(solver_options,
+                                                     block_nodes,
+                                                     bcs,
+                                                     datamanager,
+                                                     outputs,
+                                                     result_files,
+                                                     synchronise_field,
+                                                     write_results,
+                                                     compute_parabolic_problems_before_model_evaluation,
+                                                     compute_parabolic_problems_after_model_evaluation,
+                                                     to,
+                                                     silent)
     end
 end
 
