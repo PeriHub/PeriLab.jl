@@ -8,9 +8,15 @@ using Printf
 using SparseArrays
 using LinearAlgebra
 using TimerOutputs
+include("../../MPI_communication/MPI_communication.jl")
+using .MPI_communication: barrier
 include("../../Support/Parameters/parameter_handling.jl")
 using .Parameter_Handling: get_initial_time,
                            get_final_time
+include("../../Support/Helpers.jl")
+using .Helpers: check_inf_or_nan, find_active_nodes, progress_bar
+include("../BC_manager.jl")
+using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 using .Correspondence_matrix_based: assemble_stiffness_contributions_sparse
 
@@ -53,7 +59,7 @@ function init_solver(solver_options::Dict{Any,Any},
     # indizes prüfen
     # vec und reshape prüfen
     #first test constant material
-
+    find_bc_free_dof(datamanager, bcs)
     solver_options["Initial Time"] = get_initial_time(params, datamanager)
     solver_options["Final Time"] = get_final_time(params, datamanager)
     @warn "Number of steps is set to 1."
@@ -79,7 +85,7 @@ function init_solver(solver_options::Dict{Any,Any},
                                                        volume,      # volume
                                                        bond_geometry,      # bond_geometry
                                                        omega)
-    display(K_sparse)
+    datamanager.set_stiffness_matrix(K_sparse)
 end
 
 function run_solver(solver_options::Dict{Any,Any},
@@ -97,6 +103,7 @@ function run_solver(solver_options::Dict{Any,Any},
     atexit(() -> datamanager.set_cancel(true))
 
     @info "Run Linear Static Solver"
+    max_damage::Float64 = 0
     volume = datamanager.get_field("Volume")
     coor = datamanager.get_field("Coordinates")
     comm = datamanager.get_comm()
@@ -107,13 +114,14 @@ function run_solver(solver_options::Dict{Any,Any},
         a = datamanager.get_field("Acceleration")
     end
 
-    dt::Float64 = solver_options["dt"]
+    dt::Float64 = solver_options["Final Time"]
     nsteps::Int64 = solver_options["Number of Steps"]
     time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     #nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
+
     @inbounds @fastmath for idt in iter
         datamanager.set_iteration(idt)
         @timeit to "Linear Static" begin
@@ -132,6 +140,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                              step_time)
             external_force_densities.=external_forces ./ volume
             # reshape
+            non_BCs = datamanager.get_bc_free_dof()
             compute_displacements!(K,
                                    non_BCs,
                                    vec(uNP1),
@@ -139,13 +148,6 @@ function run_solver(solver_options::Dict{Any,Any},
                                    vec(external_force_densities))
 
             @views deformed_coorNP1 .= coor .+ uNP1
-
-            if "Material" in solver_options["Models"]
-                # TODO rename function -> missleading, because strains are also covered. Has to be something like a factory class
-                @timeit to "calculate_stresses" datamanager=calculate_stresses(datamanager,
-                                                                               block_nodes,
-                                                                               solver_options["Calculation"])
-            end
 
             # @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field,
             #                                                            "download_from_cores")
@@ -201,7 +203,7 @@ function compute_displacements!(K::SparseMatrixCSC{Float64,Int64},
     # Compute modified force: F_modified = F - K * u_prescribed
     # (u contains prescribed displacements at fixed DOFs)
     mul!(F_int, K, u)  # F_temp = K * u (in-place, no allocation)
-    F_int .= F_ext .- F_temp  # F_temp = F - K*u (in-place)
+    F_int .= F_ext .- F_int  # F_temp = F - K*u (in-place)
 
     # Update displacement vector at free DOFs
     @views u[non_BCs] .= K[non_BCs, non_BCs] / F_int[non_BCs]'

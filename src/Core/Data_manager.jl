@@ -101,7 +101,7 @@ export set_rotation
 export set_element_rotation
 
 """
-    initialize_data()
+	initialize_data()
 
 Initialize all parameter in the datamanager and sets them to the default values.
 """
@@ -128,6 +128,7 @@ function initialize_data()
     data["field_types"] = Dict()
     data["field_names"] = Vector{String}([])
     data["fields_to_synch"] = Dict()
+    data["Stiffness Matrix"] = AbstractMatrix{Float64}
     data["local_fields_to_synch"] = Dict("Material Model" => Dict(),
                                          "Damage Model" => Dict(),
                                          "Thermal Model" => Dict(),
@@ -188,7 +189,7 @@ end
 ###################################
 
 """
-    add_active_model(key::String, module_name::Module)
+	add_active_model(key::String, module_name::Module)
 
 Add the main modules to an OrderedDict which are active.
 
@@ -209,7 +210,7 @@ function add_active_model(key::String, active_module::Module, all::Bool = false)
 end
 
 """
-    get_accuracy_order()
+	get_accuracy_order()
 
 Returns the accuracy order for the "bond associated correspondence" implementation.
 
@@ -221,7 +222,7 @@ function get_accuracy_order()
 end
 
 """
-    get_comm()
+	get_comm()
 
 Get the MPI communicator
 """
@@ -230,7 +231,7 @@ function get_comm()
 end
 
 """
-    get_coupling_dict()
+	get_coupling_dict()
 
 Get the PD - FE coupling dict
 """
@@ -239,7 +240,7 @@ function get_coupling_dict()
 end
 
 """
-    get_coupling_fe_nodes()
+	get_coupling_fe_nodes()
 
 Get the FE nodes involved in the coupling
 """
@@ -252,7 +253,7 @@ function get_directory()
 end
 
 """
-    set_comm(comm::MPI.Comm)
+	set_comm(comm::MPI.Comm)
 
 Set the MPI communicator
 
@@ -264,7 +265,7 @@ function set_comm(comm::MPI.Comm)
 end
 
 """
-    check_property(block_id::Int64, property::String)
+	check_property(block_id::Int64, property::String)
 
 Checks if the specified `property` exists for the given `block_id`.
 
@@ -289,7 +290,7 @@ function fem_active()
 end
 
 """
-    get_active_models()
+	get_active_models()
 
 Returns a list active model modules.
 """
@@ -298,7 +299,7 @@ function get_active_models(all::Bool = false)
 end
 
 """
-    get_block_name_list()
+	get_block_name_list()
 
 Returns a list of all block IDs.
 """
@@ -307,7 +308,7 @@ function get_block_name_list()
 end
 
 """
-    get_block_id_list()
+	get_block_id_list()
 
 Returns a list of all block IDs.
 """
@@ -316,7 +317,7 @@ function get_block_id_list()
 end
 
 """
-    get_crit_values_matrix()
+	get_crit_values_matrix()
 
 Retrieves the critical values matrix.
 """
@@ -325,7 +326,7 @@ function get_crit_values_matrix()
 end
 
 """
-    get_aniso_crit_values()
+	get_aniso_crit_values()
 
 Retrieves the critical values matrix.
 """
@@ -334,7 +335,7 @@ function get_aniso_crit_values()
 end
 
 """
-    get_bond_damage(time::String)
+	get_bond_damage(time::String)
 Get the bond damage
 
 # Arguments
@@ -350,7 +351,7 @@ function get_bond_damage(time::String)
 end
 
 """
-    get_field_type()
+	get_field_type()
 Get the type of a field
 
 # Returns
@@ -369,7 +370,7 @@ function get_field_type(name::String, vartype::Bool = true)
 end
 
 """
-    get_inverse_nlist()
+	get_inverse_nlist()
 
 Get the inverse of the neighborhood list.
 """
@@ -378,7 +379,7 @@ function get_inverse_nlist()
 end
 
 """
-    get_local_nodes()
+	get_local_nodes()
 
 Determines the local node numbering.
 
@@ -402,7 +403,7 @@ function get_model_module(entry::AbstractString)
 end
 
 """
-    get_nlist()
+	get_nlist()
 
 Get the neighborhood list.
 """
@@ -411,7 +412,7 @@ function get_nlist()
 end
 
 """
-    get_filtered_nlist()
+	get_filtered_nlist()
 
 Get the neighborhood list.
 """
@@ -423,7 +424,7 @@ function get_filtered_nlist()
 end
 
 """
-    get_nnodes()
+	get_nnodes()
 
 Retrieves the number of nodes.
 
@@ -440,7 +441,7 @@ function get_nnodes()
 end
 
 """
-    get_nnsets()
+	get_nnsets()
 
 Get the number of node sets.
 
@@ -452,7 +453,7 @@ function get_nnsets()
 end
 
 """
-    get_nsets()
+	get_nsets()
 
 Get the node sets
 
@@ -464,7 +465,7 @@ function get_nsets()
 end
 
 """
-    get_num_elements()
+	get_num_elements()
 
 Get the the number of finite elements
 
@@ -476,7 +477,7 @@ function get_num_elements()
 end
 
 """
-    get_num_responder()
+	get_num_responder()
 
 Get the the number of responder nodes
 
@@ -488,7 +489,7 @@ function get_num_responder()
 end
 
 """
-    get_overlap_map()
+	get_overlap_map()
 
 Get the overlap map
 """
@@ -497,7 +498,7 @@ function get_overlap_map()
 end
 
 """
-    get_synch_fields()
+	get_synch_fields()
 
 Get the fields to synchronize
 """
@@ -506,17 +507,17 @@ function get_synch_fields()
 end
 
 """
-    get_local_synch_fields(model::String)
+	get_local_synch_fields(model::String)
 
-    model - class of models; before computation of these models the synchronisation occurs
-    Get the fields to synchronize
+	model - class of models; before computation of these models the synchronisation occurs
+	Get the fields to synchronize
 """
 function get_local_synch_fields(model::String)
     return data["local_fields_to_synch"][model]
 end
 
 """
-    get_pre_calculation_order()
+	get_pre_calculation_order()
 
 return the order of the pre calculation.
 """
@@ -525,7 +526,7 @@ function get_pre_calculation_order()
 end
 
 """
-    get_properties(block_id::Int64, property::String)
+	get_properties(block_id::Int64, property::String)
 
 This function retrieves the value of a specified `property` for a given `block_id` if it exists in the properties dictionary.
 
@@ -540,8 +541,8 @@ This function retrieves the value of a specified `property` for a given `block_i
 # Example
 ```julia
 block_properties = Dict(
-    1 => Dict("color" => "red", "size" => 10),
-    2 => Dict("color" => "blue", "height" => 20)
+	1 => Dict("color" => "red", "size" => 10),
+	2 => Dict("color" => "blue", "height" => 20)
 )
 
 # Retrieve the 'color' property for block 1
@@ -558,7 +559,7 @@ function get_properties(block_id::Int64, property::String)::Dict{String,Any}
 end
 
 """
-    get_property(block_id::Int64, property::String, value_name::String)
+	get_property(block_id::Int64, property::String, value_name::String)
 
 This function retrieves a specific `value_name` associated with a specified `property` for a given `block_id` if it exists in the properties dictionary.
 
@@ -585,7 +586,7 @@ function get_property(block_id::Int64, property::String,
 end
 
 """
-    get_rank()
+	get_rank()
 
 This function returns the rank of the core.
 
@@ -601,7 +602,7 @@ function get_rank()::Int64
 end
 
 """
-    get_max_rank()
+	get_max_rank()
 
 This function returns the maximal rank of MPI the `max_rank`.
 
@@ -617,7 +618,7 @@ function get_max_rank()::Int64
 end
 
 """
-    get_mpi_active()
+	get_mpi_active()
 
 This function returns if MPI is active.
 
@@ -633,7 +634,7 @@ function get_mpi_active()::Bool
 end
 
 """
-    get_cancel()
+	get_cancel()
 
 This function returns the `cancel` flag.
 
@@ -645,7 +646,7 @@ function get_cancel()
 end
 
 """
-    get_silent()
+	get_silent()
 
 This function returns the `silent` flag.
 
@@ -657,7 +658,7 @@ function get_silent()
 end
 
 """
-    get_verbose()
+	get_verbose()
 
 This function returns the `verbose` flag.
 
@@ -669,7 +670,7 @@ function get_verbose()
 end
 
 """
-    get_element_rotation()
+	get_element_rotation()
 
 This function returns the `element_rotation` flag.
 
@@ -681,7 +682,7 @@ function get_element_rotation()
 end
 
 """
-    get_output_frequency()
+	get_output_frequency()
 
 This function returns the `output_frequency` variable.
 
@@ -693,7 +694,7 @@ function get_output_frequency()
 end
 
 """
-    loc_to_glob(range::UnitRange{Int64})
+	loc_to_glob(range::UnitRange{Int64})
 
 Converts the local index to the global index.
 
@@ -712,7 +713,7 @@ function loc_to_glob(range::UnitRange{Int64})
     return data["distribution"][range]
 end
 """
-    init_properties()
+	init_properties()
 
 This function initializes the properties dictionary. Order of dictionary defines, in which order the models are called later on.
 
@@ -733,7 +734,7 @@ function init_properties()
 end
 
 """
-    remove_active_model(module_name::Module)
+	remove_active_model(module_name::Module)
 
 Removes main modules from OrderedDict.
 
@@ -745,7 +746,7 @@ function remove_active_model(key::String)
 end
 
 """
-    set_accuracy_order(value::Int64)
+	set_accuracy_order(value::Int64)
 
 Sets the accuracy order for the "bond associated correspondence" implementation.
 
@@ -761,7 +762,7 @@ function set_accuracy_order(value::Int64)
 end
 
 """
-    set_block_name_list(blocks_name_list::Vector{String})
+	set_block_name_list(blocks_name_list::Vector{String})
 
 Sets the block list globally.
 
@@ -773,7 +774,7 @@ function set_block_name_list(blocks_name_list::Vector{String})
 end
 
 """
-    set_block_id_list(blocks_id_list::Vector{Int64})
+	set_block_id_list(blocks_id_list::Vector{Int64})
 
 Sets the block list globally.
 
@@ -785,7 +786,7 @@ function set_block_id_list(blocks_id_list::Vector{Int64})
 end
 
 """
-    set_crit_values_matrix(crit_values::Array{Float64,3})
+	set_crit_values_matrix(crit_values::Array{Float64,3})
 
 Sets the critical values matrix globally.
 
@@ -797,7 +798,7 @@ function set_crit_values_matrix(crit_values::Array{Float64,3})
 end
 
 """
-    set_coupling_dict(coupling_dict::Dict{Int64,Int64})
+	set_coupling_dict(coupling_dict::Dict{Int64,Int64})
 
 Sets the FE - PD couplings. PD nodes -> FE Elements.
 
@@ -809,7 +810,7 @@ function set_coupling_dict(coupling_dict::Dict{Int64,Int64})
 end
 
 """
-    set_coupling_fe_nodes()
+	set_coupling_fe_nodes()
 
 Get the FE nodes involved in the coupling
 """
@@ -834,7 +835,7 @@ function set_directory(directory::String)
 end
 
 """
-    set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
+	set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
 
 Sets the inverse nlist globally.
 
@@ -846,7 +847,7 @@ function set_inverse_nlist(inv_nlist::Vector{Dict{Int64,Int64}})
 end
 
 """
-    set_nnsets(n::Int64)
+	set_nnsets(n::Int64)
 
 Set the number of node sets.
 
@@ -858,7 +859,7 @@ function set_nnsets(n::Int64)
 end
 
 """
-    set_nset(name, nodes)
+	set_nset(name, nodes)
 Set the nodes associated with a named node set.
 
 # Arguments
@@ -875,7 +876,7 @@ function set_nset(name::String, nodes::Vector{Int64})
 end
 
 """
-    set_num_elements(n::Int64)
+	set_num_elements(n::Int64)
 
 Sets the number of finite elements globally.
 
@@ -897,7 +898,7 @@ function set_num_elements(n::Int64)
 end
 
 """
-    set_num_responder(n::Int64)
+	set_num_responder(n::Int64)
 
 Sets the number of responder nodes globally. For one core the number of responder is zero. responder hold the information of the neighbors, of one node, but are not evaluated.
 
@@ -915,7 +916,7 @@ function set_num_responder(n::Int64)
 end
 
 """
-    set_overlap_map(topo)
+	set_overlap_map(topo)
 
 Sets the overlap map globally.
 
@@ -927,7 +928,7 @@ function set_overlap_map(topo)
 end
 
 """
-    set_pre_calculation_order(values::Vector{String})
+	set_pre_calculation_order(values::Vector{String})
 
 Sets the order of the pre calculation options globally.
 
@@ -939,7 +940,7 @@ function set_pre_calculation_order(values::Vector{String})
 end
 
 """
-    set_property(block_id, property, value_name, value)
+	set_property(block_id, property, value_name, value)
 
 Sets the value of a specified `property` for a given `block_id`.
 
@@ -962,7 +963,7 @@ function set_property(property::String, value_name::String, value::T) where {T}
 end
 
 """
-    set_properties(block_id, property, values)
+	set_properties(block_id, property, values)
 
 Sets the values of a specified `property` for a given `block_id`.
 
@@ -980,7 +981,7 @@ function set_properties(block_id::Int64, property::String, values::T) where {T}
 end
 
 """
-    set_properties(property, values)
+	set_properties(property, values)
 
 Sets the values of a specified `property` for a all `blocks`. E.g. for FEM, because it corresponds not to a block yet,
 
@@ -1000,7 +1001,7 @@ function set_properties(property::String, values::T) where {T}
 end
 
 """
-    set_rank(value::Int64)
+	set_rank(value::Int64)
 
 Sets the rank globally.
 
@@ -1016,7 +1017,7 @@ function set_model_module(entry::AbstractString, mod::Module)
 end
 
 """
-    set_max_rank(value::Int64)
+	set_max_rank(value::Int64)
 
 Sets the maximum rank globally.
 
@@ -1031,7 +1032,7 @@ function set_max_rank(value::Int64)
 end
 
 """
-    set_cancel(value::Int64)
+	set_cancel(value::Int64)
 
 Sets the cancel flag.
 
@@ -1043,7 +1044,7 @@ function set_cancel(value::Bool)
 end
 
 """
-    set_silent(value::Bool)
+	set_silent(value::Bool)
 
 Sets the silent flag.
 
@@ -1055,7 +1056,7 @@ function set_silent(value::Bool)
 end
 
 """
-    set_verbose(value::Bool)
+	set_verbose(value::Bool)
 
 Sets the verbose flag.
 
@@ -1066,8 +1067,16 @@ function set_verbose(value::Bool)
     data["verbose"] = value
 end
 
+function set_stiffness_matrix(K)
+    data["Stiffness Matrix"] = K
+end
+
+function get_stiffness_matrix()
+    return data["Stiffness Matrix"]
+end
+
 """
-    set_rotation(value::Int64)
+	set_rotation(value::Int64)
 
 Sets the rotation flag.
 
@@ -1079,7 +1088,7 @@ function set_rotation(value::Bool)
 end
 
 """
-    set_element_rotation(value::Int64)
+	set_element_rotation(value::Int64)
 
 Sets the element_rotation flag.
 
@@ -1091,7 +1100,7 @@ function set_element_rotation(value::Bool)
 end
 
 """
-    set_output_frequency(value)
+	set_output_frequency(value)
 
 Sets the output frequency globally.
 
@@ -1103,7 +1112,7 @@ function set_output_frequency(value)
 end
 
 """
-    set_synch(name, download_from_cores, upload_to_cores)
+	set_synch(name, download_from_cores, upload_to_cores)
 
 Sets the synchronization dictionary globally.
 
@@ -1135,7 +1144,7 @@ function set_synch(name, download_from_cores, upload_to_cores, dof = 0)
 end
 
 """
-    set_local_synch(model, name, download_from_cores, upload_to_cores, dof=0)
+	set_local_synch(model, name, download_from_cores, upload_to_cores, dof=0)
 
 Sets the synchronization dictionary locally during the model update process. Should be used carefully, to avoid unessary communication.
 
