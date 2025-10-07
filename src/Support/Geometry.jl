@@ -372,7 +372,8 @@ Creates the rotation tensor for 2D or 3D applications. Uses Rotations.jl package
 
 """
 function rotation_tensor(angles::T,
-                         dof::Int64) where {T<:Union{Vector{Float64},Vector{Int64}}}
+                         dof::Int64) where {T<:Union{AbstractVector{Float64},
+                                                     AbstractVector{Int64}}}
     if length(angles) == 3
         if dof != 3
             @error "Rotation tensor not defined for 2D"

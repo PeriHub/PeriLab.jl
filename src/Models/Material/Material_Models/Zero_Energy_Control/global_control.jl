@@ -265,7 +265,7 @@ Rotates the fourth order tensor
 # Returns
 - `C::Array{Float64,4}`: The fourth order tensor
 """
-function rotate_fourth_order_tensor(angles::Vector{T},
+function rotate_fourth_order_tensor(angles::AbstractVector{T},
                                     C::Array{Float64,4},
                                     dof::Int64,
                                     back::Bool) where {T<:Union{Int64,Float64}}
