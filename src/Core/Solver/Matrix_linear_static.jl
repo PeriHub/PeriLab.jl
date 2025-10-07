@@ -8,7 +8,9 @@ using Printf
 using SparseArrays
 using LinearAlgebra
 using TimerOutputs
-
+include("../../Support/Parameters/parameter_handling.jl")
+using .Parameter_Handling: get_initial_time,
+                           get_final_time
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 using .Correspondence_matrix_based: assemble_stiffness_contributions_sparse
 
@@ -51,6 +53,11 @@ function init_solver(solver_options::Dict{Any,Any},
     # indizes prüfen
     # vec und reshape prüfen
     #first test constant material
+
+    solver_options["Initial Time"] = get_initial_time(params, datamanager)
+    solver_options["Final Time"] = get_final_time(params, datamanager)
+    @warn "Number of steps is set to 1."
+    solver_options["Number of Steps"] = 1
 
     for (block, nodes) in pairs(block_nodes)
         model_param = datamanager.get_properties(block, "Material Model")
