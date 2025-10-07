@@ -16,6 +16,12 @@ export get_log_stream
 
 log_file::String = ""
 
+struct PeriLabError <: Exception
+    val::Any
+    msg::AbstractString
+    PeriLabError(@nospecialize(val)) = (@noinline; new(val, ""))
+    PeriLabError(@nospecialize(val), @nospecialize(msg)) = (@noinline; new(val, msg))
+end
 """
     set_log_file(filename::String)
 
@@ -210,7 +216,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             end
             error_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level == Logging.Error
-                    throw(DomainError(args, args.message))
+                    throw(PeriLabError(args, args.message))
                 end
             end
             demux_logger = TeeLogger(MinLevelLogger(file_logger, Logging.Debug),
@@ -223,7 +229,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             end
             error_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level == Logging.Error
-                    throw(DomainError(args, args.message))
+                    throw(PeriLabError(args, args.message))
                 end
             end
             filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
@@ -234,7 +240,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
     catch e
         if e isa SystemError
             @error "Could not open log file: $log_file, make sure the directory exists."
-            throw(DomainError(e))
+            throw(PeriLabError(e))
         else
             rethrow(e)
         end

@@ -390,7 +390,10 @@ function main(filename::String;
         catch e
             if e isa InterruptException
                 @info "PeriLab was interrupted"
-            elseif !isa(e, DomainError)
+            elseif !isa(e, Logging_module.PeriLabError)
+                open(Logging_module.log_file, "a") do io
+                    println(io, "[Error] ", e)
+                end
                 if !silent
                     rethrow(e)
                 end
