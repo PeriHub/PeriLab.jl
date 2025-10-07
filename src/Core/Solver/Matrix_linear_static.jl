@@ -18,7 +18,8 @@ using .Helpers: check_inf_or_nan, find_active_nodes, progress_bar
 include("../BC_manager.jl")
 using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
-using .Correspondence_matrix_based: assemble_stiffness_contributions_sparse
+using .Correspondence_matrix_based: assemble_stiffness_contributions_sparse,
+                                    add_zero_energy_stiff
 
 """
 	init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
@@ -77,6 +78,8 @@ function init_solver(solver_options::Dict{Any,Any},
     volume = datamanager.get_field("Volume")
     bond_geometry = datamanager.get_field("Bond Geometry")
     omega = datamanager.get_field("Influence Function")
+
+    # verify K
     K_sparse = assemble_stiffness_contributions_sparse(datamanager.get_nnodes(),              # nnodes
                                                        dof,                # dof
                                                        C_voigt,            # C_Voigt
@@ -85,6 +88,18 @@ function init_solver(solver_options::Dict{Any,Any},
                                                        volume,      # volume
                                                        bond_geometry,      # bond_geometry
                                                        omega)
+
+    #add_zero_energy_stiff(
+    #	K_sparse,
+    #	datamanager.get_nnodes(),              # nnodes
+    #	dof,                # dof
+    #	C_voigt,            # C_Voigt
+    #	inverse_shape_tensor, # inverse_shape_tensor
+    #	nlist,              # nlist
+    #	volume,      # volume
+    #	bond_geometry,      # bond_geometry
+    #	omega,
+    #)
     datamanager.set_stiffness_matrix(K_sparse)
 end
 
@@ -146,7 +161,10 @@ function run_solver(solver_options::Dict{Any,Any},
                                    vec(uNP1),
                                    vec(force_densities),
                                    vec(external_force_densities))
-
+            nodes = length(volume)
+            for iID in 1:nodes
+                @views forces[iID, :] .= force_densities[iID, :] .* volume[iID]
+            end
             @views deformed_coorNP1 .= coor .+ uNP1
 
             # @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field,
@@ -203,12 +221,13 @@ function compute_displacements!(K::SparseMatrixCSC{Float64,Int64},
     # Compute modified force: F_modified = F - K * u_prescribed
     # (u contains prescribed displacements at fixed DOFs)
     mul!(F_int, K, u)  # F_temp = K * u (in-place, no allocation)
-    F_int .= F_ext .- F_int  # F_temp = F - K*u (in-place)
+    F_int .+= F_ext   # F_temp = F - K*u (in-place)
 
     # Update displacement vector at free DOFs
     @views u[non_BCs] .= K[non_BCs, non_BCs] / F_int[non_BCs]'
 
-    return nothing
+    #return reshape(F_int, 2, :)
+
 end
 
 end
