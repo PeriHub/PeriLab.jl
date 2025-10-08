@@ -19,25 +19,25 @@ PeriLab:
     Material Models:
       Mat_1:
         Material Model: "Correspondence Elastic"
-        Symmetry: "isotropic plane strain"
-        Bulk Modulus: 2.5e+3
-        Shear Modulus: 1.15e3
-      Mat_2:
-        Material Model: "Correspondence Elastic"
-        Symmetry: "isotropic plane strain"
-        Bulk Modulus: 3.5e+3
-        Shear Modulus: 2.15e3
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 209695.43147208123
+        Poisson's Ratio: 0.2944
+  #     Mat_2:
+  #       Material Model: "Correspondence Elastic"
+  #       Symmetry: "isotropic plane stress"
+  #       Young's Modulus: 209695.43147208123
+  #       Poisson's Ratio: 0.2944
   Blocks:
     block_1:
       Block ID: 1
       Material Model: "Mat_1"
       Density: 2.7e-9
       Horizon: 2.1
-    block_2:
-      Block ID: 2
-      Material Model: "Mat_2"
-      Density: 2.7e-9
-      Horizon: 2.1
+  #    block_2:
+  #      Block ID: 2
+  #      Material Model: "Mat_2"
+  #      Density: 2.7e-9
+  #      Horizon: 2.1
   Boundary Conditions:
     BC_1:
       Variable: "Displacements"
