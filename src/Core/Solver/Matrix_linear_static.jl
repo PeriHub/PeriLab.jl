@@ -100,6 +100,10 @@ function init_solver(solver_options::Dict{Any,Any},
     #	bond_geometry,      # bond_geometry
     #	omega,
     #)
+    # passt nicht zu dem Beispiel. matrix erstellung ist utnerschiedlich
+    # - shape tensor prüfen
+    # - funktionen verleichen
+
     datamanager.set_stiffness_matrix(K_sparse)
 end
 
@@ -122,7 +126,8 @@ function run_solver(solver_options::Dict{Any,Any},
     volume = datamanager.get_field("Volume")
     coor = datamanager.get_field("Coordinates")
     comm = datamanager.get_comm()
-
+    # needed to bring K_sparse into the consistent style of the transformation matrix -> vector
+    perm = create_permutation(datamanager.get_nnodes(), datamanager.get_dof())
     if "Material" in solver_options["Models"]
         external_forces = datamanager.get_field("External Forces")
         external_force_densities = datamanager.get_field("External Force Densities")
@@ -156,11 +161,11 @@ function run_solver(solver_options::Dict{Any,Any},
             external_force_densities.=external_forces ./ volume
             # reshape
             non_BCs = datamanager.get_bc_free_dof()
-            compute_displacements!(K,
+            compute_displacements!(K[perm, perm],
                                    non_BCs,
-                                   vec(uNP1),
-                                   vec(force_densities),
-                                   vec(external_force_densities))
+                                   uNP1,
+                                   force_densities,
+                                   external_force_densities)
             nodes = length(volume)
             for iID in 1:nodes
                 @views forces[iID, :] .= force_densities[iID, :] .* volume[iID]
@@ -214,20 +219,38 @@ Arguments:
 """
 function compute_displacements!(K::SparseMatrixCSC{Float64,Int64},
                                 non_BCs::Vector{Int64},
-                                u::Vector{Float64},
-                                F_int::Vector{Float64},
-                                F_ext::Vector{Float64})
+                                u::Matrix{Float64},
+                                F_int::Matrix{Float64},
+                                F_ext::Matrix{Float64})
 
     # Compute modified force: F_modified = F - K * u_prescribed
     # (u contains prescribed displacements at fixed DOFs)
-    mul!(F_int, K, u)  # F_temp = K * u (in-place, no allocation)
-    F_int .+= F_ext   # F_temp = F - K*u (in-place)
 
-    # Update displacement vector at free DOFs
-    @views u[non_BCs] .= K[non_BCs, non_BCs] / F_int[non_BCs]'
+    #mul!(vec(F_int), K, vec(u))  # F_temp = K * u (in-place, no allocation)
+    #F_int .+= F_ext   # F_temp = F - K*u (in-place)
+    ## Update displacement vector at free DOFs
+    #u[non_BCs] = K[non_BCs, non_BCs] \ F_int[non_BCs]
+
+    F_modified = copy(vec(F_ext))
+    BCs = setdiff(1:length(vec(u)), non_BCs)
+
+    @views F_modified[non_BCs] .-= (K[non_BCs, BCs] * vec(u)[BCs])
+    @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified[non_BCs]
 
     #return reshape(F_int, 2, :)
 
 end
 
+function create_permutation(nnodes::Int, dof::Int)
+    perm = Vector{Int}(undef, nnodes * dof)
+    idx = 1
+    for d in 1:dof           # Für jeden DOF
+        for n in 1:nnodes     # Für jeden Knoten
+            old_idx = (n-1)*dof + d  # Row-major: node, dann dof
+            perm[idx] = old_idx
+            idx += 1
+        end
+    end
+    return perm
+end
 end
