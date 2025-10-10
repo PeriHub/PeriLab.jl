@@ -3,16 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module PD_Solid_Elastic
-include("../../Material_Basis.jl")
-using .Material_Basis: get_symmetry
-include("./Ordinary.jl")
-include("../../../../Support/Helpers.jl")
-using .Helpers: add_in_place!
+using ....Material_Basis: get_symmetry
+using ......Helpers: add_in_place!
 using TimerOutputs
 using StaticArrays
-using .Ordinary:
-                 compute_weighted_volume!, compute_dilatation!, calculate_symmetry_params,
-                 get_bond_forces
+using ..Ordinary:
+                  compute_weighted_volume!, compute_dilatation!, calculate_symmetry_params,
+                  get_bond_forces
 export fe_support
 export init_model
 export material_name
@@ -211,8 +208,8 @@ function elastic!(nodes::AbstractVector{Int64},
     # alpha::Float64 = 0
     if shear_modulus isa Float64
         alpha, gamma,
-        kappa = Ordinary.calculate_symmetry_params(symmetry, shear_modulus,
-                                                   bulk_modulus)
+        kappa = calculate_symmetry_params(symmetry, shear_modulus,
+                                          bulk_modulus)
     end
 
     for iID in nodes
@@ -222,9 +219,9 @@ function elastic!(nodes::AbstractVector{Int64},
         end
         if !(shear_modulus isa Float64)
             alpha, gamma,
-            kappa = Ordinary.calculate_symmetry_params(symmetry,
-                                                       shear_modulus[iID],
-                                                       bulk_modulus[iID])
+            kappa = calculate_symmetry_params(symmetry,
+                                              shear_modulus[iID],
+                                              bulk_modulus[iID])
         end
 
         deviatoric_deformation::Float64 = 0.0

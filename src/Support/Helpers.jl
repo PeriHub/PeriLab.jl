@@ -46,6 +46,11 @@ export get_ring
 export get_hexagon
 export nearest_point_id
 export get_shared_horizon
+export matrix_style
+export matrix_to_voigt
+export voigt_to_matrix
+export matrix_to_vector
+export vector_to_matrix
 
 const MAPPING_2D = @SMatrix [1 1; 2 2; 2 1]
 const MAPPING_3D = @SMatrix [1 1; 2 2; 3 3; 2 3; 1 3; 1 2]
@@ -1083,6 +1088,109 @@ function rotation(R::Union{Adjoint{Float64,Matrix{Float64}},Matrix{Float64}},
             end
             tensor[m, n] = tmn
         end
+    end
+end
+
+"""
+	matrix_to_voigt(matrix)
+
+Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
+
+# Arguments
+- `matrix::Matrix{Float64}`: The matrix.
+# Returns
+- `voigt::Vector{Float64}`: The Voigt notation.
+"""
+
+function matrix_to_voigt(matrix::AbstractMatrix{Float64})
+    if length(matrix) == 4
+        @inbounds return @SVector [matrix[1, 1],
+            matrix[2, 2],
+            0.5 * (matrix[1, 2] + matrix[2, 1])]
+
+    elseif length(matrix) == 9
+        @inbounds return @SVector [matrix[1, 1],
+            matrix[2, 2],
+            matrix[3, 3],
+            0.5 * (matrix[2, 3] + matrix[3, 2]),
+            0.5 * (matrix[1, 3] + matrix[3, 1]),
+            0.5 * (matrix[1, 2] + matrix[2, 1])]
+    else
+        @error "Unsupported matrix size for matrix_to_voigt"
+        return nothing
+    end
+end
+
+"""
+	voigt_to_matrix(voigt::Union{Vector{Float64},Vector{Int64}})
+
+Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
+
+# Arguments
+- `voigt::Vector{Float64}`: The Voigt notation.
+# Returns
+- `matrix::Matrix{Float64}`: The matrix.
+"""
+function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
+    if length(voigt) == 3
+        return @SMatrix [voigt[1] voigt[3]; voigt[3] voigt[2]]
+    elseif length(voigt) == 6
+        return @SMatrix [voigt[1] voigt[6] voigt[5]
+                         voigt[6] voigt[2] voigt[4]
+                         voigt[5] voigt[4] voigt[3]]
+    else
+        @error "Unsupported matrix size for voigt_to_matrix"
+        return nothing
+    end
+end
+
+"""
+	matrix_to_vector(matrix::AbstractMatrix{Float64})
+
+Convert a 3x3 matrix to a 6x1 vector
+
+# Arguments
+- `matrix::Matrix{Float64}`: The matrix.
+# Returns
+- `vector::SVector{Float64}`: The Vorigt vector.
+"""
+function matrix_to_vector(matrix::AbstractMatrix{Float64})
+    if length(matrix) == 4
+        @inbounds return @SVector [
+            matrix[1, 1],
+            matrix[2, 2],
+            0.0,
+            matrix[1, 2],
+            matrix[2, 1]
+        ]
+    elseif length(matrix) == 9
+        @inbounds return @SVector [matrix[1, 1], matrix[2, 2], matrix[3, 3],
+            matrix[1, 2], matrix[2, 3], matrix[3, 1],
+            matrix[2, 1], matrix[3, 2], matrix[1, 3]]
+    end
+end
+
+"""
+	vector_to_matrix(matrix)
+
+Convert a 6x1 vector to a 3x3 matrix
+
+# Arguments
+- `vector::Vector{Float64}`: The vector.
+# Returns
+- `matrix::Matrix{Float64}`: The matrix.
+"""
+function vector_to_matrix(vector)
+    if length(vector) == 5
+        return @SMatrix [vector[1] vector[3]
+                         vector[4] vector[2]]
+    elseif length(vector) == 9
+        return @SMatrix [vector[1] vector[4] vector[9]
+                         vector[7] vector[2] vector[5]
+                         vector[6] vector[8] vector[3]]
+    else
+        @error "Unsupported vector size for vector_to_matrix"
+        return nothing
     end
 end
 

@@ -5,8 +5,7 @@
 module Data_manager
 using MPI
 using DataStructures: OrderedDict
-include("../Support/Helpers.jl")
-using .Helpers: fill_in_place!
+using ..Helpers: fill_in_place!
 
 ##########################
 # Variables

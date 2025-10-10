@@ -12,27 +12,18 @@ using LoopVectorization
 using PrettyTables
 using Logging
 
-include("../../Support/Helpers.jl")
-using .Helpers: check_inf_or_nan, find_active_nodes, progress_bar
-include("../../Support/Parameters/parameter_handling.jl")
-using .Parameter_Handling:
-                           get_initial_time,
-                           get_fixed_dt,
-                           get_final_time,
-                           get_numerical_damping,
-                           get_safety_factor,
-                           get_max_damage
-
-include("../../MPI_communication/MPI_communication.jl")
-using .MPI_communication: barrier
-include("../BC_manager.jl")
-include("../../Models/Model_Factory.jl")
-include("../../IO/logging.jl")
-include("../../Compute/compute_field_values.jl")
-using .Model_Factory
-using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
-using .Helpers: matrix_style
-using .Logging_module: print_table
+using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
+using ...Parameter_Handling:
+                             get_initial_time,
+                             get_fixed_dt,
+                             get_final_time,
+                             get_numerical_damping,
+                             get_safety_factor,
+                             get_max_damage
+using ...MPI_communication: barrier
+using ..Model_Factory
+using ..Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
+using ...Logging_module: print_table
 export init_solver
 export run_solver
 

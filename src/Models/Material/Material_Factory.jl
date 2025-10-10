@@ -4,23 +4,21 @@
 
 module Material
 include("../../Core/Module_inclusion/set_Modules.jl")
-include("Material_Basis.jl")
-using .Material_Basis:
-                       get_all_elastic_moduli,
-                       distribute_forces!,
-                       check_symmetry,
-                       get_all_elastic_moduli,
-                       init_local_damping_due_to_damage,
-                       local_damping_due_to_damage
+include("Material_Models/Ordinary/Ordinary.jl")
+using ...Material_Basis:
+                         get_all_elastic_moduli,
+                         distribute_forces!,
+                         check_symmetry,
+                         get_all_elastic_moduli,
+                         init_local_damping_due_to_damage,
+                         local_damping_due_to_damage
 using LinearAlgebra: dot
-using .Set_modules
+# using .Set_modules
 using TimerOutputs
 using StaticArrays
 
-global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
-Set_modules.include_files(module_list)
-include("./Material_Models/Correspondence/Correspondence.jl")
-using .Correspondence
+global module_list = find_module_files(@__DIR__, "material_name")
+include_files(module_list)
 export init_model
 export compute_model
 export determine_isotropic_parameter
@@ -108,9 +106,9 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     material_models = map(r -> strip(r), material_models)
 
     for material_model in material_models
-        mod = Set_modules.create_module_specifics(material_model,
-                                                  module_list,
-                                                  "material_name")
+        mod = create_module_specifics(material_model,
+                                      module_list,
+                                      "material_name")
         datamanager.set_analysis_model("Material Model", block, material_model)
         if isnothing(mod)
             @error "No material of name " * material_model * " exists."

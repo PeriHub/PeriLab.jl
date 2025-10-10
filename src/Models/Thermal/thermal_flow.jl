@@ -5,8 +5,7 @@
 module Thermal_Flow
 using LinearAlgebra
 using StaticArrays
-include("../../Support/Helpers.jl")
-using .Helpers: rotate_second_order_tensor, fastdot
+using .....Helpers: rotate_second_order_tensor, fastdot
 export compute_model
 export thermal_model_name
 export init_model

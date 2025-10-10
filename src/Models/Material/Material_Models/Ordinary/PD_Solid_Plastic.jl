@@ -5,12 +5,9 @@
 module PD_Solid_Plastic
 using TimerOutputs
 
-include("../../Material_Basis.jl")
-using .Material_Basis: get_symmetry
-include("./Ordinary.jl")
-include("../../../../Support/Helpers.jl")
-using .Helpers: add_in_place!, mul_in_place!, sub_in_place!
-using .Ordinary: calculate_symmetry_params, get_bond_forces
+using ....Material_Basis: get_symmetry
+using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!
+using ..Ordinary: calculate_symmetry_params, get_bond_forces
 
 export fe_support
 export init_model
@@ -159,9 +156,9 @@ function compute_model(datamanager::Module,
     lambdaNP1 = datamanager.get_field("Lambda Plastic", "NP1")
 
     @timeit to "calculate_symmetry_params" alpha, gamma,
-                                           kappa=Ordinary.calculate_symmetry_params(symmetry,
-                                                                                    shear_modulus,
-                                                                                    bulk_modulus)
+                                           kappa=calculate_symmetry_params(symmetry,
+                                                                           shear_modulus,
+                                                                           bulk_modulus)
     @timeit to "compute_deviatoric_force_state_norm" compute_deviatoric_force_state_norm!(td_norm,
                                                                                           nodes,
                                                                                           nlist,

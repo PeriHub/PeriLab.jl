@@ -11,8 +11,7 @@ It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as
 """
 
 #
-include("../../Material_Basis.jl")
-import .Material_Basis: get_symmetry, apply_pointwise_E
+import ....Material_Basis: get_symmetry, apply_pointwise_E
 using LoopVectorization
 using TimerOutputs
 export init_model

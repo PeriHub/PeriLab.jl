@@ -3,19 +3,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_Energy_Aniso_Model
-include("../Material/Material_Factory.jl")
-include("../../Support/Geometry.jl")
-include("../../Support/Helpers.jl")
-using .Material
-using .Geometry
-using .Helpers:
-                rotate,
-                fastdot,
-                sub_in_place!,
-                div_in_place!,
-                mul_in_place!,
-                interpol_data,
-                is_dependent
+using ......Helpers:
+                     rotate,
+                     fastdot,
+                     sub_in_place!,
+                     div_in_place!,
+                     mul_in_place!,
+                     interpol_data,
+                     is_dependent
 using LinearAlgebra
 using StaticArrays
 export compute_model
@@ -185,9 +180,9 @@ function compute_model(datamanager::Module,
             end
             # Compute bond_norm for all components at once
             div_in_place!(bond_norm_all,
-                            rotated_bond,
-                            deformed_bond_length[iID][jID],
-                            true)
+                          rotated_bond,
+                          deformed_bond_length[iID][jID],
+                          true)
 
             mul!(temp, bond_energy, bond_norm_all)
             # Compute the condition for all components at once

@@ -10,10 +10,11 @@ using PrettyTables
 include("bond_filters.jl")
 include("gcode.jl")
 include("volume.jl")
-# include("../Support/Helpers.jl")
-using .Helpers: fastdot, get_nearest_neighbors
-include("./logging.jl")
-using .Logging_module: print_table
+using ..Helpers: fastdot, get_nearest_neighbors
+using ..Logging_module: print_table
+using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
+                            get_external_topology_name, get_horizon
+using ..Geometry: bond_geometry!
 
 #export read_mesh
 #export load_mesh_and_distribute
@@ -378,11 +379,11 @@ function get_bond_geometry(datamanager::Module)
     undeformed_bond = datamanager.create_constant_bond_field("Bond Geometry", Float64, dof)
     undeformed_bond_length = datamanager.create_constant_bond_field("Bond Length", Float64,
                                                                     1)
-    Geometry.bond_geometry!(undeformed_bond,
-                            undeformed_bond_length,
-                            Vector{Int64}(1:nnodes),
-                            nlist,
-                            coor)
+    bond_geometry!(undeformed_bond,
+                   undeformed_bond_length,
+                   Vector{Int64}(1:nnodes),
+                   nlist,
+                   coor)
     return datamanager
 end
 
@@ -846,7 +847,7 @@ function load_and_evaluate_mesh(params::Dict,
                                 ranksize::Int64,
                                 to::TimerOutput,
                                 silent::Bool)
-    filename = joinpath(path, Parameter_Handling.get_mesh_name(params))
+    filename = joinpath(path, get_mesh_name(params))
     if params["Discretization"]["Type"] == "Abaqus"
         @timeit to "read_mesh" mesh, nsets=read_mesh(filename, params)
     elseif params["Discretization"]["Type"] == "Gcode"

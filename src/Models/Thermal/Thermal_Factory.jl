@@ -5,9 +5,9 @@
 module Thermal
 using TimerOutputs
 include("../../Core/Module_inclusion/set_Modules.jl")
-using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "thermal_model_name")
-Set_modules.include_files(module_list)
+# using .Set_modules
+global module_list = find_module_files(@__DIR__, "thermal_model_name")
+include_files(module_list)
 using TimerOutputs
 export init_model
 export compute_model
@@ -85,9 +85,9 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
-        mod = Set_modules.create_module_specifics(thermal_model,
-                                                  module_list,
-                                                  "thermal_model_name")
+        mod = create_module_specifics(thermal_model,
+                                      module_list,
+                                      "thermal_model_name")
         if isnothing(mod)
             @error "No thermal model of name " * thermal_model * " exists."
             return nothing

@@ -12,7 +12,7 @@ using Random
     Random.seed!(rand(1:100000))
     base = "test_tmp_Set_modules"
 
-    @test isnothing(Set_modules.find_jl_files(base))
+    @test isnothing(find_jl_files(base))
 
     if isdir(base)
         rm(base, recursive = true)

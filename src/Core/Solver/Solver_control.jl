@@ -3,31 +3,28 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Solver_control
-
-include("../../Support/Parameters/parameter_handling.jl")
-include("../../Support/Helpers.jl")
-using .Parameter_Handling:
-                           get_density,
-                           get_horizon,
-                           get_solver_name,
-                           get_model_options,
-                           get_fem_block,
-                           get_calculation_options,
-                           get_angles,
-                           get_block_names_and_ids,
-                           get_solver_params
-using .Helpers: fastdot, check_inf_or_nan, get_block_nodes
+using ..Parameter_Handling:
+                            get_density,
+                            get_horizon,
+                            get_solver_name,
+                            get_model_options,
+                            get_fem_block,
+                            get_calculation_options,
+                            get_angles,
+                            get_block_names_and_ids,
+                            get_solver_params
+using ..Helpers
+include("../../Models/Material/Material_Basis.jl")
+include("../../FEM/FEM_Factory.jl")
 include("../../Models/Model_Factory.jl")
+include("../BC_manager.jl")
 include("Verlet.jl")
 include("Static_solver.jl")
-include("../BC_manager.jl")
-include("../../MPI_communication/MPI_communication.jl")
-using .MPI_communication: synch_responder_to_controller,
-                          synch_controller_to_responder,
-                          synch_controller_bonds_to_responder,
-                          synch_controller_bonds_to_responder_flattened
+using ..MPI_communication: synch_responder_to_controller,
+                           synch_controller_to_responder,
+                           synch_controller_bonds_to_responder,
+                           synch_controller_bonds_to_responder_flattened
 
-include("../../FEM/FEM_Factory.jl")
 include("../Influence_function.jl")
 
 using .Model_Factory: init_models, read_properties

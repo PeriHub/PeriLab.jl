@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Set_modules
+# module Set_modules
 export include_files
 export find_module_files
 
@@ -191,4 +191,4 @@ function create_module_specifics(name::Union{String,SubString},
     return nothing
 end
 
-end
+# end

@@ -7,8 +7,7 @@ using LinearAlgebra: dot
 export compute_model
 export thermal_model_name
 export init_model
-include("../../Support/Helpers.jl")
-using .Helpers: normalize_in_place!
+using .....Helpers: normalize_in_place!
 """
     thermal_model_name()
 

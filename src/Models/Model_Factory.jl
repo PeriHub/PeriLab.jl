@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Model_Factory
-include("../Support/Helpers.jl")
 
-using .Helpers:
-                check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
-                determinant
+using ....Helpers:
+                   check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
+                   determinant
+include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
 include("./Contact/Contact_Factory.jl")
 include("./Additive/Additive_Factory.jl")
@@ -15,11 +15,7 @@ include("./Degradation/Degradation_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
-include("./Pre_calculation/Pre_Calculation_Factory.jl")
-include("../Support/Parameters/parameter_handling.jl")
-using .Parameter_Handling: get_model_parameter, get_heat_capacity
-# in future FEM will be outside of the Model_Factory
-include("../FEM/FEM_Factory.jl")
+using ...Parameter_Handling: get_model_parameter, get_heat_capacity
 using .Additive
 using .Degradation
 using .Damage
@@ -29,7 +25,7 @@ using .Surface_correction: init_surface_correction, compute_surface_correction
 using .Thermal
 using .Contact_Factory
 # in future FEM will be outside of the Model_Factory
-using .FEM
+using ..FEM
 using TimerOutputs
 export compute_models
 export init_models

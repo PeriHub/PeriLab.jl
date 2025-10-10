@@ -4,8 +4,7 @@
 
 module Ordinary
 
-include("../../../../Support/Helpers.jl")
-using .Helpers: div_in_place!, mul_in_place!
+using .....Helpers: div_in_place!, mul_in_place!
 using LinearAlgebra
 using LoopVectorization
 export compute_dilatation!

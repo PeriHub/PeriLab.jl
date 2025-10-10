@@ -6,19 +6,15 @@ module Material_Basis
 using LinearAlgebra
 using LoopVectorization
 using StaticArrays
-include("../../Support/Helpers.jl")
-using .Helpers: get_MMatrix, determinant, invert, smat, interpol_data, get_dependent_value,
-                mat_mul!
+using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
+                     get_dependent_value,
+                     mat_mul!, matrix_to_voigt, voigt_to_matrix
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
 export distribute_forces!
 export local_damping_due_to_damage
 export flaw_function
-export matrix_to_voigt
-export voigt_to_matrix
-export matrix_to_vector
-export vector_to_matrix
 export check_symmetry
 export get_symmetry
 export get_von_mises_yield_stress
@@ -249,7 +245,7 @@ function get_all_elastic_moduli(datamanager::Module,
 
     if state_factor_defined && datamanager.has_key("State Variables")
         state_factor = datamanager.get_field("State Variables")[:,
-        parameter["State Factor ID"]]
+                                                                parameter["State Factor ID"]]
         K .*= state_factor
         E .*= state_factor
         G .*= state_factor
@@ -472,15 +468,15 @@ function distribute_forces!(force_densities::Matrix{Float64},
             @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
                 force_densities[iID,
-                m] += bond_damage[iID][jID] *
-                                           bond_force[iID][jID][m] *
-                                           volume[nlist[iID][jID]] *
-                                           bond_mod[jID][m]
+                                m] += bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[nlist[iID][jID]] *
+                                      bond_mod[jID][m]
                 force_densities[nlist[iID][jID],
-                m] -= bond_damage[iID][jID] *
-                                                       bond_force[iID][jID][m] *
-                                                       volume[iID] *
-                                                       bond_mod[jID][m]
+                                m] -= bond_damage[iID][jID] *
+                                      bond_force[iID][jID][m] *
+                                      volume[iID] *
+                                      bond_mod[jID][m]
             end
         end
     end
@@ -522,115 +518,14 @@ function distribute_forces!(force_densities::Matrix{Float64},
 
             @inbounds @fastmath for m in eachindex(forces_j)
                 force_contribution = damage_factor * forces_j[m]
+                # @info damage_factor
+                # @info forces_j[m]
                 force_densities[iID, m] += force_contribution * vol_j
                 force_densities[jID, m] -= force_contribution * vol_i
             end
         end
     end
     return nothing
-end
-
-"""
-	matrix_to_voigt(matrix)
-
-Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
-
-# Arguments
-- `matrix::Matrix{Float64}`: The matrix.
-# Returns
-- `voigt::Vector{Float64}`: The Voigt notation.
-"""
-
-function matrix_to_voigt(matrix::AbstractMatrix{Float64})
-    if length(matrix) == 4
-        @inbounds return @SVector [matrix[1, 1],
-            matrix[2, 2],
-            0.5 * (matrix[1, 2] + matrix[2, 1])]
-
-    elseif length(matrix) == 9
-        @inbounds return @SVector [matrix[1, 1],
-            matrix[2, 2],
-            matrix[3, 3],
-            0.5 * (matrix[2, 3] + matrix[3, 2]),
-            0.5 * (matrix[1, 3] + matrix[3, 1]),
-            0.5 * (matrix[1, 2] + matrix[2, 1])]
-    else
-        @error "Unsupported matrix size for matrix_to_voigt"
-        return nothing
-    end
-end
-
-"""
-	voigt_to_matrix(voigt::Union{Vector{Float64},Vector{Int64}})
-
-Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
-
-# Arguments
-- `voigt::Vector{Float64}`: The Voigt notation.
-# Returns
-- `matrix::Matrix{Float64}`: The matrix.
-"""
-function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
-    if length(voigt) == 3
-        return @SMatrix [voigt[1] voigt[3]; voigt[3] voigt[2]]
-    elseif length(voigt) == 6
-        return @SMatrix [voigt[1] voigt[6] voigt[5]
-                         voigt[6] voigt[2] voigt[4]
-                         voigt[5] voigt[4] voigt[3]]
-    else
-        @error "Unsupported matrix size for voigt_to_matrix"
-        return nothing
-    end
-end
-
-"""
-	matrix_to_vector(matrix::AbstractMatrix{Float64})
-
-Convert a 3x3 matrix to a 6x1 vector
-
-# Arguments
-- `matrix::Matrix{Float64}`: The matrix.
-# Returns
-- `vector::SVector{Float64}`: The Vorigt vector.
-"""
-function matrix_to_vector(matrix::AbstractMatrix{Float64})
-    if length(matrix) == 4
-        @inbounds return @SVector [
-            matrix[1, 1],
-            matrix[2, 2],
-            0.0,
-            matrix[1, 2],
-            matrix[2, 1]
-        ]
-    elseif length(matrix) == 9
-        @inbounds return @SVector [matrix[1, 1], matrix[2, 2], matrix[3, 3],
-            matrix[1, 2], matrix[2, 3], matrix[3, 1],
-            matrix[2, 1], matrix[3, 2], matrix[1, 3]]
-    end
-end
-
-"""
-	vector_to_matrix(matrix)
-
-Convert a 6x1 vector to a 3x3 matrix
-
-# Arguments
-- `vector::Vector{Float64}`: The vector.
-# Returns
-- `matrix::Matrix{Float64}`: The matrix.
-"""
-function vector_to_matrix(vector)
-    if length(vector) == 5
-        return @SMatrix [vector[1] vector[3]
-                         vector[4] vector[2]]
-    elseif length(vector) == 9
-        return @SMatrix [vector[1] vector[4] vector[9]
-                         vector[7] vector[2] vector[5]
-                         vector[6] vector[8] vector[3]]
-    else
-        @error "Unsupported vector size for vector_to_matrix"
-        return nothing
-    end
 end
 
 """

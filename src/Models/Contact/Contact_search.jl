@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Contact_search
-include("../../Support/Helpers.jl")
-using .Helpers: get_nearest_neighbors, nearest_point_id, get_block_nodes, compute_geometry,
-                point_is_inside, get_surface_information, compute_distance_and_normals
+using ....Helpers: get_nearest_neighbors, nearest_point_id, get_block_nodes,
+                   compute_geometry,
+                   point_is_inside, get_surface_information, compute_distance_and_normals
 
 export init_contact_search
 export compute_contact_pairs

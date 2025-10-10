@@ -10,8 +10,6 @@ using .Material_Basis:
                        get_Hooke_matrix,
                        distribute_forces!,
                        flaw_function,
-                       matrix_to_voigt,
-                       voigt_to_matrix,
                        check_symmetry,
                        get_symmetry,
                        get_von_mises_yield_stress,
@@ -90,16 +88,16 @@ end
     expected_force_densities = copy(force_densities)
     for iID in nodes
         expected_force_densities[iID,
-        :] .+= transpose(sum(bond_damage[iID] .*
-                                                           mapreduce(permutedims, vcat,
-                                                                     bond_force[iID]) .*
-                                                           volume[nlist[iID]],
-                                                           dims = 1))
+                                 :] .+= transpose(sum(bond_damage[iID] .*
+                                                      mapreduce(permutedims, vcat,
+                                                                bond_force[iID]) .*
+                                                      volume[nlist[iID]],
+                                                      dims = 1))
         expected_force_densities[nlist[iID],
-        :] .-= bond_damage[iID] .*
-                                                    mapreduce(permutedims, vcat,
-                                                              bond_force[iID]) .*
-                                                    volume[iID]
+                                 :] .-= bond_damage[iID] .*
+                                        mapreduce(permutedims, vcat,
+                                                  bond_force[iID]) .*
+                                        volume[iID]
     end
 
     distribute_forces!(force_densities, nodes, nlist, bond_force, volume, bond_damage)
@@ -481,25 +479,4 @@ end
     result = zeros(2, 2)
     compute_Piola_Kirchhoff_stress!(stress, deformation_gradient, result)
     @test isapprox(result, expected_result)
-end
-
-@testset "ut_matrix_to_voigt" begin
-    matrix = Matrix{Float64}([1 2; 3 4])
-    voigt = matrix_to_voigt(matrix)
-    @test voigt[1] == 1
-    @test voigt[2] == 4
-    @test voigt[3] == 2.5
-    matrix = Matrix{Float64}([1 2 3; 4 5 6; 7 8 9])
-    voigt = matrix_to_voigt(matrix)
-    @test voigt[1] == 1
-    @test voigt[2] == 5
-    @test voigt[3] == 9
-    @test voigt[4] == 7
-    @test voigt[5] == 5
-    @test voigt[6] == 3
-    matrix = Matrix{Float64}([1 2 3 3; 4 5 6 3; 7 8 9 3])
-    @test isnothing(matrix_to_voigt(matrix))
-end
-@testset "ut_voigt_to_matrix" begin
-    @test isnothing(voigt_to_matrix([1, 2.2]))
 end

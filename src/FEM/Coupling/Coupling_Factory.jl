@@ -4,9 +4,9 @@
 
 module Coupling_PD_FEM
 include("../../Core/Module_inclusion/set_Modules.jl")
-using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "coupling_name")
-Set_modules.include_files(module_list)
+# using .Set_modules
+global module_list = find_module_files(@__DIR__, "coupling_name")
+include_files(module_list)
 
 export init_coupling
 export compute_coupling
@@ -22,7 +22,7 @@ function init_coupling(datamanager::Module, nodes, complete_params::Dict)
     end
     coupling_model = complete_params["FEM"]["Coupling"]["Coupling Type"]
 
-    mod = Set_modules.create_module_specifics(coupling_model, module_list, "coupling_name")
+    mod = create_module_specifics(coupling_model, module_list, "coupling_name")
     if isnothing(mod)
         @error "No material of name " * material_model * " exists."
     end

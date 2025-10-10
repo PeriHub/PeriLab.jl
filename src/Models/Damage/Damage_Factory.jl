@@ -4,13 +4,11 @@
 
 module Damage
 include("../../Core/Module_inclusion/set_Modules.jl")
-using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "damage_name")
-Set_modules.include_files(module_list)
-include("../../Support/Helpers.jl")
+global module_list = find_module_files(@__DIR__, "damage_name")
+include_files(module_list)
 using TimerOutputs
 using LoopVectorization
-using .Helpers: find_inverse_bond_id
+using .....Helpers: find_inverse_bond_id
 export fields_for_local_synchronization
 export compute_model
 export init_interface_crit_values
@@ -253,9 +251,9 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     # if haskey(model_param, "Anisotropic Damage")
     #     datamanager.create_bond_field("Bond Damage Anisotropic", Float64, datamanager.get_dof(), 1)
     # end
-    mod = Set_modules.create_module_specifics(model_param["Damage Model"],
-                                              module_list,
-                                              "damage_name")
+    mod = create_module_specifics(model_param["Damage Model"],
+                                  module_list,
+                                  "damage_name")
 
     if isnothing(mod)
         @error "No damage model of name " * model_param["Damage Model"] * " exists."
