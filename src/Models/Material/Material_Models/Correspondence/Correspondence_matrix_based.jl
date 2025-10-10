@@ -650,6 +650,10 @@ Initializes the material model.
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
                     material_parameter::Dict)
+    if datamanager.get_max_rank()>1
+        @error "Correspondence matrix based not implemented for parallel runs."
+    end
+
     dof = datamanager.get_dof()
 
     hooke_matrix = datamanager.create_constant_node_field("Hooke Matrix", Float64,
