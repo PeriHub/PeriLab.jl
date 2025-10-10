@@ -243,7 +243,7 @@ Adds Zero-Energy-Mode stabilization to the stiffness matrix (in-place).
 """
 
 function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
-                                nnodes::Int64,
+                                nodes::AbstractVector{Int64},
                                 dof::Int64,
                                 zStiff::Array{Float64,3},
                                 inverse_shape_tensor::Array{Float64,3},
@@ -251,7 +251,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
                                 volume::Vector{Float64},
                                 bond_geometry::Vector{Vector{Vector{Float64}}},
                                 omega::Vector{Vector{Float64}})
-    ndof_total = nnodes * dof
+    ndof_total = nodes[end] * dof
 
     # COO format
     I_indices = Int[]
@@ -260,18 +260,12 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 
     # Pre-compute scalar product matrix S for each node
     # S[i][p,q] = X_ip^T * D_inv_i * X_iq
-    S_matrices = Vector{Matrix{Float64}}(undef, nnodes)
-    D_inv_X = Vector{Vector{Vector{Float64}}}(undef, nnodes)
+    S_matrices = Vector{Matrix{Float64}}(undef, nodes[end])
+    D_inv_X = Vector{Vector{Vector{Float64}}}(undef, nodes[end])
 
-    for i in 1:nnodes
+    for i in nodes
         neighbors = nlist[i]
         n_neighbors = length(neighbors)
-
-        if n_neighbors == 0
-            S_matrices[i] = zeros(0, 0)
-            D_inv_X[i] = []
-            continue
-        end
 
         @views D_inv_i = inverse_shape_tensor[i, :, :]
 
@@ -289,7 +283,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 
     # STEP 1: Fill rows for neighbor nodes (j, k, l, m, ...)
     # For each node i and each bond ij
-    for i in 1:nnodes
+    for i in nodes
         neighbors = nlist[i]
         n_neighbors = length(neighbors)
 
@@ -331,7 +325,7 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 
     # STEP 2: Fill row for central node i
     # Each row i gets contributions from ALL bonds of node i
-    for i in 1:nnodes
+    for i in nodes
         neighbors = nlist[i]
         n_neighbors = length(neighbors)
 
@@ -375,13 +369,13 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
     K_stab = sparse(I_indices, J_indices, values, ndof_total, ndof_total)
 
     # STEP 3: Diagonal blocks K_ii = -Σ_(ℓ≠i) K_iℓ
-    for i in 1:nnodes
+    for i in nodes
         K_ii_block = zeros(dof, dof)
 
         # Sum all off-diagonal entries in row i
         for d1 in 1:dof
             row = (i-1)*dof + d1
-            for j in 1:nnodes
+            for j in nodes
                 if i != j
                     for d2 in 1:dof
                         col = (j-1)*dof + d2
@@ -405,27 +399,6 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
     K .+= K_stab
 
     return nothing
-end
-
-"""
-Adds a dof×dof block to COO sparse matrix format.
-"""
-function add_block_to_coo!(I_indices::Vector{Int},
-                           J_indices::Vector{Int},
-                           values::Vector{Float64},
-                           block::Matrix{Float64},
-                           i::Int,
-                           j::Int,
-                           dof::Int)
-    for d1 in 1:dof
-        for d2 in 1:dof
-            if abs(block[d1, d2]) > 1e-14
-                push!(I_indices, (i-1)*dof + d1)
-                push!(J_indices, (j-1)*dof + d2)
-                push!(values, block[d1, d2])
-            end
-        end
-    end
 end
 
 """
@@ -527,7 +500,7 @@ function add_block_to_coo!(I_indices::Vector{Int},
 end
 
 """
-	assemble_stiffness_contributions_sparse(nnodes, dof, C_Voigt,
+	assemble_stiffness_contributions_sparse(nodes, dof, C_Voigt,
 										   inverse_shape_tensor, nlist, volume,
 										   bond_geometry, omega)
 
@@ -535,7 +508,7 @@ Assemble stiffness matrix directly as sparse matrix to save memory.
 Uses I, J, V vectors to build sparse structure incrementally.
 
 Arguments:
-- nnodes: Number of nodes
+- nodes: list of nodes
 - dof: Degrees of freedom per node
 - C_Voigt: Voigt notation elasticity tensor per node (nnodes × voigt_dim × voigt_dim)
 - inverse_shape_tensor: Inverse shape tensor per node (nnodes × dof × dof)
@@ -545,10 +518,10 @@ Arguments:
 - omega: Influence function values per node
 
 Returns:
-- K: Sparse global stiffness matrix (nnodes*dof × nnodes*dof)
+- K: Sparse global stiffness matrix (nodes[end]*dof × nodes[end]*dof)
 """
 
-function assemble_stiffness_contributions_sparse(nnodes::Int64,
+function assemble_stiffness_contributions_sparse(nodes::AbstractVector{Int64},
                                                  dof::Int64,
                                                  C_Voigt::Array{Float64,3},
                                                  inverse_shape_tensor::Array{Float64,
@@ -557,9 +530,9 @@ function assemble_stiffness_contributions_sparse(nnodes::Int64,
                                                  volume::Vector{Float64},
                                                  bond_geometry::Vector{Vector{Vector{Float64}}},
                                                  omega::Vector{Vector{Float64}})
-    K = zeros(nnodes*dof, nnodes*dof)
+    K = zeros(nodes[end]*dof, nodes[end]*dof)
     # Process each node i
-    for i in 1:nnodes
+    for i in nodes
         D_inv = inverse_shape_tensor[i, :, :]
         @views C_tensor = get_fourth_order(C_Voigt[i, :, :], dof)
 
@@ -574,7 +547,7 @@ function assemble_stiffness_contributions_sparse(nnodes::Int64,
             V_j = volume[j]
 
             # Local K_ij matrix for this bond
-            K_ij = zeros(dof, nnodes * dof)
+            K_ij = zeros(dof, nodes[end] * dof)
 
             # Sum over all k in neighborhood of i
             for (k_idx, k) in enumerate(nlist[i])
@@ -596,7 +569,7 @@ function assemble_stiffness_contributions_sparse(nnodes::Int64,
 
             # Add K_ij to global matrix K
             for m in 1:dof
-                for n in 1:(nnodes * dof)
+                for n in 1:(nodes[end] * dof)
                     K[(j-1)*dof+m, n] -= K_ij[m, n] * V_i
                     K[(i-1)*dof+m, n] += K_ij[m, n] * V_j
                 end
@@ -673,8 +646,44 @@ function init_model(datamanager::Module,
                                                     Float64,
                                                     dof,
                                                     VectorOrMatrix = "Matrix")
-
+    @warn "Memory inefficient version for testing, K_sparse is not initialized and sparsed after full initial"
+    @warn "damages are not included yet in stiffness matrix"
     return datamanager
 end
+function compute_model(datamanager::Module,
+                       nodes::AbstractVector{Int64})
+    dof = datamanager.get_dof()
+    C_voigt = datamanager.get_field("Hooke Matrix")
+    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
+    nlist = datamanager.get_nlist()
+    volume = datamanager.get_field("Volume")
+    #bond_geometry = datamanager.get_field("Bond Geometry")
+    bond_geometry_N = datamanager.get_field("Deformed Bond Geometry", "N")
+    omega = datamanager.get_field("Influence Function")
 
+    # verify K
+    K_sparse = assemble_stiffness_contributions_sparse(nodes,              # nnodes
+                                                       dof,                # dof
+                                                       C_voigt,            # C_Voigt
+                                                       inverse_shape_tensor, # inverse_shape_tensor
+                                                       nlist,              # nlist
+                                                       volume,      # volume
+                                                       bond_geometry_N,      # bond_geometry
+                                                       omega)
+
+    zStiff = datamanager.get_field("Zero Energy Stiffness")
+    create_zero_energy_mode_stiffness!(nodes, dof, C_voigt,
+                                       inverse_shape_tensor, zStiff)
+    add_zero_energy_stiff!(K_sparse,
+                           nodes,              # nnodes
+                           dof,                # dof
+                           zStiff,            # C_Voigt
+                           inverse_shape_tensor, # inverse_shape_tensor
+                           nlist,              # nlist
+                           volume,      # volume
+                           bond_geometry_N,      # bond_geometry
+                           omega)
+    datamanager.set_stiffness_matrix(K_sparse)
+    return K_sparse
+end
 end # module
