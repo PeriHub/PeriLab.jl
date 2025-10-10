@@ -19,7 +19,8 @@ include("../BC_manager.jl")
 using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 using .Correspondence_matrix_based: assemble_stiffness_contributions_sparse,
-                                    add_zero_energy_stiff
+                                    add_zero_energy_stiff!,
+                                    create_zero_energy_mode_stiffness!
 
 """
 	init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
@@ -56,10 +57,6 @@ function init_solver(solver_options::Dict{Any,Any},
                      bcs::Dict{Any,Any},
                      datamanager::Module,
                      block_nodes::Dict{Int64,Vector{Int64}})
-    # hier wird erstmal K bestimmt, bevor es woanders hinkommt.
-    # indizes prüfen
-    # vec und reshape prüfen
-    #first test constant material
     find_bc_free_dof(datamanager, bcs)
     solver_options["Initial Time"] = get_initial_time(params, datamanager)
     solver_options["Final Time"] = get_final_time(params, datamanager)
@@ -89,17 +86,18 @@ function init_solver(solver_options::Dict{Any,Any},
                                                        bond_geometry,      # bond_geometry
                                                        omega)
 
-    #add_zero_energy_stiff(
-    #	K_sparse,
-    #	datamanager.get_nnodes(),              # nnodes
-    #	dof,                # dof
-    #	C_voigt,            # C_Voigt
-    #	inverse_shape_tensor, # inverse_shape_tensor
-    #	nlist,              # nlist
-    #	volume,      # volume
-    #	bond_geometry,      # bond_geometry
-    #	omega,
-    #)
+    zStiff = datamanager.get_field("Zero Energy Stiffness")
+    create_zero_energy_mode_stiffness!(1:datamanager.get_nnodes(), dof, C_voigt,
+                                       inverse_shape_tensor, zStiff)
+    add_zero_energy_stiff!(K_sparse,
+                           datamanager.get_nnodes(),              # nnodes
+                           dof,                # dof
+                           zStiff,            # C_Voigt
+                           inverse_shape_tensor, # inverse_shape_tensor
+                           nlist,              # nlist
+                           volume,      # volume
+                           bond_geometry,      # bond_geometry
+                           omega)
     # passt nicht zu dem Beispiel. matrix erstellung ist utnerschiedlich
     # - shape tensor prüfen
     # - funktionen verleichen
