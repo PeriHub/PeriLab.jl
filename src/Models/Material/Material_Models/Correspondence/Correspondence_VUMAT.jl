@@ -4,13 +4,10 @@
 
 module Correspondence_VUMAT
 using StaticArrays
-include("../../Material_Basis.jl")
-using .Material_Basis:
-                       voigt_to_matrix, matrix_to_voigt, get_Hooke_matrix, matrix_to_vector,
-                       vector_to_matrix
-include("../../../../Support/Geometry.jl")
-include("../Zero_Energy_Control/global_control.jl")
-using .Global_zero_energy_control: global_zero_energy_mode_stiffness
+using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_vector,
+                     vector_to_matrix
+using .....Material_Basis: get_Hooke_matrix
+using ..Global_zero_energy_control: global_zero_energy_mode_stiffness
 export fe_support
 export init_model
 export correspondence_name

@@ -5,9 +5,9 @@
 module Pre_Calculation
 include("../../Core/Module_inclusion/set_Modules.jl")
 using DataStructures
-using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "pre_calculation_name")
-Set_modules.include_files(module_list)
+# using .Set_modules
+global module_list = find_module_files(@__DIR__, "pre_calculation_name")
+include_files(module_list)
 
 using TimerOutputs
 
@@ -60,9 +60,9 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     for (active_model_name, active_model) in pairs(datamanager.get_properties(block,
                                          "Pre Calculation Model"))
         if active_model
-            mod = Set_modules.create_module_specifics(active_model_name,
-                                                      module_list,
-                                                      "pre_calculation_name")
+            mod = create_module_specifics(active_model_name,
+                                          module_list,
+                                          "pre_calculation_name")
 
             datamanager.set_model_module(active_model_name, mod)
             # TODO right now no additional information is needed

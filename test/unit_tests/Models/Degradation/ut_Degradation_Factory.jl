@@ -2,8 +2,5 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../../src/Models/Degradation/Degradation_Factory.jl")
-# include("../../../../src/Core/Data_manager.jl")
 using Test
-using .Degradation
 @testset "test_empty" begin end

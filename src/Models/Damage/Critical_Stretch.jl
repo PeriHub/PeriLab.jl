@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_stretch
-include("../../Support/Helpers.jl")
-using .Helpers: sub_in_place!, div_in_place!
+using .....Helpers: sub_in_place!, div_in_place!
 export compute_model
 export damage_name
 export init_model

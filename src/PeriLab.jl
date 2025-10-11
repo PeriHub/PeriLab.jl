@@ -35,12 +35,14 @@ main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=fals
 """
 
 module PeriLab
+include("./Support/Helpers.jl")
+include("./Support/Geometry.jl")
 include("./Core/Data_manager.jl")
 include("./IO/logging.jl")
+include("./MPI_communication/MPI_communication.jl")
+include("./Support/Parameters/parameter_handling.jl")
 include("./IO/IO.jl")
 include("./Core/Solver/Solver_control.jl")
-include("./Support/Parameters/parameter_handling.jl")
-using .Parameter_Handling: get_solver_steps
 
 using MPI
 using TimerOutputs
@@ -55,9 +57,9 @@ using .Data_manager
 
 import .Logging_module
 import .IO
-import .Solver_control
+using .Solver_control
 
-PERILAB_VERSION = "1.4.11"
+PERILAB_VERSION = "1.5.0"
 
 export main
 
@@ -293,12 +295,11 @@ function main(filename::String;
             Data_manager.set_silent(silent)
             Data_manager.set_verbose(verbose)
             @timeit to "IO.initialize_data" datamanager,
-                                            params=IO.initialize_data(filename,
-                                                                      filedirectory,
-                                                                      Data_manager,
-                                                                      comm, to)
-
-            steps = get_solver_steps(params)
+                                            params,
+                                            steps=IO.initialize_data(filename,
+                                                                     filedirectory,
+                                                                     Data_manager,
+                                                                     comm, to)
             datamanager.set_max_step(steps[end])
             for step_id in steps
                 if !isnothing(step_id)

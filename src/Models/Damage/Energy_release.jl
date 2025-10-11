@@ -3,19 +3,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Critical_Energy_Model
-include("../Material/Material_Factory.jl")
-include("../../Support/Geometry.jl")
-include("../../Support/Helpers.jl")
-using .Material
-using .Geometry
-using .Helpers:
-                rotate,
-                fastdot,
-                sub_in_place!,
-                div_in_place!,
-                mul_in_place!,
-                interpol_data,
-                is_dependent
+using ......Helpers:
+                     rotate,
+                     fastdot,
+                     sub_in_place!,
+                     div_in_place!,
+                     mul_in_place!,
+                     interpol_data,
+                     is_dependent
 using LinearAlgebra
 using StaticArrays
 export compute_model

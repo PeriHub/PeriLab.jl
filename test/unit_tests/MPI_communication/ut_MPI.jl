@@ -6,18 +6,7 @@ import MPI
 using Test
 using JSON3
 using TimerOutputs
-
-include("../../../src/MPI_communication/MPI_communication.jl")
-using .MPI_communication: send_single_value_from_vector, synch_responder_to_controller,
-                          synch_controller_to_responder,
-                          synch_controller_bonds_to_responder,
-                          split_vector, synch_controller_bonds_to_responder_flattened,
-                          send_vector_from_root_to_core_i, broadcast_value,
-                          find_and_set_core_value_min, find_and_set_core_value_max,
-                          find_and_set_core_value_sum, find_and_set_core_value_max,
-                          find_and_set_core_value_avg, gather_values, barrier
-
-include("../../../src/Models/Material/Material_Models/BondBased/Bondbased_Elastic.jl")
+using PeriLab
 
 function push_test!(dict::Dict, test::Bool, file::String, line::Int)
     push!(dict["tests"], test)
@@ -36,10 +25,10 @@ test_dict = Dict()
 
 test = test_dict["find_and_set_core_value_min and max"] = Dict("tests" => [], "line" => [])
 value = rank + 1
-value = find_and_set_core_value_min(comm, value)
+value = PeriLab.MPI_communication.find_and_set_core_value_min(comm, value)
 push_test!(test, (value == 1), @__FILE__, @__LINE__)
 value = rank + 1
-value = find_and_set_core_value_max(comm, value)
+value = PeriLab.MPI_communication.find_and_set_core_value_max(comm, value)
 push_test!(test, (ncores == value), @__FILE__, @__LINE__)
 
 test = test_dict["ut_broadcast_value"] = Dict("tests" => [], "line" => [])
@@ -48,21 +37,21 @@ if rank == 0
 else
     send_msg = nothing
 end
-send_msg = broadcast_value(comm, send_msg)
+send_msg = PeriLab.MPI_communication.broadcast_value(comm, send_msg)
 push_test!(test, (send_msg == 100), @__FILE__, @__LINE__)
 if rank == 0
     send_msg = true
 else
     send_msg = nothing
 end
-send_msg = broadcast_value(comm, send_msg)
+send_msg = PeriLab.MPI_communication.broadcast_value(comm, send_msg)
 push_test!(test, (send_msg), @__FILE__, @__LINE__)
 if rank == 0
     send_msg = 100.5
 else
     send_msg = nothing
 end
-send_msg = broadcast_value(comm, send_msg)
+send_msg = PeriLab.MPI_communication.broadcast_value(comm, send_msg)
 push_test!(test, (send_msg == 100.5), @__FILE__, @__LINE__)
 
 test = test_dict["ut_send_vector_from_root_to_core_i"] = Dict("tests" => [], "line" => [])
@@ -74,12 +63,12 @@ else
 end
 recv_msg = [0, 0, 0]
 
-recv_msg = send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
+recv_msg = PeriLab.MPI_communication.send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
 push_test!(test, (recv_msg[1] == 2), @__FILE__, @__LINE__)
 push_test!(test, (recv_msg[2] == 1), @__FILE__, @__LINE__)
 push_test!(test, (recv_msg[3] == 5), @__FILE__, @__LINE__)
 distribution = [[1, 2, 3], [3, 2, 1], [3, 2, 1]]
-recv_msg = send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
+recv_msg = PeriLab.MPI_communication.send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
 if rank != 0
     push_test!(test, (recv_msg[1] == 5), @__FILE__, @__LINE__)
     push_test!(test, (recv_msg[2] == 1), @__FILE__, @__LINE__)
@@ -87,23 +76,19 @@ if rank != 0
 end
 
 push_test!(test,
-           (isnothing(send_single_value_from_vector(comm, 0, [1], String))),
+           (isnothing(PeriLab.MPI_communication.send_single_value_from_vector(comm, 0, [1], String))),
            @__FILE__,
            @__LINE__)
 if ncores == 3
-    include("../../../src/Core/Data_manager.jl")
-    include("../../../src/IO/IO.jl")
-    import .IO
-    using .Data_manager
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
     ncores = 3
     dof = 2
     ptc = [1, 2, 2, 3]
-    overlap_map = IO.create_overlap_map(distribution, ptc, ncores)
+    overlap_map = PeriLab.IO.create_overlap_map(distribution, ptc, ncores)
 
-    overlap_map = IO.get_local_overlap_map(overlap_map, distribution, ncores)
+    overlap_map = PeriLab.IO.get_local_overlap_map(overlap_map, distribution, ncores)
 
-    test_data_manager = Data_manager
+    test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
     test_data_manager.set_comm(comm)
     test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
@@ -175,11 +160,11 @@ if ncores == 3
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
 
     # sammel ein und summiere -> zweite routine mit sende vom Controller an alle responder
-    A = synch_responder_to_controller(comm, overlap_map, A, 1)
-    B = synch_responder_to_controller(comm, overlap_map, B, 4)
-    C = synch_responder_to_controller(comm, overlap_map, C, 1)
-    D = synch_responder_to_controller(comm, overlap_map, D, 5)
-    E = synch_responder_to_controller(comm, overlap_map, E, 1)
+    A = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, A, 1)
+    B = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, B, 4)
+    C = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, C, 1)
+    D = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, D, 5)
+    E = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, E, 1)
 
     if rank == 0
         test = test_dict["synch_responder_to_controller_rank_0"] = Dict("tests" => [],
@@ -238,13 +223,13 @@ if ncores == 3
         push_test!(test, (E[2] == false), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
     end
-    barrier(comm)
+    PeriLab.MPI_communication.barrier(comm)
 
-    A = synch_controller_to_responder(comm, overlap_map, A, 1)
-    B = synch_controller_to_responder(comm, overlap_map, B, 4)
-    C = synch_controller_to_responder(comm, overlap_map, C, 1)
-    D = synch_controller_to_responder(comm, overlap_map, D, 5)
-    E = synch_controller_to_responder(comm, overlap_map, E, 1)
+    A = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, A, 1)
+    B = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, B, 4)
+    C = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, C, 1)
+    D = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, D, 5)
+    E = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, E, 1)
     if rank == 0
         test = test_dict["synch_controller_to_responder_rank_0"] = Dict("tests" => [],
                                                                         "line" => [])
@@ -265,19 +250,19 @@ if ncores == 3
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_0"] = Dict("tests" => [], "line" => [])
         push_test!(test,
-                   (IO.find_global_core_value!(0, "Sum", 1, test_data_manager) == 3),
+                   (PeriLab.IO.find_global_core_value!(0, "Sum", 1, test_data_manager) == 3),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (IO.find_global_core_value!(0, "Maximum", 1, test_data_manager) == 2),
+                   (PeriLab.IO.find_global_core_value!(0, "Maximum", 1, test_data_manager) == 2),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (IO.find_global_core_value!(0, "Minimum", 1, test_data_manager) == 0),
+                   (PeriLab.IO.find_global_core_value!(0, "Minimum", 1, test_data_manager) == 0),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (IO.find_global_core_value!(0, "Average", 1, test_data_manager) == 1),
+                   (PeriLab.IO.find_global_core_value!(0, "Average", 1, test_data_manager) == 1),
                    @__FILE__,
                    @__LINE__)
     end
@@ -302,19 +287,19 @@ if ncores == 3
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_1"] = Dict("tests" => [], "line" => [])
         push_test!(test,
-                   (IO.find_global_core_value!(1, "Sum", 1, test_data_manager) == 3),
+                   (PeriLab.IO.find_global_core_value!(1, "Sum", 1, test_data_manager) == 3),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (IO.find_global_core_value!(1, "Maximum", 1, test_data_manager) == 2),
+                   (PeriLab.IO.find_global_core_value!(1, "Maximum", 1, test_data_manager) == 2),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (IO.find_global_core_value!(1, "Minimum", 1, test_data_manager) == 0),
+                   (PeriLab.IO.find_global_core_value!(1, "Minimum", 1, test_data_manager) == 0),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (IO.find_global_core_value!(1, "Average", 1, test_data_manager) == 1),
+                   (PeriLab.IO.find_global_core_value!(1, "Average", 1, test_data_manager) == 1),
                    @__FILE__,
                    @__LINE__)
     end
@@ -343,19 +328,19 @@ if ncores == 3
         push_test!(test, (E[3] == true), @__FILE__, @__LINE__)
         test = test_dict["find_global_core_value!_2"] = Dict("tests" => [], "line" => [])
         push_test!(test,
-                   (IO.find_global_core_value!(2, "Sum", 1, test_data_manager) == 3),
+                   (PeriLab.IO.find_global_core_value!(2, "Sum", 1, test_data_manager) == 3),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (IO.find_global_core_value!(2, "Maximum", 1, test_data_manager) == 2),
+                   (PeriLab.IO.find_global_core_value!(2, "Maximum", 1, test_data_manager) == 2),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (IO.find_global_core_value!(2, "Minimum", 1, test_data_manager) == 0),
+                   (PeriLab.IO.find_global_core_value!(2, "Minimum", 1, test_data_manager) == 0),
                    @__FILE__,
                    @__LINE__)
         push_test!(test,
-                   (IO.find_global_core_value!(2, "Average", 1, test_data_manager) == 1),
+                   (PeriLab.IO.find_global_core_value!(2, "Average", 1, test_data_manager) == 1),
                    @__FILE__,
                    @__LINE__)
     end
@@ -379,11 +364,11 @@ if ncores == 3
         end
     end
 
-    test_data_manager = Bondbased_Elastic.init_model(test_data_manager,
+    test_data_manager = PeriLab.Solver_control.Model_Factory.Material.Bondbased_Elastic.init_model(test_data_manager,
                                                      Vector{Int64}(1:nodes),
                                                      Dict("Bulk Modulus" => 1.0,
                                                           "Young's Modulus" => 1.0))
-    test_data_manager = Bondbased_Elastic.compute_model(test_data_manager,
+    test_data_manager = PeriLab.Solver_control.Model_Factory.Material.Bondbased_Elastic.compute_model(test_data_manager,
                                                         Vector{Int64}(1:nodes),
                                                         Dict("Bulk Modulus" => 1.0,
                                                              "Young's Modulus" => 1.0),
@@ -394,7 +379,7 @@ if ncores == 3
 
     bf = test_data_manager.get_field("Bond Forces")
 
-    synch_controller_bonds_to_responder(comm, overlap_map, bf, dof)
+    PeriLab.MPI_communication.synch_controller_bonds_to_responder(comm, overlap_map, bf, dof)
 
     if rank == 0
         test = test_dict["synch_controller_bonds_to_responder_rank_0"] = Dict("tests" => [],
@@ -402,7 +387,7 @@ if ncores == 3
         # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
     end
 
-    synch_controller_bonds_to_responder_flattened(comm, overlap_map, bf, dof)
+    PeriLab.MPI_communication.synch_controller_bonds_to_responder_flattened(comm, overlap_map, bf, dof)
     if rank == 0
         test = test_dict["synch_controller_bonds_to_responder_flattened_rank_0"] = Dict("tests" => [],
                                                                                         "line" => [])
@@ -414,10 +399,10 @@ if ncores == 3
                                                      "Material Model" => "Test 1"),
                                    "block_2" => Dict("Block ID" => 2,
                                                      "Material Model" => "Test 2")))
-    IO.show_block_summary(solver_options, params, "", false, comm, test_data_manager)
-    IO.show_block_summary(solver_options, params, "", true, comm, test_data_manager)
-    IO.show_mpi_summary("", false, comm, test_data_manager)
-    IO.show_mpi_summary("", true, comm, test_data_manager)
+    PeriLab.IO.show_block_summary(solver_options, params, "", false, comm, test_data_manager)
+    PeriLab.IO.show_block_summary(solver_options, params, "", true, comm, test_data_manager)
+    PeriLab.IO.show_mpi_summary("", false, comm, test_data_manager)
+    PeriLab.IO.show_mpi_summary("", true, comm, test_data_manager)
 end
 
 open("test_results_$rank.json", "w") do f

@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../src/Models/Model_Factory.jl")
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
 using Test
@@ -35,7 +34,7 @@ using Test
                                    "Additive Models" => Dict("add" => Dict("value" => "ad",
                                                                            "bool" => false))))
 
-    Model_Factory.get_block_model_definition(params,
+    PeriLab.Solver_control.Model_Factory.get_block_model_definition(params,
                                              block_list,
                                              block_id_list,
                                              prop_keys,
@@ -90,7 +89,7 @@ end
                                    "Thermal Models" => Dict("therm" => Dict("value" => "hot",
                                                                             "bool" => true,
                                                                             "name" => "t3"))))
-    Model_Factory.read_properties(params, test_data_manager_read_properties, false)
+    PeriLab.Solver_control.Model_Factory.read_properties(params, test_data_manager_read_properties, false)
 
     @test isnothing(test_data_manager_read_properties.get_property(1, "Material Model",
                                                                    "value"))
@@ -101,7 +100,7 @@ end
     @test test_data_manager_read_properties.get_property(3, "Thermal Model", "bool") ==
           params["Models"]["Thermal Models"]["therm"]["bool"]
 
-    Model_Factory.read_properties(params, test_data_manager_read_properties, true)
+    PeriLab.Solver_control.Model_Factory.read_properties(params, test_data_manager_read_properties, true)
     @test test_data_manager_read_properties.get_property(1, "Material Model", "value") ==
           params["Models"]["Material Models"]["a"]["value"]
     @test test_data_manager_read_properties.get_property(2, "Material Model", "value") ==
@@ -121,5 +120,5 @@ end
 @testset "ut_add_model" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
-    @test isnothing(Model_Factory.add_model(test_data_manager, "Test"))
+    @test isnothing(PeriLab.Solver_control.Model_Factory.add_model(test_data_manager, "Test"))
 end

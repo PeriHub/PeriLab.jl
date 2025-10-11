@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-include("../../../../src/Models/Pre_calculation/pre_bond_associated_correspondence.jl")
 #include("../../../../src/PeriLab.jl")
 #using .PeriLab
 
@@ -14,7 +13,7 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
     horizon = 3.0
     expected_Q = [1.0 / 3.0, 2.0 / 3.0]
     Q = zeros(2)
-    Q = Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
+    Q = PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
                                                        dof,
                                                        undeformed_bond,
                                                        horizon,
@@ -34,7 +33,7 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
         0.4444444444444444
     ]
     Q = zeros(5)
-    Q = Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
+    Q = PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
                                                        dof,
                                                        undeformed_bond,
                                                        horizon,
@@ -58,7 +57,7 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
         2.777777777777778
     ]
     Q = zeros(9)
-    Q = Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
+    Q = PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
                                                        dof,
                                                        undeformed_bond,
                                                        horizon,
@@ -67,13 +66,13 @@ include("../../../../src/Models/Pre_calculation/pre_bond_associated_corresponden
     @test isapprox(Q, expected_Q)
     Q = zeros(3)
     undeformed_bond = [1.0, 0.0, 0]
-    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
+    @test PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [1, 0, 0]
     undeformed_bond = [0.0, 1.0, 0]
-    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
+    @test PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [0, 1, 0]
     undeformed_bond = [0.0, 0.0, 1.0]
-    @test Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
+    @test PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [0, 0, 1]
 end
 
@@ -104,7 +103,7 @@ end
     weighted_volume = test_data_manager.create_constant_node_field("Weighted Volume",
                                                                    Float64, 1)
 
-    Pre_Bond_Associated_Correspondence.compute_weighted_volume!(weighted_volume,
+    PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.compute_weighted_volume!(weighted_volume,
                                                                 nodes,
                                                                 nlist,
                                                                 volume,
@@ -136,7 +135,7 @@ end
     Minv = zeros(5, 5)
     M = zeros(5, 5)
 
-    Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes,
+    PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes,
                                                                            dof,
                                                                            accuracy_order,
                                                                            volume,

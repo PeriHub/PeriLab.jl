@@ -3,9 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-# include("../../../src/Core/Data_manager.jl")
-include("../../../src/Support/Helpers.jl")
-include("../../../src/Compute/compute_field_values.jl")
+
 @testset "ut_get_forces_from_force_density" begin
     test_data_manager = PeriLab.Data_manager
     test_data_manager.initialize_data()
@@ -21,7 +19,7 @@ include("../../../src/Compute/compute_field_values.jl")
     volume[1:5] = 1:5
     force_densityNP1 = rand(5, 3)
 
-    test_data_manager = get_forces_from_force_density(test_data_manager)
+    test_data_manager = PeriLab.Solver_control.Verlet.get_forces_from_force_density(test_data_manager)
     forces = test_data_manager.get_field("Forces", "NP1")
     for i in 1:5
         for j in 1:3
@@ -62,7 +60,7 @@ end
 
     nodes = [1, 2, 3, 4, 5]
 
-    test_data_manager = get_partial_stresses(test_data_manager, nodes)
+    test_data_manager = PeriLab.Solver_control.Verlet.get_partial_stresses(test_data_manager, nodes)
     stresses = test_data_manager.get_field("Cauchy Stress", "NP1")
 
     testval = zeros(5, 3, 3)

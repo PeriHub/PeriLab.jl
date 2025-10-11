@@ -7,9 +7,8 @@ export init_BCs
 export apply_bc_dirichlet
 export apply_bc_neumann
 export find_bc_free_dof
-include("../Support/Parameters/parameter_handling.jl")
 
-using .Parameter_Handling: get_bc_definitions
+using ...Parameter_Handling: get_bc_definitions
 
 """
     find_bc_free_dof(datamanager::Module, bcs::Dict{String,Any})

@@ -3,10 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bondbased_Elastic
-include("../../Material_Basis.jl")
-include("../../../../Support/Helpers.jl")
-using .Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
-using .Helpers: is_dependent
+using ....Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
+using .......Helpers: is_dependent
 using LoopVectorization
 using TimerOutputs
 export init_model

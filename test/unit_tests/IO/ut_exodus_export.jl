@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../src/IO/exodus_export.jl")
-include("../../../src/IO/csv_export.jl")
-include("../../../src/Core/Data_manager.jl")
-
 using Test
 using TimerOutputs
 
@@ -14,35 +10,35 @@ test_data_manager = PeriLab.Data_manager
 test_data_manager.initialize_data()
 @testset "ut_get_block_nodes" begin
     block_Id = [1, 1, 2, 2, 2, 3, 3, 3, 1, 3, 3, 4]
-    test = get_block_nodes(block_Id, 1)
+    test = PeriLab.IO.get_block_nodes(block_Id, 1)
     @test test == [1 2 9]
-    test = get_block_nodes(block_Id, 2)
+    test = PeriLab.IO.get_block_nodes(block_Id, 2)
     @test test == [3 4 5]
-    test = get_block_nodes(block_Id, 3)
+    test = PeriLab.IO.get_block_nodes(block_Id, 3)
     @test test == [6 7 8 10 11]
-    test = get_block_nodes(block_Id, 4)
+    test = PeriLab.IO.get_block_nodes(block_Id, 4)
     @test test[1] == 12
 end
 
 @testset "ut_paraview_specifics" begin
-    @test paraview_specifics(1) == "x"
-    @test paraview_specifics(2) == "y"
-    @test paraview_specifics(3) == "z"
+    @test PeriLab.IO.paraview_specifics(1) == "x"
+    @test PeriLab.IO.paraview_specifics(2) == "y"
+    @test PeriLab.IO.paraview_specifics(3) == "z"
 end
 
 @testset "ut_get_paraview_coordinates" begin
     for i in 1:3
-        @test get_paraview_coordinates(1, i) == "x"
-        @test get_paraview_coordinates(2, i) == "y"
-        @test get_paraview_coordinates(3, i) == "z"
+        @test PeriLab.IO.get_paraview_coordinates(1, i) == "x"
+        @test PeriLab.IO.get_paraview_coordinates(2, i) == "y"
+        @test PeriLab.IO.get_paraview_coordinates(3, i) == "z"
     end
-    @test isnothing(get_paraview_coordinates(3, 10))
+    @test isnothing(PeriLab.IO.get_paraview_coordinates(3, 10))
 
     for ref in 4:9
         for i in 1:3
             for j in 1:3
-                @test get_paraview_coordinates((i - 1) * 3 + j, ref) ==
-                      paraview_specifics(i) * paraview_specifics(j)
+                @test PeriLab.IO.get_paraview_coordinates((i - 1) * 3 + j, ref) ==
+                      PeriLab.IO.paraview_specifics(i) * PeriLab.IO.paraview_specifics(j)
             end
         end
     end
@@ -66,8 +62,8 @@ topology[2, 4] = 5
     filename2 = "./tmp/" * "test2.e"
     nnodes = 4
     dof = 3
-    exo = create_result_file(filename1, 5, dof, 1, 0, 2, topology)
-    exo = create_result_file(filename2, nnodes, dof, 1, 0)
+    exo = PeriLab.IO.create_result_file(filename1, 5, dof, 1, 0, 2, topology)
+    exo = PeriLab.IO.create_result_file(filename2, nnodes, dof, 1, 0)
     @test isfile(filename2)
     @test exo["file"].file_name == filename2
     # @test num_dim(exo["file"].init) == dof
@@ -82,7 +78,7 @@ topology[2, 4] = 5
     nnodes = 300
     dof = 2
     @test isfile(filename2)
-    exo = create_result_file(filename2, nnodes, dof, 3, 2)
+    exo = PeriLab.IO.create_result_file(filename2, nnodes, dof, 3, 2)
     @test isfile(filename2)
     @test exo["file"].file_name == filename2
     # @test num_dim(exo["file"].init) == dof
@@ -194,14 +190,14 @@ computes = Dict("Fields" => Dict("External_Displacements" => Dict("fieldname" =>
                                                                                     "Node Set" => 1,
                                                                                     "Variable" => "DisplacementsNP1"))))
 
-exo1 = create_result_file(filename2,
+exo1 = PeriLab.IO.create_result_file(filename2,
                           nnodes,
                           dof,
                           maximum(block_Id),
                           length(nsets),
                           2,
                           topology)
-exo1["file"] = init_results_in_exodus(exo1["file"],
+exo1["file"] = PeriLab.IO.init_results_in_exodus(exo1["file"],
                                       outputs,
                                       coords,
                                       block_Id[1:nnodes],
@@ -213,8 +209,8 @@ exo1["file"] = init_results_in_exodus(exo1["file"],
                                       topology,
                                       [1, 2])
 rm(filename2)
-exo = create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
-exo["file"] = init_results_in_exodus(exo["file"],
+exo = PeriLab.IO.create_result_file(filename, nnodes, dof, maximum(block_Id), length(nsets))
+exo["file"] = PeriLab.IO.init_results_in_exodus(exo["file"],
                                      outputs,
                                      coords,
                                      block_Id[1:nnodes],
@@ -224,11 +220,11 @@ exo["file"] = init_results_in_exodus(exo["file"],
                                      "1.0.0")
 result_files = []
 push!(result_files, exo)
-result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 2, 2.2)
-result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 3, 3.7)
-result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 4, 4.7)
-result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 5, 5.7)
-result_files[1]["file"] = write_step_and_time(result_files[1]["file"], 6, 6.7)
+result_files[1]["file"] = PeriLab.IO.write_step_and_time(result_files[1]["file"], 2, 2.2)
+result_files[1]["file"] = PeriLab.IO.write_step_and_time(result_files[1]["file"], 3, 3.7)
+result_files[1]["file"] = PeriLab.IO.write_step_and_time(result_files[1]["file"], 4, 4.7)
+result_files[1]["file"] = PeriLab.IO.write_step_and_time(result_files[1]["file"], 5, 5.7)
+result_files[1]["file"] = PeriLab.IO.write_step_and_time(result_files[1]["file"], 6, 6.7)
 
 @testset "ut_init_results_in_exodus" begin
     # @test exo["file"].init.num_dim == dof
@@ -266,7 +262,7 @@ disp[5] = 0
 
 nodal_outputs = Dict(key => value
                      for (key, value) in outputs["Fields"] if (!value["global_var"]))
-exo["file"] = write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs,
+exo["file"] = PeriLab.IO.write_nodal_results_in_exodus(exo["file"], 2, nodal_outputs,
                                             test_data_manager)
 
 test_disp_step_zero = read_values(exo["file"], NodalVariable, 1, 1, "Displacements")
@@ -320,8 +316,8 @@ end
 csvfilename = "./tmp/" * "test_2.csv"
 csv_file = open(csvfilename, "w")
 println(csv_file, "Test")
-csv_file = create_result_file(csvfilename, computes)
-exo["file"] = write_global_results_in_exodus(exo["file"], 2, [0.1, 0.2])
+csv_file = PeriLab.IO.create_result_file(csvfilename, computes)
+exo["file"] = PeriLab.IO.write_global_results_in_exodus(exo["file"], 2, [0.1, 0.2])
 
 @testset "ut_write_global_results_in_exodus" begin
     global_vars = read_names(exo["file"], GlobalVariable)
@@ -336,14 +332,14 @@ end
 @testset "ut_merge_exodus_file" begin
     merged = true
     try
-        merge_exodus_file(exo["filename"])
+        PeriLab.IO.merge_exodus_file(exo["filename"])
     catch
         merged = false
     end
     @test merged
 end
 
-write_global_results_in_csv(csv_file["file"], 1.0, [0.1, 0.2])
+PeriLab.IO.write_global_results_in_csv(csv_file["file"], 1.0, [0.1, 0.2])
 #TODO: check if the csv file is correct
 @testset "ut_write_global_results_in_csv" begin
     @test isfile(csv_file["filename"])

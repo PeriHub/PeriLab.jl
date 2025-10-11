@@ -4,8 +4,7 @@
 
 module Bond_Deformation
 using DataStructures: OrderedDict
-include("../../Support/Geometry.jl")
-using .Geometry
+using .......Geometry: bond_geometry!
 export pre_calculation_name
 export init_model
 export compute
@@ -75,11 +74,11 @@ function compute(datamanager::Module,
     deformed_coor = datamanager.get_field("Deformed Coordinates", "NP1")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")
     deformed_bond_length = datamanager.get_field("Deformed Bond Length", "NP1")
-    Geometry.bond_geometry!(deformed_bond,
-                            deformed_bond_length,
-                            nodes,
-                            nlist,
-                            deformed_coor)
+    bond_geometry!(deformed_bond,
+                   deformed_bond_length,
+                   nodes,
+                   nlist,
+                   deformed_coor)
     return datamanager
 end
 

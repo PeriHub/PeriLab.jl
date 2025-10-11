@@ -4,12 +4,10 @@
 
 module Additive
 include("../../Core/Module_inclusion/set_Modules.jl")
-using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "additive_name")
-Set_modules.include_files(module_list)
-include("../../Support/Helpers.jl")
+global module_list = find_module_files(@__DIR__, "additive_name")
+include_files(module_list)
 using TimerOutputs
-using .Helpers: find_inverse_bond_id
+using .....Helpers: find_inverse_bond_id
 export compute_model
 export init_model
 export init_fields
@@ -96,9 +94,9 @@ datamanager = init_model(my_data_manager, [1, 2, 3], 1)
 function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
     model_param = datamanager.get_properties(block, "Additive Model")
-    mod = Set_modules.create_module_specifics(model_param["Additive Model"],
-                                              module_list,
-                                              "additive_name")
+    mod = create_module_specifics(model_param["Additive Model"],
+                                  module_list,
+                                  "additive_name")
     if isnothing(mod)
         @error "No additive model of name " * model_param["Additive Model"] * " exists."
         return nothing

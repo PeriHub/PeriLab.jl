@@ -7,8 +7,7 @@ using LinearAlgebra
 using Combinatorics: levicivita
 using StaticArrays
 using Rotations
-include("Helpers.jl")
-using .Helpers: invert, smat, mat_mul_transpose_mat!
+using ...Helpers: invert, smat, mat_mul_transpose_mat!
 export bond_geometry!
 export compute_shape_tensors!
 export compute_deformation_gradients!

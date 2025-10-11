@@ -117,7 +117,7 @@ end
 
 @testset "rotate_second_order_tensor" begin
     angles = [0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 2)
+    rot = PeriLab.Geometry.rotation_tensor(angles, 2)
     tensor = zeros(2, 2)
     tensor[1, 1] = 1
     dof = 2
@@ -127,7 +127,7 @@ end
                                                                            back)
     @test tensorTest == tensor
     angles = [90.0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 2)
+    rot = PeriLab.Geometry.rotation_tensor(angles, 2)
     tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
                                                                            tensor,
                                                                            back)
@@ -143,7 +143,7 @@ end
     @test tensorTest == tensor
 
     angles = [0, 0, 0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 3)
+    rot = PeriLab.Geometry.rotation_tensor(angles, 3)
     tensor = zeros(3, 3)
     tensor[1, 1] = 1
     dof = 3
@@ -154,7 +154,7 @@ end
                                                                            back)
     @test tensorTest == tensor
     angles = [0, 0, 90.0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 3)
+    rot = PeriLab.Geometry.rotation_tensor(angles, 3)
     tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
                                                                            tensor,
                                                                            back)
@@ -175,7 +175,7 @@ end
     @test tensorTest == tensor
 
     angles = [10, 20, 90.0]
-    rot = PeriLab.IO.Geometry.rotation_tensor(angles, 3)
+    rot = PeriLab.Geometry.rotation_tensor(angles, 3)
     tensorTest = PeriLab.Solver_control.Helpers.rotate_second_order_tensor(Matrix{Float64}(rot),
                                                                            tensor,
                                                                            true)
@@ -459,4 +459,25 @@ end
     params = Dict("Value" => Dict("Field" => "Non_Existent"))
     @test isnothing(PeriLab.Solver_control.Helpers.is_dependent("Value", params,
                                                                 test_data_manager))
+end
+
+@testset "ut_matrix_to_voigt" begin
+    matrix = Matrix{Float64}([1 2; 3 4])
+    voigt = PeriLab.Solver_control.Helpers.matrix_to_voigt(matrix)
+    @test voigt[1] == 1
+    @test voigt[2] == 4
+    @test voigt[3] == 2.5
+    matrix = Matrix{Float64}([1 2 3; 4 5 6; 7 8 9])
+    voigt = PeriLab.Solver_control.Helpers.matrix_to_voigt(matrix)
+    @test voigt[1] == 1
+    @test voigt[2] == 5
+    @test voigt[3] == 9
+    @test voigt[4] == 7
+    @test voigt[5] == 5
+    @test voigt[6] == 3
+    matrix = Matrix{Float64}([1 2 3 3; 4 5 6 3; 7 8 9 3])
+    @test isnothing(PeriLab.Solver_control.Helpers.matrix_to_voigt(matrix))
+end
+@testset "ut_voigt_to_matrix" begin
+    @test isnothing(PeriLab.Solver_control.Helpers.voigt_to_matrix([1, 2.2]))
 end

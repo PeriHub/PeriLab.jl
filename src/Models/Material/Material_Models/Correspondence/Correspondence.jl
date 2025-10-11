@@ -12,17 +12,13 @@ include("../Zero_Energy_Control/global_control.jl")
 using .Global_zero_energy_control: compute_control
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
-include("../../Material_Basis.jl")
-using .Material_Basis: compute_Piola_Kirchhoff_stress!
-include("../../../../Support/Helpers.jl")
-using .Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
-include("../../../../Support/Geometry.jl")
-using .Geometry: compute_strain
+using ....Material_Basis: compute_Piola_Kirchhoff_stress!
+using .......Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
+using .......Geometry: compute_strain
 using .Global_zero_energy_control
 include("../../../../Core/Module_inclusion/set_Modules.jl")
-using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "correspondence_name")
-Set_modules.include_files(module_list)
+global module_list = find_module_files(@__DIR__, "correspondence_name")
+include_files(module_list)
 
 export init_model
 export material_name
@@ -65,9 +61,9 @@ function init_model(datamanager::Module,
     #occursin("Correspondence", material_name)
     for material_model in material_models
         datamanager.set_analysis_model("Correspondence Model", block, material_model)
-        mod = Set_modules.create_module_specifics(material_model,
-                                                  module_list,
-                                                  "correspondence_name")
+        mod = create_module_specifics(material_model,
+                                      module_list,
+                                      "correspondence_name")
         if isnothing(mod)
             @error "No correspondence material of name " * material_model * " exists."
             return nothing

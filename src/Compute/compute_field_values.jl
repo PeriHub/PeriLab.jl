@@ -2,13 +2,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using .Helpers: find_active_nodes, get_active_update_nodes, add_in_place!
+using ...Helpers: find_active_nodes, get_active_update_nodes, add_in_place!, invert
 using StaticArrays: MMatrix, SMatrix
-using .Helpers: invert
-include("../Models/Material/Material_Basis.jl")
-using .Material_Basis:
-                       get_strain, get_Hooke_matrix,
-                       compute_deviatoric_and_spherical_stresses
+using ..Material_Basis:
+                        get_strain, get_Hooke_matrix,
+                        compute_deviatoric_and_spherical_stresses
 """
     get_forces_from_force_density(datamanager::Module)
 

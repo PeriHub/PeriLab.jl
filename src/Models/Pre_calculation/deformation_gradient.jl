@@ -4,8 +4,7 @@
 
 module Deformation_Gradient
 using DataStructures: OrderedDict
-include("../../Support/Geometry.jl")
-using .Geometry: compute_deformation_gradients!
+using .......Geometry: compute_deformation_gradients!
 export pre_calculation_name
 export init_model
 export compute

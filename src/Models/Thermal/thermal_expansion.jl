@@ -9,8 +9,7 @@
 module Thermal_expansion
 using LinearAlgebra
 using StaticArrays
-include("../Pre_calculation/deformation_gradient.jl")
-using .Deformation_Gradient
+using ...Pre_Calculation.Deformation_Gradient
 export fields_for_local_synchronization
 export compute_model
 export thermal_model_name

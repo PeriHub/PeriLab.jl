@@ -3,10 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_Plastic
-include("../../Material_Basis.jl")
-using .Material_Basis:
-                       flaw_function, get_von_mises_yield_stress,
-                       compute_deviatoric_and_spherical_stresses
+using .....Material_Basis:
+                           flaw_function, get_von_mises_yield_stress,
+                           compute_deviatoric_and_spherical_stresses
 using LinearAlgebra
 using StaticArrays
 export fe_support
@@ -142,18 +141,18 @@ function compute_stresses(datamanager::Module,
 
         stress_NP1[iID, :, :], plastic_strain_NP1[iID],
         von_Mises_stress_yield[iID] = compute_plastic_model(stress_NP1[iID,
-                                                            :,
-                                                            :],
+                                                                       :,
+                                                                       :],
                                                             stress_N[iID,
-                                                            :,
-                                                            :],
+                                                                     :,
+                                                                     :],
                                                             spherical_stress_NP1,
                                                             spherical_stress_N,
                                                             deviatoric_stress_NP1,
                                                             deviatoric_stress_N,
                                                             strain_increment[iID,
-                                                            :,
-                                                            :],
+                                                                             :,
+                                                                             :],
                                                             von_Mises_stress_yield[iID],
                                                             plastic_strain_NP1[iID],
                                                             plastic_strain_N[iID],
@@ -199,16 +198,16 @@ function compute_stresses_ba(datamanager::Module,
             stress_NP1[iID][jID, :, :],
             plastic_strain_NP1[iID][jID],
             von_Mises_stress_yield[iID][jID] = compute_plastic_model(stress_NP1[iID][jID, :,
-                                                                     :],
+                                                                                     :],
                                                                      stress_N[iID][jID, :,
-                                                                     :],
+                                                                                   :],
                                                                      spherical_stress_NP1,
                                                                      spherical_stress_N,
                                                                      deviatoric_stress_NP1,
                                                                      deviatoric_stress_N,
                                                                      strain_increment[iID][jID,
-                                                                     :,
-                                                                     :],
+                                                                                           :,
+                                                                                           :],
                                                                      von_Mises_stress_yield[iID][jID],
                                                                      plastic_strain_NP1[iID][jID],
                                                                      plastic_strain_N[iID][jID],
