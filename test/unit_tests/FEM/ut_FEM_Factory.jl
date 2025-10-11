@@ -4,7 +4,6 @@
 
 using Test
 #include("../../../src/PeriLab.jl")
-
 #using .PeriLab
 PeriLab.Data_manager.initialize_data()
 

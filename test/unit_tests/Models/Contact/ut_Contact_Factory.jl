@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../../src/Models/Contact/Contact_Factory.jl")
-# include("../../../../src/Core/Data_manager.jl")
 using Test
-using .Contact_Factory: check_valid_contact_model, get_all_contact_blocks
 
 @testset "ut_check_valid_contact_model" begin
     test_data_manager = PeriLab.Data_manager
@@ -15,30 +12,30 @@ using .Contact_Factory: check_valid_contact_model, get_all_contact_blocks
     block_id = test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
     block_id .= 1
     # contact_params = Dict("cm" => Dict("Contact Groups" => Dict()))
-    # @test !check_valid_contact_model(contact_params, block_id)
+    # @test !PeriLab.Solver_control.check_valid_contact_model(contact_params, block_id)
     contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1))))
-    @test !check_valid_contact_model(contact_params, block_id)
+    @test !PeriLab.Solver_control.Model_Factory.Contact_Factory.check_valid_contact_model(contact_params, block_id)
     contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
                                                                              "Slave Block ID" => 1))))
-    @test !check_valid_contact_model(contact_params, block_id)
+    @test !PeriLab.Solver_control.Model_Factory.Contact_Factory.check_valid_contact_model(contact_params, block_id)
     contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
                                                                              "Slave Block ID" => 2))))
-    @test !check_valid_contact_model(contact_params, block_id)
+    @test !PeriLab.Solver_control.Model_Factory.Contact_Factory.check_valid_contact_model(contact_params, block_id)
     contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
                                                                              "Slave Block ID" => 2))),
                           "cm2" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 2,
                                                                               "Slave Block ID" => 1))))
-    @test !check_valid_contact_model(contact_params, block_id)
+    @test !PeriLab.Solver_control.Model_Factory.Contact_Factory.check_valid_contact_model(contact_params, block_id)
     block_id[2] = 2
-    @test !check_valid_contact_model(contact_params, block_id)
+    @test !PeriLab.Solver_control.Model_Factory.Contact_Factory.check_valid_contact_model(contact_params, block_id)
     contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
                                                                              "Slave Block ID" => 2,
                                                                              "Search Radius" => 0.0))))
-    @test !check_valid_contact_model(contact_params, block_id)
+    @test !PeriLab.Solver_control.Model_Factory.Contact_Factory.check_valid_contact_model(contact_params, block_id)
     contact_params = Dict("cm" => Dict("Contact Groups" => Dict("cg" => Dict("Master Block ID" => 1,
                                                                              "Slave Block ID" => 2,
                                                                              "Search Radius" => -20.0))))
-    @test !check_valid_contact_model(contact_params, block_id)
+    @test !PeriLab.Solver_control.Model_Factory.Contact_Factory.check_valid_contact_model(contact_params, block_id)
 end
 
 @testset "ut_get_all_contact_blocks" begin
@@ -50,7 +47,7 @@ end
                                                                     "Slave Block ID" => 5),
                                                         "q" => Dict("Master Block ID" => 8,
                                                                     "Slave Block ID" => 5))))
-    @test get_all_contact_blocks(params) == [1, 2, 3, 5, 8]
+    @test PeriLab.Solver_control.Model_Factory.Contact_Factory.get_all_contact_blocks(params) == [1, 2, 3, 5, 8]
 end
 @testset "ut_get_double_surfs" begin
     @warn "TBD implentation of double surfs test"

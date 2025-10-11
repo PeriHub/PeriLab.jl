@@ -148,7 +148,7 @@ function init_solver(solver_options::Dict{Any,Any},
         start_u = datamanager.get_field("Start_Values")
     end
     check_inf_or_nan(start_u, "Start_Values")
-    Boundary_conditions.find_bc_free_dof(datamanager, bcs)
+    find_bc_free_dof(datamanager, bcs)
 
     if datamanager.get_rank() == 0
         data = ["Static Solver" "" "" ""
@@ -375,7 +375,7 @@ function residual!(residual,
     datamanager.synch_manager(synchronise_field, "download_from_cores")
     # synch
 
-    # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, time) #-> von neumann
+    # @timeit to "apply_bc_neumann" datamanager = apply_bc_neumann(bcs, datamanager, time) #-> von neumann
     #active_nodes = datamanager.get_field("Active Nodes")
     #active_nodes =            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
 

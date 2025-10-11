@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../../src/Core/Module_inclusion/set_Modules.jl")
 
 using Test
 using Random
-# using .Set_modules
+include("../../../../src/Core/Module_inclusion/set_Modules.jl")
 
 @testset "ut_find_jl_files" begin
     Random.seed!(rand(1:100000))
@@ -46,7 +45,7 @@ using Random
     io = open(folder * "/" * filename4 * ".dat", "w")
     close(io)
 
-    list = PeriLab.Solver_control.FEM.Set_modules.find_jl_files(base)
+    list = find_jl_files(base)
     folder * "/" * filename1 * ".jl" in list
     @test subfolder1 * "/" * filename2 * ".jl" in list
     @test subfolder1 * "/" * filename3 * ".jl" in list

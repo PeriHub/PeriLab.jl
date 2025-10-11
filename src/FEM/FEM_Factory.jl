@@ -18,6 +18,7 @@ include("./Coupling/Coupling_Factory.jl")
 # in future using set modules for material
 # test case is correspondence material
 using ...Helpers: fast_mul!, get_mapping
+using ..Material_Basis: get_Hooke_matrix
 # using .Correspondence_Elastic
 using .Coupling_PD_FEM
 # using .Set_modules
@@ -164,22 +165,19 @@ function valid_models(params::Dict)
 end
 
 function compute_stresses(datamanager::Module,
-                          nodes::AbstractVector{Int64},
                           dof::Int64,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::AbstractArray{Float64},
-                          stress_N::AbstractArray{Float64},
-                          stress_NP1::AbstractArray{Float64})
-    mapping = get_mapping(dof)
-    hooke_matrix = datamanager.get_field("Hooke Matrix")
-    for iID in nodes
-        @views sNP1 = stress_NP1[iID, :, :]
-        @views sInc = strain_increment[iID, :, :]
-        @views sN = stress_N[iID, :, :]
-        @views fast_mul!(sNP1, hooke_matrix[iID, :, :], sInc, sN, mapping)
-    end
+                          strain_increment::Vector{Float64},
+                          stress_N::Vector{Float64},
+                          stress_NP1::Vector{Float64})
+    hookeMatrix = get_Hooke_matrix(datamanager,
+                                   material_parameter,
+                                   material_parameter["Symmetry"],
+                                   dof)
+
+    return hookeMatrix * strain_increment + stress_N, datamanager
 end
 
 function eval_FEM(datamanager::Module,

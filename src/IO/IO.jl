@@ -27,7 +27,7 @@ using ..Helpers: progress_bar
 using ..Logging_module: get_log_stream
 using ..Parameter_Handling: get_solver_steps, get_flush_file, get_write_after_damage,
                             get_start_time, get_end_time, get_outputs, get_output_frequency,
-                            get_output_filenames, get_computes_names, get_computes
+                            get_output_filenames, get_computes_names, get_computes, get_fem_block
 using ..Geometry: rotation_tensor
 
 using OrderedCollections

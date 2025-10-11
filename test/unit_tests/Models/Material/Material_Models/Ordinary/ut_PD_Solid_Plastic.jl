@@ -1,14 +1,14 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
+
 using Test
-include("../../../../../../src/Models/Material/Material_Models/Ordinary/PD_Solid_Plastic.jl")
 #include("../../../../../../src/PeriLab.jl")
 #using .PeriLab
 
 @testset "get_name&fe_support" begin
-    @test PD_Solid_Plastic.material_name() == "PD Solid Plastic"
-    @test !(PD_Solid_Plastic.fe_support())
+    @test PeriLab.Solver_control.Model_Factory.Material.PD_Solid_Plastic.material_name() == "PD Solid Plastic"
+    @test !(PeriLab.Solver_control.Model_Factory.Material.PD_Solid_Plastic.fe_support())
 end
 
 @testset "ut_init_model" begin
@@ -26,10 +26,10 @@ end
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
 
     nn .= 1
-    @test isnothing(PD_Solid_Plastic.init_model(test_data_manager, Vector{Int64}(1:nodes),
+    @test isnothing(PeriLab.Solver_control.Model_Factory.Material.PD_Solid_Plastic.init_model(test_data_manager, Vector{Int64}(1:nodes),
                                                 Dict()))
 
-    test_data_manager = PD_Solid_Plastic.init_model(test_data_manager,
+    test_data_manager = PeriLab.Solver_control.Model_Factory.Material.PD_Solid_Plastic.init_model(test_data_manager,
                                                     Vector{Int64}(1:nodes),
                                                     Dict("Yield Stress" => 5.3))
     yield = test_data_manager.get_field("Yield Value")
@@ -37,7 +37,7 @@ end
     @test isapprox(yield[1], 25 * 5.3 * 5.3 / (8 * pi * 3^5))
     @test isapprox(yield[2], 25 * 5.3 * 5.3 / (8 * pi * 2^5))
 
-    test_data_manager = PD_Solid_Plastic.init_model(test_data_manager,
+    test_data_manager = PeriLab.Solver_control.Model_Factory.Material.PD_Solid_Plastic.init_model(test_data_manager,
                                                     Vector{Int64}(1:nodes),
                                                     Dict("Yield Stress" => 2.2,
                                                          "Symmetry" => "plane stress"))
@@ -58,7 +58,7 @@ end
     deviatoric_plastic_extension_state = [[0.0, 0.0], [0.0, 0.0]]
     bond_force_deviatoric = [[0.0, 0.0], [0.0, 0.0]]
 
-    (bond_force_deviatoric, deviatoric_plastic_extension_state) = PD_Solid_Plastic.plastic(nodes,
+    (bond_force_deviatoric, deviatoric_plastic_extension_state) = PeriLab.Solver_control.Model_Factory.Material.PD_Solid_Plastic.plastic(nodes,
                                                                                            td_norm,
                                                                                            yield_value,
                                                                                            lambdaNP1,

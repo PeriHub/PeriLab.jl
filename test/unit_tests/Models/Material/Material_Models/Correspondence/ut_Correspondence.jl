@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-include("../../../../../../src/Models/Material/Material_Models/Correspondence/Correspondence.jl")
-
 using Test
-using .Correspondence
 #include("../../../../../../src/PeriLab.jl")
 #using .PeriLab
 @testset "zero_energy_mode_compensation_exception" begin
@@ -17,7 +14,7 @@ using .Correspondence
     nn[2] = 3
     nodes = Vector{Int64}(1:2)
 
-    @test Correspondence.zero_energy_mode_compensation(test_data_manager,
+    @test PeriLab.Solver_control.Model_Factory.Material.Correspondence.zero_energy_mode_compensation(test_data_manager,
                                                        nodes,
                                                        Dict{String,Any}(),
                                                        0.0,
@@ -27,11 +24,11 @@ end
 @testset "ut_init_model" begin
     test_data_manager = PeriLab.Data_manager
     material_parameter = Dict{String,Any}()
-    @test isnothing(Correspondence.init_model(test_data_manager, [1, 2], 1,
+    @test isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.init_model(test_data_manager, [1, 2], 1,
                                               material_parameter))
 
     material_parameter = Dict{String,Any}("Material Model" => "Correspondence Non_Exist",
                                           "Symmetry" => "isotropic plane strain")
-    @test isnothing(Correspondence.init_model(test_data_manager, [1, 2], 1,
+    @test isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.init_model(test_data_manager, [1, 2], 1,
                                               material_parameter))
 end
