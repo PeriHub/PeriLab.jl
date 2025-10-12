@@ -3,9 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Damage
-include("../../Core/Module_inclusion/set_Modules.jl")
+
+using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "damage_name")
-include_files(module_list)
+for mod in module_list
+    include(mod["File"])
+end
+
 using TimerOutputs
 using LoopVectorization
 using .....Helpers: find_inverse_bond_id
@@ -251,7 +255,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     # if haskey(model_param, "Anisotropic Damage")
     #     datamanager.create_bond_field("Bond Damage Anisotropic", Float64, datamanager.get_dof(), 1)
     # end
-    mod = create_module_specifics(model_param["Damage Model"],
+    mod = Set_modules.create_module_specifics(model_param["Damage Model"],
                                   module_list,
                                   "damage_name")
 

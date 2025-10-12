@@ -5,7 +5,7 @@
 using Test
 #include("../../../src/PeriLab.jl")
 @testset "ut_coupling_name" begin
-    @test PeriLab.Solver_Manager.FEM.Coupling_PD_FEM.Arlequin_coupling.coupling_name() == "Arlequin"
+    @test PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.coupling_name() == "Arlequin"
 end
 @testset "ut_find_point_in_elements" begin
     dof = 2
@@ -30,7 +30,7 @@ end
     coordinates[9, :] = [0.5, 1.5]
     coordinates[10, :] = [1.5, 1.5]    #PD
 
-    test_dict = PeriLab.Solver_Manager.FEM.Coupling_PD_FEM.Arlequin_coupling.find_point_in_elements(coordinates,
+    test_dict = PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.find_point_in_elements(coordinates,
                                                          topology,
                                                          nodesPD,
                                                          2)
@@ -67,7 +67,7 @@ end
     p = [1, 1]
     dof = 2
 
-    test_mat = PeriLab.Solver_Manager.FEM.Coupling_PD_FEM.Arlequin_coupling.compute_coupling_matrix(coordinates,
+    test_mat = PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.compute_coupling_matrix(coordinates,
                                                          topology,
                                                          7,
                                                          2,
@@ -80,7 +80,7 @@ end
            -0.25 0.0625 0.0625 0.0625 0.0625
            -0.25 0.0625 0.0625 0.0625 0.0625
            -0.25 0.0625 0.0625 0.0625 0.0625]
-    test_mat = PeriLab.Solver_Manager.FEM.Coupling_PD_FEM.Arlequin_coupling.compute_coupling_matrix(coordinates,
+    test_mat = PeriLab.Solver_Manager.FEM.Coupling.Arlequin_Coupling.compute_coupling_matrix(coordinates,
                                                          topology,
                                                          8,
                                                          1,

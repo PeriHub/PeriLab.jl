@@ -2,7 +2,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 module FEM
-include("../Core/Module_inclusion/set_Modules.jl")
+
+using ...Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "element_name")
+for mod in module_list
+    include(mod["File"])
+end
+
 include("./FEM_basis.jl")
 using .FEM_Basis:
                      compute_FEM,
@@ -20,13 +26,9 @@ include("./Coupling/Coupling_Factory.jl")
 using ...Helpers: fast_mul!, get_mapping
 using ..Material_Basis: get_Hooke_matrix
 # using .Correspondence_Elastic
-using .Coupling_PD_FEM
-# using .Set_modules
+using .Coupling
 export init_FEM
 export eval_FEM
-
-global module_list = find_module_files(@__DIR__, "element_name")
-include_files(module_list)
 
 function init_FEM(complete_params::Dict, datamanager::Module)
     if !haskey(complete_params, "FEM")

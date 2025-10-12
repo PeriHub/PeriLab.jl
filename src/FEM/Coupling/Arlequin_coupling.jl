@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Arlequin_coupling
+module Arlequin_Coupling
 include("../Element_formulation/Lagrange_element.jl")
 using .Lagrange_element:
                          define_lagrangian_grid_space,

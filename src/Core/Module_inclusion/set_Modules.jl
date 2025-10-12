@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# module Set_modules
-export include_files
 export find_module_files
+export create_module_specifics
 
 """
     find_jl_files(directory::AbstractString)
@@ -101,28 +100,6 @@ function find_module_files(directory::AbstractString, specific::String)
 end
 
 """
-    include_files(module_list::Vector{Any})
-
-Include files specified in a list of modules.
-
-This function iterates over a list of modules and includes the files specified
-in each module's "File" key.
-
-# Arguments
-- `module_list::Vector{Any}`: A list of modules where each module is expected to
-  be a dictionary-like object with a "File" key specifying the file path.
-
-# Examples
-```julia
-include_files([Dict("File" => "module1.jl"), Dict("File" => "module2.jl")])
-"""
-function include_files(module_list::Vector{Any})
-    for mod in module_list
-        include(mod["File"])
-    end
-end
-
-"""
     create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),specifics::Dict{String,String}(), values::Tuple)
 
 Searches for a specific function within a list of modules and calls that function if found.
@@ -190,5 +167,3 @@ function create_module_specifics(name::Union{String,SubString},
     @error "Functionality $name not found."
     return nothing
 end
-
-# end

@@ -3,11 +3,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Pre_Calculation
-include("../../Core/Module_inclusion/set_Modules.jl")
-using DataStructures
-# using .Set_modules
+
+using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "pre_calculation_name")
-include_files(module_list)
+for mod in module_list
+    include(mod["File"])
+end
+
+using DataStructures
 
 using TimerOutputs
 

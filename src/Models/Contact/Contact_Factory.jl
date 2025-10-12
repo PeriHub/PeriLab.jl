@@ -3,6 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Contact
+
+using ...Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "contact_model_name")
+for mod in module_list
+    include(mod["File"])
+end
+
 using TimerOutputs
 using LinearAlgebra
 using .....MPI_Communication: find_and_set_core_value_sum
@@ -10,10 +17,6 @@ include("Contact_search.jl")
 using .Contact_Search: init_contact_search, compute_geometry, get_surface_information,
                        compute_contact_pairs
 using .....Helpers: remove_ids, get_block_nodes, compute_free_surface_nodes, find_indices
-include("../../Core/Module_inclusion/set_Modules.jl")
-# using .Set_modules: find_module_files, include_files
-global module_list = find_module_files(@__DIR__, "contact_model_name")
-include_files(module_list)
 export init_contact_model
 export compute_contact_model
 

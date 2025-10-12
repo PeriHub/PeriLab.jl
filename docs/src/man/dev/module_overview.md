@@ -11,6 +11,8 @@
         - Material_Basis
         - FEM
             - FEM_Basis
+            - Coupling
+                - Arlequin_Coupling
         - Model
             - Pre_Calculation
                 - Axissymmetric

@@ -3,22 +3,26 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence
+
+include("../Zero_Energy_Control/global_control.jl")
+
+using ....Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "correspondence_name")
+for mod in module_list
+    include(mod["File"])
+end
+
 using LinearAlgebra
 using StaticArrays
 using LoopVectorization
 using TimerOutputs
 using Rotations
-include("../Zero_Energy_Control/global_control.jl")
-using .Global_Zero_Energy_Control: compute_control
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 using ....Material_Basis: compute_Piola_Kirchhoff_stress!
 using .......Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
 using .......Geometry: compute_strain
 using .Global_Zero_Energy_Control
-include("../../../../Core/Module_inclusion/set_Modules.jl")
-global module_list = find_module_files(@__DIR__, "correspondence_name")
-include_files(module_list)
 
 export init_model
 export material_name

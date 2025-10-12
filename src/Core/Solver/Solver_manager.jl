@@ -15,6 +15,7 @@ using ..Parameter_Handling:
                             get_solver_params
 using ..Helpers
 include("../../Models/Material/Material_Basis.jl")
+include("../Module_inclusion/set_Modules.jl")
 include("../../FEM/FEM_Factory.jl")
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
@@ -139,7 +140,7 @@ function init(params::Dict,
 
     if datamanager.fem_active()
         datamanager = FEM.init_FEM(params, datamanager)
-        datamanager = FEM.Coupling_PD_FEM.init_coupling(datamanager,
+        datamanager = FEM.Coupling.init_coupling(datamanager,
                                                         1:datamanager.get_nnodes(),
                                                         params)
     end

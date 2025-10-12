@@ -332,7 +332,7 @@ function compute_models(datamanager::Module,
     end
 
     if fem_option
-        @timeit to "coupling" datamanager=FEM.Coupling_PD_FEM.compute_coupling(datamanager,
+        @timeit to "coupling" datamanager=FEM.Coupling.compute_coupling(datamanager,
                                                                                datamanager.get_properties(1,
                                                                                                           "FEM"))
     end

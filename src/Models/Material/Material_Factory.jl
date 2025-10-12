@@ -3,8 +3,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Material
-include("../../Core/Module_inclusion/set_Modules.jl")
+
 include("Material_Models/Ordinary/Ordinary.jl")
+
+using ...Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "material_name")
+for mod in module_list
+    include(mod["File"])
+end
+
 using ...Material_Basis:
                          get_all_elastic_moduli,
                          distribute_forces!,
@@ -13,12 +20,9 @@ using ...Material_Basis:
                          init_local_damping_due_to_damage,
                          local_damping_due_to_damage
 using LinearAlgebra: dot
-# using .Set_modules
 using TimerOutputs
 using StaticArrays
 
-global module_list = find_module_files(@__DIR__, "material_name")
-include_files(module_list)
 export init_model
 export compute_model
 export determine_isotropic_parameter

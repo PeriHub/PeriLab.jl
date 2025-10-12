@@ -3,11 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal
-using TimerOutputs
-include("../../Core/Module_inclusion/set_Modules.jl")
-# using .Set_modules
+
+using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "thermal_model_name")
-include_files(module_list)
+for mod in module_list
+    include(mod["File"])
+end
+
 using TimerOutputs
 export init_model
 export compute_model

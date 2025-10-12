@@ -2,11 +2,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Coupling_PD_FEM
-include("../../Core/Module_inclusion/set_Modules.jl")
-# using .Set_modules
+module Coupling
+
+using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "coupling_name")
-include_files(module_list)
+for mod in module_list
+    include(mod["File"])
+end
 
 export init_coupling
 export compute_coupling

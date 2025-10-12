@@ -3,9 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Additive
-include("../../Core/Module_inclusion/set_Modules.jl")
+
+using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "additive_name")
-include_files(module_list)
+for mod in module_list
+    include(mod["File"])
+end
+
 using TimerOutputs
 using .....Helpers: find_inverse_bond_id
 export compute_model
