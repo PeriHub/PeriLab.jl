@@ -67,6 +67,7 @@ function init_model(datamanager::Module,
         datamanager.set_analysis_model("Correspondence Model", block, material_model)
         mod = create_module_specifics(material_model,
                                       module_list,
+                                          @__MODULE__,
                                       "correspondence_name")
         if isnothing(mod)
             @error "No correspondence material of name " * material_model * " exists."

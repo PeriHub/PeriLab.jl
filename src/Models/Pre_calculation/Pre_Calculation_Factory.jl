@@ -65,6 +65,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
         if active_model
             mod = create_module_specifics(active_model_name,
                                           module_list,
+                                          @__MODULE__,
                                           "pre_calculation_name")
 
             datamanager.set_model_module(active_model_name, mod)

@@ -122,6 +122,7 @@ function init_contact_model(datamanager::Module, params)
 
         mod = create_module_specifics(contact_params["Type"],
                                       module_list,
+                                          @__MODULE__,
                                       "contact_model_name")
         if isnothing(mod)
             @error "No contact model of type " * contact_params["Type"] *

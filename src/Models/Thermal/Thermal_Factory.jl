@@ -89,6 +89,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     for thermal_model in thermal_models
         mod = create_module_specifics(thermal_model,
                                       module_list,
+                                          @__MODULE__,
                                       "thermal_model_name")
         if isnothing(mod)
             @error "No thermal model of name " * thermal_model * " exists."

@@ -112,6 +112,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     for material_model in material_models
         mod = create_module_specifics(material_model,
                                       module_list,
+                                          @__MODULE__,
                                       "material_name")
         datamanager.set_analysis_model("Material Model", block, material_model)
         if isnothing(mod)

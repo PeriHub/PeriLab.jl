@@ -83,6 +83,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     model_param = datamanager.get_properties(block, "Degradation Model")
     mod = create_module_specifics(model_param["Degradation Model"],
                                   module_list,
+                                          @__MODULE__,
                                   "degradation_name")
     if isnothing(mod)
         @error "No degradation model of name " * model_param["Degradation Model"] *

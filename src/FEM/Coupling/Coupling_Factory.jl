@@ -24,7 +24,8 @@ function init_coupling(datamanager::Module, nodes, complete_params::Dict)
     end
     coupling_model = complete_params["FEM"]["Coupling"]["Coupling Type"]
 
-    mod = create_module_specifics(coupling_model, module_list, "coupling_name")
+    mod = create_module_specifics(coupling_model, module_list, 
+                                          @__MODULE__, "coupling_name")
     if isnothing(mod)
         @error "No material of name " * material_model * " exists."
     end

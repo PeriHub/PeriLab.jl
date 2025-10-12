@@ -255,8 +255,9 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     # if haskey(model_param, "Anisotropic Damage")
     #     datamanager.create_bond_field("Bond Damage Anisotropic", Float64, datamanager.get_dof(), 1)
     # end
-    mod = Set_modules.create_module_specifics(model_param["Damage Model"],
+    mod = create_module_specifics(model_param["Damage Model"],
                                   module_list,
+                                          @__MODULE__,
                                   "damage_name")
 
     if isnothing(mod)

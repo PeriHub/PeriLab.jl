@@ -98,6 +98,7 @@ function init_FEM(complete_params::Dict, datamanager::Module)
                                      p,
                                      create_module_specifics(params["Element Type"],
                                                              module_list,
+                                                            @__MODULE__,
                                                              specifics))
     if isnothing(N) || isnothing(B_matrix)
         return nothing
@@ -106,6 +107,7 @@ function init_FEM(complete_params::Dict, datamanager::Module)
                                     "Name" => "element_name")
     datamanager = create_module_specifics(params["Element Type"],
                                           module_list,
+                                          @__MODULE__,
                                           specifics,
                                           (datamanager, elements, params, p))
 
