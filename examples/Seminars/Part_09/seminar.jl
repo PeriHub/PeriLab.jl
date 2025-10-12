@@ -34,14 +34,14 @@ c ompute_damage(datamanager, nodes, damage_parameter, block, time, dt)
 Calculates the damage criterion of each bond. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `block::Int64`: Block number
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
@@ -83,13 +83,13 @@ end
 Inits the damage model. Should be used to init damage specific fields, etc.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `block::Int64`: Block number
 - `damage_parameter::Dict`: Damage parameter.
 - `block::Float64`: The current block.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```

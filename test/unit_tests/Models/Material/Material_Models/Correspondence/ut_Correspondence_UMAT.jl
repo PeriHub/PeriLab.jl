@@ -6,12 +6,12 @@ using LinearAlgebra
 #include("../../../../../../src/PeriLab.jl")
 #using .PeriLab
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.correspondence_name() == "Correspondence UMAT"
-    @test PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.fe_support()
+    @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.correspondence_name() == "Correspondence UMAT"
+    @test PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.fe_support()
 end
 @testset "init exceptions" begin
     nodes = 2
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nodes)
     dof = 3
@@ -21,7 +21,7 @@ end
         file = "../src/Models/Material/UMATs/libperuser.so"
     end
 
-    @test !isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
+    @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
                                                     Vector{Int64}(1:nodes),
                                                     Dict{String,Any}("File" => file,
                                                                      "Number of Properties" => 3,
@@ -29,19 +29,19 @@ end
                                                                      "Property_2" => 2,
                                                                      "Property_3" => 2.4,
                                                                      "Property_4" => 2)))
-    @test isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
                                                    Vector{Int64}(1:nodes),
                                                    Dict{String,Any}("File" => file *
                                                                               "_not_there")))
-    @test isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
                                                    Vector{Int64}(1:nodes),
                                                    Dict{String,Any}("File" => file)))
 
-    @test isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
                                                    Vector{Int64}(1:nodes),
                                                    Dict{String,Any}()))
 
-    @test isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
                                                    Vector{Int64}(1:nodes),
                                                    Dict{String,Any}("File" => file,
                                                                     "Number of Properties" => 3,
@@ -49,7 +49,7 @@ end
                                                                     "Property_2" => 2.4,
                                                                     "Property_3" => 2.4,
                                                                     "UMAT Material Name" => "a"^81)))
-    @test !isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
+    @test !isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
                                                     Vector{Int64}(1:nodes),
                                                     Dict{String,Any}("File" => file,
                                                                      "Number of Properties" => 3,
@@ -64,7 +64,7 @@ end
     @test properties[2] == 2
     @test properties[3] == 2.4
 
-    @test isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager,
                                                    Vector{Int64}(1:nodes),
                                                    Dict{String,Any}("File" => file,
                                                                     "Number of Properties" => 3,
@@ -84,7 +84,7 @@ end
                                 "Property_2" => 2,
                                 "Property_3" => 2.4,
                                 "Predefined Field Names" => "test_field_2 test_field_3")
-    PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
     fields = test_data_manager.get_field("Predefined Fields")
     inc = test_data_manager.get_field("Predefined Fields Increment")
     @test size(fields) == (2, 2)
@@ -101,12 +101,12 @@ end
                                 "Property_3" => 2.4,
                                 "Predefined Field Names" => "test_field_2 test_field_3")
     @test !haskey(mat_dict, "UMAT name")
-    PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.init_model(test_data_manager, Vector{Int64}(1:nodes), mat_dict)
     @test haskey(mat_dict, "UMAT name")
     @test mat_dict["UMAT name"] == "UMAT"
 end
 @testset "ut_malloc_cstring" begin
-    CMNAME = PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.malloc_cstring("UMAT_TEST")
+    CMNAME = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.malloc_cstring("UMAT_TEST")
     @test typeof(CMNAME) == Cstring
 end
 
@@ -114,7 +114,7 @@ end
 @testset "UMAT_interface Tests" begin
 
     # Example test case (you should define your own)
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     file = "./src/Models/Material/UMATs/libusertest.so"
     if !isfile(file)
         file = "../src/Models/Material/UMATs/libusertest.so"
@@ -137,7 +137,7 @@ end
     DTEMP::Float64 = 0.1
     PREDEF::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
     DPRED::Vector{Float64} = zeros(Float64, 1)  # Adjust as needed
-    CMNAME::Cstring = PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.malloc_cstring("UMAT_TEST")  # Adjust as needed
+    CMNAME::Cstring = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.malloc_cstring("UMAT_TEST")  # Adjust as needed
     NDI::Int64 = 3
     NSHR::Int64 = 3
     NTENS::Int64 = 6
@@ -162,8 +162,8 @@ end
     PROPS[1] = 4.2
     STRAN[1] = 1
     DSTRAN[1] = 3
-    PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.umat_file_path = file
-    PeriLab.Solver_control.Model_Factory.Material.Correspondence.Correspondence_UMAT.UMAT_interface(STRESS,
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.umat_file_path = file
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Correspondence_UMAT.UMAT_interface(STRESS,
                                        STATEV,
                                        DDSDDE,
                                        SSE,

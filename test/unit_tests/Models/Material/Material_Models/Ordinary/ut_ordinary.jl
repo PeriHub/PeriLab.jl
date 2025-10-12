@@ -80,7 +80,7 @@ using Test
                      0.8615883,
                      0.8615883]
     vec = Vector{Int64}(1:nnodes)
-    PeriLab.Solver_control.Model_Factory.Material.Ordinary.compute_weighted_volume!(weighted_volume,
+    PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.compute_weighted_volume!(weighted_volume,
                                       vec,
                                       nlist,
                                       undeformed_bond_length,
@@ -118,7 +118,7 @@ nlist[2][1] = 2
 @testset "compute_dilatation!" begin
     vec = Vector{Int64}(1:nnodes)
     theta = zeros(Float64, 2)
-    PeriLab.Solver_control.Model_Factory.Material.Ordinary.compute_dilatation!(vec,
+    PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.compute_dilatation!(vec,
                                  nlist,
                                  undeformed_bond_length,
                                  deformed_bond_length,
@@ -130,7 +130,7 @@ nlist[2][1] = 2
     @test theta[1] == 3.0
     @test theta[2] == 3.0
     weighted_volume[1] = 0
-    PeriLab.Solver_control.Model_Factory.Material.Ordinary.compute_dilatation!(vec,
+    PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.compute_dilatation!(vec,
                                  nlist,
                                  undeformed_bond_length,
                                  deformed_bond_length,
@@ -144,12 +144,12 @@ nlist[2][1] = 2
 end
 
 @testset "calculate_symmetry_params" begin
-    @test PeriLab.Solver_control.Model_Factory.Material.Ordinary.calculate_symmetry_params("3D", 1.0, 1.0) == (15, 1, 3)
-    test_val = PeriLab.Solver_control.Model_Factory.Material.Ordinary.calculate_symmetry_params("plane stress", 1.0, 1.0)
+    @test PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.calculate_symmetry_params("3D", 1.0, 1.0) == (15, 1, 3)
+    test_val = PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.calculate_symmetry_params("plane stress", 1.0, 1.0)
     @test test_val[1] == 8
     @test isapprox(test_val[2], 0.5714285714285714)
     @test isapprox(test_val[3], 0.5714285714285714)
-    @test PeriLab.Solver_control.Model_Factory.Material.Ordinary.calculate_symmetry_params("plane strain", 1.0, 1.0) == (8, 2 / 3, 8 / 9)
+    @test PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.calculate_symmetry_params("plane strain", 1.0, 1.0) == (8, 2 / 3, 8 / 9)
 end
 
 @testset "ut_get_bond_forces" begin
@@ -162,7 +162,7 @@ end
     deformed_bond[1][2][1] = 1
     bond_force = [[fill(0.0, dof) for j in 1:n] for n in nBonds]
     temp = [fill(0.0, n) for n in nBonds]
-    bond_force = PeriLab.Solver_control.Model_Factory.Material.Ordinary.get_bond_forces(vec,
+    bond_force = PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.get_bond_forces(vec,
                                           bond_force_length,
                                           deformed_bond,
                                           deformed_bond_length,
@@ -171,7 +171,7 @@ end
     @test bond_force == [[[0.5, 0.0], [0.5, 0.0]], [[0.0, 0.0], [0.0, 0.0]]]
     # deformed_bond_length[2][1] = 0
     # @test isnothing(
-    #     PeriLab.Solver_control.Model_Factory.Material.Ordinary.get_bond_forces(
+    #     PeriLab.Solver_Manager.Model_Factory.Material.Ordinary.get_bond_forces(
     #         vec,
     #         bond_force_length,
     #         deformed_bond,

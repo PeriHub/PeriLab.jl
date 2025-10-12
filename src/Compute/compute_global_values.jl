@@ -8,7 +8,7 @@
 Calculate the global value of a field for a given set of nodes.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `field_key::String`: Field key.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `calculation_type::String`: Calculation type.
@@ -84,7 +84,7 @@ end
 Calculate the global value of a field for a given block.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `field_key::String`: Field key.
 - `dof::Union{Int64,Vector{Int64}}`: Degree of freedom
 - `calculation_type::String`: Calculation type.

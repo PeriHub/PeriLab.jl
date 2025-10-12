@@ -6,7 +6,7 @@ using Test
 using TimerOutputs
 
 using Exodus
-test_data_manager = PeriLab.Data_manager
+test_data_manager = PeriLab.Data_Manager
 test_data_manager.initialize_data()
 @testset "ut_get_block_nodes" begin
     block_Id = [1, 1, 2, 2, 2, 3, 3, 3, 1, 3, 3, 4]

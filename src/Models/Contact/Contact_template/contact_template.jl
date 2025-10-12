@@ -37,12 +37,12 @@ end
 Inits the contact model. This template has to be copied, the file renamed and edited by the user to create a new contact. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `contact_parameter::Dict(String, Any)`: Dictionary with contact parameter.
 - `block::Int64`: The current block.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 
 """
 function init_contact_model(datamanager::Module,
@@ -65,13 +65,13 @@ end
 Calculates the contact behavior of the material. This template has to be copied, the file renamed and edited by the user to create a new flow. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `flow parameter::Dict(String, Any)`: Dictionary with flow parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```

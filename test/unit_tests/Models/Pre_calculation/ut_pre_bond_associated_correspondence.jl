@@ -13,7 +13,7 @@ using Test
     horizon = 3.0
     expected_Q = [1.0 / 3.0, 2.0 / 3.0]
     Q = zeros(2)
-    Q = PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
+    Q = PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
                                                        dof,
                                                        undeformed_bond,
                                                        horizon,
@@ -33,7 +33,7 @@ using Test
         0.4444444444444444
     ]
     Q = zeros(5)
-    Q = PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
+    Q = PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
                                                        dof,
                                                        undeformed_bond,
                                                        horizon,
@@ -57,7 +57,7 @@ using Test
         2.777777777777778
     ]
     Q = zeros(9)
-    Q = PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
+    Q = PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(accuracy_order,
                                                        dof,
                                                        undeformed_bond,
                                                        horizon,
@@ -66,18 +66,18 @@ using Test
     @test isapprox(Q, expected_Q)
     Q = zeros(3)
     undeformed_bond = [1.0, 0.0, 0]
-    @test PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
+    @test PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [1, 0, 0]
     undeformed_bond = [0.0, 1.0, 0]
-    @test PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
+    @test PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [0, 1, 0]
     undeformed_bond = [0.0, 0.0, 1.0]
-    @test PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
+    @test PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.calculate_Q(1, dof, undeformed_bond, 1.0, Q) ==
           [0, 0, 1]
 end
 
 @testset "ut_compute_weighted_volume!" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(4)
     test_data_manager.set_dof(3)
@@ -103,7 +103,7 @@ end
     weighted_volume = test_data_manager.create_constant_node_field("Weighted Volume",
                                                                    Float64, 1)
 
-    PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.compute_weighted_volume!(weighted_volume,
+    PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.compute_weighted_volume!(weighted_volume,
                                                                 nodes,
                                                                 nlist,
                                                                 volume,
@@ -135,7 +135,7 @@ end
     Minv = zeros(5, 5)
     M = zeros(5, 5)
 
-    PeriLab.Solver_control.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes,
+    PeriLab.Solver_Manager.Model_Factory.Pre_Calculation.Pre_Bond_Associated_Correspondence.compute_Lagrangian_gradient_weights(nodes,
                                                                            dof,
                                                                            accuracy_order,
                                                                            volume,

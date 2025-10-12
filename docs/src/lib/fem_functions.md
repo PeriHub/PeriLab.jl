@@ -1,18 +1,18 @@
-# Logging - Functions
+# FEM - Functions
 
 ## Index
 
 ```@index
-Pages = ["logging_functions.md"]
+Pages = ["fem_functions.md"]
 ```
 
 ```@meta
 CurrentModule = PeriLab
 ```
 
-## Logging_Module
+## FEM
 
 ```@autodocs
-Modules = [Logging_Module]
+Modules = [Solver_Manager.FEM]
 Order   = [:function, :type]
 ```

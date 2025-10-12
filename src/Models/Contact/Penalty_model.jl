@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Penalty_model
+module Penalty_Model
 
 import .....Helpers: get_shared_horizon, dot, norm
 

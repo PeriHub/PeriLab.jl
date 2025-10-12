@@ -42,12 +42,12 @@ end
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
@@ -94,13 +94,13 @@ end
 Computes the forces.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `material_parameter::Dict`: The material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function compute_model(datamanager::Module,
                        nodes::AbstractVector{Int64},

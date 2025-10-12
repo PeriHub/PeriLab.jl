@@ -9,13 +9,13 @@ using LoopVectorization
 using TimerOutputs
 using Rotations
 include("../Zero_Energy_Control/global_control.jl")
-using .Global_zero_energy_control: compute_control
+using .Global_Zero_Energy_Control: compute_control
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
 using ....Material_Basis: compute_Piola_Kirchhoff_stress!
 using .......Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
 using .......Geometry: compute_strain
-using .Global_zero_energy_control
+using .Global_Zero_Energy_Control
 include("../../../../Core/Module_inclusion/set_Modules.jl")
 global module_list = find_module_files(@__DIR__, "correspondence_name")
 include_files(module_list)
@@ -30,13 +30,13 @@ export fields_for_local_synchronization
 Initializes the correspondence material model.
 
 # Arguments
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `block::Int64`: Block id of the current block.
   - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 
 # Returns
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
@@ -135,13 +135,13 @@ end
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
@@ -242,13 +242,13 @@ end
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict{String, Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function zero_energy_mode_compensation(datamanager::Module,
                                        nodes::AbstractVector{Int64},
@@ -262,8 +262,8 @@ function zero_energy_mode_compensation(datamanager::Module,
         return datamanager::Module
     end
     if material_parameter["Zero Energy Control"]::String ==
-       Global_zero_energy_control.control_name()::String
-        datamanager = Global_zero_energy_control.compute_control(datamanager,
+       Global_Zero_Energy_Control.control_name()::String
+        datamanager = Global_Zero_Energy_Control.compute_control(datamanager,
                                                                  nodes,
                                                                  material_parameter,
                                                                  time,

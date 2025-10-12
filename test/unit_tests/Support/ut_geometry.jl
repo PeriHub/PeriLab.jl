@@ -85,7 +85,7 @@ end
 @testset "ut_undeformed_bond" begin
     nnodes = 4
     dof = 2
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_num_responder(0)
@@ -227,7 +227,7 @@ end
     nnodes = 4
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_dof(dof)
@@ -402,7 +402,7 @@ end
 end
 
 @testset "ut_strain" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     dof = test_data_manager.get_dof()
     nnodes = 4
     nodes = Vector{Int64}(1:nnodes)

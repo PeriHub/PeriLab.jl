@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Boundary_conditions
+module Boundary_Conditions
 export init_BCs
 export apply_bc_dirichlet
 export apply_bc_neumann

@@ -23,9 +23,9 @@ export check_dependencies
 Initializes the fields.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager
+- `datamanager::Data_Manager`: Datamanager
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
@@ -46,11 +46,11 @@ end
 Initializes the model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager
+- `datamanager::Data_Manager`: Datamanager
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
@@ -150,7 +150,7 @@ Check if materials are used which needs a form of pre calculation. If so, the op
 - `datamanager::Module`: Datamanager.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function check_dependencies(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}})
     for block_id in eachindex(block_nodes)

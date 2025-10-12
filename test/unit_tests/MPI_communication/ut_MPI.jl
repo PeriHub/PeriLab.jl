@@ -25,10 +25,10 @@ test_dict = Dict()
 
 test = test_dict["find_and_set_core_value_min and max"] = Dict("tests" => [], "line" => [])
 value = rank + 1
-value = PeriLab.MPI_communication.find_and_set_core_value_min(comm, value)
+value = PeriLab.MPI_Communication.find_and_set_core_value_min(comm, value)
 push_test!(test, (value == 1), @__FILE__, @__LINE__)
 value = rank + 1
-value = PeriLab.MPI_communication.find_and_set_core_value_max(comm, value)
+value = PeriLab.MPI_Communication.find_and_set_core_value_max(comm, value)
 push_test!(test, (ncores == value), @__FILE__, @__LINE__)
 
 test = test_dict["ut_broadcast_value"] = Dict("tests" => [], "line" => [])
@@ -37,21 +37,21 @@ if rank == 0
 else
     send_msg = nothing
 end
-send_msg = PeriLab.MPI_communication.broadcast_value(comm, send_msg)
+send_msg = PeriLab.MPI_Communication.broadcast_value(comm, send_msg)
 push_test!(test, (send_msg == 100), @__FILE__, @__LINE__)
 if rank == 0
     send_msg = true
 else
     send_msg = nothing
 end
-send_msg = PeriLab.MPI_communication.broadcast_value(comm, send_msg)
+send_msg = PeriLab.MPI_Communication.broadcast_value(comm, send_msg)
 push_test!(test, (send_msg), @__FILE__, @__LINE__)
 if rank == 0
     send_msg = 100.5
 else
     send_msg = nothing
 end
-send_msg = PeriLab.MPI_communication.broadcast_value(comm, send_msg)
+send_msg = PeriLab.MPI_Communication.broadcast_value(comm, send_msg)
 push_test!(test, (send_msg == 100.5), @__FILE__, @__LINE__)
 
 test = test_dict["ut_send_vector_from_root_to_core_i"] = Dict("tests" => [], "line" => [])
@@ -63,12 +63,12 @@ else
 end
 recv_msg = [0, 0, 0]
 
-recv_msg = PeriLab.MPI_communication.send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
+recv_msg = PeriLab.MPI_Communication.send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
 push_test!(test, (recv_msg[1] == 2), @__FILE__, @__LINE__)
 push_test!(test, (recv_msg[2] == 1), @__FILE__, @__LINE__)
 push_test!(test, (recv_msg[3] == 5), @__FILE__, @__LINE__)
 distribution = [[1, 2, 3], [3, 2, 1], [3, 2, 1]]
-recv_msg = PeriLab.MPI_communication.send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
+recv_msg = PeriLab.MPI_Communication.send_vector_from_root_to_core_i(comm, send_msg, recv_msg, distribution)
 if rank != 0
     push_test!(test, (recv_msg[1] == 5), @__FILE__, @__LINE__)
     push_test!(test, (recv_msg[2] == 1), @__FILE__, @__LINE__)
@@ -76,7 +76,7 @@ if rank != 0
 end
 
 push_test!(test,
-           (isnothing(PeriLab.MPI_communication.send_single_value_from_vector(comm, 0, [1], String))),
+           (isnothing(PeriLab.MPI_Communication.send_single_value_from_vector(comm, 0, [1], String))),
            @__FILE__,
            @__LINE__)
 if ncores == 3
@@ -88,7 +88,7 @@ if ncores == 3
 
     overlap_map = PeriLab.IO.get_local_overlap_map(overlap_map, distribution, ncores)
 
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_comm(comm)
     test_data_manager.create_constant_node_field("Block_Id", Int64, 1)
@@ -160,11 +160,11 @@ if ncores == 3
     distribution = [[1, 2, 3], [2, 3, 4], [4, 1, 3]]
 
     # sammel ein und summiere -> zweite routine mit sende vom Controller an alle responder
-    A = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, A, 1)
-    B = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, B, 4)
-    C = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, C, 1)
-    D = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, D, 5)
-    E = PeriLab.MPI_communication.synch_responder_to_controller(comm, overlap_map, E, 1)
+    A = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, A, 1)
+    B = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, B, 4)
+    C = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, C, 1)
+    D = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, D, 5)
+    E = PeriLab.MPI_Communication.synch_responder_to_controller(comm, overlap_map, E, 1)
 
     if rank == 0
         test = test_dict["synch_responder_to_controller_rank_0"] = Dict("tests" => [],
@@ -223,13 +223,13 @@ if ncores == 3
         push_test!(test, (E[2] == false), @__FILE__, @__LINE__)
         push_test!(test, (E[3] == false), @__FILE__, @__LINE__)
     end
-    PeriLab.MPI_communication.barrier(comm)
+    PeriLab.MPI_Communication.barrier(comm)
 
-    A = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, A, 1)
-    B = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, B, 4)
-    C = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, C, 1)
-    D = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, D, 5)
-    E = PeriLab.MPI_communication.synch_controller_to_responder(comm, overlap_map, E, 1)
+    A = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, A, 1)
+    B = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, B, 4)
+    C = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, C, 1)
+    D = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, D, 5)
+    E = PeriLab.MPI_Communication.synch_controller_to_responder(comm, overlap_map, E, 1)
     if rank == 0
         test = test_dict["synch_controller_to_responder_rank_0"] = Dict("tests" => [],
                                                                         "line" => [])
@@ -364,11 +364,11 @@ if ncores == 3
         end
     end
 
-    test_data_manager = PeriLab.Solver_control.Model_Factory.Material.Bondbased_Elastic.init_model(test_data_manager,
+    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(test_data_manager,
                                                      Vector{Int64}(1:nodes),
                                                      Dict("Bulk Modulus" => 1.0,
                                                           "Young's Modulus" => 1.0))
-    test_data_manager = PeriLab.Solver_control.Model_Factory.Material.Bondbased_Elastic.compute_model(test_data_manager,
+    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(test_data_manager,
                                                         Vector{Int64}(1:nodes),
                                                         Dict("Bulk Modulus" => 1.0,
                                                              "Young's Modulus" => 1.0),
@@ -379,7 +379,7 @@ if ncores == 3
 
     bf = test_data_manager.get_field("Bond Forces")
 
-    PeriLab.MPI_communication.synch_controller_bonds_to_responder(comm, overlap_map, bf, dof)
+    PeriLab.MPI_Communication.synch_controller_bonds_to_responder(comm, overlap_map, bf, dof)
 
     if rank == 0
         test = test_dict["synch_controller_bonds_to_responder_rank_0"] = Dict("tests" => [],
@@ -387,7 +387,7 @@ if ncores == 3
         # push_test!(test, (bf[1] == Float64(-0.9)), @__FILE__, @__LINE__)
     end
 
-    PeriLab.MPI_communication.synch_controller_bonds_to_responder_flattened(comm, overlap_map, bf, dof)
+    PeriLab.MPI_Communication.synch_controller_bonds_to_responder_flattened(comm, overlap_map, bf, dof)
     if rank == 0
         test = test_dict["synch_controller_bonds_to_responder_flattened_rank_0"] = Dict("tests" => [],
                                                                                         "line" => [])

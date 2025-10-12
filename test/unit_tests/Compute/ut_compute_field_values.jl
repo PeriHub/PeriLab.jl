@@ -5,7 +5,7 @@
 using Test
 
 @testset "ut_get_forces_from_force_density" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(5)
 
@@ -19,7 +19,7 @@ using Test
     volume[1:5] = 1:5
     force_densityNP1 = rand(5, 3)
 
-    test_data_manager = PeriLab.Solver_control.Verlet.get_forces_from_force_density(test_data_manager)
+    test_data_manager = PeriLab.Solver_Manager.Verlet_Solver.get_forces_from_force_density(test_data_manager)
     forces = test_data_manager.get_field("Forces", "NP1")
     for i in 1:5
         for j in 1:3
@@ -29,7 +29,7 @@ using Test
 end
 
 @testset "ut_get_partial_stresses" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.set_dof(3)
     test_data_manager.set_num_controller(5)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
@@ -60,7 +60,7 @@ end
 
     nodes = [1, 2, 3, 4, 5]
 
-    test_data_manager = PeriLab.Solver_control.Verlet.get_partial_stresses(test_data_manager, nodes)
+    test_data_manager = PeriLab.Solver_Manager.Verlet_Solver.get_partial_stresses(test_data_manager, nodes)
     stresses = test_data_manager.get_field("Cauchy Stress", "NP1")
 
     testval = zeros(5, 3, 3)

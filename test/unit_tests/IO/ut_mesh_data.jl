@@ -221,7 +221,7 @@ end
     @test element_distribution[2] == [3, 1]
 end
 @testset "ut_get_local_element_topology" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     topology::Vector{Vector{Int64}} = [[1, 2, 3, 4], [3, 4, 2, 1]]
     distribution::Vector{Vector{Int64}} = [
         [2, 3, 4, 1],
@@ -532,7 +532,7 @@ end
     nsets_predef = Dict{String,Vector{Int64}}("Nset_2" => [11, 12, 13, 44, 125],
                                               "Nset_1" => [1, 2, 3, 4, 5, 6, 7])
 
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     @test test_data_manager.get_nnsets() == 0
     PeriLab.IO.define_nsets(nsets_predef, test_data_manager)
     @test test_data_manager.get_nnsets() == 2
@@ -542,7 +542,7 @@ end
 end
 
 @testset "ut_get_bond_geometry" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.set_num_controller(3)
     test_data_manager.set_num_responder(0)
     test_data_manager.set_dof(2)

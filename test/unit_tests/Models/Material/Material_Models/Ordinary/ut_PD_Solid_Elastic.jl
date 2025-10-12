@@ -4,6 +4,6 @@
 
 using Test
 @testset "get_name&fe_support" begin
-    @test PeriLab.Solver_control.Model_Factory.Material.PD_Solid_Elastic.material_name() == "PD Solid Elastic"
-    @test !(PeriLab.Solver_control.Model_Factory.Material.PD_Solid_Elastic.fe_support())
+    @test PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Elastic.material_name() == "PD Solid Elastic"
+    @test !(PeriLab.Solver_Manager.Model_Factory.Material.PD_Solid_Elastic.fe_support())
 end

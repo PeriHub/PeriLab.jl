@@ -249,7 +249,7 @@ end
     @test (freq[2] == 100) || (freq[2] == 20)
 end
 
-test_data_manager = PeriLab.Data_manager
+test_data_manager = PeriLab.Data_Manager
 @testset "ut_get_outputs" begin
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(5)

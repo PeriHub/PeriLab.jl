@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Data_manager
+module Data_Manager
 using MPI
 using DataStructures: OrderedDict
 using ..Helpers: fill_in_place!

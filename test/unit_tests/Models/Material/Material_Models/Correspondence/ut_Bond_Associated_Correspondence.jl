@@ -7,7 +7,7 @@ using Test
 # using .PeriLab
 
 @testset "ut_compute_bond_strain" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(2)
@@ -36,7 +36,7 @@ using Test
 
     strainN[1][1, :, :] = [-1 -1; -1 -1]
     strainN[2][1, :, :] = [0.5 0; 0 0.5]
-    PeriLab.Solver_control.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.compute_bond_strain(nodes,
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.compute_bond_strain(nodes,
                                                        nlist,
                                                        deformation_gradient,
                                                        strain,
@@ -56,7 +56,7 @@ end
     expected_strain = 0.5 .* dt .* (deformation_gradient * deformation_gradient_dot +
                        (deformation_gradient * deformation_gradient_dot)')
     computed_strain = zeros(3, 3)
-    PeriLab.Solver_control.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.update_Green_Langrange_strain(dt,
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.update_Green_Langrange_strain(dt,
                                                                  deformation_gradient,
                                                                  deformation_gradient_dot,
                                                                  computed_strain)
@@ -71,14 +71,14 @@ end
     deformation_gradient_dot = zeros(3, 3)
     expected_strain = zeros(3, 3)
     computed_strain = zeros(3, 3)
-    PeriLab.Solver_control.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.update_Green_Langrange_strain(dt,
+    PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.update_Green_Langrange_strain(dt,
                                                                  deformation_gradient,
                                                                  deformation_gradient_dot,
                                                                  computed_strain)
     @test computed_strain == expected_strain
 end
 @testset "ut_init_Bond-Associated" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(2)
     test_data_manager.set_dof(3)
@@ -92,25 +92,25 @@ end
     test_data_manager.create_constant_bond_field("Influence Function", Float64, 1)
     test_data_manager.create_bond_field("Bond Damage", Float64, 1)
 
-    @test isnothing(PeriLab.Solver_control.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(test_data_manager, nodes,
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(test_data_manager, nodes,
                                                               Dict()))
 
     material_parameter = Dict{String,Any}("Symmetry" => "isotropic")
-    test_data_manager = PeriLab.Solver_control.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(test_data_manager,
+    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(test_data_manager,
                                                                   nodes,
                                                                   material_parameter)
 
     @test test_data_manager.get_accuracy_order() == 1
 
     material_parameter = Dict("Symmetry" => "isotropic", "Accuracy Order" => 2)
-    test_data_manager = PeriLab.Solver_control.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(test_data_manager,
+    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.init_model(test_data_manager,
                                                                   nodes,
                                                                   material_parameter)
 
     @test test_data_manager.get_accuracy_order() == 2
 end
 @testset "ut_compute_stress_integral" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     dof = 2
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(2)
@@ -159,7 +159,7 @@ end
                                                                    Float64, dof,
                                                                    VectorOrMatrix = "Matrix")
 
-    stress_integral = PeriLab.Solver_control.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.compute_stress_integral(nodes,
+    stress_integral = PeriLab.Solver_Manager.Model_Factory.Material.Correspondence.Bond_Associated_Correspondence.compute_stress_integral(nodes,
                                                                              dof,
                                                                              nlist,
                                                                              omega,

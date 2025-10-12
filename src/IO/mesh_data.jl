@@ -11,7 +11,7 @@ include("bond_filters.jl")
 include("gcode.jl")
 include("volume.jl")
 using ..Helpers: fastdot, get_nearest_neighbors
-using ..Logging_module: print_table
+using ..Logging_Module: print_table
 using ..Parameter_Handling: get_mesh_name, get_header, get_node_sets,
                             get_external_topology_name, get_horizon
 using ..Geometry: bond_geometry!
@@ -30,11 +30,11 @@ Initializes the data for the mesh.
 # Arguments
 - `params::Dict`: The parameters for the simulation.
 - `path::String`: The path to the mesh file.
-- `datamanager::Data_manager`: The data manager.
+- `datamanager::Data_Manager`: The data manager.
 - `comm::MPI.Comm`: The MPI communicator.
 - `to::TimerOutput`: The timer output.
 # Returns
-- `datamanager::Data_manager`: The data manager.
+- `datamanager::Data_Manager`: The data manager.
 - `params::Dict`: The parameters for the simulation.
 """
 function init_data(params::Dict,

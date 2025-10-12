@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Solver_control
+module Solver_Manager
 using ..Parameter_Handling:
                             get_density,
                             get_horizon,
@@ -18,9 +18,9 @@ include("../../Models/Material/Material_Basis.jl")
 include("../../FEM/FEM_Factory.jl")
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
-include("Verlet.jl")
+include("Verlet_solver.jl")
 include("Static_solver.jl")
-using ..MPI_communication: synch_responder_to_controller,
+using ..MPI_Communication: synch_responder_to_controller,
                            synch_controller_to_responder,
                            synch_controller_bonds_to_responder,
                            synch_controller_bonds_to_responder_flattened
@@ -28,10 +28,10 @@ using ..MPI_communication: synch_responder_to_controller,
 include("../Influence_function.jl")
 
 using .Model_Factory: init_models, read_properties
-using .Boundary_conditions: init_BCs
-using .Verlet
+using .Boundary_Conditions: init_BCs
+using .Verlet_Solver
 using .FEM
-using .Influence_function
+using .Influence_Function
 using TimerOutputs
 
 export init
@@ -100,7 +100,7 @@ function init(params::Dict,
     end
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     for iblock in eachindex(block_nodes)
-        datamanager = Influence_function.init_influence_function(block_nodes[iblock],
+        datamanager = Influence_Function.init_influence_function(block_nodes[iblock],
                                                                  datamanager,
                                                                  params["Discretization"])
     end
@@ -108,25 +108,25 @@ function init(params::Dict,
     @debug "Read properties"
     read_properties(params, datamanager, "Material" in solver_options["All Models"])
     @debug "Init models"
-    @timeit to "init_models" datamanager=Model_Factory.init_models(params,
+    @timeit to "init_models" datamanager=init_models(params,
                                                                    datamanager,
                                                                    block_nodes,
                                                                    solver_options,
                                                                    synchronise_field,
                                                                    to)
     @debug "Init Boundary Conditions"
-    @timeit to "init_BCs" bcs=Boundary_conditions.init_BCs(params, datamanager)
+    @timeit to "init_BCs" bcs=init_BCs(params, datamanager)
     solver_options["Solver"] = get_solver_name(solver_params)
     if get_solver_name(solver_params) == "Verlet"
         @debug "Init " * get_solver_name(solver_params)
-        @timeit to "init_solver" Verlet.init_solver(solver_options,
+        @timeit to "init_solver" Verlet_Solver.init_solver(solver_options,
                                                     solver_params,
                                                     bcs,
                                                     datamanager,
                                                     block_nodes)
     elseif solver_options["Solver"] == "Static"
         @debug "Init " * get_solver_name(solver_params)
-        @timeit to "init_solver" Static_solver.init_solver(solver_options,
+        @timeit to "init_solver" Static_Solver.init_solver(solver_options,
                                                            solver_params,
                                                            bcs,
                                                            datamanager,
@@ -286,7 +286,7 @@ function solver(solver_options::Dict{Any,Any},
                 to,
                 silent::Bool)
     if solver_options["Solver"] == "Verlet"
-        return Verlet.run_solver(solver_options,
+        return Verlet_Solver.run_solver(solver_options,
                                  block_nodes,
                                  bcs,
                                  datamanager,
@@ -299,7 +299,7 @@ function solver(solver_options::Dict{Any,Any},
                                  to,
                                  silent)
     elseif solver_options["Solver"] == "Static"
-        return Static_solver.run_solver(solver_options,
+        return Static_Solver.run_solver(solver_options,
                                         block_nodes,
                                         bcs,
                                         datamanager,

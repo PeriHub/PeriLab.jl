@@ -13,9 +13,9 @@ using ..Material_Basis:
 Computes the forces from the force densities.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function get_forces_from_force_density(datamanager::Module)
     force_density = datamanager.get_field("Force Densities", "NP1")
@@ -31,10 +31,10 @@ end
 Computes the partial stresses.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::Vector{Int64}`: List of block nodes.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function get_partial_stresses(datamanager::Module, nodes::AbstractVector{Int64})
     bond_forces = datamanager.get_field("Bond Forces")
@@ -55,10 +55,10 @@ end
 Calculate the von Mises stress.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function calculate_von_mises_stress(datamanager::Module,
                                     nodes::AbstractVector{Int64})
@@ -95,11 +95,11 @@ end
 Calculate the von Mises stress.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `hooke_matrix::Matrix{Float64}`: The hooke matrix.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function calculate_strain(datamanager::Module,
                           nodes::AbstractVector{Int64},
@@ -118,11 +118,11 @@ end
 Computes the stresses.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: List of block nodes.
 - `options::Dict{String, Any}`: List of options.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function calculate_stresses(datamanager::Module,
                             block_nodes::Dict{Int64,Vector{Int64}},

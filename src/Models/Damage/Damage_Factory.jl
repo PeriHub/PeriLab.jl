@@ -21,10 +21,10 @@ export init_fields
 Initialize damage model fields
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `params::Dict`: Parameters.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
@@ -99,7 +99,7 @@ The damage index is defined as damaged volume in relation the neighborhood volum
 damageIndex = sum_i (brokenBonds_i * volume_i) / volumeNeighborhood
 
 # Arguments
-- `datamanager::Data_manager`: all model data
+- `datamanager::Data_Manager`: all model data
 - `nodes::AbstractVector{Int64}`: corresponding nodes to this model
 """
 function damage_index(datamanager::Module,

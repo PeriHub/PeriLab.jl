@@ -20,9 +20,9 @@ export fields_for_local_synchronization
 Initialize thermal model fields
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_fields(datamanager::Module)
     datamanager.create_node_field("Temperature", Float64, 1)
@@ -73,11 +73,11 @@ end
 Initializes the thermal model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager
+- `datamanager::Data_Manager`: Datamanager
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)

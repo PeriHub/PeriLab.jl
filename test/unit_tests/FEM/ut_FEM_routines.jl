@@ -7,7 +7,7 @@ include("../../../src/FEM/Element_formulation/Lagrange_element.jl")
 using Test
 
 @testset "ut_jacobi" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     dof = 2
     nelements = 1
@@ -33,8 +33,8 @@ using Test
     topology[1, 3] = 3
     topology[1, 4] = 4
     elements = Vector{Int64}(1:nelements)
-    p = PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params["FEM"]["FE_1"], dof)
-    num_int = PeriLab.Solver_control.FEM.FEM_routines.get_number_of_integration_points(p, dof)
+    p = PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params["FEM"]["FE_1"], dof)
+    num_int = PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(p, dof)
 
     N = test_data_manager.create_constant_free_size_field("N Matrix",
                                                           Float64,
@@ -45,7 +45,7 @@ using Test
                                                           (prod(num_int),
                                                            prod(p .+ 1) * dof, 3 * dof - 3))
 
-    N, B = PeriLab.Solver_control.FEM.FEM_routines.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+    N, B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
 
     jacobian = test_data_manager.create_constant_free_size_field("Element Jacobi Matrix",
                                                                  Float64,
@@ -56,7 +56,7 @@ using Test
                                                                              (nelements,
                                                                               prod(num_int)))
     test_jacobian,
-    test_determinant_jacobian = PeriLab.Solver_control.FEM.FEM_routines.get_Jacobian(elements,
+    test_determinant_jacobian = PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
                                              dof,
                                              topology,
                                              coordinates,
@@ -75,7 +75,7 @@ using Test
     coordinates[4, 2] = 1
 
     jacobian,
-    determinant_jacobian = PeriLab.Solver_control.FEM.FEM_routines.get_Jacobian(elements,
+    determinant_jacobian = PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
                                         dof,
                                         topology,
                                         coordinates,
@@ -97,7 +97,7 @@ using Test
     coordinates[4, 1] = 2
     coordinates[4, 2] = 0.5
     jacobian,
-    determinant_jacobian = PeriLab.Solver_control.FEM.FEM_routines.get_Jacobian(elements,
+    determinant_jacobian = PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
                                         dof,
                                         topology,
                                         coordinates,
@@ -120,7 +120,7 @@ using Test
     coordinates[4, 2] = 1.0
 
     jacobian,
-    determinant_jacobian = PeriLab.Solver_control.FEM.FEM_routines.get_Jacobian(elements,
+    determinant_jacobian = PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
                                         dof,
                                         topology,
                                         coordinates,
@@ -146,7 +146,7 @@ using Test
     coordinates[4, 2] = 1.5
 
     jacobian,
-    determinant_jacobian = PeriLab.Solver_control.FEM.FEM_routines.get_Jacobian(elements,
+    determinant_jacobian = PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
                                         dof,
                                         topology,
                                         coordinates,
@@ -164,7 +164,7 @@ using Test
 end
 
 @testset "ut_lumped_mass" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     dof = 2
     nelements = 1
     test_data_manager.set_dof(dof)
@@ -188,8 +188,8 @@ end
     topology[1, 3] = 3
     topology[1, 4] = 4
     elements = Vector{Int64}(1:nelements)
-    p = PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params["FEM"]["FE_1"], dof)
-    num_int = PeriLab.Solver_control.FEM.FEM_routines.get_number_of_integration_points(p, dof)
+    p = PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params["FEM"]["FE_1"], dof)
+    num_int = PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(p, dof)
 
     N = test_data_manager.create_constant_free_size_field("N Matrix",
                                                           Float64,
@@ -200,7 +200,7 @@ end
                                                           (prod(num_int),
                                                            prod(p .+ 1) * dof, 3 * dof - 3))
 
-    N[:], B[:] = PeriLab.Solver_control.FEM.FEM_routines.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+    N[:], B[:] = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
     lumped_mass = test_data_manager.create_constant_node_field("Lumped Mass Matrix",
                                                                Float64, 1)
 
@@ -335,7 +335,7 @@ end
                                                                              (nelements,
                                                                               prod(num_int)))
     jacobian,
-    determinant_jacobian = PeriLab.Solver_control.FEM.FEM_routines.get_Jacobian(elements,
+    determinant_jacobian = PeriLab.Solver_Manager.FEM.FEM_Basis.get_Jacobian(elements,
                                         dof,
                                         topology,
                                         coordinates,
@@ -346,7 +346,7 @@ end
     rho = test_data_manager.create_constant_node_field("Density", Float64, 1)
 
     rho[:] .= 1.0
-    lumped_mass = PeriLab.Solver_control.FEM.FEM_routines.get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho,
+    lumped_mass = PeriLab.Solver_Manager.FEM.FEM_Basis.get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho,
                                   lumped_mass)
     for i in 1:4
         @test isapprox(lumped_mass[i], 1.0)
@@ -354,7 +354,7 @@ end
     lumped_mass[:] .= 0
     rho[:] .= 2.0
 
-    lumped_mass = PeriLab.Solver_control.FEM.FEM_routines.get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho,
+    lumped_mass = PeriLab.Solver_Manager.FEM.FEM_Basis.get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho,
                                   lumped_mass)
     for i in 1:4
         @test isapprox(lumped_mass[i], 2.0)
@@ -362,7 +362,7 @@ end
     lumped_mass[:] .= 0
     rho[:] .= 1.2
 
-    lumped_mass = PeriLab.Solver_control.FEM.FEM_routines.get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho,
+    lumped_mass = PeriLab.Solver_Manager.FEM.FEM_Basis.get_lumped_mass(elements, dof, topology, N, determinant_jacobian, rho,
                                   lumped_mass)
     # specific lumped mass
     @test lumped_mass == [1.2; 1.2; 1.2; 1.2]
@@ -377,7 +377,7 @@ end
                                                                                   "Bulk Modulus" => 2.5e+3,
                                                                                   "Shear Modulus" => 1.15e3)))
 
-    @test isnothing(PeriLab.Solver_control.FEM.FEM_routines.get_FE_material_model(params, "FE_1"))
+    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_FE_material_model(params, "FE_1"))
 
     params = Dict{String,Any}("FEM" => Dict("FE_1" => Dict("Degree" => 1,
                                                            "Element Type" => "Lagrange",
@@ -387,7 +387,7 @@ end
                                                                                 "Bulk Modulus" => 2.5e+3,
                                                                                 "Shear Modulus" => 1.15e3)))
 
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_FE_material_model(params, "FE_1") ==
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_FE_material_model(params, "FE_1") ==
           Dict("Material Model" => "Correspondence Elastic",
                "Symmetry" => "isotropic plane strain",
                "Bulk Modulus" => 2.5e+3,
@@ -395,51 +395,51 @@ end
 end
 
 @testset "ut_get_polynomial_degree" begin
-    @test isnothing(PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(Dict{String,Any}(), 1))
-    @test isnothing(PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(Dict{String,Any}(), 2))
-    @test isnothing(PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(Dict{String,Any}(), 3))
+    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,Any}(), 1))
+    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,Any}(), 2))
+    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(Dict{String,Any}(), 3))
 
     params = Dict{String,Any}("Degree" => 1)
 
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 2) == [1, 1]
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 3) == [1, 1, 1]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [1, 1]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [1, 1, 1]
 
     params = Dict{String,Any}("Degree" => 2)
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 2) == [2, 2]
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 3) == [2, 2, 2]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
 
     params = Dict{String,Any}("Degree" => 2.1)
 
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 2) == [2, 2]
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 3) == [2, 2, 2]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
 
     params = Dict{String,Any}("Degree" => [2 3 1])
-    @test isnothing(PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 2))
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 3) == [2, 3, 1]
+    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2))
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 3, 1]
 
     params = Dict{String,Any}("Degree" => [2.1 2])
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 2) == [2, 2]
-    @test isnothing(PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 3))
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
+    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3))
     params = Dict{String,Any}("Degree" => "2")
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 3) == [2, 2, 2]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 3) == [2, 2, 2]
     params = Dict{String,Any}("Degree" => "2 2")
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 2) == [2, 2]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 2]
     params = Dict{String,Any}("Degree" => "2 1")
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_polynomial_degree(params, 2) == [2, 1]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_polynomial_degree(params, 2) == [2, 1]
 end
 @testset "ut_get_number_of_integration_points" begin
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_number_of_integration_points(Vector{Int64}([1, 1]), 2) == [2, 2]
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_number_of_integration_points(Vector{Int64}([1, 1, 1]), 3) == [2, 2, 2]
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_number_of_integration_points(Vector{Int64}([1, 2, 1]), 3) == [2, 3, 2]
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_number_of_integration_points(Vector{Int64}([1, 3, 8]), 3) == [2, 5, 15]
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_number_of_integration_points(Vector{Int64}([1, 3]), 2) == [2, 5]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(Vector{Int64}([1, 1]), 2) == [2, 2]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(Vector{Int64}([1, 1, 1]), 3) == [2, 2, 2]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(Vector{Int64}([1, 2, 1]), 3) == [2, 3, 2]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(Vector{Int64}([1, 3, 8]), 3) == [2, 5, 15]
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_number_of_integration_points(Vector{Int64}([1, 3]), 2) == [2, 5]
 end
 
 @testset "ut_get_weights_and_integration_points" begin
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_weights_and_integration_points(2, [1, 1]) == ([2.0 2.0], [0.0 0.0])
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_weights_and_integration_points(2, [2, 2]) == ([1.0 1.0; 1.0 1.0],
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(2, [1, 1]) == ([2.0 2.0], [0.0 0.0])
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(2, [2, 2]) == ([1.0 1.0; 1.0 1.0],
            [-0.5773502691896258 -0.5773502691896258; 0.5773502691896258 0.5773502691896258])
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_weights_and_integration_points(3, [2, 3, 4]) ==
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(3, [2, 3, 4]) ==
           ([1.0 0.5555555555555556 0.34785484513745385
             1.0 0.8888888888888888 0.6521451548625462
             0.0 0.5555555555555556 0.6521451548625462
@@ -448,18 +448,18 @@ end
             0.5773502691896258 0.0 -0.3399810435848563
             0.0 0.7745966692414834 0.3399810435848563
             0.0 0.0 0.8611363115940526])
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_weights_and_integration_points(3, [2, 1, 1]) == ([1.0 2.0 2.0; 1.0 0.0 0.0],
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(3, [2, 1, 1]) == ([1.0 2.0 2.0; 1.0 0.0 0.0],
            [-0.5773502691896258 0.0 0.0; 0.5773502691896258 0.0 0.0])
 end
 
 @testset "ut_get_multi_dimensional_integration_points" begin
-    @test isnothing(PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(1, [1], zeros(2, 2)))
-    @test isnothing(PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(4, [1, 1, 1, 1],
+    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(1, [1], zeros(2, 2)))
+    @test isnothing(PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(4, [1, 1, 1, 1],
                                                                  zeros(2, 2)))
     dof = 2
     num_int = 2
-    weights, xi = PeriLab.Solver_control.FEM.FEM_routines.get_weights_and_integration_points(dof, [num_int, num_int])
-    integration_point_coordinates = PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(dof,
+    weights, xi = PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(dof, [num_int, num_int])
+    integration_point_coordinates = PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(dof,
                                                                                  [
                                                                                      num_int,
                                                                                      num_int
@@ -469,11 +469,11 @@ end
     @test integration_point_coordinates[2, :] == [0.5773502691896258, -0.5773502691896258]
     @test integration_point_coordinates[3, :] == [-0.5773502691896258, 0.5773502691896258]
     @test integration_point_coordinates[4, :] == [0.5773502691896258, 0.5773502691896258]
-    @test PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(dof, [num_int, num_int], weights) ==
+    @test PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(dof, [num_int, num_int], weights) ==
           [1.0 1.0; 1.0 1.0; 1.0 1.0; 1.0 1.0]
     dof = 3
-    weights, xi = PeriLab.Solver_control.FEM.FEM_routines.get_weights_and_integration_points(dof, [num_int, num_int, num_int])
-    integration_point_coordinates = PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(dof,
+    weights, xi = PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(dof, [num_int, num_int, num_int])
+    integration_point_coordinates = PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(dof,
                                                                                  [
                                                                                      num_int,
                                                                                      num_int,
@@ -497,7 +497,7 @@ end
           [-0.5773502691896258, 0.5773502691896258, 0.5773502691896258]
     @test integration_point_coordinates[8, :] ==
           [0.5773502691896258, 0.5773502691896258, 0.5773502691896258]
-    integration_point_weights = PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(dof,
+    integration_point_weights = PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(dof,
                                                                              [
                                                                                  num_int,
                                                                                  num_int,
@@ -510,14 +510,14 @@ end
     end
 
     dof = 2
-    weights, xi = PeriLab.Solver_control.FEM.FEM_routines.get_weights_and_integration_points(dof, [num_int, num_int + 1])
-    integration_point_coordinates = PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(dof,
+    weights, xi = PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(dof, [num_int, num_int + 1])
+    integration_point_coordinates = PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(dof,
                                                                                  [
                                                                                      num_int,
                                                                                      num_int +
                                                                                      1
                                                                                  ], xi)
-    integration_point_weights = PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(dof,
+    integration_point_weights = PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(dof,
                                                                              [
                                                                                  num_int,
                                                                                  num_int +
@@ -541,14 +541,14 @@ end
     @test integration_point_weights[5, :] == [1.0, 0.5555555555555556]
     @test integration_point_weights[6, :] == [1.0, 0.5555555555555556]
 
-    weights, xi = PeriLab.Solver_control.FEM.FEM_routines.get_weights_and_integration_points(dof, [num_int + 1, num_int])
-    integration_point_coordinates = PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(dof,
+    weights, xi = PeriLab.Solver_Manager.FEM.FEM_Basis.get_weights_and_integration_points(dof, [num_int + 1, num_int])
+    integration_point_coordinates = PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(dof,
                                                                                  [
                                                                                      num_int +
                                                                                      1,
                                                                                      num_int
                                                                                  ], xi)
-    integration_point_weights = PeriLab.Solver_control.FEM.FEM_routines.get_multi_dimensional_integration_point_data(dof,
+    integration_point_weights = PeriLab.Solver_Manager.FEM.FEM_Basis.get_multi_dimensional_integration_point_data(dof,
                                                                              [
                                                                                  num_int +
                                                                                  1,
@@ -576,19 +576,19 @@ end
     dof::Int64 = 1
     p::Vector{Int64} = [1, 1]
 
-    N, B = PeriLab.Solver_control.FEM.FEM_routines.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+    N, B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
 
     @test isnothing(N)
     @test isnothing(B)
     dof = 4
     N,
-    B = PeriLab.Solver_control.FEM.FEM_routines.create_element_matrices(dof,
+    B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof,
                                 Vector{Int64}([1, 1, 1, 1]),
                                 Lagrange_element.create_element_matrices)
     @test isnothing(N)
     @test isnothing(B)
     dof = 2
-    N, B = PeriLab.Solver_control.FEM.FEM_routines.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+    N, B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
 
     @test size(N) == (4, 8, 2)
     @test size(B) == (4, 8, 3)
@@ -642,7 +642,7 @@ end
 
     dof = 3
     p = [1, 1, 1]
-    N, B = PeriLab.Solver_control.FEM.FEM_routines.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+    N, B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
 
     @test size(N) == (8, 24, 3)
     @test size(B) == (8, 24, 6)
@@ -670,13 +670,13 @@ end
 
     dof = 2
     p = [2, 1]
-    N, B = PeriLab.Solver_control.FEM.FEM_routines.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+    N, B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
 
     @test size(N) == (6, 12, 2)
     @test size(B) == (6, 12, 3)
     dof = 3
     p = [5, 3, 1]
-    N, B = PeriLab.Solver_control.FEM.FEM_routines.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
+    N, B = PeriLab.Solver_Manager.FEM.FEM_Basis.create_element_matrices(dof, p, Lagrange_element.create_element_matrices)
 
     @test size(N) == (90, 144, 3)
     @test size(B) == (90, 144, 6)

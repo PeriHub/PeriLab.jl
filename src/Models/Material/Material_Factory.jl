@@ -44,9 +44,9 @@ end
 Initialize material model fields
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
@@ -83,11 +83,11 @@ end
 Initializes the material model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager
+- `datamanager::Data_Manager`: Datamanager
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
@@ -240,10 +240,10 @@ end
 Distribute the force densities.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function distribute_force_densities(datamanager::Module,
                                     nodes::AbstractVector{Int64}, to::TimerOutput)

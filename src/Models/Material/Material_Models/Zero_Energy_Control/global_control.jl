@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Global_zero_energy_control
+module Global_Zero_Energy_Control
 using ........Helpers: get_fourth_order, mul!
 using StaticArrays: MMatrix, MVector
 using LoopVectorization

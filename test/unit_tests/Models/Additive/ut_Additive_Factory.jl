@@ -5,7 +5,7 @@
 using Test
 
 @testset "init_fields" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_dof(3)
     test_data_manager.set_num_controller(4)
@@ -20,7 +20,7 @@ using Test
     nlist[3] = [1]
     nlist[4] = [1, 3]
     test_data_manager.create_bond_field("Bond Damage", Float64, 1)
-    test_data_manager = PeriLab.Solver_control.Model_Factory.Additive.init_fields(test_data_manager)
+    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Additive.init_fields(test_data_manager)
     field_keys = test_data_manager.get_all_field_keys()
     @test "Active" in field_keys
     active = test_data_manager.get_field("Active")
@@ -30,7 +30,7 @@ using Test
 end
 
 @testset "init_additive" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.data["properties"][23] = Dict("Additive Model" => Dict("Additive Model" => "does not exist"))
-    @test isnothing(PeriLab.Solver_control.Model_Factory.Additive.init_model(test_data_manager, Vector{Int64}([1, 2, 3]), 23))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Additive.init_model(test_data_manager, Vector{Int64}([1, 2, 3]), 23))
 end

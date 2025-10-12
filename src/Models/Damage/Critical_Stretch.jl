@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Critical_stretch
+module Critical_Stretch
 using .....Helpers: sub_in_place!, div_in_place!
 export compute_model
 export damage_name
@@ -35,14 +35,14 @@ end
 Calculates the stretch of each bond and compares it to a critical one. If it is exceeded, the bond damage value is set to zero.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `block::Int64`: Block number.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```

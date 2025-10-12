@@ -7,13 +7,13 @@ using Test
 #include("../../../../src/PeriLab.jl")
 #import .PeriLab
 
-@test PeriLab.Solver_control.Model_Factory.Thermal.Heat_transfer.thermal_model_name() == "Heat Transfer"
+@test PeriLab.Solver_Manager.Model_Factory.Thermal.Heat_Transfer.thermal_model_name() == "Heat Transfer"
 
 @testset "ut_calculate_specific_volume" begin
     nnodes = 10
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_dof(dof)
@@ -58,7 +58,7 @@ using Test
     specific_volume_check = test_data_manager.create_constant_node_field("Specific Volume Check",
                                                                          Bool, 1, true)
     rotation_tensor = nothing
-    PeriLab.Solver_control.Model_Factory.Thermal.Heat_transfer.calculate_specific_volume!(specific_volume,
+    PeriLab.Solver_Manager.Model_Factory.Thermal.Heat_Transfer.calculate_specific_volume!(specific_volume,
                                              nodes,
                                              nlist,
                                              active,
@@ -81,14 +81,14 @@ using Test
 end
 
 @testset "ut_compute_thermal_model" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
 
     test_data_manager.create_node_field("Heat Flow", Float64, 1)
     test_data_manager.create_node_field("Temperature", Float64, 1)
     test_data_manager.create_constant_node_field("Specific Volume", Float64, 1)
     test_data_manager.create_constant_node_field("Surface_Nodes", Bool, 1)
     test_data_manager.create_bond_field("Bond Damage", Float64, 1)
-    @test PeriLab.Solver_control.Model_Factory.Thermal.Heat_transfer.compute_model(test_data_manager,
+    @test PeriLab.Solver_Manager.Model_Factory.Thermal.Heat_Transfer.compute_model(test_data_manager,
                                       Vector{Int64}(1:10),
                                       Dict("Heat Transfer Coefficient" => 1,
                                            "Environmental Temperature" => 1.2,
@@ -100,7 +100,7 @@ end
     dof = 3
     test_data_manager.set_dof(dof)
 
-    @test PeriLab.Solver_control.Model_Factory.Thermal.Heat_transfer.compute_model(test_data_manager,
+    @test PeriLab.Solver_Manager.Model_Factory.Thermal.Heat_Transfer.compute_model(test_data_manager,
                                       Vector{Int64}(1:10),
                                       Dict("Heat Transfer Coefficient" => 1,
                                            "Environmental Temperature" => 1.2,

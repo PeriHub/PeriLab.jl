@@ -13,20 +13,34 @@ CurrentModule = PeriLab
 ## Solver
 
 ```@autodocs
-Modules = [Solver_control]
+Modules = [Solver_Manager]
 Order   = [:function, :type]
 ```
 
-## Verlet
+## Verlet_Solver
 
 ```@autodocs
-Modules = [Solver_control.Verlet]
+Modules = [Solver_Manager.Verlet_Solver]
 Order   = [:function, :type]
 ```
 
-## Boundary_conditions
+## Static_Solver
 
 ```@autodocs
-Modules = [Solver_control.Boundary_conditions]
+Modules = [Solver_Manager.Static_Solver]
+Order   = [:function, :type]
+```
+
+## Boundary_Conditions
+
+```@autodocs
+Modules = [Solver_Manager.Boundary_Conditions]
+Order   = [:function, :type]
+```
+
+## Influence_Function
+
+```@autodocs
+Modules = [Solver_Manager.Influence_Function]
 Order   = [:function, :type]
 ```

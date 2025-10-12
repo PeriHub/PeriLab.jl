@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 module FEM
 include("../Core/Module_inclusion/set_Modules.jl")
-include("./FEM_routines.jl")
-using .FEM_routines:
+include("./FEM_basis.jl")
+using .FEM_Basis:
                      compute_FEM,
                      create_element_matrices,
                      get_Jacobian,

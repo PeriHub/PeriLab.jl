@@ -14,7 +14,7 @@ include("mesh_data.jl")
 include("exodus_export.jl")
 include("csv_export.jl")
 include("../Compute/compute_global_values.jl")
-using ..MPI_communication: send_single_value_from_vector, synch_responder_to_controller,
+using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_controller,
                            synch_controller_to_responder,
                            synch_controller_bonds_to_responder,
                            split_vector, synch_controller_bonds_to_responder_flattened,
@@ -24,7 +24,7 @@ using ..MPI_communication: send_single_value_from_vector, synch_responder_to_con
                            find_and_set_core_value_avg, gather_values, barrier
 
 using ..Helpers: progress_bar
-using ..Logging_module: get_log_stream
+using ..Logging_Module: get_log_stream
 using ..Parameter_Handling: get_solver_steps, get_flush_file, get_write_after_damage,
                             get_start_time, get_end_time, get_outputs, get_output_frequency,
                             get_output_filenames, get_computes_names, get_computes, get_fem_block

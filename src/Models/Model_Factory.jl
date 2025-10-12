@@ -21,9 +21,9 @@ using .Degradation
 using .Damage
 using .Material
 using .Pre_Calculation
-using .Surface_correction: init_surface_correction, compute_surface_correction
+using .Surface_Correction: init_surface_correction, compute_surface_correction
 using .Thermal
-using .Contact_Factory
+using .Contact
 # in future FEM will be outside of the Model_Factory
 using ..FEM
 using TimerOutputs
@@ -42,7 +42,7 @@ Initialize models
 - `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
 - `solver_options::Dict`: Solver options.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_models(params::Dict,
                      datamanager::Module,
@@ -130,14 +130,14 @@ end
 
 function check_contact(datamanager::Module, params::Dict)
     if haskey(params, "Contact")
-        return Contact_Factory.init_contact_model(datamanager, params["Contact"])
+        return Contact.init_contact_model(datamanager, params["Contact"])
     end
     return datamanager
 end
 function check_contact(datamanager::Module, params::Dict, time::Float64, dt::Float64,
                        to::TimerOutput)
     if length(params) != 0
-        return Contact_Factory.compute_contact_model(datamanager, params, time,
+        return Contact.compute_contact_model(datamanager, params, time,
                                                      dt, to)
     end
     return datamanager
@@ -419,10 +419,10 @@ Read properties of material.
 
 # Arguments
 - `params::Dict`: Parameters.
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `material_model::Bool`: Material model.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function read_properties(params::Dict, datamanager::Module, material_model::Bool)
     datamanager.init_properties()

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Static_solver
+module Static_Solver
 using LinearAlgebra
 using NLsolve
 using TimerOutputs
@@ -20,10 +20,10 @@ using ...Parameter_Handling:
                              get_numerical_damping,
                              get_safety_factor,
                              get_max_damage
-using ...MPI_communication: barrier
+using ...MPI_Communication: barrier
 using ..Model_Factory
-using ..Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
-using ...Logging_module: print_table
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
+using ...Logging_Module: print_table
 export init_solver
 export run_solver
 

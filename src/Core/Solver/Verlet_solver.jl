@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Verlet
+module Verlet_Solver
 using LinearAlgebra
 using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
@@ -19,11 +19,11 @@ using ...Parameter_Handling:
                              get_numerical_damping,
                              get_safety_factor,
                              get_max_damage
-using ...MPI_communication: find_and_set_core_value_min, find_and_set_core_value_max,
+using ...MPI_Communication: find_and_set_core_value_min, find_and_set_core_value_max,
                             barrier
 using ..Model_Factory: compute_models
-using ..Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann
-using ...Logging_module: print_table
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann
+using ...Logging_Module: print_table
 include("../../Compute/compute_field_values.jl")
 export init_solver
 export run_solver
@@ -523,7 +523,7 @@ function run_solver(solver_options::Dict{Any,Any},
                                              bcs,
                                              datamanager, time,
                                              step_time) #-> Dirichlet
-            # @timeit to "apply_bc_neumann" datamanager = Boundary_conditions.apply_bc_neumann(bcs, datamanager, time) #-> von neumann
+            # @timeit to "apply_bc_neumann" datamanager = apply_bc_neumann(bcs, datamanager, time) #-> von neumann
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:datamanager.get_nnodes())

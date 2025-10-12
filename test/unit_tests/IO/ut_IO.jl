@@ -8,7 +8,7 @@ using MPI
 using TimerOutputs
 using Test
 
-test_data_manager = PeriLab.Data_manager
+test_data_manager = PeriLab.Data_Manager
 test_data_manager.initialize_data()
 filename1 = "test1"
 filename2 = "test2"

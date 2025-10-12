@@ -11,7 +11,7 @@ using Test
 @testset "set_comm" begin
     # MPI.Init()
     comm = MPI.COMM_WORLD
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_comm(comm)
     b = test_data_manager.get_comm()
@@ -20,7 +20,7 @@ using Test
 end
 
 @testset "add_and_get_models" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     @test length(keys(test_data_manager.get_active_models())) == 0
     test_data_manager.add_active_model("Test", Test)
@@ -42,7 +42,7 @@ end
 end
 
 @testset "ut_set_get_accuracy_order" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     @test test_data_manager.get_accuracy_order() == 1
     test_data_manager.set_accuracy_order(2)
@@ -52,7 +52,7 @@ end
     @test isnothing(test_data_manager.set_accuracy_order(0))
 end
 @testset "ranks" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.set_rank(2)
     test_data_manager.set_max_rank(3)
     @test test_data_manager.get_rank() == 2
@@ -62,7 +62,7 @@ end
 end
 
 @testset "get_local_nodes" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.set_glob_to_loc(Dict{Int64,Int64}(1 => 1, 3 => 2, 2 => 3))
     @test test_data_manager.get_local_nodes([1, 2, 3]) == [1, 3, 2]
     @test test_data_manager.get_local_nodes([1]) == [1]
@@ -77,7 +77,7 @@ end
 end
 
 @testset "get_set_functions" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     ref_dof = [0, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
     for i in 1:15
         test_data_manager.set_dof(i)
@@ -99,7 +99,7 @@ end
     @test test_data_manager.get_nnodes() == 97
     @test nnodes == 3
 end
-test_data_manager = PeriLab.Data_manager
+test_data_manager = PeriLab.Data_Manager
 num_controller = 3
 num_responder = 2
 test_data_manager.set_num_controller(num_controller)
@@ -577,7 +577,7 @@ end
 end
 
 @testset "ut_initialize_data" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.create_node_field("test4", Float64, 3)
     test_data_manager.initialize_data()
 

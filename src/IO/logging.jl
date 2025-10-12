@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Logging_module
+module Logging_Module
 using Logging
 using LoggingExtras
 using TimerOutputs
@@ -109,7 +109,7 @@ function print_table(data::Matrix, datamanager::Module)
                                      hl_col(2, crayon"dark_gray")),
                      show_header = false,
                      tf = tf_borderless,)
-        stream = Logging_module.get_log_stream(2)
+        stream = Logging_Module.get_log_stream(2)
         if !isnothing(stream)
             pretty_table(stream,
                          data;
@@ -123,7 +123,7 @@ function print_table(data::Matrix, datamanager::Module)
                          tf = tf_borderless,)
         end
     else
-        stream = Logging_module.get_log_stream(1)
+        stream = Logging_Module.get_log_stream(1)
         if !isnothing(stream)
             pretty_table(stream,
                          data;

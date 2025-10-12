@@ -19,9 +19,9 @@ export fields_for_local_synchronization
 Initialize additive model fields
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_fields(datamanager::Module)
     if !datamanager.has_key("Activation_Time")

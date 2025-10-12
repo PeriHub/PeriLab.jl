@@ -7,7 +7,7 @@ include("../Element_formulation/Lagrange_element.jl")
 using .Lagrange_element:
                          define_lagrangian_grid_space,
                          get_recursive_lagrange_shape_functions
-using ...FEM_routines: get_polynomial_degree
+using ...FEM_Basis: get_polynomial_degree
 using ......Helpers:
                      find_active_nodes,
                      find_point_in_polygon,

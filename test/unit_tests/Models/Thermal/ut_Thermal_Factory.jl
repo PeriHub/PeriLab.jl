@@ -4,7 +4,7 @@
 using Test
 
 @testset "init_fields" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_dof(3)
     test_data_manager.set_num_controller(4)
@@ -14,7 +14,7 @@ using Test
     nn[3] = 1
     nn[4] = 2
 
-    PeriLab.Solver_control.Model_Factory.Thermal.init_fields(test_data_manager)
+    PeriLab.Solver_Manager.Model_Factory.Thermal.init_fields(test_data_manager)
     field_keys = test_data_manager.get_all_field_keys()
     @test "TemperatureN" in field_keys
     @test "TemperatureNP1" in field_keys
@@ -22,7 +22,7 @@ using Test
     @test "Heat FlowNP1" in field_keys
 end
 @testset "init_model" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_dof(2)
     test_data_manager.set_num_controller(4)
@@ -43,7 +43,7 @@ end
     test_data_manager.set_properties(1,
                                      "Thermal Model",
                                      Dict("Thermal Model" => "Heat Transfer"))
-    PeriLab.Solver_control.Model_Factory.Thermal.init_model(test_data_manager, [1], 1)
+    PeriLab.Solver_Manager.Model_Factory.Thermal.init_model(test_data_manager, [1], 1)
     test_data_manager.set_properties(2, "Thermal Model", Dict("Thermal Model" => "Missing"))
-    @test isnothing(PeriLab.Solver_control.Model_Factory.Thermal.init_model(test_data_manager, [1], 2))
+    @test isnothing(PeriLab.Solver_Manager.Model_Factory.Thermal.init_model(test_data_manager, [1], 2))
 end

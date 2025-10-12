@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Critical_Energy_Model
+module Critical_Energy
 using ......Helpers:
                      rotate,
                      fastdot,
@@ -42,14 +42,14 @@ Calculates the elastic energy of each bond and compares it to a critical one. If
 [WillbergC2019](@cite), [FosterJT2011](@cite)
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `damage_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `block::Int64`: Block number.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```

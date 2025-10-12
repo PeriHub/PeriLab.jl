@@ -11,7 +11,7 @@ include("../../../../src/Models/Thermal/hetval.jl")
 end
 @testset "init exceptions" begin
     nodes = 2
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nodes)
     dof = 3
@@ -72,7 +72,7 @@ end
 # Test wrapper function for HETVAL_interface
 @testset "HETVAL_interface Tests" begin
     # Example test case (you should define your own)
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     file = "./src/Models/Thermal/HETVALs/hetval.so"
     if !isfile(file)
         file = "../src/Models/Thermal/HETVALs/hetval.so"

@@ -20,9 +20,9 @@ init_fields(datamanager::Module)
 Initialize  model fields
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_fields(datamanager::Module)
     datamanager.create_node_field("Damage", Float64, 1)

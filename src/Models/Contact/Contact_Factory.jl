@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Contact_Factory
+module Contact
 using TimerOutputs
 using LinearAlgebra
-using .....MPI_communication: find_and_set_core_value_sum
+using .....MPI_Communication: find_and_set_core_value_sum
 include("Contact_search.jl")
-using .Contact_search: init_contact_search, compute_geometry, get_surface_information,
+using .Contact_Search: init_contact_search, compute_geometry, get_surface_information,
                        compute_contact_pairs
 using .....Helpers: remove_ids, get_block_nodes, compute_free_surface_nodes, find_indices
 include("../../Core/Module_inclusion/set_Modules.jl")
@@ -23,10 +23,10 @@ export compute_contact_model
 Initializes the contact model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager
+- `datamanager::Data_Manager`: Datamanager
 - `params:`: Contact parameter.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_contact_model(datamanager::Module, params)
     @info "Init Contact Model"
@@ -190,14 +190,14 @@ end
 Compute the forces of the contact model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `model_param::Dict`: The contact parameter.
 - `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function compute_contact_model(datamanager::Module,
                                contact_params::Dict,
