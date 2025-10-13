@@ -67,7 +67,7 @@ function init_model(datamanager::Module,
         datamanager.set_analysis_model("Correspondence Model", block, material_model)
         mod = create_module_specifics(material_model,
                                       module_list,
-                                          @__MODULE__,
+                                      @__MODULE__,
                                       "correspondence_name")
         if isnothing(mod)
             @error "No correspondence material of name " * material_model * " exists."
@@ -331,13 +331,14 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
     pk_stress = MMatrix{2,2}(zeros(2, 2))
     temp = MMatrix{2,2}(zeros(Float64, 2, 2))
     @inbounds @fastmath for iID in nodes
-        @views compute_Piola_Kirchhoff_stress!(SMatrix{2,2}(@views stress_NP1[iID, :,
-                                                                              :]),
-                                               SMatrix{2,2}(@views deformation_gradient[iID,
-                                                                                        :,
-                                                                                        :]),
-                                               pk_stress)
-
+        if !all(deformation_gradient[iID, :, :] .== 0.0)
+            @views compute_Piola_Kirchhoff_stress!(pk_stress,
+                                                   SMatrix{2,2}(@views stress_NP1[iID, :,
+                                                                                  :]),
+                                                   SMatrix{2,2}(@views deformation_gradient[iID,
+                                                                                            :,
+                                                                                            :]))
+        end
         mat_mul!(temp, SMatrix{2,2}(pk_stress),
                  SMatrix{2,2}(@views inverse_shape_tensor[iID, :, :]))
 
@@ -365,13 +366,14 @@ function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
     pk_stress = MMatrix{3,3}(zeros(3, 3))
     temp = MMatrix{3,3}(zeros(Float64, 3, 3))
     @inbounds @fastmath for iID in nodes
-        @views compute_Piola_Kirchhoff_stress!(SMatrix{3,3}(stress_NP1[iID, :,
-                                                                       :]),
-                                               SMatrix{3,3}(deformation_gradient[iID,
-                                                                                 :,
-                                                                                 :]),
-                                               pk_stress)
-
+        if !all(deformation_gradient[iID, :, :] .== 0.0)
+            @views compute_Piola_Kirchhoff_stress!(pk_stress,
+                                                   SMatrix{3,3}(stress_NP1[iID, :,
+                                                                           :]),
+                                                   SMatrix{3,3}(deformation_gradient[iID,
+                                                                                     :,
+                                                                                     :]))
+        end
         mat_mul!(temp, SMatrix{3,3}(pk_stress),
                  SMatrix{3,3}(inverse_shape_tensor[iID, :, :]))
         @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)
