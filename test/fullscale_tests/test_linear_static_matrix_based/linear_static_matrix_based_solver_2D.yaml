@@ -22,34 +22,34 @@ PeriLab:
         Symmetry: "isotropic plane stress"
         Young's Modulus: 209695.43147208123
         Poisson's Ratio: 0.2944
-  #     Mat_2:
-  #       Material Model: "Correspondence Elastic"
-  #       Symmetry: "isotropic plane stress"
-  #       Young's Modulus: 209695.43147208123
-  #       Poisson's Ratio: 0.2944
+      Mat_2:
+        Material Model: "Correspondence Elastic"
+        Symmetry: "isotropic plane stress"
+        Young's Modulus: 209695.43147208123
+        Poisson's Ratio: 0.2944
   Blocks:
     block_1:
       Block ID: 1
       Material Model: "Mat_1"
       Density: 2.7e-9
       Horizon: 2.1
-  #    block_2:
-  #      Block ID: 2
-  #      Material Model: "Mat_2"
-  #      Density: 2.7e-9
-  #      Horizon: 2.1
+    block_2:
+      Block ID: 2
+      Material Model: "Mat_2"
+      Density: 2.7e-9
+      Horizon: 2.1
   Boundary Conditions:
     BC_1:
       Variable: "Displacements"
       Node Set: "Node Set 1"
-      Coordinate: "x"
+      Coordinate: "y"
       Value: "0.0"
       Type: Dirichlet
     BC_2:
       Variable: "Displacements"
       Node Set: "Node Set 2"
       Coordinate: "y"
-      Value: "0.1"
+      Value: "0.001"
       Type: Dirichlet
     BC_3:
       Variable: "Displacements"

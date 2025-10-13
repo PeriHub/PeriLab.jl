@@ -11,16 +11,16 @@ using TimerOutputs
 include("../../MPI_communication/MPI_communication.jl")
 using .MPI_communication: barrier
 include("../../Support/Parameters/parameter_handling.jl")
-using .Parameter_Handling: get_initial_time,
-                           get_final_time
+using .Parameter_Handling: get_initial_time, get_nsteps, get_final_time
 include("../../Support/Helpers.jl")
 using .Helpers: check_inf_or_nan, find_active_nodes, progress_bar
 include("../BC_manager.jl")
 using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
+
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
-using .Correspondence_matrix_based: assemble_stiffness_contributions_sparse,
-                                    add_zero_energy_stiff!,
-                                    create_zero_energy_mode_stiffness!
+using .Correspondence_matrix_based
+include("../../Models/Pre_calculation/bond_deformation.jl")
+using .Bond_Deformation
 
 """
 	init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
@@ -60,49 +60,13 @@ function init_solver(solver_options::Dict{Any,Any},
     find_bc_free_dof(datamanager, bcs)
     solver_options["Initial Time"] = get_initial_time(params, datamanager)
     solver_options["Final Time"] = get_final_time(params, datamanager)
-    @warn "Number of steps is set to 1."
-    solver_options["Number of Steps"] = 1
+    solver_options["Final Time"] = get_final_time(params, datamanager)
+    solver_options["Number of Steps"] = get_nsteps(params)
 
     for (block, nodes) in pairs(block_nodes)
         model_param = datamanager.get_properties(block, "Material Model")
         Correspondence_matrix_based.init_model(datamanager, nodes, model_param)
     end
-
-    dof = datamanager.get_dof()
-    C_voigt = datamanager.get_field("Hooke Matrix")
-    inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
-    nlist = datamanager.get_nlist()
-    volume = datamanager.get_field("Volume")
-    bond_geometry = datamanager.get_field("Bond Geometry")
-    omega = datamanager.get_field("Influence Function")
-
-    # verify K
-    K_sparse = assemble_stiffness_contributions_sparse(datamanager.get_nnodes(),              # nnodes
-                                                       dof,                # dof
-                                                       C_voigt,            # C_Voigt
-                                                       inverse_shape_tensor, # inverse_shape_tensor
-                                                       nlist,              # nlist
-                                                       volume,      # volume
-                                                       bond_geometry,      # bond_geometry
-                                                       omega)
-
-    zStiff = datamanager.get_field("Zero Energy Stiffness")
-    create_zero_energy_mode_stiffness!(1:datamanager.get_nnodes(), dof, C_voigt,
-                                       inverse_shape_tensor, zStiff)
-    add_zero_energy_stiff!(K_sparse,
-                           datamanager.get_nnodes(),              # nnodes
-                           dof,                # dof
-                           zStiff,            # C_Voigt
-                           inverse_shape_tensor, # inverse_shape_tensor
-                           nlist,              # nlist
-                           volume,      # volume
-                           bond_geometry,      # bond_geometry
-                           omega)
-    # passt nicht zu dem Beispiel. matrix erstellung ist utnerschiedlich
-    # - shape tensor prüfen
-    # - funktionen verleichen
-
-    datamanager.set_stiffness_matrix(K_sparse)
 end
 
 function run_solver(solver_options::Dict{Any,Any},
@@ -139,14 +103,18 @@ function run_solver(solver_options::Dict{Any,Any},
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
     #nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
-
+    delta_u = datamanager.create_constant_node_field("Delta Displacements", Float64,
+                                                     datamanager.get_dof())
     @inbounds @fastmath for idt in iter
         datamanager.set_iteration(idt)
         @timeit to "Linear Static" begin
+            K=compute_matrix(datamanager)
+            uN = datamanager.get_field("Displacements", "N")
             uNP1 = datamanager.get_field("Displacements", "NP1")
             deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
             forces = datamanager.get_field("Forces", "NP1")
-            force_densities = datamanager.get_field("Force Densities", "NP1")
+            force_densities_N = datamanager.get_field("Force Densities", "N")
+            force_densities_NP1 = datamanager.get_field("Force Densities", "NP1")
             volume = datamanager.get_field("Volume")
             forces = datamanager.get_field("Forces", "NP1")
             K = datamanager.get_stiffness_matrix()
@@ -156,18 +124,23 @@ function run_solver(solver_options::Dict{Any,Any},
                                              bcs,
                                              datamanager, time,
                                              step_time)
-            external_force_densities.=external_forces ./ volume
+            external_force_densities .= external_forces ./ volume # it must be delta external forces
             # reshape
             non_BCs = datamanager.get_bc_free_dof()
+
+            delta_u .= uNP1-uN
             compute_displacements!(K[perm, perm],
                                    non_BCs,
-                                   uNP1,
-                                   force_densities,
+                                   delta_u,
+                                   force_densities_NP1,
                                    external_force_densities)
             nodes = length(volume)
+            force_densities_NP1 .+= force_densities_N
             for iID in 1:nodes
-                @views forces[iID, :] .= force_densities[iID, :] .* volume[iID]
+                @views forces[iID, :] .= force_densities_NP1[iID, :] .* volume[iID]
             end
+            uNP1.=delta_u .+ uN
+
             @views deformed_coorNP1 .= coor .+ uNP1
 
             # @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field,
@@ -201,6 +174,14 @@ function run_solver(solver_options::Dict{Any,Any},
     return result_files
 end
 
+function compute_matrix(datamanager::Module)
+    nodes = collect(1:datamanager.get_nnodes())
+    Bond_Deformation.compute(datamanager,
+                             nodes,
+                             Dict(),
+                             0) # not needed here
+    return Correspondence_matrix_based.compute_model(datamanager, nodes)
+end
 """
 	compute_displacements!(K, non_BCs, u, F, F_temp, K_reduced, lu_fact, temp)
 
@@ -231,8 +212,8 @@ function compute_displacements!(K::SparseMatrixCSC{Float64,Int64},
 
     F_modified = copy(vec(F_ext))
     BCs = setdiff(1:length(vec(u)), non_BCs)
-
-    @views F_modified[non_BCs] .-= (K[non_BCs, BCs] * vec(u)[BCs])
+    F_int[non_BCs] = (K[non_BCs, BCs] * vec(u)[BCs])
+    @views F_modified[non_BCs] .-= F_int[non_BCs]
     @views vec(u)[non_BCs] .= K[non_BCs, non_BCs] \ F_modified[non_BCs]
 
     #return reshape(F_int, 2, :)
