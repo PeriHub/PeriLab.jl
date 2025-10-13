@@ -17,6 +17,7 @@ using ..Helpers
 include("../../Models/Material/Material_Basis.jl")
 include("../Module_inclusion/set_Modules.jl")
 include("../../FEM/FEM_Factory.jl")
+include("../../Models/Material/Material_Models/Zero_Energy_Control/global_control.jl")
 include("../../Models/Model_Factory.jl")
 include("../BC_manager.jl")
 include("Verlet_solver.jl")
@@ -112,11 +113,11 @@ function init(params::Dict,
     read_properties(params, datamanager, "Material" in solver_options["All Models"])
     @debug "Init models"
     @timeit to "init_models" datamanager=init_models(params,
-                                                                   datamanager,
-                                                                   block_nodes,
-                                                                   solver_options,
-                                                                   synchronise_field,
-                                                                   to)
+                                                     datamanager,
+                                                     block_nodes,
+                                                     solver_options,
+                                                     synchronise_field,
+                                                     to)
     @debug "Init Boundary Conditions"
 
     @timeit to "init_BCs" bcs=init_BCs(params, datamanager)
@@ -126,10 +127,10 @@ function init(params::Dict,
     @info "Init " * get_solver_name(solver_params)
     if get_solver_name(solver_params) == "Verlet"
         @timeit to "init_solver" Verlet_Solver.init_solver(solver_options,
-                                                    solver_params,
-                                                    bcs,
-                                                    datamanager,
-                                                    block_nodes)
+                                                           solver_params,
+                                                           bcs,
+                                                           datamanager,
+                                                           block_nodes)
     elseif solver_options["Solver"] == "Static"
         @timeit to "init_solver" Static_Solver.init_solver(solver_options,
                                                            solver_params,
@@ -147,8 +148,8 @@ function init(params::Dict,
     if datamanager.fem_active()
         datamanager = FEM.init_FEM(params, datamanager)
         datamanager = FEM.Coupling.init_coupling(datamanager,
-                                                        1:datamanager.get_nnodes(),
-                                                        params)
+                                                 1:datamanager.get_nnodes(),
+                                                 params)
     end
     if !datamanager.has_key("Active")
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)
@@ -294,17 +295,17 @@ function solver(solver_options::Dict{Any,Any},
                 silent::Bool)
     if solver_options["Solver"] == "Verlet"
         return Verlet_Solver.run_solver(solver_options,
-                                 block_nodes,
-                                 bcs,
-                                 datamanager,
-                                 outputs,
-                                 result_files,
-                                 synchronise_field,
-                                 write_results,
-                                 compute_parabolic_problems_before_model_evaluation,
-                                 compute_parabolic_problems_after_model_evaluation,
-                                 to,
-                                 silent)
+                                        block_nodes,
+                                        bcs,
+                                        datamanager,
+                                        outputs,
+                                        result_files,
+                                        synchronise_field,
+                                        write_results,
+                                        compute_parabolic_problems_before_model_evaluation,
+                                        compute_parabolic_problems_after_model_evaluation,
+                                        to,
+                                        silent)
     elseif solver_options["Solver"] == "Static"
         return Static_Solver.run_solver(solver_options,
                                         block_nodes,

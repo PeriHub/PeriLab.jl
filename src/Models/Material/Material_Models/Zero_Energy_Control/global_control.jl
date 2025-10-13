@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Global_Zero_Energy_Control
-using ........Helpers: get_fourth_order, mul!
+using ...Helpers: get_fourth_order, mul!
 using StaticArrays: MMatrix, MVector
 using LoopVectorization
-using .....Material_Basis: get_Hooke_matrix
-using ........Geometry: rotation_tensor
+using ..Material_Basis: get_Hooke_matrix
+using ...Geometry: rotation_tensor
 export control_name
 export compute_control
 export global_zero_energy_mode_stiffness

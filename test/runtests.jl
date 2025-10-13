@@ -204,7 +204,7 @@ MPI.Init()
         #     include("fullscale_tests/test_reload/test_reload.jl")
         # end
         @testset "test_linear_static_matrix_based" begin
-            include("fullscale_tests/test_linear_static_matrix_based/test_linear_static_matrix_based_solver.jl")
+            include("fullscale_tests/test_linear_static_matrix_based_solver/test_linear_static_matrix_based_solver.jl")
         end
         @testset "test_bond_based_elastic" begin
             include("fullscale_tests/test_bond_based_elastic/test_bond_based_elastic.jl")

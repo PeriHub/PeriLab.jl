@@ -71,7 +71,7 @@ PeriLab:
   Outputs:
     Output1:
       Number of Output Steps: 100
-      Output Filename: DCBmodel_correspondence_linear
+      Output Filename: linear_static_matrix_based_solver_DCBmodel
       Output File Type: Exodus
       Output Variables:
         Damage: true

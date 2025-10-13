@@ -8,14 +8,11 @@ using Printf
 using SparseArrays
 using LinearAlgebra
 using TimerOutputs
-include("../../MPI_communication/MPI_communication.jl")
-using .MPI_communication: barrier
-include("../../Support/Parameters/parameter_handling.jl")
-using .Parameter_Handling: get_initial_time, get_nsteps, get_final_time
-include("../../Support/Helpers.jl")
-using .Helpers: check_inf_or_nan, find_active_nodes, progress_bar
-include("../BC_manager.jl")
-using .Boundary_conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
+
+using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar
+using ...Parameter_Handling: get_initial_time, get_nsteps, get_final_time
+using ...MPI_Communication: barrier
+using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 using .Correspondence_matrix_based

@@ -3,13 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_matrix_based
-include("../../Material_Basis.jl")
-include("../../../../Support/Helpers.jl")
 using LinearAlgebra
-using .Helpers: get_fourth_order
-include("../Zero_Energy_Control/global_control.jl")
-using .Global_zero_energy_control: create_zero_energy_mode_stiffness!
-using .Material_Basis: get_Hooke_matrix
+using ...Material_Basis: get_Hooke_matrix
+using ....Helpers: get_fourth_order
+using ...Global_Zero_Energy_Control: create_zero_energy_mode_stiffness!
 using SparseArrays
 
 export init_model
