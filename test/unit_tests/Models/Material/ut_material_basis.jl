@@ -13,13 +13,13 @@ using Test
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
     nn .= 2
     @test isnothing(PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(test_data_manager,
-                                                     collect(1:2),
-                                                     Dict(),
-                                                     Dict("Local Damping" => Dict())))
+                                                                                           collect(1:2),
+                                                                                           Dict(),
+                                                                                           Dict("Local Damping" => Dict())))
     @test isnothing(PeriLab.Solver_Manager.Material_Basis.init_local_damping_due_to_damage(test_data_manager,
-                                                     collect(1:2),
-                                                     Dict(),
-                                                     Dict("Local Damping" => Dict("Representative Young's modulus" => 0))))
+                                                                                           collect(1:2),
+                                                                                           Dict(),
+                                                                                           Dict("Local Damping" => Dict("Representative Young's modulus" => 0))))
 end
 
 @testset "ut_apply_pointwise_E" begin
@@ -74,70 +74,94 @@ end
     expected_force_densities = copy(force_densities)
     for iID in nodes
         expected_force_densities[iID,
-                                 :] .+= transpose(sum(bond_damage[iID] .*
-                                                      mapreduce(permutedims, vcat,
-                                                                bond_force[iID]) .*
-                                                      volume[nlist[iID]],
-                                                      dims = 1))
+        :] .+= transpose(sum(bond_damage[iID] .*
+                                                           mapreduce(permutedims, vcat,
+                                                                     bond_force[iID]) .*
+                                                           volume[nlist[iID]],
+                                                           dims = 1))
         expected_force_densities[nlist[iID],
-                                 :] .-= bond_damage[iID] .*
-                                        mapreduce(permutedims, vcat,
-                                                  bond_force[iID]) .*
-                                        volume[iID]
+        :] .-= bond_damage[iID] .*
+                                                    mapreduce(permutedims, vcat,
+                                                              bond_force[iID]) .*
+                                                    volume[iID]
     end
 
-    PeriLab.Solver_Manager.Material_Basis.distribute_forces!(force_densities, nodes, nlist, bond_force, volume, bond_damage)
+    PeriLab.Solver_Manager.Material_Basis.distribute_forces!(force_densities, nodes, nlist,
+                                                             bond_force, volume,
+                                                             bond_damage)
     @test force_densities ≈ expected_force_densities
 end
 @testset "ut_flaw_function" begin
     stress::Float64 = 5.3
-    @test PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict(), Vector{Float64}([1, 2]), stress) == stress
+    @test PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict(),
+                                                              Vector{Float64}([1, 2]),
+                                                              stress) == stress
 
-    @test isnothing(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict()), Vector{Float64}([1, 2]),
-                                  stress))
+    @test isnothing(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict()),
+                                                                        Vector{Float64}([
+                                                                                            1,
+                                                                                            2
+                                                                                        ]),
+                                                                        stress))
     @test isnothing(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => false)),
-                                  Vector{Float64}([1, 2]),
-                                  stress))
+                                                                        Vector{Float64}([
+                                                                                            1,
+                                                                                            2
+                                                                                        ]),
+                                                                        stress))
     @test PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => false,
-                                                     "Function" => "Pre-defined")),
-                        Vector{Float64}([1, 2]),
-                        stress) == stress
+                                                                                           "Function" => "Pre-defined")),
+                                                              Vector{Float64}([1, 2]),
+                                                              stress) == stress
     @test isnothing(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                               "Function" => "Pre-defined",
-                                                               "Flaw Location X" => 1.1,
-                                                               "Flaw Location Y" => 1.1,
-                                                               "Flaw Magnitude" => 1.3,
-                                                               "Flaw Size" => 0.2)),
-                                  Vector{Float64}([1, 2]),
-                                  stress))
+                                                                                                     "Function" => "Pre-defined",
+                                                                                                     "Flaw Location X" => 1.1,
+                                                                                                     "Flaw Location Y" => 1.1,
+                                                                                                     "Flaw Magnitude" => 1.3,
+                                                                                                     "Flaw Size" => 0.2)),
+                                                                        Vector{Float64}([
+                                                                                            1,
+                                                                                            2
+                                                                                        ]),
+                                                                        stress))
     @test isnothing(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                               "Function" => "Pre-defined",
-                                                               "Flaw Location X" => 1.1,
-                                                               "Flaw Location Y" => 1.1,
-                                                               "Flaw Magnitude" => -1.3,
-                                                               "Flaw Size" => 0.2)),
-                                  Vector{Float64}([1, 2]),
-                                  stress))
+                                                                                                     "Function" => "Pre-defined",
+                                                                                                     "Flaw Location X" => 1.1,
+                                                                                                     "Flaw Location Y" => 1.1,
+                                                                                                     "Flaw Magnitude" => -1.3,
+                                                                                                     "Flaw Size" => 0.2)),
+                                                                        Vector{Float64}([
+                                                                                            1,
+                                                                                            2
+                                                                                        ]),
+                                                                        stress))
 
     @test isapprox(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                              "Function" => "Pre-defined",
-                                                              "Flaw Location X" => 1.1,
-                                                              "Flaw Location Y" => 1.1,
-                                                              "Flaw Magnitude" => 0.3,
-                                                              "Flaw Size" => 0.2)),
-                                 Vector{Float64}([1, 2]),
-                                 stress),
+                                                                                                    "Function" => "Pre-defined",
+                                                                                                    "Flaw Location X" => 1.1,
+                                                                                                    "Flaw Location Y" => 1.1,
+                                                                                                    "Flaw Magnitude" => 0.3,
+                                                                                                    "Flaw Size" => 0.2)),
+                                                                       Vector{Float64}([
+                                                                                           1,
+                                                                                           2
+                                                                                       ]),
+                                                                       stress),
                    5.29999999)
 
     @test isapprox(PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true,
-                                                              "Function" => "Pre-defined",
-                                                              "Flaw Location X" => 1.1,
-                                                              "Flaw Location Y" => 1.1,
-                                                              "Flaw Location Z" => 2.1,
-                                                              "Flaw Magnitude" => 0.3,
-                                                              "Flaw Size" => 0.2)),
-                                 Vector{Float64}([1, 2, 3]),
-                                 stress),
+                                                                                                    "Function" => "Pre-defined",
+                                                                                                    "Flaw Location X" => 1.1,
+                                                                                                    "Flaw Location Y" => 1.1,
+                                                                                                    "Flaw Location Z" => 2.1,
+                                                                                                    "Flaw Magnitude" => 0.3,
+                                                                                                    "Flaw Size" => 0.2)),
+                                                                       Vector{Float64}([
+                                                                                           1,
+                                                                                           2,
+                                                                                           3
+                                                                                       ]),
+                                                                       stress),
                    5.29999999)
 
     #  @test PeriLab.Solver_Manager.Material_Basis.flaw_function(Dict("Flaw Function" => Dict("Active" => true, "Function" => "x*x")), Vector{Float64}([1, 2]), stress) == 1
@@ -145,25 +169,38 @@ end
 @testset "check_symmetry" begin
     @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict(), 2))
     @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict(), 3))
-    @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "a"), 2))
-    @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "plane"), 2))
-    @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "stress"), 2))
-    @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "strain"), 2))
-    PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "plane stress"), 2)
-    PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "plane strain"), 2)
+    @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "a"),
+                                                                         2))
+    @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "plane"),
+                                                                         2))
+    @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "stress"),
+                                                                         2))
+    @test isnothing(PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "strain"),
+                                                                         2))
+    PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "plane stress"),
+                                                         2)
+    PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "plane strain"),
+                                                         2)
     PeriLab.Solver_Manager.Material_Basis.check_symmetry(Dict("Symmetry" => "3D"), 3)
 end
 
 @testset "get_symmetry" begin
     @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict()) == "3D"
-    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "iso plane stress")) == "plane stress"
-    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "iso plane stress")) == "plane stress"
-    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "iso Plane Stress")) == "plane stress"
+    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "iso plane stress")) ==
+          "plane stress"
+    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "iso plane stress")) ==
+          "plane stress"
+    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "iso Plane Stress")) ==
+          "plane stress"
 
-    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "plane strain")) == "plane strain"
-    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "plane Strain")) == "plane strain"
-    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "PLANE strain")) == "plane strain"
-    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "plan strain")) == "3D"
+    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "plane strain")) ==
+          "plane strain"
+    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "plane Strain")) ==
+          "plane strain"
+    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "PLANE strain")) ==
+          "plane strain"
+    @test PeriLab.Solver_Manager.Material_Basis.get_symmetry(Dict("Symmetry" => "plan strain")) ==
+          "3D"
 end
 
 @testset "get_all_elastic_moduli" begin
@@ -179,36 +216,41 @@ end
                          "Poisson's Ratio" => 0,
                          "Symmetry" => "isotropic")
     test = PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
-                                  Dict{String,Any}("Material Model" => "PD Solid Elastic"))
+                                                                        Dict{String,Any}("Material Model" => "PD Solid Elastic"))
     @test isnothing(test)
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 1000,
                                  "Young's Modulus" => 10)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 1,
                                  "Shear Modulus" => 10)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 1,
                                  "Shear Modulus" => 10,
                                  "Poisson's Ratio" => 0.2)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test sort(collect(keys(parameter))) == sort(collect(keys(ref_parameter)))
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 10)
-    @test isnothing(PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter))
+    @test isnothing(PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                                 parameter))
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 10,
                                  "Shear Modulus" => 10)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test parameter["Young's Modulus"] == Float64(22.5)
     @test parameter["Poisson's Ratio"] == Float64(0.125)
     @test parameter["Bulk Modulus"] == 10
@@ -217,7 +259,8 @@ end
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 5,
                                  "Shear Modulus" => 1.25)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test parameter["Young's Modulus"] / 3.4615384615384617 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] / 0.45454545454545453 - 1 < 1e-7
     @test parameter["Bulk Modulus"] == 5
@@ -226,14 +269,16 @@ end
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Bulk Modulus" => 5,
                                  "Young's Modulus" => 1.25)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test parameter["Shear Modulus"] / 4.2857142857142855e-1 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] / 0.4583333333333333 - 1 < 1e-7
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Poisson's Ratio" => 0.45,
                                  "Shear Modulus" => 1.25)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test parameter["Young's Modulus"] / 3.625e+0 - 1 < 1e-8
     @test parameter["Bulk Modulus"] / 1.2083333333333336e+1 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] == Float64(0.45)
@@ -242,7 +287,8 @@ end
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Young's Modulus" => 5,
                                  "Poisson's Ratio" => 0.125)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test parameter["Bulk Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
     @test parameter["Shear Modulus"] / 2.2222222222222223e+0 - 1 < 1e-7
     @test parameter["Poisson's Ratio"] == Float64(0.125)
@@ -250,7 +296,8 @@ end
 
     parameter = Dict{String,Any}("Material Model" => "Bond-based Elastic",
                                  "Young's Modulus" => 5)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test parameter["Bulk Modulus"] == 5
     @test parameter["Shear Modulus"] == 1.875
     @test parameter["Poisson's Ratio"] == Float64(1 / 3)
@@ -259,7 +306,8 @@ end
     parameter = Dict{String,Any}("Material Model" => "Bond-based Elastic",
                                  "Young's Modulus" => 5,
                                  "Poisson's Ratio" => 0.125)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test parameter["Bulk Modulus"] == 5
     @test parameter["Shear Modulus"] == 1.875
     @test parameter["Poisson's Ratio"] == Float64(1 / 3)
@@ -268,7 +316,8 @@ end
     test_data_manager.create_constant_node_field("Bulk_Modulus", Float64, 1, 10)
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Shear Modulus" => 10)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
     @test parameter["Young's Modulus"] == [22.5, 22.5, 22.5]
     @test parameter["Poisson's Ratio"] == [0.125, 0.125, 0.125]
     @test parameter["Bulk Modulus"] == [10, 10, 10]
@@ -277,7 +326,8 @@ end
     parameter = Dict{String,Any}("Material Model" => "Unified Bond-based Elastic",
                                  "Young's Modulus" => 5,
                                  "Poisson's Ratio" => 0.125)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
 
     @test parameter["Young's Modulus"] == [22.5, 22.5, 22.5]
     @test parameter["Poisson's Ratio"] == [0.125, 0.125, 0.125]
@@ -287,12 +337,14 @@ end
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Symmetry" => "Anisotropic",
                                  "C11" => 5)
-    @test isnothing(PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter))
+    @test isnothing(PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                                 parameter))
 
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
                                  "Symmetry" => "Orthotropic",
                                  "Young's Modulus X" => 5)
-    @test isnothing(PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter))
+    @test isnothing(PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                                 parameter))
 end
 
 @testset "get_Hooke_matrix" begin
@@ -303,13 +355,15 @@ end
                                  "Shear Modulus" => 1.25,
                                  "Poisson's Ratio" => 0.2,
                                  "Compute_Hook" => false)
-    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager, parameter)
+    PeriLab.Solver_Manager.Material_Basis.get_all_elastic_moduli(test_data_manager,
+                                                                 parameter)
 
     symmetry = "isotropic"
     E = parameter["Young's Modulus"]
     nu = parameter["Poisson's Ratio"]
     temp = 1 / ((1 + nu) * (1 - 2 * nu))
-    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
+    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter,
+                                                               symmetry, 3)
     for iID in 1:3
         @test isapprox(C[iID, iID], E * (1 - nu) * temp)
         @test C[iID+3, iID+3] == (1 - 2 * nu) * temp * E
@@ -321,7 +375,8 @@ end
     end
 
     symmetry = "isotropic plane strain"
-    C2D = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
+    C2D = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager,
+                                                                 parameter, symmetry, 2)
     for iID in 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
         for jID in 1:2
@@ -333,7 +388,8 @@ end
     @test C2D[3, 3] == parameter["Shear Modulus"]
 
     symmetry = "missing"
-    C2D = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
+    C2D = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager,
+                                                                 parameter, symmetry, 2)
     for iID in 1:2
         @test C2D[iID, iID] / (E * (1 - nu) * temp) - 1 < 1e-7
         for jID in 1:2
@@ -350,7 +406,8 @@ end
     C2D_test[1:2, 1:2] = Cinv[1:2, 1:2]
     C2D_test[3, 3] = Cinv[6, 6]
     C2D_test = inv(C2D_test)
-    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
+    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter,
+                                                               symmetry, 2)
     for iID in 1:3
         for jID in 1:3
             if C2D_test[iID, jID] != 0
@@ -366,10 +423,13 @@ end
     end
 
     symmetry = "isotropic missing"
-    @test isnothing(PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 2))
+    @test isnothing(PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager,
+                                                                           parameter,
+                                                                           symmetry, 2))
 
     symmetry = "anisotropic"
-    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
+    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter,
+                                                               symmetry, 3)
     for iID in 1:6
         for jID in 1:6
             @test C[iID, jID] == C[jID, iID]
@@ -380,7 +440,8 @@ end
     end
 
     symmetry = "anisotropic plane strain"
-    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 2)
+    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter,
+                                                               symmetry, 2)
     for iID in 1:2
         for jID in 1:2
             @test C[iID, jID] == C[jID, iID]
@@ -419,7 +480,8 @@ end
                                  "Shear Modulus YZ" => 2,
                                  "Shear Modulus XZ" => 3,
                                  "Compute_Hook" => true)
-    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
+    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter,
+                                                               symmetry, 3)
     @test C[1, 1] == 5.9692770078477215
     @test C[1, 2] == 1.2773417932876945
     @test C[1, 3] == 2.8051427617298383
@@ -447,7 +509,8 @@ end
                                  "Shear Modulus YZ" => G,
                                  "Shear Modulus XZ" => G,
                                  "Compute_Hook" => true)
-    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
+    C = PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter,
+                                                               symmetry, 3)
 
     symmetry = "isotropic"
     parameter = Dict{String,Any}("Material Model" => "PD Solid Elastic",
@@ -455,7 +518,8 @@ end
                                  "Poisson's Ratio" => nu,
                                  "Shear Modulus" => G,
                                  "Compute_Hook" => true)
-    @test C == PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager, parameter, symmetry, 3)
+    @test C == PeriLab.Solver_Manager.Material_Basis.get_Hooke_matrix(test_data_manager,
+                                                                 parameter, symmetry, 3)
 end
 
 @testset "ut_compute_Piola_Kirchhoff_stress" begin
@@ -463,6 +527,7 @@ end
     deformation_gradient = [2.0 0.0; 0.0 2.0]
     expected_result = [2.0 0.0; 0.0 2.0]
     result = zeros(2, 2)
-    PeriLab.Solver_Manager.Material_Basis.compute_Piola_Kirchhoff_stress!(stress, deformation_gradient, result)
+    PeriLab.Solver_Manager.Material_Basis.compute_Piola_Kirchhoff_stress!(result, stress,
+                                                                          deformation_gradient)
     @test isapprox(result, expected_result)
 end

@@ -245,7 +245,7 @@ function get_all_elastic_moduli(datamanager::Module,
 
     if state_factor_defined && datamanager.has_key("State Variables")
         state_factor = datamanager.get_field("State Variables")[:,
-                                                                parameter["State Factor ID"]]
+        parameter["State Factor ID"]]
         K .*= state_factor
         E .*= state_factor
         G .*= state_factor
@@ -468,15 +468,15 @@ function distribute_forces!(force_densities::Matrix{Float64},
             @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
                 force_densities[iID,
-                                m] += bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[nlist[iID][jID]] *
-                                      bond_mod[jID][m]
+                m] += bond_damage[iID][jID] *
+                                           bond_force[iID][jID][m] *
+                                           volume[nlist[iID][jID]] *
+                                           bond_mod[jID][m]
                 force_densities[nlist[iID][jID],
-                                m] -= bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[iID] *
-                                      bond_mod[jID][m]
+                m] -= bond_damage[iID][jID] *
+                                                       bond_force[iID][jID][m] *
+                                                       volume[iID] *
+                                                       bond_mod[jID][m]
             end
         end
     end
@@ -695,9 +695,9 @@ function get_strain(stress_NP1::Matrix{Float64},
     return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
 end
 
-function compute_Piola_Kirchhoff_stress!(stress::AbstractMatrix{Float64},
-                                         deformation_gradient::AbstractMatrix{Float64},
-                                         pk_stress::AbstractMatrix{Float64})
+function compute_Piola_Kirchhoff_stress!(pk_stress::AbstractMatrix{Float64},
+                                         stress::AbstractMatrix{Float64},
+                                         deformation_gradient::AbstractMatrix{Float64})
     #50% less memory
 
     mat_mul!(pk_stress,
