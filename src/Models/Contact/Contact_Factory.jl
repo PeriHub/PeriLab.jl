@@ -2,22 +2,21 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Contact_Factory
+module Contact
+
+using ...Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "contact_model_name")
+for mod in module_list
+    include(mod["File"])
+end
+
 using TimerOutputs
 using LinearAlgebra
-include("../../MPI_communication/MPI_communication.jl")
-using .MPI_communication: find_and_set_core_value_sum
+using .....MPI_Communication: find_and_set_core_value_sum
 include("Contact_search.jl")
-using .Contact_search: init_contact_search, compute_geometry, get_surface_information,
+using .Contact_Search: init_contact_search, compute_geometry, get_surface_information,
                        compute_contact_pairs
-include("Penalty_model.jl")
-using .Penalty_model
-include("../../Support/Helpers.jl")
-using .Helpers: remove_ids, get_block_nodes, compute_free_surface_nodes, find_indices
-include("../../Core/Module_inclusion/set_Modules.jl")
-using .Set_modules: find_module_files, include_files
-global module_list = find_module_files(@__DIR__, "contact_model_name")
-include_files(module_list)
+using .....Helpers: remove_ids, get_block_nodes, compute_free_surface_nodes, find_indices
 export init_contact_model
 export compute_contact_model
 
@@ -27,10 +26,10 @@ export compute_contact_model
 Initializes the contact model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager
+- `datamanager::Data_Manager`: Datamanager
 - `params:`: Contact parameter.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_contact_model(datamanager::Module, params)
     @info "Init Contact Model"
@@ -121,9 +120,10 @@ function init_contact_model(datamanager::Module, params)
         end
         init_contact_search(datamanager, contact_params, cm)
 
-        mod = Set_modules.create_module_specifics(contact_params["Type"],
-                                                  module_list,
-                                                  "contact_model_name")
+        mod = create_module_specifics(contact_params["Type"],
+                                      module_list,
+                                          @__MODULE__,
+                                      "contact_model_name")
         if isnothing(mod)
             @error "No contact model of type " * contact_params["Type"] *
                    " exists."
@@ -194,14 +194,14 @@ end
 Compute the forces of the contact model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `model_param::Dict`: The contact parameter.
 - `block::Int64`: The current block.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function compute_contact_model(datamanager::Module,
                                contact_params::Dict,

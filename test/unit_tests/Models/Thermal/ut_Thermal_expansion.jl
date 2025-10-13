@@ -3,18 +3,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using Test
-
-include("../../../../src/Models/Thermal/thermal_expansion.jl")
-using .Thermal_expansion
 #include("../../../../src/PeriLab.jl")
 #import .PeriLab
 
-@test Thermal_expansion.thermal_model_name() == "Thermal Expansion"
+@test PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.thermal_model_name() == "Thermal Expansion"
 
 @testset "ut_thermal_deformation" begin
     nnodes = 2
     dof = 2
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(2)
     nn = test_data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
@@ -73,7 +70,7 @@ using .Thermal_expansion
                              "Reference Temperature" => 0.0)
 
     temperature_NP1 .= 0
-    test_data_manager = Thermal_expansion.compute_model(test_data_manager, nodes,
+    test_data_manager = PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(test_data_manager, nodes,
                                                         thermal_parameter, 1, 1.0, 1.0)
 
     for iID in nodes
@@ -85,7 +82,7 @@ using .Thermal_expansion
     end
 
     # temperature_NP1 .= 1
-    # test_data_manager = Thermal_expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
+    # test_data_manager = PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
 
     # for iID in nodes
     #     for jID in nn[iID]
@@ -94,7 +91,7 @@ using .Thermal_expansion
     # end
 
     # temperature_NP1 .= 2
-    # test_data_manager = Thermal_expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
+    # test_data_manager = PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
 
     # for iID in nodes
     #     for jID in nn[iID]
@@ -107,7 +104,7 @@ using .Thermal_expansion
     # temperature_NP1[2] = -23
 
     # thermal_parameter = Dict("Thermal Expansion Coefficient" => [-1.1,2.1], "Reference Temperature" => 0.0)
-    # test_data_manager = Thermal_expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
+    # test_data_manager = PeriLab.Solver_Manager.Model_Factory.Thermal.Thermal_Expansion.compute_model(test_data_manager, nodes, thermal_parameter, 1, 1.0, 1.0)
 
     # for iID in nodes
     #     for jID in nn[iID]

@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Set_modules
-export include_files
 export find_module_files
+export create_module_specifics
 
 """
     find_jl_files(directory::AbstractString)
@@ -101,28 +100,6 @@ function find_module_files(directory::AbstractString, specific::String)
 end
 
 """
-    include_files(module_list::Vector{Any})
-
-Include files specified in a list of modules.
-
-This function iterates over a list of modules and includes the files specified
-in each module's "File" key.
-
-# Arguments
-- `module_list::Vector{Any}`: A list of modules where each module is expected to
-  be a dictionary-like object with a "File" key specifying the file path.
-
-# Examples
-```julia
-include_files([Dict("File" => "module1.jl"), Dict("File" => "module2.jl")])
-"""
-function include_files(module_list::Vector{Any})
-    for mod in module_list
-        include(mod["File"])
-    end
-end
-
-"""
     create_module_specifics(name::String, module_list::Dict{String,AbstractString}(),specifics::Dict{String,String}(), values::Tuple)
 
 Searches for a specific function within a list of modules and calls that function if found.
@@ -144,13 +121,14 @@ create_module_specifics("Module1Name", module_list, specifics, values)
 """
 function create_module_specifics(name::Union{String,SubString},
                                  module_list::Vector{Any},
+                                 own_module::Module,
                                  specifics::Dict{String,String},
                                  values::Tuple)
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * specifics["Name"] * "()"
-        if Base.eval(@__MODULE__, Meta.parse(parse_statement)) == name
+        if Base.eval(own_module, Meta.parse(parse_statement)) == name
             parse_statement = m["Module Name"] * "." * specifics["Call Function"]
-            function_call = Base.eval(@__MODULE__, Meta.parse(parse_statement))
+            function_call = Base.eval(own_module, Meta.parse(parse_statement))
             return function_call(values...)
         end
     end
@@ -163,12 +141,13 @@ end
 """
 function create_module_specifics(name::Union{String,SubString},
                                  module_list::Vector{Any},
+                                 own_module::Module,
                                  specifics::Dict{String,String})
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * specifics["Name"] * "()"
-        if Base.eval(@__MODULE__, Meta.parse(parse_statement)) == name
+        if Base.eval(own_module, Meta.parse(parse_statement)) == name
             parse_statement = m["Module Name"] * "." * specifics["Call Function"]
-            function_call = Base.eval(@__MODULE__, Meta.parse(parse_statement))
+            function_call = Base.eval(own_module, Meta.parse(parse_statement))
             return function_call
         end
     end
@@ -178,17 +157,16 @@ end
 # only module
 function create_module_specifics(name::Union{String,SubString},
                                  module_list::Vector{Any},
+                                 own_module::Module,
                                  get_model_name::String)
     for m in module_list
         parse_statement = "module_name=" * m["Module Name"] * "." * get_model_name * "()"
-        if Base.eval(@__MODULE__, Meta.parse(parse_statement)) == name
+        if Base.eval(own_module, Meta.parse(parse_statement)) == name
             parse_statement = m["Module Name"]
-            module_call = Base.eval(@__MODULE__, Meta.parse(parse_statement))
+            module_call = Base.eval(own_module, Meta.parse(parse_statement))
             return module_call
         end
     end
     @error "Functionality $name not found."
     return nothing
-end
-
 end

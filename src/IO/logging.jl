@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Logging_module
+module Logging_Module
 using Logging
 using LoggingExtras
 using TimerOutputs
@@ -11,13 +11,17 @@ using LibGit2
 using PrettyTables
 using Dates
 export init_logging
-export set_result_files
 export get_current_git_info
 export get_log_stream
 
-result_files::Vector{Dict} = []
 log_file::String = ""
 
+struct PeriLabError <: Exception
+    val::Any
+    msg::AbstractString
+    PeriLabError(@nospecialize(val)) = (@noinline; new(val, ""))
+    PeriLabError(@nospecialize(val), @nospecialize(msg)) = (@noinline; new(val, msg))
+end
 """
     set_log_file(filename::String)
 
@@ -70,18 +74,6 @@ function get_log_stream(id::Int64)
         return nothing
     end
 end
-"""
-    set_result_files(result_files_temp::Vector{Dict})
-
-Set the result files.
-
-# Arguments
-- `result_files_temp::Vector{Dict}`: The result files.
-"""
-function set_result_files(result_files_temp::Vector{Dict})
-    global result_files = result_files_temp
-end
-
 # function progress_wrap(f::Function, desc::String)
 #     p = ProgressUnknown(desc=desc, spinner=true, color=:blue)
 #     channel = Channel() do ch
@@ -96,26 +88,6 @@ end
 
 #     put!(channel, 1)
 # end
-
-function close_result_file(result_file::Dict)
-    if !isnothing(result_file["file"])
-        close(result_file["file"])
-        return true
-    end
-    return false
-end
-
-function close_result_files(result_files::Union{Vector{Dict},
-                                                Vector{Dict{String,IOStream}}})
-    for result_file in result_files
-        try
-            close_result_file(result_file)
-        catch
-            @warn "File already closed"
-        end
-    end
-    return true
-end
 
 """
     print_table(data::Matrix, datamanager::Module)
@@ -137,7 +109,7 @@ function print_table(data::Matrix, datamanager::Module)
                                      hl_col(2, crayon"dark_gray")),
                      show_header = false,
                      tf = tf_borderless,)
-        stream = Logging_module.get_log_stream(2)
+        stream = Logging_Module.get_log_stream(2)
         if !isnothing(stream)
             pretty_table(stream,
                          data;
@@ -151,7 +123,7 @@ function print_table(data::Matrix, datamanager::Module)
                          tf = tf_borderless,)
         end
     else
-        stream = Logging_module.get_log_stream(1)
+        stream = Logging_Module.get_log_stream(1)
         if !isnothing(stream)
             pretty_table(stream,
                          data;
@@ -244,8 +216,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             end
             error_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level == Logging.Error
-                    close_result_files(result_files)
-                    exit()
+                    throw(PeriLabError(args, args.message))
                 end
             end
             demux_logger = TeeLogger(MinLevelLogger(file_logger, Logging.Debug),
@@ -258,8 +229,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
             end
             error_logger = FormatLogger(log_file; append = false) do io, args
                 if args.level == Logging.Error
-                    close_result_files(result_files)
-                    throw(DomainError(args, args.message))
+                    throw(PeriLabError(args, args.message))
                 end
             end
             filtered_logger = ActiveFilteredLogger(progress_filter, ConsoleLogger(stderr))
@@ -270,7 +240,7 @@ function init_logging(filename::String, debug::Bool, silent::Bool, rank::Int64, 
     catch e
         if e isa SystemError
             @error "Could not open log file: $log_file, make sure the directory exists."
-            throw(DomainError(e))
+            throw(PeriLabError(e))
         else
             rethrow(e)
         end

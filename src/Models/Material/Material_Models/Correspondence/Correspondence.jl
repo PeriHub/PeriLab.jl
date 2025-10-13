@@ -3,26 +3,27 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence
+
+#TODO: include here and not in Solver_manager
+# include("../Zero_Energy_Control/global_control.jl")
+
+using ....Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "correspondence_name")
+for mod in module_list
+    include(mod["File"])
+end
+
 using LinearAlgebra
 using StaticArrays
 using LoopVectorization
 using TimerOutputs
 using Rotations
-include("../Zero_Energy_Control/global_control.jl")
-using .Global_zero_energy_control: compute_control
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
-include("../../Material_Basis.jl")
-using .Material_Basis: compute_Piola_Kirchhoff_stress!
-include("../../../../Support/Helpers.jl")
-using .Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
-include("../../../../Support/Geometry.jl")
-using .Geometry: compute_strain
-using .Global_zero_energy_control
-include("../../../../Core/Module_inclusion/set_Modules.jl")
-using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "correspondence_name")
-Set_modules.include_files(module_list)
+using ....Material_Basis: compute_Piola_Kirchhoff_stress!
+using .......Helpers: invert, rotate, determinant, smat, matrix_diff!, fast_mul!, mat_mul!
+using .......Geometry: compute_strain
+using ....Global_Zero_Energy_Control
 
 export init_model
 export material_name
@@ -34,13 +35,13 @@ export fields_for_local_synchronization
 Initializes the correspondence material model.
 
 # Arguments
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `block::Int64`: Block id of the current block.
   - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 
 # Returns
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
@@ -65,9 +66,10 @@ function init_model(datamanager::Module,
     #occursin("Correspondence", material_name)
     for material_model in material_models
         datamanager.set_analysis_model("Correspondence Model", block, material_model)
-        mod = Set_modules.create_module_specifics(material_model,
-                                                  module_list,
-                                                  "correspondence_name")
+        mod = create_module_specifics(material_model,
+                                      module_list,
+                                      @__MODULE__,
+                                      "correspondence_name")
         if isnothing(mod)
             @error "No correspondence material of name " * material_model * " exists."
             return nothing
@@ -139,13 +141,13 @@ end
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict{String,Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
@@ -246,13 +248,13 @@ end
 Global - J. Wan et al., "Improved method for zero-energy mode suppression in peridynamic correspondence model in Acta Mechanica Sinica https://doi.org/10.1007/s10409-019-00873-y
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict{String, Any}`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function zero_energy_mode_compensation(datamanager::Module,
                                        nodes::AbstractVector{Int64},
@@ -266,8 +268,8 @@ function zero_energy_mode_compensation(datamanager::Module,
         return datamanager::Module
     end
     if material_parameter["Zero Energy Control"]::String ==
-       Global_zero_energy_control.control_name()::String
-        datamanager = Global_zero_energy_control.compute_control(datamanager,
+       Global_Zero_Energy_Control.control_name()::String
+        datamanager = Global_Zero_Energy_Control.compute_control(datamanager,
                                                                  nodes,
                                                                  material_parameter,
                                                                  time,
@@ -330,13 +332,14 @@ function calculate_bond_force_2d!(bond_force::Vector{Vector{Vector{Float64}}},
     pk_stress = MMatrix{2,2}(zeros(2, 2))
     temp = MMatrix{2,2}(zeros(Float64, 2, 2))
     @inbounds @fastmath for iID in nodes
-        @views compute_Piola_Kirchhoff_stress!(SMatrix{2,2}(@views stress_NP1[iID, :,
-                                                                              :]),
-                                               SMatrix{2,2}(@views deformation_gradient[iID,
-                                                                                        :,
-                                                                                        :]),
-                                               pk_stress)
-
+        if !all(deformation_gradient[iID, :, :] .== 0.0)
+            @views compute_Piola_Kirchhoff_stress!(pk_stress,
+                                                   SMatrix{2,2}(@views stress_NP1[iID, :,
+                                                                                  :]),
+                                                   SMatrix{2,2}(@views deformation_gradient[iID,
+                                                                                            :,
+                                                                                            :]))
+        end
         mat_mul!(temp, SMatrix{2,2}(pk_stress),
                  SMatrix{2,2}(@views inverse_shape_tensor[iID, :, :]))
 
@@ -364,13 +367,14 @@ function calculate_bond_force_3d!(bond_force::Vector{Vector{Vector{Float64}}},
     pk_stress = MMatrix{3,3}(zeros(3, 3))
     temp = MMatrix{3,3}(zeros(Float64, 3, 3))
     @inbounds @fastmath for iID in nodes
-        @views compute_Piola_Kirchhoff_stress!(SMatrix{3,3}(stress_NP1[iID, :,
-                                                                       :]),
-                                               SMatrix{3,3}(deformation_gradient[iID,
-                                                                                 :,
-                                                                                 :]),
-                                               pk_stress)
-
+        if !all(deformation_gradient[iID, :, :] .== 0.0)
+            @views compute_Piola_Kirchhoff_stress!(pk_stress,
+                                                   SMatrix{3,3}(stress_NP1[iID, :,
+                                                                           :]),
+                                                   SMatrix{3,3}(deformation_gradient[iID,
+                                                                                     :,
+                                                                                     :]))
+        end
         mat_mul!(temp, SMatrix{3,3}(pk_stress),
                  SMatrix{3,3}(inverse_shape_tensor[iID, :, :]))
         @views @inbounds @fastmath for jID in axes(bond_damage[iID], 1)

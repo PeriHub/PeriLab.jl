@@ -2,41 +2,40 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Solver_control
-
-include("../../Support/Parameters/parameter_handling.jl")
-include("../../Support/Helpers.jl")
-using .Parameter_Handling:
-                           get_density,
-                           get_horizon,
-                           get_solver_name,
-                           get_model_options,
-                           get_fem_block,
-                           get_calculation_options,
-                           get_angles,
-                           get_block_names_and_ids,
-                           get_solver_params
-using .Helpers: fastdot, check_inf_or_nan, get_block_nodes
+module Solver_Manager
+using ..Parameter_Handling:
+                            get_density,
+                            get_horizon,
+                            get_solver_name,
+                            get_model_options,
+                            get_fem_block,
+                            get_calculation_options,
+                            get_angles,
+                            get_block_names_and_ids,
+                            get_solver_params
+using ..Helpers
+include("../../Models/Material/Material_Basis.jl")
+include("../Module_inclusion/set_Modules.jl")
+include("../../FEM/FEM_Factory.jl")
+include("../../Models/Material/Material_Models/Zero_Energy_Control/global_control.jl")
 include("../../Models/Model_Factory.jl")
-include("Verlet.jl")
+include("../BC_manager.jl")
+include("Verlet_solver.jl")
 include("Matrix_linear_static.jl")
 include("Static_solver.jl")
-include("../BC_manager.jl")
-include("../../MPI_communication/MPI_communication.jl")
-using .MPI_communication: synch_responder_to_controller,
-                          synch_controller_to_responder,
-                          synch_controller_bonds_to_responder,
-                          synch_controller_bonds_to_responder_flattened
+using ..MPI_Communication: synch_responder_to_controller,
+                           synch_controller_to_responder,
+                           synch_controller_bonds_to_responder,
+                           synch_controller_bonds_to_responder_flattened
 
-include("../../FEM/FEM_Factory.jl")
 include("../Influence_function.jl")
 
 using .Model_Factory: init_models, read_properties
-using .Boundary_conditions: init_BCs
-using .Verlet
+using .Boundary_Conditions: init_BCs
+using .Verlet_Solver
 using .Linear_static_matrix_based
 using .FEM
-using .Influence_function
+using .Influence_Function
 using TimerOutputs
 
 export init
@@ -105,7 +104,7 @@ function init(params::Dict,
     end
     datamanager.create_constant_bond_field("Influence Function", Float64, 1, 1)
     for iblock in eachindex(block_nodes)
-        datamanager = Influence_function.init_influence_function(block_nodes[iblock],
+        datamanager = Influence_Function.init_influence_function(block_nodes[iblock],
                                                                  datamanager,
                                                                  params["Discretization"])
     end
@@ -113,27 +112,27 @@ function init(params::Dict,
     @debug "Read properties"
     read_properties(params, datamanager, "Material" in solver_options["All Models"])
     @debug "Init models"
-    @timeit to "init_models" datamanager=Model_Factory.init_models(params,
-                                                                   datamanager,
-                                                                   block_nodes,
-                                                                   solver_options,
-                                                                   synchronise_field,
-                                                                   to)
+    @timeit to "init_models" datamanager=init_models(params,
+                                                     datamanager,
+                                                     block_nodes,
+                                                     solver_options,
+                                                     synchronise_field,
+                                                     to)
     @debug "Init Boundary Conditions"
 
-    @timeit to "init_BCs" bcs=Boundary_conditions.init_BCs(params, datamanager)
+    @timeit to "init_BCs" bcs=init_BCs(params, datamanager)
     # get name and checks if it is there
     solver_options["Solver"] = get_solver_name(solver_params)
 
     @info "Init " * get_solver_name(solver_params)
     if get_solver_name(solver_params) == "Verlet"
-        @timeit to "init_solver" Verlet.init_solver(solver_options,
-                                                    solver_params,
-                                                    bcs,
-                                                    datamanager,
-                                                    block_nodes)
+        @timeit to "init_solver" Verlet_Solver.init_solver(solver_options,
+                                                           solver_params,
+                                                           bcs,
+                                                           datamanager,
+                                                           block_nodes)
     elseif solver_options["Solver"] == "Static"
-        @timeit to "init_solver" Static_solver.init_solver(solver_options,
+        @timeit to "init_solver" Static_Solver.init_solver(solver_options,
                                                            solver_params,
                                                            bcs,
                                                            datamanager,
@@ -148,9 +147,9 @@ function init(params::Dict,
 
     if datamanager.fem_active()
         datamanager = FEM.init_FEM(params, datamanager)
-        datamanager = FEM.Coupling_PD_FEM.init_coupling(datamanager,
-                                                        1:datamanager.get_nnodes(),
-                                                        params)
+        datamanager = FEM.Coupling.init_coupling(datamanager,
+                                                 1:datamanager.get_nnodes(),
+                                                 params)
     end
     if !datamanager.has_key("Active")
         active = datamanager.create_constant_node_field("Active", Bool, 1, true)
@@ -295,20 +294,20 @@ function solver(solver_options::Dict{Any,Any},
                 to,
                 silent::Bool)
     if solver_options["Solver"] == "Verlet"
-        return Verlet.run_solver(solver_options,
-                                 block_nodes,
-                                 bcs,
-                                 datamanager,
-                                 outputs,
-                                 result_files,
-                                 synchronise_field,
-                                 write_results,
-                                 compute_parabolic_problems_before_model_evaluation,
-                                 compute_parabolic_problems_after_model_evaluation,
-                                 to,
-                                 silent)
+        return Verlet_Solver.run_solver(solver_options,
+                                        block_nodes,
+                                        bcs,
+                                        datamanager,
+                                        outputs,
+                                        result_files,
+                                        synchronise_field,
+                                        write_results,
+                                        compute_parabolic_problems_before_model_evaluation,
+                                        compute_parabolic_problems_after_model_evaluation,
+                                        to,
+                                        silent)
     elseif solver_options["Solver"] == "Static"
-        return Static_solver.run_solver(solver_options,
+        return Static_Solver.run_solver(solver_options,
                                         block_nodes,
                                         bcs,
                                         datamanager,

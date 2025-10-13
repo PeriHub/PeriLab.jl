@@ -9,7 +9,7 @@ include("../../../src/Compute/compute_global_values.jl")
 #include("../../../src/PeriLab.jl")
 #using .PeriLab
 @testset "ut_global_value_sum" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(4)
     test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
@@ -66,7 +66,7 @@ include("../../../src/Compute/compute_global_values.jl")
 end
 
 @testset "ut_global_value_max" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.set_num_controller(4)
     test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
     nodes = Vector{Int64}(1:4)
@@ -102,7 +102,7 @@ end
 end
 
 @testset "ut_global_value_min" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.set_num_controller(4)
     test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
     nodes = Vector{Int64}(1:4)
@@ -135,7 +135,7 @@ end
     @test isnothing(calculate_nodelist(test_data_manager, "not there", 1, "Minimum", nodes))
 end
 @testset "ut_global_value_avg" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.set_num_controller(4)
     test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
     nodes = Vector{Int64}(1:4)
@@ -172,7 +172,7 @@ end
 end
 
 @testset "ut_calculate_block" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.create_constant_node_field("Block_Id", Int64, 1, 1)
     test_data_manager.set_glob_to_loc(Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4))
     nodes = Vector{Int64}(1:4)

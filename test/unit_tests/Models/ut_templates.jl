@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-# include("../../../src/Core/Data_manager.jl")
+# include("../../../src/Core/Data_Manager.jl")
 include("../../../src/Models/Degradation/Degradation_template/degradation_template.jl")
 include("../../../src/Models/Additive/Additive_template/additive_template.jl")
 include("../../../src/Models/Contact/Contact_template/contact_template.jl")
@@ -20,7 +20,7 @@ using TimerOutputs
 #using .PeriLab
 const to = TimerOutput()
 
-test_data_manager = PeriLab.Data_manager
+test_data_manager = PeriLab.Data_Manager
 test_data_manager.initialize_data()
 test_data_manager.set_num_controller(3)
 
@@ -94,7 +94,7 @@ end
 end
 
 @testset "ut_material_template" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     @test !(Material_template.fe_support())
     @test Material_template.material_name() == "Material Template"
     @test Material_template.init_model(test_data_manager, Vector{Int64}(1:3), Dict()) ==
@@ -123,7 +123,7 @@ end
 end
 
 @testset "ut_correspondence_template" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     @test !(Correspondence_template.fe_support())
     @test Correspondence_template.correspondence_name() == "Correspondence Template"
 
@@ -139,8 +139,8 @@ end
                                                    Dict(),
                                                    0.0,
                                                    0.0,
-                                                   view([1, 2], :, :, :),
-                                                   view([1, 0], :, :, :),
+                                                   view([1.0, 2.0], :, :, :),
+                                                   view([1, 0.0], :, :, :),
                                                    view([-1, 2.2], :, :, :))
     @test dat == test_data_manager
     @test vec[1] == -1
@@ -153,8 +153,8 @@ end
                                                    Dict(),
                                                    0.0,
                                                    0.0,
-                                                   view([1, 2], :, :, :),
-                                                   view([1, 0], :, :, :),
+                                                   view([1.0, 2.0], :, :, :),
+                                                   view([1.0, 0.0], :, :, :),
                                                    view([-1, 2.2], :, :, :),
                                                    (1, 1))
     @test dat == test_data_manager

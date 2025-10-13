@@ -4,10 +4,8 @@
 
 module Shape_Tensor
 using DataStructures: OrderedDict
-include("../../Support/Helpers.jl")
-using .Helpers: find_active_nodes
-include("../../Support/Geometry.jl")
-using .Geometry: compute_shape_tensors!
+using ......Helpers: find_active_nodes
+using ......Geometry: compute_shape_tensors!
 export pre_calculation_name
 export init_model
 export compute
@@ -39,11 +37,11 @@ end
 Inits the shape tensor calculation.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 
 """
 function init_model(datamanager::Module,
@@ -99,13 +97,13 @@ function compute(datamanager::Module,
     undeformed_bond = datamanager.get_field("Bond Geometry")
     shape_tensor = datamanager.get_field("Shape Tensor")
     inverse_shape_tensor = datamanager.get_field("Inverse Shape Tensor")
-    update_list = datamanager.get_field("Update")
-    active_nodes = datamanager.get_field("Active Nodes")
-    active_nodes = find_active_nodes(update_list, active_nodes, nodes)
+    # update_list = datamanager.get_field("Update")
+    # active_nodes = datamanager.get_field("Active Nodes")
+    # active_nodes = find_active_nodes(update_list, active_nodes, nodes)
 
     compute_shape_tensors!(shape_tensor,
                            inverse_shape_tensor,
-                           active_nodes,
+                           nodes,
                            nlist,
                            volume,
                            omega,

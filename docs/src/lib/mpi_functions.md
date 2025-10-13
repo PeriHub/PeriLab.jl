@@ -6,7 +6,7 @@ Pages = ["mpi_functions.md"]
 ```
 
 ```@meta
-CurrentModule = PeriLab.IO
+CurrentModule = PeriLab.MPI_Communication
 ```
 ## MPI
 ```@docs

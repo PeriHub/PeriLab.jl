@@ -4,8 +4,7 @@
 
 module Pre_Bond_Associated_Correspondence
 using DataStructures: OrderedDict
-include("../../Support/Geometry.jl")
-using .Geometry: compute_weighted_deformation_gradient
+using .......Geometry: compute_weighted_deformation_gradient
 using LoopVectorization
 using StaticArrays: @MVector
 export fields_for_local_synchronization
@@ -13,8 +12,7 @@ export pre_calculation_name
 export init_model
 export compute
 
-include("../../Support/Helpers.jl")
-using .Helpers: invert, qdim
+using .......Helpers: invert, qdim
 
 """
     pre_calculation_name()
@@ -42,11 +40,11 @@ end
 Inits the bond deformation gradient calculation.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `parameter::Dict(String, Any)`: Dictionary with parameter.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 
 """
 function init_model(datamanager::Module,

@@ -2,12 +2,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Data_manager
+module Data_Manager
 using MPI
 using SparseArrays
 using DataStructures: OrderedDict
-include("../Support/Helpers.jl")
-using .Helpers: fill_in_place!
+using ..Helpers: fill_in_place!
 
 ##########################
 # Variables

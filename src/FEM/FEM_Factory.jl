@@ -2,9 +2,15 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 module FEM
-include("../Core/Module_inclusion/set_Modules.jl")
-include("./FEM_routines.jl")
-using .FEM_routines:
+
+using ...Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "element_name")
+for mod in module_list
+    include(mod["File"])
+end
+
+include("./FEM_basis.jl")
+using .FEM_Basis:
                      compute_FEM,
                      create_element_matrices,
                      get_Jacobian,
@@ -17,15 +23,12 @@ include("./Coupling/Coupling_Factory.jl")
 
 # in future using set modules for material
 # test case is correspondence material
-include("./../Models/Material/Material_Models/Correspondence/Correspondence_Elastic.jl")
-using .Correspondence_Elastic
-using .Coupling_PD_FEM
-using .Set_modules
+using ...Helpers: fast_mul!, get_mapping
+using ..Material_Basis: get_Hooke_matrix
+# using .Correspondence_Elastic
+using .Coupling
 export init_FEM
 export eval_FEM
-
-global module_list = Set_modules.find_module_files(@__DIR__, "element_name")
-Set_modules.include_files(module_list)
 
 function init_FEM(complete_params::Dict, datamanager::Module)
     if !haskey(complete_params, "FEM")
@@ -93,18 +96,20 @@ function init_FEM(complete_params::Dict, datamanager::Module)
     N[:],
     B_elem = create_element_matrices(dof,
                                      p,
-                                     Set_modules.create_module_specifics(params["Element Type"],
-                                                                         module_list,
-                                                                         specifics))
+                                     create_module_specifics(params["Element Type"],
+                                                             module_list,
+                                                            @__MODULE__,
+                                                             specifics))
     if isnothing(N) || isnothing(B_matrix)
         return nothing
     end
     specifics = Dict{String,String}("Call Function" => "init_element",
                                     "Name" => "element_name")
-    datamanager = Set_modules.create_module_specifics(params["Element Type"],
-                                                      module_list,
-                                                      specifics,
-                                                      (datamanager, elements, params, p))
+    datamanager = create_module_specifics(params["Element Type"],
+                                          module_list,
+                                          @__MODULE__,
+                                          specifics,
+                                          (datamanager, elements, params, p))
 
     elements = Vector{Int64}(1:nelements)
     topology = datamanager.get_field("FE Topology")
@@ -153,14 +158,30 @@ function valid_models(params::Dict)
     if !haskey(params, "Material Model")
         @error "No material model has been defined for FEM in the block."
         return nothing
-    else
-        # in future -> FE support -> check with set modules
-        if !Correspondence_Elastic.fe_support()
-            @error "No FEM support for " * params["Material Model"]
-            return nothing
-        end
+        # else
+        #     # in future -> FE support -> check with set modules
+        #     if !Correspondence_Elastic.fe_support()
+        #         @error "No FEM support for " * params["Material Model"]
+        #         return nothing
+        #     end
     end
     return true
+end
+
+function compute_stresses(datamanager::Module,
+                          dof::Int64,
+                          material_parameter::Dict,
+                          time::Float64,
+                          dt::Float64,
+                          strain_increment::Vector{Float64},
+                          stress_N::Vector{Float64},
+                          stress_NP1::Vector{Float64})
+    hookeMatrix = get_Hooke_matrix(datamanager,
+                                   material_parameter,
+                                   material_parameter["Symmetry"],
+                                   dof)
+
+    return hookeMatrix * strain_increment + stress_N, datamanager
 end
 
 function eval_FEM(datamanager::Module,
@@ -171,7 +192,7 @@ function eval_FEM(datamanager::Module,
     return compute_FEM(datamanager,
                        elements,
                        params,
-                       Correspondence_Elastic.compute_stresses,
+                       compute_stresses,
                        time,
                        dt)
 end

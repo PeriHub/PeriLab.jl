@@ -5,12 +5,9 @@
 module PD_Solid_Plastic
 using TimerOutputs
 
-include("../../Material_Basis.jl")
-using .Material_Basis: get_symmetry
-include("./Ordinary.jl")
-include("../../../../Support/Helpers.jl")
-using .Helpers: add_in_place!, mul_in_place!, sub_in_place!
-using .Ordinary: calculate_symmetry_params, get_bond_forces
+using ....Material_Basis: get_symmetry
+using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!
+using ..Ordinary: calculate_symmetry_params, get_bond_forces
 
 export fe_support
 export init_model
@@ -43,12 +40,12 @@ end
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
@@ -121,13 +118,13 @@ end
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 Example:
 ```julia
 ```
@@ -159,9 +156,9 @@ function compute_model(datamanager::Module,
     lambdaNP1 = datamanager.get_field("Lambda Plastic", "NP1")
 
     @timeit to "calculate_symmetry_params" alpha, gamma,
-                                           kappa=Ordinary.calculate_symmetry_params(symmetry,
-                                                                                    shear_modulus,
-                                                                                    bulk_modulus)
+                                           kappa=calculate_symmetry_params(symmetry,
+                                                                           shear_modulus,
+                                                                           bulk_modulus)
     @timeit to "compute_deviatoric_force_state_norm" compute_deviatoric_force_state_norm!(td_norm,
                                                                                           nodes,
                                                                                           nlist,

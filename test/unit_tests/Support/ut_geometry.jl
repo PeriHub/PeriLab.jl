@@ -20,16 +20,16 @@ using Test
     deformation_gradient[1, :, :] = [1 0; 0 1]
     deformation_gradient[2, :, :] = [1 0; 0 1]
 
-    @test PeriLab.IO.Geometry.compute_bond_level_deformation_gradient(nodes,
-                                                                      nlist,
-                                                                      dof,
-                                                                      bond_geometry,
-                                                                      bond_length,
-                                                                      bond_deformation,
-                                                                      deformation_gradient,
-                                                                      ba_deformation_gradient)[1][1,
-                                                                                                  :,
-                                                                                                  :] ==
+    @test PeriLab.Geometry.compute_bond_level_deformation_gradient(nodes,
+                                                                   nlist,
+                                                                   dof,
+                                                                   bond_geometry,
+                                                                   bond_length,
+                                                                   bond_deformation,
+                                                                   deformation_gradient,
+                                                                   ba_deformation_gradient)[1][1,
+                                                                                               :,
+                                                                                               :] ==
           [1 0; 0 1]
 end
 
@@ -43,12 +43,12 @@ end
 
     ba_rotation_tensor = [zeros(Float64, 1, dof, dof) for _ in 1:dof]
 
-    @test PeriLab.IO.Geometry.compute_bond_level_rotation_tensor(nodes,
-                                                                 nlist,
-                                                                 ba_deformation_gradient,
-                                                                 ba_rotation_tensor)[1][1,
-                                                                                        :,
-                                                                                        :] ==
+    @test PeriLab.Geometry.compute_bond_level_rotation_tensor(nodes,
+                                                              nlist,
+                                                              ba_deformation_gradient,
+                                                              ba_rotation_tensor)[1][1,
+                                                                                     :,
+                                                                                     :] ==
           [1 0; 0 1]
 end
 
@@ -60,9 +60,9 @@ end
     rot_tensor = zeros(Float64, 2, dof, dof)
     deformation_gradient[:, 1, 1] .= 1
     deformation_gradient[:, 2, 2] .= 1
-    rot_tensor = PeriLab.IO.Geometry.deformation_gradient_decomposition(nodes,
-                                                                        deformation_gradient,
-                                                                        rot_tensor)
+    rot_tensor = PeriLab.Geometry.deformation_gradient_decomposition(nodes,
+                                                                     deformation_gradient,
+                                                                     rot_tensor)
 
     @test rot_tensor == deformation_gradient
 
@@ -74,9 +74,9 @@ end
     deformation_gradient[1, :, :] = rot * deformation_gradient[1, :, :]
     deformation_gradient[2, :, :] = rot * deformation_gradient[2, :, :]
 
-    rot_tensor = PeriLab.IO.Geometry.deformation_gradient_decomposition(nodes,
-                                                                        deformation_gradient,
-                                                                        rot_tensor)
+    rot_tensor = PeriLab.Geometry.deformation_gradient_decomposition(nodes,
+                                                                     deformation_gradient,
+                                                                     rot_tensor)
 
     @test rot_tensor[1, :, :] == rot
     @test rot_tensor[1, :, :] == rot
@@ -85,7 +85,7 @@ end
 @testset "ut_undeformed_bond" begin
     nnodes = 4
     dof = 2
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_num_responder(0)
@@ -112,11 +112,11 @@ end
     coor[4, 1] = 0
     coor[4, 2] = 1
 
-    PeriLab.IO.Geometry.calculate_bond_length!(undeformed_bond[1],
-                                               undeformed_bond_length[1],
-                                               1,
-                                               coor,
-                                               nlist[1])
+    PeriLab.Geometry.calculate_bond_length!(undeformed_bond[1],
+                                            undeformed_bond_length[1],
+                                            1,
+                                            coor,
+                                            nlist[1])
 
     @test undeformed_bond[1][1][1] == 0.5
     @test undeformed_bond[1][1][2] == 0.5
@@ -125,11 +125,11 @@ end
     @test undeformed_bond[1][2][2] == 0
     @test undeformed_bond_length[1][2] == 1
 
-    PeriLab.IO.Geometry.bond_geometry!(undeformed_bond,
-                                       undeformed_bond_length,
-                                       Vector(1:nnodes),
-                                       nlist,
-                                       coor)
+    PeriLab.Geometry.bond_geometry!(undeformed_bond,
+                                    undeformed_bond_length,
+                                    Vector(1:nnodes),
+                                    nlist,
+                                    coor)
 
     @test undeformed_bond[1][1][1] == 0.5
     @test undeformed_bond[1][1][2] == 0.5
@@ -155,11 +155,11 @@ end
     @test undeformed_bond[4][1][1] == 0.5
     @test undeformed_bond[4][1][2] == -0.5
     @test undeformed_bond_length[4][1] / sqrt(1.25) - 1 < 1e-8
-    PeriLab.IO.Geometry.bond_geometry!(undeformed_bond,
-                                       undeformed_bond_length,
-                                       Vector(1:nnodes),
-                                       nlist,
-                                       coor)
+    PeriLab.Geometry.bond_geometry!(undeformed_bond,
+                                    undeformed_bond_length,
+                                    Vector(1:nnodes),
+                                    nlist,
+                                    coor)
     # test if a sum exists or not
     @test undeformed_bond[1][1][1] == 0.5
     @test undeformed_bond[1][1][2] == 0.5
@@ -193,11 +193,11 @@ end
         end
     end
 
-    PeriLab.IO.Geometry.bond_geometry!(undeformed_bond,
-                                       undeformed_bond_length,
-                                       Vector(1:nnodes),
-                                       nlist,
-                                       coor)
+    PeriLab.Geometry.bond_geometry!(undeformed_bond,
+                                    undeformed_bond_length,
+                                    Vector(1:nnodes),
+                                    nlist,
+                                    coor)
 end
 
 @testset "ut_compute_left_stretch_tensor" begin
@@ -207,9 +207,9 @@ end
     expected_result = [[1.0 0.0; 0.0 1.0], [0.5 0.5; 0.5 0.5]]
     left_stretch_tensor = zeros(Float64, 2, 2, 2)
     result = zeros(2, 2, 2)
-    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
+    result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
     @test result[:, :] == expected_result[1]
-    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
+    result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
     @test isapprox(result[:, :], expected_result[2])
     alpha = 22 * pi / 180
     rot = zeros(2, 2)
@@ -218,16 +218,16 @@ end
     # compute_left_stretch_tensor should "filter" the rotation
     deformation_gradient[1, :, :] = deformation_gradient[1, :, :] * rot
     deformation_gradient[2, :, :] = deformation_gradient[2, :, :] * rot
-    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
+    result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[1, :, :])
     @test result == expected_result[1]
-    result = PeriLab.IO.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
+    result = PeriLab.Geometry.compute_left_stretch_tensor(deformation_gradient[2, :, :])
     @test isapprox(result[:, :], expected_result[2])
 end
 @testset "ut_shape_tensor_and_deformation_gradient" begin
     nnodes = 4
     dof = 2
     nodes = Vector{Int64}(1:nnodes)
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     test_data_manager.initialize_data()
     test_data_manager.set_num_controller(nnodes)
     test_data_manager.set_dof(dof)
@@ -274,32 +274,32 @@ end
     coor[4, 1] = 1
     coor[4, 2] = 0.5
 
-    PeriLab.IO.Geometry.bond_geometry!(undeformed_bond,
-                                       undeformed_bond_length,
-                                       Vector(1:nnodes),
-                                       nlist,
-                                       coor)
-    PeriLab.IO.Geometry.compute_shape_tensors!(shape_tensor,
-                                               inverse_shape_tensor,
-                                               nodes,
-                                               nlist,
-                                               volume,
-                                               omega,
-                                               bond_damage,
-                                               undeformed_bond)
+    PeriLab.Geometry.bond_geometry!(undeformed_bond,
+                                    undeformed_bond_length,
+                                    Vector(1:nnodes),
+                                    nlist,
+                                    coor)
+    PeriLab.Geometry.compute_shape_tensors!(shape_tensor,
+                                            inverse_shape_tensor,
+                                            nodes,
+                                            nlist,
+                                            volume,
+                                            omega,
+                                            bond_damage,
+                                            undeformed_bond)
 
     deformed_coor = copy(coor)
 
-    PeriLab.IO.Geometry.compute_deformation_gradients!(deformation_gradient,
-                                                       nodes,
-                                                       dof,
-                                                       nlist,
-                                                       volume,
-                                                       omega,
-                                                       bond_damage,
-                                                       deformed_bond,
-                                                       undeformed_bond,
-                                                       inverse_shape_tensor)
+    PeriLab.Geometry.compute_deformation_gradients!(deformation_gradient,
+                                                    nodes,
+                                                    dof,
+                                                    nlist,
+                                                    volume,
+                                                    omega,
+                                                    bond_damage,
+                                                    deformed_bond,
+                                                    undeformed_bond,
+                                                    inverse_shape_tensor)
     for i in 1:nnodes
         @test deformation_gradient[i, 1, 1] - 1 < 1e-7
         @test deformation_gradient[i, 1, 2] < 1e-7
@@ -311,21 +311,21 @@ end
     deformed_coor[2, 1] = 0.25
     deformed_coor[4, 1] = 0.25
 
-    PeriLab.IO.Geometry.bond_geometry!(deformed_bond,
-                                       deformed_bond_length,
-                                       Vector(1:nnodes),
-                                       nlist,
-                                       deformed_coor)
-    PeriLab.IO.Geometry.compute_deformation_gradients!(deformation_gradient,
-                                                       nodes,
-                                                       dof,
-                                                       nlist,
-                                                       volume,
-                                                       omega,
-                                                       bond_damage,
-                                                       deformed_bond,
-                                                       undeformed_bond,
-                                                       inverse_shape_tensor)
+    PeriLab.Geometry.bond_geometry!(deformed_bond,
+                                    deformed_bond_length,
+                                    Vector(1:nnodes),
+                                    nlist,
+                                    deformed_coor)
+    PeriLab.Geometry.compute_deformation_gradients!(deformation_gradient,
+                                                    nodes,
+                                                    dof,
+                                                    nlist,
+                                                    volume,
+                                                    omega,
+                                                    bond_damage,
+                                                    deformed_bond,
+                                                    undeformed_bond,
+                                                    inverse_shape_tensor)
 
     for i in 1:nnodes
         for j in 1:nn[i]
@@ -341,21 +341,21 @@ end
     deformed_coor[3, 2] = 1.5
     deformed_coor[4, 2] = 1.5
 
-    PeriLab.IO.Geometry.bond_geometry!(deformed_bond,
-                                       deformed_bond_length,
-                                       Vector(1:nnodes),
-                                       nlist,
-                                       deformed_coor)
-    PeriLab.IO.Geometry.compute_deformation_gradients!(deformation_gradient,
-                                                       nodes,
-                                                       dof,
-                                                       nlist,
-                                                       volume,
-                                                       omega,
-                                                       bond_damage,
-                                                       deformed_bond,
-                                                       undeformed_bond,
-                                                       inverse_shape_tensor)
+    PeriLab.Geometry.bond_geometry!(deformed_bond,
+                                    deformed_bond_length,
+                                    Vector(1:nnodes),
+                                    nlist,
+                                    deformed_coor)
+    PeriLab.Geometry.compute_deformation_gradients!(deformation_gradient,
+                                                    nodes,
+                                                    dof,
+                                                    nlist,
+                                                    volume,
+                                                    omega,
+                                                    bond_damage,
+                                                    deformed_bond,
+                                                    undeformed_bond,
+                                                    inverse_shape_tensor)
     for i in 1:nnodes
         for j in nn[i]
             test_vector = deformation_gradient[i, :, :] * undeformed_bond[i][j] -
@@ -375,21 +375,21 @@ end
     deformed_coor[4, 1] = 1.5
     deformed_coor[4, 2] = 0.5
 
-    PeriLab.IO.Geometry.bond_geometry!(deformed_bond,
-                                       deformed_bond_length,
-                                       Vector(1:nnodes),
-                                       nlist,
-                                       deformed_coor)
-    PeriLab.IO.Geometry.compute_deformation_gradients!(deformation_gradient,
-                                                       nodes,
-                                                       dof,
-                                                       nlist,
-                                                       volume,
-                                                       omega,
-                                                       bond_damage,
-                                                       deformed_bond,
-                                                       undeformed_bond,
-                                                       inverse_shape_tensor)
+    PeriLab.Geometry.bond_geometry!(deformed_bond,
+                                    deformed_bond_length,
+                                    Vector(1:nnodes),
+                                    nlist,
+                                    deformed_coor)
+    PeriLab.Geometry.compute_deformation_gradients!(deformation_gradient,
+                                                    nodes,
+                                                    dof,
+                                                    nlist,
+                                                    volume,
+                                                    omega,
+                                                    bond_damage,
+                                                    deformed_bond,
+                                                    undeformed_bond,
+                                                    inverse_shape_tensor)
     for i in 1:nnodes
         for j in nn[i]
             test_vector = deformation_gradient[i, :, :] * undeformed_bond[i][j] -
@@ -402,7 +402,7 @@ end
 end
 
 @testset "ut_strain" begin
-    test_data_manager = PeriLab.Data_manager
+    test_data_manager = PeriLab.Data_Manager
     dof = test_data_manager.get_dof()
     nnodes = 4
     nodes = Vector{Int64}(1:nnodes)
@@ -426,17 +426,17 @@ end
                                                                         Float64, dof,
                                                                         VectorOrMatrix = "Matrix")
 
-    PeriLab.IO.Geometry.compute_deformation_gradients!(deformation_gradient,
-                                                       nodes,
-                                                       dof,
-                                                       nlist,
-                                                       volume,
-                                                       omega,
-                                                       bond_damage,
-                                                       undeformed_bond,
-                                                       undeformed_bond,
-                                                       inverse_shape_tensor)
-    PeriLab.IO.Geometry.compute_strain(nodes, deformation_gradient, strain)
+    PeriLab.Geometry.compute_deformation_gradients!(deformation_gradient,
+                                                    nodes,
+                                                    dof,
+                                                    nlist,
+                                                    volume,
+                                                    omega,
+                                                    bond_damage,
+                                                    undeformed_bond,
+                                                    undeformed_bond,
+                                                    inverse_shape_tensor)
+    PeriLab.Geometry.compute_strain(nodes, deformation_gradient, strain)
 
     for i in 1:nnodes
         @test strain[i, 1, 1] == 0
@@ -458,9 +458,9 @@ end
     deformation_gradient_3D[1, 3, 3] = 3.0
     strain_3D = test_data_manager.create_constant_node_field("Strain_3D", Float64,
                                                              3, VectorOrMatrix = "Matrix")
-    PeriLab.IO.Geometry.compute_strain(view(nodes, eachindex(nodes)),
-                                       deformation_gradient_3D,
-                                       strain_3D)
+    PeriLab.Geometry.compute_strain(view(nodes, eachindex(nodes)),
+                                    deformation_gradient_3D,
+                                    strain_3D)
     identity = zeros(3, 3)
     identity[1, 1] = 1
     identity[2, 2] = 1
@@ -475,12 +475,12 @@ end
     end
 end
 @testset "ut_rotation_tensor" begin
-    rot = PeriLab.IO.Geometry.rotation_tensor(fill(Float64(0), (1)), 2)
+    rot = PeriLab.Geometry.rotation_tensor(fill(Float64(0), (1)), 2)
     @test rot[1, 1] == 1
     @test rot[1, 2] == 0
     @test rot[2, 1] == 0
     @test rot[2, 2] == 1
-    rot = PeriLab.IO.Geometry.rotation_tensor(fill(Float64(0), (3)), 3)
+    rot = PeriLab.Geometry.rotation_tensor(fill(Float64(0), (3)), 3)
     @test rot[1, 1] == 1
     @test rot[1, 2] == 0
     @test rot[1, 3] == 0
@@ -490,13 +490,13 @@ end
     @test rot[3, 1] == 0
     @test rot[3, 2] == 0
     @test rot[3, 3] == 1
-    rot = PeriLab.IO.Geometry.rotation_tensor(fill(Float64(90), (1)), 2)
+    rot = PeriLab.Geometry.rotation_tensor(fill(Float64(90), (1)), 2)
     @test rot[1, 1] < 1e-10
     @test rot[1, 2] == -1
     @test rot[2, 1] == 1
     @test rot[2, 2] < 1e-10
-    @test isnothing(PeriLab.IO.Geometry.rotation_tensor(fill(Float64(90), (1)), 3))
-    @test isnothing(PeriLab.IO.Geometry.rotation_tensor(fill(Float64(0), (3)), 2))
+    @test isnothing(PeriLab.Geometry.rotation_tensor(fill(Float64(90), (1)), 3))
+    @test isnothing(PeriLab.Geometry.rotation_tensor(fill(Float64(0), (3)), 2))
 end
 
 @testset "ut_compute_weighted_deformation_gradient" begin
@@ -508,12 +508,12 @@ end
     displacement = [0.0 0.0 0.0; 1.0 1.0 1.0]
     deformation_gradient = zeros(Float64, length(nnodes), dof, dof)
 
-    PeriLab.IO.Geometry.compute_weighted_deformation_gradient(nnodes,
-                                                              nlist,
-                                                              volume,
-                                                              gradient_weight,
-                                                              displacement,
-                                                              deformation_gradient)
+    PeriLab.Geometry.compute_weighted_deformation_gradient(nnodes,
+                                                           nlist,
+                                                           volume,
+                                                           gradient_weight,
+                                                           displacement,
+                                                           deformation_gradient)
 
     @test deformation_gradient[1, :, :] == [1.1 0.1 0.1; 0.1 1.1 0.1; 0.1 0.1 1.1]
     @test deformation_gradient[2, :, :] ==

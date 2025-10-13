@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module OneD_Bond_based_elastic
-include("../../Material_Basis.jl")
-include("../../../../Support/Helpers.jl")
-using .Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
-using .Helpers: is_dependent
+module OneD_Bond_Based_Elastic
 using LoopVectorization
 using TimerOutputs
 export init_model
@@ -40,12 +36,12 @@ end
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
@@ -70,13 +66,13 @@ end
 Calculate the elastic bond force for each node.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function compute_model(datamanager::Module,
                        nodes::AbstractVector{Int64},

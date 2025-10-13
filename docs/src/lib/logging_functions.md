@@ -10,9 +10,9 @@ Pages = ["logging_functions.md"]
 CurrentModule = PeriLab
 ```
 
-## Logging_module
+## Logging_Module
 
 ```@autodocs
-Modules = [Logging_module]
+Modules = [Logging_Module]
 Order   = [:function, :type]
 ```

@@ -6,19 +6,15 @@ module Material_Basis
 using LinearAlgebra
 using LoopVectorization
 using StaticArrays
-include("../../Support/Helpers.jl")
-using .Helpers: get_MMatrix, determinant, invert, smat, interpol_data, get_dependent_value,
-                mat_mul!
+using ......Helpers: get_MMatrix, determinant, invert, smat, interpol_data,
+                     get_dependent_value,
+                     mat_mul!, matrix_to_voigt, voigt_to_matrix
 export get_value
 export get_all_elastic_moduli
 export get_Hooke_matrix
 export distribute_forces!
 export local_damping_due_to_damage
 export flaw_function
-export matrix_to_voigt
-export voigt_to_matrix
-export matrix_to_vector
-export vector_to_matrix
 export check_symmetry
 export get_symmetry
 export get_von_mises_yield_stress
@@ -123,7 +119,7 @@ function get_value(datamanager::Module,
 end
 
 """
-    get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}})
+	get_all_elastic_moduli(datamanager::Module, parameter::Union{Dict{Any,Any},Dict{String,Any}})
 
 Returns the elastic moduli of the material.
 
@@ -249,7 +245,7 @@ function get_all_elastic_moduli(datamanager::Module,
 
     if state_factor_defined && datamanager.has_key("State Variables")
         state_factor = datamanager.get_field("State Variables")[:,
-                                                                parameter["State Factor ID"]]
+        parameter["State Factor ID"]]
         K .*= state_factor
         E .*= state_factor
         G .*= state_factor
@@ -269,7 +265,7 @@ function get_all_elastic_moduli(datamanager::Module,
 end
 
 """
-    get_Hooke_matrix(datamanager::Module, parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
+	get_Hooke_matrix(datamanager::Module, parameter::Dict, symmetry::String, dof::Int64, ID::Int64=1)
 
 Returns the Hooke matrix of the material.
 
@@ -429,7 +425,7 @@ function get_2D_Hooke_matrix(aniso_matrix::MMatrix{T}, symmetry::String,
 end
 
 """
-    distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, nlist_filtered_ids::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, displacements::Matrix{Float64}, bond_norm::Vector{Matrix{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
@@ -472,22 +468,22 @@ function distribute_forces!(force_densities::Matrix{Float64},
             @views @inbounds @fastmath for m in axes(force_densities[iID, :], 1)
                 #temp = bond_damage[iID][jID] * bond_force[iID][jID, m]
                 force_densities[iID,
-                                m] += bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[nlist[iID][jID]] *
-                                      bond_mod[jID][m]
+                m] += bond_damage[iID][jID] *
+                                           bond_force[iID][jID][m] *
+                                           volume[nlist[iID][jID]] *
+                                           bond_mod[jID][m]
                 force_densities[nlist[iID][jID],
-                                m] -= bond_damage[iID][jID] *
-                                      bond_force[iID][jID][m] *
-                                      volume[iID] *
-                                      bond_mod[jID][m]
+                m] -= bond_damage[iID][jID] *
+                                                       bond_force[iID][jID][m] *
+                                                       volume[iID] *
+                                                       bond_mod[jID][m]
             end
         end
     end
 end
 
 """
-    distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
+	distribute_forces!(nodes::AbstractVector{Int64}, nlist::Vector{Vector{Int64}}, bond_force::Vector{Matrix{Float64}}, volume::Vector{Float64}, bond_damage::Vector{Vector{Float64}}, force_densities::Matrix{Float64})
 
 Distribute the forces on the nodes
 
@@ -531,110 +527,7 @@ function distribute_forces!(force_densities::Matrix{Float64},
 end
 
 """
-    matrix_to_voigt(matrix)
-
-Convert a 2x2 or 3x3 matrix to Voigt notation (6x1 vector)
-
-# Arguments
-- `matrix::Matrix{Float64}`: The matrix.
-# Returns
-- `voigt::Vector{Float64}`: The Voigt notation.
-"""
-
-function matrix_to_voigt(matrix::AbstractMatrix{Float64})
-    if length(matrix) == 4
-        @inbounds return @SVector [matrix[1, 1],
-            matrix[2, 2],
-            0.5 * (matrix[1, 2] + matrix[2, 1])]
-
-    elseif length(matrix) == 9
-        @inbounds return @SVector [matrix[1, 1],
-            matrix[2, 2],
-            matrix[3, 3],
-            0.5 * (matrix[2, 3] + matrix[3, 2]),
-            0.5 * (matrix[1, 3] + matrix[3, 1]),
-            0.5 * (matrix[1, 2] + matrix[2, 1])]
-    else
-        @error "Unsupported matrix size for matrix_to_voigt"
-        return nothing
-    end
-end
-
-"""
-    voigt_to_matrix(voigt::Union{Vector{Float64},Vector{Int64}})
-
-Convert a Voigt notation (6x1 or 3x1 vector) to a 2x2 or 3x3 matrix
-
-# Arguments
-- `voigt::Vector{Float64}`: The Voigt notation.
-# Returns
-- `matrix::Matrix{Float64}`: The matrix.
-"""
-function voigt_to_matrix(voigt::Union{MVector,SVector,Vector})
-    if length(voigt) == 3
-        return @SMatrix [voigt[1] voigt[3]; voigt[3] voigt[2]]
-    elseif length(voigt) == 6
-        return @SMatrix [voigt[1] voigt[6] voigt[5]
-                         voigt[6] voigt[2] voigt[4]
-                         voigt[5] voigt[4] voigt[3]]
-    else
-        @error "Unsupported matrix size for voigt_to_matrix"
-        return nothing
-    end
-end
-
-"""
-    matrix_to_vector(matrix::AbstractMatrix{Float64})
-
-Convert a 3x3 matrix to a 6x1 vector
-
-# Arguments
-- `matrix::Matrix{Float64}`: The matrix.
-# Returns
-- `vector::SVector{Float64}`: The Vorigt vector.
-"""
-function matrix_to_vector(matrix::AbstractMatrix{Float64})
-    if length(matrix) == 4
-        @inbounds return @SVector [
-            matrix[1, 1],
-            matrix[2, 2],
-            0.0,
-            matrix[1, 2],
-            matrix[2, 1]
-        ]
-    elseif length(matrix) == 9
-        @inbounds return @SVector [matrix[1, 1], matrix[2, 2], matrix[3, 3],
-            matrix[1, 2], matrix[2, 3], matrix[3, 1],
-            matrix[2, 1], matrix[3, 2], matrix[1, 3]]
-    end
-end
-
-"""
-    vector_to_matrix(matrix)
-
-Convert a 6x1 vector to a 3x3 matrix
-
-# Arguments
-- `vector::Vector{Float64}`: The vector.
-# Returns
-- `matrix::Matrix{Float64}`: The matrix.
-"""
-function vector_to_matrix(vector)
-    if length(vector) == 5
-        return @SMatrix [vector[1] vector[3]
-                         vector[4] vector[2]]
-    elseif length(vector) == 9
-        return @SMatrix [vector[1] vector[4] vector[9]
-                         vector[7] vector[2] vector[5]
-                         vector[6] vector[8] vector[3]]
-    else
-        @error "Unsupported vector size for vector_to_matrix"
-        return nothing
-    end
-end
-
-"""
-    check_symmetry(prop::Dict, dof::Int64)
+	check_symmetry(prop::Dict, dof::Int64)
 
 Check if the symmetry information is present in the material dictionary.
 
@@ -660,7 +553,7 @@ function check_symmetry(prop::Dict, dof::Int64)
 end
 
 """
-    flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
+	flaw_function(params::Dict, coor::Union{Vector{Int64},Vector{Float64}}, stress::Float64)
 
 Allows the modification of the yield stress at a specific position. This is typically used as starting point for plastic deformation.
 
@@ -719,7 +612,7 @@ function flaw_function(params::Dict,
 end
 
 """
-    get_symmetry(material::Dict)
+	get_symmetry(material::Dict)
 
 Return the symmetry information from the given material dictionary.
 
@@ -749,20 +642,16 @@ function get_symmetry(material::Dict)
 end
 
 """
-    get_von_mises_yield_stress(von_Mises_stress::Float64, dof::Int64, stress_NP1::Matrix{Float64})
+	get_von_mises_yield_stress(deviatoric_stress::AbstractMatrix{Float64})
 
 # Arguments
-- `von_Mises_stress::Float64`: Von Mises stress
-- `dof::Int64`: Degree of freedom.
-- `stress_NP1::Matrix{Float64}`: Stress.
+- `deviatoric_stress_NP1::AbstractMatrix{Float64}`: Deviatoric stress
 # returns
-- `spherical_stress_NP1::Float64`: Spherical stress
-- `deviatoric_stress_NP1::Matrix{Float64}`: Deviatoric stress
+- `von_Mises_stress::Float64`: Von Mises stress
+
 """
 
-function get_von_mises_yield_stress(von_Mises_stress::Float64,
-                                    spherical_stress::AbstractMatrix{Float64},
-                                    deviatoric_stress::AbstractMatrix{Float64})
+function get_von_mises_yield_stress(deviatoric_stress::AbstractMatrix{Float64})
     temp = zero(eltype(deviatoric_stress))
     @views @inbounds @fastmath for i in axes(deviatoric_stress, 1)
         for j in axes(deviatoric_stress, 2)
@@ -770,9 +659,7 @@ function get_von_mises_yield_stress(von_Mises_stress::Float64,
         end
     end
 
-    von_Mises_stress = sqrt(3.0 / 2.0 * temp)
-
-    return von_Mises_stress
+    return sqrt(3.0 / 2.0 * temp)
 end
 
 function compute_deviatoric_and_spherical_stresses(stress,
@@ -793,7 +680,7 @@ function compute_deviatoric_and_spherical_stresses(stress,
 end
 
 """
-    get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
+	get_strain(stress_NP1::Matrix{Float64}, hooke_matrix::Matrix{Float64})
 
 # Arguments
 - `stress_NP1::Matrix{Float64}`: Stress.
@@ -806,9 +693,9 @@ function get_strain(stress_NP1::Matrix{Float64},
     return voigt_to_matrix(hooke_matrix' * matrix_to_voigt(stress_NP1))
 end
 
-function compute_Piola_Kirchhoff_stress!(stress::AbstractMatrix{Float64},
-                                         deformation_gradient::AbstractMatrix{Float64},
-                                         pk_stress::AbstractMatrix{Float64})
+function compute_Piola_Kirchhoff_stress!(pk_stress::AbstractMatrix{Float64},
+                                         stress::AbstractMatrix{Float64},
+                                         deformation_gradient::AbstractMatrix{Float64})
     #50% less memory
 
     mat_mul!(pk_stress,
@@ -821,33 +708,33 @@ function compute_Piola_Kirchhoff_stress!(stress::AbstractMatrix{Float64},
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64}, E::Union{Int64,Float64},
-                           bond_force)
+                           bond_force::Vector{Vector{Vector{Float64}}})
     @inbounds @fastmath for i in nodes
-        @views @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i, j] *= E
+        @views @inbounds @fastmath for bf in bond_force[i]
+            bf .*= E
         end
     end
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64},
                            E::Union{SubArray,Vector{Float64},Vector{Int64}},
-                           bond_force::Vector{Vector{Float64}})
+                           bond_force::Vector{Vector{Vector{Float64}}})
     @inbounds @fastmath for i in nodes
         @views @inbounds @fastmath for bf in bond_force[i]
-            bf *= E[i]
+            bf .*= E[i]
         end
     end
 end
 
 function apply_pointwise_E(nodes::AbstractVector{Int64},
-                           bond_force::Vector{Vector{Float64}}, dependent_field)
+                           bond_force::Vector{Vector{Vector{Float64}}}, dependent_field)
     warning_flag = true
     @inbounds @fastmath for i in nodes
         E_int = interpol_data(dependent_field[i],
                               damage_parameter["Young's Modulus"]["Data"],
                               warning_flag)
         @views @inbounds @fastmath for bf in bond_force[i]
-            bf *= E_int
+            bf .*= E_int
         end
     end
 end

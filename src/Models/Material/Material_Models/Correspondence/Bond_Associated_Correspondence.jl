@@ -6,19 +6,15 @@ module Bond_Associated_Correspondence
 using LinearAlgebra
 using StaticArrays
 using TimerOutputs
-include("../../../../Support/Helpers.jl")
-include("../../../../Support/Geometry.jl")
-include("../../Material_Basis.jl")
-using .Material_Basis: compute_Piola_Kirchhoff_stress!
-using .Helpers:
-                find_local_neighbors, invert, rotate, fastdot, determinant, smat,
-                matrix_diff!
-using .Geometry:
-                 compute_strain,
-                 compute_bond_level_rotation_tensor,
-                 compute_bond_level_deformation_gradient
-include("../../../Pre_calculation/pre_bond_associated_correspondence.jl")
-using .Pre_Bond_Associated_Correspondence: compute_weighted_volume!
+using .....Material_Basis: compute_Piola_Kirchhoff_stress!
+using ........Helpers:
+                       find_local_neighbors, invert, rotate, fastdot, determinant, smat,
+                       matrix_diff!
+using ........Geometry:
+                        compute_strain,
+                        compute_bond_level_rotation_tensor,
+                        compute_bond_level_deformation_gradient
+using ....Pre_Calculation.Pre_Bond_Associated_Correspondence: compute_weighted_volume!
 export fields_for_local_synchronization
 export init_model
 export compute_model
@@ -262,14 +258,14 @@ function compute_stress_integral(nodes::AbstractVector{Int64},
                             omega[iID][jID] *
                             bond_damage[iID][jID] *
                             (0.5 / weighted_volume[iID] + 0.5 / weighted_volume[nID])
-            @views compute_Piola_Kirchhoff_stress!(bond_stresses[iID][jID,
-                                                                      :,
-                                                                      :],
+            @views compute_Piola_Kirchhoff_stress!(pk_stress, bond_stresses[iID][jID,
+                                                                                 :,
+                                                                                 :],
                                                    deformation_gradient[iID][jID,
                                                                              :,
-                                                                             :], pk_stress)
+                                                                             :])
             @views stress_integral[iID, :,
-                                   :] += factor .* pk_stress * temp
+            :] += factor .* pk_stress * temp
         end
     end
     return stress_integral
@@ -301,16 +297,16 @@ function update_Green_Langrange_nodal_strain_increment(nodes::Union{SubArray,
                                                        strain_increment::SubArray)
     for iID in nodes
         @views strain_increment[iID, :,
-                                :] = update_Green_Langrange_strain(dt,
-                                                                   deformation_gradient[iID,
-                                                                                        :,
-                                                                                        :],
-                                                                   deformation_gradient_dot[iID,
-                                                                                            :,
-                                                                                            :],
-                                                                   strain_increment[iID,
-                                                                                    :,
-                                                                                    :])
+        :] = update_Green_Langrange_strain(dt,
+                                                                           deformation_gradient[iID,
+                                                                           :,
+                                                                           :],
+                                                                           deformation_gradient_dot[iID,
+                                                                           :,
+                                                                           :],
+                                                                           strain_increment[iID,
+                                                                           :,
+                                                                           :])
     end
 end
 

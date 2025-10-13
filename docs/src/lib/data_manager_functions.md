@@ -10,9 +10,9 @@ Pages = ["data_manager_functions.md"]
 CurrentModule = PeriLab
 ```
 
-## Data_manager
+## Data_Manager
 
 ```@autodocs
-Modules = [Data_manager]
+Modules = [Data_Manager]
 Order   = [:function, :type]
 ```

@@ -2,22 +2,20 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-using .Helpers: find_active_nodes, get_active_update_nodes, add_in_place!
+using ...Helpers: find_active_nodes, get_active_update_nodes, add_in_place!, invert
 using StaticArrays: MMatrix, SMatrix
-using .Helpers: invert
-include("../Models/Material/Material_Basis.jl")
-using .Material_Basis:
-                       get_strain, get_Hooke_matrix,
-                       compute_deviatoric_and_spherical_stresses
+using ..Material_Basis:
+                        get_strain, get_Hooke_matrix,
+                        compute_deviatoric_and_spherical_stresses
 """
     get_forces_from_force_density(datamanager::Module)
 
 Computes the forces from the force densities.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function get_forces_from_force_density(datamanager::Module)
     force_density = datamanager.get_field("Force Densities", "NP1")
@@ -33,10 +31,10 @@ end
 Computes the partial stresses.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::Vector{Int64}`: List of block nodes.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function get_partial_stresses(datamanager::Module, nodes::AbstractVector{Int64})
     bond_forces = datamanager.get_field("Bond Forces")
@@ -57,10 +55,10 @@ end
 Calculate the von Mises stress.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function calculate_von_mises_stress(datamanager::Module,
                                     nodes::AbstractVector{Int64})
@@ -97,11 +95,11 @@ end
 Calculate the von Mises stress.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `hooke_matrix::Matrix{Float64}`: The hooke matrix.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function calculate_strain(datamanager::Module,
                           nodes::AbstractVector{Int64},
@@ -120,33 +118,32 @@ end
 Computes the stresses.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `block_nodes::Dict{Int64,Vector{Int64}}`: List of block nodes.
 - `options::Dict{String, Any}`: List of options.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function calculate_stresses(datamanager::Module,
                             block_nodes::Dict{Int64,Vector{Int64}},
                             options::Dict{String,Any})
     active_list = datamanager.get_field("Active")
     for block in eachindex(block_nodes)
+        correspondence = occursin("Correspondence",
+                                  datamanager.get_properties(block, "Material Model")["Material Model"])
         if options["Calculate Cauchy"] |
            options["Calculate von Mises stress"] |
-           options["Calculate Strain"]
+           options["Calculate Strain"] | correspondence
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes, block_nodes[block])
-            if !occursin("Correspondence",
-                         datamanager.get_properties(block, "Material Model")["Material Model"])
+            if !correspondence
                 datamanager = get_partial_stresses(datamanager, active_nodes)
             end
         end
-        if options["Calculate von Mises stress"]
+        if options["Calculate von Mises stress"] | correspondence
             datamanager = calculate_von_mises_stress(datamanager, active_nodes)
         end
-        if options["Calculate Strain"] &&
-           !occursin("Correspondence",
-                     datamanager.get_properties(block, "Material Model")["Material Model"])
+        if options["Calculate Strain"] && !correspondence
             material_parameter = datamanager.get_properties(block, "Material Model")
             hookeMatrix = get_Hooke_matrix(datamanager,
                                            material_parameter,

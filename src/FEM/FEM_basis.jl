@@ -1,15 +1,12 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-module FEM_routines
+module FEM_Basis
 using LinearAlgebra
 using StaticArrays
 using FastGaussQuadrature
 using Statistics
-include("../Models/Material/Material_Basis.jl")
-using .Material_Basis: voigt_to_matrix
-include("../Support/Helpers.jl")
-using .Helpers: invert, determinant
+using ....Helpers: invert, determinant, voigt_to_matrix
 function get_FE_material_model(params::Dict{String,Any}, name::String)
     if !haskey(params["Material Models"], params["FEM"][name]["Material Model"])
         @error "Material model " *

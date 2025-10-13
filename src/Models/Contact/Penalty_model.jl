@@ -2,10 +2,9 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Penalty_model
+module Penalty_Model
 
-include("../../Support/Helpers.jl")
-import .Helpers: get_shared_horizon, dot, norm
+import .....Helpers: get_shared_horizon, dot, norm
 
 export contact_model_name
 export init_contact_model

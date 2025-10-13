@@ -3,10 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_Plastic
-include("../../Material_Basis.jl")
-using .Material_Basis:
-                       flaw_function, get_von_mises_yield_stress,
-                       compute_deviatoric_and_spherical_stresses
+using .....Material_Basis:
+                           flaw_function, get_von_mises_yield_stress,
+                           compute_deviatoric_and_spherical_stresses
 using LinearAlgebra
 using StaticArrays
 export fe_support
@@ -38,12 +37,12 @@ end
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
@@ -89,23 +88,23 @@ function correspondence_name()
 end
 
 """
-    compute_stresses(datamanager::Module, nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
+	compute_stresses(datamanager::Module, nodes::AbstractVector{Int64}, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray, iID_jID_nID::Tuple=())
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `iID::Int64`: Node ID.
 - `dof::Int64`: Degrees of freedom
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
-- `strainInc::AbstractArray{Float64,3}`: Strain increment.
-- `stress_N::AbstractArray{Float64,3}`: Stress of step N.
-- `stress_NP1::AbstractArray{Float64,3}`: Stress of step N+1.
+- `strainInc::Union{Array{Float64,3},Array{Float64,6}}`: Strain increment.
+- `stress_N::SubArray`: Stress of step N.
+- `stress_NP1::SubArray`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
 
 Example:
@@ -118,9 +117,9 @@ function compute_stresses(datamanager::Module,
                           material_parameter::Dict,
                           time::Float64,
                           dt::Float64,
-                          strain_increment::AbstractArray{Float64,3},
-                          stress_N::AbstractArray{Float64,3},
-                          stress_NP1::AbstractArray{Float64,3})
+                          strain_increment::Union{SubArray,Array{Float64,3}},
+                          stress_N::Union{SubArray,Array{Float64,3}},
+                          stress_NP1::Union{SubArray,Array{Float64,3}})
     von_Mises_stress_yield = datamanager.get_field("von Mises Yield Stress", "NP1")
     plastic_strain_N = datamanager.get_field("Plastic Strain", "N")
     plastic_strain_NP1 = datamanager.get_field("Plastic Strain", "NP1")
@@ -173,9 +172,9 @@ function compute_stresses_ba(datamanager::Module,
                              material_parameter::Dict,
                              time::Float64,
                              dt::Float64,
-                             strain_increment::Vector{Array{Float64,3}},
-                             stress_N::Vector{Array{Float64,3}},
-                             stress_NP1::Vector{Array{Float64,3}})
+                             strain_increment::Vector{AbstractArray{Float64,3}},
+                             stress_N::Vector{AbstractArray{Float64,3}},
+                             stress_NP1::Vector{AbstractArray{Float64,3}})
     temp_A = @MMatrix zeros(dof, dof)
     temp_B = @MMatrix zeros(dof, dof)
 
@@ -243,9 +242,7 @@ function compute_plastic_model(stress_NP1,
                                               deviatoric_stress_NP1,
                                               dof)
 
-    von_Mises_stress_yield = get_von_mises_yield_stress(von_Mises_stress_yield,
-                                                        spherical_stress_NP1,
-                                                        deviatoric_stress_NP1)
+    von_Mises_stress_yield = get_von_mises_yield_stress(deviatoric_stress_NP1)
     if von_Mises_stress_yield < reduced_yield_stress
         # material is elastic and nothing happens
         plastic_strain_NP1 = plastic_strain_N
@@ -256,9 +253,7 @@ function compute_plastic_model(stress_NP1,
                               deviatoric_stress_magnitude_NP1
     @views stress_NP1 = deviatoric_stress_NP1 + spherical_stress_NP1 .* I(dof)
 
-    von_Mises_stress_yield = get_von_mises_yield_stress(von_Mises_stress_yield,
-                                                        spherical_stress_NP1,
-                                                        deviatoric_stress_NP1)
+    von_Mises_stress_yield = get_von_mises_yield_stress(deviatoric_stress_NP1)
     #https://de.wikipedia.org/wiki/Plastizit%C3%A4tstheorie
     #############################
     # comment taken from Peridigm elastic_plastic_correspondence.cxx
@@ -301,7 +296,7 @@ function compute_plastic_model(stress_NP1,
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+	fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 using YAML: load_file
+using ...Parameter_Handling: validate_yaml
 
 export read_input_file
 

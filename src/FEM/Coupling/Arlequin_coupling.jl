@@ -2,23 +2,21 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Arlequin_coupling
+module Arlequin_Coupling
 include("../Element_formulation/Lagrange_element.jl")
-include("../FEM_routines.jl")
 using .Lagrange_element:
                          define_lagrangian_grid_space,
                          get_recursive_lagrange_shape_functions
-using .FEM_routines: get_polynomial_degree
-include("../../Support/Helpers.jl")
-using .Helpers:
-                find_active_nodes,
-                find_point_in_polygon,
-                find_point_in_hexagon,
-                get_ring,
-                get_hexagon,
-                create_centroid_and_search_radius,
-                get_nearest_neighbors,
-                find_point_in_element
+using ...FEM_Basis: get_polynomial_degree
+using ......Helpers:
+                     find_active_nodes,
+                     find_point_in_polygon,
+                     find_point_in_hexagon,
+                     get_ring,
+                     get_hexagon,
+                     create_centroid_and_search_radius,
+                     get_nearest_neighbors,
+                     find_point_in_element
 using LinearAlgebra
 
 export coupling_name

@@ -4,13 +4,10 @@
 
 module Correspondence_VUMAT
 using StaticArrays
-include("../../Material_Basis.jl")
-using .Material_Basis:
-                       voigt_to_matrix, matrix_to_voigt, get_Hooke_matrix, matrix_to_vector,
-                       vector_to_matrix
-include("../../../../Support/Geometry.jl")
-include("../Zero_Energy_Control/global_control.jl")
-using .Global_zero_energy_control: global_zero_energy_mode_stiffness
+using ......Helpers: voigt_to_matrix, matrix_to_voigt, matrix_to_vector,
+                     vector_to_matrix
+using .....Material_Basis: get_Hooke_matrix
+using .....Global_Zero_Energy_Control: global_zero_energy_mode_stiffness
 export fe_support
 export init_model
 export correspondence_name
@@ -46,12 +43,12 @@ end
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
@@ -146,7 +143,7 @@ end
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `iID::Int64`: Node ID.
 - `dof::Int64`: Degrees of freedom
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
@@ -157,7 +154,7 @@ Calculates the stresses of the material. This template has to be copied, the fil
 - `stress_NP1::SubArray`: Stress of step N+1.
 - `iID_jID_nID::Tuple=(): (optional) are the index and node id information. The tuple is ordered iID as index of the point,  jID the index of the bond of iID and nID the neighborID.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `stress_NP1::SubArray`: updated stresses
 
 Example:

@@ -6,8 +6,8 @@ include("../../src/Core/Data_manager.jl")
 include("../../src/IO/mesh_data.jl")
 using Test
 using MPI
-using .Data_manager
-using .MPI_communication: send_vector_from_root_to_core_i
+using .Data_Manager
+using .MPI_Communication: send_vector_from_root_to_core_i
 
 include("../../src/MPI_communication/MPI_communication.jl")
 MPI.Init()
@@ -21,10 +21,10 @@ else
     nnodes = 4
     nneighbors = [2, 3, 2, 5]
 end
-Data_manager.set_num_controller(nnodes)
-nn = Data_manager.create_constant_node_field("Number of Neighbors", Int64, 1)
+Data_Manager.set_num_controller(nnodes)
+nn = Data_Manager.create_constant_node_field("Number of Neighbors", Int64, 1)
 nn = nneighbors
-nlist = Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+nlist = Data_Manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 @testset "init_distributed_lists rank $rank" begin
     for (id, list) in enumerate(nlist)
         @test length(list) == nneighbors[id]
@@ -39,6 +39,6 @@ create_global_to_local_mapping = create_global_to_local_mapping(distribution)
 @testset "init_data rank $rank" begin
     length_nlist = send_vector_from_root_to_core_i(comm, send_msg, length_nlist,
                                                    distribution)
-    nlist_core = Data_manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
+    nlist_core = Data_Manager.create_constant_bond_field("Neighborhoodlist", Int64, 1)
 end
 MPI.Finalize()

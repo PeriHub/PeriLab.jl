@@ -3,24 +3,26 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Material
-include("../../Core/Module_inclusion/set_Modules.jl")
-include("Material_Basis.jl")
-using .Material_Basis:
-                       get_all_elastic_moduli,
-                       distribute_forces!,
-                       check_symmetry,
-                       get_all_elastic_moduli,
-                       init_local_damping_due_to_damage,
-                       local_damping_due_to_damage
+
+include("Material_Models/Ordinary/Ordinary.jl")
+
+using ...Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "material_name")
+for mod in module_list
+    include(mod["File"])
+end
+
+using ...Material_Basis:
+                         get_all_elastic_moduli,
+                         distribute_forces!,
+                         check_symmetry,
+                         get_all_elastic_moduli,
+                         init_local_damping_due_to_damage,
+                         local_damping_due_to_damage
 using LinearAlgebra: dot
-using .Set_modules
 using TimerOutputs
 using StaticArrays
 
-global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
-Set_modules.include_files(module_list)
-include("./Material_Models/Correspondence/Correspondence.jl")
-using .Correspondence
 export init_model
 export compute_model
 export determine_isotropic_parameter
@@ -46,9 +48,9 @@ end
 Initialize material model fields
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_fields(datamanager::Module)
     dof = datamanager.get_dof()
@@ -85,11 +87,11 @@ end
 Initializes the material model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager
+- `datamanager::Data_Manager`: Datamanager
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
@@ -108,9 +110,10 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     material_models = map(r -> strip(r), material_models)
 
     for material_model in material_models
-        mod = Set_modules.create_module_specifics(material_model,
-                                                  module_list,
-                                                  "material_name")
+        mod = create_module_specifics(material_model,
+                                      module_list,
+                                          @__MODULE__,
+                                      "material_name")
         datamanager.set_analysis_model("Material Model", block, material_model)
         if isnothing(mod)
             @error "No material of name " * material_model * " exists."
@@ -242,10 +245,10 @@ end
 Distribute the force densities.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: The nodes.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function distribute_force_densities(datamanager::Module,
                                     nodes::AbstractVector{Int64}, to::TimerOutput)

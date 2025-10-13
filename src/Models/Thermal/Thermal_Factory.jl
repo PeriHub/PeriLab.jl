@@ -3,11 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal
-using TimerOutputs
-include("../../Core/Module_inclusion/set_Modules.jl")
-using .Set_modules
-global module_list = Set_modules.find_module_files(@__DIR__, "thermal_model_name")
-Set_modules.include_files(module_list)
+
+using ...Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "thermal_model_name")
+for mod in module_list
+    include(mod["File"])
+end
+
 using TimerOutputs
 export init_model
 export compute_model
@@ -20,9 +22,9 @@ export fields_for_local_synchronization
 Initialize thermal model fields
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_fields(datamanager::Module)
     datamanager.create_node_field("Temperature", Float64, 1)
@@ -73,11 +75,11 @@ end
 Initializes the thermal model.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager
+- `datamanager::Data_Manager`: Datamanager
 - `nodes::AbstractVector{Int64}`: The nodes.
 - `block::Int64`: Block.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module, nodes::AbstractVector{Int64},
                     block::Int64)
@@ -85,9 +87,10 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     thermal_models = split(model_param["Thermal Model"], "+")
     thermal_models = map(r -> strip(r), thermal_models)
     for thermal_model in thermal_models
-        mod = Set_modules.create_module_specifics(thermal_model,
-                                                  module_list,
-                                                  "thermal_model_name")
+        mod = create_module_specifics(thermal_model,
+                                      module_list,
+                                          @__MODULE__,
+                                      "thermal_model_name")
         if isnothing(mod)
             @error "No thermal model of name " * thermal_model * " exists."
             return nothing

@@ -1,4 +1,4 @@
-# IO - Functions
+# Geometry - Functions
 
 ## Index
 
@@ -13,5 +13,6 @@ CurrentModule = PeriLab
 ## Geometry
 
 ```@autodocs
-Modules = [IO.Geometry]
+Modules = [Geometry]
 Order   = [:function, :type]
+```

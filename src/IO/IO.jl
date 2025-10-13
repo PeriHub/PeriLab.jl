@@ -9,29 +9,27 @@ using DataFrames
 using PrettyTables
 using Logging
 
-include("../Support/Geometry.jl")
-
-using .Geometry
-
 include("read_inputdeck.jl")
 include("mesh_data.jl")
 include("exodus_export.jl")
 include("csv_export.jl")
 include("../Compute/compute_global_values.jl")
-include("../Support/Parameters/parameter_handling.jl")
-include("../MPI_communication/MPI_communication.jl")
-using .MPI_communication: send_single_value_from_vector, synch_responder_to_controller,
-                          synch_controller_to_responder,
-                          synch_controller_bonds_to_responder,
-                          split_vector, synch_controller_bonds_to_responder_flattened,
-                          send_vector_from_root_to_core_i, broadcast_value,
-                          find_and_set_core_value_min, find_and_set_core_value_sum,
-                          find_and_set_core_value_max,
-                          find_and_set_core_value_avg, gather_values, barrier
+using ..MPI_Communication: send_single_value_from_vector, synch_responder_to_controller,
+                           synch_controller_to_responder,
+                           synch_controller_bonds_to_responder,
+                           split_vector, synch_controller_bonds_to_responder_flattened,
+                           send_vector_from_root_to_core_i, broadcast_value,
+                           find_and_set_core_value_min, find_and_set_core_value_sum,
+                           find_and_set_core_value_max,
+                           find_and_set_core_value_avg, gather_values, barrier
 
-using .Helpers: progress_bar
+using ..Helpers: progress_bar
+using ..Logging_Module: get_log_stream
+using ..Parameter_Handling: get_solver_steps, get_flush_file, get_write_after_damage,
+                            get_start_time, get_end_time, get_outputs, get_output_frequency,
+                            get_output_filenames, get_computes_names, get_computes, get_fem_block
+using ..Geometry: rotation_tensor
 
-using .Parameter_Handling
 using OrderedCollections
 using NearestNeighbors: KDTree, nn
 export initialize_data
@@ -414,7 +412,8 @@ function initialize_data(filename::String,
                            params=init_data(read_input_file(filename),
                                             filedirectory, datamanager, comm,
                                             to)
-    return datamanager, params
+    steps = get_solver_steps(params)
+    return datamanager, params, steps
 end
 
 """
@@ -435,18 +434,19 @@ function init_orientations(datamanager::Module)
     dof = datamanager.get_dof()
     nnodes = datamanager.get_nnodes()
     orientations = datamanager.create_constant_node_field("Orientations", Float64, 3)
-    rotation_tensor = datamanager.create_constant_node_field("Rotation Tensor",
-                                                             Float64,
-                                                             dof, VectorOrMatrix = "Matrix")
+    rotation_tensor_field = datamanager.create_constant_node_field("Rotation Tensor",
+                                                                   Float64,
+                                                                   dof,
+                                                                   VectorOrMatrix = "Matrix")
     angles = datamanager.get_field("Angles")
 
     for iID in 1:nnodes
-        rotation_tensor[iID, :, :] = Geometry.rotation_tensor(angles[iID, :], dof)
+        rotation_tensor_field[iID, :, :] = rotation_tensor(angles[iID, :], dof)
 
         if dof == 2
-            orientations[iID, :] = vcat(rotation_tensor[iID, :, 1], 0)
+            orientations[iID, :] = vcat(rotation_tensor_field[iID, :, 1], 0)
         elseif dof == 3
-            orientations[iID, :] = rotation_tensor[iID, :, 1]
+            orientations[iID, :] = rotation_tensor_field[iID, :, 1]
         end
     end
     return datamanager
@@ -935,12 +935,12 @@ function show_block_summary(solver_options::Dict,
         end
         if !silent
             pretty_table(full_df; show_subheader = false)
-            stream = Logging_module.get_log_stream(2)
+            stream = get_log_stream(2)
             if !isnothing(stream)
                 pretty_table(stream, full_df; show_subheader = false)
             end
         else
-            stream = Logging_module.get_log_stream(1)
+            stream = get_log_stream(1)
             if !isnothing(stream)
                 pretty_table(stream, full_df; show_subheader = false)
             end
@@ -949,12 +949,12 @@ function show_block_summary(solver_options::Dict,
         if log_file != ""
             if !silent
                 pretty_table(df; show_subheader = false)
-                stream = Logging_module.get_log_stream(2)
+                stream = get_log_stream(2)
                 if !isnothing(stream)
                     pretty_table(stream, df; show_subheader = false)
                 end
             else
-                stream = Logging_module.get_log_stream(1)
+                stream = get_log_stream(1)
                 if !isnothing(stream)
                     pretty_table(stream, df; show_subheader = false)
                 end
@@ -1029,12 +1029,12 @@ function show_mpi_summary(log_file::String,
         merged_df = vcat(all_dfs...)
         if !silent
             pretty_table(merged_df; show_subheader = false)
-            stream = Logging_module.get_log_stream(2)
+            stream = get_log_stream(2)
             if !isnothing(stream)
                 pretty_table(stream, merged_df; show_subheader = false)
             end
         else
-            stream = Logging_module.get_log_stream(1)
+            stream = get_log_stream(1)
             if !isnothing(stream)
                 pretty_table(stream, merged_df; show_subheader = false)
             end
@@ -1043,12 +1043,12 @@ function show_mpi_summary(log_file::String,
         if log_file != ""
             if !silent
                 pretty_table(df; show_subheader = false)
-                stream = Logging_module.get_log_stream(2)
+                stream = get_log_stream(2)
                 if !isnothing(stream)
                     pretty_table(stream, df; show_subheader = false)
                 end
             else
-                stream = Logging_module.get_log_stream(1)
+                stream = get_log_stream(1)
                 if !isnothing(stream)
                     pretty_table(stream, df; show_subheader = false)
                 end

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Surface_correction
+module Surface_Correction
 export init_surface_correction
 export compute_surface_correction
 

@@ -3,11 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Model_Factory
-include("../Support/Helpers.jl")
 
-using .Helpers:
-                check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
-                determinant
+using ....Helpers:
+                   check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
+                   determinant
+include("./Pre_calculation/Pre_Calculation_Factory.jl")
 include("./Surface_correction/Surface_correction.jl")
 include("./Contact/Contact_Factory.jl")
 include("./Additive/Additive_Factory.jl")
@@ -15,21 +15,17 @@ include("./Degradation/Degradation_Factory.jl")
 include("./Damage/Damage_Factory.jl")
 include("./Material/Material_Factory.jl")
 include("./Thermal/Thermal_Factory.jl")
-include("./Pre_calculation/Pre_Calculation_Factory.jl")
-include("../Support/Parameters/parameter_handling.jl")
-using .Parameter_Handling: get_model_parameter, get_heat_capacity
-# in future FEM will be outside of the Model_Factory
-include("../FEM/FEM_Factory.jl")
+using ...Parameter_Handling: get_model_parameter, get_heat_capacity
 using .Additive
 using .Degradation
 using .Damage
 using .Material
 using .Pre_Calculation
-using .Surface_correction: init_surface_correction, compute_surface_correction
+using .Surface_Correction: init_surface_correction, compute_surface_correction
 using .Thermal
-using .Contact_Factory
+using .Contact
 # in future FEM will be outside of the Model_Factory
-using .FEM
+using ..FEM
 using TimerOutputs
 export compute_models
 export init_models
@@ -46,7 +42,7 @@ Initialize models
 - `block_nodes::Dict{Int64,Vector{Int64}}`: block nodes.
 - `solver_options::Dict`: Solver options.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function init_models(params::Dict,
                      datamanager::Module,
@@ -134,14 +130,14 @@ end
 
 function check_contact(datamanager::Module, params::Dict)
     if haskey(params, "Contact")
-        return Contact_Factory.init_contact_model(datamanager, params["Contact"])
+        return Contact.init_contact_model(datamanager, params["Contact"])
     end
     return datamanager
 end
 function check_contact(datamanager::Module, params::Dict, time::Float64, dt::Float64,
                        to::TimerOutput)
     if length(params) != 0
-        return Contact_Factory.compute_contact_model(datamanager, params, time,
+        return Contact.compute_contact_model(datamanager, params, time,
                                                      dt, to)
     end
     return datamanager
@@ -336,7 +332,7 @@ function compute_models(datamanager::Module,
     end
 
     if fem_option
-        @timeit to "coupling" datamanager=FEM.Coupling_PD_FEM.compute_coupling(datamanager,
+        @timeit to "coupling" datamanager=FEM.Coupling.compute_coupling(datamanager,
                                                                                datamanager.get_properties(1,
                                                                                                           "FEM"))
     end
@@ -423,10 +419,10 @@ Read properties of material.
 
 # Arguments
 - `params::Dict`: Parameters.
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `material_model::Bool`: Material model.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function read_properties(params::Dict, datamanager::Module, material_model::Bool)
     datamanager.init_properties()

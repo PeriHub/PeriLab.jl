@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2023 Christian Willberg <christian.willberg@dlr.de>, Jan-Timo Hesse <jan-timo.hesse@dlr.de>
 #
 # SPDX-License-Identifier: BSD-3-Clause
-module MPI_communication
+module MPI_Communication
 import MPI
 export send_single_value_from_vector
 export synch_responder_to_controller

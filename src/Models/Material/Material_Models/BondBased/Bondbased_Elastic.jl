@@ -3,10 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bondbased_Elastic
-include("../../Material_Basis.jl")
-include("../../../../Support/Helpers.jl")
-using .Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
-using .Helpers: is_dependent
+using ....Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
+using .......Helpers: is_dependent
 using LoopVectorization
 using TimerOutputs
 export init_model
@@ -40,12 +38,12 @@ end
 Initializes the material model.
 
 # Arguments
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
   - `nodes::AbstractVector{Int64}`: List of block nodes.
   - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 
 # Returns
-  - `datamanager::Data_manager`: Datamanager.
+  - `datamanager::Data_Manager`: Datamanager.
 """
 function init_model(datamanager::Module,
                     nodes::AbstractVector{Int64},
@@ -58,7 +56,7 @@ function init_model(datamanager::Module,
 end
 
 """
-    material_name()
+	material_name()
 
 Returns the name of the material model.
 """
@@ -67,18 +65,18 @@ function material_name()
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
+	compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Calculate the elastic bond force for each node.
 
 # Arguments
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 - `nodes::AbstractVector{Int64}`: List of block nodes.
 - `material_parameter::Dict(String, Any)`: Dictionary with material parameter.
 - `time::Float64`: The current time.
 - `dt::Float64`: The current time step.
 # Returns
-- `datamanager::Data_manager`: Datamanager.
+- `datamanager::Data_Manager`: Datamanager.
 """
 function compute_model(datamanager::Module,
                        nodes::AbstractVector{Int64},
@@ -130,26 +128,25 @@ function compute_model(datamanager::Module,
     return datamanager
 end
 
-function compute_bb_force!(bond_force,
-                           constant,
-                           bond_damage,
-                           deformed_bond_length,
-                           undeformed_bond_length,
-                           deformed_bond)
+function compute_bb_force!(bond_force::Vector{Vector{Float64}},
+                           constant::Float64,
+                           bond_damage::Vector{Float64},
+                           deformed_bond_length::Vector{Float64},
+                           undeformed_bond_length::Vector{Float64},
+                           deformed_bond::Vector{Vector{Float64}})
     @inbounds @fastmath for i in axes(bond_force, 1)
-        @inbounds @fastmath for j in axes(bond_force, 2)
-            bond_force[i,
-                       j] = (constant *
-                             bond_damage[i] *
-                             (deformed_bond_length[i] - undeformed_bond_length[i]) /
-                             undeformed_bond_length[i]) * deformed_bond[i, j] /
-                            deformed_bond_length[i]
+        @inbounds @fastmath for j in eachindex(bond_force[i])
+            bond_force[i][j] = (constant *
+                                bond_damage[i] *
+                                (deformed_bond_length[i] - undeformed_bond_length[i]) /
+                                undeformed_bond_length[i]) * deformed_bond[i][j] /
+                               deformed_bond_length[i]
         end
     end
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+	fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 

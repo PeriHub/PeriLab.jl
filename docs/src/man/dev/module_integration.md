@@ -41,15 +41,18 @@ To integrate a model category somewhere you have to do the following things. You
 Here, the call for the init function is shown for the material factory.
 
 ```julia
-mod = Set_modules.create_module_specifics(material_model, module_list, "material_name")
+mod = create_module_specifics(material_model, module_list, "material_name")
 datamanager.set_model_module(material_model, mod)
 ```
 
 The module_list is optained, by applying
 
 ```julia
-global module_list = Set_modules.find_module_files(@__DIR__, "material_name")
-Set_modules.include_files(module_list)
+using ...Solver_Manager: find_module_files, create_module_specifics
+global module_list = find_module_files(@__DIR__, "material_name")
+for mod in module_list
+    include(mod["File"])
+end
 ```
 
 You can integrate these functions than in the compute function of the factory module.

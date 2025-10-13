@@ -9,8 +9,7 @@ using Rotations
 using CSV, DataFrames
 using ProgressBars
 using NearestNeighbors
-include("../Support/Helpers.jl")
-using .Helpers: sub_in_place!, normalize_in_place!
+using ..Helpers: sub_in_place!, normalize_in_place!
 
 function distance_along_line(dir::Vector{Float64}, point_diff::Vector{Float64})
 

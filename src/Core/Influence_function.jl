@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-module Influence_function
+module Influence_Function
 
 function init_influence_function(nodes::AbstractVector{Int64},
                                  datamanager::Module,

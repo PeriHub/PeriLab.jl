@@ -14,7 +14,7 @@ This module provides functionality for running simulations in the PeriLab enviro
 - `Core/Data_manager.jl`: Data manager module for data management and access.
 - `IO/logging.jl`: Module for setting up and managing logging.
 - `IO/IO.jl`: Input/output functions for handling data files.
-- `Core/Solver/Solver_control.jl`: Solver control module for managing simulation solvers.
+- `Core/Solver/Solver_manager.jl`: Solver control module for managing simulation solvers.
 
 ## Dependencies
 
@@ -35,12 +35,14 @@ main("examples/Dogbone/Dogbone.yaml"; output_dir="", dry_run=false, verbose=fals
 """
 
 module PeriLab
+include("./Support/Helpers.jl")
+include("./Support/Geometry.jl")
 include("./Core/Data_manager.jl")
 include("./IO/logging.jl")
-include("./IO/IO.jl")
-include("./Core/Solver/Solver_control.jl")
+include("./MPI_communication/MPI_communication.jl")
 include("./Support/Parameters/parameter_handling.jl")
-using .Parameter_Handling: get_solver_steps
+include("./IO/IO.jl")
+include("./Core/Solver/Solver_manager.jl")
 
 using MPI
 using TimerOutputs
@@ -51,13 +53,13 @@ using LibGit2
 using StyledStrings
 
 const to = TimerOutput()
-using .Data_manager
+using .Data_Manager
 
-import .Logging_module
+import .Logging_Module
 import .IO
-import .Solver_control
+using .Solver_Manager
 
-PERILAB_VERSION = "1.4.10"
+PERILAB_VERSION = "1.5.0"
 
 export main
 
@@ -245,7 +247,7 @@ function main(filename::String;
                 @warn "Silent and debug mode currently cannot be used at the same time."
                 silent = false
             end
-            Logging_module.init_logging(filename, debug, silent, rank, size)
+            Logging_Module.init_logging(filename, debug, silent, rank, size)
             if rank == 0
                 if !silent
                     print_banner(size > 1)
@@ -254,7 +256,7 @@ function main(filename::String;
                 @info Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
                 try
                     dirty,
-                    git_info = Logging_module.get_current_git_info(joinpath(@__DIR__,
+                    git_info = Logging_Module.get_current_git_info(joinpath(@__DIR__,
                                                                             ".."))
                     if dirty
                         @warn git_info
@@ -286,19 +288,18 @@ function main(filename::String;
             end
 
             if !reload
-                Data_manager.initialize_data()
+                Data_Manager.initialize_data()
             else
                 @info "PeriLab started in the reload mode"
             end
-            Data_manager.set_silent(silent)
-            Data_manager.set_verbose(verbose)
+            Data_Manager.set_silent(silent)
+            Data_Manager.set_verbose(verbose)
             @timeit to "IO.initialize_data" datamanager,
-                                            params=IO.initialize_data(filename,
-                                                                      filedirectory,
-                                                                      Data_manager,
-                                                                      comm, to)
-
-            steps = get_solver_steps(params)
+                                            params,
+                                            steps=IO.initialize_data(filename,
+                                                                     filedirectory,
+                                                                     Data_Manager,
+                                                                     comm, to)
             datamanager.set_max_step(steps[end])
             for step_id in steps
                 if !isnothing(step_id)
@@ -307,10 +308,10 @@ function main(filename::String;
                 datamanager.set_cancel(false)
                 datamanager.set_step(step_id)
                 @info "Init Solver"
-                @timeit to "Solver_control.init" block_nodes,
+                @timeit to "Solver_Manager.init" block_nodes,
                                                  bcs,
                                                  datamanager,
-                                                 solver_options=Solver_control.init(params,
+                                                 solver_options=Solver_Manager.init(params,
                                                                                     datamanager,
                                                                                     to,
                                                                                     step_id)
@@ -325,11 +326,11 @@ function main(filename::String;
                 @timeit to "IO.init orientations" datamanager=IO.init_orientations(datamanager)
                 IO.show_block_summary(solver_options,
                                       params,
-                                      Logging_module.get_log_file(),
+                                      Logging_Module.get_log_file(),
                                       silent,
                                       comm,
                                       datamanager)
-                IO.show_mpi_summary(Logging_module.get_log_file(),
+                IO.show_mpi_summary(Logging_Module.get_log_file(),
                                     silent,
                                     comm,
                                     datamanager)
@@ -341,7 +342,6 @@ function main(filename::String;
                                                                                      filedirectory,
                                                                                      datamanager,
                                                                                      PERILAB_VERSION)
-                    Logging_module.set_result_files(result_files)
                 end
                 IO.set_output_frequency(params,
                                         datamanager,
@@ -356,7 +356,7 @@ function main(filename::String;
                     nsteps = solver_options["Number of Steps"]
                     solver_options["Number of Steps"] = 10
                     elapsed_time = @elapsed begin
-                        @timeit to "Solver" result_files=Solver_control.solver(solver_options,
+                        @timeit to "Solver" result_files=Solver_Manager.solver(solver_options,
                                                                                block_nodes,
                                                                                bcs,
                                                                                datamanager,
@@ -376,7 +376,7 @@ function main(filename::String;
                           " [b]"
 
                 else
-                    @timeit to "Solver_control.solver" result_files=Solver_control.solver(solver_options,
+                    @timeit to "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_options,
                                                                                           block_nodes,
                                                                                           bcs,
                                                                                           datamanager,
@@ -391,8 +391,13 @@ function main(filename::String;
         catch e
             if e isa InterruptException
                 @info "PeriLab was interrupted"
-            elseif !isa(e, DomainError)
-                rethrow(e)
+            elseif !isa(e, Logging_Module.PeriLabError)
+                open(Logging_Module.log_file, "a") do io
+                    println(io, "[Error] ", e)
+                end
+                if !silent
+                    rethrow(e)
+                end
             end
         end
         if !isnothing(result_files)
