@@ -402,49 +402,6 @@ function add_zero_energy_stiff!(K::SparseMatrixCSC{Float64,Int64},
 end
 
 """
-Computes Z = C : D^(-1) for 2D or 3D.
-"""
-function compute_Z_tensor(C_voigt::AbstractMatrix{Float64}, D_inv::AbstractMatrix{Float64},
-                          dof::Int)
-    if dof == 2
-        # 2D: Voigt notation [ε11, ε22, 2ε12] -> [σ11, σ22, σ12]
-        # Z_ij = C_ijkl D^(-1)_kl
-        Z = zeros(2, 2)
-        #@warn "must be implementated for general C"
-        # Simplified for isotropic materials in 2D:
-        Z[1, 1] = C_voigt[1, 1]*D_inv[1, 1] + C_voigt[1, 2]*D_inv[2, 2] +
-                  C_voigt[1, 3]*(D_inv[1, 2] + D_inv[2, 1])
-        Z[1, 2] = C_voigt[1, 1]*D_inv[1, 2] + C_voigt[1, 2]*D_inv[2, 1] +
-                  C_voigt[1, 3]*(D_inv[1, 1] + D_inv[2, 2])
-        Z[2, 1] = C_voigt[2, 1]*D_inv[1, 1] + C_voigt[2, 2]*D_inv[2, 2] +
-                  C_voigt[2, 3]*(D_inv[1, 2] + D_inv[2, 1])
-        Z[2, 2] = C_voigt[2, 1]*D_inv[1, 2] + C_voigt[2, 2]*D_inv[2, 1] +
-                  C_voigt[2, 3]*(D_inv[1, 1] + D_inv[2, 2])
-
-        return Z
-
-    elseif dof == 3
-        # 3D: Voigt notation [ε11, ε22, ε33, 2ε23, 2ε13, 2ε12]
-        Z = zeros(3, 3)
-
-        # Full tensor contraction
-        for i in 1:3
-            for j in 1:3
-                Z[i, j] = C_voigt[1, 1]*D_inv[i, j] + C_voigt[1, 2]*D_inv[i, j] +
-                          C_voigt[1, 3]*D_inv[i, j] +
-                          C_voigt[2, 1]*D_inv[i, j] + C_voigt[2, 2]*D_inv[i, j] +
-                          C_voigt[2, 3]*D_inv[i, j] +
-                          C_voigt[3, 1]*D_inv[i, j] + C_voigt[3, 2]*D_inv[i, j] +
-                          C_voigt[3, 3]*D_inv[i, j]
-            end
-        end
-
-        return Z
-    else
-        error("Only dof=2 or dof=3 supported")
-    end
-end
-"""
 Computes Γ_ij = I - Σ_k ω_ik V_k X_ik (D^(-1) X_ij)^T.
 
 Note: This is a MATRIX equation, not scalar! The term X_ik (D^(-1) X_ij)^T
