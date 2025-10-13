@@ -108,9 +108,11 @@ function compute_model(datamanager::Module,
 
     for iID in nodes
         temp_diff = temperature_NP1[iID] - ref_temp
-        for j in 1:dof
-            deformed_bond[iID][:][j] .-= temp_diff * alpha_mat[j, j] .*
-                                         undeformed_bond[iID][:][j]
+        @inbounds @fastmath @views for jID in eachindex(undeformed_bond[iID])
+            for j in 1:dof
+                deformed_bond[iID][jID][j] -= temp_diff * alpha_mat[j, j] *
+                                              undeformed_bond[iID][jID][j]
+            end
         end
         deformed_bond_length[iID] .-= sum(alpha_mat) / dof * temp_diff .*
                                       undeformed_bond_length[iID]
