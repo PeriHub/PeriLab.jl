@@ -518,8 +518,6 @@ function distribute_forces!(force_densities::Matrix{Float64},
 
             @inbounds @fastmath for m in eachindex(forces_j)
                 force_contribution = damage_factor * forces_j[m]
-                # @info damage_factor
-                # @info forces_j[m]
                 force_densities[iID, m] += force_contribution * vol_j
                 force_densities[jID, m] -= force_contribution * vol_i
             end
