@@ -4,6 +4,7 @@
 
 module Data_manager
 using MPI
+using SparseArrays
 using DataStructures: OrderedDict
 include("../Support/Helpers.jl")
 using .Helpers: fill_in_place!
@@ -20,6 +21,23 @@ struct DataField{T,N}
     name::String
     data::Array{T,N}
     bond_or_node::String
+end
+
+struct PD_matrix
+    xID::Vector{Int64}
+    yID::Vector{Int64}
+    data::Vector{Float64}
+    sparse_matrix::SparseMatrixCSC{Float64,Int64}
+
+    # Konstruktor 1: Erstellt sparse_matrix aus Daten
+    function PD_matrix(xID::Vector{Int64}, yID::Vector{Int64}, data::Vector{Float64},
+                       N::Int64)
+        sparse_matrix = spzeros(N, N)
+        for i in eachindex(data)
+            sparse_matrix[xID[i], yID[i]] = data[i]
+        end
+        new(xID, yID, data, sparse_matrix)
+    end
 end
 
 struct FieldManager
@@ -129,7 +147,7 @@ function initialize_data()
     data["field_types"] = Dict()
     data["field_names"] = Vector{String}([])
     data["fields_to_synch"] = Dict()
-    data["Stiffness Matrix"] = AbstractMatrix{Float64}
+    data["Stiffness Matrix"] = PD_matrix
     data["local_fields_to_synch"] = Dict("Material Model" => Dict(),
                                          "Damage Model" => Dict(),
                                          "Thermal Model" => Dict(),
@@ -1068,12 +1086,19 @@ function set_verbose(value::Bool)
     data["verbose"] = value
 end
 
-function set_stiffness_matrix(K)
-    data["Stiffness Matrix"] = K
+function init_stiffness_matrix(xID::Vector{Int64}, yID::Vector{Int64},
+                               data::Vector{Float64}, N::Int64)
+    data["Stiffness Matrix"] = PD_matrix(xID, yID, data, N)
+end
+
+function set_stiffness_matrix(xID::Vector{Int64}, yID::Vector{Int64},
+                              sparse_data::Vector{Float64})
+    data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
+                                         data["Stiffness Matrix"].sparse_matrix)
 end
 
 function get_stiffness_matrix()
-    return data["Stiffness Matrix"]
+    return data["Stiffness Matrix"].sparse_matrix
 end
 
 """
