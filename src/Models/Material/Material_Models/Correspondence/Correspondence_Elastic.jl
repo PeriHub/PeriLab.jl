@@ -52,18 +52,19 @@ function init_model(datamanager::Module,
                                                           Int64((dof * (dof + 1)) / 2),
                                                           VectorOrMatrix = "Matrix")
     symmetry = get(material_parameter, "Symmetry", "default")::String
+
     for iID in nodes
         @views hooke_matrix[iID, :,
-                            :] = get_Hooke_matrix(datamanager,
-                                                  material_parameter,
-                                                  symmetry,
-                                                  dof,
-                                                  iID)
+        :] = get_Hooke_matrix(datamanager,
+                                                          material_parameter,
+                                                          symmetry,
+                                                          dof,
+                                                          iID)
     end
     return datamanager
 end
 """
-    correspondence_name()
+	correspondence_name()
 
 Gives the material name. It is needed for comparison with the yaml input deck.
 
@@ -83,7 +84,7 @@ function correspondence_name()
 end
 
 """
-    compute_stresses(datamanager::Module, iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+	compute_stresses(datamanager::Module, iID:Int64, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
 Calculates the stresses of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -151,7 +152,7 @@ function compute_stresses_ba(datamanager::Module,
 end
 
 """
-    compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
+	compute_stresses(datamanager::Module, dof::Int64, material_parameter::Dict, time::Float64, dt::Float64, strain_increment::SubArray, stress_N::SubArray, stress_NP1::SubArray)
 
 Calculates the stresses of a single node. Needed for FEM. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -188,7 +189,7 @@ function compute_stresses(datamanager::Module,
 end
 
 """
-    fields_for_local_synchronization(datamanager::Module, model::String)
+	fields_for_local_synchronization(datamanager::Module, model::String)
 
 Returns a user developer defined local synchronization. This happens before each model.
 

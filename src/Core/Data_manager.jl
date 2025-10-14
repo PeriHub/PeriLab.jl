@@ -25,17 +25,13 @@ end
 struct PD_matrix
     xID::Vector{Int64}
     yID::Vector{Int64}
-    data::Vector{Float64}
     sparse_matrix::SparseMatrixCSC{Float64,Int64}
 
     # Konstruktor 1: Erstellt sparse_matrix aus Daten
-    function PD_matrix(xID::Vector{Int64}, yID::Vector{Int64}, data::Vector{Float64},
+    function PD_matrix(I::Vector{Int64}, J::Vector{Int64}, V::Vector{Float64},
                        N::Int64)
-        sparse_matrix = spzeros(N, N)
-        for i in eachindex(data)
-            sparse_matrix[xID[i], yID[i]] = data[i]
-        end
-        new(xID, yID, data, sparse_matrix)
+        sparse_matrix=sparse(I, J, V, N, N)
+        new(I, J, sparse_matrix)
     end
 end
 
@@ -1086,18 +1082,22 @@ function set_verbose(value::Bool)
 end
 
 function init_stiffness_matrix(xID::Vector{Int64}, yID::Vector{Int64},
-                               data::Vector{Float64}, N::Int64)
-    data["Stiffness Matrix"] = PD_matrix(xID, yID, data, N)
+                               vals::Vector{Float64}, N::Int64)
+    data["Stiffness Matrix"] = PD_matrix(xID, yID, vals, N)
 end
-
-function set_stiffness_matrix(xID::Vector{Int64}, yID::Vector{Int64},
-                              sparse_data::Vector{Float64})
-    data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
-                                         data["Stiffness Matrix"].sparse_matrix)
-end
+#
+#function set_stiffness_matrix(sparse_mat)
+#	#data["Stiffness Matrix"] = PD_matrix(xID, yID, sparse_data,
+#	#	data["Stiffness Matrix"].sparse_matrix)
+#	data["Stiffness Matrix"].sparse_matrix = sparse_mat
+#end
 
 function get_stiffness_matrix()
     return data["Stiffness Matrix"].sparse_matrix
+end
+
+function get_stiffness_index()
+    return data["Stiffness Matrix"].xID, data["Stiffness Matrix"].yID
 end
 
 """
