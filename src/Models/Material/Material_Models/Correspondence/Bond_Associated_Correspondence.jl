@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Bond_Associated_Correspondence
-using LinearAlgebra
-using StaticArrays
+using LinearAlgebra: mul!
+using StaticArrays: I, @MMatrix
 using TimerOutputs
 using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:

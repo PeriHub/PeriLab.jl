@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Geometry
-using LinearAlgebra
+using LinearAlgebra: mul!
 using Combinatorics: levicivita
 using StaticArrays
 using Rotations

@@ -5,15 +5,16 @@
 module Helpers
 
 using PointNeighbors: GridNeighborhoodSearch, initialize_grid!, foreach_neighbor
-using Meshes
+using Meshes: Ring, Point, centroid
 #using Tensors
-using Dierckx
-using ProgressBars
-using LinearAlgebra
-using StaticArrays
+using Dierckx: Spline1D, evaluate
+using ProgressBars: ProgressBar
+using LinearAlgebra: Adjoint, dot, det, norm
+using StaticArrays: MMatrix, MVector, SMatrix, @SMatrix, SVector, @SVector
 using LoopVectorization
-using Unitful
-using CDDLib, Polyhedra
+using Unitful: ustrip
+using CDDLib
+using Polyhedra: MixedMatHRep, polyhedron, vrep, hrep
 
 export qdim
 export check_inf_or_nan
@@ -1048,8 +1049,8 @@ function rotate(nodes::AbstractVector{Int64},
                 back::Bool)
     for iID in nodes
         matrix[iID, :,
-               :] = rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :],
-                                               back)
+        :] = rotate_second_order_tensor(rot[iID, :, :], matrix[iID, :, :],
+                                                       back)
     end
     return matrix
 end

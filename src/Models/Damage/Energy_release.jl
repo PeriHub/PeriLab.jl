@@ -11,7 +11,7 @@ using ......Helpers:
                      mul_in_place!,
                      interpol_data,
                      is_dependent
-using LinearAlgebra
+using LinearAlgebra: mul!
 using StaticArrays
 export compute_model
 export damage_name
@@ -140,7 +140,7 @@ function compute_model(datamanager::Module,
                 critical_energy_value = critical_energy[iID]
             elseif inter_block_damage
                 critical_energy_value = inter_critical_energy[block_ids[iID],
-                                                              block_ids[neighborID], block]
+                block_ids[neighborID], block]
 
                 param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
                              string(block_ids[neighborID])
