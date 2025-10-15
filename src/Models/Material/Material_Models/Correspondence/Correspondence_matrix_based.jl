@@ -627,6 +627,32 @@ function update_assemble_stiffness_contributions_sparse!(nodes::AbstractVector{I
     end
 end
 
+function compute_bond_force(bond_force::Vector{Vector{Vector{Float64}}},
+                            K::SparseMatrixCSC{Float64,Int64}, u::Matrix{Float64},
+                            nodes::Vector{Int64}, nlist::Vector{Vector{Int64}}, dof::Int64)
+    for i in nodes
+        ni = nlist[i]
+        i_offset = (i-1)*dof
+
+        for (j_idx, j) in enumerate(ni)
+            if i == j
+                continue
+            end
+
+            j_offset = (j-1)*dof
+            f_ij = zeros(dof)
+
+            for m in 1:dof
+                for n in 1:dof
+                    f_ij[m] += K[i_offset+m, j_offset+n] * (u[j, n] - u[i, n])
+                end
+            end
+
+            bond_force[i][j_idx] = f_ij
+        end
+    end
+end
+
 """
 Assemble global stiffness matrix for peridynamics system
 

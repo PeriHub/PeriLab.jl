@@ -14,6 +14,17 @@ using ...Parameter_Handling: get_initial_time, get_nsteps, get_final_time
 using ...MPI_Communication: barrier
 using ..Boundary_Conditions: apply_bc_dirichlet, apply_bc_neumann, find_bc_free_dof
 
+using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
+using ...Parameter_Handling:
+                             get_initial_time,
+                             get_fixed_dt,
+                             get_final_time,
+                             get_numerical_damping,
+                             get_safety_factor,
+                             get_max_damage
+
+using ..Model_Factory: compute_stiff_matrix_compatible_models
+
 include("../../Models/Material/Material_Models/Correspondence/Correspondence_matrix_based.jl")
 using .Correspondence_matrix_based
 include("../../Models/Pre_calculation/bond_deformation.jl")
@@ -57,8 +68,14 @@ function init_solver(solver_options::Dict{Any,Any},
     find_bc_free_dof(datamanager, bcs)
     solver_options["Initial Time"] = get_initial_time(params, datamanager)
     solver_options["Final Time"] = get_final_time(params, datamanager)
-    solver_options["Final Time"] = get_final_time(params, datamanager)
+
     solver_options["Number of Steps"] = get_nsteps(params)
+    ## Remark: For static analysis, the number of steps is mandatory
+    # dt cannot be defined here; Number of steps define the value,
+    # because for static analysis it is a virtual case
+    # for thermal analysis this must be adopted and dt and nsteps must be computed
+    solver_options["dt"] = (solver_options["Final Time"] - solver_options["Initial Time"]) /
+                           solver_options["Number of Steps"]
 
     for (block, nodes) in pairs(block_nodes)
         model_param = datamanager.get_properties(block, "Material Model")
@@ -85,6 +102,7 @@ function run_solver(solver_options::Dict{Any,Any},
     max_damage::Float64 = 0
     volume = datamanager.get_field("Volume")
     coor = datamanager.get_field("Coordinates")
+    bond_force = datamanager.get_field("Bond Forces")
     comm = datamanager.get_comm()
     # needed to bring K_sparse into the consistent style of the transformation matrix -> vector
     perm = create_permutation(datamanager.get_nnodes(), datamanager.get_dof())
@@ -94,19 +112,20 @@ function run_solver(solver_options::Dict{Any,Any},
         a = datamanager.get_field("Acceleration")
     end
 
-    dt::Float64 = solver_options["Final Time"]
+    dt::Float64 = solver_options["dt"]
     nsteps::Int64 = solver_options["Number of Steps"]
     time::Float64 = solver_options["Initial Time"]
     step_time::Float64 = 0
     rank = datamanager.get_rank()
     iter = progress_bar(rank, nsteps, silent)
-    #nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
+    nodes::Vector{Int64} = collect(1:datamanager.get_nnodes())
+    nlist = datamanager.get_nlist()
+    dof = datamanager.get_dof()
     delta_u = datamanager.create_constant_node_field("Delta Displacements", Float64,
                                                      datamanager.get_dof())
     @inbounds @fastmath for idt in iter
         datamanager.set_iteration(idt)
         @timeit to "Linear Static" begin
-            K=compute_matrix(datamanager)
             uN = datamanager.get_field("Displacements", "N")
             uNP1 = datamanager.get_field("Displacements", "NP1")
             deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
@@ -115,7 +134,7 @@ function run_solver(solver_options::Dict{Any,Any},
             force_densities_NP1 = datamanager.get_field("Force Densities", "NP1")
             volume = datamanager.get_field("Volume")
             forces = datamanager.get_field("Forces", "NP1")
-
+            velocities = datamanager.get_field("Velocity", "NP1")
             external_force_densities = datamanager.get_field("External Force Densities")
 
             datamanager = apply_bc_dirichlet(["Displacements", "Forces", "Force Densities"],
@@ -125,20 +144,35 @@ function run_solver(solver_options::Dict{Any,Any},
             external_force_densities .= external_forces ./ volume # it must be delta external forces
             # reshape
             non_BCs = datamanager.get_bc_free_dof()
-
+            uNP1[non_BCs] .= uN[non_BCs]
             delta_u .= uNP1-uN
-            compute_displacements!(K[perm, perm],
-                                   non_BCs,
-                                   delta_u,
-                                   force_densities_NP1,
-                                   external_force_densities)
-            nodes = length(volume)
+            K = datamanager.get_stiffness_matrix()
+            @timeit to "compute bond forces" Correspondence_matrix_based.compute_bond_force(bond_force,
+                                                                                            K,
+                                                                                            uNP1,
+                                                                                            nodes,
+                                                                                            nlist,
+                                                                                            dof)
+            @timeit to "compute_models" datamanager = compute_stiff_matrix_compatible_models(datamanager,
+                                                                                             block_nodes,
+                                                                                             dt,
+                                                                                             time,
+                                                                                             solver_options["Models"],
+                                                                                             synchronise_field,
+                                                                                             to)
+            @timeit to "update stiffness matrix" K = compute_matrix(datamanager)
+            @timeit to "compute_displacements" compute_displacements!(K[perm, perm],
+                                                                      non_BCs,
+                                                                      delta_u,
+                                                                      force_densities_NP1,
+                                                                      external_force_densities)
+
             force_densities_NP1 .+= force_densities_N
-            for iID in 1:nodes
+            for iID in nodes
                 @views forces[iID, :] .= force_densities_NP1[iID, :] .* volume[iID]
             end
             uNP1.=delta_u .+ uN
-
+            velocities .= delta_u ./ dt
             @views deformed_coorNP1 .= coor .+ uNP1
 
             # @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field,

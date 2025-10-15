@@ -32,7 +32,7 @@ export init_models
 export read_properties
 
 """
-    init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
+	init_models(params::Dict, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, solver_options::Dict)
 
 Initialize models
 
@@ -138,15 +138,15 @@ function check_contact(datamanager::Module, params::Dict, time::Float64, dt::Flo
                        to::TimerOutput)
     if length(params) != 0
         return Contact.compute_contact_model(datamanager, params, time,
-                                                     dt, to)
+                                             dt, to)
     end
     return datamanager
 end
 
 """
-    compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field, to::TimerOutput)
+	compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field, to::TimerOutput)
 
-Computes the models models
+Computes the material point models
 
 # Arguments
 - `datamanager::Module`: The datamanager
@@ -333,8 +333,8 @@ function compute_models(datamanager::Module,
 
     if fem_option
         @timeit to "coupling" datamanager=FEM.Coupling.compute_coupling(datamanager,
-                                                                               datamanager.get_properties(1,
-                                                                                                          "FEM"))
+                                                                        datamanager.get_properties(1,
+                                                                                                   "FEM"))
     end
     check_contact(datamanager, datamanager.get_contact_properties(), time, dt, to)
     #=
@@ -345,6 +345,70 @@ function compute_models(datamanager::Module,
     for (block, nodes) in pairs(block_nodes)
         update_list[nodes] .= false
     end
+    return datamanager
+end
+
+"""
+	compute_stiff_matrix_compatible_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field, to::TimerOutput)
+
+Computes the models models that are compatible with the stiffness matrix calculation.
+
+# Arguments
+- `datamanager::Module`: The datamanager
+- `block_nodes::Dict{Int64,Vector{Int64}}`: The block nodes
+- `dt::Float64`: The time step
+- `time::Float64`: The current time of the solver
+- `options::Vector{String}`: The options
+- `synchronise_field`: The synchronise field
+- `to::TimerOutput`: The timer output
+# Returns
+- `datamanager`: The datamanager
+"""
+function compute_stiff_matrix_compatible_models(datamanager::Module,
+                                                block_nodes::Dict{Int64,Vector{Int64}},
+                                                dt::Float64,
+                                                time::Float64,
+                                                options::Vector{String},
+                                                synchronise_field,
+                                                to::TimerOutput)
+    active_list = datamanager.get_field("Active")
+
+    for (active_model_name, active_model) in pairs(datamanager.get_active_models())
+
+        #local_synch(datamanager, active_model_name, "upload_to_cores", synchronise_field)
+        # maybe not needed?
+        #local_synch(datamanager,
+        #	active_model_name,
+        #	"download_from_cores",
+        #	synchronise_field)
+        if active_model_name == "Material Model"
+            # we need here an activation trigger for mixed models in future
+            continue
+        end
+
+        for (block, nodes) in pairs(block_nodes)
+            # "delete" the view of active nodes
+            active_nodes = datamanager.get_field("Active Nodes")
+
+            active_nodes = find_active_nodes(active_list,
+                                             active_nodes,
+                                             nodes,
+                                             active_model_name != "Additive Model")
+
+            if datamanager.check_property(block, active_model_name)
+                # synch
+                @timeit to "compute $active_model_name" datamanager=active_model.compute_model(datamanager,
+                                                                                               active_nodes,
+                                                                                               datamanager.get_properties(block,
+                                                                                                                          active_model_name),
+                                                                                               block,
+                                                                                               time,
+                                                                                               dt,
+                                                                                               to)
+            end
+        end
+    end
+
     return datamanager
 end
 
@@ -362,7 +426,7 @@ function get_update_nodes(active_list,
 end
 
 """
-    get_block_model_definition(params::Dict, block_id_list::Int64, prop_keys::Vector{String}, properties)
+	get_block_model_definition(params::Dict, block_id_list::Int64, prop_keys::Vector{String}, properties)
 
 Get block model definition.
 
@@ -413,7 +477,7 @@ function get_block_model_definition(params::Dict,
 end
 
 """
-    read_properties(params::Dict, datamanager::Module, material_model::Bool)
+	read_properties(params::Dict, datamanager::Module, material_model::Bool)
 
 Read properties of material.
 
@@ -452,7 +516,7 @@ function read_properties(params::Dict, datamanager::Module, material_model::Bool
 end
 
 """
-    set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::Vector{Float64})
+	set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::Vector{Float64})
 
 Sets the heat capacity of the nodes in the dictionary.
 
@@ -471,7 +535,7 @@ function set_heat_capacity(params::Dict, block_nodes::Dict, heat_capacity::Vecto
 end
 
 """
-    add_model(datamanager::Module, model_name::String)
+	add_model(datamanager::Module, model_name::String)
 
 Includes the models in the datamanager and checks if the model definition is correct or not.
 
