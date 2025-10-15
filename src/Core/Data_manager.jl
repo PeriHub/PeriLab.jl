@@ -1096,7 +1096,7 @@ function get_stiffness_matrix()
     return data["Stiffness Matrix"].sparse_matrix
 end
 
-function get_stiffness_index()
+function get_stiffness_matrix_indices()
     return data["Stiffness Matrix"].xID, data["Stiffness Matrix"].yID
 end
 

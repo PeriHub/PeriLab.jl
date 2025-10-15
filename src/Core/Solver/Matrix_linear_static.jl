@@ -64,6 +64,7 @@ function init_solver(solver_options::Dict{Any,Any},
         model_param = datamanager.get_properties(block, "Material Model")
         Correspondence_matrix_based.init_model(datamanager, nodes, model_param)
     end
+    Correspondence_matrix_based.init_matrix(datamanager)
 end
 
 function run_solver(solver_options::Dict{Any,Any},
@@ -114,7 +115,7 @@ function run_solver(solver_options::Dict{Any,Any},
             force_densities_NP1 = datamanager.get_field("Force Densities", "NP1")
             volume = datamanager.get_field("Volume")
             forces = datamanager.get_field("Forces", "NP1")
-            K = datamanager.get_stiffness_matrix()
+
             external_force_densities = datamanager.get_field("External Force Densities")
 
             datamanager = apply_bc_dirichlet(["Displacements", "Forces", "Force Densities"],
