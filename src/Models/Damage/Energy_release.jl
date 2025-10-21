@@ -83,9 +83,6 @@ function compute_model(datamanager::Module,
     dependent_field = is_dependent("Critical Value", damage_parameter,
                                    datamanager)
 
-    # for anisotropic damage models
-    rotation::Bool = datamanager.get_rotation()
-
     tension::Bool = get(damage_parameter, "Only Tension", false)
     inter_block_damage::Bool = haskey(damage_parameter, "Interblock Damage")
     if inter_block_damage
@@ -98,21 +95,22 @@ function compute_model(datamanager::Module,
     x_vector::Vector{Float64} = @SVector zeros(Float64, dof)
     x_vector[1] = 1.0
 
-    bond_force::Vector{Float64} = zeros(Float64, dof)
-    neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
-    bond_force_delta::Vector{Float64} = zeros(Float64, dof)
-    projected_force::Vector{Float64} = zeros(Float64, dof)
+    # bond_force::Vector{Float64} = zeros(Float64, dof)
+    # neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
+    # bond_force_delta::Vector{Float64} = zeros(Float64, dof)
+    # projected_force::Vector{Float64} = zeros(Float64, dof)
     relative_displacement::Vector{Float64} = zeros(Float64, dof)
+    temp_vector::Vector{Float64} = zeros(Float64, dof)
 
     sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
     warning_flag = true
 
     for iID in nodes
-        bond_displacement = bond_displacements[iID]
-        bond_force_vec = bond_forces[iID]
+        # bond_displacement = bond_displacements[iID]
+        # bond_force_vec = bond_forces[iID]
         quad_horizon = quad_horizons[iID]
         @fastmath @inbounds for jID in eachindex(nlist[iID])
-            relative_displacement = bond_displacement[jID]
+            relative_displacement = bond_displacements[iID][jID]
             norm_displacement = fastdot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (tension &&
                 deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
@@ -122,18 +120,19 @@ function compute_model(datamanager::Module,
             @views neighborID = nlist[iID][jID]
 
             # check if the bond also exist at other node, due to different horizons
-            try
-                neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID]]
-            catch e
-                # Handle the case when the key doesn't exist
-            end
+            # try
+            #     neighbor_bond_force .= bond_forces[neighborID][inverse_nlist[neighborID][iID]]
+            # catch e
+            #     # Handle the case when the key doesn't exist
+            # end
 
-            bond_force .= bond_force_vec[jID]
-            bond_force_delta .= bond_force .- neighbor_bond_force
+            # bond_force .= bond_force_vec[jID]
+            temp_vector .= bond_forces[iID][jID] .-
+                           bond_forces[neighborID][inverse_nlist[neighborID][iID]]
 
-            product = fastdot(bond_force_delta, relative_displacement)
-            mul!(projected_force, product / norm_displacement, relative_displacement)
-            product = fastdot(projected_force, relative_displacement, true)
+            product = fastdot(temp_vector, relative_displacement)
+            mul!(temp_vector, product / norm_displacement, relative_displacement)
+            product = fastdot(temp_vector, relative_displacement, true)
             bond_energy = 0.25 * product
 
             if critical_field
@@ -218,14 +217,6 @@ function init_model(datamanager::Module,
     thickness::Float64 = get(damage_parameter, "Thickness", 1)
     for iID in nodes
         quad_horizon[iID] = get_quad_horizon(horizon[iID], dof, thickness)
-    end
-
-    if haskey(damage_parameter, "Anisotropic Damage")
-        rotation::Bool = datamanager.get_rotation()
-        if !rotation
-            @error "Anisotropic damage requires Angles field"
-            return nothing
-        end
     end
 
     return datamanager

@@ -550,7 +550,7 @@ end
 function fastdot(a::AbstractArray{Float64}, b::AbstractArray{Float64}, absolute = false)
     c = zero(eltype(a))
     @assert length(a) == length(b)
-    @inbounds @simd for i in eachindex(a, b)
+    for i in eachindex(a, b)
         if absolute
             c += abs(a[i]) * abs(b[i])
         else
