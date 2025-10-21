@@ -99,42 +99,40 @@ Print the table.
 - `datamanager::Module`: The data manager.
 """
 function print_table(data::Matrix, datamanager::Module)
+    highlighters = [
+        TextHighlighter((data, i, j) -> i == 1 && j == 1, crayon"bold"),
+        TextHighlighter((data, i, j) -> j == 2, crayon"dark_gray")
+    ]
     if !datamanager.get_silent()
         pretty_table(data;
-                     body_hlines = [1],
-                     body_hlines_format = Tuple('─' for _ in 1:4),
-                     cell_alignment = Dict((1, 1) => :l),
-                     formatters = ft_printf("%10.1f", 2),
-                     highlighters = (hl_cell([(1, 1)], crayon"bold"),
-                                     hl_col(2, crayon"dark_gray")),
-                     show_header = false,
-                     tf = tf_borderless,)
+                     cell_alignment = [(1, 1) => :l],
+                     formatters = [fmt__printf("%10.1f", [2])],
+                     highlighters = highlighters,
+                     show_column_labels = false,
+                     table_format = TextTableFormat(; @text__no_vertical_lines,
+                                                    horizontal_lines_at_data_rows = [1]))
         stream = Logging_Module.get_log_stream(2)
         if !isnothing(stream)
             pretty_table(stream,
                          data;
-                         body_hlines = [1],
-                         body_hlines_format = Tuple('─' for _ in 1:4),
-                         cell_alignment = Dict((1, 1) => :l),
-                         formatters = ft_printf("%10.1f", 2),
-                         highlighters = (hl_cell([(1, 1)], crayon"bold"),
-                                         hl_col(2, crayon"dark_gray")),
-                         show_header = false,
-                         tf = tf_borderless,)
+                         cell_alignment = [(1, 1) => :l],
+                         formatters = [fmt__printf("%10.1f", [2])],
+                         highlighters = highlighters,
+                         show_column_labels = false,
+                         table_format = TextTableFormat(; @text__no_vertical_lines,
+                                                        horizontal_lines_at_data_rows = [1]))
         end
     else
         stream = Logging_Module.get_log_stream(1)
         if !isnothing(stream)
             pretty_table(stream,
                          data;
-                         body_hlines = [1],
-                         body_hlines_format = Tuple('─' for _ in 1:4),
-                         cell_alignment = Dict((1, 1) => :l),
-                         formatters = ft_printf("%10.1f", 2),
-                         highlighters = (hl_cell([(1, 1)], crayon"bold"),
-                                         hl_col(2, crayon"dark_gray")),
-                         show_header = false,
-                         tf = tf_borderless,)
+                         cell_alignment = [(1, 1) => :l],
+                         formatters = [fmt__printf("%10.1f", [2])],
+                         highlighters = highlighters,
+                         show_column_labels = false,
+                         table_format = TextTableFormat(; @text__no_vertical_lines,
+                                                        horizontal_lines_at_data_rows = [1]))
         end
     end
 end

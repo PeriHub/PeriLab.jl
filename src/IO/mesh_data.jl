@@ -6,7 +6,6 @@ using LinearAlgebra
 using AbaqusReader
 using DataFrames
 using OrderedCollections: OrderedDict
-using PrettyTables
 include("bond_filters.jl")
 include("gcode.jl")
 include("volume.jl")
@@ -448,11 +447,11 @@ function distribution_to_cores(comm::MPI.Comm,
                                                              distribution)
             else
                 datafield[:,
-                          localDof] = send_vector_from_root_to_core_i(comm,
-                                                                      send_msg,
-                                                                      datafield[:,
-                                                                                localDof],
-                                                                      distribution)
+                localDof] = send_vector_from_root_to_core_i(comm,
+                                                                         send_msg,
+                                                                         datafield[:,
+                                                                         localDof],
+                                                                         distribution)
             end
         end
     end

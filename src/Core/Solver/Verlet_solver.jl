@@ -8,7 +8,6 @@ using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
 using LoopVectorization
-using PrettyTables
 using Logging
 
 using ...Helpers#: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
@@ -469,14 +468,14 @@ function run_solver(solver_options::Dict{Any,Any},
             # one step more, because of init step (time = 0)
             if "Material" in solver_options["Models"]
                 @views vNP1[active_nodes,
-                            :] = (1 - numerical_damping) .*
-                                 vN[active_nodes, :] .+
-                                 0.5 * dt .* a[active_nodes, :]
+                :] = (1 - numerical_damping) .*
+                                               vN[active_nodes, :] .+
+                                               0.5 * dt .* a[active_nodes, :]
                 datamanager = apply_bc_dirichlet(["Velocity"], bcs, datamanager, time,
                                                  step_time)
                 @views uNP1[active_nodes,
-                            :] = uN[active_nodes, :] .+
-                                 dt .* vNP1[active_nodes, :]
+                :] = uN[active_nodes, :] .+
+                                               dt .* vNP1[active_nodes, :]
             end
 
             compute_parabolic_problems_before_model_evaluation(active_nodes, datamanager,
@@ -493,8 +492,8 @@ function run_solver(solver_options::Dict{Any,Any},
             # all points to guarantee that the neighbors have coor as coordinates if they are not active
             if "Material" in solver_options["Models"]
                 @views deformed_coorNP1[active_nodes,
-                                        :] = coor[active_nodes, :] .+
-                                             uNP1[active_nodes, :]
+                :] = coor[active_nodes, :] .+
+                                                           uNP1[active_nodes, :]
             end
             @timeit to "upload_to_cores" datamanager.synch_manager(synchronise_field,
                                                                    "upload_to_cores")
@@ -540,13 +539,13 @@ function run_solver(solver_options::Dict{Any,Any},
 
                     forces[active_nodes, :] += external_forces[active_nodes, :]
                     force_densities[active_nodes,
-                                    :] += external_force_densities[active_nodes,
-                                                                   :] .+
-                                          external_forces[active_nodes, :] ./
-                                          volume[active_nodes]
+                    :] += external_force_densities[active_nodes,
+                                                                                 :] .+
+                                                        external_forces[active_nodes, :] ./
+                                                        volume[active_nodes]
                     a[active_nodes,
-                      :] = force_densities[active_nodes, :] ./
-                           lumped_mass[active_nodes] # element wise
+                    :] = force_densities[active_nodes, :] ./
+                                         lumped_mass[active_nodes] # element wise
 
                     active_nodes = datamanager.get_field("Active Nodes")
                     active_nodes = find_active_nodes(fe_nodes,
@@ -557,17 +556,17 @@ function run_solver(solver_options::Dict{Any,Any},
 
                 @views forces[active_nodes, :] += external_forces[active_nodes, :]
                 @views force_densities[active_nodes,
-                                       :] += external_force_densities[active_nodes,
-                                                                      :] .+
-                                             external_forces[active_nodes,
-                                                             :] ./
-                                             volume[active_nodes]
+                :] += external_force_densities[active_nodes,
+                                                                                    :] .+
+                                                           external_forces[active_nodes,
+                                                                           :] ./
+                                                           volume[active_nodes]
                 @views a[active_nodes,
-                         :] = force_densities[active_nodes, :] ./
-                              density[active_nodes] # element wise
+                :] = force_densities[active_nodes, :] ./
+                                            density[active_nodes] # element wise
                 @views forces[active_nodes,
-                              :] = force_densities[active_nodes, :] .*
-                                   volume[active_nodes]
+                :] = force_densities[active_nodes, :] .*
+                                                 volume[active_nodes]
             end
 
             compute_parabolic_problems_after_model_evaluation(active_nodes, datamanager,

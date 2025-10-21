@@ -9,7 +9,6 @@ using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
 using LoopVectorization
-using PrettyTables
 using Logging
 
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
@@ -298,8 +297,8 @@ function run_solver(solver_options::Dict{Any,Any},
         force_densities = datamanager.get_field("Force Densities", "NP1")
 
         @views forces[active_nodes,
-                      :] = force_densities[active_nodes, :] .*
-                           volume[active_nodes]
+        :] = force_densities[active_nodes, :] .*
+                                         volume[active_nodes]
 
         @timeit to "write_results" result_files=write_results(result_files, time,
                                                               max_damage, outputs,
@@ -355,8 +354,8 @@ function residual!(residual,
     # bc_dof = setdiff(1:length(uNP1), bc_free_dof)
 
     @views deformed_coorNP1[active_nodes,
-                            :] = coor[active_nodes, :] .+
-                                 uNP1[active_nodes, :]
+    :] = coor[active_nodes, :] .+
+                                               uNP1[active_nodes, :]
 
     force_densities[:, :] .= 0 # TODO check where to put it for iterative solver
     forces = datamanager.get_field("Forces", "NP1")

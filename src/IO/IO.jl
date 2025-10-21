@@ -27,7 +27,8 @@ using ..Helpers: progress_bar
 using ..Logging_Module: get_log_stream
 using ..Parameter_Handling: get_solver_steps, get_flush_file, get_write_after_damage,
                             get_start_time, get_end_time, get_outputs, get_output_frequency,
-                            get_output_filenames, get_computes_names, get_computes, get_fem_block
+                            get_output_filenames, get_computes_names, get_computes,
+                            get_fem_block
 using ..Geometry: rotation_tensor
 
 using OrderedCollections
@@ -327,22 +328,22 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                 for dof in 1:i_ref_dof
                     if global_var
                         output_mapping[id]["Fields"][compute_name * get_paraview_coordinates(dof,
-                                                                                             i_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                "time" => fieldname[2],
-                                                                                                                "global_var" => global_var,
-                                                                                                                "dof" => dof,
-                                                                                                                "type" => typeof(datafield[1,
-                                                                                                                                           1]),
-                                                                                                                "compute_params" => compute_params,
-                                                                                                                "nodeset" => nodeset)
+                                                                                                                          i_ref_dof)] = Dict("fieldname" => fieldname[1],
+                                                                                                                     "time" => fieldname[2],
+                                                                                                                     "global_var" => global_var,
+                                                                                                                     "dof" => dof,
+                                                                                                                     "type" => typeof(datafield[1,
+                                                                                                                                                1]),
+                                                                                                                     "compute_params" => compute_params,
+                                                                                                                     "nodeset" => nodeset)
                     else
                         output_mapping[id]["Fields"][fieldname[1] * get_paraview_coordinates(dof,
-                                                                                             i_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                "time" => fieldname[2],
-                                                                                                                "global_var" => global_var,
-                                                                                                                "dof" => dof,
-                                                                                                                "type" => typeof(datafield[1,
-                                                                                                                                           1]))
+                                                                                                                          i_ref_dof)] = Dict("fieldname" => fieldname[1],
+                                                                                                                     "time" => fieldname[2],
+                                                                                                                     "global_var" => global_var,
+                                                                                                                     "dof" => dof,
+                                                                                                                     "type" => typeof(datafield[1,
+                                                                                                                                                1]))
                     end
                 end
             elseif length(sizedatafield) == 3
@@ -352,28 +353,28 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
                     for j_dof in 1:j_ref_dof
                         if global_var
                             output_mapping[id]["Fields"][compute_name * get_paraview_coordinates(i_dof,
-                                                                                                 i_ref_dof) * get_paraview_coordinates(j_dof,
-                                                                                                                                       j_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                                                          "time" => fieldname[2],
-                                                                                                                                                          "global_var" => global_var,
-                                                                                                                                                          "i_dof" => i_dof,
-                                                                                                                                                          "j_dof" => j_dof,
-                                                                                                                                                          "type" => typeof(datafield[1,
-                                                                                                                                                                                     1,
-                                                                                                                                                                                     1]),
-                                                                                                                                                          "compute_params" => compute_params,
-                                                                                                                                                          "nodeset" => nodeset)
+                                                                                                                              i_ref_dof) * get_paraview_coordinates(j_dof,
+                                                                                                                                                                    j_ref_dof)] = Dict("fieldname" => fieldname[1],
+                                                                                                                                                                        "time" => fieldname[2],
+                                                                                                                                                                        "global_var" => global_var,
+                                                                                                                                                                        "i_dof" => i_dof,
+                                                                                                                                                                        "j_dof" => j_dof,
+                                                                                                                                                                        "type" => typeof(datafield[1,
+                                                                                                                                                                                                   1,
+                                                                                                                                                                                                   1]),
+                                                                                                                                                                        "compute_params" => compute_params,
+                                                                                                                                                                        "nodeset" => nodeset)
                         else
                             output_mapping[id]["Fields"][fieldname[1] * get_paraview_coordinates(i_dof,
-                                                                                                 i_ref_dof) * get_paraview_coordinates(j_dof,
-                                                                                                                                       j_ref_dof)] = Dict("fieldname" => fieldname[1],
-                                                                                                                                                          "time" => fieldname[2],
-                                                                                                                                                          "global_var" => global_var,
-                                                                                                                                                          "i_dof" => i_dof,
-                                                                                                                                                          "j_dof" => j_dof,
-                                                                                                                                                          "type" => typeof(datafield[1,
-                                                                                                                                                                                     1,
-                                                                                                                                                                                     1]))
+                                                                                                                              i_ref_dof) * get_paraview_coordinates(j_dof,
+                                                                                                                                                                    j_ref_dof)] = Dict("fieldname" => fieldname[1],
+                                                                                                                                                                        "time" => fieldname[2],
+                                                                                                                                                                        "global_var" => global_var,
+                                                                                                                                                                        "i_dof" => i_dof,
+                                                                                                                                                                        "j_dof" => j_dof,
+                                                                                                                                                                        "type" => typeof(datafield[1,
+                                                                                                                                                                                                   1,
+                                                                                                                                                                                                   1]))
                         end
                     end
                 end
@@ -934,29 +935,29 @@ function show_block_summary(solver_options::Dict,
             push!(full_df, new_row)
         end
         if !silent
-            pretty_table(full_df; show_subheader = false)
+            pretty_table(full_df; show_first_column_label_only = true)
             stream = get_log_stream(2)
             if !isnothing(stream)
-                pretty_table(stream, full_df; show_subheader = false)
+                pretty_table(stream, full_df; show_first_column_label_only = true)
             end
         else
             stream = get_log_stream(1)
             if !isnothing(stream)
-                pretty_table(stream, full_df; show_subheader = false)
+                pretty_table(stream, full_df; show_first_column_label_only = true)
             end
         end
     else
         if log_file != ""
             if !silent
-                pretty_table(df; show_subheader = false)
+                pretty_table(df; show_first_column_label_only = true)
                 stream = get_log_stream(2)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_first_column_label_only = true)
                 end
             else
                 stream = get_log_stream(1)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_first_column_label_only = true)
                 end
             end
         end
@@ -1028,29 +1029,29 @@ function show_mpi_summary(log_file::String,
     if rank == 0
         merged_df = vcat(all_dfs...)
         if !silent
-            pretty_table(merged_df; show_subheader = false)
+            pretty_table(merged_df; show_first_column_label_only = true)
             stream = get_log_stream(2)
             if !isnothing(stream)
-                pretty_table(stream, merged_df; show_subheader = false)
+                pretty_table(stream, merged_df; show_first_column_label_only = true)
             end
         else
             stream = get_log_stream(1)
             if !isnothing(stream)
-                pretty_table(stream, merged_df; show_subheader = false)
+                pretty_table(stream, merged_df; show_first_column_label_only = true)
             end
         end
     else
         if log_file != ""
             if !silent
-                pretty_table(df; show_subheader = false)
+                pretty_table(df; show_first_column_label_only = true)
                 stream = get_log_stream(2)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_first_column_label_only = true)
                 end
             else
                 stream = get_log_stream(1)
                 if !isnothing(stream)
-                    pretty_table(stream, df; show_subheader = false)
+                    pretty_table(stream, df; show_first_column_label_only = true)
                 end
             end
         end
