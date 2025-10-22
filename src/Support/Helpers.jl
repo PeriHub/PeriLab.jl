@@ -547,8 +547,8 @@ function div_in_place!(C::Vector{Vector{T}},
         C[i] .= A[i] ./ B[i]
     end
 end
-function fastdot(a::AbstractArray{Float64}, b::AbstractArray{Float64}, absolute = false)
-    c = zero(eltype(a))
+function fastdot(a::Vector{Float64}, b::Vector{Float64}, absolute = false)
+    c = zero(Float64)
     @assert length(a) == length(b)
     for i in eachindex(a, b)
         if absolute

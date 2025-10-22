@@ -11,7 +11,7 @@ using ......Helpers:
                      mul_in_place!,
                      interpol_data,
                      is_dependent
-using LinearAlgebra: mul!
+using LinearAlgebra: mul!, dot
 using StaticArrays
 export compute_model
 export damage_name
@@ -92,32 +92,26 @@ function compute_model(datamanager::Module,
     bond_energy::Float64 = 0.0
     norm_displacement::Float64 = 0.0
     product::Float64 = 0.0
-    x_vector::Vector{Float64} = @SVector zeros(Float64, dof)
-    x_vector[1] = 1.0
 
-    # bond_force::Vector{Float64} = zeros(Float64, dof)
-    # neighbor_bond_force::Vector{Float64} = zeros(Float64, dof)
-    # bond_force_delta::Vector{Float64} = zeros(Float64, dof)
-    # projected_force::Vector{Float64} = zeros(Float64, dof)
-    relative_displacement::Vector{Float64} = zeros(Float64, dof)
     temp_vector::Vector{Float64} = zeros(Float64, dof)
 
     sub_in_place!(bond_displacements, deformed_bond, undeformed_bond)
     warning_flag = true
 
     for iID in nodes
-        # bond_displacement = bond_displacements[iID]
-        # bond_force_vec = bond_forces[iID]
-        quad_horizon = quad_horizons[iID]
-        @fastmath @inbounds for jID in eachindex(nlist[iID])
-            relative_displacement = bond_displacements[iID][jID]
-            norm_displacement = fastdot(relative_displacement, relative_displacement)
+        block_id::Int64 = block_ids[iID]
+        quad_horizon::Float64 = quad_horizons[iID]
+        neighbors::Vector{Int64} = nlist[iID]
+        @fastmath @inbounds for jID in eachindex(neighbors)
+            relative_displacement::Vector{Float64} = bond_displacements[iID][jID]
+            norm_displacement = dot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (tension &&
                 deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
                 continue
             end
 
-            @views neighborID = nlist[iID][jID]
+            neighborID::Int64 = neighbors[jID]
+            neighbor_block_id::Int64 = block_ids[neighborID]
 
             # check if the bond also exist at other node, due to different horizons
             # try
@@ -126,11 +120,11 @@ function compute_model(datamanager::Module,
             #     # Handle the case when the key doesn't exist
             # end
 
-            # bond_force .= bond_force_vec[jID]
-            temp_vector .= bond_forces[iID][jID] .-
-                           bond_forces[neighborID][inverse_nlist[neighborID][iID]]
+            bond_force::Vector{Float64} = bond_forces[iID][jID]
+            neighbor_bond_force::Vector{Float64} = bond_forces[neighborID][inverse_nlist[neighborID][iID]]
+            temp_vector .= bond_force .- neighbor_bond_force
 
-            product = fastdot(temp_vector, relative_displacement)
+            product = dot(temp_vector, relative_displacement)
             mul!(temp_vector, product / norm_displacement, relative_displacement)
             product = fastdot(temp_vector, relative_displacement, true)
             bond_energy = 0.25 * product
@@ -138,19 +132,18 @@ function compute_model(datamanager::Module,
             if critical_field
                 critical_energy_value = critical_energy[iID]
             elseif inter_block_damage
-                critical_energy_value = inter_critical_energy[block_ids[iID],
-                block_ids[neighborID], block]
+                critical_energy_value = inter_critical_energy[block_id, neighbor_block_id, block]
 
-                param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
-                             string(block_ids[neighborID])
+                # param_name = "Interblock Critical Value " * string(block_ids[iID]) * "_" *
+                #              string(block_ids[neighborID])
 
-                dependend_value,
-                dependent_field = is_dependent(param_name, damage_parameter, datamanager)
-                if dependend_value
-                    critical_energy_value = interpol_data(dependent_field[iID],
-                                                          damage_parameter[param_name]["Data"],
-                                                          warning_flag)
-                end
+                # dependend_value,
+                # dependent_field = is_dependent(param_name, damage_parameter, datamanager)
+                # if dependend_value
+                #     critical_energy_value = interpol_data(dependent_field[iID],
+                #                                           damage_parameter[param_name]["Data"],
+                #                                           warning_flag)
+                # end
             elseif dependend_value
                 critical_energy_value = interpol_data(dependent_field[iID],
                                                       damage_parameter["Critical Value"]["Data"],
