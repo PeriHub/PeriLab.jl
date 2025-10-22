@@ -7,10 +7,11 @@ using TimerOutputs
 #include("../../../../../../src/PeriLab.jl")
 # #using .PeriLab
 
-#const to = TimerOutput()
+# const to = TimerOutput()
 
 @testset "material_name" begin
-    @test PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.material_name() == "Bond-based Elastic"
+    @test PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.material_name() ==
+          "Bond-based Elastic"
     @test !(PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.fe_support())
 end
 @testset "compute_model" begin
@@ -29,8 +30,9 @@ end
     bf = test_data_manager.create_constant_bond_field("Bond Forces", Float64, dof)
 
     bdN, bdNP1 = test_data_manager.create_bond_field("Bond Damage", Float64, 1, 1)
-    dbN, dbNP1 = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof,
-                                                     1)
+    dbN,
+    dbNP1 = test_data_manager.create_bond_field("Deformed Bond Geometry", Float64, dof,
+                                                1)
     dbdN, dbdNP1 = test_data_manager.create_bond_field("Deformed Bond Length", Float64, 1)
     bg = test_data_manager.create_constant_bond_field("Bond Geometry", Float64, dof)
     bd = test_data_manager.create_constant_bond_field("Bond Length", Float64, 1, 1)
@@ -38,17 +40,17 @@ end
         dbdNP1[iID] .= 1 + (-1)^iID * 0.1
     end
     test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(test_data_manager,
-                                                     Vector{Int64}(1:nodes),
-                                                     Dict("Bulk Modulus" => 1.0,
-                                                          "Young's Modulus" => 1.0))
+                                                                                                   Vector{Int64}(1:nodes),
+                                                                                                   Dict("Bulk Modulus" => 1.0,
+                                                                                                        "Young's Modulus" => 1.0))
     test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(test_data_manager,
-                                                        Vector{Int64}(1:nodes),
-                                                        Dict("Bulk Modulus" => 1.0,
-                                                             "Young's Modulus" => 1.0),
-                                                        1,
-                                                        0.0,
-                                                        0.0,
-                                                        to)
+                                                                                                      Vector{Int64}(1:nodes),
+                                                                                                      Dict("Bulk Modulus" => 1.0,
+                                                                                                           "Young's Modulus" => 1.0),
+                                                                                                      1,
+                                                                                                      0.0,
+                                                                                                      0.0,
+                                                                                                      PeriLab.to)
 
     bf = test_data_manager.get_field("Bond Forces")
     @test isapprox(bf[1],
@@ -69,19 +71,19 @@ end
     bf[2][2] .= 0
     bf[2][3] .= 0
     test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(test_data_manager,
-                                                     Vector{Int64}(1:nodes),
-                                                     Dict("Bulk Modulus" => 1.0,
-                                                          "Young's Modulus" => 1.0,
-                                                          "Symmetry" => "here is something"))
+                                                                                                   Vector{Int64}(1:nodes),
+                                                                                                   Dict("Bulk Modulus" => 1.0,
+                                                                                                        "Young's Modulus" => 1.0,
+                                                                                                        "Symmetry" => "here is something"))
     test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(test_data_manager,
-                                                        Vector{Int64}(1:nodes),
-                                                        Dict("Bulk Modulus" => 1.0,
-                                                             "Young's Modulus" => 1.0,
-                                                             "Symmetry" => "here is something"),
-                                                        1,
-                                                        0.0,
-                                                        0.0,
-                                                        to)
+                                                                                                      Vector{Int64}(1:nodes),
+                                                                                                      Dict("Bulk Modulus" => 1.0,
+                                                                                                           "Young's Modulus" => 1.0,
+                                                                                                           "Symmetry" => "here is something"),
+                                                                                                      1,
+                                                                                                      0.0,
+                                                                                                      0.0,
+                                                                                                      to)
 
     bf = test_data_manager.get_field("Bond Forces")
 
@@ -103,20 +105,20 @@ end
     bf[2][2] .= 0
     bf[2][3] .= 0
     test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(test_data_manager,
-                                                     Vector{Int64}(1:nodes),
-                                                     Dict("Bulk Modulus" => 1.0,
-                                                          "Young's Modulus" => 1.0,
-                                                          "Symmetry" => "plane strain"))
+                                                                                                   Vector{Int64}(1:nodes),
+                                                                                                   Dict("Bulk Modulus" => 1.0,
+                                                                                                        "Young's Modulus" => 1.0,
+                                                                                                        "Symmetry" => "plane strain"))
 
     test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(test_data_manager,
-                                                        Vector{Int64}(1:nodes),
-                                                        Dict("Bulk Modulus" => 1.0,
-                                                             "Young's Modulus" => 1.0,
-                                                             "Symmetry" => "plane strain"),
-                                                        1,
-                                                        0.0,
-                                                        0.0,
-                                                        to)
+                                                                                                      Vector{Int64}(1:nodes),
+                                                                                                      Dict("Bulk Modulus" => 1.0,
+                                                                                                           "Young's Modulus" => 1.0,
+                                                                                                           "Symmetry" => "plane strain"),
+                                                                                                      1,
+                                                                                                      0.0,
+                                                                                                      0.0,
+                                                                                                      to)
 
     bf = test_data_manager.get_field("Bond Forces")
 
@@ -138,19 +140,19 @@ end
     bf[2][2] .= 0
     bf[2][3] .= 0
     test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.init_model(test_data_manager,
-                                                     Vector{Int64}(1:nodes),
-                                                     Dict("Bulk Modulus" => 1.0,
-                                                          "Young's Modulus" => 1.0,
-                                                          "Symmetry" => "plane stress"))
+                                                                                                   Vector{Int64}(1:nodes),
+                                                                                                   Dict("Bulk Modulus" => 1.0,
+                                                                                                        "Young's Modulus" => 1.0,
+                                                                                                        "Symmetry" => "plane stress"))
     test_data_manager = PeriLab.Solver_Manager.Model_Factory.Material.Bondbased_Elastic.compute_model(test_data_manager,
-                                                        Vector{Int64}(1:nodes),
-                                                        Dict("Bulk Modulus" => 1.0,
-                                                             "Young's Modulus" => 1.0,
-                                                             "Symmetry" => "plane stress"),
-                                                        1,
-                                                        0.0,
-                                                        0.0,
-                                                        to)
+                                                                                                      Vector{Int64}(1:nodes),
+                                                                                                      Dict("Bulk Modulus" => 1.0,
+                                                                                                           "Young's Modulus" => 1.0,
+                                                                                                           "Symmetry" => "plane stress"),
+                                                                                                      1,
+                                                                                                      0.0,
+                                                                                                      0.0,
+                                                                                                      to)
 
     bf = test_data_manager.get_field("Bond Forces")
     @test isapprox(bf[1][1][1], -0.15915494309189532)
