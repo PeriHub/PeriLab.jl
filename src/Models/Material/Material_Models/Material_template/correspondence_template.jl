@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_template
+export compute_stresses
+export correspondence_name
 export fe_support
 export init_model
-export correspondence_name
-export compute_model
 export fields_for_local_synchronization
 
 """
@@ -69,23 +69,6 @@ println(correspondence_name())
 """
 function correspondence_name()
     return "Correspondence Template"
-end
-
-"""
-    fields_for_local_synchronization(datamanager::Module, model::String)
-
-Returns a user developer defined local synchronization. This happens before each model.
-
-
-
-# Arguments
-
-"""
-function fields_for_local_synchronization(datamanager::Module, model::String)
-    # download_from_cores = false
-    # upload_to_cores = true
-    # datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
-    return datamanager
 end
 
 """
@@ -175,6 +158,23 @@ function compute_stresses_ba(datamanager::Module,
                              stress_NP1::Union{SubArray,Array{Float64,3},
                                                Vector{Float64}})
     @error "$(correspondence_name()) not yet implemented for bond associated."
+end
+
+"""
+    fields_for_local_synchronization(datamanager::Module, model::String)
+
+Returns a user developer defined local synchronization. This happens before each model.
+
+
+
+# Arguments
+
+"""
+function fields_for_local_synchronization(datamanager::Module, model::String)
+    # download_from_cores = false
+    # upload_to_cores = true
+    # datamanager.set_local_synch(model, "Bond Forces", download_from_cores, upload_to_cores)
+    return datamanager
 end
 
 end
