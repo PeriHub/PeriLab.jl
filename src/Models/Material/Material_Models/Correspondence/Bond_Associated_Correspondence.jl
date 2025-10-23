@@ -8,7 +8,7 @@ using StaticArrays: I, @MMatrix
 using TimerOutputs
 using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:
-                       find_local_neighbors, invert, rotate, fastdot, determinant, smat,
+                       find_local_neighbors, invert, rotate, determinant, smat,
                        matrix_diff!
 using ........Geometry:
                         compute_strain,

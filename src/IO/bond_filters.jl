@@ -23,8 +23,8 @@ function bond_intersects_disc(p0::Vector{Float64},
                               center::Vector{Float64},
                               normal::Vector{Float64},
                               radius::Float64)
-    numerator = fastdot((center - p0), normal)
-    denominator = fastdot((p1 - p0), normal)
+    numerator = dot((center - p0), normal)
+    denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane, may or may not lie on the plane
         # If it does lie on the plane, then the numerator will be zero
@@ -69,7 +69,7 @@ function bond_intersect_infinite_plane(p0::Vector{Float64},
                                        p1::Vector{Float64},
                                        lower_left_corner::Vector{Float64},
                                        normal::Vector{Float64})
-    denominator = fastdot((p1 - p0), normal)
+    denominator = dot((p1 - p0), normal)
     if abs(denominator) < TOLERANCE
         # Line is parallel to the plane
         # It may or may not lie on the plane
@@ -79,7 +79,7 @@ function bond_intersect_infinite_plane(p0::Vector{Float64},
     end
     # The line intersects the plane
 
-    t = fastdot((lower_left_corner - p0), normal) / denominator
+    t = dot((lower_left_corner - p0), normal) / denominator
 
     # Determine if the line segment intersects the plane
     if 0.0 <= t <= 1.0
@@ -119,7 +119,7 @@ function bond_intersect_rectangle_plane(x::Union{Vector{Float64},Vector{Int64}},
             return true
         end
         ua = cross(bottom_unit_vector, normal)
-        aa = fastdot(dr, ua)
+        aa = dot(dr, ua)
         if 0.0 <= aa && aa / side_length <= 1.0
             return true
         end

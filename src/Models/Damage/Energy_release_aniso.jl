@@ -124,7 +124,7 @@ function compute_model(datamanager::Module,
         quad_horizon = quad_horizons[iID]
         @fastmath @inbounds for jID in eachindex(nlist[iID])
             relative_displacement = bond_displacement[jID]
-            norm_displacement = fastdot(relative_displacement, relative_displacement)
+            norm_displacement = dot(relative_displacement, relative_displacement)
             if norm_displacement == 0 || (tension &&
                 deformed_bond_length[iID][jID] - undeformed_bond_length[iID][jID] < 0)
                 continue
@@ -142,7 +142,7 @@ function compute_model(datamanager::Module,
             bond_force .= bond_force_vec[jID]
             bond_force_delta .= bond_force .- neighbor_bond_force
 
-            product = fastdot(bond_force_delta, relative_displacement)
+            product = dot(bond_force_delta, relative_displacement)
             mul!(projected_force, product / norm_displacement, relative_displacement)
             product = fastdot(projected_force, relative_displacement, true)
             bond_energy = 0.25 * product
