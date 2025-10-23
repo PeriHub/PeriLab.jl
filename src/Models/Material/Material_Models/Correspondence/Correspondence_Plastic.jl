@@ -12,24 +12,24 @@ export fe_support
 export init_model
 export fields_for_local_synchronization
 
-yield_stress::Float64 = 0
-reduced_yield_stress::Float64 = 0
-spherical_stress_N::Float64 = 0
-spherical_stress_NP1::Float64 = 0
+yield_stress::Float64 = 1.0
+reduced_yield_stress::Float64 = 0.0
+spherical_stress_N::Float64 = 0.0
+spherical_stress_NP1::Float64 = 0.0
 
 deviatoric_stress_N::Matrix{Float64} = zeros(2, 2)
 deviatoric_stress_NP1::Matrix{Float64} = zeros(2, 2)
 temp_A::Matrix{Float64} = zeros(2, 2)
 temp_B::Matrix{Float64} = zeros(2, 2)
 
-temp_scalar::Float64 = 0
+temp_scalar::Float64 = 0.0
 
 sqrt23::Float64 = sqrt(2 / 3)
-deviatoric_stress_magnitude_N::Float64 = 0
-deviatoric_stress_magnitude_NP1::Float64 = 0
+deviatoric_stress_magnitude_N::Float64 = 0.0
+deviatoric_stress_magnitude_NP1::Float64 = 0.0
 
 dev_strain_inc::Matrix{Float64} = zeros(2, 2)
-spherical_strain::Float64 = 0
+spherical_strain::Float64 = 0.0
 
 """
   fe_support()
@@ -146,17 +146,27 @@ function compute_stresses(datamanager::Module,
                           strain_increment::Union{SubArray,Array{Float64,3}},
                           stress_N::Union{SubArray,Array{Float64,3}},
                           stress_NP1::Union{SubArray,Array{Float64,3}})
+    global yield_stress
+    global reduced_yield_stress
+    global spherical_stress_N
+    global spherical_stress_NP1
+    global deviatoric_stress_N
+    global deviatoric_stress_NP1
+    global temp_A
+    global temp_B
+    global sqrt23
+
     von_Mises_stress_yield = datamanager.get_field("von Mises Yield Stress", "NP1")
     plastic_strain_N = datamanager.get_field("Plastic Strain", "N")
     plastic_strain_NP1 = datamanager.get_field("Plastic Strain", "NP1")
     coordinates = datamanager.get_field("Coordinates")
     yield_stress = material_parameter["Yield Stress"]
-    spherical_stress_N = 0
-    spherical_stress_NP1 = 0
-    deviatoric_stress_N .= 0
-    deviatoric_stress_NP1 .= 0
-    temp_A .= 0
-    temp_B .= 0
+    spherical_stress_N = 0.0
+    spherical_stress_NP1 = 0.0
+    deviatoric_stress_N .= 0.0
+    deviatoric_stress_NP1 .= 0.0
+    temp_A .= 0.0
+    temp_B .= 0.0
 
     # sqrt23::Float64 = sqrt(2 / 3)
     for iID in nodes
@@ -262,6 +272,13 @@ function compute_plastic_model(stress_NP1,
                                temp_A,
                                temp_B,
                                sqrt23)
+    global temp_scalar
+    global sqrt23
+    global deviatoric_stress_magnitude_N
+    global deviatoric_stress_magnitude_NP1
+    global dev_strain_inc
+    global spherical_strain
+
     compute_deviatoric_and_spherical_stresses(stress_NP1,
                                               spherical_stress_NP1,
                                               deviatoric_stress_NP1,

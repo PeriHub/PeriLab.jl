@@ -11,7 +11,7 @@ using ......Helpers:
                      mul_in_place!,
                      interpol_data,
                      is_dependent
-using LinearAlgebra: mul!
+using LinearAlgebra: mul!, dot
 using StaticArrays
 export compute_model
 export damage_name
