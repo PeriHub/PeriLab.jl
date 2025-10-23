@@ -4,6 +4,7 @@
 
 module Critical_Energy
 using ......Helpers:
+                     abs!,
                      rotate,
                      fastdot,
                      sub_in_place!,
@@ -124,9 +125,10 @@ function compute_model(datamanager::Module,
             neighbor_bond_force::Vector{Float64} = bond_forces[neighborID][inverse_nlist[neighborID][iID]]
             temp_vector .= bond_force .- neighbor_bond_force
 
-            product = dot(temp_vector, relative_displacement)
+            product = abs(dot(temp_vector, relative_displacement))
+            abs!(relative_displacement)
             mul!(temp_vector, product / norm_displacement, relative_displacement)
-            product = fastdot(temp_vector, relative_displacement, true)
+            product = dot(temp_vector, relative_displacement)
             bond_energy = 0.25 * product
 
             if critical_field

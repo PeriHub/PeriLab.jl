@@ -559,6 +559,11 @@ function fastdot(a::Vector{Float64}, b::Vector{Float64}, absolute = false)
     end
     c
 end
+function abs!(a::Vector{T}) where {T<:Union{Int64,Float64}}
+    @inbounds for i in eachindex(a)
+        a[i] = abs(a[i])
+    end
+end
 function fill_in_place!(A::Vector{Vector{T}},
                         value::T,
                         active::Vector{Bool}) where {T<:Union{Int64,Float64,Bool}}
