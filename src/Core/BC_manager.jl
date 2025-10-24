@@ -88,7 +88,7 @@ function check_valid_bcs(bcs::Dict{String,Any}, datamanager::Module)
             end
         end
         if !valid
-            @error "Boundary condition $bc is not valid: Variable $(bcs[bc]["Variable"]) not found."
+            @error "Boundary condition $bc is not valid: Variable $(bcs[bc]["Variable"]) not found. Please check if the physical model is activated."
             return nothing
         end
     end
@@ -188,7 +188,7 @@ function apply_bc_dirichlet(allowed_variables::Vector{String},
         if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
                 @views field_to_apply_bc = field[bc["Node Set"],
-                                                 dof_mapping[bc["Coordinate"]]]
+                dof_mapping[bc["Coordinate"]]]
                 eval_bc!(field_to_apply_bc,
                          bc["Value"],
                          coordinates[bc["Node Set"], :],
@@ -243,7 +243,7 @@ function apply_bc_neumann(bcs::Dict, datamanager::Module, time::Float64, step_ti
         if ndims(field) > 1
             if haskey(dof_mapping, bc["Coordinate"])
                 @views field_to_apply_bc = field[bc["Node Set"],
-                                                 dof_mapping[bc["Coordinate"]]]
+                dof_mapping[bc["Coordinate"]]]
                 eval_bc!(field_to_apply_bc,
                          bc["Value"],
                          coordinates[bc["Node Set"], :],
