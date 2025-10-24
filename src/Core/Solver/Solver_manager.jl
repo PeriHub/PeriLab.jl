@@ -142,7 +142,8 @@ function init(params::Dict,
                                                                         solver_params,
                                                                         bcs,
                                                                         datamanager,
-                                                                        block_nodes)
+                                                                        block_nodes,
+                                                                        to)
     end
 
     if datamanager.fem_active()

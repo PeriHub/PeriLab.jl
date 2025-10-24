@@ -31,6 +31,50 @@ include("../../Models/Pre_calculation/bond_deformation.jl")
 using .Bond_Deformation
 
 """
+	compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64}, datamanager::Module, lambda::Float64, Cv::Float64)
+
+Calculate the critical time step for a thermodynamic simulation based on  [OterkusS2014](@cite).
+
+This function iterates over a collection of nodes and computes the critical time step for each node using provided input data and parameters.
+
+# Arguments
+- `nodes::AbstractVector{Int64}`: The collection of nodes to calculate the critical time step for.
+- `datamanager::Module`: The data manager module that provides access to required data fields.
+- `lambda::Float64`: The material parameter used in the calculations.
+- `Cv::Float64`: The heat capacity at constant volume used in the calculations.
+
+# Returns
+- `Float64`: The calculated critical time step for the thermodynamic simulation.
+
+# Dependencies
+This function depends on the following data fields from the `datamanager` module:
+- `get_nlist()`: Returns the neighbor list.
+- `get_field("Density")`: Returns the density field.
+- `get_field("Bond Length")`: Returns the bond distance field.
+- `get_field("Volume")`: Returns the volume field.
+- `get_field("Number of Neighbors")`: Returns the number of neighbors field.
+"""
+function compute_thermodynamic_critical_time_step(nodes::AbstractVector{Int64},
+                                                  datamanager::Module,
+                                                  lambda::Union{Float64,Int64})
+    critical_time_step::Float64 = 1.0e50
+    nlist = datamanager.get_nlist()
+    density = datamanager.get_field("Density")
+    undeformed_bond_length = datamanager.get_field("Bond Length")
+    volume = datamanager.get_field("Volume")
+    Cv = datamanager.get_field("Specific Heat Capacity")
+    lambda = matrix_style(lambda)
+    eigLam = maximum(eigvals(lambda))
+
+    for iID in nodes
+        denominator = get_cs_denominator(volume[nlist[iID]], undeformed_bond_length[iID])
+        t = density[iID] * Cv[iID] / (eigLam * denominator)
+        critical_time_step = test_timestep(t, critical_time_step)
+    end
+    return sqrt(critical_time_step)
+end
+
+"""
 	init_solver(params::Dict, bcs::Dict{Any,Any}, datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, mechanical::Bool, thermo::Bool)
 
 Initialize the Verlet solver for a simulation.
@@ -64,7 +108,8 @@ function init_solver(solver_options::Dict{Any,Any},
                      params::Dict,
                      bcs::Dict{Any,Any},
                      datamanager::Module,
-                     block_nodes::Dict{Int64,Vector{Int64}})
+                     block_nodes::Dict{Int64,Vector{Int64}},
+                     to::TimerOutput)
     find_bc_free_dof(datamanager, bcs)
     solver_options["Initial Time"] = get_initial_time(params, datamanager)
     solver_options["Final Time"] = get_final_time(params, datamanager)
@@ -81,7 +126,28 @@ function init_solver(solver_options::Dict{Any,Any},
         model_param = datamanager.get_properties(block, "Material Model")
         Correspondence_matrix_based.init_model(datamanager, nodes, model_param)
     end
-    Correspondence_matrix_based.init_matrix(datamanager)
+    @timeit to "init_matrix" Correspondence_matrix_based.init_matrix(datamanager)
+    ### for coupled thermal analysis
+
+    #critical_time_step::Float64 = 1.0e50
+    #for iblock in eachindex(block_nodes)
+    #	if thermal
+    #		lambda = datamanager.get_property(iblock, "Thermal Model",
+    #			"Thermal Conductivity")
+    #		# if Cv and lambda are not defined it is valid, because an analysis can take place, if material is still analysed
+    #		if isnothing(lambda)
+    #			if !mechanical
+    #				@error "No time step can be calculated, because the heat conduction is not defined."
+    #				return nothing
+    #			end
+    #		else
+    #			t = compute_thermodynamic_critical_time_step(block_nodes[iblock],
+    #				datamanager,
+    #				lambda)
+    #			critical_time_step = test_timestep(t, critical_time_step)
+    #		end
+    #	end
+    #end
 end
 
 function run_solver(solver_options::Dict{Any,Any},
@@ -144,9 +210,15 @@ function run_solver(solver_options::Dict{Any,Any},
             external_force_densities .= external_forces ./ volume # it must be delta external forces
             # reshape
             non_BCs = datamanager.get_bc_free_dof()
-            uNP1[non_BCs] .= uN[non_BCs]
             delta_u .= uNP1-uN
             K = datamanager.get_stiffness_matrix()
+
+            @timeit to "update stiffness matrix" K = compute_matrix(datamanager)
+            @timeit to "compute_displacements" compute_displacements!(K[perm, perm],
+                                                                      non_BCs,
+                                                                      delta_u,
+                                                                      force_densities_NP1,
+                                                                      external_force_densities)
             @timeit to "compute bond forces" Correspondence_matrix_based.compute_bond_force(bond_force,
                                                                                             K,
                                                                                             uNP1,
@@ -166,7 +238,6 @@ function run_solver(solver_options::Dict{Any,Any},
                                                                       delta_u,
                                                                       force_densities_NP1,
                                                                       external_force_densities)
-
             force_densities_NP1 .+= force_densities_N
             for iID in nodes
                 @views forces[iID, :] .= force_densities_NP1[iID, :] .* volume[iID]
