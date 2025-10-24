@@ -51,18 +51,18 @@ Mathematical background:
 This contraction is fundamental in correspondence theory, relating
 the material response (C) to the kinematic relationship (B).
 """
-function contraction(C::Array{Float64,4}, B::Array{Float64,3})
+function contraction!(C::Array{Float64,4}, B::Array{Float64,3},
+                      CB::AbstractArray{Float64,3})
     dof = size(C, 1)
-    CB = zeros(dof, dof, dof)
+    fill!(CB, 0.0)
 
     # CB_{mnq} = C_{mnop} * B_{opq}
-    for m in 1:dof, n in 1:dof, q in 1:dof
-        for o in 1:dof, p in 1:dof
-            CB[m, n, q] += C[m, n, o, p] * B[o, p, q]
+    @inbounds for q in 1:dof, p in 1:dof, o in 1:dof
+        B_opq = B[o, p, q]
+        for n in 1:dof, m in 1:dof
+            CB[m, n, q] += C[m, n, o, p] * B_opq
         end
     end
-
-    return CB
 end
 
 """
@@ -85,20 +85,56 @@ B1 = X_ik' * D_inv (row vector)
 B2 = D_inv' * X_ik (column vector)
 The tensor incorporates both volumetric and influence function weights.
 """
-function create_B_tensor(D_inv::Matrix{Float64}, X_ik::Vector{Float64},
-                         V_k::Float64, omega_ik::Float64)
+function create_B_tensor!(D_inv::Matrix{Float64}, X_ik::Vector{Float64},
+                          V_k::Float64, omega_ik::Float64, B_tensor::Array{Float64,3})
     dof = length(X_ik)
-    factor = omega_ik * V_k / 2
-    B_tensor = zeros(dof, dof, dof)
-    B1 = X_ik' * D_inv  # Row vector (1×dof)
-    B2 = D_inv' * X_ik  # Column vector (dof×1)
+    factor = omega_ik * V_k * 0.5  # Multiplication often faster than division
 
-    for m in 1:dof, n in 1:dof, p in 1:dof
-        B_tensor[m, n, p] = factor * (kronecker_delta(m, p) * B1[n] +
-                             kronecker_delta(n, p) * B2[m])
+    @inbounds @fastmath if dof == 2
+        # Compute B1 and B2 inline
+        B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2]
+        B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2]
+        B2_1 = D_inv[1, 1] * X_ik[1] + D_inv[1, 2] * X_ik[2]
+        B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2]
+
+        # Direct assignment with factor
+        B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
+        B_tensor[1, 2, 1] = factor * B1_2
+        B_tensor[1, 2, 2] = factor * B2_1
+        B_tensor[2, 1, 1] = factor * B2_2
+        B_tensor[2, 1, 2] = factor * B1_1
+        B_tensor[2, 2, 2] = factor * (B1_2 + B2_2)
+
+    else  # dof == 3
+        # Compute B1 and B2 inline
+        B1_1 = D_inv[1, 1] * X_ik[1] + D_inv[2, 1] * X_ik[2] + D_inv[3, 1] * X_ik[3]
+        B1_2 = D_inv[1, 2] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[3, 2] * X_ik[3]
+        B1_3 = D_inv[1, 3] * X_ik[1] + D_inv[2, 3] * X_ik[2] + D_inv[3, 3] * X_ik[3]
+        B2_1 = D_inv[1, 1] * X_ik[1] + D_inv[1, 2] * X_ik[2] + D_inv[1, 3] * X_ik[3]
+        B2_2 = D_inv[2, 1] * X_ik[1] + D_inv[2, 2] * X_ik[2] + D_inv[2, 3] * X_ik[3]
+        B2_3 = D_inv[3, 1] * X_ik[1] + D_inv[3, 2] * X_ik[2] + D_inv[3, 3] * X_ik[3]
+
+        # Direct assignment with factor
+        B_tensor[1, 1, 1] = factor * (B1_1 + B2_1)
+        B_tensor[1, 2, 1] = factor * B1_2
+        B_tensor[1, 3, 1] = factor * B1_3
+        B_tensor[1, 2, 2] = factor * B2_1
+        B_tensor[1, 3, 3] = factor * B2_1
+
+        B_tensor[2, 1, 1] = factor * B2_2
+        B_tensor[2, 1, 2] = factor * B1_1
+        B_tensor[2, 2, 2] = factor * (B1_2 + B2_2)
+        B_tensor[2, 3, 2] = factor * B1_3
+        B_tensor[2, 3, 3] = factor * B2_2
+
+        B_tensor[3, 1, 1] = factor * B2_3
+        B_tensor[3, 2, 2] = factor * B2_3
+        B_tensor[3, 1, 3] = factor * B1_1
+        B_tensor[3, 2, 3] = factor * B1_2
+        B_tensor[3, 3, 3] = factor * (B1_3 + B2_3)
     end
 
-    return B_tensor
+    return nothing
 end
 
 """
@@ -155,7 +191,8 @@ Returns:
 This operator is central to the linearized correspondence formulation,
 enabling efficient implicit solution methods.
 """
-function compute_linearized_operator(CB_ik::Array{Float64,3}, D_inv_i::Matrix{Float64},
+function compute_linearized_operator(CB_ik::AbstractArray{Float64,3},
+                                     D_inv_i::Matrix{Float64},
                                      X_ij::Vector{Float64}, omega_ij::Float64,
                                      V_k::Float64, omega_ik::Float64)
     dof = size(CB_ik, 1)
@@ -399,19 +436,20 @@ function add_block_to_coo!(I_indices::Vector{Int},
     end
 end
 # Helper function 1: Precompute CB tensors for all k neighbors
-function precompute_CB_tensors!(CB_k::AbstractVector{Array{Float64,3}},
+function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
                                 C_tensor::Array{Float64,4},
                                 D_inv::Matrix{Float64},
                                 neighbors::Vector{Int64},
                                 volume::Vector{Float64},
                                 bond_geometry_i::Vector{Vector{Float64}},
                                 omega_i::Vector{Float64})
+    B_ik = zeros(Float64, size(CB_k, 2), size(CB_k, 3), size(CB_k, 4))
     @inbounds for (k_idx, k) in enumerate(neighbors)
         V_k = volume[k]
         omega_ik = omega_i[k_idx]
         X_ik = bond_geometry_i[k_idx]
-        B_ik = create_B_tensor(D_inv, X_ik, V_k, omega_ik)
-        CB_k[k_idx] = contraction(C_tensor, B_ik)
+        create_B_tensor!(D_inv, X_ik, V_k, omega_ik, B_ik)
+        @views contraction!(C_tensor, B_ik, CB_k[k_idx, :, :, :])
     end
     return nothing
 end
@@ -419,7 +457,7 @@ end
 # Helper function 2: Accumulate K contributions for a (j,k) pair
 @inline function accumulate_K_contributions!(K_ij_j::Matrix{Float64},
                                              K_ij_i::Matrix{Float64},
-                                             CB_k::Array{Float64,3},
+                                             CB_k::AbstractArray{Float64,3},
                                              D_inv::Matrix{Float64},
                                              X_ij::Vector{Float64},
                                              omega_ij::Float64,
@@ -506,8 +544,7 @@ function init_assemble_stiffness_contributions_sparse(nodes::AbstractVector{Int6
     K_ij_i = zeros(dof, n_total)
 
     # Buffer for CB tensors (allocate once, reuse)
-    max_neighbors = maximum(number_of_neighbors[i] for i in nodes)
-    CB_k_buffer = Vector{Array{Float64,3}}(undef, max_neighbors)
+    CB_k_buffer = zeros(maximum(number_of_neighbors), dof, dof, dof)
 
     for i in nodes
         D_inv = inverse_shape_tensor[i, :, :]
@@ -517,11 +554,7 @@ function init_assemble_stiffness_contributions_sparse(nodes::AbstractVector{Int6
         ni = nlist[i]
         n_neighbors = length(ni)
 
-        # Resize CB buffer if necessary
-        if n_neighbors > length(CB_k_buffer)
-            resize!(CB_k_buffer, n_neighbors)
-        end
-        CB_k = @view CB_k_buffer[1:n_neighbors]
+        CB_k = @view CB_k_buffer[1:n_neighbors, :, :, :]
 
         # Step 1: Precompute CB tensors (once per i)
         precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
@@ -543,9 +576,9 @@ function init_assemble_stiffness_contributions_sparse(nodes::AbstractVector{Int6
                 V_k = volume[k]
                 k_offset = (k-1)*dof
 
-                accumulate_K_contributions!(K_ij_j, K_ij_i, CB_k[k_idx],
-                                            D_inv, X_ij, omega_ij, V_k, omega_ik,
-                                            i_offset, k_offset, dof)
+                @views accumulate_K_contributions!(K_ij_j, K_ij_i, CB_k[k_idx, :, :, :],
+                                                   D_inv, X_ij, omega_ij, V_k, omega_ik,
+                                                   i_offset, k_offset, dof)
             end
 
             # Step 4: Add COO entries

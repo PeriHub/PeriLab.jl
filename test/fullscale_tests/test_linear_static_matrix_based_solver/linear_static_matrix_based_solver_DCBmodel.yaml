@@ -31,13 +31,13 @@ PeriLab:
       Coordinate: y
       Node Set: Node Set 1
       Variable: Displacements
-      Value: 8e-6*t
+      Value: 4.4*t
       Type: Dirichlet
     BC_2:
       Coordinate: y
       Node Set: Node Set 2
       Variable: Displacements
-      Value: -8e-6*t
+      Value: -4.4*t
       Type: Dirichlet
   Compute Class Parameters:
     External_Forces:
@@ -72,7 +72,7 @@ PeriLab:
         Type: Rectangular_Plane
   Outputs:
     Output1:
-      Number of Output Steps: 100
+      Output Frequency: 1
       Output Filename: linear_static_matrix_based_solver_DCBmodel
       Output File Type: Exodus
       Output Variables:
@@ -102,14 +102,14 @@ PeriLab:
       Deformed Bond Geometry: true
       Shape Tensor: false
   Solver:
-    Final Time: 1.0
+    Final Time: 0.0002
     Initial Time: 0.0
-    Number of Steps: 10
+    Number of Steps: 2
     Material Models: true
     Damage Models: true
     Linear Static Matrix Based:
       Safety Factor: 1.0
-      Number of Steps: 100
+
     #Verlet:
     #  Safety Factor: 0.9
     #  Numerical Damping: 5.0e-06
