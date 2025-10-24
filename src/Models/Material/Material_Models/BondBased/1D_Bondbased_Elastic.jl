@@ -4,7 +4,6 @@
 
 module OneD_Bond_Based_Elastic
 using LoopVectorization
-using TimerOutputs
 export init_model
 export fe_support
 export material_name
@@ -79,8 +78,7 @@ function compute_model(datamanager::Module,
                        material_parameter::Dict{String,Any},
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     undeformed_bond_length = datamanager.get_field("Bond Length")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     deformed_bond = datamanager.get_field("Deformed Bond Geometry", "NP1")

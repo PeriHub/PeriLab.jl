@@ -5,7 +5,6 @@
 module Static_Solver
 using LinearAlgebra
 using NLsolve
-using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
 using LoopVectorization
@@ -188,7 +187,6 @@ function run_solver(solver_options::Dict{Any,Any},
                     write_results,
                     compute_parabolic_problems_before_model_evaluation,
                     compute_parabolic_problems_after_model_evaluation,
-                    to::TimerOutputs.TimerOutput,
                     silent::Bool)
     atexit(() -> datamanager.set_cancel(true))
 
@@ -253,7 +251,6 @@ function run_solver(solver_options::Dict{Any,Any},
                                        time,
                                        solver_options,
                                        synchronise_field,
-                                       to,
                                        scaling),
                       start_u;
                       xtol = xtol,
@@ -300,11 +297,11 @@ function run_solver(solver_options::Dict{Any,Any},
         :] = force_densities[active_nodes, :] .*
                                          volume[active_nodes]
 
-        @timeit to "write_results" result_files=write_results(result_files, time,
-                                                              max_damage, outputs,
-                                                              datamanager)
+        @timeit "write_results" result_files=write_results(result_files, time,
+                                                           max_damage, outputs,
+                                                           datamanager)
 
-        @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
+        @timeit "switch_NP1_to_N" datamanager.switch_NP1_to_N()
 
         time += dt
         step_time += dt
@@ -329,7 +326,6 @@ function residual!(residual,
                    time,
                    solver_options,
                    synchronise_field,
-                   to,
                    scaling)
     active_list = datamanager.get_field("Active")
 
@@ -368,13 +364,12 @@ function residual!(residual,
                                                dt,
                                                time,
                                                solver_options["Models"],
-                                               synchronise_field,
-                                               to)
+                                               synchronise_field)
 
     datamanager.synch_manager(synchronise_field, "download_from_cores")
     # synch
 
-    # @timeit to "apply_bc_neumann" datamanager = apply_bc_neumann(bcs, datamanager, time) #-> von neumann
+    # @timeit "apply_bc_neumann" datamanager = apply_bc_neumann(bcs, datamanager, time) #-> von neumann
     #active_nodes = datamanager.get_field("Active Nodes")
     #active_nodes =            find_active_nodes(active_list, active_nodes, 1:datamanager.get_nnodes())
 

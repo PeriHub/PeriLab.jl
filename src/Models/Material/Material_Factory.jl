@@ -20,7 +20,6 @@ using ...Material_Basis:
                          init_local_damping_due_to_damage,
                          local_damping_due_to_damage
 using LinearAlgebra: dot
-using TimerOutputs
 using StaticArrays
 
 export init_model
@@ -112,7 +111,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     for material_model in material_models
         mod = create_module_specifics(material_model,
                                       module_list,
-                                          @__MODULE__,
+                                      @__MODULE__,
                                       "material_name")
         datamanager.set_analysis_model("Material Model", block, material_model)
         if isnothing(mod)
@@ -167,7 +166,7 @@ function fields_for_local_synchronization(datamanager, model, block)
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict{String,Any}, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict{String,Any}, block::Int64, time::Float64, dt::Float64)
 
 Computes the material models
 
@@ -186,15 +185,13 @@ function compute_model(datamanager::Module,
                        model_param::Dict{String,Any},
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
-    @timeit to "all" begin
+                       dt::Float64)
+    @timeit "all" begin
         if occursin("Correspondence", model_param["Material Model"])
-            @timeit to "corresponcence" begin
+            @timeit "corresponcence" begin
                 datamanager = Correspondence.compute_model(datamanager, nodes, model_param,
                                                            block, time,
-                                                           dt,
-                                                           to)
+                                                           dt)
                 return datamanager
             end
         end
@@ -203,8 +200,7 @@ function compute_model(datamanager::Module,
             mod = datamanager.get_model_module(material_model)
 
             datamanager = mod.compute_model(datamanager, nodes, model_param, block, time,
-                                            dt,
-                                            to)
+                                            dt)
         end
         return datamanager
     end
@@ -251,8 +247,8 @@ Distribute the force densities.
 - `datamanager::Data_Manager`: Datamanager.
 """
 function distribute_force_densities(datamanager::Module,
-                                    nodes::AbstractVector{Int64}, to::TimerOutput)
-    @timeit to "load data" begin
+                                    nodes::AbstractVector{Int64})
+    @timeit "load data" begin
         nlist = datamanager.get_nlist()
         nlist_filtered_ids = datamanager.get_filtered_nlist()
         bond_force = datamanager.get_field("Bond Forces")
@@ -263,18 +259,18 @@ function distribute_force_densities(datamanager::Module,
     if !isnothing(nlist_filtered_ids)
         bond_norm = datamanager.get_field("Bond Norm")
         displacements = datamanager.get_field("Displacements", "NP1")
-        @timeit to "local dist" force_densities=distribute_forces!(force_densities,
-                                                                   nodes,
-                                                                   nlist,
-                                                                   nlist_filtered_ids,
-                                                                   bond_force,
-                                                                   volume,
-                                                                   bond_damage,
-                                                                   displacements,
-                                                                   bond_norm)
+        @timeit "local dist" force_densities=distribute_forces!(force_densities,
+                                                                nodes,
+                                                                nlist,
+                                                                nlist_filtered_ids,
+                                                                bond_force,
+                                                                volume,
+                                                                bond_damage,
+                                                                displacements,
+                                                                bond_norm)
     else
-        @timeit to "local dist" distribute_forces!(force_densities, nodes, nlist,
-                                                   bond_force, volume, bond_damage)
+        @timeit "local dist" distribute_forces!(force_densities, nodes, nlist,
+                                                bond_force, volume, bond_damage)
     end
 end
 end

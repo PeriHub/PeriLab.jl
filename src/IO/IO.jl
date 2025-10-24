@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module IO
-using TimerOutputs
 using MPI
 using DataFrames
 using PrettyTables
@@ -385,7 +384,7 @@ function get_results_mapping(params::Dict, path::String, datamanager::Module)
 end
 
 """
-    initialize_data(filename::String, filedirectory::String, datamanager::Module, comm::MPI.Comm, to::TimerOutputs.TimerOutput)
+    initialize_data(filename::String, filedirectory::String, datamanager::Module, comm::MPI.Comm)
 
 Initialize data.
 
@@ -394,25 +393,22 @@ Initialize data.
 - `filedirectory::String`: The directory of the input file.
 - `datamanager::Module`: The datamanager
 - `comm::MPI.Comm`: The MPI communicator
-- `to::TimerOutputs.TimerOutput`: The TimerOutput
 # Returns
 - `data::Dict`: The data
 """
 function initialize_data(filename::String,
                          filedirectory::String,
                          datamanager::Module,
-                         comm::MPI.Comm,
-                         to::TimerOutputs.TimerOutput)
+                         comm::MPI.Comm)
     datamanager.set_directory(filedirectory)
-    @timeit to "MPI init data" begin
+    @timeit "MPI init data" begin
         datamanager.set_rank(MPI.Comm_rank(comm))
         datamanager.set_max_rank(MPI.Comm_size(comm))
         datamanager.set_comm(comm)
     end
-    @timeit to "init_data" datamanager,
-                           params=init_data(read_input_file(filename),
-                                            filedirectory, datamanager, comm,
-                                            to)
+    @timeit "init_data" datamanager,
+                        params=init_data(read_input_file(filename),
+                                         filedirectory, datamanager, comm)
     steps = get_solver_steps(params)
     return datamanager, params, steps
 end

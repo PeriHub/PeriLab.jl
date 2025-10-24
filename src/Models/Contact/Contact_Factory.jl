@@ -10,7 +10,6 @@ for mod in module_list
     include(mod["File"])
 end
 
-using TimerOutputs
 using LinearAlgebra
 using .....MPI_Communication: find_and_set_core_value_sum
 include("Contact_search.jl")
@@ -122,7 +121,7 @@ function init_contact_model(datamanager::Module, params)
 
         mod = create_module_specifics(contact_params["Type"],
                                       module_list,
-                                          @__MODULE__,
+                                      @__MODULE__,
                                       "contact_model_name")
         if isnothing(mod)
             @error "No contact model of type " * contact_params["Type"] *
@@ -189,7 +188,7 @@ function get_all_contact_blocks(params)
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64, to::TimerOutput)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
 Compute the forces of the contact model.
 
@@ -206,8 +205,7 @@ Compute the forces of the contact model.
 function compute_contact_model(datamanager::Module,
                                contact_params::Dict,
                                time::Float64,
-                               dt::Float64,
-                               to::TimerOutput)
+                               dt::Float64)
     # computes and synchronizes the relevant positions
     all_positions = datamanager.get_all_positions()
     if datamanager.global_synchronization()
@@ -226,7 +224,7 @@ function compute_contact_model(datamanager::Module,
                                                    all_positions, update_list)
     end
     datamanager.set_all_positions(all_positions)
-    @timeit to "Contact search" begin
+    @timeit "Contact search" begin
         for (cm, block_contact_params) in pairs(contact_params)
             if cm == "Globals"
                 continue
@@ -240,14 +238,14 @@ function compute_contact_model(datamanager::Module,
                 block_contact_group["Contact Radius"] = block_contact_params["Contact Radius"]
                 datamanager.set_contact_dict(cg, Dict())
 
-                @timeit to "compute_contact_pairs" compute_contact_pairs(datamanager,
-                                                                         cg,
-                                                                         block_contact_group)
-                @timeit to "compute_contact_model" datamanager=mod.compute_contact_model(datamanager,
-                                                                                         cg,
-                                                                                         block_contact_params,
-                                                                                         compute_master_force_density,
-                                                                                         compute_slave_force_density)
+                @timeit "compute_contact_pairs" compute_contact_pairs(datamanager,
+                                                                      cg,
+                                                                      block_contact_group)
+                @timeit "compute_contact_model" datamanager=mod.compute_contact_model(datamanager,
+                                                                                      cg,
+                                                                                      block_contact_params,
+                                                                                      compute_master_force_density,
+                                                                                      compute_slave_force_density)
                 if n == block_contact_group["Global Search Frequency"]
                     datamanager.set_search_step(cg, 0)
                 end

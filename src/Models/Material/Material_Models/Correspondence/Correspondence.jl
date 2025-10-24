@@ -15,7 +15,6 @@ end
 using LinearAlgebra
 using StaticArrays
 using LoopVectorization
-using TimerOutputs
 using Rotations
 include("./Bond_Associated_Correspondence.jl")
 using .Bond_Associated_Correspondence
@@ -135,7 +134,7 @@ function fields_for_local_synchronization(datamanager::Module,
 end
 
 """
-    compute_model(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
+    compute_model(datamanager, nodes, material_parameter, time, dt)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -156,24 +155,21 @@ function compute_model(datamanager::Module,
                        material_parameter::Dict{String,Any},
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     if material_parameter["Bond Associated"]
         return Bond_Associated_Correspondence.compute_model(datamanager,
                                                             nodes,
                                                             material_parameter,
                                                             block,
                                                             time,
-                                                            dt,
-                                                            to)
+                                                            dt)
     end
     return compute_correspondence_model(datamanager,
                                         nodes,
                                         material_parameter,
                                         block,
                                         time,
-                                        dt,
-                                        to)
+                                        dt)
 end
 
 function compute_correspondence_model(datamanager::Module,
@@ -181,8 +177,7 @@ function compute_correspondence_model(datamanager::Module,
                                       material_parameter::Dict{String,Any},
                                       block::Int64,
                                       time::Float64,
-                                      dt::Float64,
-                                      to::TimerOutput)
+                                      dt::Float64)
     rotation::Bool = datamanager.get_rotation()
     dof = datamanager.get_dof()
     deformation_gradient = datamanager.get_field("Deformation Gradient")
@@ -207,7 +202,7 @@ function compute_correspondence_model(datamanager::Module,
 
     # material_models = split(material_parameter["Material Model"], "+")
     # material_models = map(r -> strip(r), material_models)
-    @timeit to "Calculated material" begin
+    @timeit "Calculated material" begin
         for material_model in datamanager.get_analysis_model("Correspondence Model", block)
             mod = datamanager.get_model_module(material_model)
 
@@ -226,18 +221,18 @@ function compute_correspondence_model(datamanager::Module,
     if rotation
         stress_NP1 = rotate(nodes, stress_NP1, rotation_tensor, true)
     end
-    @timeit to "Calculated bond force" calculate_bond_force!(nodes,
-                                                             dof,
-                                                             deformation_gradient,
-                                                             undeformed_bond,
-                                                             bond_damage,
-                                                             inverse_shape_tensor,
-                                                             stress_NP1,
-                                                             bond_force)
+    @timeit "Calculated bond force" calculate_bond_force!(nodes,
+                                                          dof,
+                                                          deformation_gradient,
+                                                          undeformed_bond,
+                                                          bond_damage,
+                                                          inverse_shape_tensor,
+                                                          stress_NP1,
+                                                          bond_force)
     # TODO general interface, because it might be a flexbile Set_modules interface in future
-    @timeit to "zero energy" datamanager=zero_energy_mode_compensation(datamanager, nodes,
-                                                                       material_parameter,
-                                                                       time, dt)
+    @timeit "zero energy" datamanager=zero_energy_mode_compensation(datamanager, nodes,
+                                                                    material_parameter,
+                                                                    time, dt)
     return datamanager
 end
 

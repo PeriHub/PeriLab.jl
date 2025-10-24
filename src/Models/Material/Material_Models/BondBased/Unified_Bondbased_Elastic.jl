@@ -13,7 +13,6 @@ It is simplified. Rigid body motion is not considered )omega_{ij} = 0 as well as
 #
 import ....Material_Basis: get_symmetry, apply_pointwise_E
 using LoopVectorization
-using TimerOutputs
 export init_model
 export fe_support
 export material_name
@@ -136,8 +135,7 @@ function compute_model(datamanager::Module,
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     constant = datamanager.get_field("Unified Bond Based Constant")
     undeformed_bond = datamanager.get_field("Bond Geometry")
     undeformed_bond_length = datamanager.get_field("Bond Length")
@@ -220,10 +218,10 @@ function compute_bond_based_strain(bb_strain,
                 end
 
                 bb_strain[k,
-                          l] += bond_damage[j] *
-                                (deformed_bond[j][k] - undeformed_bond[j][k]) *
-                                volume[nlist[j]] /
-                                (undeformed_bond[j][l] * reference_volume)
+                l] += bond_damage[j] *
+                                   (deformed_bond[j][k] - undeformed_bond[j][k]) *
+                                   volume[nlist[j]] /
+                                   (undeformed_bond[j][l] * reference_volume)
             end
         end
     end

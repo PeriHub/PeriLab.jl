@@ -10,7 +10,6 @@ for mod in module_list
     include(mod["File"])
 end
 
-using TimerOutputs
 using LoopVectorization
 using .....Helpers: find_inverse_bond_id
 export fields_for_local_synchronization
@@ -42,7 +41,7 @@ function init_fields(datamanager::Module)
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
 Computes the damage model
 
@@ -61,19 +60,18 @@ function compute_model(datamanager::Module,
                        model_param::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     mod = datamanager.get_model_module(model_param["Damage Model"])
 
-    @timeit to "run model" datamanager=mod.compute_model(datamanager, nodes, model_param,
-                                                         block, time, dt)
+    @timeit "run model" datamanager=mod.compute_model(datamanager, nodes, model_param,
+                                                      block, time, dt)
 
     if isnothing(datamanager.get_filtered_nlist())
-        @timeit to "compute index" return damage_index(datamanager, nodes)
+        @timeit "compute index" return damage_index(datamanager, nodes)
     end
 
-    @timeit to "compute index" return damage_index(datamanager, nodes,
-                                                   datamanager.get_filtered_nlist())
+    @timeit "compute index" return damage_index(datamanager, nodes,
+                                                datamanager.get_filtered_nlist())
 end
 
 """
@@ -185,7 +183,7 @@ function init_interface_crit_values(datamanager::Module,
             if haskey(damage_parameter["Interblock Damage"], critical_value_name)
                 if damage_parameter["Interblock Damage"][critical_value_name] isa Number
                     inter_critical_value[block_iId, block_jId,
-                                         block_id] = damage_parameter["Interblock Damage"][critical_value_name]
+                    block_id] = damage_parameter["Interblock Damage"][critical_value_name]
                 end
             end
         end
@@ -257,7 +255,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     # end
     mod = create_module_specifics(model_param["Damage Model"],
                                   module_list,
-                                          @__MODULE__,
+                                  @__MODULE__,
                                   "damage_name")
 
     if isnothing(mod)

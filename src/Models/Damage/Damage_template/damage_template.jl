@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Damage_template
-using TimerOutputs
 export init_model
 export compute_model
 export damage_name
@@ -51,8 +50,7 @@ function compute_model(datamanager::Module,
                        damage_parameter::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     @info "Please write a damage model name in damage_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model(datamanager, nodes, damage_parameter, block, time, dt) function."

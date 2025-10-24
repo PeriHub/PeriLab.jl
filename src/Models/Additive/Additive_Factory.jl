@@ -10,7 +10,6 @@ for mod in module_list
     include(mod["File"])
 end
 
-using TimerOutputs
 using .....Helpers: find_inverse_bond_id
 export compute_model
 export init_model
@@ -52,7 +51,7 @@ function init_fields(datamanager::Module)
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
 Computes the addtive models
 
@@ -71,8 +70,7 @@ function compute_model(datamanager::Module,
                        model_param::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     mod = datamanager.get_model_module(model_param["Additive Model"])
     return mod.compute_model(datamanager, nodes, model_param, block, time, dt)
 end
@@ -100,7 +98,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
     model_param = datamanager.get_properties(block, "Additive Model")
     mod = create_module_specifics(model_param["Additive Model"],
                                   module_list,
-                                          @__MODULE__,
+                                  @__MODULE__,
                                   "additive_name")
     if isnothing(mod)
         @error "No additive model of name " * model_param["Additive Model"] * " exists."

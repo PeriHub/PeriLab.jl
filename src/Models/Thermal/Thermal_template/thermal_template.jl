@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal_template
-using TimerOutputs
 export compute_model
 export init_model
 export thermal_model_name

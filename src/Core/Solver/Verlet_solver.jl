@@ -4,7 +4,6 @@
 
 module Verlet_Solver
 using LinearAlgebra
-using TimerOutputs
 using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
 using LoopVectorization
@@ -361,7 +360,6 @@ end
         result_files::Vector{Any},
         synchronise_field,
         write_results,
-        to::TimerOutputs.TimerOutput,
         silent::Bool
     )
 
@@ -378,7 +376,6 @@ This function performs the Verlet solver simulation, updating various data field
 - `result_files::Vector{Any}`: A vector of result files.
 - `synchronise_field`: A function for synchronization.
 - `write_results`: A function to write simulation results.
-- `to::TimerOutputs.TimerOutput`: A timer output.
 - `silent::Bool`: A boolean flag to suppress progress bars.
 
 # Returns
@@ -403,7 +400,6 @@ function run_solver(solver_options::Dict{Any,Any},
                     write_results,
                     compute_parabolic_problems_before_model_evaluation,
                     compute_parabolic_problems_after_model_evaluation,
-                    to::TimerOutputs.TimerOutput,
                     silent::Bool)
     atexit(() -> datamanager.set_cancel(true))
 
@@ -440,7 +436,7 @@ function run_solver(solver_options::Dict{Any,Any},
     #nodes::Vector{Int64} = Vector{Int64}(1:datamanager.get_nnodes())
     @inbounds @fastmath for idt in iter
         datamanager.set_iteration(idt)
-        @timeit to "Verlet" begin
+        @timeit "Verlet" begin
             if "Material" in solver_options["Models"]
                 uNP1 = datamanager.get_field("Displacements", "NP1")
                 deformed_coorNP1 = datamanager.get_field("Deformed Coordinates", "NP1")
@@ -495,34 +491,33 @@ function run_solver(solver_options::Dict{Any,Any},
                 :] = coor[active_nodes, :] .+
                                                            uNP1[active_nodes, :]
             end
-            @timeit to "upload_to_cores" datamanager.synch_manager(synchronise_field,
-                                                                   "upload_to_cores")
+            @timeit "upload_to_cores" datamanager.synch_manager(synchronise_field,
+                                                                "upload_to_cores")
             # synch
 
-            @timeit to "compute_models" datamanager=compute_models(datamanager,
-                                                                   block_nodes,
-                                                                   dt,
-                                                                   time,
-                                                                   solver_options["Models"],
-                                                                   synchronise_field,
-                                                                   to)
+            @timeit "compute_models" datamanager=compute_models(datamanager,
+                                                                block_nodes,
+                                                                dt,
+                                                                time,
+                                                                solver_options["Models"],
+                                                                synchronise_field)
             # update the current active nodes; might have been changed by the additive models
 
             if "Material" in solver_options["Models"]
                 # TODO rename function -> missleading, because strains are also covered. Has to be something like a factory class
-                @timeit to "calculate_stresses" datamanager=calculate_stresses(datamanager,
-                                                                               block_nodes,
-                                                                               solver_options["Calculation"])
+                @timeit "calculate_stresses" datamanager=calculate_stresses(datamanager,
+                                                                            block_nodes,
+                                                                            solver_options["Calculation"])
             end
 
-            @timeit to "download_from_cores" datamanager.synch_manager(synchronise_field,
-                                                                       "download_from_cores")
+            @timeit "download_from_cores" datamanager.synch_manager(synchronise_field,
+                                                                    "download_from_cores")
             # synch
             datamanager = apply_bc_dirichlet(["Forces", "Force Densities"],
                                              bcs,
                                              datamanager, time,
                                              step_time) #-> Dirichlet
-            # @timeit to "apply_bc_neumann" datamanager = apply_bc_neumann(bcs, datamanager, time) #-> von neumann
+            # @timeit "apply_bc_neumann" datamanager = apply_bc_neumann(bcs, datamanager, time) #-> von neumann
             active_nodes = datamanager.get_field("Active Nodes")
             active_nodes = find_active_nodes(active_list, active_nodes,
                                              1:datamanager.get_nnodes())
@@ -589,9 +584,9 @@ function run_solver(solver_options::Dict{Any,Any},
                     end
                 end
             end
-            @timeit to "write_results" result_files=write_results(result_files, time,
-                                                                  max_damage, outputs,
-                                                                  datamanager)
+            @timeit "write_results" result_files=write_results(result_files, time,
+                                                               max_damage, outputs,
+                                                               datamanager)
             # for file in result_files
             #     flush(file)
             # end
@@ -599,7 +594,7 @@ function run_solver(solver_options::Dict{Any,Any},
                 set_multiline_postfix(iter, "Simulation canceled!")
                 break
             end
-            @timeit to "switch_NP1_to_N" datamanager.switch_NP1_to_N()
+            @timeit "switch_NP1_to_N" datamanager.switch_NP1_to_N()
 
             time += dt
             step_time += dt

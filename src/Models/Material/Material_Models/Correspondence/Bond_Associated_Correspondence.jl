@@ -5,7 +5,6 @@
 module Bond_Associated_Correspondence
 using LinearAlgebra: mul!
 using StaticArrays: I, @MMatrix
-using TimerOutputs
 using .....Material_Basis: compute_Piola_Kirchhoff_stress!
 using ........Helpers:
                        find_local_neighbors, invert, rotate, determinant, smat,
@@ -90,8 +89,7 @@ function compute_model(datamanager::Module,
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     rotation::Bool = datamanager.get_rotation()
 
     dof = datamanager.get_dof()

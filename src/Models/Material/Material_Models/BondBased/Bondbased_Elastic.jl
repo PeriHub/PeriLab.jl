@@ -6,7 +6,6 @@ module Bondbased_Elastic
 using ....Material_Basis: get_symmetry, apply_pointwise_E, compute_bond_based_constants
 using .......Helpers: is_dependent
 using LoopVectorization
-using TimerOutputs
 export init_model
 export fe_support
 export material_name
@@ -83,8 +82,7 @@ function compute_model(datamanager::Module,
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     constant = datamanager.get_field("Bond Based Constant")
 
     undeformed_bond_length = datamanager.get_field("Bond Length")

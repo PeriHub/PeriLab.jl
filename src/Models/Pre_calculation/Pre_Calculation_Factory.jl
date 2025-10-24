@@ -12,8 +12,6 @@ end
 
 using DataStructures
 
-using TimerOutputs
-
 export init_fields
 export init_model
 export fields_for_local_synchronization
@@ -83,7 +81,7 @@ function init_model(datamanager::Module, nodes::AbstractVector{Int64},
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64,to::TimerOutput,)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, model_param::Dict, block::Int64, time::Float64, dt::Float64)
 
 Computes the pre calculation models
 
@@ -102,18 +100,17 @@ function compute_model(datamanager::Module,
                        model_param::Union{Dict,OrderedDict},
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     for (pre_calculation_model, active) in pairs(model_param)
         if !active
             continue
         end
         mod = datamanager.get_model_module(pre_calculation_model)
 
-        @timeit to "compute $pre_calculation_model" datamanager=mod.compute(datamanager,
-                                                                            nodes,
-                                                                            model_param,
-                                                                            block)
+        @timeit "compute $pre_calculation_model" datamanager=mod.compute(datamanager,
+                                                                         nodes,
+                                                                         model_param,
+                                                                         block)
     end
 
     return datamanager

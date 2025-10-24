@@ -59,9 +59,9 @@ Congratulations you first model works and runs. However, it does not do anything
 The module TimerOutputs allows you measuring the computation speed and memory for certain functions or areas of your code.
 
 ```julia
-@timeit to "foo function" foo()
+@timeit "foo function" foo()
 
-@timeit to "more foo functions" begin
+@timeit "more foo functions" begin
     foo1()
     foo2()
 end

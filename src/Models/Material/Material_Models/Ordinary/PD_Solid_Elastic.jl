@@ -5,7 +5,6 @@
 module PD_Solid_Elastic
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!
-using TimerOutputs
 using StaticArrays
 using ..Ordinary:
                   compute_weighted_volume!, compute_dilatation!, calculate_symmetry_params,
@@ -89,7 +88,7 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
 end
 
 """
-    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64, to::TimerOutput)
+    compute_model(datamanager::Module, nodes::AbstractVector{Int64}, material_parameter::Dict, time::Float64, dt::Float64)
 
 Computes the forces.
 
@@ -107,8 +106,7 @@ function compute_model(datamanager::Module,
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     # global dof
     # global nlist
     # global volume
@@ -132,36 +130,36 @@ function compute_model(datamanager::Module,
 
     # optimizing, because if no damage it has not to be updated
     # TBD update_list should be used here as in shape_tensor.jl
-    @timeit to "Weighted Volume" compute_weighted_volume!(weighted_volume,
-                                                          nodes,
-                                                          nlist,
-                                                          undeformed_bond_length,
-                                                          bond_damage,
-                                                          omega,
-                                                          volume)
-    @timeit to "Dilatation" compute_dilatation!(nodes,
-                                                nlist,
-                                                undeformed_bond_length,
-                                                deformed_bond_length,
-                                                bond_damage,
-                                                volume,
-                                                weighted_volume,
-                                                omega,
-                                                theta)
-    @timeit to "elastic" elastic!(nodes,
-                                  undeformed_bond_length,
-                                  deformed_bond_length,
-                                  bond_damage,
-                                  theta,
-                                  weighted_volume,
-                                  omega,
-                                  material_parameter,
-                                  bond_force_deviatoric_part,
-                                  bond_force_isotropic_part)
+    @timeit "Weighted Volume" compute_weighted_volume!(weighted_volume,
+                                                       nodes,
+                                                       nlist,
+                                                       undeformed_bond_length,
+                                                       bond_damage,
+                                                       omega,
+                                                       volume)
+    @timeit "Dilatation" compute_dilatation!(nodes,
+                                             nlist,
+                                             undeformed_bond_length,
+                                             deformed_bond_length,
+                                             bond_damage,
+                                             volume,
+                                             weighted_volume,
+                                             omega,
+                                             theta)
+    @timeit "elastic" elastic!(nodes,
+                               undeformed_bond_length,
+                               deformed_bond_length,
+                               bond_damage,
+                               theta,
+                               weighted_volume,
+                               omega,
+                               material_parameter,
+                               bond_force_deviatoric_part,
+                               bond_force_isotropic_part)
     add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
-    @timeit to "get_bond_forces" bond_force=get_bond_forces(nodes, temp, deformed_bond,
-                                                            deformed_bond_length,
-                                                            bond_force, temp)
+    @timeit "get_bond_forces" bond_force=get_bond_forces(nodes, temp, deformed_bond,
+                                                         deformed_bond_length,
+                                                         bond_force, temp)
 
     return datamanager
 end

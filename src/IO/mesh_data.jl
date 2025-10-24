@@ -22,7 +22,7 @@ export init_data
 const TOLERANCE = 1.0e-14
 
 """
-    init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm, to::TimerOutput)
+    init_data(params::Dict, path::String, datamanager::Module, comm::MPI.Comm)
 
 Initializes the data for the mesh.
 
@@ -31,7 +31,6 @@ Initializes the data for the mesh.
 - `path::String`: The path to the mesh file.
 - `datamanager::Data_Manager`: The data manager.
 - `comm::MPI.Comm`: The MPI communicator.
-- `to::TimerOutput`: The timer output.
 # Returns
 - `datamanager::Data_Manager`: The data manager.
 - `params::Dict`: The parameters for the simulation.
@@ -39,28 +38,26 @@ Initializes the data for the mesh.
 function init_data(params::Dict,
                    path::String,
                    datamanager::Module,
-                   comm::MPI.Comm,
-                   to::TimerOutput)
-    @timeit to "init_data - mesh_data,jl" begin
+                   comm::MPI.Comm)
+    @timeit "init_data - mesh_data,jl" begin
         size = MPI.Comm_size(comm)
         rank = MPI.Comm_rank(comm) + 1
         fem_active::Bool = false
         if rank == 1
-            @timeit to "load_and_evaluate_mesh" distribution,
-                                                mesh,
-                                                ntype,
-                                                overlap_map,
-                                                nlist,
-                                                nlist_filtered_ids,
-                                                bond_norm,
-                                                dof,
-                                                nsets,
-                                                topology,
-                                                element_distribution=load_and_evaluate_mesh(params,
-                                                                                            path,
-                                                                                            size,
-                                                                                            to,
-                                                                                            datamanager.get_silent())
+            @timeit "load_and_evaluate_mesh" distribution,
+                                             mesh,
+                                             ntype,
+                                             overlap_map,
+                                             nlist,
+                                             nlist_filtered_ids,
+                                             bond_norm,
+                                             dof,
+                                             nsets,
+                                             topology,
+                                             element_distribution=load_and_evaluate_mesh(params,
+                                                                                         path,
+                                                                                         size,
+                                                                                         datamanager.get_silent())
             if !isnothing(element_distribution)
                 fem_active = true
             end
@@ -107,19 +104,19 @@ function init_data(params::Dict,
         # defines the order of the global nodes to the local core nodes
         datamanager.set_distribution(distribution[rank])
         datamanager.set_glob_to_loc(create_global_to_local_mapping(distribution[rank]))
-        @timeit to "get_local_overlap_map" overlap_map=get_local_overlap_map(overlap_map,
-                                                                             distribution,
-                                                                             size)
-        @timeit to "distribution_to_cores" datamanager=distribution_to_cores(comm,
-                                                                             datamanager,
-                                                                             mesh,
-                                                                             distribution,
-                                                                             dof)
-        @timeit to "distribute_neighborhoodlist_to_cores" datamanager=distribute_neighborhoodlist_to_cores(comm,
-                                                                                                           datamanager,
-                                                                                                           nlist,
-                                                                                                           distribution,
-                                                                                                           false)
+        @timeit "get_local_overlap_map" overlap_map=get_local_overlap_map(overlap_map,
+                                                                          distribution,
+                                                                          size)
+        @timeit "distribution_to_cores" datamanager=distribution_to_cores(comm,
+                                                                          datamanager,
+                                                                          mesh,
+                                                                          distribution,
+                                                                          dof)
+        @timeit "distribute_neighborhoodlist_to_cores" datamanager=distribute_neighborhoodlist_to_cores(comm,
+                                                                                                        datamanager,
+                                                                                                        nlist,
+                                                                                                        distribution,
+                                                                                                        false)
 
         if !isnothing(nlist_filtered_ids)
             create_and_distribute_bond_norm(comm,
@@ -821,7 +818,7 @@ function check_types_in_dataframe(mesh::DataFrame)
 end
 
 """
-    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64, to::TimerOutput)
+    load_and_evaluate_mesh(params::Dict, path::String, ranksize::Int64)
 
 Load and evaluate the mesh data.
 
@@ -829,7 +826,6 @@ Load and evaluate the mesh data.
 - `params::Dict`: The input parameters.
 - `path::String`: The path to the mesh file.
 - `ranksize::Int64`: The number of ranks.
-- `to::TimerOutput`: The timer output
 # Returns
 - `distribution::Array{Int64,1}`: The distribution of the mesh elements.
 - `mesh::DataFrame`: The mesh data as a DataFrame.
@@ -844,11 +840,10 @@ Load and evaluate the mesh data.
 function load_and_evaluate_mesh(params::Dict,
                                 path::String,
                                 ranksize::Int64,
-                                to::TimerOutput,
                                 silent::Bool)
     filename = joinpath(path, get_mesh_name(params))
     if params["Discretization"]["Type"] == "Abaqus"
-        @timeit to "read_mesh" mesh, nsets=read_mesh(filename, params)
+        @timeit "read_mesh" mesh, nsets=read_mesh(filename, params)
     elseif params["Discretization"]["Type"] == "Gcode"
         txt_file = replace(filename, ".gcode" => ".txt")
         @info txt_file
@@ -860,7 +855,7 @@ function load_and_evaluate_mesh(params::Dict,
         nsets = get_node_sets(params, path, mesh)
     else
         @debug "Read node sets"
-        @timeit to "read_mesh" mesh=read_mesh(filename, params)
+        @timeit "read_mesh" mesh=read_mesh(filename, params)
         nsets = get_node_sets(params, path, mesh)
     end
     nnodes = size(mesh, 1) + 1
@@ -883,13 +878,13 @@ function load_and_evaluate_mesh(params::Dict,
         @info "External topology files was read."
     end
     dof::Int64 = set_dof(mesh)
-    @timeit to "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, params, dof)
+    @timeit "neighborhoodlist" nlist, _=create_neighborhoodlist(mesh, params, dof)
     @debug "Finished init Neighborhoodlist"
-    @timeit to "apply_bond_filters" nlist, nlist_filtered_ids,
-                                    bond_norm=apply_bond_filters(nlist,
-                                                                 mesh,
-                                                                 params,
-                                                                 dof)
+    @timeit "apply_bond_filters" nlist, nlist_filtered_ids,
+                                 bond_norm=apply_bond_filters(nlist,
+                                                              mesh,
+                                                              params,
+                                                              dof)
     topology = nothing
     if !isnothing(external_topology)
         @info "Create a consistent neighborhood list with external topology definition."
@@ -901,14 +896,14 @@ function load_and_evaluate_mesh(params::Dict,
     end
     @debug "Start distribution"
     if haskey(params["Discretization"], "Distribution Type")
-        @timeit to "node_distribution" distribution, ptc,
-                                       ntype=node_distribution(nlist,
-                                                               ranksize,
-                                                               params["Discretization"]["Distribution Type"])
+        @timeit "node_distribution" distribution, ptc,
+                                    ntype=node_distribution(nlist,
+                                                            ranksize,
+                                                            params["Discretization"]["Distribution Type"])
     else
-        @timeit to "node_distribution" distribution, ptc,
-                                       ntype=node_distribution(nlist,
-                                                               ranksize)
+        @timeit "node_distribution" distribution, ptc,
+                                    ntype=node_distribution(nlist,
+                                                            ranksize)
     end
 
     el_distribution = nothing
@@ -918,7 +913,7 @@ function load_and_evaluate_mesh(params::Dict,
     end
     @debug "Finished distribution"
     @debug "Create Overlap"
-    @timeit to "overlap_map" overlap_map=create_overlap_map(distribution, ptc, ranksize)
+    @timeit "overlap_map" overlap_map=create_overlap_map(distribution, ptc, ranksize)
     @debug "Finished Overlap"
     return distribution,
            mesh,

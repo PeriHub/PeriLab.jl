@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Thermal_Decomposition
-using TimerOutputs
 export compute_model
 export degradation_name
 export init_model

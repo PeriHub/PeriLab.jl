@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module PD_Solid_Plastic
-using TimerOutputs
 
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!
@@ -113,7 +112,7 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
 end
 
 """
-    compute_model(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
+    compute_model(datamanager, nodes, material_parameter, time, dt)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -134,8 +133,7 @@ function compute_model(datamanager::Module,
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     volume = datamanager.get_field("Volume")
     nlist = datamanager.get_nlist()
     symmetry::String = get_symmetry(material_parameter)
@@ -155,39 +153,39 @@ function compute_model(datamanager::Module,
     lambdaN = datamanager.get_field("Lambda Plastic", "N")
     lambdaNP1 = datamanager.get_field("Lambda Plastic", "NP1")
 
-    @timeit to "calculate_symmetry_params" alpha, gamma,
-                                           kappa=calculate_symmetry_params(symmetry,
-                                                                           shear_modulus,
-                                                                           bulk_modulus)
-    @timeit to "compute_deviatoric_force_state_norm" compute_deviatoric_force_state_norm!(td_norm,
-                                                                                          nodes,
-                                                                                          nlist,
-                                                                                          alpha,
-                                                                                          bond_force_deviatoric_part,
-                                                                                          bond_damage,
-                                                                                          omega,
-                                                                                          volume,
-                                                                                          deviatoric_plastic_extension_state,
-                                                                                          temp)
+    @timeit "calculate_symmetry_params" alpha, gamma,
+                                        kappa=calculate_symmetry_params(symmetry,
+                                                                        shear_modulus,
+                                                                        bulk_modulus)
+    @timeit "compute_deviatoric_force_state_norm" compute_deviatoric_force_state_norm!(td_norm,
+                                                                                       nodes,
+                                                                                       nlist,
+                                                                                       alpha,
+                                                                                       bond_force_deviatoric_part,
+                                                                                       bond_damage,
+                                                                                       omega,
+                                                                                       volume,
+                                                                                       deviatoric_plastic_extension_state,
+                                                                                       temp)
     lambdaNP1 = copy(lambdaN)
 
-    @timeit to "plastic" bond_force_deviatoric_part,
-                         deviatoric_plastic_extension_state=plastic(nodes,
-                                                                    td_norm,
-                                                                    yield_value,
-                                                                    lambdaNP1,
-                                                                    alpha,
-                                                                    omega,
-                                                                    bond_damage,
-                                                                    deviatoric_plastic_extension_state,
-                                                                    bond_force_deviatoric_part)
+    @timeit "plastic" bond_force_deviatoric_part,
+                      deviatoric_plastic_extension_state=plastic(nodes,
+                                                                 td_norm,
+                                                                 yield_value,
+                                                                 lambdaNP1,
+                                                                 alpha,
+                                                                 omega,
+                                                                 bond_damage,
+                                                                 deviatoric_plastic_extension_state,
+                                                                 bond_force_deviatoric_part)
     add_in_place!(temp, bond_force_deviatoric_part, bond_force_isotropic_part)
-    @timeit to "get_bond_forces" bond_force=get_bond_forces(nodes,
-                                                            temp,
-                                                            deformed_bond,
-                                                            deformed_bond_length,
-                                                            bond_force,
-                                                            temp)
+    @timeit "get_bond_forces" bond_force=get_bond_forces(nodes,
+                                                         temp,
+                                                         deformed_bond,
+                                                         deformed_bond_length,
+                                                         bond_force,
+                                                         temp)
     return datamanager
 end
 

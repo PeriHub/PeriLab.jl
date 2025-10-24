@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Material_template
-using TimerOutputs
 export fe_support
 export init_model
 export material_name
@@ -87,7 +86,7 @@ function fields_for_local_synchronization(datamanager::Module, model::String)
 end
 
 """
-    compute_model(datamanager, nodes, material_parameter, time, dt, to::TimerOutput)
+    compute_model(datamanager, nodes, material_parameter, time, dt)
 
 Calculates the force densities of the material. This template has to be copied, the file renamed and edited by the user to create a new material. Additional files can be called from here using include and `import .any_module` or `using .any_module`. Make sure that you return the datamanager.
 
@@ -108,8 +107,7 @@ function compute_model(datamanager::Module,
                        material_parameter::Dict,
                        block::Int64,
                        time::Float64,
-                       dt::Float64,
-                       to::TimerOutput)
+                       dt::Float64)
     @info "Please write a material name in material_name()."
     @info "You can call your routine within the yaml file."
     @info "Fill the compute_model() and init_model() function."

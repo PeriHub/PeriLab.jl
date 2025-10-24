@@ -52,7 +52,6 @@ using Dates
 using LibGit2
 using StyledStrings
 
-const to = TimerOutput()
 using .Data_Manager
 
 import .Logging_Module
@@ -229,8 +228,8 @@ function main(filename::String;
               debug::Bool = false,
               silent::Bool = false,
               reload::Bool = false,)
-    reset_timer!(to)
-    @timeit to "PeriLab" begin
+    reset_timer!()
+    @timeit "PeriLab" begin
         if !MPI.Initialized()
             MPI.Init()
         end
@@ -294,12 +293,12 @@ function main(filename::String;
             end
             Data_Manager.set_silent(silent)
             Data_Manager.set_verbose(verbose)
-            @timeit to "IO.initialize_data" datamanager,
-                                            params,
-                                            steps=IO.initialize_data(filename,
-                                                                     filedirectory,
-                                                                     Data_Manager,
-                                                                     comm, to)
+            @timeit "IO.initialize_data" datamanager,
+                                         params,
+                                         steps=IO.initialize_data(filename,
+                                                                  filedirectory,
+                                                                  Data_Manager,
+                                                                  comm)
             datamanager.set_max_step(steps[end])
             for step_id in steps
                 if !isnothing(step_id)
@@ -308,13 +307,12 @@ function main(filename::String;
                 datamanager.set_cancel(false)
                 datamanager.set_step(step_id)
                 @info "Init Solver"
-                @timeit to "Solver_Manager.init" block_nodes,
-                                                 bcs,
-                                                 datamanager,
-                                                 solver_options=Solver_Manager.init(params,
-                                                                                    datamanager,
-                                                                                    to,
-                                                                                    step_id)
+                @timeit "Solver_Manager.init" block_nodes,
+                                              bcs,
+                                              datamanager,
+                                              solver_options=Solver_Manager.init(params,
+                                                                                 datamanager,
+                                                                                 step_id)
                 if datamanager.get_current_time() >= solver_options["Final Time"]
                     @info "Step " * string(step_id) * " skipped."
                     continue
@@ -323,7 +321,7 @@ function main(filename::String;
                     @info "Initial time not reached. Skipping step " * string(step_id)
                     continue
                 end
-                @timeit to "IO.init orientations" datamanager=IO.init_orientations(datamanager)
+                @timeit "IO.init orientations" datamanager=IO.init_orientations(datamanager)
                 IO.show_block_summary(solver_options,
                                       params,
                                       Logging_Module.get_log_file(),
@@ -336,12 +334,12 @@ function main(filename::String;
                                     datamanager)
                 @debug "Init write results"
                 if isnothing(step_id) || step_id == 1
-                    @timeit to "IO.init_write_results" result_files,
-                                                       outputs=IO.init_write_results(params,
-                                                                                     output_dir,
-                                                                                     filedirectory,
-                                                                                     datamanager,
-                                                                                     PERILAB_VERSION)
+                    @timeit "IO.init_write_results" result_files,
+                                                    outputs=IO.init_write_results(params,
+                                                                                  output_dir,
+                                                                                  filedirectory,
+                                                                                  datamanager,
+                                                                                  PERILAB_VERSION)
                 end
                 IO.set_output_frequency(params,
                                         datamanager,
@@ -356,15 +354,14 @@ function main(filename::String;
                     nsteps = solver_options["Number of Steps"]
                     solver_options["Number of Steps"] = 10
                     elapsed_time = @elapsed begin
-                        @timeit to "Solver" result_files=Solver_Manager.solver(solver_options,
-                                                                               block_nodes,
-                                                                               bcs,
-                                                                               datamanager,
-                                                                               outputs,
-                                                                               result_files,
-                                                                               IO.write_results,
-                                                                               to,
-                                                                               silent)
+                        @timeit "Solver" result_files=Solver_Manager.solver(solver_options,
+                                                                            block_nodes,
+                                                                            bcs,
+                                                                            datamanager,
+                                                                            outputs,
+                                                                            result_files,
+                                                                            IO.write_results,
+                                                                            silent)
                     end
 
                     @info "Estimated runtime: " *
@@ -376,15 +373,14 @@ function main(filename::String;
                           " [b]"
 
                 else
-                    @timeit to "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_options,
-                                                                                          block_nodes,
-                                                                                          bcs,
-                                                                                          datamanager,
-                                                                                          outputs,
-                                                                                          result_files,
-                                                                                          IO.write_results,
-                                                                                          to,
-                                                                                          silent)
+                    @timeit "Solver_Manager.solver" result_files=Solver_Manager.solver(solver_options,
+                                                                                       block_nodes,
+                                                                                       bcs,
+                                                                                       datamanager,
+                                                                                       outputs,
+                                                                                       result_files,
+                                                                                       IO.write_results,
+                                                                                       silent)
                 end
             end
 
@@ -414,6 +410,7 @@ function main(filename::String;
         end
     end
     if verbose
+        to = TimerOutputs.get_defaulttimer()
         TimerOutputs.complement!(to)
         @info to
     end

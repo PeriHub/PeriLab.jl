@@ -26,7 +26,6 @@ using .Thermal
 using .Contact
 # in future FEM will be outside of the Model_Factory
 using ..FEM
-using TimerOutputs
 export compute_models
 export init_models
 export read_properties
@@ -48,8 +47,7 @@ function init_models(params::Dict,
                      datamanager::Module,
                      block_nodes::Dict{Int64,Vector{Int64}},
                      solver_options::Dict,
-                     synchronise_field,
-                     to::TimerOutput)
+                     synchronise_field)
     if "Pre_Calculation" in solver_options["Models"]
         @info "Check pre calculation models are initialized for material models."
         datamanager = Pre_Calculation.check_dependencies(datamanager, block_nodes)
@@ -77,7 +75,7 @@ function init_models(params::Dict,
     if isnothing(datamanager.get_step()) || datamanager.get_step() == 1
         for (active_model_name, active_model) in pairs(datamanager.get_active_models(true))
             @debug "Init $active_model_name fields"
-            @timeit to "$active_model_name model fields" datamanager=active_model.init_fields(datamanager)
+            @timeit "$active_model_name model fields" datamanager=active_model.init_fields(datamanager)
         end
     end
     for (active_model_name, active_model) in pairs(datamanager.get_active_models())
@@ -85,12 +83,12 @@ function init_models(params::Dict,
 
         for block in eachindex(block_nodes)
             if datamanager.check_property(block, active_model_name)
-                @timeit to "init $active_model_name models" datamanager=active_model.init_model(datamanager,
-                                                                                                block_nodes[block],
-                                                                                                block)
-                @timeit to "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(datamanager,
-                                                                                                                                           active_model_name,
-                                                                                                                                           block)
+                @timeit "init $active_model_name models" datamanager=active_model.init_model(datamanager,
+                                                                                             block_nodes[block],
+                                                                                             block)
+                @timeit "init fields_for_local_synchronization $active_model_name models" active_model.fields_for_local_synchronization(datamanager,
+                                                                                                                                        active_model_name,
+                                                                                                                                        block)
                 if active_model_name == "Damage Model" &&
                    haskey(datamanager.get_properties(block, active_model_name),
                           "Local Damping")
@@ -134,17 +132,16 @@ function check_contact(datamanager::Module, params::Dict)
     end
     return datamanager
 end
-function check_contact(datamanager::Module, params::Dict, time::Float64, dt::Float64,
-                       to::TimerOutput)
+function check_contact(datamanager::Module, params::Dict, time::Float64, dt::Float64)
     if length(params) != 0
         return Contact.compute_contact_model(datamanager, params, time,
-                                                     dt, to)
+                                             dt)
     end
     return datamanager
 end
 
 """
-    compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field, to::TimerOutput)
+    compute_models(datamanager::Module, block_nodes::Dict{Int64,Vector{Int64}}, dt::Float64, time::Float64, options::Vector{String}, synchronise_field)
 
 Computes the models models
 
@@ -155,7 +152,6 @@ Computes the models models
 - `time::Float64`: The current time of the solver
 - `options::Vector{String}`: The options
 - `synchronise_field`: The synchronise field
-- `to::TimerOutput`: The timer output
 # Returns
 - `datamanager`: The datamanager
 """
@@ -164,8 +160,7 @@ function compute_models(datamanager::Module,
                         dt::Float64,
                         time::Float64,
                         options::Vector{String},
-                        synchronise_field,
-                        to::TimerOutput)
+                        synchronise_field)
     fem_option = datamanager.fem_active()
     if fem_option
         fe_nodes = datamanager.get_field("FE Nodes")
@@ -211,14 +206,13 @@ function compute_models(datamanager::Module,
             end
             if datamanager.check_property(block, active_model_name)
                 # synch
-                @timeit to "compute $active_model_name" datamanager=active_model.compute_model(datamanager,
-                                                                                               active_nodes,
-                                                                                               datamanager.get_properties(block,
-                                                                                                                          active_model_name),
-                                                                                               block,
-                                                                                               time,
-                                                                                               dt,
-                                                                                               to)
+                @timeit "compute $active_model_name" datamanager=active_model.compute_model(datamanager,
+                                                                                            active_nodes,
+                                                                                            datamanager.get_properties(block,
+                                                                                                                       active_model_name),
+                                                                                            block,
+                                                                                            time,
+                                                                                            dt)
             end
         end
     end
@@ -265,28 +259,27 @@ function compute_models(datamanager::Module,
 
             if datamanager.check_property(block, active_model_name)
                 # TODO synch
-                @timeit to "compute $active_model_name" datamanager=active_model.compute_model(datamanager,
-                                                                                               update_nodes,
-                                                                                               datamanager.get_properties(block,
-                                                                                                                          active_model_name),
-                                                                                               block,
-                                                                                               time,
-                                                                                               dt,
-                                                                                               to)
+                @timeit "compute $active_model_name" datamanager=active_model.compute_model(datamanager,
+                                                                                            update_nodes,
+                                                                                            datamanager.get_properties(block,
+                                                                                                                       active_model_name),
+                                                                                            block,
+                                                                                            time,
+                                                                                            dt)
             end
         end
     end
     # must be here to avoid double distributions
     # distributes ones over all nodes
     if fem_option
-        @timeit to "FEM" begin
+        @timeit "FEM" begin
             nelements = datamanager.get_num_elements()
 
-            @timeit to "eval" datamanager=FEM.eval_FEM(datamanager,
-                                                       Vector{Int64}(1:nelements),
-                                                       datamanager.get_properties(1, "FEM"),
-                                                       time,
-                                                       dt)
+            @timeit "eval" datamanager=FEM.eval_FEM(datamanager,
+                                                    Vector{Int64}(1:nelements),
+                                                    datamanager.get_properties(1, "FEM"),
+                                                    time,
+                                                    dt)
             active_nodes = datamanager.get_field("Active Nodes")
 
             FEM.force_densities(datamanager,
@@ -309,11 +302,11 @@ function compute_models(datamanager::Module,
                     else
                         find_active_nodes(active_list, active_nodes, nodes)
                     end
-                    @timeit to "local_damping_due_to_damage" Material.compute_local_damping(datamanager,
-                                                                                            active_nodes,
-                                                                                            datamanager.get_properties(block,
-                                                                                                                       "Damage Model")["Local Damping"],
-                                                                                            dt)
+                    @timeit "local_damping_due_to_damage" Material.compute_local_damping(datamanager,
+                                                                                         active_nodes,
+                                                                                         datamanager.get_properties(block,
+                                                                                                                    "Damage Model")["Local Damping"],
+                                                                                         dt)
                 end
             end
         end
@@ -326,17 +319,16 @@ function compute_models(datamanager::Module,
                                    local_synch,
                                    synchronise_field)
 
-        @timeit to "distribute_force_densities" Material.distribute_force_densities(datamanager,
-                                                                                    active_nodes,
-                                                                                    to)
+        @timeit "distribute_force_densities" Material.distribute_force_densities(datamanager,
+                                                                                 active_nodes)
     end
 
     if fem_option
-        @timeit to "coupling" datamanager=FEM.Coupling.compute_coupling(datamanager,
-                                                                               datamanager.get_properties(1,
-                                                                                                          "FEM"))
+        @timeit "coupling" datamanager=FEM.Coupling.compute_coupling(datamanager,
+                                                                     datamanager.get_properties(1,
+                                                                                                "FEM"))
     end
-    check_contact(datamanager, datamanager.get_contact_properties(), time, dt, to)
+    check_contact(datamanager, datamanager.get_contact_properties(), time, dt)
     #=
     Used for shape tensor or other fixed calculations, to avoid an update if its not needed.
     The damage update is done in the second loop.
