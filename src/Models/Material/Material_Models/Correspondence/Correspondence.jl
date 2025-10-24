@@ -6,6 +6,7 @@ module Correspondence
 
 include("../Zero_Energy_Control/global_control.jl")
 
+using TimerOutputs: @timeit
 using ....Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "correspondence_name")
 for mod in module_list

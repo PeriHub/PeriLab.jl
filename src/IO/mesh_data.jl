@@ -6,6 +6,7 @@ using LinearAlgebra
 using AbaqusReader
 using DataFrames
 using OrderedCollections: OrderedDict
+using TimerOutputs: @timeit
 include("bond_filters.jl")
 include("gcode.jl")
 include("volume.jl")

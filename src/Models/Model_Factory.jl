@@ -4,6 +4,7 @@
 
 module Model_Factory
 
+using TimerOutputs: @timeit
 using ....Helpers:
                    check_inf_or_nan, find_active_nodes, get_active_update_nodes, invert,
                    determinant

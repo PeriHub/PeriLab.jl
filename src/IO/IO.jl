@@ -7,6 +7,7 @@ using MPI
 using DataFrames
 using PrettyTables
 using Logging
+using TimerOutputs: @timeit
 
 include("read_inputdeck.jl")
 include("mesh_data.jl")

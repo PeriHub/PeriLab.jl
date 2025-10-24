@@ -6,6 +6,7 @@ module Material
 
 include("Material_Models/Ordinary/Ordinary.jl")
 
+using TimerOutputs: @timeit
 using ...Solver_Manager: find_module_files, create_module_specifics
 global module_list = find_module_files(@__DIR__, "material_name")
 for mod in module_list

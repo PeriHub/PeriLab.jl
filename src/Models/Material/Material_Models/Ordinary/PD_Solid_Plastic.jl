@@ -4,6 +4,7 @@
 
 module PD_Solid_Plastic
 
+using TimerOutputs: @timeit
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!, mul_in_place!, sub_in_place!
 using ..Ordinary: calculate_symmetry_params, get_bond_forces

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Solver_Manager
+using TimerOutputs: @timeit
 using ..Parameter_Handling:
                             get_density,
                             get_horizon,

@@ -9,6 +9,7 @@ using ProgressBars: set_multiline_postfix, set_postfix
 using Printf
 using LoopVectorization
 using Logging
+using TimerOutputs: @timeit
 
 using ...Helpers: check_inf_or_nan, find_active_nodes, progress_bar, matrix_style
 using ...Parameter_Handling:

@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module PD_Solid_Elastic
+
+using TimerOutputs: @timeit
 using ....Material_Basis: get_symmetry
 using ......Helpers: add_in_place!
 using StaticArrays
