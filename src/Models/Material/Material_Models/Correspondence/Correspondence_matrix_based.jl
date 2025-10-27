@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 module Correspondence_matrix_based
-using ProgressBars
 using LinearAlgebra
-using StaticArrays: @MMatrix
+using ProgressBars
 using ...Material_Basis: get_Hooke_matrix
 using ....Helpers: get_fourth_order, progress_bar
 using ...Global_Zero_Energy_Control: create_zero_energy_mode_stiffness!
 using SparseArrays
-
+using StaticArrays: @MMatrix
 export init_model
 export add_zero_energy_stiff!
 """
@@ -90,7 +89,7 @@ The tensor incorporates both volumetric and influence function weights.
 function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
                           V_k::Float64, omega_ik::Float64, B_tensor::Array{Float64,3})
     dof = length(X_ik)
-    factor = omega_ik * V_k * 0.5  # Multiplication often faster than division
+    factor = omega_ik * V_k * 0.5
 
     @inbounds @fastmath if dof == 2
         # Compute B1 and B2 inline
@@ -140,40 +139,6 @@ function create_B_tensor!(D_inv::AbstractMatrix{Float64}, X_ik::Vector{Float64},
 end
 
 """
-Corrected multiplication: R[m,r] = sum_n CB[m,n,r] * v[n]
-
-This function computes the matrix-vector product where v = D_inv * X.
-It's used in the linearized operator computation.
-
-Arguments:
-- CB: Contracted elasticity-strain tensor (dof×dof×dof)
-- D_inv: Inverse shape tensor matrix (dof×dof)
-- X: Bond vector (dof×1)
-
-Returns:
-- R: Result matrix (dof×dof)
-
-Mathematical operation:
-v_n = (D_inv * X)_n
-R[m,r] = Σ_n CB[m,n,r] * v[n]
-"""
-function multi(CB::Array{Float64,3}, D_inv::AbstractMatrix{Float64},
-               X::AbstractVector{Float64})
-    dof = length(X)
-    v = D_inv * X                 # v_n = (D_inv * X)_n
-    R = zeros(dof, dof)           # R[m,r]
-
-    @inbounds for m in 1:dof, r in 1:dof
-        s = 0.0
-        for n in 1:dof
-            s += CB[m, n, r] * v[n]
-        end
-        R[m, r] = s
-    end
-    return R
-end
-
-"""
 Compute linearized operator K_ijk for correspondence theory
 
 The linearized operator relates displacement at node kID to bond force along iID-jID:
@@ -201,25 +166,19 @@ function compute_linearized_operator(CB_ik::AbstractArray{Float64,3},
     dof = size(CB_ik, 1)
 
     if dof == 2
-        # Compute DX inline
         DX_1 = D_inv_i[1, 1] * X_ij[1] + D_inv_i[1, 2] * X_ij[2]
         DX_2 = D_inv_i[2, 1] * X_ij[1] + D_inv_i[2, 2] * X_ij[2]
 
         factor = omega_ij * V_k * omega_ik
 
         @inbounds begin
-            # m=1, o=1
             K_ijk[1, 1] = factor * (CB_ik[1, 1, 1]*DX_1 + CB_ik[1, 2, 1]*DX_2)
-            # m=1, o=2
             K_ijk[1, 2] = factor * (CB_ik[1, 1, 2]*DX_1 + CB_ik[1, 2, 2]*DX_2)
-            # m=2, o=1
             K_ijk[2, 1] = factor * (CB_ik[2, 1, 1]*DX_1 + CB_ik[2, 2, 1]*DX_2)
-            # m=2, o=2
             K_ijk[2, 2] = factor * (CB_ik[2, 1, 2]*DX_1 + CB_ik[2, 2, 2]*DX_2)
         end
 
     elseif dof == 3
-        # Compute DX inline
         DX_1 = D_inv_i[1, 1]*X_ij[1] + D_inv_i[1, 2]*X_ij[2] + D_inv_i[1, 3]*X_ij[3]
         DX_2 = D_inv_i[2, 1]*X_ij[1] + D_inv_i[2, 2]*X_ij[2] + D_inv_i[2, 3]*X_ij[3]
         DX_3 = D_inv_i[3, 1]*X_ij[1] + D_inv_i[3, 2]*X_ij[2] + D_inv_i[3, 3]*X_ij[3]
@@ -479,12 +438,12 @@ end
 # Helper function 1: Precompute CB tensors for all k neighbors
 function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
                                 C_tensor::Array{Float64,4},
-                                D_inv::AbstractMatrix{Float64},
+                                D_inv::Matrix{Float64},
                                 neighbors::Vector{Int64},
                                 volume::Vector{Float64},
                                 bond_geometry_i::Vector{Vector{Float64}},
-                                omega_i::Vector{Float64})
-    B_ik = zeros(Float64, size(CB_k, 2), size(CB_k, 3), size(CB_k, 4))
+                                omega_i::Vector{Float64},
+                                B_ik::Array{Float64,3})
     @inbounds for (k_idx, k) in enumerate(neighbors)
         V_k = volume[k]
         omega_ik = omega_i[k_idx]
@@ -495,113 +454,73 @@ function precompute_CB_tensors!(CB_k::AbstractArray{Float64,4},
     return nothing
 end
 
-# accumulate mit lokalen Indizes
-@inline function accumulate_K_contributions_local!(K_ij_j::Matrix{Float64},
-                                                   K_ij_i::Matrix{Float64},
-                                                   CB_k::AbstractArray{Float64,3},
-                                                   D_inv::Matrix{Float64},
-                                                   X_ij::Vector{Float64},
-                                                   omega_ij::Float64,
-                                                   V_k::Float64,
-                                                   omega_ik::Float64,
-                                                   i_offset_local::Int64,
-                                                   k_offset_local::Int64,
-                                                   K_block::AbstractMatrix{Float64},
-                                                   dof::Int64)
-    compute_linearized_operator(CB_k, D_inv, X_ij, omega_ij, V_k, omega_ik, dof, K_block)
+# Helper function 2: Accumulate K contributions for a (j,k) pair
+@inline function accumulate_K_contributions!(K_ij_j::Matrix{Float64},
+                                             K_ij_i::Matrix{Float64},
+                                             CB_k::AbstractArray{Float64,3},
+                                             D_inv::Matrix{Float64},
+                                             X_ij::Vector{Float64},
+                                             omega_ij::Float64,
+                                             V_k::Float64,
+                                             omega_ik::Float64,
+                                             i_offset::Int64,
+                                             k_offset::Int64,
+                                             dof::Int64)
+    # Compute K_block for this (j,k) pair
+    K_block = compute_linearized_operator(CB_k, D_inv, X_ij, omega_ij, V_k, omega_ik, dof,
+                                          K_ij_i)
 
     factor = omega_ij * V_k * omega_ik
 
     @inbounds for m in 1:dof, o in 1:dof
         val = factor * K_block[m, o]
-        K_ij_j[m, i_offset_local+o] -= val
-        K_ij_i[m, i_offset_local+o] -= val
-        K_ij_j[m, k_offset_local+o] += val
-        K_ij_i[m, k_offset_local+o] += val
+        K_ij_j[m, i_offset+o] -= val
+        K_ij_i[m, i_offset+o] -= val
+        K_ij_j[m, k_offset+o] += val
+        K_ij_i[m, k_offset+o] += val
     end
 
     return nothing
 end
 
-# add_coo mit lokalem Mapping
-@inline function add_coo_entries_local!(I::Vector{Int64},
-                                        J::Vector{Int64},
-                                        V::Vector{Float64},
-                                        idx::Ref{Int64},
-                                        K_ij_j::Matrix{Float64},
-                                        K_ij_i::Matrix{Float64},
-                                        j_offset::Int64,
-                                        i_offset::Int64,
-                                        V_i::Float64,
-                                        V_j::Float64,
-                                        dof::Int64,
-                                        neighbors::Vector{Int64},
-                                        node_i::Int64,
-                                        col_map::Vector{Int64},
-                                        n_active_cols::Int64,
-                                        tol::Float64 = 1e-16)
-
-    # Iteriere über aktive lokale Spalten
-    @inbounds for local_col in 1:n_active_cols, m in 1:dof
-        # Finde globale Spalte (reverse lookup)
-        # Schneller: direkt über neighbors iterieren
-        for neighbor in neighbors
-            for d in 1:dof
-                global_col = (neighbor - 1) * dof + d
-                if col_map[global_col] == local_col
-                    # j-row
-                    val_j = -K_ij_j[m, local_col] * V_i
-                    if abs(val_j) > tol
-                        idx[] += 1
-                        I[idx[]] = j_offset + m
-                        J[idx[]] = global_col
-                        V[idx[]] = val_j
-                    end
-
-                    # i-row
-                    val_i = K_ij_i[m, local_col] * V_j
-                    if abs(val_i) > tol
-                        idx[] += 1
-                        I[idx[]] = i_offset + m
-                        J[idx[]] = global_col
-                        V[idx[]] = val_i
-                    end
-                    @goto next_local_col
-                end
-            end
+# Helper function 3: Add non-zero entries to COO format
+@inline function add_coo_entries!(I::Vector{Int64},
+                                  J::Vector{Int64},
+                                  V::Vector{Float64},
+                                  idx::Ref{Int64},
+                                  K_ij_j::Matrix{Float64},
+                                  K_ij_i::Matrix{Float64},
+                                  j_offset::Int64,
+                                  i_offset::Int64,
+                                  V_i::Float64,
+                                  V_j::Float64,
+                                  dof::Int64,
+                                  n_total::Int64,
+                                  tol::Float64 = 1e-16)
+    @inbounds for m in 1:dof, n in 1:n_total
+        # j-row
+        val_j = -K_ij_j[m, n] * V_i
+        if abs(val_j) > tol
+            idx[] += 1
+            I[idx[]] = j_offset + m
+            J[idx[]] = n
+            V[idx[]] = val_j
         end
 
-        # Check node_i
-        for d in 1:dof
-            global_col = (node_i - 1) * dof + d
-            if col_map[global_col] == local_col
-                # j-row
-                val_j = -K_ij_j[m, local_col] * V_i
-                if abs(val_j) > tol
-                    idx[] += 1
-                    I[idx[]] = j_offset + m
-                    J[idx[]] = global_col
-                    V[idx[]] = val_j
-                end
-
-                # i-row
-                val_i = K_ij_i[m, local_col] * V_j
-                if abs(val_i) > tol
-                    idx[] += 1
-                    I[idx[]] = i_offset + m
-                    J[idx[]] = global_col
-                    V[idx[]] = val_i
-                end
-                break
-            end
+        # i-row
+        val_i = K_ij_i[m, n] * V_j
+        if abs(val_i) > tol
+            idx[] += 1
+            I[idx[]] = i_offset + m
+            J[idx[]] = n
+            V[idx[]] = val_i
         end
-
-        @label next_local_col
     end
 
     return nothing
 end
 
+# Main function: Fully integrated, no Dict, minimal loops
 function init_assemble_stiffness_contributions_sparse(nodes::AbstractVector{Int64},
                                                       dof::Int64,
                                                       C_Voigt::Array{Float64,3},
@@ -615,218 +534,67 @@ function init_assemble_stiffness_contributions_sparse(nodes::AbstractVector{Int6
     n_total = nodes[end] * dof
     estimated_nnz = 2 * dof^2 * sum(number_of_neighbors[i]^2 for i in nodes)
 
-    # Add safety factor to prevent buffer overflow
-    safety_factor = 1.5
-    buffer_size = ceil(Int, estimated_nnz * safety_factor)
+    I = Vector{Int64}(undef, estimated_nnz)
+    J = Vector{Int64}(undef, estimated_nnz)
+    V = Vector{Float64}(undef, estimated_nnz)
 
-    I = Vector{Int64}(undef, buffer_size)
-    J = Vector{Int64}(undef, buffer_size)
-    V = Vector{Float64}(undef, buffer_size)
+    idx = Ref(0)  # Mutable reference for idx
 
-    idx = Ref(0)
+    # Reusable buffers
+    K_ij_j = zeros(dof, n_total)
+    K_ij_i = zeros(dof, n_total)
 
-    # ✅ Much smaller buffers - only dof × dof instead of dof × max_cols
-    max_neighbors = maximum(number_of_neighbors)
-    CB_k_buffer = zeros(max_neighbors, dof, dof, dof)
+    # Buffer for CB tensors (allocate once, reuse)
+    CB_k_buffer = zeros(maximum(number_of_neighbors), dof, dof, dof)
 
-    # Small K_block for linearized operator result
     if dof == 2
         K_block = @MMatrix zeros(2, 2)
+        B_ik = zeros(2, 2, 2)
     else
         K_block = @MMatrix zeros(3, 3)
+        B_ik = zeros(3, 3, 3)
     end
 
-    iter = progress_bar(0, length(nodes), false)
-
-    for iter_dx in iter
-        i = nodes[iter_dx]
-        @views D_inv = inverse_shape_tensor[i, :, :]
-        @views C_tensor = get_fourth_order(C_Voigt[i, :, :], dof)
-
-        V_i = volume[i]
-        ni = nlist[i]
-        n_neighbors = length(ni)
-
-        CB_k = @view CB_k_buffer[1:n_neighbors, :, :, :]
-
-        # Step 1: Precompute CB tensors (once per node i)
-        precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
-                               bond_geometry[i], omega[i])
-
-        i_offset = (i-1) * dof
-
-        # Step 2: j-loop over neighbors
-        for (j_idx, j) in enumerate(ni)
-            omega_ij = omega[i][j_idx]
-            V_j = volume[j]
-            X_ij = bond_geometry[i][j_idx]
-            j_offset = (j-1) * dof
-
-            # Step 3: k-loop - compute and write directly to COO
-            for (k_idx, k) in enumerate(ni)
-                omega_ik = omega[i][k_idx]
-                V_k = volume[k]
-
-                # ✅ Compute K_block and write directly to COO arrays
-                @views accumulate_and_write_direct!(I, J, V, idx,
-                                                    CB_k[k_idx, :, :, :], D_inv, X_ij,
-                                                    omega_ij, V_k, omega_ik,
-                                                    j_offset, i_offset, k, i,
-                                                    V_i, V_j, K_block, dof)
-            end
-        end
-    end
-
-    # Trim to actual size
-    resize!(I, idx[])
-    resize!(J, idx[])
-    resize!(V, idx[])
-
-    return I, J, V, n_total
-end
-
-# Helper function: Compute K_block and write directly to COO format
-@inline function accumulate_and_write_direct!(I::Vector{Int64},
-                                              J::Vector{Int64},
-                                              V::Vector{Float64},
-                                              idx::Ref{Int64},
-                                              CB_k::AbstractArray{Float64,3},
-                                              D_inv::Matrix{Float64},
-                                              X_ij::Vector{Float64},
-                                              omega_ij::Float64,
-                                              V_k::Float64,
-                                              omega_ik::Float64,
-                                              j_offset::Int64,
-                                              i_offset::Int64,
-                                              k_global::Int64,
-                                              i_global::Int64,
-                                              V_i::Float64,
-                                              V_j::Float64,
-                                              K_block::AbstractMatrix{Float64},
-                                              dof::Int64,
-                                              tol::Float64 = 1e-16)
-
-    # Compute linearized operator for this (j,k) pair
-    compute_linearized_operator!(K_block, CB_k, D_inv, X_ij, omega_ij, V_k, omega_ik, dof)
-
-    factor = omega_ij * V_k * omega_ik
-    i_offset_global = (i_global - 1) * dof
-    k_offset_global = (k_global - 1) * dof
-
-    # Write all 4 contributions directly to COO format
-    @inbounds for m in 1:dof, o in 1:dof
-        val = factor * K_block[m, o]
-
-        # Contribution to (j, i) block - negative
-        val_ji = -val * V_i
-        if abs(val_ji) > tol
-            idx[] += 1
-            I[idx[]] = j_offset + m
-            J[idx[]] = i_offset_global + o
-            V[idx[]] = val_ji
-        end
-
-        # Contribution to (j, k) block - positive
-        val_jk = val * V_i
-        if abs(val_jk) > tol
-            idx[] += 1
-            I[idx[]] = j_offset + m
-            J[idx[]] = k_offset_global + o
-            V[idx[]] = val_jk
-        end
-
-        # Contribution to (i, i) block - negative
-        val_ii = -val * V_j
-        if abs(val_ii) > tol
-            idx[] += 1
-            I[idx[]] = i_offset + m
-            J[idx[]] = i_offset_global + o
-            V[idx[]] = val_ii
-        end
-
-        # Contribution to (i, k) block - positive
-        val_ik = val * V_j
-        if abs(val_ik) > tol
-            idx[] += 1
-            I[idx[]] = i_offset + m
-            J[idx[]] = k_offset_global + o
-            V[idx[]] = val_ik
-        end
-    end
-
-    return nothing
-end
-
-function init_assemble_stiffness_contributions_sparse(nodes::AbstractVector{Int64},
-                                                      dof::Int64,
-                                                      C_Voigt::Array{Float64,3},
-                                                      inverse_shape_tensor::Array{Float64,
-                                                                                  3},
-                                                      number_of_neighbors::Vector{Int64},
-                                                      nlist::Vector{Vector{Int64}},
-                                                      volume::Vector{Float64},
-                                                      bond_geometry::Vector{Vector{Vector{Float64}}},
-                                                      omega::Vector{Vector{Float64}})
-    n_total = nodes[end] * dof
-    estimated_nnz = dof^2 * sum(number_of_neighbors[i] for i in nodes)
-
-    buffer_size = ceil(Int, estimated_nnz)
-
-    I = Vector{Int64}(undef, buffer_size)
-    J = Vector{Int64}(undef, buffer_size)
-    V = Vector{Float64}(undef, buffer_size)
-
-    idx = Ref(0)
-
-    # ✅ Much smaller buffers - only dof × dof instead of dof × max_cols
-    max_neighbors = maximum(number_of_neighbors)
-    CB_k_buffer = zeros(max_neighbors, dof, dof, dof)
-
-    # Small K_block for linearized operator result
-    if dof == 2
-        K_block = @MMatrix zeros(2, 2)
-    else
-        K_block = @MMatrix zeros(3, 3)
-    end
-
-    iter = progress_bar(0, length(nodes), false)
-
-    for iter_dx in iter
+    iter = progress_bar(1, length(nodes)-1, false) # steps + 1 as end step
+    @inbounds for iter_dx in iter
         i = nodes[iter_dx]
         D_inv = inverse_shape_tensor[i, :, :]
         @views C_tensor = get_fourth_order(C_Voigt[i, :, :], dof)
-
         V_i = volume[i]
         ni = nlist[i]
         n_neighbors = length(ni)
 
         CB_k = @view CB_k_buffer[1:n_neighbors, :, :, :]
 
-        # Step 1: Precompute CB tensors (once per node i)
+        # Step 1: Precompute CB tensors (once per i)
         precompute_CB_tensors!(CB_k, C_tensor, D_inv, ni, volume,
-                               bond_geometry[i], omega[i])
+                               bond_geometry[i], omega[i], B_ik)
 
-        i_offset = (i-1) * dof
-
-        # Step 2: j-loop over neighbors
+        # Step 2: j-loop
         for (j_idx, j) in enumerate(ni)
             omega_ij = omega[i][j_idx]
             V_j = volume[j]
             X_ij = bond_geometry[i][j_idx]
-            j_offset = (j-1) * dof
 
-            # Step 3: k-loop - compute and write directly to COO
+            fill!(K_ij_j, 0.0)
+            fill!(K_ij_i, 0.0)
+
+            # Step 3: k-loop - accumulate K contributions
+            i_offset = (i-1)*dof
             for (k_idx, k) in enumerate(ni)
                 omega_ik = omega[i][k_idx]
                 V_k = volume[k]
+                k_offset = (k-1)*dof
 
-                # ✅ Compute K_block and write directly to COO arrays
-                accumulate_and_write_direct!(I, J, V, idx,
-                                             CB_k[k_idx, :, :, :], D_inv, X_ij,
-                                             omega_ij, V_k, omega_ik,
-                                             j_offset, i_offset, k, i,
-                                             V_i, V_j, K_block, dof)
+                @views accumulate_K_contributions!(K_ij_j, K_ij_i, CB_k[k_idx, :, :, :],
+                                                   D_inv, X_ij, omega_ij, V_k, omega_ik,
+                                                   i_offset, k_offset, dof)
             end
+
+            # Step 4: Add COO entries
+            j_offset = (j-1)*dof
+            add_coo_entries!(I, J, V, idx, K_ij_j, K_ij_i,
+                             j_offset, i_offset, V_i, V_j, dof, n_total)
         end
     end
 
@@ -837,140 +605,7 @@ function init_assemble_stiffness_contributions_sparse(nodes::AbstractVector{Int6
 
     return I, J, V, n_total
 end
-
-# Helper function: Compute K_block and write directly to COO format
-@inline function accumulate_and_write_direct!(I::Vector{Int64},
-                                              J::Vector{Int64},
-                                              V::Vector{Float64},
-                                              idx::Ref{Int64},
-                                              CB_k::AbstractArray{Float64,3},
-                                              D_inv::AbstractMatrix{Float64},
-                                              X_ij::Vector{Float64},
-                                              omega_ij::Float64,
-                                              V_k::Float64,
-                                              omega_ik::Float64,
-                                              j_offset::Int64,
-                                              i_offset::Int64,
-                                              k_global::Int64,
-                                              i_global::Int64,
-                                              V_i::Float64,
-                                              V_j::Float64,
-                                              K_block::AbstractMatrix{Float64},
-                                              dof::Int64,
-                                              tol::Float64 = 1e-16)
-
-    # Compute linearized operator for this (j,k) pair
-    compute_linearized_operator!(K_block, CB_k, D_inv, X_ij, omega_ij, V_k, omega_ik, dof)
-
-    factor = omega_ij * V_k * omega_ik
-    i_offset_global = (i_global - 1) * dof
-    k_offset_global = (k_global - 1) * dof
-
-    # Write all 4 contributions directly to COO format
-    @inbounds for m in 1:dof, o in 1:dof
-        val = factor * K_block[m, o]
-
-        # Contribution to (j, i) block - negative
-        val_ji = -val * V_i
-        if abs(val_ji) > tol
-            if j_offset + m in I && i_offset_global + o in J
-
-            else
-                idx[] += 1
-                I[idx[]] = j_offset + m
-                J[idx[]] = i_offset_global + o
-                V[idx[]] = val_ji
-            end
-        end
-
-        # Contribution to (j, k) block - positive
-        val_jk = val * V_i
-        if abs(val_jk) > tol
-            idx[] += 1
-            I[idx[]] = j_offset + m
-            J[idx[]] = k_offset_global + o
-            V[idx[]] = val_jk
-        end
-
-        # Contribution to (i, i) block - negative
-        val_ii = -val * V_j
-        if abs(val_ii) > tol
-            idx[] += 1
-            I[idx[]] = i_offset + m
-            J[idx[]] = i_offset_global + o
-            V[idx[]] = val_ii
-        end
-
-        # Contribution to (i, k) block - positive
-        val_ik = val * V_j
-        if abs(val_ik) > tol
-            idx[] += 1
-            I[idx[]] = i_offset + m
-            J[idx[]] = k_offset_global + o
-            V[idx[]] = val_ik
-        end
-    end
-
-    return nothing
-end
-
-# In-place version of compute_linearized_operator
-function compute_linearized_operator!(K_ijk::AbstractMatrix{Float64},
-                                      CB_ik::AbstractArray{Float64,3},
-                                      D_inv_i::AbstractMatrix{Float64},
-                                      X_ij::Vector{Float64},
-                                      omega_ij::Float64,
-                                      V_k::Float64,
-                                      omega_ik::Float64,
-                                      dof::Int64)
-
-    # Precompute D_inv * X_ij
-    if dof == 2
-        DX_1 = D_inv_i[1, 1] * X_ij[1] + D_inv_i[1, 2] * X_ij[2]
-        DX_2 = D_inv_i[2, 1] * X_ij[1] + D_inv_i[2, 2] * X_ij[2]
-
-        factor = omega_ij * V_k * omega_ik
-
-        @inbounds begin
-            K_ijk[1, 1] = factor * (CB_ik[1, 1, 1]*DX_1 + CB_ik[1, 2, 1]*DX_2)
-            K_ijk[1, 2] = factor * (CB_ik[1, 1, 2]*DX_1 + CB_ik[1, 2, 2]*DX_2)
-            K_ijk[2, 1] = factor * (CB_ik[2, 1, 1]*DX_1 + CB_ik[2, 2, 1]*DX_2)
-            K_ijk[2, 2] = factor * (CB_ik[2, 1, 2]*DX_1 + CB_ik[2, 2, 2]*DX_2)
-        end
-    else  # dof == 3
-        DX_1 = D_inv_i[1, 1]*X_ij[1] + D_inv_i[1, 2]*X_ij[2] + D_inv_i[1, 3]*X_ij[3]
-        DX_2 = D_inv_i[2, 1]*X_ij[1] + D_inv_i[2, 2]*X_ij[2] + D_inv_i[2, 3]*X_ij[3]
-        DX_3 = D_inv_i[3, 1]*X_ij[1] + D_inv_i[3, 2]*X_ij[2] + D_inv_i[3, 3]*X_ij[3]
-
-        factor = omega_ij * V_k * omega_ik
-
-        @inbounds begin
-            K_ijk[1, 1] = factor *
-                          (CB_ik[1, 1, 1]*DX_1 + CB_ik[1, 2, 1]*DX_2 + CB_ik[1, 3, 1]*DX_3)
-            K_ijk[1, 2] = factor *
-                          (CB_ik[1, 1, 2]*DX_1 + CB_ik[1, 2, 2]*DX_2 + CB_ik[1, 3, 2]*DX_3)
-            K_ijk[1, 3] = factor *
-                          (CB_ik[1, 1, 3]*DX_1 + CB_ik[1, 2, 3]*DX_2 + CB_ik[1, 3, 3]*DX_3)
-
-            K_ijk[2, 1] = factor *
-                          (CB_ik[2, 1, 1]*DX_1 + CB_ik[2, 2, 1]*DX_2 + CB_ik[2, 3, 1]*DX_3)
-            K_ijk[2, 2] = factor *
-                          (CB_ik[2, 1, 2]*DX_1 + CB_ik[2, 2, 2]*DX_2 + CB_ik[2, 3, 2]*DX_3)
-            K_ijk[2, 3] = factor *
-                          (CB_ik[2, 1, 3]*DX_1 + CB_ik[2, 2, 3]*DX_2 + CB_ik[2, 3, 3]*DX_3)
-
-            K_ijk[3, 1] = factor *
-                          (CB_ik[3, 1, 1]*DX_1 + CB_ik[3, 2, 1]*DX_2 + CB_ik[3, 3, 1]*DX_3)
-            K_ijk[3, 2] = factor *
-                          (CB_ik[3, 1, 2]*DX_1 + CB_ik[3, 2, 2]*DX_2 + CB_ik[3, 3, 2]*DX_3)
-            K_ijk[3, 3] = factor *
-                          (CB_ik[3, 1, 3]*DX_1 + CB_ik[3, 2, 3]*DX_2 + CB_ik[3, 3, 3]*DX_3)
-        end
-    end
-
-    return nothing
-end
-
+#tbd
 function update_assemble_stiffness_contributions_sparse!(nodes::AbstractVector{Int64},
                                                          dof::Int64,
                                                          C_Voigt::Array{Float64,3},
